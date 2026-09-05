@@ -50,7 +50,12 @@ public record GitSigningStatus(
      * Supported signing formats reported by git config.
      */
     public enum Format {
-        OPENPGP, SSH, UNKNOWN
+        /** The configuration explicitly selects OpenPGP signing. */
+        OPENPGP,
+        /** The configuration explicitly selects SSH signing. */
+        SSH,
+        /** The configured format is absent or is not recognized by the parser. */
+        UNKNOWN
     }
 
     /**

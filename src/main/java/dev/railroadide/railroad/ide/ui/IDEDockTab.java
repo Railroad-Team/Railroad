@@ -12,6 +12,13 @@ import java.util.Objects;
 public final class IDEDockTab extends LocalizedTab {
     private final IDEDockItem dockItem;
 
+    /**
+     * Creates a tool tab with its content initialization policy and workspace actions.
+     *
+     * @param dockItem tool pane whose workspace state is being queried or changed
+     * @param project project whose files and workspace are being displayed
+     * @param workspaceActions workspace navigation and tool-window actions
+     */
     public IDEDockTab(IDEDockItem dockItem, Project project, IDEWorkspaceActions workspaceActions) {
         super(Objects.requireNonNull(dockItem, "Dock item cannot be null").localizationKey());
         this.dockItem = dockItem;
@@ -31,6 +38,11 @@ public final class IDEDockTab extends LocalizedTab {
         }
     }
 
+    /**
+     * Returns the tool definition represented by this tab.
+     *
+     * @return dock item definition
+     */
     public IDEDockItem getDockItem() {
         return dockItem;
     }

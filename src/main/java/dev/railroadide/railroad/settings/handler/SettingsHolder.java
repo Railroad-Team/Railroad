@@ -20,6 +20,11 @@ import java.util.Map;
 public class SettingsHolder implements JsonSerializable<JsonObject> {
     private final Map<String, JsonElement> pendingSettings = new HashMap<>();
 
+    /**
+     * Forces every currently registered setting to refresh its value.
+     *
+     * <p>Settings that have become unavailable are reported and skipped.</p>
+     */
     public void updateAll() {
         for (Map.Entry<String, Setting<?>> entry : SettingsHandler.SETTINGS_REGISTRY.entries().entrySet()) {
             String id = entry.getKey();
@@ -33,6 +38,12 @@ public class SettingsHolder implements JsonSerializable<JsonObject> {
         }
     }
 
+    /**
+     * Serializes all persisted registered settings and any values deferred for
+     * settings that were not registered yet.
+     *
+     * @return a JSON object containing the values that should be persisted
+     */
     @Override
     public JsonObject toJson() {
         var json = new JsonObject();
@@ -65,6 +76,14 @@ public class SettingsHolder implements JsonSerializable<JsonObject> {
         return json;
     }
 
+    /**
+     * Loads persisted setting values from a JSON object. Values for unknown
+     * settings are retained until the corresponding setting is registered.
+     *
+     * @param json JSON object containing persisted setting values
+     * @throws IllegalArgumentException if {@code json} is {@code null}
+     * @throws IllegalStateException if a registered setting rejects its value
+     */
     @Override
     public void fromJson(JsonObject json) throws IllegalStateException {
         if (json == null)
@@ -90,6 +109,12 @@ public class SettingsHolder implements JsonSerializable<JsonObject> {
         }
     }
 
+    /**
+     * Applies a deferred value to a setting when one is available.
+     *
+     * @param key identifier of the setting to hydrate
+     * @param setting setting that should receive the deferred value
+     */
     public void tryHydratePendingSetting(String key, Setting<?> setting) {
         if (key == null || key.isBlank() || setting == null)
             return;
@@ -100,6 +125,12 @@ public class SettingsHolder implements JsonSerializable<JsonObject> {
         }
     }
 
+    /**
+     * Returns a snapshot of all settings currently registered with the settings
+     * registry.
+     *
+     * @return an immutable list of registered settings
+     */
     public List<Setting<?>> getSettings() {
         return List.copyOf(SettingsHandler.SETTINGS_REGISTRY.values());
     }

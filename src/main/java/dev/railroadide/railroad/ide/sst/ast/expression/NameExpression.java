@@ -8,6 +8,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A simple or qualified name stored as ordered identifier segments.
+ *
+ * @param span source range occupied by this node
+ * @param parts name segments in source order
+ */
 public record NameExpression(Span span, List<String> parts) implements Expression {
     @Override
     public AstKind kind() {

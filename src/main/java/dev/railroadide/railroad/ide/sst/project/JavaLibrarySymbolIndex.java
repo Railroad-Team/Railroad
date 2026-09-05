@@ -14,6 +14,9 @@ import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+/**
+ * Binary symbol index built from class directories, JAR archives, and JMOD archives.
+ */
 public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
     private JavaLibrarySymbolIndex(
         Map<String, ClassStub> classStubsByQualifiedName,
@@ -22,6 +25,12 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         super(classStubsByQualifiedName, sourceByQualifiedName);
     }
 
+    /**
+     * Scans unique library roots and indexes readable class files, logging individual scan failures.
+     *
+     * @param roots the class directories, JARs, or JMODs to scan; unavailable roots are skipped
+     * @return the symbol index for successfully parsed library classes
+     */
     public static JavaLibrarySymbolIndex build(List<Path> roots) {
         Map<String, ClassStub> stubsByQualifiedName = new LinkedHashMap<>();
         Map<String, Path> sourceByQualifiedName = new LinkedHashMap<>();

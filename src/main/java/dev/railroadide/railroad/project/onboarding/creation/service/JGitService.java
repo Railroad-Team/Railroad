@@ -5,6 +5,7 @@ import org.eclipse.jgit.api.Git;
 
 import java.nio.file.Path;
 
+/** Initializes Git repositories and stages their contents for an initial commit using JGit. */
 public class JGitService implements GitService {
     @Override
     public void init(Path repoDir) throws Exception {

@@ -9,7 +9,7 @@ import dev.railroadide.railroad.ui.*;
 import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.utility.ShutdownHooks;
-import dev.railroadide.railroad.utility.TimeFormatter;
+import dev.railroadide.railroad.utility.TimeFormatingUtils;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import io.github.palexdev.materialfx.controls.MFXProgressSpinner;
@@ -45,6 +45,9 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+/**
+ * Loads, filters, and displays repository commits with their reference metadata.
+ */
 public class GitCommitListViewPane extends RRListView<GitCommit> implements AutoCloseable {
     private static final String PLACEHOLDER_EMPTY_KEY = "railroad.git.commit.list.placeholder.empty";
 
@@ -69,6 +72,11 @@ public class GitCommitListViewPane extends RRListView<GitCommit> implements Auto
     private final ShutdownHooks.Registration shutdownRegistration;
     private boolean closed;
 
+    /**
+     * Creates the commit list and starts loading repository history and metadata.
+     *
+     * @param project project whose files and workspace are being displayed
+     */
     public GitCommitListViewPane(Project project) {
         super();
         this.gitManager = project.getGitManager();
@@ -150,6 +158,11 @@ public class GitCommitListViewPane extends RRListView<GitCommit> implements Auto
         }
     }
 
+    /**
+     * Updates the case-insensitive search text and schedules a debounced filter refresh.
+     *
+     * @param searchText commit filter text; null clears the search filter
+     */
     public void setSearchFilter(String searchText) {
         this.searchFilter = searchText != null ? searchText.toLowerCase() : "";
         requestFilterUpdate(150);
@@ -454,11 +467,11 @@ public class GitCommitListViewPane extends RRListView<GitCommit> implements Auto
         public void setCommit(GitCommit commit) {
             clear();
             long timestampMillis = getCommitTimestampEpochSeconds(commit) * 1000L;
-            timestampText.setText(TimeFormatter.formatElapsed(timestampMillis));
-            tooltip.setText(TimeFormatter.formatDateTime(timestampMillis));
+            timestampText.setText(TimeFormatingUtils.formatElapsed(timestampMillis));
+            tooltip.setText(TimeFormatingUtils.formatDateTime(timestampMillis));
             updateTimeline = new Timeline(new KeyFrame(Duration.seconds(1), _ -> {
-                timestampText.setText(TimeFormatter.formatElapsed(timestampMillis));
-                tooltip.setText(TimeFormatter.formatDateTime(timestampMillis));
+                timestampText.setText(TimeFormatingUtils.formatElapsed(timestampMillis));
+                tooltip.setText(TimeFormatingUtils.formatDateTime(timestampMillis));
             }));
             updateTimeline.setCycleCount(Timeline.INDEFINITE);
             if (getScene() != null) {

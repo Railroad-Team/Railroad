@@ -12,6 +12,13 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+/**
+ * Base parser providing buffered token lookahead, recovery, and diagnostic collection for language parsers.
+ *
+ * @param <T> the enum representing lexer token categories
+ * @param <N> the common parsed-node type
+ * @param <E> the expression-node subtype
+ */
 public abstract class Parser<T extends Enum<T>, N, E extends N> {
     protected final Lexer<T> lexer;
     protected final List<ParseDiagnostic> diagnostics = new ArrayList<>();
@@ -567,6 +574,12 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
     /**
      * Represents a diagnostic message generated during parsing.
      * It includes the severity, message, and position of the diagnostic in the source code.
+     *
+     * @param severity the diagnostic severity
+     * @param message the nonblank diagnostic message
+     * @param offset the nonnegative source offset of the diagnostic
+     * @param line the one-based source line
+     * @param column the one-based source column
      */
     public record ParseDiagnostic(Severity severity, String message, int offset, int line, int column) {
         /**
@@ -594,7 +607,14 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
          * Severity levels for parse diagnostics.
          */
         public enum Severity {
-            ERROR, WARNING
+            /**
+             * An error that prevents the source from being valid.
+             */
+            ERROR,
+            /**
+             * A potential problem that does not necessarily invalidate the source.
+             */
+            WARNING
         }
 
         /**

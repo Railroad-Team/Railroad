@@ -22,6 +22,11 @@ import java.util.Optional;
  * @param value absolute URI value
  */
 public record DocumentUri(URI value) {
+    /**
+     * Creates a document address, requiring an absolute URI with a nonblank resource identifier.
+     *
+     * @param value the absolute URI identifying the resource
+     */
     public DocumentUri {
         value = Objects.requireNonNull(value, "value");
         if (!value.isAbsolute() || value.getScheme() == null || value.getScheme().isBlank())

@@ -6,7 +6,7 @@ import dev.railroadide.railroad.ui.*;
 import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
-import dev.railroadide.railroad.utility.TimeFormatter;
+import dev.railroadide.railroad.utility.TimeFormatingUtils;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.remote.GitRemote;
 import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
@@ -23,6 +23,9 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.util.List;
 
+/**
+ * Provides repository synchronization actions and overview status.
+ */
 public class GitOverviewHeaderPane extends RRVBox {
     private final RRHBox actionsBox = new RRHBox();
     private final GridPane infoGrid = new RRGridPane();
@@ -49,6 +52,11 @@ public class GitOverviewHeaderPane extends RRVBox {
     private final Timeline upstreamElapsedTimeline;
     private final GitManager gitManager;
 
+    /**
+     * Creates repository synchronization actions and overview status controls.
+     *
+     * @param project project whose files and workspace are being displayed
+     */
     public GitOverviewHeaderPane(Project project) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_OVERVIEW_HEADER, this);
         getStyleClass().add("git-overview-header-pane");
@@ -243,7 +251,7 @@ public class GitOverviewHeaderPane extends RRVBox {
         }
         upstreamBehindText.setText(Long.toString(status.behind()));
         upstreamAheadText.setText(Long.toString(status.ahead()));
-        upstreamFetchText.setText(TimeFormatter.formatElapsed(gitManager.getLastFetchTimestamp()));
+        upstreamFetchText.setText(TimeFormatingUtils.formatElapsed(gitManager.getLastFetchTimestamp()));
     }
 
     private void configureChangeChips() {

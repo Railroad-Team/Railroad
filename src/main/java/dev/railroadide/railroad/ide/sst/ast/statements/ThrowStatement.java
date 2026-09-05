@@ -9,6 +9,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A statement that throws the exception produced by an expression.
+ *
+ * @param span source range occupied by this node
+ * @param expression expression producing the exception to throw
+ */
 public record ThrowStatement(
     Span span,
     Expression expression

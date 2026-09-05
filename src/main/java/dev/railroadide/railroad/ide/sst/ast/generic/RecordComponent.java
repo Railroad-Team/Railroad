@@ -12,6 +12,15 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A named, typed component declared in a record header.
+ *
+ * @param span source range occupied by this node
+ * @param modifiers modifiers attached to the declaration
+ * @param annotations annotations attached to this node
+ * @param type declared component type
+ * @param name declared component name
+ */
 public record RecordComponent(
     Span span,
     List<Modifier> modifiers,

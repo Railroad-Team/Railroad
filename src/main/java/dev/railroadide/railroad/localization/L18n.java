@@ -32,6 +32,8 @@ public class L18n {
     }
 
     /**
+     * Returns the current Language object.
+     *
      * @return the current Language object
      */
     public static Language getCurrentLanguage() {
@@ -40,6 +42,8 @@ public class L18n {
 
     /**
      * Returns the current language as an ObjectProperty.
+     *
+     * @return the current language property
      */
     public static ObjectProperty<Language> currentLanguageProperty() {
         return CURRENT_LANG;

@@ -12,7 +12,15 @@ import javafx.scene.layout.VBox;
 
 import java.util.List;
 
+/**
+ * Displays local commits awaiting synchronization with the tracked remote.
+ */
 public class GitSyncOutgoingChangesPane extends RRVBox {
+    /**
+     * Creates the outgoing commit list and subscribes to repository status changes.
+     *
+     * @param gitManager repository service supplying state and Git operations
+     */
     public GitSyncOutgoingChangesPane(GitManager gitManager) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_SYNC_OUTGOING_CHANGES, this);
         getStyleClass().add("git-sync-outgoing-changes-pane");

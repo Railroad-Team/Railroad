@@ -69,6 +69,15 @@ public final class IDEMenuBarFactory {
     private IDEMenuBarFactory() {
     }
 
+    /**
+     * Builds the project menu bar with editor, workspace, and tool actions.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param viewModeController controller exposing workspace mode state and availability
+     * @param viewModeRequester callback for requesting a workspace mode change
+     * @param workspaceActions workspace navigation and tool-window actions
+     * @return configured IDE menu bar
+     */
     public static MenuBar create(
         Project project,
         WorkspaceModeController viewModeController,

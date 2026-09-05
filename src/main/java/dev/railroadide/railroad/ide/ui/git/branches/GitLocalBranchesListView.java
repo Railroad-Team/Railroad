@@ -4,7 +4,7 @@ import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
-import dev.railroadide.railroad.utility.TimeFormatter;
+import dev.railroadide.railroad.utility.TimeFormatingUtils;
 import dev.railroadide.railroad.vcs.git.branch.GitBranch;
 import dev.railroadide.railroad.vcs.git.branch.GitBranchLastCommit;
 import dev.railroadide.railroad.vcs.git.branch.GitBranchStatus;
@@ -24,9 +24,17 @@ import javafx.util.Duration;
 import java.util.ArrayList;
 import java.util.Locale;
 
+/**
+ * Displays local Git branches and their branch-specific details and actions.
+ */
 public class GitLocalBranchesListView extends AbstractGitBranchesListView<GitBranch.LocalGitBranch> {
     private final Timeline elapsedRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(1), _ -> refresh()));
 
+    /**
+     * Creates the local branch list and configures elapsed-time refreshes.
+     *
+     * @param project project whose files and workspace are being displayed
+     */
     public GitLocalBranchesListView(Project project) {
         super(
             project,
@@ -163,7 +171,7 @@ public class GitLocalBranchesListView extends AbstractGitBranchesListView<GitBra
                 if (timestampSeconds == null) {
                     lastSummaryLabel.setKey("railroad.git.branches.local.last_summary_never", shortHash);
                 } else {
-                    String lastCommitAge = TimeFormatter.formatElapsed(timestampSeconds * 1000L);
+                    String lastCommitAge = TimeFormatingUtils.formatElapsed(timestampSeconds * 1000L);
                     lastSummaryLabel.setKey("railroad.git.branches.local.last_summary", shortHash, lastCommitAge);
                 }
             } else {
@@ -173,7 +181,7 @@ public class GitLocalBranchesListView extends AbstractGitBranchesListView<GitBra
             if (fullHash != null && !fullHash.isBlank()) {
                 String tooltipText = timestampSeconds == null
                     ? fullHash
-                    : fullHash + "\n" + TimeFormatter.formatDateTime(timestampSeconds * 1000L);
+                    : fullHash + "\n" + TimeFormatingUtils.formatDateTime(timestampSeconds * 1000L);
                 lastSummaryLabel.setTooltip(new Tooltip(tooltipText));
             } else {
                 lastSummaryLabel.setTooltip(null);

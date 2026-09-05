@@ -17,9 +17,15 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Launches executable JARs with configured Java runtime options and tracks their processes.
+ */
 public class JarApplicationRunConfigurationType extends RunConfigurationType<JarApplicationRunConfigurationData> {
     private final Map<RunConfiguration<?>, Process> runningProcesses = new ConcurrentHashMap<>();
 
+    /**
+     * Creates the JAR application type with its localized label and JAR icon.
+     */
     public JarApplicationRunConfigurationType() {
         super("railroad.runconfig.jar_application", RailroadIcon.JAR_FILE, Color.web("#e67e22"));
     }

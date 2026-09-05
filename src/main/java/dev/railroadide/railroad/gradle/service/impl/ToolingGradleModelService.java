@@ -56,6 +56,13 @@ public class ToolingGradleModelService implements GradleModelService {
         this.executor = Objects.requireNonNull(executor);
     }
 
+    /**
+     * Loads the Gradle build model for the given project and environment.
+     *
+     * @param project the project for which to load the Gradle model
+     * @param environment the Gradle environment configuration
+     * @return the loaded GradleBuildModel
+     */
     public static GradleBuildModel loadModel(Project project, GradleEnvironment environment) {
         GradleConnector connector = GradleConnector.newConnector()
             .forProjectDirectory(project.getPath().toFile());

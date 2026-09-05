@@ -9,6 +9,10 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Fluent builder for configuring and launching {@code jps} from a {@link JDK}.
+ * Supports JVM listing options, a remote host identifier, and process execution settings.
+ */
 public class JpsCLIBuilder implements CLIBuilder<Process, JpsCLIBuilder> {
     private static final String EXECUTABLE_NAME = OperatingSystem.isWindows() ? "jps.exe" : "jps";
 

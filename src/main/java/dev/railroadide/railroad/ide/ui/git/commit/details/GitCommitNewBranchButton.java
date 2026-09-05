@@ -14,7 +14,16 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.util.Objects;
 
+/**
+ * Opens a dialog for creating a branch at a selected commit.
+ */
 public class GitCommitNewBranchButton extends RRButton {
+    /**
+     * Creates the branch-creation action for the supplied commit.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param commit commit to display or act on
+     */
     public GitCommitNewBranchButton(Project project, GitCommit commit) {
         super("railroad.git.commit.details.button.create_branch", FontAwesomeSolid.CODE_BRANCH);
         setVariant(ButtonVariant.PRIMARY);

@@ -248,7 +248,9 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
      * Represents the operation mode for the {@code jcmd} command.
      */
     private enum Mode {
-        COMMAND, LIST, HELP
+        COMMAND,
+        LIST,
+        HELP
     }
 
     /**
@@ -272,6 +274,8 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
      * Represents the type of target for the {@code jcmd} command.
      */
     private enum TargetType {
-        NONE, PID, MAIN_CLASS
+        NONE,
+        PID,
+        MAIN_CLASS
     }
 }

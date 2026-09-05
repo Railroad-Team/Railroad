@@ -17,12 +17,21 @@ import lombok.Getter;
 
 import java.io.IOException;
 
+/**
+ * Hosts project creation progress and connects service completion to opening the new project in the IDE.
+ * Construct and initialize this pane on the JavaFX application thread.
+ */
 @Getter
 public class ProjectCreationPane extends RRBorderPane {
     protected final ProjectContext context;
     protected final ProjectCreationView view;
     protected final TextAreaOutputStream taos;
 
+    /**
+     * Creates a context and progress view for a project beneath its configured parent directory.
+     *
+     * @param data project data containing the parent path and project name
+     */
     public ProjectCreationPane(ProjectData data) {
         this.context = new ProjectContext(
             data,
@@ -34,6 +43,12 @@ public class ProjectCreationPane extends RRBorderPane {
         Services.UI_MANAGER.assignWhileAttached(UIIds.ProjectOnboarding.PROJECT_CREATION, this);
     }
 
+    /**
+     * Displays the progress view, installs cancellation and completion handlers, and starts the service.
+     * Successful completion opens the project; failure presents an error dialog.
+     *
+     * @param service creation service ready to be started on the JavaFX application thread
+     */
     public void initService(Service<?> service) {
         view.bindToService(
             service,

@@ -8,6 +8,9 @@ import dev.railroadide.railroad.registry.RegistryManager;
  * Global registries for language inspection extension points.
  */
 public final class LanguageInspectionRegistries {
+    /**
+     * Registry of inspection providers shared by all supported languages.
+     */
     public static final Registry<LanguageInspectionProvider> LANGUAGE_INSPECTION_PROVIDER_REGISTRY = RegistryManager
         .createOrderedRegistry("railroad:language_inspection_provider", LanguageInspectionProvider.class);
 

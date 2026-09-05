@@ -14,6 +14,10 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Builds creation pipelines for Fabric, Forge, and NeoForge projects, then lets registered
+ * providers customize their steps. Providers run in registration order after the default steps are added.
+ */
 public final class DefaultProjectCreationPipelineService implements ProjectCreationPipelineService {
     private final List<CreationStepProvider> providers = new ArrayList<>();
 

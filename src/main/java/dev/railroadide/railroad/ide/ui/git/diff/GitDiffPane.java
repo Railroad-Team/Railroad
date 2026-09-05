@@ -29,6 +29,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Displays a read-only file diff or supplied diff text with line gutters and status placeholders.
+ */
 public class GitDiffPane extends RRBorderPane implements AutoCloseable {
     private static final String DEFAULT_TITLE = "Git Diff";
     private static final String PLACEHOLDER_NO_FILE_KEY = "railroad.git.diff.placeholder.no_file";
@@ -53,6 +56,12 @@ public class GitDiffPane extends RRBorderPane implements AutoCloseable {
     private int oldNumberDigits = 1;
     private int newNumberDigits = 1;
 
+    /**
+     * Creates a diff viewer for the project, optionally loading an initial file.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param filePath file whose changes should be displayed, or null for no selected file
+     */
     public GitDiffPane(Project project, Path filePath) {
         this.gitManager = project.getGitManager();
 
@@ -78,6 +87,11 @@ public class GitDiffPane extends RRBorderPane implements AutoCloseable {
         shutdownRegistration = ShutdownHooks.registerHook(executor::shutdownNow);
     }
 
+    /**
+     * Creates a diff viewer for the project, optionally loading an initial file.
+     *
+     * @param project project whose files and workspace are being displayed
+     */
     public GitDiffPane(Project project) {
         this(project, null);
     }
@@ -89,18 +103,39 @@ public class GitDiffPane extends RRBorderPane implements AutoCloseable {
         executor.shutdownNow();
     }
 
+    /**
+     * Exposes the selected file and triggers diff loading when it changes.
+     *
+     * @return mutable selected-file property
+     */
     public ObjectProperty<Path> filePathProperty() {
         return filePath;
     }
 
+    /**
+     * Returns the file currently selected for diff display.
+     *
+     * @return selected file, or null when no file is selected
+     */
     public Path getFilePath() {
         return filePath.get();
     }
 
+    /**
+     * Selects a file and triggers the corresponding diff update.
+     *
+     * @param filePath file whose changes should be displayed, or null for no selected file
+     */
     public void setFilePath(Path filePath) {
         this.filePath.set(filePath);
     }
 
+    /**
+     * Displays supplied diff text, superseding any pending diff request.
+     *
+     * @param displayTitle replacement title; null or blank retains the existing title
+     * @param diffText diff text to display; null indicates failure and blank text indicates no changes
+     */
     public void setExternalDiff(String displayTitle, String diffText) {
         int requestId = generation.incrementAndGet();
         if (displayTitle != null && !displayTitle.isBlank()) {
@@ -119,10 +154,20 @@ public class GitDiffPane extends RRBorderPane implements AutoCloseable {
         applyDiffResult(requestId, result);
     }
 
+    /**
+     * Exposes the title associated with the displayed diff.
+     *
+     * @return mutable diff-title property
+     */
     public StringProperty titleProperty() {
         return title;
     }
 
+    /**
+     * Returns the current diff title.
+     *
+     * @return display title
+     */
     public String getTitle() {
         return title.get();
     }
@@ -465,7 +510,12 @@ public class GitDiffPane extends RRBorderPane implements AutoCloseable {
     }
 
     private enum LineKind {
-        FILE_HEADER(false), HUNK_HEADER(false), META(false), CONTEXT(true), ADDITION(true), DELETION(true);
+        FILE_HEADER(false),
+        HUNK_HEADER(false),
+        META(false),
+        CONTEXT(true),
+        ADDITION(true),
+        DELETION(true);
 
         private final boolean codeLine;
 

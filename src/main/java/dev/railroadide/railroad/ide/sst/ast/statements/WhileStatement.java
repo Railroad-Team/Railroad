@@ -9,6 +9,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A loop that evaluates its condition before each execution of its body.
+ *
+ * @param span source range occupied by this node
+ * @param condition condition expression
+ * @param body statement executed while the condition remains true
+ */
 public record WhileStatement(Span span, Expression condition, Statement body) implements Statement {
     @Override
     public AstKind kind() {

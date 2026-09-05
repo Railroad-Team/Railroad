@@ -37,6 +37,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Edits a project's run configurations with a grouped tree, type-specific forms, and apply controls.
+ */
 public class RunConfigurationEditorPane extends RRVBox {
     private final ObservableList<RunConfiguration<?>> configurations = FXCollections.observableArrayList();
     private final ObjectProperty<RunConfiguration<?>> selectedConfiguration = new SimpleObjectProperty<>();
@@ -49,6 +52,11 @@ public class RunConfigurationEditorPane extends RRVBox {
     private final Node detailsEmptyStatePane;
     private final Map<UUID, ConfigurationFormContext> configurationFormContexts = new HashMap<>();
 
+    /**
+     * Creates an editor from the project's configurations and binds its selection to the project manager.
+     *
+     * @param project the project owning the configuration
+     */
     public RunConfigurationEditorPane(Project project) {
         this.project = project;
         this.configurations.addAll(project.getRunConfigManager().getConfigurations());
@@ -239,6 +247,11 @@ public class RunConfigurationEditorPane extends RRVBox {
         return bottomButtonBar;
     }
 
+    /**
+     * Selects a configuration in the editor and its bound project selection.
+     *
+     * @param runConfiguration the configuration to select, or {@code null} to clear the selection
+     */
     public void selectConfiguration(RunConfiguration<?> runConfiguration) {
         selectedConfiguration.set(runConfiguration);
     }

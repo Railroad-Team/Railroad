@@ -13,8 +13,14 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.*;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#DUPLICATE_DECLARATION}.
+ */
 @RegisteredInspection
 public final class CoreDuplicateDeclarationInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-duplicate-declaration";
     private static final String JAVA_BLOCK = "JAVA_BLOCK";
     private static final String JAVA_METHOD_DECLARATION = "JAVA_METHOD_DECLARATION";

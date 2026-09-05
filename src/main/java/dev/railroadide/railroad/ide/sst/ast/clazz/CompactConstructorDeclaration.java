@@ -14,6 +14,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * A record constructor declared without an explicit parameter list.
+ *
+ * @param span source range occupied by this node
+ * @param modifiers modifiers attached to the declaration
+ * @param annotations annotations attached to this node
+ * @param name name of the containing record
+ * @param body optional compact constructor implementation block
+ */
 public record CompactConstructorDeclaration(
     Span span,
     List<Modifier> modifiers,

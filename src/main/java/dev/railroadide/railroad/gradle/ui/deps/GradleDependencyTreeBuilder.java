@@ -15,6 +15,10 @@ import org.gradle.tooling.model.DomainObjectSet;
 
 import java.util.*;
 
+/**
+ * Builds a dependency tree grouped by module and configuration, retaining transitive dependency children.
+ * Omits configurations without dependencies and sorts sibling nodes by name, ignoring case.
+ */
 public class GradleDependencyTreeBuilder implements GradleTreeBuilder<RailroadConfiguration> {
     @Override
     public TreeItem<GradleTreeElement> buildTree(Project project, List<RailroadConfiguration> elements) {

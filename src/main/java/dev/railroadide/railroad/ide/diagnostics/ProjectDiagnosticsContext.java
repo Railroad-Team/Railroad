@@ -14,17 +14,34 @@ import java.util.Objects;
 
 /**
  * Reusable state for a project diagnostics export run.
+ *
+ * @param project project being analyzed
+ * @param indexContext resolved source roots and language settings
+ * @param javaSymbolIndex shared Java symbol index, or null if unavailable
  */
 public record ProjectDiagnosticsContext(
     Project project,
     ProjectIndexContext indexContext,
     @Nullable JavaSymbolIndex javaSymbolIndex
 ) {
+    /**
+     * Creates a context requiring a project and resolved indexing settings.
+     *
+     * @param project project being analyzed
+     * @param indexContext resolved source roots and language settings
+     * @param javaSymbolIndex shared Java symbol index, or null if unavailable
+     */
     public ProjectDiagnosticsContext {
         project = Objects.requireNonNull(project, "project");
         indexContext = Objects.requireNonNull(indexContext, "indexContext");
     }
 
+    /**
+     * Loads project indexing state for reuse throughout a diagnostics scan.
+     *
+     * @param project project being analyzed
+     * @return initialized project diagnostics context
+     */
     public static ProjectDiagnosticsContext create(Project project) {
         Objects.requireNonNull(project, "project");
 

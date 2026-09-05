@@ -9,9 +9,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
+/**
+ * Utility class for URL-related operations.
+ */
 public final class UrlUtils {
     private UrlUtils() {
-        // Prevent instantiation
+        throw new UnsupportedOperationException("Instantiated utility class");
     }
 
     /**
@@ -80,6 +83,12 @@ public final class UrlUtils {
         }
     }
 
+    /**
+     * Writes the body of a URL to a specified file path.
+     *
+     * @param url  the URL to read from
+     * @param path the file path to write to
+     */
     public static void writeBody(String url, Path path) {
         try (var in = new URI(url).toURL().openStream()) {
             Files.copy(in, path, StandardCopyOption.REPLACE_EXISTING);

@@ -16,8 +16,14 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR}.
+ */
 @RegisteredInspection
 public class CoreSerializableClassWithUnconstructableAncestorInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-serializable-class-with-unconstructable-ancestor";
 
     @Override

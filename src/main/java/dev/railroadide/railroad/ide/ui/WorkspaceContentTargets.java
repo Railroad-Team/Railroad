@@ -5,10 +5,16 @@ import dev.railroadide.railroad.ui.id.UIIds;
 
 /** Registers Railroad's built-in workspace content targets. */
 public final class WorkspaceContentTargets {
+    /**
+     * Destination for documents opened in the code workspace.
+     */
     public static final WorkspaceContentTarget CODE_EDITOR = WorkspaceContentTarget.register(
         "railroad:code_editor",
         WorkspaceModes.CODE,
         UIIds.IDE.IDE_CODE_EDITOR_DOCK);
+    /**
+     * Destination for content opened in the Git workspace.
+     */
     public static final WorkspaceContentTarget GIT_EDITOR = WorkspaceContentTarget.register(
         "railroad:git_editor",
         WorkspaceModes.GIT,
@@ -17,6 +23,9 @@ public final class WorkspaceContentTargets {
     private WorkspaceContentTargets() {
     }
 
+    /**
+     * Ensures class initialization has registered the built-in content targets.
+     */
     public static void initialize() {
     }
 }

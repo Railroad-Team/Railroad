@@ -26,6 +26,16 @@ public class FormRadioButtonGroup<E extends Enum<E>> extends InformativeLabeledH
     private final ObjectProperty<E> value = new SimpleObjectProperty<>();
     private Map<E, RadioButton> radioButtons;
 
+    /**
+     * Creates a radio button group for the supplied enum values.
+     *
+     * @param labelKey the localization key for the group label
+     * @param required whether a selection is required
+     * @param values the values represented by the radio buttons
+     * @param optionLabelProvider provides the label for each value
+     * @param translateOptions whether the labels should be localized
+     * @param spacing the spacing between radio buttons
+     */
     public FormRadioButtonGroup(
         String labelKey,
         boolean required,
@@ -90,14 +100,29 @@ public class FormRadioButtonGroup<E extends Enum<E>> extends InformativeLabeledH
         return container;
     }
 
+    /**
+     * Returns the property containing the selected value.
+     *
+     * @return the selected-value property
+     */
     public ObjectProperty<E> valueProperty() {
         return value;
     }
 
+    /**
+     * Returns the selected value.
+     *
+     * @return the selected enum value, or {@code null} when nothing is selected
+     */
     public E getValue() {
         return value.get();
     }
 
+    /**
+     * Selects a value in the group.
+     *
+     * @param newValue the value to select, or {@code null} to clear the selection
+     */
     public void setValue(E newValue) {
         if (newValue == null) {
             Platform.runLater(() -> {
@@ -129,7 +154,10 @@ public class FormRadioButtonGroup<E extends Enum<E>> extends InformativeLabeledH
     }
 
     /**
-     * Exposes the selected toggle for validation or accessibility.
+     * Returns the selected toggle for validation or accessibility.
+     *
+     * @return the selected toggle, or {@code null} before the controls are
+     *         created or when no value is selected
      */
     public Toggle selectedToggle() {
         return toggleGroup == null ? null : toggleGroup.getSelectedToggle();

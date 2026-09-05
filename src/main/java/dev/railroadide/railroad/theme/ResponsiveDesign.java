@@ -19,6 +19,11 @@ public final class ResponsiveDesign {
     private ResponsiveDesign() {
     }
 
+    /**
+     * Installs the responsive design behavior on the given scene.
+     *
+     * @param scene the scene to install the responsive design on
+     */
     public static void install(Scene scene) {
         if (scene == null || !INSTALLED_SCENES.add(scene))
             return;

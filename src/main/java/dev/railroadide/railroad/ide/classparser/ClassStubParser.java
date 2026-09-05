@@ -6,7 +6,17 @@ import org.objectweb.asm.ClassReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * Parses JVM class files into lightweight class metadata stubs.
+ */
 public class ClassStubParser {
+    /**
+     * Visits a class file to collect its declaration and member metadata.
+     *
+     * @param pathToClassFile the path to the class file
+     * @return the parsed class stub
+     * @throws ClassScanException if the bytecode cannot be read or class metadata is unavailable
+     */
     public static ClassStub parse(Path pathToClassFile) throws ClassScanException {
         try {
             return parse(new ClassReader(Files.newInputStream(pathToClassFile)));
@@ -18,6 +28,13 @@ public class ClassStubParser {
         }
     }
 
+    /**
+     * Visits a class file to collect its declaration and member metadata.
+     *
+     * @param reader the ASM reader containing class bytecode
+     * @return the parsed class stub
+     * @throws ClassScanException if the bytecode cannot be read or class metadata is unavailable
+     */
     public static ClassStub parse(ClassReader reader) {
         var visitor = new ClassStubVisitor();
         reader.accept(visitor, ClassReader.EXPAND_FRAMES);

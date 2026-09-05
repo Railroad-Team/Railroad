@@ -10,11 +10,21 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Utility class for executing commands and finding executables in the system.
+ */
 public final class CommandUtils {
     private CommandUtils() {
         throw new UnsupportedOperationException("Instantiated utility class");
     }
 
+    /**
+     * Checks if a command can be run successfully within a specified timeout.
+     *
+     * @param timeoutMs the timeout in milliseconds; use -1 for no timeout
+     * @param command   the command to execute
+     * @return true if the command runs successfully, false otherwise
+     */
     public static boolean canRunCommand(long timeoutMs, String... command) {
         try {
             Process process = new ProcessBuilder(command)
@@ -35,6 +45,13 @@ public final class CommandUtils {
         }
     }
 
+    /**
+     * Finds all paths of an executable in the system's PATH.
+     *
+     * @param timeoutMs      the timeout in milliseconds; use -1 for no timeout
+     * @param executableName the name of the executable to find
+     * @return a list of paths where the executable is found
+     */
     public static List<Path> findPathsOfExecutable(long timeoutMs, String executableName) {
         String[] cmd = new String[]{(OperatingSystem.isWindows() ? "where" : "which"), executableName};
         List<String> lines = runAndCollectLines(timeoutMs, cmd);
@@ -53,6 +70,13 @@ public final class CommandUtils {
         return paths;
     }
 
+    /**
+     * Runs a command and collects its output lines.
+     *
+     * @param timeoutMs the timeout in milliseconds; use -1 for no timeout
+     * @param command   the command to execute
+     * @return a list of output lines from the command
+     */
     public static List<String> runAndCollectLines(long timeoutMs, String... command) {
         try {
             Process process = new ProcessBuilder(command)
@@ -82,6 +106,13 @@ public final class CommandUtils {
         }
     }
 
+    /**
+     * Finds the first path of an executable in the system's PATH.
+     *
+     * @param timeoutMs      the timeout in milliseconds; use -1 for no timeout
+     * @param executableName the name of the executable to find
+     * @return an Optional containing the first path if found, or empty if not found
+     */
     public static Optional<Path> findPathOfExecutable(long timeoutMs, String executableName) {
         List<Path> paths = findPathsOfExecutable(timeoutMs, executableName);
         return paths.isEmpty()

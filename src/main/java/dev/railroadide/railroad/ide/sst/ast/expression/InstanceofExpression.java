@@ -9,6 +9,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * An {@code instanceof} test of an expression against a type or deconstruction pattern.
+ *
+ * @param span source range occupied by this node
+ * @param expression value tested against the pattern
+ * @param pattern pattern to match
+ */
 public record InstanceofExpression(
     Span span,
     Expression expression,

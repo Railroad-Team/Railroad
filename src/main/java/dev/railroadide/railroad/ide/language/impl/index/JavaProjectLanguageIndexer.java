@@ -10,6 +10,9 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Locale;
 
+/**
+ * Builds and incrementally updates semantic indexes for Java project source files.
+ */
 public final class JavaProjectLanguageIndexer
     implements
         ProjectLanguageIndexer<JavaProjectSemanticIndex, JavaProjectSemanticIndex.SourceFileIndex> {

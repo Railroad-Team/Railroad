@@ -16,8 +16,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#ASSERTION_WITH_SIDE_EFFECTS}.
+ */
 @RegisteredInspection
 public class CoreAssertionWithSideEffectsInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-assertion-with-side-effects";
 
     @Override

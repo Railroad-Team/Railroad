@@ -38,6 +38,7 @@ import java.util.regex.Pattern;
 public class GitClient {
     private static final Pattern STASH_SUBJECT_PATTERN = Pattern.compile("^(?:WIP on|On)\\s+(.+?):\\s*(.*)$");
 
+    /** Process runner used by this client and subclasses to execute Git commands. */
     protected final GitProcessRunner runner;
 
     /**

@@ -21,13 +21,32 @@ import lombok.Getter;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+/** Welcome-screen header with project search, sorting controls, and a live count of known projects. */
 @Getter
 public class WelcomeHeaderPane extends RRCard {
     private static final PseudoClass FOCUSED_PSEUDO_CLASS = PseudoClass.getPseudoClass("focused");
+    /**
+     * Input used by the project list to filter aliases.
+     *
+     * @return the live search field
+     */
     private final RRTextField searchField;
+    /**
+     * Selector for the project list's ordering.
+     *
+     * @return the live sort selector
+     */
     private final ProjectSortComboBox sortComboBox;
+    /**
+     * Label displaying the total number of projects known to the project manager.
+     *
+     * @return the project-count label
+     */
     private final LocalizedLabel projectsStatLabel = new LocalizedLabel("railroad.home.welcome.stats.projects", 0);
 
+    /**
+     * Builds the header, listens for project-count changes, and registers its UI identifier while attached.
+     */
     public WelcomeHeaderPane() {
         super(18);
         getStyleClass().add("welcome-card");

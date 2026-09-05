@@ -13,12 +13,20 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.Objects;
 
+/**
+ * Input pane for selecting the Windows Terminal settings file.
+ */
 public class WindowsTerminalSettingsPathPane extends RRHBox {
     private final ObjectProperty<Path> settingsPath = new SimpleObjectProperty<>();
 
     private final RRTextField pathField = new RRTextField();
     private final BrowseButton browseButton = new BrowseButton();
 
+    /**
+     * Creates a Windows Terminal settings path selector.
+     *
+     * @param path initial settings file path, or {@code null} when no path is configured
+     */
     public WindowsTerminalSettingsPathPane(@Nullable Path path) {
         getStyleClass().add("windows-terminal-settings-path-pane");
         browseButton.textFieldProperty().set(pathField);
@@ -50,14 +58,29 @@ public class WindowsTerminalSettingsPathPane extends RRHBox {
         setSettingsPath(path);
     }
 
+    /**
+     * Returns the selected Windows Terminal settings path.
+     *
+     * @return the selected settings path, or {@code null} when none is set
+     */
     public Path getSettingsPath() {
         return settingsPath.get();
     }
 
+    /**
+     * Returns the observable property containing the settings path.
+     *
+     * @return the settings path property
+     */
     public ObjectProperty<Path> settingsPathProperty() {
         return settingsPath;
     }
 
+    /**
+     * Sets the Windows Terminal settings path displayed by this pane.
+     *
+     * @param settingsPath settings file path, or {@code null} to clear it
+     */
     public void setSettingsPath(Path settingsPath) {
         this.settingsPath.set(settingsPath);
     }

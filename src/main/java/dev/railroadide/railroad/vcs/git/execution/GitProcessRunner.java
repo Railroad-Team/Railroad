@@ -29,6 +29,12 @@ import java.util.function.Consumer;
 public class GitProcessRunner {
     private static final Path DEFAULT_GIT_EXECUTABLE = Path.of("git");
 
+    /**
+     * Git executable path. A null value causes the next command to fall back to {@code git} on PATH.
+     *
+     * @param gitExecutable executable path to use for subsequent commands, or null to use PATH
+     * @return the configured executable path, or null before a fallback path has been resolved
+     */
     @Getter
     @Setter
     private Path gitExecutable;

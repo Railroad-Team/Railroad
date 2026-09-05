@@ -29,6 +29,16 @@ import java.util.function.Supplier;
 public class RadioButtonGroupComponent<E extends Enum<E>>
     extends
         FormComponent<FormRadioButtonGroup<E>, RadioButtonGroupComponent.Data<E>, FormRadioButtonGroup<E>, E> {
+    /**
+     * Creates a radio button group component.
+     *
+     * @param dataKey the key under which the selected value is stored in form data
+     * @param data the component configuration
+     * @param validator the component validator
+     * @param listener the component change listener
+     * @param transformers value transformers attached to the component
+     * @param visible binding controlling component visibility
+     */
     public RadioButtonGroupComponent(
         String dataKey,
         Data<E> data,
@@ -111,6 +121,8 @@ public class RadioButtonGroupComponent<E extends Enum<E>>
 
     /**
      * Builder for {@link RadioButtonGroupComponent}.
+     *
+     * @param <E> the enum type represented by the radio buttons
      */
     public static class Builder<E extends Enum<E>>
         implements
@@ -122,6 +134,13 @@ public class RadioButtonGroupComponent<E extends Enum<E>>
         private FormComponentChangeListener<FormRadioButtonGroup<E>, E> listener;
         private BooleanBinding visible;
 
+        /**
+         * Creates a radio button group builder.
+         *
+         * @param dataKey the key under which the selected value is stored in form data
+         * @param label the localization key for the group label
+         * @param enumClass the enum class supplying the default options
+         */
         public Builder(@NotNull String dataKey, @NotNull String label, @NotNull Class<E> enumClass) {
             this.dataKey = dataKey;
             this.data = new Data<>(label, enumClass);
@@ -155,43 +174,96 @@ public class RadioButtonGroupComponent<E extends Enum<E>>
             return dataKey;
         }
 
+        /**
+         * Sets the options displayed by the group.
+         *
+         * @param options the options to display
+         * @return this builder
+         */
         public Builder<E> options(List<E> options) {
             data.options(options);
             return this;
         }
 
+        /**
+         * Sets the options displayed by the group.
+         *
+         * @param options the options to display
+         * @return this builder
+         */
         public Builder<E> options(E[] options) {
             return options(Arrays.asList(options));
         }
 
+        /**
+         * Sets whether a selection is required.
+         *
+         * @param required whether the group is required
+         * @return this builder
+         */
         public Builder<E> required(boolean required) {
             data.required(required);
             return this;
         }
 
+        /**
+         * Marks the group as required.
+         *
+         * @return this builder
+         */
         public Builder<E> required() {
             return required(true);
         }
 
+        /**
+         * Sets the initial selection.
+         *
+         * @param selected the initially selected option, or {@code null}
+         * @return this builder
+         */
         public Builder<E> selected(E selected) {
             return selected(() -> selected);
         }
 
+        /**
+         * Sets a supplier used to determine the initial selection.
+         *
+         * @param supplier the initial-selection supplier
+         * @return this builder
+         */
         public Builder<E> selected(Supplier<E> supplier) {
             data.selectedSupplier(Objects.requireNonNull(supplier));
             return this;
         }
 
+        /**
+         * Sets the spacing between radio buttons.
+         *
+         * @param spacing the spacing in pixels
+         * @return this builder
+         */
         public Builder<E> spacing(double spacing) {
             data.spacing(spacing);
             return this;
         }
 
+        /**
+         * Sets the function used to obtain each option's label.
+         *
+         * @param provider the option-label provider
+         * @return this builder
+         */
         public Builder<E> optionLabelProvider(Function<E, String> provider) {
             data.optionLabelProvider(provider);
             return this;
         }
 
+        /**
+         * Sets whether option labels should be localized.
+         *
+         * @param translate whether option labels should be localized
+         * @return this builder
+         */
         public Builder<E> translateOptions(boolean translate) {
             data.translateOptions(translate);
             return this;
@@ -249,6 +321,8 @@ public class RadioButtonGroupComponent<E extends Enum<E>>
 
     /**
      * Mutable data backing the component factory.
+     *
+     * @param <E> the enum type represented by the radio buttons
      */
     public static class Data<E extends Enum<E>> {
         private final String label;
@@ -260,36 +334,78 @@ public class RadioButtonGroupComponent<E extends Enum<E>>
         private Function<E, String> optionLabelProvider = Enum::name;
         private List<E> options;
 
+        /**
+         * Creates radio button group data.
+         *
+         * @param label the localization key for the group label
+         * @param enumClass the enum class supplying the default options
+         */
         public Data(String label, Class<E> enumClass) {
             this.label = label;
             this.enumClass = enumClass;
             this.options = enumClass.isEnum() ? List.of(enumClass.getEnumConstants()) : List.of();
         }
 
+        /**
+         * Sets whether a selection is required.
+         *
+         * @param required whether the group is required
+         */
         public void required(boolean required) {
             this.required = required;
         }
 
+        /**
+         * Sets whether option labels should be localized.
+         *
+         * @param translateOptions whether option labels should be localized
+         */
         public void translateOptions(boolean translateOptions) {
             this.translateOptions = translateOptions;
         }
 
+        /**
+         * Sets the spacing between radio buttons.
+         *
+         * @param spacing the spacing in pixels
+         */
         public void spacing(double spacing) {
             this.spacing = spacing;
         }
 
+        /**
+         * Sets the supplier used to determine the initial selection.
+         *
+         * @param selectedSupplier the initial-selection supplier
+         */
         public void selectedSupplier(Supplier<E> selectedSupplier) {
             this.selectedSupplier = Objects.requireNonNull(selectedSupplier);
         }
 
+        /**
+         * Sets the function used to obtain each option's label.
+         *
+         * @param optionLabelProvider the option-label provider
+         */
         public void optionLabelProvider(Function<E, String> optionLabelProvider) {
             this.optionLabelProvider = Objects.requireNonNull(optionLabelProvider);
         }
 
+        /**
+         * Sets the options displayed by the group.
+         *
+         * @param options the options to display
+         */
         public void options(List<E> options) {
             this.options = List.copyOf(Objects.requireNonNull(options));
         }
 
+        /**
+         * Returns the configured options, or all enum constants when no custom
+         * options were supplied.
+         *
+         * @return the options displayed by the group
+         */
         public List<E> options() {
             if (options != null)
                 return options;

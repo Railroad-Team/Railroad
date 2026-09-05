@@ -13,6 +13,11 @@ import dev.railroadide.railroad.ide.sst.syntax.internal.SyntaxInternalFactory;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+/**
+ * Creates Java syntax trees and recovery diagnostics from source snapshots or lexers.
+ * Incremental parsing reuses unaffected top-level prefixes when possible and falls
+ * back to parsing the whole document when a suitable reparse boundary is unavailable.
+ */
 public final class JavaSyntaxParser {
     private static final Set<String> INCREMENTAL_ANCHOR_KIND_IDS = Set.of(
         JavaSyntaxKinds.TYPE_DECLARATION.id(),
@@ -30,18 +35,51 @@ public final class JavaSyntaxParser {
     private JavaSyntaxParser() {
     }
 
+    /**
+     * Parses Java source text.
+     * A fresh in-memory document identity and initial version are assigned.
+     *
+     * @param source Java source text to parse
+     * @return parsed Java syntax tree
+     */
     public static SyntaxTree parse(CharSequence source) {
         return parse(DocumentId.create(), source);
     }
 
+    /**
+     * Parses Java source text.
+     * The document uses an in-memory URI and its initial version.
+     *
+     * @param documentId identity of the logical document
+     * @param source Java source text to parse
+     * @return parsed Java syntax tree
+     */
     public static SyntaxTree parse(DocumentId documentId, CharSequence source) {
         return parse(documentId, DocumentUri.inMemory(documentId), source);
     }
 
+    /**
+     * Parses Java source text.
+     * The document uses its initial version.
+     *
+     * @param documentId identity of the logical document
+     * @param documentUri location associated with the document
+     * @param source Java source text to parse
+     * @return parsed Java syntax tree
+     */
     public static SyntaxTree parse(DocumentId documentId, DocumentUri documentUri, CharSequence source) {
         return parse(documentId, documentUri, DocumentVersion.initial(), source);
     }
 
+    /**
+     * Parses Java source text.
+     *
+     * @param documentId identity of the logical document
+     * @param documentUri location associated with the document
+     * @param documentVersion version represented by the source text
+     * @param source Java source text to parse
+     * @return parsed Java syntax tree
+     */
     public static SyntaxTree parse(
         DocumentId documentId,
         DocumentUri documentUri,
@@ -57,6 +95,13 @@ public final class JavaSyntaxParser {
             StandardCharsets.UTF_8));
     }
 
+    /**
+     * Parses the supplied Java snapshot.
+     *
+     * @param documentSnapshot immutable Java snapshot whose text and metadata the tree represents
+     * @return parsed Java syntax tree
+     * @throws IllegalArgumentException if the snapshot language is not Java
+     */
     public static SyntaxTree parse(TextDocumentSnapshot documentSnapshot) {
         documentSnapshot = requireJavaSnapshot(documentSnapshot);
         try (var lexer = new JavaLexer(documentSnapshot.text())) {
@@ -64,14 +109,41 @@ public final class JavaSyntaxParser {
         }
     }
 
+    /**
+     * Parses Java tokens from the supplied lexer.
+     * A fresh in-memory document identity and initial version are assigned.
+     * The snapshot text is reconstructed from the parsed tokens.
+     *
+     * @param lexer Java token source to consume; the caller retains responsibility for closing it
+     * @return parsed Java syntax tree
+     */
     public static SyntaxTree parse(Lexer<JavaTokenType> lexer) {
         return parse(DocumentId.create(), lexer);
     }
 
+    /**
+     * Parses Java tokens from the supplied lexer.
+     * The document uses an in-memory URI and its initial version.
+     * The snapshot text is reconstructed from the parsed tokens.
+     *
+     * @param documentId identity of the logical document
+     * @param lexer Java token source to consume; the caller retains responsibility for closing it
+     * @return parsed Java syntax tree
+     */
     public static SyntaxTree parse(DocumentId documentId, Lexer<JavaTokenType> lexer) {
         return parse(documentId, DocumentUri.inMemory(documentId), lexer);
     }
 
+    /**
+     * Parses Java tokens from the supplied lexer.
+     * The document uses its initial version.
+     * The snapshot text is reconstructed from the parsed tokens.
+     *
+     * @param documentId identity of the logical document
+     * @param documentUri location associated with the document
+     * @param lexer Java token source to consume; the caller retains responsibility for closing it
+     * @return parsed Java syntax tree
+     */
     public static SyntaxTree parse(
         DocumentId documentId,
         DocumentUri documentUri,
@@ -80,6 +152,16 @@ public final class JavaSyntaxParser {
         return parse(documentId, documentUri, DocumentVersion.initial(), lexer);
     }
 
+    /**
+     * Parses Java tokens from the supplied lexer.
+     * The snapshot text is reconstructed from the parsed tokens.
+     *
+     * @param documentId identity of the logical document
+     * @param documentUri location associated with the document
+     * @param documentVersion version represented by the source text
+     * @param lexer Java token source to consume; the caller retains responsibility for closing it
+     * @return parsed Java syntax tree
+     */
     public static SyntaxTree parse(
         DocumentId documentId,
         DocumentUri documentUri,
@@ -100,6 +182,14 @@ public final class JavaSyntaxParser {
         return SyntaxInternalFactory.treeFromGreenRoot(documentSnapshot, root);
     }
 
+    /**
+     * Parses the supplied Java snapshot.
+     *
+     * @param documentSnapshot immutable Java snapshot whose text must match the supplied lexer input
+     * @param lexer Java token source to consume; the caller retains responsibility for closing it
+     * @return parsed Java syntax tree
+     * @throws IllegalArgumentException if the snapshot language is not Java
+     */
     public static SyntaxTree parse(
         TextDocumentSnapshot documentSnapshot,
         Lexer<JavaTokenType> lexer
@@ -109,14 +199,38 @@ public final class JavaSyntaxParser {
         return SyntaxInternalFactory.treeFromGreenRoot(documentSnapshot, root);
     }
 
+    /**
+     * Parses Java source text and collects syntax recovery diagnostics.
+     * A fresh in-memory document identity and initial version are assigned.
+     *
+     * @param source Java source text to parse
+     * @return parsed tree and diagnostics for error nodes and inserted missing tokens
+     */
     public static ParseResult parseWithDiagnostics(CharSequence source) {
         return parseWithDiagnostics(DocumentId.create(), source);
     }
 
+    /**
+     * Parses Java source text and collects syntax recovery diagnostics.
+     * The document uses an in-memory URI and its initial version.
+     *
+     * @param documentId identity of the logical document
+     * @param source Java source text to parse
+     * @return parsed tree and diagnostics for error nodes and inserted missing tokens
+     */
     public static ParseResult parseWithDiagnostics(DocumentId documentId, CharSequence source) {
         return parseWithDiagnostics(documentId, DocumentUri.inMemory(documentId), source);
     }
 
+    /**
+     * Parses Java source text and collects syntax recovery diagnostics.
+     * The document uses its initial version.
+     *
+     * @param documentId identity of the logical document
+     * @param documentUri location associated with the document
+     * @param source Java source text to parse
+     * @return parsed tree and diagnostics for error nodes and inserted missing tokens
+     */
     public static ParseResult parseWithDiagnostics(
         DocumentId documentId,
         DocumentUri documentUri,
@@ -125,6 +239,15 @@ public final class JavaSyntaxParser {
         return parseWithDiagnostics(documentId, documentUri, DocumentVersion.initial(), source);
     }
 
+    /**
+     * Parses Java source text and collects syntax recovery diagnostics.
+     *
+     * @param documentId identity of the logical document
+     * @param documentUri location associated with the document
+     * @param documentVersion version represented by the source text
+     * @param source Java source text to parse
+     * @return parsed tree and diagnostics for error nodes and inserted missing tokens
+     */
     public static ParseResult parseWithDiagnostics(
         DocumentId documentId,
         DocumentUri documentUri,
@@ -140,19 +263,53 @@ public final class JavaSyntaxParser {
             StandardCharsets.UTF_8));
     }
 
+    /**
+     * Parses the supplied Java snapshot and collects syntax recovery diagnostics.
+     *
+     * @param documentSnapshot immutable Java snapshot whose text and metadata the tree represents
+     * @return parsed tree and diagnostics for error nodes and inserted missing tokens
+     * @throws IllegalArgumentException if the snapshot language is not Java
+     */
     public static ParseResult parseWithDiagnostics(TextDocumentSnapshot documentSnapshot) {
         SyntaxTree tree = parse(documentSnapshot);
         return new ParseResult(tree, collectSyntaxDiagnostics(tree.root()));
     }
 
+    /**
+     * Parses Java tokens from the supplied lexer and collects syntax recovery diagnostics.
+     * A fresh in-memory document identity and initial version are assigned.
+     * The snapshot text is reconstructed from the parsed tokens.
+     *
+     * @param lexer Java token source to consume; the caller retains responsibility for closing it
+     * @return parsed tree and diagnostics for error nodes and inserted missing tokens
+     */
     public static ParseResult parseWithDiagnostics(Lexer<JavaTokenType> lexer) {
         return parseWithDiagnostics(DocumentId.create(), lexer);
     }
 
+    /**
+     * Parses Java tokens from the supplied lexer and collects syntax recovery diagnostics.
+     * The document uses an in-memory URI and its initial version.
+     * The snapshot text is reconstructed from the parsed tokens.
+     *
+     * @param documentId identity of the logical document
+     * @param lexer Java token source to consume; the caller retains responsibility for closing it
+     * @return parsed tree and diagnostics for error nodes and inserted missing tokens
+     */
     public static ParseResult parseWithDiagnostics(DocumentId documentId, Lexer<JavaTokenType> lexer) {
         return parseWithDiagnostics(documentId, DocumentUri.inMemory(documentId), lexer);
     }
 
+    /**
+     * Parses Java tokens from the supplied lexer and collects syntax recovery diagnostics.
+     * The document uses its initial version.
+     * The snapshot text is reconstructed from the parsed tokens.
+     *
+     * @param documentId identity of the logical document
+     * @param documentUri location associated with the document
+     * @param lexer Java token source to consume; the caller retains responsibility for closing it
+     * @return parsed tree and diagnostics for error nodes and inserted missing tokens
+     */
     public static ParseResult parseWithDiagnostics(
         DocumentId documentId,
         DocumentUri documentUri,
@@ -161,6 +318,16 @@ public final class JavaSyntaxParser {
         return parseWithDiagnostics(documentId, documentUri, DocumentVersion.initial(), lexer);
     }
 
+    /**
+     * Parses Java tokens from the supplied lexer and collects syntax recovery diagnostics.
+     * The snapshot text is reconstructed from the parsed tokens.
+     *
+     * @param documentId identity of the logical document
+     * @param documentUri location associated with the document
+     * @param documentVersion version represented by the source text
+     * @param lexer Java token source to consume; the caller retains responsibility for closing it
+     * @return parsed tree and diagnostics for error nodes and inserted missing tokens
+     */
     public static ParseResult parseWithDiagnostics(
         DocumentId documentId,
         DocumentUri documentUri,
@@ -171,6 +338,14 @@ public final class JavaSyntaxParser {
         return new ParseResult(tree, collectSyntaxDiagnostics(tree.root()));
     }
 
+    /**
+     * Parses the supplied Java snapshot and collects syntax recovery diagnostics.
+     *
+     * @param documentSnapshot immutable Java snapshot whose text must match the supplied lexer input
+     * @param lexer Java token source to consume; the caller retains responsibility for closing it
+     * @return parsed tree and diagnostics for error nodes and inserted missing tokens
+     * @throws IllegalArgumentException if the snapshot language is not Java
+     */
     public static ParseResult parseWithDiagnostics(
         TextDocumentSnapshot documentSnapshot,
         Lexer<JavaTokenType> lexer
@@ -179,6 +354,18 @@ public final class JavaSyntaxParser {
         return new ParseResult(tree, collectSyntaxDiagnostics(tree.root()));
     }
 
+    /**
+     * Parses an edited document, reusing its unaffected top-level prefix when possible.
+     * The document identity, URI, language, and encoding are retained.
+     * The snapshot version advances by one.
+     *
+     * @param previousTree syntax tree for the previous document snapshot
+     * @param previousSource source text matching the snapshot carried by the previous tree
+     * @param newSource complete source text after applying the edit
+     * @param edit replacement describing the change from the previous source to the new source
+     * @return updated tree, reuse plan, and whether a full reparse was necessary
+     * @throws IllegalArgumentException if the previous source, edit bounds, or version are invalid
+     */
     public static IncrementalParseResult parseIncremental(
         SyntaxTree previousTree,
         CharSequence previousSource,
@@ -197,6 +384,18 @@ public final class JavaSyntaxParser {
             previousSnapshot.encoding()), edit);
     }
 
+    /**
+     * Parses an edited document, reusing its unaffected top-level prefix when possible.
+     * The document identity, URI, language, and encoding are retained.
+     *
+     * @param previousTree syntax tree for the previous document snapshot
+     * @param newVersion document version later than the previous tree version
+     * @param previousSource source text matching the snapshot carried by the previous tree
+     * @param newSource complete source text after applying the edit
+     * @param edit replacement describing the change from the previous source to the new source
+     * @return updated tree, reuse plan, and whether a full reparse was necessary
+     * @throws IllegalArgumentException if the previous source, edit bounds, or version are invalid
+     */
     public static IncrementalParseResult parseIncremental(
         SyntaxTree previousTree,
         DocumentVersion newVersion,
@@ -273,6 +472,18 @@ public final class JavaSyntaxParser {
         }
     }
 
+    /**
+     * Plans a reparse range around the smallest syntax node covering the edit.
+     * Subtrees outside that range are recorded as potential reuse candidates.
+     * This method describes potential reuse without parsing the new source.
+     *
+     * @param previousTree syntax tree for the previous document snapshot
+     * @param previousSource source text matching the snapshot carried by the previous tree
+     * @param newSource complete source text after applying the edit
+     * @param edit replacement describing the change from the previous source to the new source
+     * @return reparse ranges in the previous and new sources, with mapped reuse candidates
+     * @throws IllegalArgumentException if the edit is out of bounds or its length change is inconsistent
+     */
     public static ReusePlan planReuse(
         SyntaxTree previousTree,
         CharSequence previousSource,
@@ -557,11 +768,26 @@ public final class JavaSyntaxParser {
     ) {
     }
 
+    /**
+     * Describes one replacement in the previous source using UTF-16 offsets.
+     *
+     * @param startOffset zero-based start of the replaced range in the previous source
+     * @param removedLength number of UTF-16 code units removed
+     * @param insertedText replacement text, which may be empty
+     */
     public record TextEdit(
         int startOffset,
         int removedLength,
         String insertedText
     ) {
+        /**
+         * Creates a replacement with nonnegative offsets and a non-null replacement.
+         *
+         * @param startOffset zero-based start of the replaced range
+         * @param removedLength number of UTF-16 code units removed
+         * @param insertedText text inserted at the start offset
+         * @throws IllegalArgumentException if the start offset or removed length is negative
+         */
         public TextEdit {
             if (startOffset < 0)
                 throw new IllegalArgumentException("startOffset cannot be negative");
@@ -570,15 +796,35 @@ public final class JavaSyntaxParser {
             insertedText = Objects.requireNonNull(insertedText, "insertedText");
         }
 
+        /**
+         * Returns the end of the replaced range in the previous source.
+         *
+         * @return exclusive UTF-16 end offset before applying the edit
+         */
         public int oldEndOffset() {
             return startOffset + removedLength;
         }
 
+        /**
+         * Calculates the change in source length caused by this replacement.
+         *
+         * @return inserted length minus removed length, in UTF-16 code units
+         */
         public int lengthDelta() {
             return insertedText.length() - removedLength;
         }
     }
 
+    /**
+     * Identifies a syntax subtree outside the planned reparse range.
+     * All ranges use zero-based UTF-16 offsets with exclusive end offsets.
+     *
+     * @param kindId syntax kind identifier of the candidate subtree
+     * @param oldStartOffset subtree start in the previous source
+     * @param oldEndOffset subtree end in the previous source
+     * @param newStartOffset mapped subtree start in the new source
+     * @param newEndOffset mapped subtree end in the new source
+     */
     public record ReuseCandidate(
         String kindId,
         int oldStartOffset,
@@ -588,6 +834,18 @@ public final class JavaSyntaxParser {
     ) {
     }
 
+    /**
+     * Describes a reparse range and subtrees that may be reused outside it.
+     * Candidates describe potential reuse, including when parsing falls back to a full reparse.
+     * All ranges use zero-based UTF-16 offsets with exclusive end offsets.
+     *
+     * @param oldReparseStart start of the reparse range in the previous source
+     * @param oldReparseEnd end of the reparse range in the previous source
+     * @param newReparseStart start of the corresponding range in the new source
+     * @param newReparseEnd end of the corresponding range in the new source
+     * @param lengthDelta change in total source length caused by the edit
+     * @param candidates syntax subtrees outside the reparse range
+     */
     public record ReusePlan(
         int oldReparseStart,
         int oldReparseEnd,
@@ -598,6 +856,13 @@ public final class JavaSyntaxParser {
     ) {
     }
 
+    /**
+     * Contains the updated syntax tree and the outcome of an incremental parse attempt.
+     *
+     * @param tree syntax tree for the new document snapshot
+     * @param reusePlan planned reparse range and candidate subtrees
+     * @param fullReparse whether parsing fell back to rebuilding the entire tree
+     */
     public record IncrementalParseResult(
         SyntaxTree tree,
         ReusePlan reusePlan,
@@ -605,10 +870,22 @@ public final class JavaSyntaxParser {
     ) {
     }
 
+    /**
+     * Pairs a parsed syntax tree with diagnostics for error nodes and inserted missing tokens.
+     *
+     * @param tree parsed syntax tree
+     * @param diagnostics immutable list of syntax recovery diagnostics
+     */
     public record ParseResult(
         SyntaxTree tree,
         List<SyntaxDiagnostic> diagnostics
     ) {
+        /**
+         * Creates a parse result with a defensive copy of its diagnostics.
+         *
+         * @param tree parsed syntax tree
+         * @param diagnostics syntax recovery diagnostics to copy
+         */
         public ParseResult {
             tree = Objects.requireNonNull(tree, "tree");
             diagnostics = List.copyOf(Objects.requireNonNull(diagnostics, "diagnostics"));

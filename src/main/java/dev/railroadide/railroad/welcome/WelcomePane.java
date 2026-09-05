@@ -21,15 +21,35 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicReference;
 
+/** Root welcome view coordinating project browsing, creation, import, directory opening, and settings actions. */
 public class WelcomePane extends HBox {
+    /**
+     * Sidebar controlling the visible welcome content.
+     *
+     * @return the navigation sidebar
+     */
     @Getter
     private final WelcomeLeftPane leftPane;
+    /**
+     * Header containing search and sorting controls for the home view.
+     *
+     * @return the home header
+     */
     @Getter
     private final WelcomeHeaderPane headerPane;
+    /**
+     * Known-project browser displayed by the home view.
+     *
+     * @return the project browser
+     */
     @Getter
     private final WelcomeProjectsPane projectsPane;
     private final AtomicReference<NewProjectPane> newProjectPane = new AtomicReference<>();
 
+    /**
+     * Builds the home view, connects search and sort controls, and installs sidebar navigation handlers.
+     * Registers the welcome UI identifier while attached and schedules an initial focus request.
+     */
     public WelcomePane() {
         getStyleClass().add("welcome-root");
 

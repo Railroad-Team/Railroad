@@ -14,7 +14,13 @@ import java.net.URI;
 import java.nio.file.Path;
 
 /**
- * @param checksum TODO: Possibly consider holding some known checksums for example mods?
+ * Downloads the Fabric example mod archive for the resolved MDK version to {@code example-mod.zip}.
+ * The version must already be stored under {@link ProjectContextKeys#MDK_VERSION}.
+ *
+ * @param http service used to download the archive
+ * @param files file service retained by the step but not currently used
+ * @param zip archive service retained by the step but not currently used
+ * @param checksum checksum service reserved for future verification; downloads are not currently verified
  */
 public record DownloadFabricExampleModStep(
     HttpService http,

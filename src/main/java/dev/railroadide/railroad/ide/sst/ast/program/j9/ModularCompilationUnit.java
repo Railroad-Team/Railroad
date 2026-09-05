@@ -11,6 +11,15 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A Java module declaration containing its name, annotations, and directives.
+ *
+ * @param span source range occupied by this node
+ * @param isOpen whether the module is open
+ * @param name qualified module name
+ * @param annotations annotations attached to this node
+ * @param directives module directives in source order
+ */
 public record ModularCompilationUnit(
     Span span,
     boolean isOpen,

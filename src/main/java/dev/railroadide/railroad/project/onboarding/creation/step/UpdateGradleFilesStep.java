@@ -20,6 +20,16 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * Downloads and renders Gradle build templates using the project's mappings and mod-loader options.
+ * Looks up templates for the resolved MDK version, falling back to the selected Minecraft version.
+ *
+ * @param files service used to read templates, write build files, and delete downloaded templates
+ * @param http service used to check template availability and download templates
+ * @param templateEngine engine used to substitute project bindings into each template
+ * @param branch Railroad repository branch from which templates are downloaded
+ * @param includeSettingsGradle whether to render {@code settings.gradle} as well as {@code build.gradle}
+ */
 public record UpdateGradleFilesStep(
     FilesService files,
     HttpService http,
@@ -173,6 +183,13 @@ public record UpdateGradleFilesStep(
         return args;
     }
 
+    /**
+     * Selects the default mappings for a supported mod-loader project type.
+     *
+     * @param projectType project type for which mappings are needed
+     * @return Yarn for Fabric, Mojmap for Forge, or Parchment for NeoForge
+     * @throws IllegalStateException if the project type is unsupported
+     */
     public static MappingChannel getDefaultMappingChannel(ProjectType projectType) {
         if (projectType.equals(ProjectTypeRegistry.FABRIC))
             return MappingChannelRegistry.YARN;

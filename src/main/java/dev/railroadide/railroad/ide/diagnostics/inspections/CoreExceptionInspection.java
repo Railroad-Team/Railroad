@@ -18,8 +18,16 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#UNCAUGHT_CHECKED_EXCEPTION},
+ * {@link JavaSemanticRules#UNREACHABLE_CATCH}, {@link JavaSemanticRules#INVALID_EXCEPTION_TYPE},
+ * {@link JavaSemanticRules#DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE}.
+ */
 @RegisteredInspection
 public final class CoreExceptionInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-exceptions";
 
     private static final String JAVA_METHOD_DECLARATION = "JAVA_METHOD_DECLARATION";

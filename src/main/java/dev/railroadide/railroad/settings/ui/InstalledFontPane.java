@@ -7,7 +7,16 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
 
+/**
+ * Combo box containing the fonts installed on the current system.
+ */
 public class InstalledFontPane extends ComboBox<String> {
+    /**
+     * Creates a font selector and optionally selects the supplied font.
+     * A selected font that is not installed is added to the choices so it remains visible.
+     *
+     * @param selectedFont initially selected font, or {@code null} for no selection
+     */
     public InstalledFontPane(@Nullable String selectedFont) {
         var fonts = FXCollections.observableArrayList(Font.getFamilies());
         fonts.sort(String.CASE_INSENSITIVE_ORDER);

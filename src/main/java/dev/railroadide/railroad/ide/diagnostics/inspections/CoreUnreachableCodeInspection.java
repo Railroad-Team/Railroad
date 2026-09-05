@@ -14,8 +14,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#UNREACHABLE_CODE}.
+ */
 @RegisteredInspection
 public class CoreUnreachableCodeInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-unreachable-code";
 
     private static final List<JavaInspectionRule> RULES = List.of(
@@ -79,6 +85,14 @@ public class CoreUnreachableCodeInspection implements JavaInspectionRuleProvider
         return reachable;
     }
 
+    /**
+     * Analyzes statement completion and reports unreachable nested statements.
+     *
+     * @param context source and semantic context to inspect
+     * @param reporter destination for reported diagnostics
+     * @param statement statement to analyze
+     * @return whether control can continue after the statement
+     */
     public static boolean completesNormally(
         JavaRuleContext context,
         @Nullable JavaInspectionRuleReporter reporter,

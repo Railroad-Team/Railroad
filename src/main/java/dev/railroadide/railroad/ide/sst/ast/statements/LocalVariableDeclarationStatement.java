@@ -13,6 +13,16 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A local declaration sharing a type and modifiers across one or more variables.
+ *
+ * @param span source range occupied by this node
+ * @param annotations annotations attached to this node
+ * @param modifiers modifiers attached to the declaration
+ * @param type shared declared or inferred type of the local variables
+ * @param isVar whether the declaration uses local variable type inference
+ * @param declarations variable declarators in source order
+ */
 public record LocalVariableDeclarationStatement(
     Span span,
     List<Annotation> annotations,

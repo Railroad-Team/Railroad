@@ -26,6 +26,9 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.*;
 
+/**
+ * Displays installed plugins, their metadata, and editable enabled states for the settings UI.
+ */
 public class PluginsPane extends SplitPane {
     private static final double DEFAULT_DIVIDER_POSITION = 0.35;
 
@@ -58,10 +61,16 @@ public class PluginsPane extends SplitPane {
     private PluginDescriptor activeDescriptor;
     private boolean updatingDetailToggle;
 
+    /** Creates the pane with the plugin manager's current enabled states. */
     public PluginsPane() {
         this(PluginManager.getEnabledPlugins());
     }
 
+    /**
+     * Creates the pane with initial enabled states and adds any other loaded plugins as disabled.
+     *
+     * @param defaultEnabledPlugins initial plugin states, or {@code null} to start with all loaded plugins disabled
+     */
     public PluginsPane(Map<PluginDescriptor, Boolean> defaultEnabledPlugins) {
         HostServices services;
         try {
@@ -121,10 +130,21 @@ public class PluginsPane extends SplitPane {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Settings.PLUGINS, this);
     }
 
+    /**
+     * Returns a snapshot of the enabled states currently displayed in the pane.
+     *
+     * @return a mutable copy mapping plugin descriptors to their enabled states
+     */
     public Map<PluginDescriptor, Boolean> getEnabledPlugins() {
         return new LinkedHashMap<>(enabledPlugins);
     }
 
+    /**
+     * Replaces the displayed enabled states and refreshes the plugin list.
+     * Loaded plugins absent from the supplied map are included as disabled.
+     *
+     * @param state plugin states to display, or {@code null} to mark all loaded plugins disabled
+     */
     public void setEnabledPlugins(Map<PluginDescriptor, Boolean> state) {
         enabledPlugins.clear();
         if (state != null) {

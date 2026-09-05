@@ -12,11 +12,19 @@ import javafx.scene.layout.VBox;
 
 import java.util.Objects;
 
+/**
+ * Combines remote selection, configuration details, and repository remote actions.
+ */
 public class GitRemotesPane extends RRVBox {
     private final GitRemoteActionsPane actionsPane;
     private final GitRemotesListPane remotesList;
     private final GitRemoteDetailsPane detailsPane;
 
+    /**
+     * Creates remote actions, selection, and details and connects their state.
+     *
+     * @param project project whose files and workspace are being displayed
+     */
     public GitRemotesPane(Project project) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_REMOTES, this);
         GitManager gitManager = project.getGitManager();

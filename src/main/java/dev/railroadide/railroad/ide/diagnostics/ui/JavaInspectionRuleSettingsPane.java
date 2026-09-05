@@ -26,6 +26,11 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
     private final List<TagRow> tagRows = new ArrayList<>();
     private final List<RuleRow> ruleRows = new ArrayList<>();
 
+    /**
+     * Builds controls for the registered Java rules and loads the supplied overrides.
+     *
+     * @param initialState inspection overrides initially displayed
+     */
     public JavaInspectionRuleSettingsPane(JavaInspectionRuleSettingsState initialState) {
         setSpacing(16);
         setPadding(new Insets(0));
@@ -42,6 +47,11 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
         setState(initialState);
     }
 
+    /**
+     * Collects the inspection overrides currently selected in the controls.
+     *
+     * @return settings snapshot reflecting the controls
+     */
     public JavaInspectionRuleSettingsState getState() {
         Map<String, Boolean> ruleEnabled = new LinkedHashMap<>();
         Map<String, Boolean> tagEnabled = new LinkedHashMap<>();
@@ -74,6 +84,11 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
         return new JavaInspectionRuleSettingsState(ruleEnabled, tagEnabled, severity);
     }
 
+    /**
+     * Replaces control selections with the supplied inspection overrides.
+     *
+     * @param state inspection overrides to apply
+     */
     public void setState(JavaInspectionRuleSettingsState state) {
         Map<String, Boolean> ruleEnabled = state.ruleEnabledOverrides();
         Map<String, Boolean> tagEnabled = state.tagEnabledOverrides();
@@ -252,7 +267,9 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
     }
 
     private enum EnabledOverride {
-        DEFAULT("Default", null), ENABLED("Enabled", true), DISABLED("Disabled", false);
+        DEFAULT("Default", null),
+        ENABLED("Enabled", true),
+        DISABLED("Disabled", false);
 
         private final String label;
         private final Boolean value;
@@ -278,8 +295,11 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
     }
 
     private enum SeverityOverride {
-        DEFAULT("Default", null), ERROR("Error", SemanticDiagnostic.Severity.ERROR), WARNING("Warning",
-            SemanticDiagnostic.Severity.WARNING), INFO("Info", SemanticDiagnostic.Severity.INFO);
+        DEFAULT("Default", null),
+        ERROR("Error", SemanticDiagnostic.Severity.ERROR),
+        WARNING("Warning",
+            SemanticDiagnostic.Severity.WARNING),
+        INFO("Info", SemanticDiagnostic.Severity.INFO);
 
         private final String label;
         private final SemanticDiagnostic.Severity value;

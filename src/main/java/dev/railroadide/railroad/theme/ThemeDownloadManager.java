@@ -165,6 +165,11 @@ public class ThemeDownloadManager {
         return ImmutableList.copyOf(THEMES_CACHE);
     }
 
+    /**
+     * Gets the themes directory path
+     *
+     * @return {@link Path} - The themes directory path
+     */
     public static Path getThemesDirectory() {
         return ConfigHandler.getConfigDirectory().resolve("themes");
     }

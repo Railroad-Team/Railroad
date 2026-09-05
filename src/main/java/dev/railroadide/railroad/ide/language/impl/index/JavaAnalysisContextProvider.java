@@ -24,15 +24,30 @@ import java.util.stream.Stream;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+/**
+ * Combines Java project, library, and JDK symbol indexes, caching library and JDK scans.
+ */
 public final class JavaAnalysisContextProvider {
     private final DefaultProjectIndexContextResolver resolver = new DefaultProjectIndexContextResolver();
     private final ConcurrentMap<LibraryIndexKey, JavaLibrarySymbolIndex> libraryIndexes = new ConcurrentHashMap<>();
     private final ConcurrentMap<Path, JavaJdkSymbolIndex> jdkIndexes = new ConcurrentHashMap<>();
 
+    /**
+     * Combines the available project, library, and JDK symbol indexes for Java analysis.
+     *
+     * @param project the project whose files and configuration are used
+     * @return the combined index, a single available index, or {@code null} if none exists
+     */
     public @Nullable JavaSymbolIndex index(Project project) {
         return index(resolver.resolve(project));
     }
 
+    /**
+     * Combines the available project, library, and JDK symbol indexes for Java analysis.
+     *
+     * @param context the project indexing context
+     * @return the combined index, a single available index, or {@code null} if none exists
+     */
     public @Nullable JavaSymbolIndex index(ProjectIndexContext context) {
         Objects.requireNonNull(context, "context");
 

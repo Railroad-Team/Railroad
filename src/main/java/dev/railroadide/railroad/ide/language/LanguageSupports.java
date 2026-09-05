@@ -8,6 +8,9 @@ import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexPersisten
 
 import java.util.List;
 
+/**
+ * Initializes built-in language support and registers optional indexing services.
+ */
 public final class LanguageSupports {
     private static final List<LanguageSupport> BUILT_INS = List.of(
         new JavaLanguageSupport(),
@@ -19,6 +22,9 @@ public final class LanguageSupports {
     private LanguageSupports() {
     }
 
+    /**
+     * Registers the built-in Java, JSON, and Markdown support once until reset.
+     */
     public static void initialize() {
         if (initialized)
             return;
@@ -27,6 +33,9 @@ public final class LanguageSupports {
         initialized = true;
     }
 
+    /**
+     * Registers indexers supplied by language supports when their language has no existing indexer.
+     */
     public static void initializeLanguageIndexers() {
         for (LanguageSupport support : LanguageSupportRegistry.all()) {
             var indexer = support.createIndexer();
@@ -37,6 +46,9 @@ public final class LanguageSupports {
         }
     }
 
+    /**
+     * Registers persistence adapters supplied by language supports when none is already registered.
+     */
     public static void initializeLanguagePersistence() {
         for (LanguageSupport support : LanguageSupportRegistry.all()) {
             ProjectLanguageIndexPersistence<?> persistence = support.createPersistence();
@@ -49,6 +61,9 @@ public final class LanguageSupports {
         }
     }
 
+    /**
+     * Clears language support registrations and permits built-in initialization to run again.
+     */
     public static void reset() {
         initialized = false;
         LanguageSupportRegistry.clear();

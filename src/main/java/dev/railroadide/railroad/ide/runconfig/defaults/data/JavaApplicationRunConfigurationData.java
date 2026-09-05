@@ -18,6 +18,9 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Stores main-class, classpath, Java runtime, argument, and environment options for a Java application.
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class JavaApplicationRunConfigurationData extends RunConfigurationData {

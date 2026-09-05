@@ -18,6 +18,9 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Stores executable JAR, Java runtime, argument, working-directory, and environment options.
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class JarApplicationRunConfigurationData extends RunConfigurationData {

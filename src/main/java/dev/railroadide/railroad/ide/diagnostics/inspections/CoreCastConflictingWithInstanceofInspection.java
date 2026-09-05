@@ -17,8 +17,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#CAST_CONFLICTING_WITH_INSTANCEOF}.
+ */
 @RegisteredInspection
 public class CoreCastConflictingWithInstanceofInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:cast-conflicting-with-instanceof";
 
     private static final List<JavaInspectionRule> RULES = List.of(

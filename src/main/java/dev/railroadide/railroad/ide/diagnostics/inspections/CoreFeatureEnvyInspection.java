@@ -15,8 +15,15 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#FEATURE_ENVY_MANIPULATE},
+ * {@link JavaSemanticRules#FEATURE_ENVY_TIGHTLY_COUPLED}.
+ */
 @RegisteredInspection
 public class CoreFeatureEnvyInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-feature-envy";
 
     private static final Set<String> CALLABLE_KINDS = Set.of(

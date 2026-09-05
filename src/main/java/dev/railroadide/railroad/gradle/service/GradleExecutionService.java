@@ -9,7 +9,6 @@ import java.util.List;
  * Responsible for scheduling Gradle task executions and exposing their state.
  */
 public interface GradleExecutionService {
-
     /**
      * Begins execution of the provided request.
      *
@@ -19,6 +18,8 @@ public interface GradleExecutionService {
     GradleTaskExecutionHandle runTask(GradleTaskExecutionRequest request);
 
     /**
+     * Returns handles for all tasks that are currently running through this service.
+     *
      * @return the handles for tasks currently running through this service
      */
     List<GradleTaskExecutionHandle> getRunningTasks();
@@ -31,6 +32,8 @@ public interface GradleExecutionService {
     List<GradleTaskExecutionHandle> stopAllRunningTasks();
 
     /**
+     * Returns the last few task execution requests submitted to this service.
+     *
      * @return the last few task execution requests submitted to this service
      */
     List<GradleTaskExecutionRequest> getRecentRequests();

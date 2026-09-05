@@ -16,7 +16,16 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Displays a project's Gradle tasks grouped by module and task group.
+ */
 public class GradleTasksPane extends GradleTreeViewPane<RailroadGradleTask> {
+    /**
+     * Creates a task pane backed by the project's Gradle model service.
+     *
+     * @param project the Gradle project whose tasks are displayed
+     * @throws IllegalStateException if the project is not a Gradle project
+     */
     public GradleTasksPane(Project project) {
         super(project);
 

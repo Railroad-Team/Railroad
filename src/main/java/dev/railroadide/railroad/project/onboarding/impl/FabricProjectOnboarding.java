@@ -48,9 +48,17 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+/**
+ * Collects Fabric project settings and starts project creation when onboarding finishes.
+ */
 public class FabricProjectOnboarding {
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
+    /**
+     * Starts the project settings wizard in the supplied scene and launches project creation when it finishes.
+     *
+     * @param scene scene whose root will be replaced with the onboarding view
+     */
     public void start(Scene scene) {
         var flow = OnboardingFlow.builder()
             .addStep("project_details", this::createProjectDetailsStep)

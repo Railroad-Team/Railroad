@@ -9,6 +9,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A declaration assigning a compilation unit to a named package.
+ *
+ * @param span source range occupied by this node
+ * @param name qualified package name
+ */
 public record PackageDeclaration(
     Span span,
     NameExpression name

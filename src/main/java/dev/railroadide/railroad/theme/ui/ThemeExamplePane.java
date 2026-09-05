@@ -34,6 +34,11 @@ import java.util.Arrays;
 public class ThemeExamplePane {
     private final String themeName;
 
+    /**
+     * Constructs a new ThemeExamplePane for the specified theme.
+     *
+     * @param themeName The name of the theme to preview.
+     */
     public ThemeExamplePane(final String themeName) {
         this.themeName = themeName;
         var previewContent = createPreviewContent();
@@ -297,27 +302,52 @@ public class ThemeExamplePane {
             .replace("_", " ");
     }
 
+    /**
+     * A simple data class representing a project with a name, type, and status.
+     */
     public static class ProjectData {
         public final StringProperty name = new SimpleStringProperty(this, "name", null);
         public final StringProperty type = new SimpleStringProperty(this, "type", null);
         public final StringProperty status = new SimpleStringProperty(this, "status", null);
 
-        public String getName() {
-            return name.get();
-        }
-
-        public String getType() {
-            return type.get();
-        }
-
-        public String getStatus() {
-            return status.get();
-        }
-
+        /**
+         * Constructs a new ProjectData instance with the specified name, type, and status.
+         *
+         * @param name   The name of the project.
+         * @param type   The type of the project.
+         * @param status The status of the project.
+         */
         public ProjectData(String name, String type, String status) {
             this.name.set(name);
             this.type.set(type);
             this.status.set(status);
+        }
+
+        /**
+         * Gets the name of the project.
+         *
+         * @return The name of the project.
+         */
+        public String getName() {
+            return name.get();
+        }
+
+        /**
+         * Gets the type of the project.
+         *
+         * @return The type of the project.
+         */
+        public String getType() {
+            return type.get();
+        }
+
+        /**
+         * Gets the status of the project.
+         *
+         * @return The status of the project.
+         */
+        public String getStatus() {
+            return status.get();
         }
     }
 }

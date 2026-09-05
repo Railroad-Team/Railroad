@@ -8,6 +8,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A union of two alternative types, written with {@code |}.
+ *
+ * @param span source range occupied by this node
+ * @param left first alternative type
+ * @param right second alternative type
+ */
 public record UnionTypeRef(
     Span span,
     TypeRef left,

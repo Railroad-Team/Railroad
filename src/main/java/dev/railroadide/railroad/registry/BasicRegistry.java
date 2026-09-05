@@ -8,6 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Thread-safe registry backed by a concurrent map.
+ * Registration order is not retained, and duplicate identifiers are rejected.
+ *
+ * @param <T> type of values managed by this registry
+ */
 public class BasicRegistry<T> implements Registry<T> {
     private final Map<String, T> registry = new ConcurrentHashMap<>();
 
@@ -16,6 +22,13 @@ public class BasicRegistry<T> implements Registry<T> {
     @Getter
     private final Type type;
 
+    /**
+     * Creates an empty registry with the supplied identifier and value type.
+     *
+     * @param id unique identifier for this registry
+     * @param type reflective type of values accepted by this registry
+     * @throws IllegalArgumentException if the identifier is blank or the type is null
+     */
     public BasicRegistry(String id, Type type) {
         if (id == null || id.isBlank())
             throw new IllegalArgumentException("Registry ID cannot be null or empty");
@@ -78,6 +91,12 @@ public class BasicRegistry<T> implements Registry<T> {
         return Map.copyOf(registry);
     }
 
+    /**
+     * Extracts the raw class from a class or parameterized reflective type.
+     *
+     * @param type reflective type to inspect
+     * @return the raw class, or {@code null} when the type is neither a class nor a parameterized type
+     */
     public static Class<?> rawType(Type type) {
         if (type instanceof Class<?> clazz)
             return clazz;

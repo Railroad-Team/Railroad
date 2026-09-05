@@ -11,7 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Tree item that exposes a selectable checkbox state for use with RRCheckBoxTreeView.
+ * Tree item with a selectable checkbox state for use with {@link RRCheckBoxTreeView}.
+ * Selection propagates through checkbox-item children, and mixed child selection makes parents indeterminate.
+ *
+ * @param <T> the type of value stored in each tree item
  */
 public class RRCheckBoxTreeItem<T> extends TreeItem<T> {
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected", false);
@@ -42,21 +45,38 @@ public class RRCheckBoxTreeItem<T> extends TreeItem<T> {
         updateStateFromChildren();
     };
 
+    /**
+     * Creates an unselected tree item with no value or graphic.
+     */
     public RRCheckBoxTreeItem() {
         super();
         initializeSelectionHandling();
     }
 
+    /**
+     * Creates an unselected tree item with a value.
+     *
+     * @param value the item value
+     */
     public RRCheckBoxTreeItem(T value) {
         super(value);
         initializeSelectionHandling();
     }
 
+    /**
+     * Creates an unselected tree item with a value and graphic.
+     *
+     * @param value the item value
+     * @param graphic the item's graphic, or null
+     */
     public RRCheckBoxTreeItem(T value, Node graphic) {
         super(value, graphic);
         initializeSelectionHandling();
     }
 
+    /**
+     * Expands this item and recursively expands descendants reached through checkbox tree items.
+     */
     public void expandAll() {
         setExpanded(true);
 
@@ -67,6 +87,9 @@ public class RRCheckBoxTreeItem<T> extends TreeItem<T> {
         }
     }
 
+    /**
+     * Collapses this item and checkbox-item descendants, clearing their selected and indeterminate states.
+     */
     public void collapseAll() {
         setExpanded(false);
         setIndeterminate(false);
@@ -79,12 +102,20 @@ public class RRCheckBoxTreeItem<T> extends TreeItem<T> {
         }
     }
 
+    /**
+     * Collects values from fully selected checkbox items, including this item and selected parent items.
+     *
+     * @return a new list in depth-first order, excluding indeterminate items
+     */
     public List<T> getSelectedValues() {
         List<T> selectedChanges = new ArrayList<>();
         collectSelected(selectedChanges);
         return selectedChanges;
     }
 
+    /**
+     * Clears selected and indeterminate state for this item and its checkbox-item descendants.
+     */
     public void clearSelection() {
         setIndeterminate(false);
         setSelected(false);
@@ -96,26 +127,56 @@ public class RRCheckBoxTreeItem<T> extends TreeItem<T> {
         }
     }
 
+    /**
+     * Returns the selected-state property; changes propagate to checkbox children and update parents.
+     *
+     * @return the writable selected-state property
+     */
     public BooleanProperty selectedProperty() {
         return selected;
     }
 
+    /**
+     * Reports this item's selected state.
+     *
+     * @return true if this item is selected
+     */
     public boolean isSelected() {
         return selected.get();
     }
 
+    /**
+     * Sets selection, clearing indeterminate state and propagating changes through checkbox items.
+     *
+     * @param selected true to select this item, false to deselect it
+     */
     public void setSelected(boolean selected) {
         this.selected.set(selected);
     }
 
+    /**
+     * Returns the property representing mixed selection among checkbox-item children.
+     *
+     * @return the writable indeterminate-state property
+     */
     public BooleanProperty indeterminateProperty() {
         return indeterminate;
     }
 
+    /**
+     * Reports whether this item represents mixed child selection.
+     *
+     * @return true if this item is indeterminate
+     */
     public boolean isIndeterminate() {
         return indeterminate.get();
     }
 
+    /**
+     * Sets indeterminate state and updates the parent; items without selectable children cannot be indeterminate.
+     *
+     * @param value true to request indeterminate state, false to clear it
+     */
     public void setIndeterminate(boolean value) {
         if (updatingState) {
             indeterminate.set(value);
@@ -136,14 +197,29 @@ public class RRCheckBoxTreeItem<T> extends TreeItem<T> {
         }
     }
 
+    /**
+     * Returns the property controlling whether a bound cell's checkbox accepts user input.
+     *
+     * @return the writable checkbox-disable property
+     */
     public BooleanProperty disabledProperty() {
         return disabled;
     }
 
+    /**
+     * Reports whether this item's checkbox is disabled in a bound cell.
+     *
+     * @return true if checkbox interaction is disabled
+     */
     public boolean isDisabled() {
         return disabled.get();
     }
 
+    /**
+     * Controls checkbox interaction without preventing programmatic selection changes.
+     *
+     * @param disabled true to disable the checkbox in a bound cell
+     */
     public void setDisabled(boolean disabled) {
         this.disabled.set(disabled);
     }

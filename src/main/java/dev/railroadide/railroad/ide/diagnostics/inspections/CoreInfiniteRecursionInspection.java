@@ -15,8 +15,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#INFINITE_RECURSION}.
+ */
 @RegisteredInspection
 public class CoreInfiniteRecursionInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-infinite-recursion";
 
     @Override

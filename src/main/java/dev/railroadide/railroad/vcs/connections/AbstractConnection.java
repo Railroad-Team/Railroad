@@ -21,6 +21,10 @@ public abstract class AbstractConnection {
      */
     protected final ObservableList<Repository> repositories = FXCollections.observableArrayList();
 
+    /** Creates a connection with an empty observable repository list. */
+    public AbstractConnection() {
+    }
+
     /**
      * Fetches the repositories associated with this connection.
      * This method must be implemented by subclasses to define the specific

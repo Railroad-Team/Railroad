@@ -9,6 +9,14 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A cast to a target type with optional additional intersection bounds.
+ *
+ * @param span source range occupied by this node
+ * @param target target type of the cast
+ * @param additionalBounds additional intersection bounds of the cast
+ * @param expression expression whose value is cast
+ */
 public record TypeCastExpression(
     Span span,
     TypeRef target,

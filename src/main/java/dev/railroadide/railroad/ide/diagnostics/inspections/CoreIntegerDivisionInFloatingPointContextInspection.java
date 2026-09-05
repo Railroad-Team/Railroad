@@ -15,8 +15,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#INTEGER_DIVISION_IN_FLOATING_POINT_CONTEXT}.
+ */
 @RegisteredInspection
 public class CoreIntegerDivisionInFloatingPointContextInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-integer-division-in-floating-point-context";
 
     private static final Set<String> INTEGRAL_TYPE_PRIMITIVE_NAMES = Set.of(

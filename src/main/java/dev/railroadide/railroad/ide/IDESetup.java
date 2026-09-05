@@ -14,6 +14,9 @@ import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Creates IDE scenes and coordinates workspace and run-configuration windows.
+ */
 public class IDESetup {
     private static boolean isSwitchingToIDE = false;
 
@@ -27,6 +30,12 @@ public class IDESetup {
         return new Scene(new IDEPane(project));
     }
 
+    /**
+     * Opens the run-configuration editor for a project.
+     *
+     * @param project project associated with the workspace
+     * @param runConfiguration configuration to select, or null for no initial selection
+     */
     public static void showEditRunConfigurationsWindow(
         @NotNull Project project,
         @Nullable RunConfiguration<?> runConfiguration

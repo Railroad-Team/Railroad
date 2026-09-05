@@ -14,6 +14,12 @@ import java.util.Objects;
  * @param jdk The {@link JDK} instance this CLI toolset is bound to.
  */
 public record JDKCLI(JDK jdk) {
+    /**
+     * Creates a command-line tool factory bound to the supplied JDK.
+     *
+     * @param jdk the JDK used by builders created through this factory; must not be null
+     * @throws NullPointerException if jdk is null
+     */
     public JDKCLI(JDK jdk) {
         this.jdk = Objects.requireNonNull(jdk, "JDK cannot be null");
     }

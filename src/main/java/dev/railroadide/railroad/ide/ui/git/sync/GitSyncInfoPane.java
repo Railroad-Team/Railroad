@@ -14,7 +14,15 @@ import dev.railroadide.railroad.vcs.git.util.GitPullStrategy;
 import dev.railroadide.railroad.vcs.git.util.GitPushStrategy;
 import javafx.scene.control.Label;
 
+/**
+ * Combines tracking, ahead/behind, and synchronization strategy information.
+ */
 public class GitSyncInfoPane extends RRVBox {
+    /**
+     * Creates tracking, ahead/behind, and synchronization strategy sections.
+     *
+     * @param gitManager repository service supplying state and Git operations
+     */
     public GitSyncInfoPane(GitManager gitManager) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_SYNC_INFO, this);
         getStyleClass().add("git-sync-info-pane");

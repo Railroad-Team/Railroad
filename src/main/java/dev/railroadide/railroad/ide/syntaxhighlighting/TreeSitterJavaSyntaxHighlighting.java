@@ -13,7 +13,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Builds Java editor style spans by traversing a Tree-sitter parse tree.
+ */
 public class TreeSitterJavaSyntaxHighlighting {
+    /**
+     * Computes editor style spans for the supplied source text.
+     *
+     * @param text source text to highlight
+     * @return style spans containing syntax CSS classes
+     */
     public static StyleSpans<Collection<String>> computeHighlighting(String text) {
         long start = System.currentTimeMillis();
 

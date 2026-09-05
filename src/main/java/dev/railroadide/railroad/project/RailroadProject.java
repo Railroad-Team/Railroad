@@ -24,6 +24,7 @@ import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.ui.id.UIIds;
+import dev.railroadide.railroad.utility.ProjectPathIdentityUtility;
 import dev.railroadide.railroad.utility.StringUtils;
 import dev.railroadide.railroad.vcs.Repository;
 import dev.railroadide.railroad.vcs.git.GitClient;
@@ -50,6 +51,10 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Represents a project managed by Railroad, including its path, metadata,
+ * facets, build tools, version-control integration, and persisted session state.
+ */
 public class RailroadProject implements Project {
     private static final String PROJECT_CONFIG_LOCATION = "project.json";
 
@@ -73,16 +78,34 @@ public class RailroadProject implements Project {
     @Getter
     private final DebuggingManager debuggingManager;
 
+    /**
+     * Creates a project using the final path component as its alias.
+     *
+     * @param path the project directory
+     */
     public RailroadProject(Path path) {
         this(path, path.getFileName().toString());
     }
 
+    /**
+     * Creates a project with a path and display alias.
+     *
+     * @param path  the project directory
+     * @param alias the display alias for the project
+     */
     public RailroadProject(Path path, String alias) {
         this(path, alias, null);
     }
 
+    /**
+     * Creates a project with a path, display alias, and optional icon.
+     *
+     * @param path  the project directory
+     * @param alias the display alias for the project
+     * @param icon  the project icon, or {@code null} to generate a default icon
+     */
     public RailroadProject(Path path, String alias, Image icon) {
-        this.path.set(ProjectPathIdentity.normalize(path));
+        this.path.set(ProjectPathIdentityUtility.normalize(path));
         this.alias.set(alias);
         this.icon.set(icon == null ? createIcon() : icon);
         this.dataStore = new ProjectDataStore(this);
@@ -132,6 +155,12 @@ public class RailroadProject implements Project {
         return new Image(iconPath.toUri().toString());
     }
 
+    /**
+     * Creates a project from its JSON representation.
+     *
+     * @param json the JSON object to deserialize
+     * @return the deserialized project, or an empty optional when no valid path is present
+     */
     public static Optional<RailroadProject> createFromJson(JsonObject json) {
         if (!json.has("Path"))
             return Optional.empty();
@@ -150,10 +179,21 @@ public class RailroadProject implements Project {
         return Optional.of(project);
     }
 
+    /**
+     * Returns the project path encoded as Base64 using UTF-8.
+     *
+     * @return the Base64-encoded project path
+     */
     public String getPathBase64() {
         return Base64.getEncoder().encodeToString(getPathString().getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * Decodes a UTF-8 project path from its Base64 representation.
+     *
+     * @param base64Path the Base64-encoded path
+     * @return the decoded project path
+     */
     public Path getPathFromBase64(String base64Path) {
         return Path.of(new String(Base64.getDecoder().decode(base64Path), StandardCharsets.UTF_8));
     }
@@ -204,7 +244,7 @@ public class RailroadProject implements Project {
     @Override
     public void open(@Nullable Stage stage) {
         Project currentProject = Railroad.PROJECT_MANAGER.getOpenProject();
-        if (currentProject != null && !ProjectPathIdentity.matches(currentProject.getPath(), getPath())) {
+        if (currentProject != null && !ProjectPathIdentityUtility.matches(currentProject.getPath(), getPath())) {
             currentProject.close();
         }
 
@@ -250,7 +290,7 @@ public class RailroadProject implements Project {
     public void close() {
         Railroad.LOGGER.debug("Closing project: {}", getPathString());
         Project currentProject = Railroad.PROJECT_MANAGER.getOpenProject();
-        if (currentProject != null && ProjectPathIdentity.matches(currentProject.getPath(), getPath())) {
+        if (currentProject != null && ProjectPathIdentityUtility.matches(currentProject.getPath(), getPath())) {
             Document activeDocument = Services.IDE_STATE.getActiveDocument();
 
             ProjectDataStore dataStore = getDataStore();
@@ -291,12 +331,12 @@ public class RailroadProject implements Project {
             return false;
 
         RailroadProject project = (RailroadProject) obj;
-        return ProjectPathIdentity.matches(getPath(), project.getPath());
+        return ProjectPathIdentityUtility.matches(getPath(), project.getPath());
     }
 
     @Override
     public int hashCode() {
-        return ProjectPathIdentity.key(getPath()).hashCode();
+        return ProjectPathIdentityUtility.key(getPath()).hashCode();
     }
 
     @Override
@@ -343,11 +383,11 @@ public class RailroadProject implements Project {
             if (pathElement.isJsonPrimitive()) {
                 JsonPrimitive pathPrimitive = pathElement.getAsJsonPrimitive();
                 if (pathPrimitive.isString()) {
-                    this.path.set(ProjectPathIdentity.normalize(Path.of(pathElement.getAsString())));
+                    this.path.set(ProjectPathIdentityUtility.normalize(Path.of(pathElement.getAsString())));
                 } else if (pathPrimitive.isNumber()) {
                     try {
                         this.path
-                            .set(ProjectPathIdentity.normalize(Path.of(String.valueOf(pathPrimitive.getAsNumber()))));
+                            .set(ProjectPathIdentityUtility.normalize(Path.of(String.valueOf(pathPrimitive.getAsNumber()))));
                     } catch (Exception exception) {
                         Railroad.LOGGER.warn("Project JSON 'Path' is not a valid path: {}", pathElement, exception);
                     }
@@ -511,8 +551,9 @@ public class RailroadProject implements Project {
 
     @Override
     public void setAlias(@NotNull String alias) {
-        if (alias == null || alias.isBlank())
-            throw new IllegalArgumentException("Alias cannot be null or blank");
+        Objects.requireNonNull(alias, "Alias cannot be null");
+        if (alias.isBlank())
+            throw new IllegalArgumentException("Alias cannot be blank");
 
         String originalAlias = this.alias.get();
         this.alias.set(alias);
@@ -559,30 +600,69 @@ public class RailroadProject implements Project {
         this.icon.set(icon == null ? createIcon() : icon);
     }
 
+    /**
+     * Returns the observable property containing the project icon.
+     *
+     * @return the project icon property
+     */
     public ObjectProperty<Image> iconProperty() {
         return icon;
     }
 
+    /**
+     * Returns an observable read-only view of the project's facets.
+     *
+     * @return the project facets property
+     */
     public SetProperty<Facet<?>> facetsProperty() {
         return new ReadOnlySetWrapper<>(facets);
     }
 
+    /**
+     * Returns a snapshot of the facets currently associated with the project.
+     *
+     * @return the project's facets
+     */
     public List<Facet<?>> getFacets() {
         return List.copyOf(facets);
     }
 
+    /**
+     * Returns the observable property containing the project alias.
+     *
+     * @return the project alias property
+     */
     public StringProperty aliasProperty() {
         return alias;
     }
 
+    /**
+     * Returns the observable property containing the project's repository.
+     *
+     * @return the project repository property
+     */
     public ObjectProperty<Repository> repositoryProperty() {
         return repository;
     }
 
+    /**
+     * Returns the observable property containing the last-opened timestamp.
+     *
+     * @return the last-opened property
+     */
     public LongProperty lastOpenedProperty() {
         return lastOpened;
     }
 
+    /**
+     * Starts an asynchronous project build using the supplied JDK.
+     *
+     * <p>The returned future completes with a task that can be used to observe
+     * or control the build when the project's build facet supports it.</p>
+     *
+     * @param jdk the JDK to use for the build
+     * @return a future completed with the build task, or exceptionally when the project cannot be built
+     */
     public CompletableFuture<Runnable> build(JDK jdk) {
         CompletableFuture<Runnable> future = new CompletableFuture<>();
         CompletableFuture.runAsync(() -> {

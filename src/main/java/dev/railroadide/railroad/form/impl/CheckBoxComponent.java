@@ -274,9 +274,10 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
         }
 
         /**
-         * Gets the label for the checkbox.
+         * Sets the initial selected state of the checkbox.
          *
-         * @return the label
+         * @param selected whether the checkbox is initially selected
+         * @return this data object
          */
         public Data selected(boolean selected) {
             this.selected = selected;
@@ -284,9 +285,10 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
         }
 
         /**
-         * Gets whether the checkbox is required.
+         * Sets whether the checkbox is required.
          *
-         * @return whether the checkbox is required
+         * @param required whether the checkbox is required
+         * @return this data object
          */
         public Data required(boolean required) {
             this.required = required;

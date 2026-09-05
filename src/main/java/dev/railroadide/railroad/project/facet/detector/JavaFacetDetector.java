@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
     /**
      * Attempts to determine the most reliable Java version for the given project path.
-     * Checks Gradle, Maven, compiled class files, and system properties in order.
+     * Checks the cached Gradle model, Maven configuration, and system properties in order.
      *
      * @param project the project
      * @return the detected JavaVersion, or an invalid version if not found
@@ -64,7 +64,7 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
     }
 
     /**
-     * Attempts to extract the Java version from a Gradle project by connecting to the build and reading configuration.
+     * Attempts to extract the Java version from the cached Gradle build model.
      *
      * @param project the project
      * @return the JavaVersion specified in the Gradle build, or an invalid version if not found

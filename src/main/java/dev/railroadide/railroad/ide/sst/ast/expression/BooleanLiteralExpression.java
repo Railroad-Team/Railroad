@@ -8,6 +8,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A literal representing the boolean value {@code true} or {@code false}.
+ *
+ * @param span source range occupied by this node
+ * @param value boolean value of the literal
+ */
 public record BooleanLiteralExpression(
     Span span,
     boolean value

@@ -331,11 +331,61 @@ public class JstatCLIBuilder implements CLIBuilder<Process, JstatCLIBuilder> {
         };
     }
 
+    /**
+     * Predefined statistics reports selectable with {@link JstatCLIBuilder#statOption(StatOption)}.
+     */
     public enum StatOption {
-        CLASS("class"), COMPILER("compiler"), GC("gc"), GC_CAPACITY("gccapacity"), GC_CAUSE("gccause"), GC_NEW(
-            "gcnew"), GC_NEW_CAPACITY("gcnewcapacity"), GC_OLD("gcold"), GC_OLD_CAPACITY(
-                "gcoldcapacity"), GC_META_CAPACITY(
-                    "gcmetacapacity"), GC_UTIL("gcutil"), PRINT_COMPILATION("printcompilation");
+        /**
+         * Reports class loading statistics.
+         */
+        CLASS("class"),
+        /**
+         * Reports JIT compiler statistics.
+         */
+        COMPILER("compiler"),
+        /**
+         * Reports garbage collection statistics.
+         */
+        GC("gc"),
+        /**
+         * Reports generation capacities.
+         */
+        GC_CAPACITY("gccapacity"),
+        /**
+         * Reports garbage collection utilization and collection causes.
+         */
+        GC_CAUSE("gccause"),
+        /**
+         * Reports statistics for the young generation.
+         */
+        GC_NEW(
+            "gcnew"),
+        /**
+         * Reports young generation capacities.
+         */
+        GC_NEW_CAPACITY("gcnewcapacity"),
+        /**
+         * Reports statistics for the old generation.
+         */
+        GC_OLD("gcold"),
+        /**
+         * Reports old generation capacity.
+         */
+        GC_OLD_CAPACITY(
+            "gcoldcapacity"),
+        /**
+         * Reports metaspace capacity.
+         */
+        GC_META_CAPACITY(
+            "gcmetacapacity"),
+        /**
+         * Reports garbage collection utilization.
+         */
+        GC_UTIL("gcutil"),
+        /**
+         * Reports method compilation statistics.
+         */
+        PRINT_COMPILATION("printcompilation");
 
         private final String flag;
 
@@ -343,6 +393,11 @@ public class JstatCLIBuilder implements CLIBuilder<Process, JstatCLIBuilder> {
             this.flag = flag;
         }
 
+        /**
+         * Returns the statistics option with its leading hyphen.
+         *
+         * @return the command-line flag, such as {@code -gc}
+         */
         public String getFlag() {
             return "-" + flag;
         }

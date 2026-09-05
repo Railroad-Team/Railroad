@@ -10,13 +10,20 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.Priority;
 import lombok.Getter;
 
+/** Scrollable selector populated from the project types registered when this pane is created. */
 public class ProjectTypePane extends RRVBox {
     private final ScrollPane projectTypesScroller;
+    /**
+     * List exposing the project-type selection used by the onboarding pane.
+     *
+     * @return the live project-type list
+     */
     @Getter
     private final RRListView<ProjectType> projectTypeListView;
     private final ObservableList<ProjectType> allProjectTypes = FXCollections
         .observableArrayList(ProjectType.REGISTRY.values());
 
+    /** Builds the type list with icon cells and selects its first entry, if any. */
     public ProjectTypePane() {
         super();
         getStyleClass().add("project-type-pane");

@@ -9,7 +9,16 @@ import dev.railroadide.railroad.window.DialogBuilder;
 import dev.railroadide.railroad.window.WindowBuilder;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
+/**
+ * Opens a dialog for creating a tag at a selected commit.
+ */
 public class GitCommitCreateTagButton extends RRButton {
+    /**
+     * Creates the tag-creation action for the supplied commit.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param commit commit to display or act on
+     */
     public GitCommitCreateTagButton(Project project, GitCommit commit) {
         super("railroad.git.commit.details.button.create_tag", FontAwesomeSolid.TAG);
         setVariant(ButtonVariant.PRIMARY);

@@ -22,6 +22,9 @@ public final class DefaultWorkspaceService implements WorkspaceService {
     private volatile WorkspaceAdapter activeWorkspace;
     private volatile Set<WorkspaceMode> availableModes = Set.of();
 
+    /**
+     * Creates the workspace service and publishes subsequent active-mode changes.
+     */
     public DefaultWorkspaceService() {
         currentViewMode.addListener((_, previousMode, currentMode) -> {
             WorkspaceMode previous = resolve(previousMode);
@@ -32,7 +35,12 @@ public final class DefaultWorkspaceService implements WorkspaceService {
         });
     }
 
-    /** Creates the internal controller used by an IDE pane without exposing JavaFX state through the SPI. */
+    /**
+     * Creates the internal controller used by an IDE pane without exposing JavaFX state through the SPI.
+     *
+     * @param availability predicate deciding whether a mode can be activated
+     * @return controller sharing this service's active mode property
+     */
     public WorkspaceModeController createModeController(Predicate<WorkspaceMode> availability) {
         return new WorkspaceModeController(currentViewMode, availability);
     }
@@ -40,6 +48,10 @@ public final class DefaultWorkspaceService implements WorkspaceService {
     /**
      * Attaches the currently displayed IDE workspace to this service. The returned registration must be closed with
      * the pane lifecycle.
+     *
+     * @param activation callback that attempts to activate a mode
+     * @param availability predicate deciding whether a mode can be activated
+     * @return registration to close when the workspace pane is disposed
      */
     public Registration attachWorkspace(
         Predicate<WorkspaceMode> activation,
@@ -151,6 +163,9 @@ public final class DefaultWorkspaceService implements WorkspaceService {
     ) {
     }
 
+    /**
+     * A lifecycle handle that detaches a workspace when closed.
+     */
     public static final class Registration implements AutoCloseable {
         private Runnable removal;
 

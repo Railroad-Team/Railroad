@@ -6,7 +6,20 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 
-public class TimeFormatter {
+/**
+ * Utility class for formatting time-related information.
+ */
+public final class TimeFormatingUtils {
+    private TimeFormatingUtils() {
+        throw new UnsupportedOperationException("Instantiated utility class");
+    }
+
+    /**
+     * Formats the elapsed time since the given epoch milliseconds into a human-readable string.
+     *
+     * @param epochMillis The epoch milliseconds to format.
+     * @return A human-readable string representing the elapsed time.
+     */
     public static String formatElapsed(long epochMillis) {
         if (epochMillis == -1)
             return "never";
@@ -65,10 +78,23 @@ public class TimeFormatter {
         return seconds < 5 ? "just now" : pluralize(seconds, "second");
     }
 
-    private static String pluralize(long amount, String unit) {
+    /**
+     * Helper method to pluralize a unit based on the amount.
+     *
+     * @param amount The amount of time units.
+     * @param unit   The time unit (e.g., "year", "month").
+     * @return A string representing the pluralized time unit.
+     */
+    public static String pluralize(long amount, String unit) {
         return amount + " " + unit + (amount == 1 ? " ago" : "s ago");
     }
 
+    /**
+     * Formats the given epoch milliseconds into a date-time string.
+     *
+     * @param millis The epoch milliseconds to format.
+     * @return A string representing the formatted date and time.
+     */
     public static String formatDateTime(long millis) {
         Instant instant = Instant.ofEpochMilli(millis);
         ZonedDateTime zdt = instant.atZone(ZoneId.systemDefault());

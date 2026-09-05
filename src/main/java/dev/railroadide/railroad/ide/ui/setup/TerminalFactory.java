@@ -48,6 +48,12 @@ public final class TerminalFactory {
         ShutdownHooks.addHook(TerminalFactory::shutdownOpenTerminals);
     }
 
+    /**
+     * Creates and registers a terminal session in the supplied directory.
+     *
+     * @param path working directory for the terminal session
+     * @return registered terminal control
+     */
     public static Terminal create(Path path) {
         var terminalConfig = createTerminalConfig();
         var terminalBuilder = new TerminalBuilder(terminalConfig);
@@ -57,6 +63,11 @@ public final class TerminalFactory {
         return terminal;
     }
 
+    /**
+     * Builds terminal colors, font, and operating-system shell configuration.
+     *
+     * @return new terminal configuration
+     */
     public static TerminalConfig createTerminalConfig() {
         var terminalConfig = new TerminalConfig();
         terminalConfig.setBackgroundColor(Color.rgb(16, 16, 16));
@@ -163,6 +174,11 @@ public final class TerminalFactory {
         }
     }
 
+    /**
+     * Destroys the terminal process, closes its streams, and unregisters the terminal.
+     *
+     * @param terminal terminal whose process and streams should be closed; null is ignored
+     */
     public static void close(Terminal terminal) {
         if (terminal == null)
             return;

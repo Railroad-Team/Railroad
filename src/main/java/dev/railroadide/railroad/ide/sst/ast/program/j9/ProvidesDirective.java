@@ -10,6 +10,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A module directive declaring implementations of a service type.
+ *
+ * @param span source range occupied by this node
+ * @param service service type being provided
+ * @param implementations service implementation types
+ */
 public record ProvidesDirective(
     Span span,
     NameExpression service,

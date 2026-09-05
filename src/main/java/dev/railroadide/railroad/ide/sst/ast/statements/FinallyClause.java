@@ -9,6 +9,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * The cleanup block associated with a try statement.
+ *
+ * @param span source range occupied by this node
+ * @param body cleanup block executed when leaving the associated try statement
+ */
 public record FinallyClause(
     Span span,
     BlockStatement body

@@ -7,6 +7,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Stores editor selection, scroll position, and folded paragraph ranges.
+ *
+ * @param caretPosition caret offset in the document text
+ * @param anchorPosition selection anchor offset in the document text
+ * @param horizontalScroll estimated horizontal scroll offset
+ * @param verticalScroll estimated vertical scroll offset
+ * @param folds folded paragraph ranges to restore
+ */
 public record EditorViewState(
     int caretPosition,
     int anchorPosition,
@@ -14,8 +23,20 @@ public record EditorViewState(
     double verticalScroll,
     List<FoldRange> folds
 ) {
+    /**
+     * Default view state at the start of the document with no folds.
+     */
     public static final EditorViewState EMPTY = new EditorViewState(0, 0, 0.0, 0.0, List.of());
 
+    /**
+     * Creates view state with nonnegative positions, valid scroll offsets, and an immutable fold list.
+     *
+     * @param caretPosition caret offset in the document text
+     * @param anchorPosition selection anchor offset in the document text
+     * @param horizontalScroll estimated horizontal scroll offset
+     * @param verticalScroll estimated vertical scroll offset
+     * @param folds folded paragraph ranges to restore
+     */
     public EditorViewState {
         caretPosition = Math.max(0, caretPosition);
         anchorPosition = Math.max(0, anchorPosition);
@@ -28,10 +49,22 @@ public record EditorViewState(
                 .toList();
     }
 
+    /**
+     * Creates view state with nonnegative positions, valid scroll offsets, and an immutable fold list.
+     *
+     * @param caretPosition caret offset in the document text
+     * @param anchorPosition selection anchor offset in the document text
+     */
     public EditorViewState(int caretPosition, int anchorPosition) {
         this(caretPosition, anchorPosition, 0.0, 0.0, List.of());
     }
 
+    /**
+     * Captures the current selection, estimated scroll offsets, and folded paragraphs.
+     *
+     * @param editor text editor to capture, or null for an empty view state
+     * @return captured view state, or EMPTY when the editor is null
+     */
     public static EditorViewState capture(@Nullable TextEditorPane editor) {
         if (editor == null)
             return EMPTY;
@@ -68,7 +101,19 @@ public record EditorViewState(
         return Double.isFinite(value) && value >= 0.0 ? value : 0.0;
     }
 
+    /**
+     * Identifies the header and final paragraph of a folded section.
+     *
+     * @param startParagraph zero-based index of the fold header paragraph
+     * @param endParagraph zero-based index of the final folded paragraph
+     */
     public record FoldRange(int startParagraph, int endParagraph) {
+        /**
+         * Creates a fold range with nonnegative, ordered paragraph indexes.
+         *
+         * @param startParagraph zero-based index of the fold header paragraph
+         * @param endParagraph zero-based index of the final folded paragraph
+         */
         public FoldRange {
             startParagraph = Math.max(0, startParagraph);
             endParagraph = Math.max(startParagraph, endParagraph);

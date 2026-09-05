@@ -8,6 +8,7 @@ import java.util.function.Consumer;
  * Decorates raw git output callbacks with parsed progress events.
  */
 public final class GitProgressListener implements GitOutputListener {
+    /** Listener that discards raw output and parsed progress events. */
     public static final GitProgressListener NO_OP = new GitProgressListener(GitOutputListener.NO_OP, _ -> {
     }, null);
 

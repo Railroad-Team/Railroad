@@ -13,6 +13,13 @@ public final class JavaInspectionRuleEngine {
     private JavaInspectionRuleEngine() {
     }
 
+    /**
+     * Runs enabled provider rules using configured severity overrides.
+     *
+     * @param provider provider supplying the inspection rules
+     * @param context source and semantic context to inspect
+     * @param reporter destination for reported diagnostics
+     */
     public static void runRules(
         JavaInspectionRuleProvider provider,
         JavaRuleContext context,
@@ -25,6 +32,13 @@ public final class JavaInspectionRuleEngine {
         LanguageInspectionRuleEngine.runRules(provider, context, reporter, JAVA_SETTINGS_ACCESS);
     }
 
+    /**
+     * Runs enabled provider rules and collects their diagnostics.
+     *
+     * @param provider provider supplying the inspection rules
+     * @param context source and semantic context to inspect
+     * @return diagnostics produced with the configured severity overrides
+     */
     public static List<SemanticDiagnostic> collectDiagnostics(
         JavaInspectionRuleProvider provider,
         JavaRuleContext context

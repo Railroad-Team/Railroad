@@ -10,6 +10,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A named element-value assignment within an annotation use.
+ *
+ * @param span source range occupied by this node
+ * @param name annotation element name
+ * @param value value assigned to the annotation element
+ */
 public record AnnotationElement(
     Span span,
     NameExpression name,

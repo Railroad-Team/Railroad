@@ -14,8 +14,14 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 
 import java.util.*;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#FIELD_CAN_BE_LOCAL_VARIABLE}.
+ */
 @RegisteredInspection
 public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-field-can-be-local-variable";
 
     private static final List<JavaInspectionRule> RULES = List

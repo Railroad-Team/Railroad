@@ -17,8 +17,15 @@ import java.util.Set;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#INVALID_CONTROL_FLOW},
+ * {@link JavaSemanticRules#MISSING_RETURN}.
+ */
 @RegisteredInspection
 public final class CoreControlFlowInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-control-flow";
 
     private static final String JAVA_BREAK_STATEMENT = "JAVA_BREAK_STATEMENT";

@@ -16,6 +16,7 @@ public final class GitLog {
     private static final String LOGGER_NAME = "dev.railroadide.railroad.vcs.git";
     private static final String APPENDER_NAME = "GIT_FILE";
 
+    /** Shared Git subsystem logger, configured to append to {@code logs/git.log} when Logback is active. */
     public static final Logger LOGGER = LoggerFactory.getLogger(LOGGER_NAME);
 
     static {
@@ -25,6 +26,11 @@ public final class GitLog {
     private GitLog() {
     }
 
+    /**
+     * Triggers the class's one-time logger configuration during application startup.
+     * With Logback, Git logging goes to {@code logs/git.log} in the configuration directory without
+     * propagating to parent loggers. Repeated calls do not reconfigure the logger.
+     */
     public static void initialize() {
         // Triggers static logger configuration during application startup.
     }

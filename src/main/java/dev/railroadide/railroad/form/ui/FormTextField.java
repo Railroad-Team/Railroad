@@ -30,6 +30,16 @@ public class FormTextField extends InformativeLabeledHBox<TextField> implements 
         this(labelKey, required, promptText, editable, translate, null);
     }
 
+    /**
+     * Creates a text field with optional auto-complete behavior.
+     *
+     * @param labelKey the localization key for the field label
+     * @param required whether the field is required
+     * @param promptText the placeholder text to display when empty
+     * @param editable whether the text field is editable
+     * @param translate whether to localize the prompt text
+     * @param autoCompleteOptions the auto-complete configuration, or {@code null}
+     */
     public FormTextField(
         String labelKey,
         boolean required,

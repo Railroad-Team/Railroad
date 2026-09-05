@@ -12,13 +12,24 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Maintains ordered language support registrations and resolves editor languages for files.
+ */
 public final class LanguageSupportRegistry {
+    /**
+     * Ordered registry of language support implementations keyed by language identifier.
+     */
     public static final Registry<LanguageSupport> REGISTRY = RegistryManager
         .createOrderedRegistry("railroad:language_support", LanguageSupport.class);
 
     private LanguageSupportRegistry() {
     }
 
+    /**
+     * Registers a language support implementation under its language identifier.
+     *
+     * @param support the language support to register
+     */
     public static void register(LanguageSupport support) {
         if (support == null)
             throw new IllegalArgumentException("Language support cannot be null.");
@@ -26,6 +37,11 @@ public final class LanguageSupportRegistry {
         REGISTRY.register(support.languageId(), support);
     }
 
+    /**
+     * Registers each supplied language support implementation in iteration order.
+     *
+     * @param supports the language support implementations
+     */
     public static void registerAll(Collection<? extends LanguageSupport> supports) {
         if (supports == null)
             throw new IllegalArgumentException("Language supports cannot be null.");
@@ -35,6 +51,12 @@ public final class LanguageSupportRegistry {
         }
     }
 
+    /**
+     * Looks up registered language support by identifier.
+     *
+     * @param languageId the stable language identifier
+     * @return the registered support, or an empty optional if absent
+     */
     public static Optional<LanguageSupport> get(String languageId) {
         if (languageId == null)
             throw new IllegalArgumentException("Language id cannot be null.");
@@ -42,6 +64,12 @@ public final class LanguageSupportRegistry {
         return Optional.ofNullable(REGISTRY.get(languageId));
     }
 
+    /**
+     * Checks whether a language identifier is registered.
+     *
+     * @param languageId the stable language identifier
+     * @return {@code true} if a registration exists
+     */
     public static boolean contains(String languageId) {
         if (languageId == null)
             throw new IllegalArgumentException("Language id cannot be null.");
@@ -49,12 +77,24 @@ public final class LanguageSupportRegistry {
         return REGISTRY.contains(languageId);
     }
 
+    /**
+     * Finds the first registered language support accepting the path.
+     *
+     * @param path the file path to inspect
+     * @return the first matching support, or an empty optional if none matches
+     */
     public static Optional<LanguageSupport> find(Path path) {
         return REGISTRY.values().stream()
             .filter(support -> support.supports(path))
             .findFirst();
     }
 
+    /**
+     * Resolves a registered language, then falls back to image, binary, or plain text recognition.
+     *
+     * @param path the file path to inspect
+     * @return the resolved language identifier
+     */
     public static String resolveLanguageId(Path path) {
         if (path == null)
             throw new IllegalArgumentException("Path cannot be null.");
@@ -72,10 +112,18 @@ public final class LanguageSupportRegistry {
             });
     }
 
+    /**
+     * Returns all registered language support implementations.
+     *
+     * @return the registered implementations in registry order
+     */
     public static List<LanguageSupport> all() {
         return REGISTRY.values();
     }
 
+    /**
+     * Unregisters every language support implementation.
+     */
     public static void clear() {
         for (String languageId : REGISTRY.keys()) {
             REGISTRY.unregister(languageId);

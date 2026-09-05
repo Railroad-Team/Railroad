@@ -5,6 +5,9 @@ import javax.tools.SimpleJavaFileObject;
 import java.net.URI;
 import java.nio.file.Path;
 
+/**
+ * A file object used to represent source coming from a string.
+ */
 public class JavaSourceFromString extends SimpleJavaFileObject {
     private final String code;
 

@@ -25,6 +25,10 @@ public class BrowseButton extends RRButton {
     private final ObjectProperty<Path> defaultLocation = new SimpleObjectProperty<>(
         Path.of(System.getProperty("user.home")));
 
+    /**
+     * Creates a localized browse button configured for a single file in the user's home directory.
+     * Set {@link #textFieldProperty()} to receive selected paths; cancellation leaves its text unchanged.
+     */
     public BrowseButton() {
         super("railroad.generic.browse");
         setOnAction(event -> {
@@ -150,6 +154,8 @@ public class BrowseButton extends RRButton {
     }
 
     /**
+     * Returns the owner-window property used for browser dialogs.
+     *
      * @return The parent window property for this button.
      */
     public ObjectProperty<Window> parentWindowProperty() {
@@ -157,6 +163,8 @@ public class BrowseButton extends RRButton {
     }
 
     /**
+     * Returns the destination field property; multiple selected paths are joined with a comma and space.
+     *
      * @return The text field property that will be updated with the selected path.
      */
     public ObjectProperty<TextField> textFieldProperty() {
@@ -164,6 +172,8 @@ public class BrowseButton extends RRButton {
     }
 
     /**
+     * Returns the property choosing the file, directory, or image dialog; defaults to file browsing.
+     *
      * @return The browse type property that determines whether to browse files, directories, or images.
      */
     public ObjectProperty<BrowseType> browseTypeProperty() {
@@ -171,6 +181,8 @@ public class BrowseButton extends RRButton {
     }
 
     /**
+     * Returns the selection mode property; directory dialogs always select one directory.
+     *
      * @return The selection mode property that determines whether to allow single or multiple selections.
      */
     public ObjectProperty<BrowseSelectionMode> selectionModeProperty() {
@@ -178,6 +190,8 @@ public class BrowseButton extends RRButton {
     }
 
     /**
+     * Returns the initial-directory property; a null value falls back to the user's home directory.
+     *
      * @return The default location property that specifies the initial directory for the browser dialog.
      */
     public ObjectProperty<Path> defaultLocationProperty() {
@@ -188,7 +202,12 @@ public class BrowseButton extends RRButton {
      * Enum representing the type of browsing operation.
      */
     public enum BrowseType {
-        FILE, DIRECTORY, IMAGE
+        /** Browse for files without an image-specific filter. */
+        FILE,
+        /** Browse for a single directory. */
+        DIRECTORY,
+        /** Browse using the configured PNG, JPEG, and GIF image filter. */
+        IMAGE
     }
 
     /**
@@ -196,6 +215,9 @@ public class BrowseButton extends RRButton {
      * SINGLE allows selecting one item, MULTIPLE allows selecting multiple items.
      */
     public enum BrowseSelectionMode {
-        SINGLE, MULTIPLE
+        /** Select one file or directory. */
+        SINGLE,
+        /** Select multiple files or images; directory browsing still selects one directory. */
+        MULTIPLE
     }
 }

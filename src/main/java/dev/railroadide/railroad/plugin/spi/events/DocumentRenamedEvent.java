@@ -5,10 +5,14 @@ import dev.railroadide.railroad.plugin.spi.dto.Document;
 /**
  * Represents an event that is triggered when a file is renamed in the Railroad IDE.
  * This event contains the file that was renamed, along with its old and new name.
+ *
+ * @param file The file associated with this event. Must not be null.
+ * @param oldName The previous name of the file. Must not be null.
+ * @param newName The new name of the file. Must not be null.
  */
 public record DocumentRenamedEvent(Document file, String oldName, String newName) implements GenericDocumentEvent {
     /**
-     * Constructs a new FileRenamedEvent.
+     * Constructs a new DocumentRenamedEvent.
      *
      * @param file The file associated with this event. Must not be null.
      * @param oldName The previous name of the file. Must not be null.

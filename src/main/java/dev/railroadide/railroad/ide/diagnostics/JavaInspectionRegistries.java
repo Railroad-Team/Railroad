@@ -82,26 +82,56 @@ public final class JavaInspectionRegistries {
     private JavaInspectionRegistries() {
     }
 
+    /**
+     * Returns registered Java providers whose identifiers start with {@code railroad}.
+     *
+     * @return built-in Java inspection providers
+     */
     public static List<JavaInspectionRuleProvider> coreRuleProviders() {
         return ruleProviders().stream()
             .filter(provider -> provider.id().startsWith("railroad"))
             .toList();
     }
 
+    /**
+     * Registers a Java inspection provider in the language inspection registry.
+     *
+     * @param id stable rule or provider identifier
+     * @param provider provider supplying the inspection rules
+     * @return registered provider
+     */
     public static JavaInspectionRuleProvider registerRuleProvider(String id, JavaInspectionRuleProvider provider) {
         Objects.requireNonNull(provider, "provider");
         LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY.register(id, provider);
         return provider;
     }
 
+    /**
+     * Removes the provider registered under the supplied identifier.
+     *
+     * @param id stable rule or provider identifier
+     * @return removed Java provider, or null if absent
+     */
     public static JavaInspectionRuleProvider unregisterRuleProvider(String id) {
         return asJavaProvider(LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY.unregister(id));
     }
 
+    /**
+     * Looks up a Java inspection provider by identifier.
+     *
+     * @param id stable rule or provider identifier
+     * @return registered Java provider, or null if absent
+     */
     public static JavaInspectionRuleProvider getRuleProvider(String id) {
         return asJavaProvider(LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY.get(id));
     }
 
+    /**
+     * Checks whether the identifier refers to a provider for Java inspections.
+     *
+     * @param id stable rule or provider identifier
+     * @return whether a matching Java provider is registered
+     */
     public static boolean containsRuleProvider(String id) {
         LanguageInspectionProvider provider = LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY
             .get(id);
@@ -109,10 +139,20 @@ public final class JavaInspectionRegistries {
             && JavaLanguageSupport.LANGUAGE_ID.equals(javaProvider.languageId());
     }
 
+    /**
+     * Returns the currently registered Java inspection providers.
+     *
+     * @return list of registered Java providers
+     */
     public static List<JavaInspectionRuleProvider> ruleProviders() {
         return ruleProviderEntries().values().stream().toList();
     }
 
+    /**
+     * Collects the registered Java providers by identifier.
+     *
+     * @return map of provider identifiers to Java providers
+     */
     public static Map<String, JavaInspectionRuleProvider> ruleProviderEntries() {
         return LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY.entries().entrySet().stream()
             .filter(entry -> entry.getValue() instanceof JavaInspectionRuleProvider javaProvider

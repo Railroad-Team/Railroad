@@ -24,14 +24,26 @@ public class RRAutoCompleteTextField extends RRTextField {
     private final CustomMenuItem suggestionsContainer = new CustomMenuItem(suggestionsListView, false);
     private AutoCompleteOptions autoCompleteOptions = new AutoCompleteOptions();
 
+    /**
+     * Creates an empty suggestion-capable field with no configured suggestion source.
+     */
     public RRAutoCompleteTextField() {
         this(null);
     }
 
+    /**
+     * Creates a suggestion-capable field with localized prompt text.
+     *
+     * @param localizationKey the translation key for the prompt
+     * @param args formatting arguments for the translation
+     */
     public RRAutoCompleteTextField(String localizationKey, Object... args) {
         super(localizationKey, args);
     }
 
+    /**
+     * Initializes the field, suggestion popup, and keyboard, mouse, text, and focus listeners.
+     */
     @Override
     protected void initialize() {
         super.initialize();
@@ -211,7 +223,10 @@ public class RRAutoCompleteTextField extends RRTextField {
     }
 
     /**
-     * Applies the provided auto-complete options to this text field.
+     * Retains the supplied options for future queries and immediately applies its suggestion cell factory.
+     *
+     * @param options the options to use for suggestion lookup and presentation
+     * @throws IllegalArgumentException if options is null
      */
     public void applyOptions(AutoCompleteOptions options) {
         if (options == null)

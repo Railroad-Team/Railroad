@@ -33,8 +33,10 @@
             also need a nonempty @return (block or inline). Type parameters and record components need @param tags on the type.
             Void methods and constructors do not need @return. Coverage counts a declaration as complete only when all its checks pass.</p>
         <p>Only declarations written in source are counted: generated methods (including Lombok and implicit record/enum members),
-            inherited members, and members inside inaccessible types are excluded. Overrides require explicit documentation;
-            {@inheritDoc} is reported as unverified. This checks documentation presence, not its accuracy or full Javadoc validity.
+            inherited members, and members inside inaccessible types are excluded. Methods annotated with @Override or
+            @java.lang.Override are excluded from checks and coverage totals. Unannotated methods are still checked;
+            {@inheritDoc} on those methods is reported as unverified because inheritance is not resolved.
+            This checks documentation presence, not its accuracy or full Javadoc validity.
             An empty scope has N/A coverage.</p>
     </details>
     <div class="toolbar">

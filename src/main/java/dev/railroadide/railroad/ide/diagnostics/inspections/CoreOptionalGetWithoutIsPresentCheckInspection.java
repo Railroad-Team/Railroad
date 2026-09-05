@@ -13,8 +13,14 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 
 import java.util.*;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK}.
+ */
 @RegisteredInspection
 public class CoreOptionalGetWithoutIsPresentCheckInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-optional-get-without-is-present-check";
 
     private static final Map<String, String> OPTIONAL_TYPE_TO_GET_METHOD = Map.of(

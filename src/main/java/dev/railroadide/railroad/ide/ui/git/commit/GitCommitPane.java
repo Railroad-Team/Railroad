@@ -7,7 +7,15 @@ import dev.railroadide.railroad.ui.id.UIIds;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
+/**
+ * Combines change selection, commit controls, and message composition for a project.
+ */
 public class GitCommitPane extends RRVBox {
+    /**
+     * Creates the project's commit composition workspace.
+     *
+     * @param project project whose files and workspace are being displayed
+     */
     public GitCommitPane(Project project) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_COMMIT, this);
         getStyleClass().add("git-commit-pane-root");

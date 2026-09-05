@@ -16,12 +16,29 @@ import java.util.List;
 
 // TODO: Improve signature extraction to handle generics, varargs, and other complex parameter types.
 // TODO: Improve signature extraction to include return type for methods.
+/**
+ * Extracts package, import, type, and member descriptors from Java declaration facts.
+ */
 public final class JavaProjectSemanticExtractor {
+    /**
+     * Extracts package, import, type, and member descriptors for one Java source file.
+     *
+     * @param path the source file path attached to extracted descriptors
+     * @param source the Java source to parse for declaration facts
+     * @return the source file's immutable index entry
+     */
     public JavaProjectSemanticIndex.SourceFileIndex extract(Path path, CharSequence source) {
         SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
         return extract(path, model);
     }
 
+    /**
+     * Extracts package, import, type, and member descriptors for one Java source file.
+     *
+     * @param path the source file path attached to extracted descriptors
+     * @param model the semantic model containing the file's declaration facts
+     * @return the source file's immutable index entry
+     */
     public JavaProjectSemanticIndex.SourceFileIndex extract(Path path, SemanticModel model) {
         SyntaxNode root = model.syntaxTree().root();
 

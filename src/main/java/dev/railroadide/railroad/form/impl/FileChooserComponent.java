@@ -22,9 +22,27 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * File picker counterpart to {@link DirectoryChooserComponent}.
+ * A form component that lets the user enter or browse for a file path.
+ *
+ * <p>
+ * The text field is used as the validation and form-data node. An optional
+ * browse button opens a file chooser.
+ * </p>
  */
 public class FileChooserComponent extends FormComponent<FormFileChooser, FileChooserComponent.Data, TextField, String> {
+    /**
+     * Creates a file chooser component.
+     *
+     * @param dataKey the key under which the path is stored in form data
+     * @param data the component configuration
+     * @param validator the text-field validator
+     * @param listener the text-field change listener
+     * @param bindTextFieldTo the property to which the text field is bound
+     * @param bindBrowseButtonTo the property to which the browse button is bound
+     * @param transformers value transformers attached to the component
+     * @param keyTypedHandler handler for key-typed events in the chooser
+     * @param visible binding controlling component visibility
+     */
     public FileChooserComponent(
         String dataKey,
         Data data,
@@ -109,6 +127,7 @@ public class FileChooserComponent extends FormComponent<FormFileChooser, FileCho
         getComponent().getPrimaryComponent().getTextField().setText(getData().defaultPath);
     }
 
+    /** Builds and configures a {@link FileChooserComponent}. */
     public static class Builder implements FormComponentBuilder<FileChooserComponent, TextField, String, Builder> {
         private final String dataKey;
         private final Data data;
@@ -120,6 +139,12 @@ public class FileChooserComponent extends FormComponent<FormFileChooser, FileCho
         private EventHandler<? super KeyEvent> keyTypedHandler;
         private BooleanBinding visible;
 
+        /**
+         * Creates a file chooser builder.
+         *
+         * @param dataKey the key under which the path is stored in form data
+         * @param label the localization key for the field label
+         */
         public Builder(@NotNull String dataKey, @NotNull String label) {
             this.dataKey = dataKey;
             this.data = new Data(label);
@@ -130,35 +155,76 @@ public class FileChooserComponent extends FormComponent<FormFileChooser, FileCho
             return dataKey;
         }
 
+        /**
+         * Sets the initial path as a string.
+         *
+         * @param defaultPath the initial path, or {@code null} for no path
+         * @return this builder
+         */
         public Builder defaultPath(@Nullable String defaultPath) {
             data.defaultPath(defaultPath);
             return this;
         }
 
+        /**
+         * Sets the initial path.
+         *
+         * @param defaultPath the initial path, or {@code null} for no path
+         * @return this builder
+         */
         public Builder defaultPath(@Nullable Path defaultPath) {
             data.defaultPath(defaultPath != null ? defaultPath.toString() : null);
             return this;
         }
 
+        /**
+         * Sets whether a path is required.
+         *
+         * @param required whether the field is required
+         * @return this builder
+         */
         public Builder required(boolean required) {
             data.required(required);
             return this;
         }
 
+        /**
+         * Marks the path as required.
+         *
+         * @return this builder
+         */
         public Builder required() {
             return required(true);
         }
 
+        /**
+         * Sets whether to include the file-browse button.
+         *
+         * @param includeButton whether the browse button should be included
+         * @return this builder
+         */
         public Builder includeButton(boolean includeButton) {
             data.includeButton(includeButton);
             return this;
         }
 
+        /**
+         * Binds the created text field to a property.
+         *
+         * @param bindTextFieldTo the target text-field property
+         * @return this builder
+         */
         public Builder bindTextFieldTo(Property<TextField> bindTextFieldTo) {
             this.bindTextFieldTo = bindTextFieldTo;
             return this;
         }
 
+        /**
+         * Binds the created browse button to a property.
+         *
+         * @param bindBrowseButtonTo the target browse-button property
+         * @return this builder
+         */
         public Builder bindBrowseButtonTo(Property<BrowseButton> bindBrowseButtonTo) {
             this.bindBrowseButtonTo = bindBrowseButtonTo;
             return this;
@@ -203,6 +269,12 @@ public class FileChooserComponent extends FormComponent<FormFileChooser, FileCho
             return this;
         }
 
+        /**
+         * Sets the key-typed event handler for the text field.
+         *
+         * @param keyTypedHandler the event handler, or {@code null} to omit it
+         * @return this builder
+         */
         public Builder keyTypedHandler(EventHandler<? super KeyEvent> keyTypedHandler) {
             this.keyTypedHandler = keyTypedHandler;
             return this;
@@ -221,26 +293,50 @@ public class FileChooserComponent extends FormComponent<FormFileChooser, FileCho
         }
     }
 
+    /** Mutable configuration used to create a file chooser component. */
     public static class Data {
         private final String label;
         private String defaultPath;
         private boolean required;
         private boolean includeButton = true;
 
+        /**
+         * Creates file chooser data.
+         *
+         * @param label the localization key for the field label
+         */
         public Data(@NotNull String label) {
             this.label = label;
         }
 
+        /**
+         * Sets the initial path.
+         *
+         * @param defaultPath the initial path, or {@code null} for no path
+         * @return this data object
+         */
         public Data defaultPath(@Nullable String defaultPath) {
             this.defaultPath = defaultPath;
             return this;
         }
 
+        /**
+         * Sets whether a path is required.
+         *
+         * @param required whether the field is required
+         * @return this data object
+         */
         public Data required(boolean required) {
             this.required = required;
             return this;
         }
 
+        /**
+         * Sets whether to include the file-browse button.
+         *
+         * @param includeButton whether the browse button should be included
+         * @return this data object
+         */
         public Data includeButton(boolean includeButton) {
             this.includeButton = includeButton;
             return this;

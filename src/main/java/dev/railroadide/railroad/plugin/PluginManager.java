@@ -469,6 +469,15 @@ public class PluginManager {
         return classLoader.getResourceAsStream("assets/" + descriptor.getId() + "/" + resourcePath);
     }
 
+    /**
+     * Opens matching resources from enabled plugins with available class loaders.
+     * Paths are resolved under each plugin's {@code assets/<plugin-id>/} directory.
+     * The caller is responsible for closing the returned streams.
+     *
+     * @param resourcePath resource path relative to each plugin's asset directory
+     * @return streams for resources found, or an empty list if none match
+     * @throws IllegalArgumentException if the path is null or empty
+     */
     public static List<InputStream> loadResourcesFromAllPlugins(String resourcePath) {
         if (resourcePath == null || resourcePath.isEmpty())
             throw new IllegalArgumentException("Resource path cannot be null or empty");
@@ -492,6 +501,14 @@ public class PluginManager {
         return resources;
     }
 
+    /**
+     * Discovers Java inspection rule providers through {@link ServiceLoader}.
+     * Only providers defined by the supplied loader are included; parent-loader providers are excluded.
+     *
+     * @param classLoader plugin class loader to search
+     * @return an immutable list of discovered providers
+     * @throws NullPointerException if the class loader is null
+     */
     public static List<JavaInspectionRuleProvider> loadJavaInspectionRuleProviders(ClassLoader classLoader) {
         Objects.requireNonNull(classLoader, "classLoader");
 
@@ -506,6 +523,16 @@ public class PluginManager {
         return List.copyOf(providers);
     }
 
+    /**
+     * Registers a plugin's Java inspection rule providers using plugin-qualified IDs.
+     * Null providers are skipped. If registration fails, IDs tracked by this call are unregistered.
+     *
+     * @param descriptor metadata identifying the contributing plugin
+     * @param providers providers to register, or {@code null} for none
+     * @return an immutable list of registration IDs for later cleanup
+     * @throws NullPointerException if the descriptor or a required ID is null
+     * @throws IllegalArgumentException if an ID is blank or providers have duplicate registration IDs
+     */
     public static List<String> registerJavaInspectionRuleProviders(
         PluginDescriptor descriptor,
         List<JavaInspectionRuleProvider> providers
@@ -534,12 +561,27 @@ public class PluginManager {
         }
     }
 
+    /**
+     * Unregisters the inspection providers tracked by a plugin and clears its registration IDs.
+     *
+     * @param loadResult plugin load result containing the registrations to remove
+     * @throws NullPointerException if the load result is null
+     */
     public static void unregisterJavaInspectionRuleProviders(PluginLoadResult loadResult) {
         Objects.requireNonNull(loadResult, "loadResult");
         unregisterJavaInspectionRuleProviders(loadResult.javaInspectionRuleProviderRegistrationIds());
         loadResult.clearJavaInspectionRuleProviderRegistrationIds();
     }
 
+    /**
+     * Builds a registry ID in the form {@code pluginId:providerId}.
+     *
+     * @param descriptor metadata containing the plugin ID
+     * @param provider inspection provider containing the provider ID
+     * @return the plugin-qualified provider ID
+     * @throws NullPointerException if either argument or its ID is null
+     * @throws IllegalArgumentException if either ID is blank
+     */
     public static String javaInspectionRuleProviderRegistrationId(
         PluginDescriptor descriptor,
         JavaInspectionRuleProvider provider

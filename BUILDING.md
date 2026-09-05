@@ -164,8 +164,10 @@ Type parameters and record components need `@param` tags on the type. Java 25 Ma
 
 Public interfaces, enums, records, annotation types, and publicly accessible nested types are included. Private,
 protected, and package-private declarations, members inside inaccessible types, test/tool sources, inherited members,
-and generated members (including Lombok methods and implicit record accessors) are excluded. Overrides require their
-own documentation; `{@inheritDoc}` is reported as unverified because this source-only check does not resolve inheritance.
+and generated members (including Lombok methods and implicit record accessors) are excluded. Methods annotated with
+`@Override` or `@java.lang.Override` are also excluded from checks and coverage totals, including their parameter and
+return documentation. Unannotated methods are still checked; `{@inheritDoc}` on those methods is reported as unverified
+because this source-only check does not resolve inheritance.
 This checks documentation presence, not prose accuracy or full Javadoc validity.
 
 To enforce complete coverage, run:

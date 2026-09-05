@@ -14,8 +14,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#ILLEGAL_MODIFIER}.
+ */
 @RegisteredInspection
 public final class CoreModifierInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-modifiers";
 
     private static final String JAVA_CLASS_DECLARATION = "JAVA_CLASS_DECLARATION";

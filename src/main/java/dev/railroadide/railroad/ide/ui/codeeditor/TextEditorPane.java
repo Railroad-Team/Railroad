@@ -38,6 +38,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
+/**
+ * Edits a file with observable save state, autosaving, and external-file change handling.
+ */
 @Slf4j
 public class TextEditorPane extends CodeArea implements AutoCloseable {
     private static final int[] FONT_SIZES = {6, 8, 10, 12, 14, 16, 18, 20, 24, 26, 28, 30, 36, 40, 48, 56, 60};
@@ -100,6 +103,12 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
 
     private int fontSizeIndex = 5;
 
+    /**
+     * Creates a file editor, loads its initial contents, and configures saving and file watching.
+     *
+     * @param item file to open in the editor
+     * @param languageId identifier of the document language
+     */
     public TextEditorPane(Path item, String languageId) {
         this.filePath = Objects.requireNonNull(item, "item");
         this.languageId = Objects.requireNonNull(languageId, "languageId");
@@ -169,6 +178,12 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         }
     }
 
+    /**
+     * Creates a factory for daemon threads with a numbered name prefix.
+     *
+     * @param prefix prefix for incrementally numbered daemon thread names
+     * @return factory that appends an increasing counter to the prefix
+     */
     public static ThreadFactory namedThreadFactory(String prefix) {
         var counter = new AtomicInteger();
         return runnable -> {
@@ -438,7 +453,11 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         }
     }
 
-    /** Immediately writes the current editor contents, bypassing the autosave delay. */
+    /**
+     * Immediately writes the current editor contents, bypassing the autosave delay.
+     *
+     * @return true when persistence succeeds, or when an already closed editor is clean
+     */
     public boolean saveNow() {
         synchronized (saveLock) {
             if (closed)
@@ -457,7 +476,12 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         }
     }
 
-    /** Writes the current contents to a new path and makes it the backing file. */
+    /**
+     * Writes the current contents to a new path and makes it the backing file.
+     *
+     * @param newPath new backing-file path
+     * @return true when the save succeeds and the backing path is updated
+     */
     public boolean saveAs(Path newPath) {
         Path normalizedPath = Objects.requireNonNull(newPath, "New path cannot be null")
             .toAbsolutePath()
@@ -538,42 +562,92 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         saveState.set(state);
     }
 
+    /**
+     * Returns the current save state.
+     *
+     * @return current editor save state
+     */
     public EditorSaveState saveState() {
         return saveState.get();
     }
 
+    /**
+     * Exposes changes to the editor save state.
+     *
+     * @return read-only observable save state
+     */
     public ReadOnlyObjectProperty<EditorSaveState> saveStateProperty() {
         return saveState.getReadOnlyProperty();
     }
 
+    /**
+     * Reports whether the editor is in any state other than clean.
+     *
+     * @return true when the save state is not CLEAN
+     */
     public boolean dirty() {
         return dirty.get();
     }
 
+    /**
+     * Exposes changes to whether the editor is not clean.
+     *
+     * @return read-only observable dirty flag
+     */
     public ReadOnlyBooleanProperty dirtyProperty() {
         return dirty.getReadOnlyProperty();
     }
 
+    /**
+     * Reports whether a save is in progress.
+     *
+     * @return true when the save state is SAVING
+     */
     public boolean saving() {
         return saving.get();
     }
 
+    /**
+     * Exposes changes to whether a save is in progress.
+     *
+     * @return read-only observable saving flag
+     */
     public ReadOnlyBooleanProperty savingProperty() {
         return saving.getReadOnlyProperty();
     }
 
+    /**
+     * Reports whether the editor is clean.
+     *
+     * @return true when the save state is CLEAN
+     */
     public boolean saved() {
         return saved.get();
     }
 
+    /**
+     * Exposes changes to whether the editor is clean.
+     *
+     * @return read-only observable clean-state flag
+     */
     public ReadOnlyBooleanProperty savedProperty() {
         return saved.getReadOnlyProperty();
     }
 
+    /**
+     * Reports whether the latest save failed.
+     *
+     * @return true when the save state is ERROR
+     */
     public boolean saveFailed() {
         return saveFailed.get();
     }
 
+    /**
+     * Exposes changes to whether the latest save failed.
+     *
+     * @return read-only observable save-failure flag
+     */
     public ReadOnlyBooleanProperty saveFailedProperty() {
         return saveFailed.getReadOnlyProperty();
     }
@@ -592,6 +666,8 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     /**
      * Rebinds this editor after its backing file has been moved or renamed. The editor
      * keeps its current in-memory content and begins saving and watching the new path.
+     *
+     * @param newPath new backing-file path
      */
     public void rebind(Path newPath) {
         Path normalizedPath = Objects.requireNonNull(newPath, "New path cannot be null")
@@ -660,6 +736,11 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         }
     }
 
+    /**
+     * Reports whether file watching or saving has detected a missing backing file.
+     *
+     * @return true when the backing file is marked missing
+     */
     public boolean isBackingFileMissing() {
         return backingFileMissing;
     }
@@ -791,6 +872,11 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         externalChangeDialog.update(getText(), disk);
     }
 
+    /**
+     * Checks whether a disk change awaits resolution against the local editor contents.
+     *
+     * @return true when external text is pending
+     */
     public boolean hasPendingExternalChange() {
         synchronized (saveLock) {
             return pendingExternalText != null;

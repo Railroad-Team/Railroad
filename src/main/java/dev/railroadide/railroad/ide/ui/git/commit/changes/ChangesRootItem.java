@@ -8,7 +8,13 @@ import javafx.scene.input.MouseEvent;
 
 import java.util.function.Consumer;
 
+/**
+ * Represents the visible group containing working-tree changes.
+ */
 public class ChangesRootItem implements ChangeItem {
+    /**
+     * Shared working-tree changes group entry.
+     */
     public static final ChangesRootItem INSTANCE = new ChangesRootItem();
 
     @Override

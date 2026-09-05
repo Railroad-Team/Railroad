@@ -6,10 +6,18 @@ import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.ui.id.UIIds;
 import javafx.scene.layout.Priority;
 
+/**
+ * Combines commit history controls with the project commit list.
+ */
 public class GitCommitListPane extends RRVBox {
     private final GitCommitListHeaderPane header;
     private final GitCommitListViewPane commitListView;
 
+    /**
+     * Creates the project commit history and its filtering header.
+     *
+     * @param project project whose files and workspace are being displayed
+     */
     public GitCommitListPane(Project project) {
         super();
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_COMMIT_LIST, this);

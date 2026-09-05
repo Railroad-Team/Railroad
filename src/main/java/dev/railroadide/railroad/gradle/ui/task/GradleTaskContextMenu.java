@@ -16,7 +16,16 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.Optional;
 
+/**
+ * Provides run and debug actions for a Gradle task using the project's run configurations.
+ */
 public class GradleTaskContextMenu extends ContextMenu {
+    /**
+     * Creates a menu that runs or debugs the supplied task, reusing or creating its run configuration.
+     *
+     * @param project the project that owns the run configurations
+     * @param task the Gradle task targeted by the menu actions
+     */
     public GradleTaskContextMenu(Project project, RailroadGradleTask task) {
         super();
 

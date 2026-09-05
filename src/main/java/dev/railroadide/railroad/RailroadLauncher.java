@@ -5,6 +5,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Locale;
 
+/**
+ * The RailroadLauncher class is the entry point for the Railroad application. It configures the environment and
+ * launches
+ * the JavaFX application with a preloader.
+ */
 public final class RailroadLauncher {
     private static final String SLF4J_PROVIDER_PROPERTY = "slf4j.provider";
     private static final String LOGBACK_PROVIDER = "ch.qos.logback.classic.spi.LogbackServiceProvider";
@@ -12,10 +17,21 @@ public final class RailroadLauncher {
     private RailroadLauncher() {
     }
 
+    /**
+     * The main method serves as the entry point for the application. It launches the JavaFX application with a
+     * preloader.
+     *
+     * @param args command-line arguments passed to the application
+     */
     public static void main(String[] args) {
         launchWithPreloader(args);
     }
 
+    /**
+     * Configures the environment and launches the JavaFX application with a preloader.
+     *
+     * @param args command-line arguments passed to the application
+     */
     public static void launchWithPreloader(String[] args) {
         configureLinuxAwt();
         bindApplicationLogging();

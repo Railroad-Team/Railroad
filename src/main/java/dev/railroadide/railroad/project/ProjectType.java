@@ -13,6 +13,9 @@ import java.util.function.Supplier;
  * This class provides a builder for creating instances and a registry for managing them.
  */
 public class ProjectType {
+    /**
+     * A registry for managing `ProjectType` instances.
+     */
     public static final Registry<ProjectType> REGISTRY = RegistryManager.createOrderedRegistry("railroad:project_type",
         ProjectType.class);
 

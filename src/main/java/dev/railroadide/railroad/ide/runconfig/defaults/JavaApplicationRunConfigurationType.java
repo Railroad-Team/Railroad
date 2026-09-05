@@ -24,9 +24,15 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Launches Java main classes for run or debug sessions and tracks their processes.
+ */
 public class JavaApplicationRunConfigurationType extends RunConfigurationType<JavaApplicationRunConfigurationData> {
     private final Map<RunConfiguration<?>, Process> runningProcesses = new ConcurrentHashMap<>();
 
+    /**
+     * Creates the Java application type with its localized label and application icon.
+     */
     public JavaApplicationRunConfigurationType() {
         super("railroad.runconfig.java_application", FontAwesomeSolid.BOX, Color.web("#f89820"));
     }

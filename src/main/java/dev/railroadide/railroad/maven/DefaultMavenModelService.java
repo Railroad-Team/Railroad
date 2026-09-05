@@ -14,6 +14,9 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Default implementation of the {@link MavenModelService} interface.
+ */
 public final class DefaultMavenModelService implements MavenModelService {
     @Override
     @SuppressWarnings("deprecation")

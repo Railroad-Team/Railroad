@@ -6,7 +6,7 @@ import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
-import dev.railroadide.railroad.utility.TimeFormatter;
+import dev.railroadide.railroad.utility.TimeFormatingUtils;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.branch.GitBranch;
 import dev.railroadide.railroad.vcs.git.branch.GitBranchLastCommit;
@@ -48,6 +48,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * Provides filtering, selection, details, and shared actions for a list of Git branches.
+ *
+ * @param <T> branch model displayed by the list
+ */
 public abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListView<T> {
     private final Project project;
     private final ObservableList<T> branches = FXCollections.observableArrayList();
@@ -726,7 +731,7 @@ public abstract class AbstractGitBranchesListView<T extends GitBranch> extends R
             return;
         }
 
-        String formattedDateTime = TimeFormatter.formatDateTime(timestampSeconds * 1000L);
+        String formattedDateTime = TimeFormatingUtils.formatDateTime(timestampSeconds * 1000L);
         rows.add(createElapsedDetailsRow(timestampSeconds * 1000L, formattedDateTime));
     }
 
@@ -737,7 +742,7 @@ public abstract class AbstractGitBranchesListView<T extends GitBranch> extends R
         Runnable refresh = () -> value.setKey(
             "railroad.git.branches.details.last_commit_time_value",
             formattedDateTime,
-            TimeFormatter.formatElapsed(timestampMillis));
+            TimeFormatingUtils.formatElapsed(timestampMillis));
         refresh.run();
 
         var elapsedTimeline = new Timeline(new KeyFrame(Duration.seconds(1), _ -> refresh.run()));
@@ -768,6 +773,11 @@ public abstract class AbstractGitBranchesListView<T extends GitBranch> extends R
             branch -> branch.name().toLowerCase(Locale.ROOT).contains(filterText.get().toLowerCase(Locale.ROOT))));
     }
 
+    /**
+     * Updates the branch-name filter using case-insensitive text.
+     *
+     * @param newValue branch filter text; null clears the filter
+     */
     public void filterBranches(String newValue) {
         filterText.set(Objects.requireNonNullElse(newValue, "").toLowerCase(Locale.ROOT));
     }

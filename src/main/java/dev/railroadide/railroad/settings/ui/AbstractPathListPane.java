@@ -34,6 +34,14 @@ public abstract class AbstractPathListPane extends RRVBox {
     @Getter
     private final ListView<Path> listView = new RRListView<>(paths);
 
+    /**
+     * Creates a path list pane initialized with the supplied paths and localization keys.
+     *
+     * @param initialPaths paths to display initially
+     * @param placeholderKey localization key for the empty-list placeholder
+     * @param addTooltipKey localization key for the add button tooltip
+     * @param removeTooltipKey localization key for the remove button tooltip
+     */
     protected AbstractPathListPane(
         Collection<Path> initialPaths,
         String placeholderKey,
@@ -94,6 +102,13 @@ public abstract class AbstractPathListPane extends RRVBox {
         setPaths(initialPaths);
     }
 
+    /**
+     * Creates an empty path list pane using the supplied localization keys.
+     *
+     * @param placeholderKey localization key for the empty-list placeholder
+     * @param addTooltipKey localization key for the add button tooltip
+     * @param removeTooltipKey localization key for the remove button tooltip
+     */
     protected AbstractPathListPane(
         String placeholderKey,
         String addTooltipKey,
@@ -111,6 +126,8 @@ public abstract class AbstractPathListPane extends RRVBox {
 
     /**
      * Returns the currently listed paths.
+     *
+     * @return a copy of the currently listed paths
      */
     public List<Path> getPaths() {
         return new ArrayList<>(paths);
@@ -118,6 +135,8 @@ public abstract class AbstractPathListPane extends RRVBox {
 
     /**
      * Replaces the current list of paths with the given collection.
+     *
+     * @param newPaths paths to display; {@code null} is treated as an empty collection
      */
     public void setPaths(Collection<Path> newPaths) {
         paths.setAll(normalizePaths(newPaths));
@@ -159,6 +178,12 @@ public abstract class AbstractPathListPane extends RRVBox {
         }
     }
 
+    /**
+     * Converts a list of paths into a JSON array containing their string forms.
+     *
+     * @param paths paths to serialize
+     * @return a JSON array containing the supplied paths
+     */
     public static JsonElement toJson(List<Path> paths) {
         var array = new JsonArray();
         for (Path path : paths) {
@@ -168,6 +193,12 @@ public abstract class AbstractPathListPane extends RRVBox {
         return array;
     }
 
+    /**
+     * Reads paths from a JSON array, ignoring malformed entries and non-array values.
+     *
+     * @param jsonElement JSON value containing serialized paths
+     * @return the paths represented by the value, or an empty list when it is not an array
+     */
     public static List<Path> fromJson(JsonElement jsonElement) {
         var paths = new ArrayList<Path>();
         if (jsonElement == null || !jsonElement.isJsonArray())

@@ -10,6 +10,7 @@ import org.kordamp.jipsy.annotations.ServiceProviderFor;
 import java.io.InputStream;
 import java.net.URL;
 
+/** Resolves {@code rr-} descriptions and loads the Railroad application-icon font for Ikonli. */
 @ServiceProviderFor(IkonHandler.class)
 public class RailroadIkonHandler extends AbstractIkonHandler {
     private static final String FONT_RESOURCE = "fonts/RailroadIcons.ttf";

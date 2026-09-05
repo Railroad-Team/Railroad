@@ -52,6 +52,9 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * Project filesystem browser with search, file operations, watching, and editor navigation.
+ */
 public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeListener, AutoCloseable {
     private static boolean fileChangeListenerEnabled = true;
     private final Project project;
@@ -66,6 +69,11 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     private final ShutdownHooks.Registration shutdownRegistration;
     private boolean closed;
 
+    /**
+     * Builds the project tree and starts filesystem watching and index warming.
+     *
+     * @param project project displayed by the explorer
+     */
     public ProjectExplorerPane(Project project) {
         this.project = project;
         this.projectLanguageIndexCoordinator = new ProjectLanguageIndexCoordinator(project);
@@ -124,6 +132,9 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         executorService.shutdownNow();
     }
 
+    /**
+     * Opens the selected file in the editor, or advances the selection for a directory.
+     */
     public void openSelectedItem() {
         selectedTreeItem().ifPresent(selectedItem -> {
             PathItem item = selectedItem.getValue();
@@ -135,35 +146,61 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         });
     }
 
+    /**
+     * Prompts to delete the selected filesystem entry.
+     */
     public void deleteSelectedItem() {
         selectedTreeItem().ifPresent(selectedItem -> DeleteDialog.open(selectedItem.getValue().getPath()));
     }
 
+    /**
+     * Marks the selected entry for a clipboard move.
+     */
     public void cutSelectedItem() {
         selectedTreeItem().ifPresent(selectedItem -> cut((PathTreeItem) selectedItem, this.treeView));
     }
 
+    /**
+     * Copies the selected filesystem entry to the clipboard.
+     */
     public void copySelectedItem() {
         selectedTreeItem().ifPresent(selectedItem -> copy(selectedItem.getValue()));
     }
 
+    /**
+     * Pastes clipboard files into the selected entry.
+     */
     public void pasteIntoSelectedItem() {
         selectedTreeItem().ifPresent(selectedItem -> paste(selectedItem.getValue()));
     }
 
+    /**
+     * Opens the creation dialog using the selected entry as its target path.
+     *
+     * @param type kind of file or directory to create
+     */
     public void createFileInSelectedItem(FileCreateType type) {
         selectedTreeItem().ifPresent(
             selectedItem -> CreateFileDialog.open(getScene().getWindow(), selectedItem.getValue().getPath(), type));
     }
 
+    /**
+     * Starts inline editing of the selected entry's name.
+     */
     public void renameSelectedItem() {
         selectedTreeItem().ifPresent(selectedItem -> ((PathTreeCell) selectedItem.getGraphic()).startEdit());
     }
 
+    /**
+     * Reveals the selected entry in the system file explorer.
+     */
     public void openSelectedItemInExplorer() {
         selectedTreeItem().ifPresent(selectedItem -> FileUtils.openInExplorer(selectedItem.getValue().getPath()));
     }
 
+    /**
+     * Opens a terminal for the selected filesystem entry.
+     */
     public void openSelectedItemInTerminal() {
         selectedTreeItem().ifPresent(selectedItem -> FileUtils.openInTerminal(selectedItem.getValue().getPath()));
     }
@@ -176,14 +213,26 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         executorService.submit(projectLanguageIndexCoordinator::warmIndexes);
     }
 
+    /**
+     * Suspends filesystem change handling across project explorer panes.
+     */
     public static void disableFileChangeListener() {
         fileChangeListenerEnabled = false;
     }
 
+    /**
+     * Enables filesystem change handling across project explorer panes.
+     */
     public static void enableFileChangeListener() {
         fileChangeListenerEnabled = true;
     }
 
+    /**
+     * Places the entry on the clipboard for moving and updates cut markers in the tree.
+     *
+     * @param pathItem filesystem tree item
+     * @param treeView tree containing the item and any previous cut selection
+     */
     public static void cut(PathTreeItem pathItem, TreeView<PathItem> treeView) {
         pathItem.getValue().setCut(true);
 
@@ -210,6 +259,11 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         clipboard.setContent(content);
     }
 
+    /**
+     * Places the entry on the system clipboard for copying.
+     *
+     * @param item filesystem item to operate on
+     */
     public static void copy(PathItem item) {
         var clipboard = Clipboard.getSystemClipboard();
         var content = new ClipboardContent();
@@ -217,6 +271,11 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         clipboard.setContent(content);
     }
 
+    /**
+     * Copies clipboard files into the target entry, prompting on conflicts and removing cut sources.
+     *
+     * @param item filesystem item to operate on
+     */
     public static void paste(PathItem item) {
         var clipboard = Clipboard.getSystemClipboard();
         if (clipboard.hasFiles()) {
@@ -253,6 +312,11 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         }
     }
 
+    /**
+     * Recursively expands the subtree, loading children as needed.
+     *
+     * @param treeItem root of the subtree to update
+     */
     public static void expandAll(TreeItem<PathItem> treeItem) {
         treeItem.setExpanded(true);
         for (TreeItem<PathItem> child : treeItem.getChildren()) {
@@ -260,6 +324,11 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         }
     }
 
+    /**
+     * Recursively collapses the subtree.
+     *
+     * @param treeItem root of the subtree to update
+     */
     public static void collapseAll(TreeItem<PathItem> treeItem) {
         treeItem.setExpanded(false);
         for (TreeItem<PathItem> child : treeItem.getChildren()) {
@@ -628,6 +697,11 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         return true;
     }
 
+    /**
+     * Resolves a directory from the current explorer selection.
+     *
+     * @return selected directory, the selected file's parent, or the project root if nothing is selected
+     */
     public Path getSelectedDirectory() {
         TreeItem<PathItem> selected = treeView.getSelectionModel().getSelectedItem();
 
@@ -638,6 +712,11 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         return Files.isDirectory(path) ? path : path.getParent();
     }
 
+    /**
+     * Expands ancestors and selects the requested path within the project tree.
+     *
+     * @param path filesystem path to operate on
+     */
     public void revealPath(Path path) {
         TreeItem<PathItem> item = findTreeItemForReveal(path);
         if (item != null) {

@@ -12,12 +12,23 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+/**
+ * Cached access to Fabric Loader versions provided by Switchboard.
+ *
+ * @param client the Switchboard HTTP client
+ * @param cache the cache used for version metadata
+ */
 public record FabricLoaderVersionRepository(SwitchboardClient client, CacheManager cache)
     implements
         SwitchboardRepository {
     private static final Duration VERSIONS_TTL = Duration.ofHours(12);
     private static final Duration LATEST_TTL = Duration.ofHours(1);
 
+    /**
+     * Returns all Fabric Loader versions.
+     *
+     * @return a future containing all Fabric Loader versions
+     */
     public CompletableFuture<List<FabricLoaderVersion>> getAllVersions() {
         return cache.getOrFetch(
             "fabric:loader:versions",
@@ -26,10 +37,21 @@ public record FabricLoaderVersionRepository(SwitchboardClient client, CacheManag
             client::fetchFabricLoaderVersions);
     }
 
+    /**
+     * Returns all Fabric Loader versions synchronously.
+     *
+     * @return all Fabric Loader versions
+     */
     public List<FabricLoaderVersion> getAllVersionsSync() throws ExecutionException, InterruptedException {
         return getAllVersions().get();
     }
 
+    /**
+     * Gets Fabric Loader versions compatible with a Minecraft version.
+     *
+     * @param minecraftVersionId the Minecraft version identifier
+     * @return a future containing compatible Fabric Loader versions
+     */
     public CompletableFuture<List<FabricLoaderVersion>> getVersionsFor(String minecraftVersionId) {
         Objects.requireNonNull(minecraftVersionId, "minecraftVersionId");
         String normalized = minecraftVersionId.toLowerCase(Locale.ROOT);
@@ -42,15 +64,32 @@ public record FabricLoaderVersionRepository(SwitchboardClient client, CacheManag
             () -> client.fetchFabricLoaderVersions(normalized));
     }
 
+    /**
+     * Gets compatible Fabric Loader versions synchronously.
+     *
+     * @param minecraftVersionId the Minecraft version identifier
+     * @return the compatible Fabric Loader versions
+     */
     public List<FabricLoaderVersion> getVersionsForSync(String minecraftVersionId)
         throws ExecutionException, InterruptedException {
         return getVersionsFor(minecraftVersionId).get();
     }
 
+    /**
+     * Returns the latest stable Fabric Loader version.
+     *
+     * @return a future containing the latest stable Fabric Loader version
+     */
     public CompletableFuture<FabricLoaderVersion> getLatestVersion() {
         return getLatestVersion(false);
     }
 
+    /**
+     * Gets the latest Fabric Loader version.
+     *
+     * @param includePrereleases whether prereleases may be returned
+     * @return a future containing the latest Fabric Loader version
+     */
     public CompletableFuture<FabricLoaderVersion> getLatestVersion(boolean includePrereleases) {
         String key = includePrereleases ? "fabric:loader:latest:prereleases" : "fabric:loader:latest";
         return cache.getOrFetch(
@@ -60,19 +99,43 @@ public record FabricLoaderVersionRepository(SwitchboardClient client, CacheManag
             () -> client.fetchLatestFabricLoaderVersion(includePrereleases));
     }
 
+    /**
+     * Returns the latest stable Fabric Loader version synchronously.
+     *
+     * @return the latest stable Fabric Loader version
+     */
     public FabricLoaderVersion getLatestVersionSync() throws ExecutionException, InterruptedException {
         return getLatestVersion().get();
     }
 
+    /**
+     * Gets the latest Fabric Loader version synchronously.
+     *
+     * @param includePrereleases whether prereleases may be returned
+     * @return the latest Fabric Loader version
+     */
     public FabricLoaderVersion getLatestVersionSync(boolean includePrereleases)
         throws ExecutionException, InterruptedException {
         return getLatestVersion(includePrereleases).get();
     }
 
+    /**
+     * Gets the latest stable Fabric Loader version for a Minecraft version.
+     *
+     * @param minecraftVersionId the Minecraft version identifier
+     * @return a future containing the latest compatible version
+     */
     public CompletableFuture<FabricLoaderVersion> getLatestVersionFor(String minecraftVersionId) {
         return getLatestVersionFor(minecraftVersionId, false);
     }
 
+    /**
+     * Gets the latest Fabric Loader version for a Minecraft version.
+     *
+     * @param minecraftVersionId the Minecraft version identifier
+     * @param includePrereleases whether prereleases may be returned
+     * @return a future containing the latest compatible version
+     */
     public CompletableFuture<FabricLoaderVersion> getLatestVersionFor(
         String minecraftVersionId,
         boolean includePrereleases
@@ -89,11 +152,24 @@ public record FabricLoaderVersionRepository(SwitchboardClient client, CacheManag
             .thenApply(fabricLoaderVersion -> fabricLoaderVersion.version() == null ? null : fabricLoaderVersion);
     }
 
+    /**
+     * Gets the latest stable Fabric Loader version for a Minecraft version synchronously.
+     *
+     * @param minecraftVersionId the Minecraft version identifier
+     * @return the latest compatible version
+     */
     public FabricLoaderVersion getLatestVersionForSync(String minecraftVersionId)
         throws ExecutionException, InterruptedException {
         return getLatestVersionFor(minecraftVersionId).get();
     }
 
+    /**
+     * Gets the latest Fabric Loader version for a Minecraft version synchronously.
+     *
+     * @param minecraftVersionId the Minecraft version identifier
+     * @param includePrereleases whether prereleases may be returned
+     * @return the latest compatible version
+     */
     public FabricLoaderVersion getLatestVersionForSync(String minecraftVersionId, boolean includePrereleases)
         throws ExecutionException, InterruptedException {
         return getLatestVersionFor(minecraftVersionId, includePrereleases).get();

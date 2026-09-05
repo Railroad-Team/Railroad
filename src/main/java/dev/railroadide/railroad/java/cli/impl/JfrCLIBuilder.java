@@ -628,8 +628,17 @@ public class JfrCLIBuilder implements CLIBuilder<Process, JfrCLIBuilder> {
     }
 
     private enum Subcommand {
-        PRINT("print"), VIEW("view"), CONFIGURE("configure"), METADATA("metadata"), SUMMARY("summary"), SCRUB(
-            "scrub"), ASSEMBLE("assemble"), DISASSEMBLE("disassemble"), VERSION("version"), HELP("--help");
+        PRINT("print"),
+        VIEW("view"),
+        CONFIGURE("configure"),
+        METADATA("metadata"),
+        SUMMARY("summary"),
+        SCRUB(
+            "scrub"),
+        ASSEMBLE("assemble"),
+        DISASSEMBLE("disassemble"),
+        VERSION("version"),
+        HELP("--help");
 
         private final String command;
 

@@ -12,6 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * A variable name with an optional initializer within a declaration.
+ *
+ * @param span source range occupied by this node
+ * @param name declared variable name
+ * @param initExpression optional initializer expression
+ */
 public record VariableDeclarator(
     Span span,
     NameExpression name,

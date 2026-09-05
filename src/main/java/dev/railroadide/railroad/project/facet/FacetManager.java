@@ -79,7 +79,10 @@ public class FacetManager {
     /**
      * Registers a new facet type.
      *
+     * @param <D> the facet data type
      * @param type the facet type to register
+     * @return the registered type
+     * @throws IllegalArgumentException if the type or its ID is missing, or the ID is already registered
      */
     public static <D> FacetType<D> registerType(FacetType<D> type) {
         if (type == null || type.id() == null || type.id().isEmpty())
@@ -129,12 +132,21 @@ public class FacetManager {
     /**
      * Retrieves all registered facet types.
      *
-     * @return a list of facet types, keyed by their IDs
+     * @return an immutable snapshot of the registered facet types
      */
     public static List<FacetType<?>> getTypes() {
         return List.copyOf(TYPES.values());
     }
 
+    /**
+     * Registers a facet type and the detector that supplies its data.
+     *
+     * @param <D> the facet data type
+     * @param facetType the type to register
+     * @param detector the detector to register after the type
+     * @return the registered facet type
+     * @throws IllegalArgumentException if either argument is null or the type cannot be registered
+     */
     public static <D> FacetType<D> registerFacet(@NotNull FacetType<D> facetType, @NotNull FacetDetector<D> detector) {
         if (facetType == null)
             throw new IllegalArgumentException("Facet type must not be null");
@@ -147,6 +159,14 @@ public class FacetManager {
         return registered;
     }
 
+    /**
+     * Runs all registered detectors on the background scanner thread.
+     * Detector failures are logged and do not prevent subsequent detectors from running.
+     * If several detectors return the same type, the last result replaces the earlier data.
+     *
+     * @param project the project to inspect
+     * @return a future containing an immutable collection of detected facets, one per type
+     */
     public static CompletableFuture<Collection<Facet<?>>> scan(@NotNull Project project) {
         return CompletableFuture.supplyAsync(() -> {
             Map<FacetType<?>, Facet<?>> facets = new LinkedHashMap<>();

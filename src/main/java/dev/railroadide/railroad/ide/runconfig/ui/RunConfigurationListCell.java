@@ -18,6 +18,9 @@ import javafx.scene.layout.Region;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+/**
+ * Displays a run configuration with its type icon and run, debug, and context-menu actions.
+ */
 public class RunConfigurationListCell extends ListCell<RunConfiguration<?>> {
     private final RRHBox container = new RRHBox(6);
     private final Label nameLabel = new Label();
@@ -27,6 +30,11 @@ public class RunConfigurationListCell extends ListCell<RunConfiguration<?>> {
 
     private final Project project;
 
+    /**
+     * Creates a configuration cell whose execution and menu actions use the supplied project.
+     *
+     * @param project the project owning the configuration
+     */
     public RunConfigurationListCell(Project project) {
         this.project = project;
 

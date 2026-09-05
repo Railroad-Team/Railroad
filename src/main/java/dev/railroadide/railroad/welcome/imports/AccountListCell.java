@@ -11,6 +11,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.layout.HBox;
 
+/** Sidebar cell displaying a VCS profile or the {@code REPO_URL_OPTION} entry for importing by URL. */
 public class AccountListCell extends ListCell<Object> {
     private final HBox container = new RRHBox();
     private final MFXFontIcon forkIcon = new MFXFontIcon();
@@ -19,6 +20,7 @@ public class AccountListCell extends ListCell<Object> {
     private final Label subtitle = new Label();
     private final RRVBox titleContainer;
 
+    /** Builds the reusable icon and label layout and installs selection styling. */
     public AccountListCell() {
         getStyleClass().add("account-list-cell");
 
@@ -55,6 +57,12 @@ public class AccountListCell extends ListCell<Object> {
         setText(null);
     }
 
+    /**
+     * Displays a profile's provider and alias or the localized URL-import option; clears empty cells.
+     *
+     * @param item a VCS profile, the {@code REPO_URL_OPTION} string, or null
+     * @param empty whether the cell has no item
+     */
     @Override
     protected void updateItem(Object item, boolean empty) {
         super.updateItem(item, empty);

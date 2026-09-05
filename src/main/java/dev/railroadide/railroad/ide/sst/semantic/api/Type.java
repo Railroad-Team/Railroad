@@ -16,11 +16,15 @@ public sealed interface Type
 
     /**
      * Returns the coarse-grained type category.
+     *
+     * @return the semantic type category
      */
     Kind kind();
 
     /**
      * Returns a human-readable type name suitable for diagnostics and logging.
+     *
+     * @return the human-readable type name
      */
     String displayName();
 
@@ -28,13 +32,47 @@ public sealed interface Type
      * Broad categories supported by the public semantic type model.
      */
     enum Kind {
-        UNKNOWN, VOID, PRIMITIVE, DECLARED, ARRAY, TYPE_VARIABLE, WILDCARD
+        /**
+         * A type not determined by semantic analysis.
+         */
+        UNKNOWN,
+        /**
+         * The absence of a return value.
+         */
+        VOID,
+        /**
+         * A primitive Java value type.
+         */
+        PRIMITIVE,
+        /**
+         * A declared reference type, optionally with generic arguments.
+         */
+        DECLARED,
+        /**
+         * An array with a component type.
+         */
+        ARRAY,
+        /**
+         * A generic type variable.
+         */
+        TYPE_VARIABLE,
+        /**
+         * A wildcard constrained by an upper or lower bound.
+         */
+        WILDCARD
     }
 
     /**
      * Type used when semantic analysis cannot determine a more precise type.
+     *
+     * @param displayName the nonblank human-readable type name
      */
     record UnknownType(String displayName) implements Type {
+        /**
+         * Creates a semantic type with a nonblank display name.
+         *
+         * @param displayName the nonblank human-readable type name
+         */
         public UnknownType {
             displayName = normalizeDisplayName(displayName, "<unknown>");
         }
@@ -62,8 +100,15 @@ public sealed interface Type
 
     /**
      * A Java primitive type such as {@code int} or {@code boolean}.
+     *
+     * @param displayName the nonblank human-readable type name
      */
     record PrimitiveType(String displayName) implements Type {
+        /**
+         * Creates a semantic type with a nonblank display name.
+         *
+         * @param displayName the nonblank human-readable type name
+         */
         public PrimitiveType {
             displayName = normalizeDisplayName(displayName, "primitive");
         }
@@ -76,8 +121,17 @@ public sealed interface Type
 
     /**
      * A declared reference type such as {@code String} or {@code List<String>}.
+     *
+     * @param displayName the nonblank human-readable type name
+     * @param typeArguments the ordered generic type arguments
      */
     record DeclaredType(String displayName, List<Type> typeArguments) implements Type {
+        /**
+         * Creates a declared type with a nonblank display name and an immutable copy of its type arguments.
+         *
+         * @param displayName the nonblank human-readable type name
+         * @param typeArguments the ordered generic type arguments
+         */
         public DeclaredType {
             displayName = normalizeDisplayName(displayName, "declared");
             typeArguments = List.copyOf(Objects.requireNonNull(typeArguments, "typeArguments"));
@@ -91,8 +145,15 @@ public sealed interface Type
 
     /**
      * An array type.
+     *
+     * @param componentType the nonnull array component type
      */
     record ArrayType(Type componentType) implements Type {
+        /**
+         * Creates an array type with a nonnull component type.
+         *
+         * @param componentType the nonnull array component type
+         */
         public ArrayType {
             componentType = Objects.requireNonNull(componentType, "componentType");
         }
@@ -110,8 +171,15 @@ public sealed interface Type
 
     /**
      * A type variable such as {@code T}.
+     *
+     * @param displayName the nonblank human-readable type name
      */
     record TypeVariableType(String displayName) implements Type {
+        /**
+         * Creates a semantic type with a nonblank display name.
+         *
+         * @param displayName the nonblank human-readable type name
+         */
         public TypeVariableType {
             displayName = normalizeDisplayName(displayName, "type variable");
         }
@@ -124,8 +192,17 @@ public sealed interface Type
 
     /**
      * A wildcard type such as {@code ? extends Number} or {@code ? super String}.
+     *
+     * @param upperBound the upper bound, or {@code null} when only a lower bound is supplied
+     * @param lowerBound the lower bound, or {@code null} when only an upper bound is supplied
      */
     record WildcardType(Type upperBound, Type lowerBound) implements Type {
+        /**
+         * Creates a wildcard type, requiring at least one nonnull bound.
+         *
+         * @param upperBound the upper bound, or {@code null} when only a lower bound is supplied
+         * @param lowerBound the lower bound, or {@code null} when only an upper bound is supplied
+         */
         public WildcardType {
             if (upperBound == null && lowerBound == null)
                 throw new IllegalArgumentException("wildcard bound cannot be fully unbounded");

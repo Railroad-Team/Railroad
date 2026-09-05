@@ -202,6 +202,9 @@ public class SettingsPane extends RRVBox {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Settings.SETTINGS, this);
     }
 
+    /**
+     * Opens the main settings window on the JavaFX application thread.
+     */
     public static void openSettingsWindow() {
         Platform.runLater(() -> {
             Screen screen = Screen.getPrimary();
@@ -221,6 +224,9 @@ public class SettingsPane extends RRVBox {
         });
     }
 
+    /**
+     * Opens the plugins management window on the JavaFX application thread.
+     */
     public static void openPluginsWindow() {
         Platform.runLater(() -> {
             Screen screen = Screen.getPrimary();

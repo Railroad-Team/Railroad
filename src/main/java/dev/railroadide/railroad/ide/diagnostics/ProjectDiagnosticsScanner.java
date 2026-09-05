@@ -31,6 +31,12 @@ public final class ProjectDiagnosticsScanner {
     private ProjectDiagnosticsScanner() {
     }
 
+    /**
+     * Scans project sources and writes a diagnostics text report.
+     *
+     * @param project project being analyzed
+     * @return path of the written report
+     */
     public static Path scan(Project project) {
         Objects.requireNonNull(project, "project");
 
@@ -42,6 +48,13 @@ public final class ProjectDiagnosticsScanner {
         return scan(diagnosticsContext, reportPath);
     }
 
+    /**
+     * Scans project sources and writes a diagnostics text report.
+     *
+     * @param project project being analyzed
+     * @param reportPath destination for the diagnostics text report
+     * @return path of the written report
+     */
     public static Path scan(Project project, Path reportPath) {
         Objects.requireNonNull(project, "project");
         Objects.requireNonNull(reportPath, "reportPath");

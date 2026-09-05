@@ -25,6 +25,11 @@ public final class RunConfigurationTreeView extends TreeView<RunConfigurationTre
     private boolean updatingSelection;
     private UUID pendingSelectionId;
 
+    /**
+     * Builds a grouped configuration tree and keeps it synchronized with the observable configuration list.
+     *
+     * @param configurations the observable configurations to display
+     */
     public RunConfigurationTreeView(ObservableList<RunConfiguration<?>> configurations) {
         this.configurations = configurations;
         setShowRoot(false);
@@ -73,6 +78,11 @@ public final class RunConfigurationTreeView extends TreeView<RunConfigurationTre
         rebuildTree();
     }
 
+    /**
+     * Returns the property linking configuration selection to the selected tree entry.
+     *
+     * @return the writable selected-configuration property; null represents no configuration selection
+     */
     public ObjectProperty<RunConfiguration<?>> selectedConfigurationProperty() {
         return selectedConfiguration;
     }
@@ -247,6 +257,9 @@ public final class RunConfigurationTreeView extends TreeView<RunConfigurationTre
         return icon;
     }
 
+    /**
+     * Marker for configuration, folder, and type entries displayed by the run configuration tree.
+     */
     public interface TreeEntry {
     }
 

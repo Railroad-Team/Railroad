@@ -28,6 +28,14 @@ public final class JavaSemanticCompletionEngine {
     private JavaSemanticCompletionEngine() {
     }
 
+    /**
+     * Computes accessible source, project, and standard-library members for a dot-completion trigger.
+     *
+     * @param document the Java document text
+     * @param triggerAt the zero-based offset of the triggering dot
+     * @param projectIndex the project symbol index, or {@code null} to use the standard library
+     * @return sorted member completions, or {@code null} when the trigger or receiver yields no candidates
+     */
     public static @Nullable CompletionResult compute(
         String document,
         int triggerAt,

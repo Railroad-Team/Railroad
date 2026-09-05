@@ -14,10 +14,19 @@ public final class JavaDeclarationAnalysis {
     private JavaDeclarationAnalysis() {
     }
 
+    /**
+     * Collects compilation-unit declarations and scopes into the shared analysis context.
+     *
+     * @param context the mutable analysis state receiving declarations
+     * @param compilationUnit the compilation-unit syntax root
+     */
     public static void collect(Context context, SyntaxNode compilationUnit) {
         new DeclarationCollector(context).visitCompilationUnit(compilationUnit);
     }
 
+    /**
+     * Mutable declaration, scope, symbol-resolution, and inferred-type state shared by Java analysis passes.
+     */
     public static final class Context {
         public final SyntaxNode syntaxRoot;
         public final Scope rootScope;
@@ -30,6 +39,14 @@ public final class JavaDeclarationAnalysis {
         @Nullable
         public String currentPackageName;
 
+        /**
+         * Creates shared analysis state backed by the supplied semantic-model builder.
+         *
+         * @param syntaxRoot the syntax-tree root being analyzed
+         * @param rootScope the compilation unit's root scope
+         * @param builder the builder receiving semantic facts
+         * @param projectIndex the external project symbol index, or {@code null} to use standard-library resolution
+         */
         public Context(
             SyntaxNode syntaxRoot,
             Scope rootScope,
@@ -46,6 +63,12 @@ public final class JavaDeclarationAnalysis {
             scopeByNode.put(node, scope);
         }
 
+        /**
+         * Finds the scope attached to a node or its nearest ancestor, falling back to the root scope.
+         *
+         * @param node the syntax node whose scope is needed
+         * @return the nearest enclosing scope, or the root scope
+         */
         public Scope scopeFor(SyntaxNode node) {
             Scope scope = scopeByNode.get(node);
             if (scope != null)
@@ -69,31 +92,66 @@ public final class JavaDeclarationAnalysis {
             builder.declare(declarationNode, symbol);
         }
 
+        /**
+         * Records a resolved symbol in this context and the semantic-model builder.
+         *
+         * @param referenceNode the syntax reference being resolved
+         * @param symbol the symbol identified by the reference
+         */
         public void resolve(SyntaxNode referenceNode, Symbol symbol) {
             resolvedSymbolByNode.put(referenceNode, symbol);
             builder.resolve(referenceNode, symbol);
         }
 
+        /**
+         * Looks up the symbol previously resolved for a syntax node.
+         *
+         * @param node the reference node to query
+         * @return the resolved symbol, or {@code null} if none was recorded
+         */
         @Nullable
         public Symbol resolvedSymbol(SyntaxNode node) {
             return resolvedSymbolByNode.get(node);
         }
 
+        /**
+         * Looks up the symbol declared by a syntax node.
+         *
+         * @param node the declaration node to query
+         * @return the declared symbol, or {@code null} if none was recorded
+         */
         @Nullable
         public Symbol declaredSymbol(SyntaxNode node) {
             return declaredSymbolByNode.get(node);
         }
 
+        /**
+         * Records an inferred type in this context and the semantic-model builder.
+         *
+         * @param node the syntax node receiving a type
+         * @param type the inferred semantic type
+         */
         public void type(SyntaxNode node, Type type) {
             inferredTypeByNode.put(node, type);
             builder.type(node, type);
         }
 
+        /**
+         * Looks up the inferred type previously recorded for a syntax node.
+         *
+         * @param node the syntax node to query
+         * @return the inferred type, or {@code null} if none was recorded
+         */
         @Nullable
         public Type inferredType(SyntaxNode node) {
             return inferredTypeByNode.get(node);
         }
 
+        /**
+         * Collects the declared class, interface, enum, annotation, and record symbols.
+         *
+         * @return an immutable snapshot of declared type symbols
+         */
         public List<Symbol> allTypeSymbols() {
             List<Symbol> symbols = new ArrayList<>();
             for (Symbol symbol : declaredSymbolByNode.values()) {
@@ -104,10 +162,21 @@ public final class JavaDeclarationAnalysis {
             return List.copyOf(symbols);
         }
 
+        /**
+         * Collects every symbol recorded by declaration analysis.
+         *
+         * @return an immutable snapshot of declared symbols
+         */
         public List<Symbol> allDeclaredSymbols() {
             return List.copyOf(declaredSymbolByNode.values());
         }
 
+        /**
+         * Walks the node's ancestors to find the nearest enclosing declared type.
+         *
+         * @param node the syntax node to start from, or {@code null}
+         * @return the enclosing type symbol, or {@code null} if none exists
+         */
         @Nullable
         public Symbol enclosingTypeSymbol(SyntaxNode node) {
             if (node == null)
@@ -125,6 +194,12 @@ public final class JavaDeclarationAnalysis {
             }
         }
 
+        /**
+         * Walks the node's ancestors to find the outermost enclosing declared type.
+         *
+         * @param node the syntax node to start from, or {@code null}
+         * @return the outermost enclosing type symbol, or {@code null} if none exists
+         */
         @Nullable
         public Symbol topLevelEnclosingTypeSymbol(SyntaxNode node) {
             if (node == null)

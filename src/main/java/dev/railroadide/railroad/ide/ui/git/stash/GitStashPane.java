@@ -10,7 +10,7 @@ import dev.railroadide.railroad.ui.*;
 import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
-import dev.railroadide.railroad.utility.TimeFormatter;
+import dev.railroadide.railroad.utility.TimeFormatingUtils;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.stash.GitStashEntry;
 import dev.railroadide.railroad.vcs.git.status.GitFileChange;
@@ -42,6 +42,9 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Displays saved stashes and controls for creating and managing stashed changes.
+ */
 public class GitStashPane extends RRVBox {
     private final Project project;
     private final GitManager gitManager;
@@ -59,6 +62,11 @@ public class GitStashPane extends RRVBox {
         new KeyFrame(Duration.seconds(1), _ -> elapsedTick.set(elapsedTick.get() + 1)));
     private String selectedStashRef;
 
+    /**
+     * Creates stash management controls and the project stash list.
+     *
+     * @param project project whose files and workspace are being displayed
+     */
     public GitStashPane(Project project) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_STASH, this);
         this.project = project;
@@ -403,8 +411,8 @@ public class GitStashPane extends RRVBox {
                 return;
             }
 
-            timestampText.setText(TimeFormatter.formatElapsed(timestampMillis));
-            timestampTooltip.setText(TimeFormatter.formatDateTime(timestampMillis));
+            timestampText.setText(TimeFormatingUtils.formatElapsed(timestampMillis));
+            timestampTooltip.setText(TimeFormatingUtils.formatDateTime(timestampMillis));
         }
     }
 }

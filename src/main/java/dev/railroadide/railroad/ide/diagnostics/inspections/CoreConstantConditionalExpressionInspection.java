@@ -15,8 +15,16 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 
 import java.util.*;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#CONSTANT_CONDITIONAL_EXPRESSION_HARDCODED_LITERAL},
+ * {@link JavaSemanticRules#CONSTANT_CONDITIONAL_EXPRESSION_COMPILE_TIME_CONSTANT},
+ * {@link JavaSemanticRules#CONSTANT_CONDITIONAL_EXPRESSION_DATA_FLOW_CONSTANT}.
+ */
 @RegisteredInspection
 public class CoreConstantConditionalExpressionInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-constant-conditional-expression";
     private static final Set<String> DATA_FLOW_ROOT_KINDS = Set.of(
         "JAVA_METHOD_DECLARATION",

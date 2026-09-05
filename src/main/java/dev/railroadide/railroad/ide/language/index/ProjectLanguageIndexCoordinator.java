@@ -22,11 +22,23 @@ public final class ProjectLanguageIndexCoordinator {
     private final ProjectLanguageIndexService indexService;
     private final List<LanguageSupport> supports;
 
+    /**
+     * Creates a coordinator for warming indexes and applying project file events.
+     *
+     * @param project the project whose files and configuration are used
+     */
     public ProjectLanguageIndexCoordinator(Project project) {
         this(new DefaultProjectIndexContextResolver().resolve(project), Services.PROJECT_LANGUAGE_INDEX_SERVICE,
             LanguageSupportRegistry.all());
     }
 
+    /**
+     * Creates a coordinator for warming indexes and applying project file events.
+     *
+     * @param context the project indexing context
+     * @param indexService the service managing project indexes
+     * @param supports the language support implementations
+     */
     public ProjectLanguageIndexCoordinator(
         ProjectIndexContext context,
         ProjectLanguageIndexService indexService,
@@ -37,6 +49,9 @@ public final class ProjectLanguageIndexCoordinator {
         this.supports = List.copyOf(Objects.requireNonNull(supports, "supports"));
     }
 
+    /**
+     * Warms each supported project index and its auxiliary indexes, logging failures independently.
+     */
     public void warmIndexes() {
         for (LanguageSupport support : supports) {
             if (support.createIndexer() == null)
@@ -64,6 +79,12 @@ public final class ProjectLanguageIndexCoordinator {
         }
     }
 
+    /**
+     * Applies supported file creation, modification, and deletion events to the matching language index.
+     *
+     * @param path the file path to inspect
+     * @param kind the file watcher event kind
+     */
     public void handleFileChange(Path path, WatchEvent.Kind<?> kind) {
         Objects.requireNonNull(path, "path");
         Objects.requireNonNull(kind, "kind");

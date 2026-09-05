@@ -3,6 +3,7 @@ package dev.railroadide.railroad;
 import javafx.application.Platform;
 import javafx.application.Preloader;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
@@ -14,6 +15,13 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
+import java.net.URL;
+
+/**
+ * The RailroadPreloader class is a JavaFX preloader that displays a splash screen with a title, subtitle, message, and
+ * progress bar
+ * while the main application is loading. It handles application notifications to update the message and progress bar.
+ */
 public class RailroadPreloader extends Preloader {
     private Stage stage;
     private Label messageLabel;
@@ -47,7 +55,7 @@ public class RailroadPreloader extends Preloader {
 
         var scene = new Scene(root);
         scene.setFill(Color.TRANSPARENT);
-        var stylesheet = AppResources.getResource("styles/preloader.css");
+        URL stylesheet = AppResources.getResource("styles/preloader.css");
         if (stylesheet != null) {
             scene.getStylesheets().add(stylesheet.toExternalForm());
         }
@@ -56,15 +64,15 @@ public class RailroadPreloader extends Preloader {
         stage.show();
         stage.centerOnScreen();
         Platform.runLater(this::centerStage);
-        stage.widthProperty().addListener((observable, oldValue, newValue) -> Platform.runLater(this::centerStage));
-        stage.heightProperty().addListener((observable, oldValue, newValue) -> Platform.runLater(this::centerStage));
+        stage.widthProperty().addListener((_, _, _) -> Platform.runLater(this::centerStage));
+        stage.heightProperty().addListener((_, _, _) -> Platform.runLater(this::centerStage));
     }
 
     @Override
     public void handleApplicationNotification(PreloaderNotification notification) {
         if (notification instanceof StatusNotification(String message, double progress)) {
             messageLabel.setText(message);
-            progressBar.setProgress(Math.max(0, Math.min(1, progress)));
+            progressBar.setProgress(Math.clamp(progress, 0, 1));
         } else if (notification instanceof ErrorNotification(String message)) {
             messageLabel.setText(message);
             progressBar.setProgress(ProgressBar.INDETERMINATE_PROGRESS);
@@ -82,14 +90,25 @@ public class RailroadPreloader extends Preloader {
         if (stage == null)
             return;
 
-        var bounds = Screen.getPrimary().getVisualBounds();
+        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
         stage.setX(bounds.getMinX() + Math.max(0, (bounds.getWidth() - stage.getWidth()) / 2));
         stage.setY(bounds.getMinY() + Math.max(0, (bounds.getHeight() - stage.getHeight()) / 2));
     }
 
+    /**
+     * PreloaderNotification is a marker interface for notifications sent to the preloader.
+     *
+     * @param message The message to be displayed in the preloader.
+     * @param progress The progress value (between 0 and 1) to be displayed in the progress bar.
+     */
     public record StatusNotification(String message, double progress) implements PreloaderNotification {
     }
 
+    /**
+     * ErrorNotification is a notification sent to the preloader to indicate an error has occurred.
+     *
+     * @param message The error message to be displayed in the preloader.
+     */
     public record ErrorNotification(String message) implements PreloaderNotification {
     }
 }

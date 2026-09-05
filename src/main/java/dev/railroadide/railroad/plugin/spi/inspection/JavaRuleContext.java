@@ -53,8 +53,17 @@ import java.util.stream.Stream;
  */
 public final class JavaRuleContext implements LanguageRuleContext {
     private static volatile @Nullable Set<String> cachedJdkTypeNames;
+    /**
+     * Modifier bit used for Java default interface methods.
+     */
     public static final int DEFAULT_MODIFIER = 0x00010000;
+    /**
+     * Modifier bit used for sealed type declarations.
+     */
     public static final int SEALED_MODIFIER = 0x00020000;
+    /**
+     * Modifier bit used for non-sealed type declarations.
+     */
     public static final int NON_SEALED_MODIFIER = 0x00040000;
 
     private static final Set<String> NUMERIC_PRIMITIVES = Set.of("byte", "short", "char", "int", "long", "float",
@@ -125,6 +134,14 @@ public final class JavaRuleContext implements LanguageRuleContext {
         this(filePath, documentText, semanticModel, null);
     }
 
+    /**
+     * Creates a rule context with an optional project symbol index for resolving external declarations.
+     *
+     * @param filePath the source file being inspected
+     * @param documentText the complete source text
+     * @param semanticModel the semantic model for the source file
+     * @param symbolIndex the project symbol index, or {@code null} to use JDK types
+     */
     public JavaRuleContext(
         Path filePath,
         String documentText,
@@ -137,6 +154,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
         this.symbolIndex = symbolIndex;
     }
 
+    /**
+     * Indexes type declarations in the current syntax tree by their qualified names.
+     *
+     * @return an immutable map of qualified type names to declaration nodes
+     */
     public Map<String, SyntaxNode> localTypeDeclarations() {
         Map<String, SyntaxNode> cached = cachedLocalTypeDeclarations;
         if (cached != null)
@@ -155,6 +177,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return copy;
     }
 
+    /**
+     * Finds the child following a basic or enhanced for-loop header.
+     *
+     * @param forNode the for statement node
+     * @return the loop body, or {@code null} if no body follows the header
+     */
     public @Nullable SyntaxNode forBodyOf(SyntaxNode forNode) {
         boolean seenHeader = false;
         for (SyntaxNode child : forNode.children()) {
@@ -172,6 +200,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return null;
     }
 
+    /**
+     * Finds the first syntax node following the lambda arrow.
+     *
+     * @param lambda the lambda expression node
+     * @return the lambda body, or {@code null} if absent
+     */
     public SyntaxNode lambdaBodyOf(SyntaxNode lambda) {
         boolean seenArrow = false;
         for (SyntaxNode child : lambda.children()) {
@@ -187,6 +221,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return null;
     }
 
+    /**
+     * Finds the child following an if statement's condition.
+     *
+     * @param ifNode the if statement node
+     * @return the then branch, or {@code null} if absent
+     */
     public @Nullable SyntaxNode thenBranchOf(SyntaxNode ifNode) {
         List<SyntaxNode> children = ifNode.children();
         boolean seenCondition = false;
@@ -204,6 +244,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return null;
     }
 
+    /**
+     * Finds the first syntax node following an else keyword.
+     *
+     * @param ifNode the if statement node
+     * @return the else branch, or {@code null} if absent
+     */
     public @Nullable SyntaxNode elseBranchOf(SyntaxNode ifNode) {
         boolean sawElse = false;
         for (SyntaxNode child : ifNode.children()) {
@@ -259,6 +305,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return documentText;
     }
 
+    /**
+     * Extracts a node's source span, clamps it to the document bounds, and collapses whitespace.
+     *
+     * @param node the syntax node to inspect
+     * @return trimmed source text with whitespace runs replaced by a single space
+     */
     public String sourceText(SyntaxNode node) {
         Objects.requireNonNull(node, "node");
         int start = Math.clamp(node.start(), 0, documentText.length());
@@ -593,6 +645,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return nodesOfKinds(Set.of(kindIds));
     }
 
+    /**
+     * Finds the first direct child classified as an expression.
+     *
+     * @param node the syntax node to inspect
+     * @return the first expression child, or {@code null} if absent
+     */
     public @Nullable SyntaxNode firstDirectExpressionChild(SyntaxNode node) {
         for (SyntaxNode child : node.children()) {
             if (isExpressionNode(child))
@@ -601,6 +659,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return null;
     }
 
+    /**
+     * Collects direct expression children in syntax order.
+     *
+     * @param node the syntax node to inspect
+     * @return an immutable list of expression children
+     */
     public List<SyntaxNode> directExpressionChildren(SyntaxNode node) {
         List<SyntaxNode> children = new ArrayList<>();
         for (SyntaxNode child : node.children()) {
@@ -611,6 +675,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return List.copyOf(children);
     }
 
+    /**
+     * Checks whether a node is a method invocation with the requested selector name.
+     *
+     * @param node the syntax node to inspect
+     * @param methodName the simple method name to match
+     * @return {@code true} if the node invokes the named method
+     */
     public boolean isMethodInvocationNamed(SyntaxNode node, String methodName) {
         Objects.requireNonNull(node, "node");
         Objects.requireNonNull(methodName, "methodName");
@@ -623,6 +694,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return methodName.equals(actualName);
     }
 
+    /**
+     * Checks existing symbol resolution, then searches known receiver or enclosing-type methods for an applicable
+     * candidate.
+     *
+     * @param invocation the invocation node to inspect
+     * @return {@code true} if a resolved symbol or applicable method candidate is available
+     */
     public boolean canResolveMethodInvocation(SyntaxNode invocation) {
         Objects.requireNonNull(invocation, "invocation");
         if (!JAVA_METHOD_INVOCATION_EXPRESSION.equals(invocation.kind().id()))
@@ -677,6 +755,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
             || canResolveIndexedSourceMethod(new MethodOwner(ownerQualifiedTypeName, false), methodName, argumentTypes);
     }
 
+    /**
+     * Describes the receiver, argument types, owner, and known candidates used to investigate invocation resolution.
+     *
+     * @param invocation the invocation node to inspect
+     * @return resolution details, or a message identifying a non-invocation node
+     */
     public String describeMethodInvocationResolution(SyntaxNode invocation) {
         Objects.requireNonNull(invocation, "invocation");
         if (!JAVA_METHOD_INVOCATION_EXPRESSION.equals(invocation.kind().id()))
@@ -759,6 +843,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 availableClassStubsByQualifiedName().containsKey("javafx.beans.property.ReadOnlyDoubleProperty"));
     }
 
+    /**
+     * Checks constructor candidates for an instance creation, including anonymous interface implementations and
+     * argument-shape fallbacks.
+     *
+     * @param creation the class instance creation node to inspect
+     * @return {@code true} if the creation has a resolved symbol or a supported constructor match
+     */
     public boolean canResolveClassInstanceCreation(SyntaxNode creation) {
         Objects.requireNonNull(creation, "creation");
         if (!"JAVA_CLASS_INSTANCE_CREATION_EXPRESSION".equals(creation.kind().id()))
@@ -790,11 +881,23 @@ public final class JavaRuleContext implements LanguageRuleContext {
             && constructors.stream().anyMatch(ctor -> ctor.parameterTypes().size() == argumentTypes.size());
     }
 
+    /**
+     * Finds the explicit receiver of a method invocation.
+     *
+     * @param invocation the invocation node to inspect
+     * @return the receiver expression, or {@code null} for an implicit receiver
+     */
     public @Nullable SyntaxNode invocationReceiver(SyntaxNode invocation) {
         Objects.requireNonNull(invocation, "invocation");
         return explicitReceiver(invocation);
     }
 
+    /**
+     * Checks for the absence of direct expression children in an invocation's argument list.
+     *
+     * @param invocation the invocation node to inspect
+     * @return {@code true} if the argument list is absent or contains no expressions
+     */
     public boolean hasNoArguments(SyntaxNode invocation) {
         Objects.requireNonNull(invocation, "invocation");
         SyntaxNode argumentList = directChild(invocation, JAVA_ARGUMENT_LIST);
@@ -809,12 +912,24 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return true;
     }
 
+    /**
+     * Unwraps an invocation receiver and extracts its name when it is a simple name expression.
+     *
+     * @param invocation the invocation node to inspect
+     * @return the simple receiver name, or {@code null} for other receiver forms
+     */
     public @Nullable String simpleReceiverName(SyntaxNode invocation) {
         Objects.requireNonNull(invocation, "invocation");
         SyntaxNode receiver = unwrapTransparentExpression(invocationReceiver(invocation));
         return simpleExpressionKey(receiver);
     }
 
+    /**
+     * Unwraps parentheses and primary-expression wrappers to identify a simple name expression.
+     *
+     * @param expression the expression to inspect, which may be {@code null}
+     * @return the identifier text, or {@code null} for absent or non-name expressions
+     */
     public @Nullable String simpleExpressionKey(@Nullable SyntaxNode expression) {
         SyntaxNode current = unwrapTransparentExpression(expression);
         if (current == null)
@@ -826,6 +941,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return null;
     }
 
+    /**
+     * Extracts the condition from an if, while, do-while, or basic for statement.
+     *
+     * @param node the syntax node to inspect
+     * @return the condition expression, or {@code null} if absent or unsupported
+     */
     public @Nullable SyntaxNode conditionOf(SyntaxNode node) {
         Objects.requireNonNull(node, "node");
 
@@ -837,6 +958,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
         };
     }
 
+    /**
+     * Checks direct token children for the requested Java token kind.
+     *
+     * @param node the syntax node to inspect
+     * @param tokenType the Java token kind to match
+     * @return {@code true} if a matching direct token is present
+     */
     public boolean hasOperatorToken(SyntaxNode node, JavaTokenType tokenType) {
         Objects.requireNonNull(node, "node");
         Objects.requireNonNull(tokenType, "tokenType");
@@ -850,18 +978,42 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return false;
     }
 
+    /**
+     * Finds the name selected by a member access or method invocation.
+     *
+     * @param node the syntax node to inspect
+     * @return the selector name node, or {@code null} if unavailable
+     */
     public @Nullable SyntaxNode selectorNameNode(SyntaxNode node) {
         return JavaSemanticAnalyzer.selectorNameNode(node);
     }
 
+    /**
+     * Finds the explicit receiver of a member access or invocation.
+     *
+     * @param node the syntax node to inspect
+     * @return the receiver node, or {@code null} if no explicit receiver exists
+     */
     public @Nullable SyntaxNode explicitReceiver(SyntaxNode node) {
         return JavaSemanticAnalyzer.explicitReceiver(node);
     }
 
+    /**
+     * Checks whether a name expression occupies the selector position of a member access or invocation.
+     *
+     * @param node the syntax node to inspect
+     * @return {@code true} if the node is a selector name
+     */
     public boolean isSelectorNameExpression(SyntaxNode node) {
         return JavaSemanticAnalyzer.isSelectorNameExpression(node);
     }
 
+    /**
+     * Checks whether a symbol kind represents a class, interface, enum, annotation, or record.
+     *
+     * @param symbolKind the symbol kind to classify
+     * @return {@code true} for a type declaration kind
+     */
     public boolean isTypeSymbol(SymbolKind symbolKind) {
         return switch (symbolKind) {
             case CLASS, INTERFACE, ENUM, ANNOTATION, RECORD -> true;
@@ -869,6 +1021,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         };
     }
 
+    /**
+     * Checks whether a node is a direct invocation child preceding its argument list.
+     *
+     * @param node the syntax node to inspect
+     * @return {@code true} if the node occurs in the invocation's method-reference portion
+     */
     public boolean isMethodNameReference(SyntaxNode node) {
         var parent = node.parent();
         if (parent.isEmpty())
@@ -884,6 +1042,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return false;
     }
 
+    /**
+     * Finds a variable's declared type, using initializer inference for {@code var} declarations.
+     *
+     * @param variableDeclarator the variable declarator whose type is requested
+     * @return the declared or inferred type, or an unknown type when unavailable
+     */
     public Type declaredTypeOfVariable(SyntaxNode variableDeclarator) {
         var parent = variableDeclarator.parent();
         while (parent.isPresent()) {
@@ -916,6 +1080,14 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return new UnknownType("<unknown>");
     }
 
+    /**
+     * Checks assignment compatibility using numeric conversion, boxing, arrays, and known inheritance. Unknown or
+     * unresolved types are accepted conservatively.
+     *
+     * @param target the destination type
+     * @param source the value's source type
+     * @return {@code true} if the source is considered assignable to the target
+     */
     public boolean isAssignable(Type target, Type source) {
         Objects.requireNonNull(target, "target");
         Objects.requireNonNull(source, "source");
@@ -967,6 +1139,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return false;
     }
 
+    /**
+     * Reads and caches the package declared by the current source file.
+     *
+     * @return the package name, or an empty string for the unnamed package
+     */
     public String currentPackageName() {
         String cached = cachedCurrentPackageName;
         if (cached != null)
@@ -988,6 +1165,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return packageName;
     }
 
+    /**
+     * Walks parent nodes to find the nearest enclosing type declaration.
+     *
+     * @param node the syntax node to inspect
+     * @return the enclosing type symbol, or an empty optional if none exists
+     */
     public Optional<Symbol> enclosingTypeSymbol(SyntaxNode node) {
         SyntaxNode current = node;
         while (true) {
@@ -1002,6 +1185,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         }
     }
 
+    /**
+     * Walks parent nodes to find the outermost enclosing type declaration.
+     *
+     * @param node the syntax node to inspect
+     * @return the outermost type symbol, or an empty optional if none exists
+     */
     public Optional<Symbol> topLevelEnclosingTypeSymbol(SyntaxNode node) {
         Symbol topLevel = null;
         SyntaxNode current = node;
@@ -1018,6 +1207,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
         }
     }
 
+    /**
+     * Finds a symbol's owning type from its qualified name or enclosing declaration. Type symbols return their own
+     * qualified name.
+     *
+     * @param symbol the symbol to inspect
+     * @return the owner name, or an empty optional when unavailable
+     */
     public Optional<String> ownerQualifiedName(Symbol symbol) {
         Objects.requireNonNull(symbol, "symbol");
         if (isTypeSymbol(symbol.kind()))
@@ -1036,10 +1232,24 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return enclosingTypeSymbol(declaration).flatMap(Symbol::qualifiedName);
     }
 
+    /**
+     * Resolves a type spelling using known types, local declarations, imports, and the current package. Type arguments
+     * and array suffixes are removed; unmatched spellings are retained.
+     *
+     * @param typeNode the syntax node containing the type reference
+     * @return the resolved or normalized type name, or {@code null} for absent or blank type text
+     */
     public @Nullable String resolveQualifiedTypeName(SyntaxNode typeNode) {
         return resolveQualifiedTypeName(canonicalTypeText(typeNode), typeNode);
     }
 
+    /**
+     * Resolves a type spelling using known types, local declarations, imports, and the current package. Type arguments
+     * and array suffixes are removed; unmatched spellings are retained.
+     *
+     * @param typeText the type spelling, or {@code null}
+     * @return the resolved or normalized type name, or {@code null} for absent or blank type text
+     */
     public @Nullable String resolveQualifiedTypeName(@Nullable String typeText) {
         return resolveQualifiedTypeName(typeText, null);
     }
@@ -1220,6 +1430,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return null;
     }
 
+    /**
+     * Reads modifier bits from source declarations or available class stubs, with public visibility as the usual
+     * fallback.
+     *
+     * @param symbol the symbol to inspect
+     * @return modifier bits, including the additional Java-specific modifier constants
+     */
     public int symbolModifiers(Symbol symbol) {
         Objects.requireNonNull(symbol, "symbol");
 
@@ -1278,12 +1495,25 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return separator < 0 || signatureStart < 0 ? null : qualifiedName.substring(signatureStart);
     }
 
+    /**
+     * Checks the known inheritance hierarchy for a relationship between two qualified type names.
+     *
+     * @param candidateQualifiedTypeName the candidate subtype's qualified name
+     * @param targetQualifiedTypeName the target supertype's qualified name
+     * @return {@code true} if the candidate is the target type or a known subtype
+     */
     public boolean isSubtype(String candidateQualifiedTypeName, String targetQualifiedTypeName) {
         Objects.requireNonNull(candidateQualifiedTypeName, "candidateQualifiedTypeName");
         Objects.requireNonNull(targetQualifiedTypeName, "targetQualifiedTypeName");
         return isSubtype(candidateQualifiedTypeName, targetQualifiedTypeName, new HashSet<>());
     }
 
+    /**
+     * Checks source symbols, class stubs, and the project index for an interface or annotation type.
+     *
+     * @param qualifiedTypeName the qualified type name to inspect
+     * @return {@code true} if the type is known to be an interface or annotation
+     */
     public boolean isInterfaceType(String qualifiedTypeName) {
         Symbol localType = localTypeSymbol(qualifiedTypeName).orElse(null);
         if (localType != null)
@@ -1304,10 +1534,22 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return false;
     }
 
+    /**
+     * Checks the type's modifier bits for finality.
+     *
+     * @param qualifiedTypeName the qualified type name to inspect
+     * @return {@code true} if the type is final
+     */
     public boolean isFinalType(String qualifiedTypeName) {
         return Modifier.isFinal(typeModifiers(qualifiedTypeName));
     }
 
+    /**
+     * Checks whether a type has an abstract modifier or represents an interface or annotation.
+     *
+     * @param qualifiedTypeName the qualified type name to inspect
+     * @return {@code true} if the type is abstract
+     */
     public boolean isAbstractType(String qualifiedTypeName) {
         Symbol localType = localTypeSymbol(qualifiedTypeName).orElse(null);
         if (localType != null && localType.declaration().isPresent()) {
@@ -1318,6 +1560,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return Modifier.isAbstract(typeModifiers(qualifiedTypeName)) || isInterfaceType(qualifiedTypeName);
     }
 
+    /**
+     * Finds direct superclass and interface names from source declarations, indexed source, or class stubs.
+     *
+     * @param qualifiedTypeName the qualified type name to inspect
+     * @return direct supertype names, retaining available source type arguments
+     */
     public List<String> directSuperTypeNames(String qualifiedTypeName) {
         List<DeclaredType> sourceSupers = directSuperTypesByQualifiedName().get(qualifiedTypeName);
         if (sourceSupers == null && availableClassStubsByQualifiedName().get(qualifiedTypeName) == null) {
@@ -1328,26 +1576,57 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return sourceSupers.stream().map(DeclaredType::displayName).toList();
     }
 
+    /**
+     * Looks up method descriptors declared by the specified owner.
+     *
+     * @param ownerQualifiedTypeName the qualified name of the declaring type
+     * @return the known declared methods, or an empty list when none are indexed
+     */
     public List<MethodDescriptor> declaredMethodDescriptors(String ownerQualifiedTypeName) {
         return declaredMethodsByOwner().getOrDefault(ownerQualifiedTypeName, List.of());
     }
 
+    /**
+     * Looks up field descriptors declared by the specified owner.
+     *
+     * @param ownerQualifiedTypeName the qualified name of the declaring type
+     * @return the known declared fields, or an empty list when none are indexed
+     */
     public List<FieldDescriptor> declaredFieldDescriptors(String ownerQualifiedTypeName) {
         return declaredFieldsByOwner().getOrDefault(ownerQualifiedTypeName, List.of());
     }
 
+    /**
+     * Collects field descriptors from the owner's known supertype hierarchy.
+     *
+     * @param ownerQualifiedTypeName the qualified name of the declaring type
+     * @return an immutable list of inherited field descriptors
+     */
     public List<FieldDescriptor> inheritedFieldDescriptors(String ownerQualifiedTypeName) {
         List<FieldDescriptor> fields = new ArrayList<>();
         collectInheritedFieldDescriptors(ownerQualifiedTypeName, fields, new HashSet<>());
         return List.copyOf(fields);
     }
 
+    /**
+     * Collects method descriptors from known supertypes, substituting available type arguments.
+     *
+     * @param ownerQualifiedTypeName the qualified name of the declaring type
+     * @return an immutable list of inherited method descriptors
+     */
     public List<MethodDescriptor> inheritedMethodDescriptors(String ownerQualifiedTypeName) {
         List<MethodDescriptor> methods = new ArrayList<>();
         collectInheritedMethodDescriptors(ownerQualifiedTypeName, methods, new HashSet<>(), Map.of());
         return List.copyOf(methods);
     }
 
+    /**
+     * Checks a type's visibility against the usage site's package and enclosing types.
+     *
+     * @param qualifiedTypeName the qualified type name to inspect
+     * @param usageSite the syntax node where access occurs
+     * @return {@code true} if the visibility checks permit access
+     */
     public boolean isTypeAccessible(String qualifiedTypeName, SyntaxNode usageSite) {
         Objects.requireNonNull(qualifiedTypeName, "qualifiedTypeName");
         Objects.requireNonNull(usageSite, "usageSite");
@@ -1384,6 +1663,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return Objects.equals(currentPackage, declaringPackage);
     }
 
+    /**
+     * Checks symbol visibility using its owner, modifiers, and the usage site's enclosing types.
+     *
+     * @param symbol the symbol to inspect
+     * @param usageSite the syntax node where access occurs
+     * @return {@code true} if the visibility checks permit access
+     */
     public boolean isSymbolAccessible(Symbol symbol, SyntaxNode usageSite) {
         Objects.requireNonNull(symbol, "symbol");
         Objects.requireNonNull(usageSite, "usageSite");
@@ -1421,6 +1707,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return Objects.equals(currentPackage, declaringPackage);
     }
 
+    /**
+     * Combines indexed or JDK type names with local declarations and type parameter names.
+     *
+     * @return an unmodifiable set containing available simple and qualified type names
+     */
     public Set<String> availableTypeNames() {
         Set<String> cached = cachedAvailableTypeNames;
         if (cached != null)
@@ -1464,6 +1755,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
         }
     }
 
+    /**
+     * Builds and caches an index of imports and resolvable static members for this file.
+     *
+     * @return the cached import index
+     */
     public ImportIndex importIndex() {
         ImportIndex cached = cachedImportIndex;
         if (cached != null)
@@ -1474,26 +1770,65 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return computed;
     }
 
+    /**
+     * Returns the imports collected from the current syntax tree.
+     *
+     * @return the immutable import entries in traversal order
+     */
     public List<ImportEntry> importEntries() {
         return importIndex().imports();
     }
 
+    /**
+     * Checks whether a qualified type name is present among local or available types.
+     *
+     * @param qualifiedTypeName the qualified type name to inspect
+     * @return {@code true} if the name identifies a known type
+     */
     public boolean isResolvableType(String qualifiedTypeName) {
         return importIndex().isResolvableType(qualifiedTypeName);
     }
 
+    /**
+     * Checks whether any available qualified type begins with the supplied package prefix followed by a dot.
+     *
+     * @param packagePrefix the package prefix to search
+     * @return {@code true} if at least one available type matches the prefix
+     */
     public boolean isResolvablePackagePrefix(String packagePrefix) {
         return importIndex().isResolvablePackagePrefix(packagePrefix);
     }
 
+    /**
+     * Checks known source members and class stubs for a static field or method of the given name.
+     *
+     * @param ownerQualifiedName the qualified name of the owning type
+     * @param memberName the simple static member name
+     * @return {@code true} if a matching static member is known
+     */
     public boolean hasResolvableStaticMember(String ownerQualifiedName, String memberName) {
         return importIndex().hasResolvableStaticMember(ownerQualifiedName, memberName);
     }
 
+    /**
+     * Finds matching single and wildcard static field imports, deduplicating results by qualified name.
+     *
+     * @param fieldName the simple field name to resolve
+     * @param referenceNode the reference node used for symbols from wildcard imports
+     * @return the matching field symbols, or an empty list if none resolve
+     */
     public List<Symbol> resolveStaticImportedFields(String fieldName, SyntaxNode referenceNode) {
         return importIndex().resolveStaticImportedFields(fieldName, referenceNode);
     }
 
+    /**
+     * Finds matching single and wildcard static method imports, optionally filtering by argument count.
+     *
+     * @param methodName the simple method name to match
+     * @param invocationNode the invocation node used for symbols from wildcard imports
+     * @param argumentCountOrUnknown the required argument count, or a negative value to accept any count
+     * @return the matching method symbols deduplicated by qualified name
+     */
     public List<Symbol> resolveStaticImportedMethods(
         String methodName,
         SyntaxNode invocationNode,
@@ -1502,6 +1837,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return importIndex().resolveStaticImportedMethods(methodName, invocationNode, argumentCountOrUnknown);
     }
 
+    /**
+     * Walks parent nodes to find the nearest method, constructor, compact constructor, or lambda.
+     *
+     * @param node the syntax node to inspect
+     * @return the enclosing callable or lambda, or {@code null} if absent
+     */
     public @Nullable SyntaxNode nearestEnclosingCallableOrLambda(SyntaxNode node) {
         Objects.requireNonNull(node, "node");
         SyntaxNode current = node;
@@ -1520,6 +1861,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         }
     }
 
+    /**
+     * Reads top-level type references from a callable's throws clause.
+     *
+     * @param callableDeclaration the method or constructor declaration
+     * @return the declared thrown type names, or an empty list without a throws clause
+     */
     public List<String> declaredThrownTypeNames(SyntaxNode callableDeclaration) {
         Objects.requireNonNull(callableDeclaration, "callableDeclaration");
         SyntaxNode throwsClause = directChild(callableDeclaration, JAVA_THROWS_CLAUSE);
@@ -1528,6 +1875,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return topLevelReferencedTypeNames(throwsClause);
     }
 
+    /**
+     * Reads the exception types of a catch parameter, including multi-catch alternatives.
+     *
+     * @param catchClause the catch clause to inspect
+     * @return the caught type names, or an empty list when no catch parameter type is found
+     */
     public List<String> catchParameterTypeNames(SyntaxNode catchClause) {
         Objects.requireNonNull(catchClause, "catchClause");
         if (!JAVA_CATCH_CLAUSE.equals(catchClause.kind().id()))
@@ -1545,6 +1898,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return List.of();
     }
 
+    /**
+     * Reads thrown types from a source callable declaration or a matching external callable signature.
+     *
+     * @param symbol the symbol to inspect
+     * @return the known thrown type names, or an empty list when unavailable
+     */
     public List<String> thrownTypeNames(Symbol symbol) {
         Objects.requireNonNull(symbol, "symbol");
 
@@ -1685,11 +2044,23 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return result;
     }
 
+    /**
+     * Checks whether a type is {@code Throwable} or one of its known subtypes.
+     *
+     * @param qualifiedTypeName the qualified type name to inspect
+     * @return {@code true} if the type is throwable
+     */
     public boolean isThrowableType(String qualifiedTypeName) {
         Objects.requireNonNull(qualifiedTypeName, "qualifiedTypeName");
         return "java.lang.Throwable".equals(qualifiedTypeName) || isSubtype(qualifiedTypeName, "java.lang.Throwable");
     }
 
+    /**
+     * Checks whether a type is {@code RuntimeException}, {@code Error}, or a known subtype of either.
+     *
+     * @param qualifiedTypeName the qualified type name to inspect
+     * @return {@code true} if the type is an unchecked exception type
+     */
     public boolean isUncheckedExceptionType(String qualifiedTypeName) {
         Objects.requireNonNull(qualifiedTypeName, "qualifiedTypeName");
         return "java.lang.RuntimeException".equals(qualifiedTypeName)
@@ -1698,17 +2069,35 @@ public final class JavaRuleContext implements LanguageRuleContext {
             || isSubtype(qualifiedTypeName, "java.lang.Error");
     }
 
+    /**
+     * Checks whether a type is throwable without belonging to the unchecked exception hierarchy.
+     *
+     * @param qualifiedTypeName the qualified type name to inspect
+     * @return {@code true} if the type is a checked exception type
+     */
     public boolean isCheckedExceptionType(String qualifiedTypeName) {
         Objects.requireNonNull(qualifiedTypeName, "qualifiedTypeName");
         return isThrowableType(qualifiedTypeName) && !isUncheckedExceptionType(qualifiedTypeName);
     }
 
+    /**
+     * Checks whether a type is {@code AutoCloseable} or a known subtype.
+     *
+     * @param qualifiedTypeName the qualified type name to inspect
+     * @return {@code true} if the type supports the AutoCloseable contract
+     */
     public boolean isAutoCloseableType(String qualifiedTypeName) {
         Objects.requireNonNull(qualifiedTypeName, "qualifiedTypeName");
         return "java.lang.AutoCloseable".equals(qualifiedTypeName)
             || isSubtype(qualifiedTypeName, "java.lang.AutoCloseable");
     }
 
+    /**
+     * Resolves a try-with-resources resource type from its declaration or inferred expression type.
+     *
+     * @param tryResource the try-with-resources resource node
+     * @return the resource type name, or {@code null} when unavailable
+     */
     public @Nullable String tryResourceTypeName(SyntaxNode tryResource) {
         Objects.requireNonNull(tryResource, "tryResource");
         if (!JAVA_TRY_RESOURCE.equals(tryResource.kind().id()))
@@ -1729,6 +2118,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return inferred.kind() == Kind.UNKNOWN ? null : resolveQualifiedTypeName(inferred.displayName());
     }
 
+    /**
+     * Finds thrown types for a resource's zero-argument {@code close} method, preferring declarations over inherited
+     * methods and nearer overrides over ancestors.
+     *
+     * @param resourceQualifiedTypeName the resource type's qualified name
+     * @return the distinct known exception type names
+     */
     public List<String> closeThrownTypeNames(String resourceQualifiedTypeName) {
         Objects.requireNonNull(resourceQualifiedTypeName, "resourceQualifiedTypeName");
 
@@ -1759,6 +2155,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return List.copyOf(new LinkedHashSet<>(thrown));
     }
 
+    /**
+     * Collects referenced type names without descending into an already recognized type reference.
+     *
+     * @param node the syntax node to inspect
+     * @return an immutable list of the outermost referenced type names
+     */
     public List<String> topLevelReferencedTypeNames(SyntaxNode node) {
         Objects.requireNonNull(node, "node");
         List<String> typeNames = new ArrayList<>();
@@ -1766,6 +2168,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return List.copyOf(typeNames);
     }
 
+    /**
+     * Removes nested parenthesized and primary-expression wrappers.
+     *
+     * @param node the syntax node to inspect
+     * @return the underlying node, or {@code null} for absent input or an empty wrapper
+     */
     public @Nullable SyntaxNode unwrapTransparentExpression(@Nullable SyntaxNode node) {
         SyntaxNode current = node;
         while (current != null) {
@@ -1781,6 +2189,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return null;
     }
 
+    /**
+     * Finds the first direct child recognized as an expression by the semantic analyzer.
+     *
+     * @param node the syntax node to inspect
+     * @return the expression child, or {@code null} if absent
+     */
     public @Nullable SyntaxNode firstExpressionChild(SyntaxNode node) {
         for (SyntaxNode child : node.children()) {
             if (JavaSemanticAnalyzer.isExpressionNode(child))
@@ -2137,6 +2551,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return false;
     }
 
+    /**
+     * Checks known interface methods for a single effective abstract method, excluding static and Object method
+     * signatures.
+     *
+     * @param type the semantic type to inspect
+     * @return {@code true} if the type is recognized as a functional interface
+     */
     public boolean isFunctionalInterface(Type type) {
         if (!(type instanceof DeclaredType declared))
             return false;
@@ -3398,6 +3819,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         };
     }
 
+    /**
+     * Visits the supplied root and all descendants in depth-first preorder.
+     *
+     * @param root the root node, which is also visited
+     * @param visitor the action invoked for each node
+     */
     public void traverseDescendants(SyntaxNode root, Consumer<SyntaxNode> visitor) {
         visitor.accept(root);
         for (SyntaxNode child : root.children()) {
@@ -3405,6 +3832,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         }
     }
 
+    /**
+     * Finds the first non-token child following the statement's condition.
+     *
+     * @param loopNode the statement whose condition guards the body
+     * @return the guarded body, or {@code null} if no such child is found
+     */
     public @Nullable SyntaxNode guardedBodyOf(SyntaxNode loopNode) {
         SyntaxNode condition = conditionOf(loopNode);
         boolean seenCondition = false;
@@ -3421,6 +3854,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return null;
     }
 
+    /**
+     * Unwraps transparent expression nodes and counts consecutive leading logical negations.
+     *
+     * @param expression the expression to inspect, which may be {@code null}
+     * @return the remaining expression and negation count, or {@code null} if no initial expression exists
+     */
     public NegationUnwrapResult unwrapLeadingNegations(SyntaxNode expression) {
         SyntaxNode current = unwrapTransparentExpression(expression);
         if (current == null)
@@ -3438,15 +3877,37 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return new NegationUnwrapResult(current, negationCount);
     }
 
+    /**
+     * Describes an expression after removing leading logical negations.
+     *
+     * @param expression the remaining expression, or {@code null} for an incomplete operand
+     * @param negationCount the number of removed leading logical negations
+     */
     public record NegationUnwrapResult(
         SyntaxNode expression,
         int negationCount
     ) {
+        /**
+         * Checks the parity of the removed logical negations.
+         *
+         * @return {@code true} if an odd number of negations was removed
+         */
         public boolean isNegated() {
             return negationCount % 2 != 0;
         }
     }
 
+    /**
+     * Describes a parsed import and the syntax nodes needed to report import diagnostics.
+     *
+     * @param declarationNode the complete import declaration node
+     * @param targetNode the import target node
+     * @param qualifiedTarget the full import target, including a wildcard suffix when present
+     * @param ownerName the package or type prefix owning the imported name
+     * @param importedName the final imported name, or an asterisk for a wildcard
+     * @param isStatic whether the import has the static modifier
+     * @param isWildcard whether the import is on demand
+     */
     public record ImportEntry(
         SyntaxNode declarationNode,
         SyntaxNode targetNode,
@@ -3458,6 +3919,18 @@ public final class JavaRuleContext implements LanguageRuleContext {
     ) {
     }
 
+    /**
+     * Describes a source or external method for resolution and inheritance checks.
+     *
+     * @param ownerQualifiedName the qualified name of the owning type
+     * @param name the simple member name
+     * @param parameterTypes the parameter types in declaration order
+     * @param returnType the method return type
+     * @param thrownTypes the declared exception type names
+     * @param modifiers the member modifier bits
+     * @param declaration the source declaration node, or {@code null} for an external member
+     * @param symbol the associated semantic symbol, or {@code null} when unavailable
+     */
     public record MethodDescriptor(
         String ownerQualifiedName,
         String name,
@@ -3468,6 +3941,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
         @Nullable SyntaxNode declaration,
         @Nullable Symbol symbol
     ) {
+        /**
+         * Builds a method signature key from its name and parameter type display names.
+         *
+         * @return the method name followed by comma-separated parameter types in parentheses
+         */
         public String signatureKey() {
             StringBuilder builder = new StringBuilder(name).append('(');
             for (int index = 0; index < parameterTypes.size(); index++) {
@@ -3480,15 +3958,35 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return builder.toString();
         }
 
+        /**
+         * Checks the abstract modifier while excluding default interface methods.
+         *
+         * @return {@code true} if the method is abstract and not default
+         */
         public boolean isAbstract() {
             return Modifier.isAbstract(modifiers) && !isDefault();
         }
 
+        /**
+         * Checks the Java-specific default method modifier bit.
+         *
+         * @return {@code true} if the method is default
+         */
         public boolean isDefault() {
             return (modifiers & DEFAULT_MODIFIER) != 0;
         }
     }
 
+    /**
+     * Describes a source or external field for resolution and inheritance checks.
+     *
+     * @param ownerQualifiedName the qualified name of the owning type
+     * @param name the simple member name
+     * @param type the field's semantic type
+     * @param modifiers the member modifier bits
+     * @param declaration the source declaration node, or {@code null} for an external member
+     * @param symbol the associated semantic symbol, or {@code null} when unavailable
+     */
     public record FieldDescriptor(
         String ownerQualifiedName,
         String name,
@@ -3508,6 +4006,9 @@ public final class JavaRuleContext implements LanguageRuleContext {
     ) {
     }
 
+    /**
+     * Indexes parsed imports and available types and static members for import resolution.
+     */
     public static final class ImportIndex {
         private final List<ImportEntry> imports;
         private final Map<String, List<ImportEntry>> staticSingleImportsByMemberName;
@@ -3538,10 +4039,21 @@ public final class JavaRuleContext implements LanguageRuleContext {
             this.localStaticMethodAritiesByOwner = localStaticMethodAritiesByOwner;
         }
 
+        /**
+         * Returns the imports retained by this index.
+         *
+         * @return the immutable import entries in traversal order
+         */
         public List<ImportEntry> imports() {
             return imports;
         }
 
+        /**
+         * Checks whether a qualified type name is present among local or available types.
+         *
+         * @param qualifiedTypeName the qualified type name to inspect
+         * @return {@code true} if the name identifies a known type
+         */
         public boolean isResolvableType(String qualifiedTypeName) {
             if (qualifiedTypeName == null || qualifiedTypeName.isBlank())
                 return false;
@@ -3550,6 +4062,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return availableQualifiedTypeNames.contains(qualifiedTypeName);
         }
 
+        /**
+         * Checks whether any available qualified type begins with the supplied package prefix followed by a dot.
+         *
+         * @param packagePrefix the package prefix to search
+         * @return {@code true} if at least one available type matches the prefix
+         */
         public boolean isResolvablePackagePrefix(String packagePrefix) {
             if (packagePrefix == null || packagePrefix.isBlank())
                 return false;
@@ -3560,11 +4078,25 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return false;
         }
 
+        /**
+         * Checks known source members and class stubs for a static field or method of the given name.
+         *
+         * @param ownerQualifiedName the qualified name of the owning type
+         * @param memberName the simple static member name
+         * @return {@code true} if a matching static member is known
+         */
         public boolean hasResolvableStaticMember(String ownerQualifiedName, String memberName) {
             return hasResolvableStaticField(ownerQualifiedName, memberName)
                 || hasResolvableStaticMethod(ownerQualifiedName, memberName, -1);
         }
 
+        /**
+         * Finds matching single and wildcard static field imports, deduplicating results by qualified name.
+         *
+         * @param fieldName the simple field name to resolve
+         * @param referenceNode the reference node used for symbols from wildcard imports
+         * @return the matching field symbols, or an empty list if none resolve
+         */
         public List<Symbol> resolveStaticImportedFields(String fieldName, SyntaxNode referenceNode) {
             List<Symbol> resolved = new ArrayList<>();
             List<ImportEntry> singleStaticImports = staticSingleImportsByMemberName.get(fieldName);
@@ -3593,6 +4125,14 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return uniqueByQualifiedName(resolved);
         }
 
+        /**
+         * Finds matching single and wildcard static method imports, optionally filtering by argument count.
+         *
+         * @param methodName the simple method name to match
+         * @param invocationNode the invocation node used for symbols from wildcard imports
+         * @param argumentCountOrUnknown the required argument count, or a negative value to accept any count
+         * @return the matching method symbols deduplicated by qualified name
+         */
         public List<Symbol> resolveStaticImportedMethods(
             String methodName,
             SyntaxNode invocationNode,

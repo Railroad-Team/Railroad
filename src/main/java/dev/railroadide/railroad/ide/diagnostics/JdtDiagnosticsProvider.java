@@ -17,6 +17,8 @@ import java.util.Map;
 
 /**
  * Diagnostics provider backed by Eclipse JDT's parser.
+ *
+ * @param filePath path identifying the analyzed source file
  */
 public record JdtDiagnosticsProvider(Path filePath) implements DiagnosticsProvider {
     @Override

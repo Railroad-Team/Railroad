@@ -14,12 +14,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
+/**
+ * Command-line profiler measuring retained Java syntax trees and optional red-node materialization.
+ */
 public final class JavaSyntaxMemoryProfileRunner {
     private static final int DEFAULT_MAX_FILES = Integer.MAX_VALUE;
 
     private JavaSyntaxMemoryProfileRunner() {
     }
 
+    /**
+     * Parses the requested Java sources and prints heap and syntax-node measurements.
+     *
+     * @param args the source paths and profiling options
+     */
     public static void main(String[] args) throws IOException {
         ProfileOptions options = parseOptions(args);
         List<SourceUnit> units = loadSources(options.inputs(), options.maxFiles());

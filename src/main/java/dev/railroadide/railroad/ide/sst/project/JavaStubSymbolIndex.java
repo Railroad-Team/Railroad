@@ -9,6 +9,9 @@ import java.util.*;
 import dev.railroadide.railroad.ide.classparser.Type;
 import java.lang.reflect.Modifier;
 
+/**
+ * Builds Java type and member lookup tables from binary class stubs and their origins.
+ */
 public class JavaStubSymbolIndex implements JavaSymbolIndex {
     private final Set<String> declaredQualifiedNames;
     private final Set<String> typeNames;
@@ -18,6 +21,12 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     private final Map<String, List<JavaProjectSemanticIndex.SymbolDescriptor>> symbolsByQualifiedName;
     private final Map<String, List<JavaProjectSemanticIndex.SymbolDescriptor>> membersByOwnerQualifiedName;
 
+    /**
+     * Copies binary class stubs and builds type, package, and member lookup tables.
+     *
+     * @param classStubsByQualifiedName the binary class stubs keyed by qualified type name
+     * @param sourceByQualifiedName the origin path for every qualified class name in the stub map
+     */
     public JavaStubSymbolIndex(
         Map<String, ClassStub> classStubsByQualifiedName,
         Map<String, Path> sourceByQualifiedName

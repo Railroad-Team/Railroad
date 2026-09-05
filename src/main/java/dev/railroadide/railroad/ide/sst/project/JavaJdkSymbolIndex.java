@@ -11,6 +11,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Binary symbol index for a selected JDK or the currently running Java runtime.
+ */
 public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
     private JavaJdkSymbolIndex(
         Map<String, ClassStub> classStubsByQualifiedName,
@@ -19,6 +22,12 @@ public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
         super(classStubsByQualifiedName, sourceByQualifiedName);
     }
 
+    /**
+     * Indexes a JDK's runtime archive or modules, falling back to the current runtime when roots are unavailable.
+     *
+     * @param jdkHome the JDK installation directory, or {@code null} to use the current runtime
+     * @return the selected JDK index, or a current-runtime index on fallback
+     */
     public static JavaJdkSymbolIndex build(Path jdkHome) {
         if (jdkHome == null || Files.notExists(jdkHome))
             return fromCurrentRuntime();
@@ -48,6 +57,11 @@ public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
         return new JavaJdkSymbolIndex(classStubsByQualifiedName, sourceByQualifiedName);
     }
 
+    /**
+     * Builds an index from the cached standard-library class stubs of the current runtime.
+     *
+     * @return the current-runtime symbol index
+     */
     public static JavaJdkSymbolIndex fromCurrentRuntime() {
         Map<String, ClassStub> classStubsByQualifiedName = new LinkedHashMap<>(
             JavaSemanticAnalyzer.loadJdkClassStubsByQualifiedName());

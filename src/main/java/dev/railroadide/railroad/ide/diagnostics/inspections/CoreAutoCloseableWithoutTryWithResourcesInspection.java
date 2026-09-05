@@ -15,8 +15,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES}.
+ */
 @RegisteredInspection
 public class CoreAutoCloseableWithoutTryWithResourcesInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-auto-closeable-without-try-with-resources";
 
     @Override

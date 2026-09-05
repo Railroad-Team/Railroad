@@ -20,6 +20,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Tracks the current project and open documents and publishes their lifecycle events.
+ */
 @Getter
 public class DefaultIDEStateService implements IDEStateService {
     private static DefaultIDEStateService instance;
@@ -40,6 +43,11 @@ public class DefaultIDEStateService implements IDEStateService {
         });
     }
 
+    /**
+     * Returns the lazily initialized application IDE state service.
+     *
+     * @return shared IDE state service
+     */
     public static synchronized DefaultIDEStateService getInstance() {
         if (instance == null) {
             instance = new DefaultIDEStateService();
@@ -178,6 +186,11 @@ public class DefaultIDEStateService implements IDEStateService {
         return documentIdentities.findIdentity(identity.uri()).orElseThrow();
     }
 
+    /**
+     * Returns a snapshot of documents currently open in the IDE.
+     *
+     * @return open documents in opening order
+     */
     public List<Document> getOpenDocuments() {
         return List.copyOf(openDocuments.keySet());
     }

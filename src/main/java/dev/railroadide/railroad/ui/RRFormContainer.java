@@ -10,22 +10,42 @@ import java.util.Arrays;
 import javafx.scene.layout.Priority;
 
 /**
- * A modern form container component that provides a clean, elevated container for entire forms.
- * Perfect for wrapping multiple form sections with consistent modern design.
+ * A styled vertical form container with an optional localized title and a growing content area.
  */
 public class RRFormContainer extends VBox {
     private final LocalizedLabel titleLabel;
+    /**
+     * The inner vertical container for form sections and other content.
+     *
+     * @return the mutable form content container
+     */
     @Getter
     private final VBox formContent;
 
+    /**
+     * Creates an empty form container without a visible title and with default padding.
+     */
     public RRFormContainer() {
         this(null);
     }
 
+    /**
+     * Creates an empty form container with a title and default padding.
+     *
+     * @param title title text, interpreted as a localization key when it contains a period;
+     *              {@code null} or blank text hides the title
+     */
     public RRFormContainer(@Nullable String title) {
         this(title, null);
     }
 
+    /**
+     * Creates an empty form container with a title and optional custom padding.
+     *
+     * @param title title text, interpreted as a localization key when it contains a period;
+     *              {@code null} or blank text hides the title
+     * @param padding container padding, or {@code null} to use stylesheet defaults
+     */
     public RRFormContainer(@Nullable String title, Insets padding) {
         getStyleClass().addAll("rr-form-container", "rr-card");
 
@@ -44,6 +64,11 @@ public class RRFormContainer extends VBox {
         initialize(padding);
     }
 
+    /**
+     * Applies optional padding, configures content growth, and tracks title visibility for layout.
+     *
+     * @param padding container padding, or {@code null} to use stylesheet defaults
+     */
     protected void initialize(Insets padding) {
         if (padding != null) {
             setPadding(padding);
@@ -57,7 +82,9 @@ public class RRFormContainer extends VBox {
     }
 
     /**
-     * Set the form title (non-localized)
+     * Sets the displayed form title directly and updates its visibility.
+     *
+     * @param title title text, or {@code null} or blank text to hide the title
      */
     public void setTitle(String title) {
         titleLabel.setText(title);
@@ -65,7 +92,10 @@ public class RRFormContainer extends VBox {
     }
 
     /**
-     * Set the form title using a localization key
+     * Sets the form title using a localization key and updates its visibility.
+     *
+     * @param localizationKey title localization key, or {@code null} or blank text to hide the title
+     * @param args formatting arguments for the localized title
      */
     public void setLocalizedTitle(@Nullable String localizationKey, Object... args) {
         titleLabel.setVisible(localizationKey != null && !localizationKey.trim().isEmpty());
@@ -84,49 +114,63 @@ public class RRFormContainer extends VBox {
     }
 
     /**
-     * Get the form title
+     * Returns the title label's current text.
+     *
+     * @return current title text, which may be {@code null}
      */
     public String getTitle() {
         return titleLabel.getText();
     }
 
     /**
-     * Get the localization key if the title is localized
+     * Returns the title label's stored localization key.
+     *
+     * @return stored localization key; directly setting text does not clear this key
      */
     public String getLocalizationKey() {
         return titleLabel.getKey();
     }
 
     /**
-     * Add content to the form container
+     * Appends nodes to the form content area.
+     *
+     * @param nodes nodes to append in layout order
      */
     public void addContent(Node... nodes) {
         formContent.getChildren().addAll(nodes);
     }
 
     /**
-     * Add content to the form container at a specific index
+     * Inserts nodes into the form content area at the specified index.
+     *
+     * @param index insertion position, from zero through the current number of content nodes
+     * @param nodes nodes to insert in layout order
+     * @throws IndexOutOfBoundsException if the index is outside the insertion range
      */
     public void addContent(int index, Node... nodes) {
         formContent.getChildren().addAll(index, Arrays.asList(nodes));
     }
 
     /**
-     * Remove content from the form container
+     * Removes the supplied nodes from the form content area when present.
+     *
+     * @param nodes nodes to remove
      */
     public void removeContent(Node... nodes) {
         formContent.getChildren().removeAll(nodes);
     }
 
     /**
-     * Clear all content from the form container
+     * Removes every node from the form content area.
      */
     public void clearContent() {
         formContent.getChildren().clear();
     }
 
     /**
-     * Set the form as compact (reduced padding and spacing)
+     * Toggles the compact CSS style for reduced padding and spacing.
+     *
+     * @param compact whether to apply compact styling
      */
     public void setCompact(boolean compact) {
         if (compact) {
@@ -137,7 +181,9 @@ public class RRFormContainer extends VBox {
     }
 
     /**
-     * Set the form as highlighted
+     * Toggles the highlighted CSS style.
+     *
+     * @param highlighted whether to apply highlighted styling
      */
     public void setHighlighted(boolean highlighted) {
         if (highlighted) {
@@ -148,7 +194,9 @@ public class RRFormContainer extends VBox {
     }
 
     /**
-     * Set the form as interactive (clickable)
+     * Toggles the interactive CSS style without installing a click handler.
+     *
+     * @param interactive whether to apply interactive styling
      */
     public void setInteractive(boolean interactive) {
         if (interactive) {

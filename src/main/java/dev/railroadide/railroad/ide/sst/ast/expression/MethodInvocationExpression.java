@@ -11,6 +11,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * A method call with an optional receiver, explicit type arguments, and argument expressions.
+ *
+ * @param span source range occupied by this node
+ * @param scope optional qualifying expression
+ * @param typeArguments explicit type arguments
+ * @param methodName name of the invoked method
+ * @param arguments argument expressions in source order
+ */
 public record MethodInvocationExpression(
     Span span,
     Optional<Expression> scope,

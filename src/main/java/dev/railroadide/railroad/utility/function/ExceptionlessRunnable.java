@@ -1,5 +1,8 @@
 package dev.railroadide.railroad.utility.function;
 
+/**
+ * A {@link Runnable} that does not throw any exceptions.
+ */
 @FunctionalInterface
 public interface ExceptionlessRunnable extends Runnable {
     @Override
@@ -10,5 +13,10 @@ public interface ExceptionlessRunnable extends Runnable {
         }
     }
 
+    /**
+     * The method to be executed by this {@link ExceptionlessRunnable}.
+     *
+     * @throws Exception if an error occurs during execution
+     */
     void onRun() throws Exception;
 }

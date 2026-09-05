@@ -9,6 +9,14 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * An import declaration for a type or static member, optionally using a wildcard.
+ *
+ * @param span source range occupied by this node
+ * @param name qualified import target
+ * @param isStatic whether the static modifier is present
+ * @param isWildcard whether the import ends in a wildcard
+ */
 public record ImportDeclaration(
     Span span,
     NameExpression name,

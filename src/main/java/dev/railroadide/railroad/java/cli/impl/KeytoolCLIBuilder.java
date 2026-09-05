@@ -1015,11 +1015,82 @@ public class KeytoolCLIBuilder implements CLIBuilder<Process, KeytoolCLIBuilder>
      */
     @Getter
     public enum KeytoolCommand {
-        CERTREQ("-certreq"), CHANGE_ALIAS("-changealias"), DELETE("-delete"), EXPORT_CERT("-exportcert"), GEN_CERT(
-            "-gencert"), GEN_KEYPAIR("-genkeypair"), GEN_SECKEY("-genseckey"), IMPORT_CERT("-importcert"), IMPORT_PASS(
-                "-importpass"), IMPORT_KEYSTORE("-importkeystore"), KEY_PASSWD("-keypasswd"), LIST("-list"), PRINT_CERT(
-                    "-printcert"), PRINT_CERT_REQ("-printcertreq"), PRINT_CRL(
-                        "-printcrl"), STORE_PASSWD("-storepasswd"), SHOW_INFO("-showinfo"), VERSION("-version");
+        /**
+         * Generates a certificate signing request.
+         */
+        CERTREQ("-certreq"),
+        /**
+         * Changes the alias of a keystore entry.
+         */
+        CHANGE_ALIAS("-changealias"),
+        /**
+         * Deletes a keystore entry.
+         */
+        DELETE("-delete"),
+        /**
+         * Exports a certificate from the keystore.
+         */
+        EXPORT_CERT("-exportcert"),
+        /**
+         * Generates a certificate from a certificate request.
+         */
+        GEN_CERT(
+            "-gencert"),
+        /**
+         * Generates a public/private key pair.
+         */
+        GEN_KEYPAIR("-genkeypair"),
+        /**
+         * Generates a secret key.
+         */
+        GEN_SECKEY("-genseckey"),
+        /**
+         * Imports a certificate or certificate chain.
+         */
+        IMPORT_CERT("-importcert"),
+        /**
+         * Imports a password into a secret key entry.
+         */
+        IMPORT_PASS(
+            "-importpass"),
+        /**
+         * Imports entries from another keystore.
+         */
+        IMPORT_KEYSTORE("-importkeystore"),
+        /**
+         * Changes the password protecting a key.
+         */
+        KEY_PASSWD("-keypasswd"),
+        /**
+         * Lists keystore entries.
+         */
+        LIST("-list"),
+        /**
+         * Prints certificate contents.
+         */
+        PRINT_CERT(
+            "-printcert"),
+        /**
+         * Prints a certificate signing request.
+         */
+        PRINT_CERT_REQ("-printcertreq"),
+        /**
+         * Prints a certificate revocation list.
+         */
+        PRINT_CRL(
+            "-printcrl"),
+        /**
+         * Changes the keystore password.
+         */
+        STORE_PASSWD("-storepasswd"),
+        /**
+         * Displays security information.
+         */
+        SHOW_INFO("-showinfo"),
+        /**
+         * Displays the keytool version.
+         */
+        VERSION("-version");
 
         private final String flag;
 

@@ -53,6 +53,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+/**
+ * Provides a text editor with configurable highlighting, completion, diagnostics, and signature help.
+ */
 public abstract class CodeEditorPane extends TextEditorPane {
     protected final Project project;
     protected final @Nullable CompletionProvider completionProvider;

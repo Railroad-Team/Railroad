@@ -50,12 +50,20 @@ import java.util.function.Function;
 // TODO: Make it so the display test and client side only options are only shown for versions that support it
 // TODO: Make it so the display test and client side only options are in their own steps
 // TODO: Fix the comboboxes not being immediately populated and instead having the data fetched completely async
+/**
+ * Collects NeoForge project settings and starts project creation when onboarding finishes.
+ */
 public class NeoforgeProjectOnboarding {
     private static final ExpiringCache<List<MinecraftVersion>> NEOFORGE_MINECRAFT_VERSIONS_CACHE = new ExpiringCache<>(
         Duration.ofHours(3));
 
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
+    /**
+     * Starts the project settings wizard in the supplied scene and launches project creation when it finishes.
+     *
+     * @param scene scene whose root will be replaced with the onboarding view
+     */
     public void start(Scene scene) {
         var flow = OnboardingFlow.builder()
             .addStep("project_details", this::createProjectDetailsStep)

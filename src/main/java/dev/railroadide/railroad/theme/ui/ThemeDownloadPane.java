@@ -32,6 +32,11 @@ public class ThemeDownloadPane {
     private LocalizedLabel statusLabel;
     private RRButton refreshButton;
 
+    /**
+     * Constructs a new ThemeDownloadPane.
+     *
+     * @param owner The owner window for modality.
+     */
     public ThemeDownloadPane(Window owner) {
         var mainContainer = new RRFormContainer();
         mainContainer.getStyleClass().add("theme-download-container");

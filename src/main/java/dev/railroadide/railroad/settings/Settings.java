@@ -20,11 +20,13 @@ import java.util.Map;
 
 import static dev.railroadide.railroad.settings.handler.SettingsHandler.registerSetting;
 
+/** Central definitions for Railroad's built-in application settings. */
 public final class Settings {
     private Settings() {
         // utility class
     }
 
+    /** Active theme identifier. */
     public static final Setting<String> THEME = registerSetting(Setting.builder(String.class, "railroad:theme")
         .treePath("appearance")
         .category(SettingCategory.simple("railroad:appearance.themes"))
@@ -36,6 +38,7 @@ public final class Settings {
         .canBeNull(false)
         .build());
 
+    /** Active application language. */
     public static final Setting<Language> LANGUAGE = registerSetting(
         Setting.builder(Language.class, "railroad:language")
             .treePath("general")
@@ -48,6 +51,7 @@ public final class Settings {
             .canBeNull(false)
             .build());
 
+    /** Whether the editor automatically pairs delimiters inside string literals. */
     public static final Setting<Boolean> AUTO_PAIR_INSIDE_STRINGS = registerSetting(
         Setting.builder(Boolean.class, "railroad:auto_pair_inside_strings")
             .treePath("ide")
@@ -56,6 +60,7 @@ public final class Settings {
             .defaultValue(true)
             .build());
 
+    /** Maximum number of simultaneously open editor tabs. */
     public static final Setting<Integer> EDITOR_TAB_LIMIT = registerSetting(
         Setting.builder(Integer.class, "railroad:editor_tab_limit")
             .treePath("ide")
@@ -65,6 +70,7 @@ public final class Settings {
             .canBeNull(false)
             .build());
 
+    /** Maximum number of recently closed editor tabs retained for reopening. */
     public static final Setting<Integer> RECENTLY_CLOSED_TAB_LIMIT = registerSetting(
         Setting.builder(Integer.class, "railroad:recently_closed_tab_limit")
             .treePath("ide")
@@ -74,6 +80,7 @@ public final class Settings {
             .canBeNull(false)
             .build());
 
+    /** Whether files open in preview tabs. */
     public static final Setting<Boolean> ENABLE_PREVIEW_TABS = registerSetting(
         Setting.builder(Boolean.class, "railroad:enable_preview_tabs")
             .treePath("ide")
@@ -83,6 +90,7 @@ public final class Settings {
             .canBeNull(false)
             .build());
 
+    /** Whether the project explorer follows the active editor tab. */
     public static final Setting<Boolean> SYNCHRONIZE_PROJECT_EXPLORER_WITH_ACTIVE_TAB = registerSetting(
         Setting.builder(Boolean.class, "railroad:synchronize_project_explorer_with_active_tab")
             .treePath("ide")
@@ -92,6 +100,7 @@ public final class Settings {
             .canBeNull(false)
             .build());
 
+    /** Whether importing a project switches to the IDE workspace afterward. */
     public static final Setting<Boolean> SWITCH_TO_IDE_AFTER_IMPORT = registerSetting(
         Setting.builder(Boolean.class, "railroad:switch_to_ide_after_import")
             .treePath("projects")
@@ -100,6 +109,7 @@ public final class Settings {
             .defaultValue(true)
             .build());
 
+    /** Default group ID used when creating projects. */
     public static final Setting<String> DEFAULT_PROJECT_GROUP_ID = registerSetting(
         Setting.builder(String.class, "railroad:projects.default_group_id")
             .treePath("projects")
@@ -109,6 +119,7 @@ public final class Settings {
             .canBeNull(true)
             .build());
 
+    /** Default project version used when creating projects. */
     public static final Setting<String> DEFAULT_PROJECT_VERSION = registerSetting(
         Setting.builder(String.class, "railroad:projects.default_version")
             .treePath("projects")
@@ -118,6 +129,7 @@ public final class Settings {
             .canBeNull(true)
             .build());
 
+    /** Default author used when creating projects. */
     public static final Setting<String> DEFAULT_PROJECT_AUTHOR = registerSetting(
         Setting.builder(String.class, "railroad:projects.default_author")
             .treePath("projects")
@@ -127,6 +139,7 @@ public final class Settings {
             .canBeNull(true)
             .build());
 
+    /** User-defined and default keyboard and mouse bindings. */
     public static final Setting<Map<String, List<KeybindData>>> KEYBINDS = registerSetting(
         Setting.builder(new TypeToken<Map<String, List<KeybindData>>>() {
         }, "railroad:keybinds")
@@ -141,6 +154,7 @@ public final class Settings {
             .treePath("keybinds")
             .build());
 
+    /** Runtime enabled state for loaded plugins. */
     public static final Setting<Map<PluginDescriptor, Boolean>> ENABLED_PLUGINS = registerSetting(
         Setting.builder((Class<Map<PluginDescriptor, Boolean>>) (Class<?>) Map.class, "railroad:enabled_plugins")
             .treePath("plugins")
@@ -172,6 +186,7 @@ public final class Settings {
             .defaultValue(new HashMap<>())
             .build());
 
+    /** Additional directories searched for installed JDKs. */
     public static final Setting<List<Path>> ADDITIONAL_JDK_SCAN_PATHS = registerSetting(
         Setting.builder(new TypeToken<List<Path>>() {
         }, "railroad:additional_jdk_scan_paths")
@@ -181,6 +196,7 @@ public final class Settings {
             .defaultValue(List.of())
             .build());
 
+    /** Directories excluded from JDK discovery. */
     public static final Setting<List<Path>> EXCLUDED_JDK_SCAN_PATHS = registerSetting(
         Setting.builder(new TypeToken<List<Path>>() {
         }, "railroad:excluded_jdk_scan_paths")
@@ -190,6 +206,7 @@ public final class Settings {
             .defaultValue(List.of())
             .build());
 
+    /** Explicit JDK executable files added to the available JDK list. */
     public static final Setting<List<Path>> ADDITIONAL_JDKS = registerSetting(
         Setting.builder(new TypeToken<List<Path>>() {
         }, "railroad:additional_jdks")
@@ -199,6 +216,7 @@ public final class Settings {
             .defaultValue(List.of())
             .build());
 
+    /** Current Java inspection rule configuration. */
     public static final Setting<JavaInspectionRuleSettingsState> JAVA_INSPECTION_RULE_SETTINGS = registerSetting(
         Setting.builder(JavaInspectionRuleSettingsState.class, "railroad:java_inspection_rule_settings")
             .treePath("ide")
@@ -221,6 +239,7 @@ public final class Settings {
             })
             .build());
 
+    /** Timeout in milliseconds for detecting a Java version. */
     public static final Setting<Long> JAVA_VERSION_DETECTION_TIMEOUT_MS = registerSetting(
         Setting.builder(Long.class, "railroad:java_version_detection_timeout_ms")
             .treePath("ide")
@@ -229,6 +248,7 @@ public final class Settings {
             .defaultValue(3000L)
             .build());
 
+    /** Optional path to the Windows Terminal settings file. */
     public static final Setting<Path> WINDOWS_TERMINAL_SETTINGS_PATH = registerSetting(
         Setting.builder(Path.class, "railroad:windows_terminal_settings_path")
             .treePath("appearance")
@@ -238,6 +258,7 @@ public final class Settings {
             .canBeNull(true)
             .build());
 
+    /** Strategy used to select the terminal font. */
     public static final Setting<TerminalFontMode> TERMINAL_FONT_MODE = registerSetting(
         Setting.builder(TerminalFontMode.class, "railroad:terminal_font_mode")
             .treePath("appearance")
@@ -247,6 +268,7 @@ public final class Settings {
             .canBeNull(false)
             .build());
 
+    /** Optional installed font selected for the terminal. */
     public static final Setting<String> TERMINAL_INSTALLED_FONT = registerSetting(
         Setting.builder(String.class, "railroad:terminal_installed_font")
             .treePath("appearance")
@@ -256,6 +278,7 @@ public final class Settings {
             .canBeNull(true)
             .build());
 
+    /** Optional custom terminal font family name. */
     public static final Setting<String> TERMINAL_CUSTOM_FONT_FAMILY = registerSetting(
         Setting.builder(String.class, "railroad:terminal_custom_font_family")
             .treePath("appearance")
@@ -265,6 +288,7 @@ public final class Settings {
             .canBeNull(true)
             .build());
 
+    /** Timeout in milliseconds for searching for the Git executable. */
     public static final Setting<Long> GIT_BINARY_SEARCH_COMMAND_TIMEOUT_MS = registerSetting(
         Setting.builder(Long.class, "railroad:git_binary_command_search_timeout_ms")
             .treePath("vcs")
@@ -273,6 +297,7 @@ public final class Settings {
             .defaultValue(5000L)
             .build());
 
+    /** Timeout in milliseconds for running Git version detection. */
     public static final Setting<Long> GIT_VERSION_COMMAND_TIMEOUT_MS = registerSetting(
         Setting.builder(Long.class, "railroad:git_version_command_timeout_ms")
             .treePath("vcs")
@@ -281,6 +306,7 @@ public final class Settings {
             .defaultValue(5000L)
             .build());
 
+    /** Optional explicitly selected Git executable. */
     public static final Setting<Path> GIT_EXECUTABLE_PATH = registerSetting(
         Setting.builder(Path.class, "railroad:git_executable_path")
             .treePath("vcs")
@@ -290,6 +316,7 @@ public final class Settings {
             .canBeNull(true)
             .build());
 
+    /** Editor indentation character mode. */
     public static final Setting<IndentMode> INDENT_MODE = registerSetting(
         Setting.builder(IndentMode.class, "railroad:indent_mode")
             .treePath("ide")
@@ -299,6 +326,7 @@ public final class Settings {
             .canBeNull(false)
             .build());
 
+    /** Number of columns represented by one indentation level. */
     public static final Setting<Integer> INDENT_WIDTH = registerSetting(
         Setting.builder(Integer.class, "railroad:indent_width")
             .treePath("ide")
@@ -308,6 +336,7 @@ public final class Settings {
             .canBeNull(false)
             .build());
 
+    /** Number of columns represented by a tab character. */
     public static final Setting<Integer> TAB_WIDTH = registerSetting(
         Setting.builder(Integer.class, "railroad:tab_width")
             .treePath("ide")
@@ -317,6 +346,7 @@ public final class Settings {
             .canBeNull(false)
             .build());
 
+    /** Font family used by editor controls. */
     public static final Setting<String> EDITOR_FONT_FAMILY = registerSetting(
         Setting.builder(String.class, "railroad:editor_font_family")
             .treePath("ide")
@@ -326,6 +356,7 @@ public final class Settings {
             .canBeNull(false)
             .build());
 
+    /** Whether the last project opens automatically at startup. */
     public static final Setting<Boolean> OPEN_LAST_PROJECT_ON_START = registerSetting(
         Setting.builder(Boolean.class, "railroad:open_last_project_on_start")
             .treePath("projects")
@@ -334,6 +365,7 @@ public final class Settings {
             .defaultValue(false)
             .build());
 
+    /** Triggers class initialization so all built-in settings are registered. */
     public static void initialize() {
         // intentionally empty - triggers class loading and static init
     }

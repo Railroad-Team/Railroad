@@ -11,6 +11,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * A continuation of the next loop iteration, optionally targeting a labeled loop.
+ *
+ * @param span source range occupied by this node
+ * @param label optional target label; empty for the innermost enclosing loop
+ */
 public record ContinueStatement(
     Span span,
     Optional<NameExpression> label

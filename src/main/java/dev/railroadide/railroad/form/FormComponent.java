@@ -142,13 +142,15 @@ public abstract class FormComponent<T extends Node & HasSetValue, U, V extends N
     }
 
     /**
-     * Creates a new combo box component.
+     * Creates a new combo box component builder.
      *
      * @param dataKey The key of the data.
      * @param label The label of the component.
      * @param itemClazz The class of the items in the combo box.
-     * @apiNote The {@param itemClazz} is used to determine the type of the items in the combo box,
-     *          however, it is not actually used in the implementation.
+     * @param <T> the type of item displayed by the combo box
+     * @return The builder for the combo box component.
+     * @apiNote The {@code itemClazz} parameter provides generic type information
+     *          to callers but is not used at runtime.
      */
     public static <T> ComboBoxComponent.Builder<T> comboBox(
         @NotNull String dataKey,
@@ -208,6 +210,7 @@ public abstract class FormComponent<T extends Node & HasSetValue, U, V extends N
      * @param dataKey The key of the data.
      * @param label The label of the component.
      * @param enumClass The enum class providing the options.
+     * @param <E> the enum type displayed by the radio button group
      * @return The builder for the radio button group component.
      */
     public static <E extends Enum<E>> RadioButtonGroupComponent.Builder<E> radioButtonGroup(

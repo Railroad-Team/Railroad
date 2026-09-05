@@ -23,10 +23,16 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Executes script files or supplied script text through a configured interpreter.
+ */
 public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellScriptRunConfigurationData> {
     private final Map<RunConfiguration<?>, Process> runningProcesses = new ConcurrentHashMap<>();
     private final Map<RunConfiguration<?>, Path> temporaryScripts = new ConcurrentHashMap<>();
 
+    /**
+     * Creates the shell script type with its localized label and terminal icon.
+     */
     public ShellScriptRunConfigurationType() {
         super("railroad.runconfig.shellscript", FontAwesomeSolid.TERMINAL, Color.web("#919191"));
     }

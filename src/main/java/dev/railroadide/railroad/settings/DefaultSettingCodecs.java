@@ -153,6 +153,15 @@ public class DefaultSettingCodecs {
         })
         .build();
 
+    /**
+     * Creates an enum codec using enum names for JSON and combo-box labels.
+     * Invalid decoded names fall back to the enum's first constant.
+     *
+     * @param <E> enum type
+     * @param id codec identifier
+     * @param enumClass enum class whose constants populate the combo box
+     * @return a codec for the enum
+     */
     public static <E extends Enum<E>> SettingCodec<E, ComboBox<E>> ofEnum(String id, Class<E> enumClass) {
         return ofEnum(id, enumClass, Enum::name, name -> {
             try {
@@ -181,6 +190,16 @@ public class DefaultSettingCodecs {
         return value == null ? 0 : Math.max(0, value);
     }
 
+    /**
+     * Creates an enum codec with custom string conversion and a converter derived from those functions.
+     *
+     * @param <E> enum type
+     * @param id codec identifier
+     * @param enumClass enum class whose constants populate the combo box
+     * @param toStringFunction converts enum values to labels and JSON strings
+     * @param fromStringFunction converts labels and JSON strings to enum values
+     * @return a codec for the enum
+     */
     public static <E extends Enum<E>> SettingCodec<E, ComboBox<E>> ofEnum(
         String id,
         Class<E> enumClass,
@@ -191,6 +210,17 @@ public class DefaultSettingCodecs {
             new ComboBoxConverter<>(toStringFunction, fromStringFunction));
     }
 
+    /**
+     * Creates an enum codec with custom value conversion and combo-box conversion.
+     *
+     * @param <E> enum type
+     * @param id codec identifier
+     * @param enumClass enum class whose constants populate the combo box
+     * @param toStringFunction converts enum values to JSON strings
+     * @param fromStringFunction converts JSON strings to enum values
+     * @param comboBoxConverter converts enum values to and from combo-box labels
+     * @return a codec for the enum
+     */
     public static <E extends Enum<E>> SettingCodec<E, ComboBox<E>> ofEnum(
         String id,
         Class<E> enumClass,

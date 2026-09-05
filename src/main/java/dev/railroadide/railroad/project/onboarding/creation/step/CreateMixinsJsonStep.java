@@ -14,6 +14,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Map;
 
+/**
+ * Writes a Mixin configuration with empty mixin lists and Java 21 compatibility.
+ * The current implementation skips creation when {@link ForgeProjectKeys#USE_MIXINS} is {@code true}.
+ *
+ * @param files service used to write the configuration under the project's resources directory
+ */
 public record CreateMixinsJsonStep(FilesService files) implements CreationStep {
     @Override
     public String id() {

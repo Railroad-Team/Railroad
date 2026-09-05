@@ -20,6 +20,9 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Cache manager that persists entries in a SQLite database and keeps a memory mirror.
+ */
 public class SqlCacheManager implements IterableCacheManager {
     private final Connection connection;
     private final Map<String, MetadataCacheEntry<?>> memoryCache = new ConcurrentHashMap<>();
@@ -27,11 +30,23 @@ public class SqlCacheManager implements IterableCacheManager {
         .registerModule(new JavaTimeModule())
         .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
+    /**
+     * Opens a SQLite-compatible JDBC connection and initializes the cache schema.
+     *
+     * @param uri the JDBC connection URI
+     * @throws SQLException if the connection or schema cannot be created
+     */
     public SqlCacheManager(String uri) throws SQLException {
         this.connection = DriverManager.getConnection(uri);
         initSchema();
     }
 
+    /**
+     * Opens a SQLite cache database file.
+     *
+     * @param dbFile the database file
+     * @throws SQLException if the connection or schema cannot be created
+     */
     public SqlCacheManager(Path dbFile) throws SQLException {
         this("jdbc:sqlite:" + dbFile.toAbsolutePath());
     }
@@ -140,6 +155,11 @@ public class SqlCacheManager implements IterableCacheManager {
     }
 
     @Override
+    /**
+     * Lists the entries stored in the SQLite database.
+     *
+     * @return the readable cache entries; entries that cannot be deserialized are omitted
+     */
     public Iterable<CacheEntryWrapper> entries() {
         List<CacheEntryWrapper> results = new ArrayList<>();
         try (Statement stmt = connection.createStatement()) {

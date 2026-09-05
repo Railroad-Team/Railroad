@@ -13,8 +13,15 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#OVERRIDABLE_METHOD_DURING_CONSTRUCTION},
+ * {@link JavaSemanticRules#OVERRIDDEN_METHOD_DURING_CONSTRUCTION}.
+ */
 @RegisteredInspection
 public final class CoreInitializationInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-initialization-inspection";
 
     private static final Set<String> CONSTRUCTOR_KINDS = Set.of(

@@ -20,7 +20,16 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Provides an action to cherry-pick a commit with handling for uncommitted changes.
+ */
 public class GitCommitCherryPickButton extends RRButton {
+    /**
+     * Creates the action for cherry-picking the supplied commit.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param commit commit to display or act on
+     */
     public GitCommitCherryPickButton(Project project, GitCommit commit) {
         super("railroad.git.commit.details.button.cherry_pick", FontAwesomeSolid.MAGNET);
         setVariant(ButtonVariant.PRIMARY);

@@ -100,62 +100,142 @@ public final class JavaSemanticAnalyzer {
     private JavaSemanticAnalyzer() {
     }
 
+    /**
+     * Parses Java source, resolves symbols and types, and runs the core inspection rules.
+     *
+     * @param source the Java source to analyze
+     * @return the semantic model with analysis and core inspection diagnostics
+     */
     public static SemanticModel analyze(CharSequence source) {
         Objects.requireNonNull(source, "source");
         return analyze(JavaSyntaxParser.parse(source));
     }
 
+    /**
+     * Parses and analyzes Java source against the supplied project symbols, then runs core inspections.
+     *
+     * @param source the Java source to analyze
+     * @param projectIndex the project index used to resolve external types and members
+     * @return the semantic model with analysis and core inspection diagnostics
+     */
     public static SemanticModel analyze(CharSequence source, JavaSymbolIndex projectIndex) {
         Objects.requireNonNull(source, "source");
         return analyze(JavaSyntaxParser.parse(source), projectIndex);
     }
 
+    /**
+     * Resolves declarations, symbols, and types in a parsed tree and runs the core inspection rules.
+     *
+     * @param syntaxTree the Java syntax tree to analyze
+     * @return the semantic model with analysis and core inspection diagnostics
+     */
     public static SemanticModel analyze(SyntaxTree syntaxTree) {
         Objects.requireNonNull(syntaxTree, "syntaxTree");
         return withCoreDiagnostics(analyzeFacts(syntaxTree));
     }
 
+    /**
+     * Analyzes a parsed tree against the supplied project symbols and runs the core inspection rules.
+     *
+     * @param syntaxTree the Java syntax tree to analyze
+     * @param projectIndex the project index used to resolve external types and members
+     * @return the semantic model with analysis and core inspection diagnostics
+     */
     public static SemanticModel analyze(SyntaxTree syntaxTree, JavaSymbolIndex projectIndex) {
         Objects.requireNonNull(syntaxTree, "syntaxTree");
         return withCoreDiagnostics(analyzeFacts(syntaxTree, projectIndex));
     }
 
+    /**
+     * Parses Java source and collects declarations, resolved symbols, and inferred types without running inspections.
+     *
+     * @param source the Java source to analyze
+     * @return the semantic facts and diagnostics produced by analysis
+     */
     public static SemanticModel analyzeFacts(CharSequence source) {
         Objects.requireNonNull(source, "source");
         return analyzeFacts(JavaSyntaxParser.parse(source));
     }
 
+    /**
+     * Parses and analyzes Java source using project symbols without running inspection rules.
+     *
+     * @param source the Java source to analyze
+     * @param projectIndex the project index used to resolve external types and members
+     * @return the semantic facts and diagnostics produced by analysis
+     */
     public static SemanticModel analyzeFacts(CharSequence source, JavaSymbolIndex projectIndex) {
         Objects.requireNonNull(source, "source");
         return analyzeFacts(JavaSyntaxParser.parse(source), projectIndex);
     }
 
+    /**
+     * Collects declarations, resolves names, and infers types using the standard library for external symbols.
+     * Inspection rules are not run.
+     *
+     * @param syntaxTree the Java syntax tree to analyze
+     * @return the semantic facts and diagnostics produced by analysis
+     */
     public static SemanticModel analyzeFacts(SyntaxTree syntaxTree) {
         Objects.requireNonNull(syntaxTree, "syntaxTree");
         return performAnalysis(syntaxTree, true);
     }
 
+    /**
+     * Collects declarations, resolves names, and infers types against project symbols without running inspections.
+     *
+     * @param syntaxTree the Java syntax tree to analyze
+     * @param projectIndex the project index used to resolve external types and members
+     * @return the semantic facts and diagnostics produced by analysis
+     */
     public static SemanticModel analyzeFacts(SyntaxTree syntaxTree, JavaSymbolIndex projectIndex) {
         Objects.requireNonNull(syntaxTree, "syntaxTree");
         Objects.requireNonNull(projectIndex, "projectIndex");
         return performAnalysis(syntaxTree, true, projectIndex);
     }
 
+    /**
+     * Parses Java source and collects its declarations and scopes, then runs core inspection rules.
+     * Name resolution and expression type inference are skipped.
+     *
+     * @param source the Java source whose declarations should be analyzed
+     * @return the declaration model with analysis and core inspection diagnostics
+     */
     public static SemanticModel analyzeDeclarations(CharSequence source) {
         Objects.requireNonNull(source, "source");
         return analyzeDeclarations(JavaSyntaxParser.parse(source));
     }
 
+    /**
+     * Collects declarations and scopes from a parsed tree and runs core inspection rules.
+     * Name resolution and expression type inference are skipped.
+     *
+     * @param syntaxTree the Java syntax tree whose declarations should be analyzed
+     * @return the declaration model with analysis and core inspection diagnostics
+     */
     public static SemanticModel analyzeDeclarations(SyntaxTree syntaxTree) {
         Objects.requireNonNull(syntaxTree, "syntaxTree");
         return withCoreDiagnostics(analyzeDeclarationsFacts(syntaxTree));
     }
 
+    /**
+     * Parses Java source and collects declarations and scopes without resolving names, inferring expression
+     * types, or running inspection rules.
+     *
+     * @param source the Java source whose declarations should be collected
+     * @return the declaration facts and diagnostics produced while collecting them
+     */
     public static SemanticModel analyzeDeclarationsFacts(CharSequence source) {
         Objects.requireNonNull(source, "source");
         return analyzeDeclarationsFacts(JavaSyntaxParser.parse(source));
     }
 
+    /**
+     * Collects declarations and scopes without resolving names, inferring expression types, or running inspections.
+     *
+     * @param syntaxTree the Java syntax tree whose declarations should be collected
+     * @return the declaration facts and diagnostics produced while collecting them
+     */
     public static SemanticModel analyzeDeclarationsFacts(SyntaxTree syntaxTree) {
         Objects.requireNonNull(syntaxTree, "syntaxTree");
         return performAnalysis(syntaxTree, false);
@@ -4760,7 +4840,8 @@ public final class JavaSemanticAnalyzer {
         }
 
         private enum CallableKind {
-            METHOD, CONSTRUCTOR
+            METHOD,
+            CONSTRUCTOR
         }
 
         private record MemberCandidate(
@@ -6753,6 +6834,11 @@ public final class JavaSemanticAnalyzer {
         return builder.toString();
     }
 
+    /**
+     * Returns the cached qualified names of classes discovered in the standard library.
+     *
+     * @return an immutable set of standard-library class names
+     */
     public static Set<String> loadJdkQualifiedTypeNames() {
         Set<String> cached = cachedJdkQualifiedTypeNames;
         if (cached != null)
@@ -6767,6 +6853,11 @@ public final class JavaSemanticAnalyzer {
         }
     }
 
+    /**
+     * Scans the standard library on first use and caches class stubs by their nonblank qualified names.
+     *
+     * @return an immutable map from qualified class names to standard-library stubs
+     */
     public static Map<String, ClassStub> loadJdkClassStubsByQualifiedName() {
         Map<String, ClassStub> cached = cachedJdkClassStubsByQualifiedName;
         if (cached != null)
@@ -6789,6 +6880,13 @@ public final class JavaSemanticAnalyzer {
         }
     }
 
+    /**
+     * Finds the first immediate child with the requested syntax kind.
+     *
+     * @param node the parent node to inspect
+     * @param kindId the syntax kind identifier to match
+     * @return the matching child, or {@code null} if none exists
+     */
     public static @Nullable SyntaxNode directChild(SyntaxNode node, String kindId) {
         for (SyntaxNode child : node.children()) {
             if (kindId.equals(child.kind().id()))
@@ -6797,6 +6895,13 @@ public final class JavaSemanticAnalyzer {
         return null;
     }
 
+    /**
+     * Tests whether a node or its descendants contain a nonmissing token of the requested Java token type.
+     *
+     * @param node the subtree to inspect
+     * @param tokenType the Java token type to find
+     * @return whether a matching token is present
+     */
     public static boolean hasTokenKind(SyntaxNode node, JavaTokenType tokenType) {
         String tokenKindId = JavaSyntaxKinds.tokenKind(tokenType).id();
         return containsTokenKind(node, tokenKindId);
@@ -6812,6 +6917,13 @@ public final class JavaSemanticAnalyzer {
         return false;
     }
 
+    /**
+     * Finds the first identifier-like direct token child after the specified keyword token.
+     *
+     * @param node the node whose immediate children should be inspected
+     * @param keywordTokenType the keyword after which to search
+     * @return the identifier text, or {@code null} if the keyword or a following identifier is absent
+     */
     public static @Nullable String identifierAfterKeyword(SyntaxNode node, JavaTokenType keywordTokenType) {
         String keywordKindId = JavaSyntaxKinds.tokenKind(keywordTokenType).id();
         boolean foundKeyword = false;
@@ -6833,6 +6945,14 @@ public final class JavaSemanticAnalyzer {
         return null;
     }
 
+    /**
+     * Finds the last identifier-like direct token child preceding the first child of the requested kind.
+     * If that kind is absent, the last identifier-like direct token child is used.
+     *
+     * @param node the node whose immediate children should be inspected
+     * @param childKindId the syntax kind identifier at which to stop searching
+     * @return the identifier text, or {@code null} if no preceding identifier exists
+     */
     public static @Nullable String identifierBeforeChildKind(SyntaxNode node, String childKindId) {
         String lastIdentifier = null;
         for (SyntaxNode child : node.children()) {
@@ -6846,6 +6966,12 @@ public final class JavaSemanticAnalyzer {
         return lastIdentifier;
     }
 
+    /**
+     * Finds the first identifier or contextual keyword token in a subtree, ignoring missing tokens.
+     *
+     * @param node the subtree to search in child order
+     * @return the first identifier-like token's text, or {@code null} if none exists
+     */
     public static @Nullable String firstIdentifierLikeTokenText(SyntaxNode node) {
         if (node instanceof SyntaxToken token)
             return isIdentifierLikeToken(token) ? token.text() : null;
@@ -6859,6 +6985,12 @@ public final class JavaSemanticAnalyzer {
         return null;
     }
 
+    /**
+     * Finds the last identifier or contextual keyword token in a subtree, ignoring missing tokens.
+     *
+     * @param node the subtree to search in reverse child order
+     * @return the last identifier-like token's text, or {@code null} if none exists
+     */
     public static @Nullable String lastIdentifierLikeTokenText(SyntaxNode node) {
         if (node instanceof SyntaxToken token)
             return isIdentifierLikeToken(token) ? token.text() : null;
@@ -6870,6 +7002,12 @@ public final class JavaSemanticAnalyzer {
         return null;
     }
 
+    /**
+     * Collects all tokens in a subtree in child order, including trivia and missing tokens.
+     *
+     * @param node the subtree whose tokens should be collected
+     * @return an immutable list of the subtree's tokens
+     */
     public static List<SyntaxToken> leafTokens(SyntaxNode node) {
         List<SyntaxToken> tokens = new ArrayList<>();
         collectLeafTokens(node, tokens);
@@ -6892,14 +7030,33 @@ public final class JavaSemanticAnalyzer {
         return IDENTIFIER_LIKE_TOKEN_KIND_IDS.contains(kindId) && !isMissingTokenKind(kindId);
     }
 
+    /**
+     * Tests whether a syntax kind identifier denotes a token inserted by parser recovery.
+     *
+     * @param kindId the syntax kind identifier to inspect
+     * @return whether the identifier starts with {@code JAVA_MISSING_}
+     */
     public static boolean isMissingTokenKind(String kindId) {
         return kindId.startsWith("JAVA_MISSING_");
     }
 
+    /**
+     * Tests whether a token represents whitespace, a line terminator, or a Java comment.
+     *
+     * @param token the token to classify
+     * @return whether the token is trivia
+     */
     public static boolean isTriviaToken(SyntaxToken token) {
         return TRIVIA_TOKEN_KIND_IDS.contains(token.kind().id());
     }
 
+    /**
+     * Joins identifier-like tokens, dots, and wildcard stars into a qualified name.
+     * Trivia, missing tokens, and other token kinds are omitted.
+     *
+     * @param node the qualified-name subtree to read
+     * @return the concatenated name, or {@code null} if no name tokens exist
+     */
     public static @Nullable String canonicalQualifiedName(SyntaxNode node) {
         var builder = new StringBuilder();
         appendCanonicalQualifiedNameTokens(node, builder);
@@ -6927,6 +7084,13 @@ public final class JavaSemanticAnalyzer {
         }
     }
 
+    /**
+     * Joins tokens describing a Java type, including generic and array syntax, into compact text.
+     * Annotations, trivia, missing tokens, and unrelated token kinds are omitted.
+     *
+     * @param node the type subtree to read
+     * @return the concatenated type text, or {@code null} if no type tokens exist
+     */
     public static @Nullable String canonicalTypeText(SyntaxNode node) {
         var builder = new StringBuilder();
         appendCanonicalTypeTokens(node, builder);
@@ -6970,6 +7134,12 @@ public final class JavaSemanticAnalyzer {
         }
     }
 
+    /**
+     * Tests whether a symbol kind represents a class, interface, enum, annotation, or record.
+     *
+     * @param symbolKind the symbol kind to classify
+     * @return whether the kind represents a declared Java type
+     */
     public static boolean isTypeSymbol(SymbolKind symbolKind) {
         return switch (symbolKind) {
             case CLASS, INTERFACE, ENUM, ANNOTATION, RECORD -> true;
@@ -6985,6 +7155,12 @@ public final class JavaSemanticAnalyzer {
             || JavaSyntaxKinds.RECORD_DECLARATION.id().equals(kindId);
     }
 
+    /**
+     * Tests whether a node is the selected name of its enclosing field access or method invocation.
+     *
+     * @param node the possible selector name expression
+     * @return whether the node is the selector name of a supported parent expression
+     */
     public static boolean isSelectorNameExpression(SyntaxNode node) {
         var parent = node.parent();
         if (parent.isEmpty())
@@ -6996,6 +7172,12 @@ public final class JavaSemanticAnalyzer {
         return selectorNameNode(parent.get()) == node;
     }
 
+    /**
+     * Finds the last direct name-expression child, skipping argument lists.
+     *
+     * @param node the field access or method invocation to inspect
+     * @return the selector name node, or {@code null} if no direct name expression exists
+     */
     public static @Nullable SyntaxNode selectorNameNode(SyntaxNode node) {
         for (int index = node.children().size() - 1; index >= 0; index--) {
             SyntaxNode child = node.children().get(index);
@@ -7007,6 +7189,13 @@ public final class JavaSemanticAnalyzer {
         return null;
     }
 
+    /**
+     * Finds the receiver expression of a qualified member access or invocation.
+     * A dot must appear among the direct children before any argument list.
+     *
+     * @param node the member access or invocation to inspect
+     * @return its first expression child when explicitly qualified, or {@code null} if none is found
+     */
     public static @Nullable SyntaxNode explicitReceiver(SyntaxNode node) {
         boolean sawDot = false;
         for (SyntaxNode child : node.children()) {
@@ -7028,10 +7217,22 @@ public final class JavaSemanticAnalyzer {
         return null;
     }
 
+    /**
+     * Tests whether a node has one of the Java expression syntax kinds recognized by semantic analysis.
+     *
+     * @param node the syntax node to classify
+     * @return whether the node represents an expression
+     */
     public static boolean isExpressionNode(SyntaxNode node) {
         return EXPRESSION_KIND_IDS.contains(node.kind().id());
     }
 
+    /**
+     * Extracts the text after the last dot, retaining names with no dot or a trailing dot unchanged.
+     *
+     * @param qualifiedName the dotted name to shorten
+     * @return the final nonempty segment, or the original name if it has no such suffix
+     */
     public static String lastSegment(String qualifiedName) {
         int index = qualifiedName.lastIndexOf('.');
         if (index < 0 || index == qualifiedName.length() - 1)
@@ -7039,6 +7240,13 @@ public final class JavaSemanticAnalyzer {
         return qualifiedName.substring(index + 1);
     }
 
+    /**
+     * Removes generic arguments, array suffixes, and package or enclosing-type qualifiers from a type name.
+     * Both dotted and dollar-separated enclosing-type names are supported.
+     *
+     * @param displayName the type's display name
+     * @return the simple name of the underlying type
+     */
     public static String simpleTypeName(String displayName) {
         String text = eraseTypeArguments(displayName);
 
@@ -7054,6 +7262,13 @@ public final class JavaSemanticAnalyzer {
         return lastSegment(text);
     }
 
+    /**
+     * Removes angle-bracketed generic arguments, including nested arguments, and trims the remaining text.
+     * Null and blank input are returned unchanged.
+     *
+     * @param displayName the type text to erase, which may be {@code null}
+     * @return the text without generic arguments, or the original null or blank input
+     */
     public static String eraseTypeArguments(String displayName) {
         if (displayName == null || displayName.isBlank())
             return displayName;
@@ -7077,6 +7292,12 @@ public final class JavaSemanticAnalyzer {
         return builder.toString().trim();
     }
 
+    /**
+     * Extracts the prefix before the last dot in a qualified name.
+     *
+     * @param qualifiedName the dotted name to inspect
+     * @return the prefix, or an empty string if no dot follows the first character
+     */
     public static String packagePrefix(String qualifiedName) {
         int index = qualifiedName.lastIndexOf('.');
         if (index <= 0)

@@ -19,8 +19,15 @@ import java.util.List;
 import java.util.Set;
 import java.lang.reflect.Modifier;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#UNASSIGNED_VARIABLE},
+ * {@link JavaSemanticRules#ILLEGAL_FINAL_ASSIGNMENT}, {@link JavaSemanticRules#UNINITIALIZED_FINAL_FIELD}.
+ */
 @RegisteredInspection
 public final class CoreDefiniteAssignmentInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-definite-assignment";
     private static final int LOOP_FIXPOINT_ITERATION_LIMIT = 32;
 
@@ -970,6 +977,12 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         return false;
     }
 
+    /**
+     * Checks whether a switch rule contains the arrow separator.
+     *
+     * @param rule rule whose behavior is queried
+     * @return whether the rule uses arrow syntax
+     */
     public static boolean isArrowSwitchRule(SyntaxNode rule) {
         for (SyntaxNode child : rule.children()) {
             if (child instanceof SyntaxToken token && "->".equals(token.text()))

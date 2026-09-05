@@ -6,6 +6,15 @@ import java.util.Locale;
 
 /**
  * Immutable diagnostic representation understood by the editor UI.
+ *
+ * @param kind diagnostic severity category
+ * @param start inclusive start offset in the source
+ * @param end exclusive end offset in the source
+ * @param line one-based source line, or the diagnostic unknown-position value
+ * @param column one-based source column, or the diagnostic unknown-position value
+ * @param message human-readable diagnostic message
+ * @param code diagnostic identifier
+ * @param source source file associated with the diagnostic
  */
 public record EditorDiagnostic(
     Diagnostic.Kind kind,

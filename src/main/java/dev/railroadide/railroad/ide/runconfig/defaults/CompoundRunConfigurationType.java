@@ -12,7 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Runs child configurations in parallel or sequentially and delegates their lifecycle operations.
+ */
 public class CompoundRunConfigurationType extends RunConfigurationType<CompoundRunConfigurationData> {
+    /**
+     * Creates the compound run type with its localized label and group icon.
+     */
     public CompoundRunConfigurationType() {
         super("railroad.runconfig.compound", FontAwesomeSolid.LAYER_GROUP, Color.web("#9b59b6"));
     }

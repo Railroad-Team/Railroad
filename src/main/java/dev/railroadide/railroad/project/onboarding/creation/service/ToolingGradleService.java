@@ -19,6 +19,11 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Objects;
 
+/**
+ * Runs project tasks through the Gradle Tooling API using the project's build distribution.
+ * Standard output and error are forwarded to the configured log stream. Build failures caused
+ * by recognized connection errors are retried after five seconds with no attempt limit.
+ */
 @EqualsAndHashCode
 @ToString
 @AllArgsConstructor

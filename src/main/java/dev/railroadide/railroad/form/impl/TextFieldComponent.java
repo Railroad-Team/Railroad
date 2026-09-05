@@ -173,6 +173,12 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
             return text(() -> text);
         }
 
+        /**
+         * Sets a supplier for the initial text of the text field.
+         *
+         * @param textSupplier the initial-text supplier
+         * @return this builder
+         */
         public Builder text(Supplier<String> textSupplier) {
             this.data.text = textSupplier;
             return this;
@@ -361,6 +367,9 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
 
         /**
          * Sets the maximum number of suggestions to display.
+         *
+         * @param maxSuggestions the maximum number of suggestions
+         * @return this builder
          */
         public Builder autoCompleteMaxSuggestions(int maxSuggestions) {
             ensureAutoCompleteOptions().setMaxSuggestions(maxSuggestions);
@@ -369,6 +378,9 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
 
         /**
          * Sets the minimum number of characters before querying suggestions.
+         *
+         * @param minQueryLength the minimum query length
+         * @return this builder
          */
         public Builder autoCompleteMinQueryLength(int minQueryLength) {
             ensureAutoCompleteOptions().setMinQueryLength(minQueryLength);
@@ -377,6 +389,9 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
 
         /**
          * Sets whether the auto-complete lookup should be case sensitive.
+         *
+         * @param caseSensitive whether matching should be case sensitive
+         * @return this builder
          */
         public Builder autoCompleteCaseSensitive(boolean caseSensitive) {
             ensureAutoCompleteOptions().setCaseSensitive(caseSensitive);
@@ -385,6 +400,9 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
 
         /**
          * Sets whether suggestions should be shown even when the query is empty.
+         *
+         * @param showOnEmpty whether to show suggestions for an empty query
+         * @return this builder
          */
         public Builder autoCompleteShowSuggestionsOnEmpty(boolean showOnEmpty) {
             ensureAutoCompleteOptions().setShowSuggestionsOnEmpty(showOnEmpty);
@@ -393,6 +411,9 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
 
         /**
          * Sets the cell factory used to render suggestions in the popup.
+         *
+         * @param cellFactory the suggestion cell factory, or {@code null} for the default
+         * @return this builder
          */
         public Builder autoCompleteSuggestionCellFactory(
             @Nullable Callback<ListView<String>, ListCell<String>> cellFactory
@@ -461,6 +482,12 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
             return this;
         }
 
+        /**
+         * Sets a supplier for the initial text of the text field.
+         *
+         * @param textSupplier the initial-text supplier
+         * @return this data object
+         */
         public Data text(Supplier<String> textSupplier) {
             this.text = textSupplier;
             return this;
@@ -517,6 +544,12 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
             return autoCompleteOptions;
         }
 
+        /**
+         * Returns the configured auto-complete options.
+         *
+         * @return the auto-complete options, or {@code null} when auto-complete
+         *         has not been configured
+         */
         public AutoCompleteOptions getAutoCompleteOptions() {
             if (autoCompleteOptions == null || !autoCompleteOptions.isConfigured())
                 return null;

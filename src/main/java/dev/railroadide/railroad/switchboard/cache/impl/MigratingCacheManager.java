@@ -14,6 +14,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * Cache manager that reads through a new backend while lazily migrating an old one.
+ */
 public class MigratingCacheManager implements CacheManager {
     private final CacheManager oldBackend;
     private final CacheManager newBackend;
@@ -23,6 +26,12 @@ public class MigratingCacheManager implements CacheManager {
     @Getter
     private long sweepThrottleMs = 10;
 
+    /**
+     * Creates a migration manager for two cache backends.
+     *
+     * @param oldBackend the backend from which entries may be copied
+     * @param newBackend the backend that receives migrated and new entries
+     */
     public MigratingCacheManager(CacheManager oldBackend, CacheManager newBackend) {
         this.oldBackend = oldBackend;
         this.newBackend = newBackend;
@@ -56,6 +65,9 @@ public class MigratingCacheManager implements CacheManager {
         newBackend.invalidate(key);
     }
 
+    /**
+     * Starts a one-shot background sweep that copies unmigrated entries.
+     */
     public void startBackgroundSweep() {
         if (sweepStarted)
             return;

@@ -104,6 +104,13 @@ public final class GitCommand {
         private boolean streamStdoutToListener = false;
 
         /**
+         * Creates an empty command builder using the process's default directory, no timeout or environment
+         * overrides, and no stdout streaming.
+         */
+        public Builder() {
+        }
+
+        /**
          * Appends string arguments to the command.
          *
          * @param args arguments to append

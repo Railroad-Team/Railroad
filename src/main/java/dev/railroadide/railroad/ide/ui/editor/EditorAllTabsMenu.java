@@ -31,6 +31,9 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Function;
 
+/**
+ * Provides a searchable popup for selecting tabs from an editor group.
+ */
 public final class EditorAllTabsMenu implements AutoCloseable {
     private static final double ROW_HEIGHT = 48;
     private static final double MIN_LIST_HEIGHT = 72;
@@ -44,6 +47,12 @@ public final class EditorAllTabsMenu implements AutoCloseable {
     private final FilteredList<EditorTab> filteredTabs;
     private final RRListView<EditorTab> tabsList;
 
+    /**
+     * Creates an all-tabs popup for the supplied editor group.
+     *
+     * @param tabPane editor group tab pane
+     * @param editorTabResolver maps JavaFX tabs to their managed editor tabs
+     */
     public EditorAllTabsMenu(
         DetachableTabPane tabPane,
         Function<Tab, EditorTab> editorTabResolver
@@ -84,6 +93,11 @@ public final class EditorAllTabsMenu implements AutoCloseable {
         popup.setOnShown(_ -> Platform.runLater(searchField::requestFocus));
     }
 
+    /**
+     * Shows the searchable all-tabs popup relative to an owner node.
+     *
+     * @param owner node used to position the popup
+     */
     public void show(Node owner) {
         refreshTabs();
         if (filteredTabs.getSource().isEmpty())
@@ -95,10 +109,18 @@ public final class EditorAllTabsMenu implements AutoCloseable {
         popup.show(owner, Side.BOTTOM, 0, 0);
     }
 
+    /**
+     * Reports whether the all-tabs popup is visible.
+     *
+     * @return true when the popup is showing
+     */
     public boolean isShowing() {
         return popup.isShowing();
     }
 
+    /**
+     * Hides the all-tabs popup.
+     */
     public void hide() {
         popup.hide();
     }

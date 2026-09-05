@@ -15,7 +15,18 @@ import javafx.scene.layout.Region;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+/**
+ * Combines project menus, workspace controls, and run actions in the IDE top bar.
+ */
 public final class IDETopBarPane extends RRHBox {
+    /**
+     * Creates project menus and workspace controls for the IDE top bar.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param viewModeController controller exposing workspace mode state and availability
+     * @param viewModeRequester callback for requesting a workspace mode change
+     * @param workspaceActions workspace navigation and tool-window actions
+     */
     public IDETopBarPane(
         Project project,
         WorkspaceModeController viewModeController,

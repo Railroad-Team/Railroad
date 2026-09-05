@@ -20,9 +20,18 @@ import org.fxmisc.richtext.model.StyleSpansBuilder;
 import java.util.*;
 import com.github.javaparser.Position;
 
+/**
+ * Highlights Java with the SST parser, falling back to JavaParser AST traversal.
+ */
 public class ASTJavaSyntaxHighlighting {
     private static final JavaParser PARSER = new JavaParser();
 
+    /**
+     * Computes editor style spans for the supplied source text.
+     *
+     * @param text source text to highlight
+     * @return style spans containing syntax CSS classes
+     */
     public static StyleSpans<Collection<String>> computeHighlighting(String text) {
         long start = System.currentTimeMillis();
         try {
@@ -43,10 +52,18 @@ public class ASTJavaSyntaxHighlighting {
         return styles;
     }
 
+    /**
+     * Collects style ranges while visiting JavaParser AST nodes.
+     */
     public static class SyntaxHighlighter extends VoidVisitorAdapter<Void> {
         private final List<StyleRange> styleRanges = new ArrayList<>();
         private final String text;
 
+        /**
+         * Creates a visitor that collects highlight ranges for the supplied source.
+         *
+         * @param text source text to highlight
+         */
         public SyntaxHighlighter(String text) {
             this.text = text;
         }
@@ -164,6 +181,11 @@ public class ASTJavaSyntaxHighlighting {
             };
         }
 
+        /**
+         * Builds style spans from the ranges collected by AST visits.
+         *
+         * @return style spans for the original source text
+         */
         public StyleSpans<Collection<String>> computeStyleSpans() {
             styleRanges.sort(Comparator.comparingInt(styleRange -> styleRange.beginOffset)); // Ensure ranges are in
                                                                                              // order

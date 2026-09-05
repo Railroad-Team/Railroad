@@ -15,6 +15,18 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A record declaration with component definitions, implemented interfaces, and body declarations.
+ *
+ * @param span source range occupied by this node
+ * @param modifiers modifiers attached to the declaration
+ * @param annotations annotations attached to this node
+ * @param name declared record name
+ * @param typeParameters declared type parameters
+ * @param components record components in source order
+ * @param implementsTypes implemented interface types
+ * @param bodyDeclarations declarations in the type body
+ */
 public record RecordDeclaration(
     Span span,
     List<Modifier> modifiers,

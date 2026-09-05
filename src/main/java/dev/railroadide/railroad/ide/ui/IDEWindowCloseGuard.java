@@ -35,6 +35,11 @@ public final class IDEWindowCloseGuard implements AutoCloseable {
     private Label dialogContent;
     private boolean allowClose;
 
+    /**
+     * Installs window-close handling for the window containing the owner node.
+     *
+     * @param owner node whose containing window receives the close guard
+     */
     public IDEWindowCloseGuard(Node owner) {
         this.owner = Objects.requireNonNull(owner, "Owner cannot be null");
         owner.sceneProperty().addListener(sceneListener);

@@ -8,6 +8,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A string literal or text block and its stored string value.
+ *
+ * @param span source range occupied by this node
+ * @param value string value stored for the literal or text block
+ * @param isTextBlock whether this is a text block
+ */
 public record StringLiteralExpression(
     Span span,
     String value,

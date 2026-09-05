@@ -63,6 +63,15 @@ public class FormRunConfigurationPicker extends InformativeLabeledHBox<RRVBox> i
         }
     }
 
+    /**
+     * Creates a labeled picker for selecting and ordering available run configurations.
+     *
+     * @param labelKey the translation key for the field label
+     * @param required whether the field is marked as required
+     * @param availableConfigurations the observable list of configurations available to choose from
+     * @param filter the eligibility predicate, or {@code null} to allow all nonnull configurations
+     * @param initialSelection the initial ordered selections, or {@code null} for an empty selection
+     */
     public FormRunConfigurationPicker(
         String labelKey,
         boolean required,
@@ -170,16 +179,31 @@ public class FormRunConfigurationPicker extends InformativeLabeledHBox<RRVBox> i
         return container;
     }
 
+    /**
+     * Returns the observable array representation of the current ordered selection.
+     *
+     * @return the read-only selected-configurations property
+     */
     public ReadOnlyObjectProperty<RunConfiguration<?>[]> valueProperty() {
         ensureStateInitialized();
         return value.getReadOnlyProperty();
     }
 
+    /**
+     * Returns the current ordered selection as an array.
+     *
+     * @return the current selection array, or an empty array if no value is available
+     */
     public RunConfiguration<?>[] getValue() {
         ensureStateInitialized();
         return value.get() == null ? new RunConfiguration[0] : value.get();
     }
 
+    /**
+     * Returns an observable view of the current ordered selections.
+     *
+     * @return an unmodifiable observable view of the selected configurations
+     */
     public ObservableList<RunConfiguration<?>> getSelectedConfigurations() {
         ensureStateInitialized();
         return FXCollections.unmodifiableObservableList(selectedConfigurations);

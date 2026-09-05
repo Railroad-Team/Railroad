@@ -5,7 +5,14 @@ import dev.railroadide.railroad.Railroad;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-public class DesktopUtils {
+/**
+ * Utility class for desktop-related operations
+ */
+public final class DesktopUtils {
+    private DesktopUtils() {
+        throw new UnsupportedOperationException("Instantiated utility class");
+    }
+
     /**
      * Open a URL in the default browser
      *

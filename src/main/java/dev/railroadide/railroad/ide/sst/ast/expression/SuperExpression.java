@@ -10,6 +10,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * A {@code super} reference with an optional enclosing-type qualifier.
+ *
+ * @param span source range occupied by this node
+ * @param qualifier optional enclosing type qualifier
+ */
 public record SuperExpression(
     Span span,
     Optional<Expression> qualifier

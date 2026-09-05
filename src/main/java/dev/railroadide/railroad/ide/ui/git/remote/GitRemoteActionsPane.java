@@ -22,6 +22,9 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Provides remote configuration, fetching, pruning, and browser actions.
+ */
 public class GitRemoteActionsPane extends RRVBox {
     private final GitManager gitManager;
 
@@ -33,6 +36,11 @@ public class GitRemoteActionsPane extends RRVBox {
 
     private GitRemote selectedRemote;
 
+    /**
+     * Creates remote management actions for a repository.
+     *
+     * @param gitManager repository service supplying state and Git operations
+     */
     public GitRemoteActionsPane(GitManager gitManager) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_REMOTE_ACTIONS, this);
         this.gitManager = gitManager;
@@ -108,6 +116,11 @@ public class GitRemoteActionsPane extends RRVBox {
         updateActions(resolveDefaultRemote());
     }
 
+    /**
+     * Selects the action target and enables remote-specific buttons only when a remote is present.
+     *
+     * @param remote selected remote, or null to disable remote-specific actions
+     */
     public void updateActions(GitRemote remote) {
         selectedRemote = remote;
         boolean hasRemote = remote != null;

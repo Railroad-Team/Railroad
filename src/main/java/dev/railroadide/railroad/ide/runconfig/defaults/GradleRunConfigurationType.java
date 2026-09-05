@@ -21,6 +21,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * Executes Gradle tasks through the Tooling API and tracks cancellable build connections.
+ */
 public class GradleRunConfigurationType extends RunConfigurationType<GradleRunConfigurationData> {
     private final Map<RunConfiguration<GradleRunConfigurationData>, GradleExecutionHandle> executions = new ConcurrentHashMap<>();
     private final ExecutorService handleCloser = Executors.newSingleThreadExecutor(runnable -> {
@@ -29,6 +32,9 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         return thread;
     });
 
+    /**
+     * Creates the Gradle run type with its localized label and Gradle icon.
+     */
     public GradleRunConfigurationType() {
         super("railroad.runconfig.gradle", RailroadBrandsIcon.GRADLE, Color.web("#6dc24f"));
     }
@@ -82,6 +88,12 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         return GradleRunConfigurationData.class;
     }
 
+    /**
+     * Owns a Gradle connection and cancellation source; closing cancels execution and closes the connection.
+     *
+     * @param connection the Gradle project connection to close
+     * @param cancellationTokenSource the source used to cancel the running build
+     */
     public record GradleExecutionHandle(ProjectConnection connection, CancellationTokenSource cancellationTokenSource)
         implements
             AutoCloseable {

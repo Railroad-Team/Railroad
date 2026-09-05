@@ -154,11 +154,10 @@ public class JavadocCoverageTest {
     }
 
     @Test
-    public void doesNotCreditOverridesInheritedDocsOrEmptyComments() throws IOException {
+    public void doesNotCreditUnverifiedInheritedDocsOrEmptyComments() throws IOException {
         var report = analyze("""
             /** */
             public class Api {
-                @Override public String toString() { return ""; }
                 /** {@inheritDoc} */
                 public int hashCode() { return 1; }
                 /** <p></p> */
@@ -177,10 +176,36 @@ public class JavadocCoverageTest {
         assertEquals(0, report.complete());
         assertTrue(entry(report, "hashCode(").issues().stream()
             .anyMatch(issue -> issue.startsWith("Inherited documentation")));
-        assertEquals(List.of("Missing Javadoc", "Missing or empty @return"), entry(report, "toString(").issues());
         assertEquals(List.of("Missing or empty @param value"), entry(report, "markup(").issues());
         assertEquals(List.of("Missing or empty @param value", "Missing or empty @return"),
             entry(report, "emptyInline(").issues());
+    }
+
+    @Test
+    public void excludesAnnotatedOverridesFromCoverageIncludingParametersAndReturns() throws IOException {
+        var report = analyze("""
+            /** API. */
+            public class Api extends missing.Parent {
+                @Override public String toString() { return ""; }
+                /** {@inheritDoc} */
+                @java.lang.Override public int compute(int input) { return input; }
+                /** Broken {@link */
+                @Override public int hashCode() { return 1; }
+                public int compute(String input) { return 1; }
+                /** Nested API. */
+                public interface Nested extends missing.Contract {
+                    @Override int read(int input);
+                    int ownMethod(int value);
+                }
+            }
+            """);
+        assertEquals(4, report.total());
+        assertEquals(2, report.complete());
+        var names = report.classes().stream().flatMap(type -> type.entries().stream())
+            .map(JavadocCoverage.Entry::name).toList();
+        assertEquals(List.of("Api", "compute(String input) : int", "Api.Nested", "ownMethod(int value) : int"), names);
+        assertEquals(List.of("Missing Javadoc", "Missing or empty @param input", "Missing or empty @return"),
+            entry(report, "compute(").issues());
     }
 
     @Test

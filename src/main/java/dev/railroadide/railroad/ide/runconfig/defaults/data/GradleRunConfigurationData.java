@@ -37,6 +37,9 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Stores Gradle task, project directory, Java runtime, and environment options and builds their editor form.
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class GradleRunConfigurationData extends RunConfigurationData {

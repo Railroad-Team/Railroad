@@ -20,6 +20,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * Builds a Gradle task tree organized by module hierarchy and task group.
+ * Sorts sibling nodes by element type and then by name, ignoring case.
+ */
 public class GradleTaskTreeBuilder implements GradleTreeBuilder<RailroadGradleTask> {
     @Override
     public TreeItem<GradleTreeElement> buildTree(Project project, List<RailroadGradleTask> elements) {

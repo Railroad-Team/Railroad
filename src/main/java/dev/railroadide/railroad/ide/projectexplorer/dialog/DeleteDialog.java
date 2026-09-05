@@ -12,7 +12,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 // TODO: Should use the IDEStateService to delete the document
+/**
+ * Prompts for confirmation before deleting a file or directory.
+ */
 public class DeleteDialog {
+    /**
+     * Shows a deletion confirmation and deletes the entry if accepted.
+     *
+     * @param path filesystem path to operate on
+     */
     public static void open(Path path) {
         WindowBuilder.createDialog(
             "railroad.dialog.delete.title",

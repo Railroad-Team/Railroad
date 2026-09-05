@@ -21,6 +21,12 @@ public final class ProjectLanguageIndexService {
     private final Map<ProjectLanguageKey, ProjectLanguageIndex<?>> indexesByProjectAndLanguage = new ConcurrentHashMap<>();
     private final Map<String, ProjectLanguageIndexPersistence<?>> persistenceByLanguageId = new ConcurrentHashMap<>();
 
+    /**
+     * Registers an indexer for its language, rejecting duplicate registrations.
+     *
+     * @param indexer the indexer to register
+     * @throws IllegalArgumentException if an adapter for the language is already registered
+     */
     public void registerIndexer(ProjectLanguageIndexer<?, ?> indexer) {
         Objects.requireNonNull(indexer, "indexer");
         ProjectLanguageIndexer<?, ?> existing = indexersByLanguageId.putIfAbsent(indexer.languageId(), indexer);
@@ -29,6 +35,12 @@ public final class ProjectLanguageIndexService {
                 "Project language indexer for '" + indexer.languageId() + "' is already registered.");
     }
 
+    /**
+     * Registers a persistence adapter for its language, rejecting duplicate registrations.
+     *
+     * @param persistence the persistence adapter to register
+     * @throws IllegalArgumentException if an adapter for the language is already registered
+     */
     public void registerPersistence(ProjectLanguageIndexPersistence<?> persistence) {
         Objects.requireNonNull(persistence, "persistence");
         ProjectLanguageIndexPersistence<?> existing = persistenceByLanguageId.putIfAbsent(persistence.languageId(),
@@ -38,31 +50,69 @@ public final class ProjectLanguageIndexService {
                 "Project language index persistence for '" + persistence.languageId() + "' is already registered.");
     }
 
+    /**
+     * Checks whether a project indexer is registered for a language.
+     *
+     * @param languageId the stable language identifier
+     * @return {@code true} if an indexer is registered
+     */
     public boolean hasIndexer(String languageId) {
         Objects.requireNonNull(languageId, "languageId");
         return indexersByLanguageId.containsKey(languageId);
     }
 
+    /**
+     * Checks whether an index persistence adapter is registered for a language.
+     *
+     * @param languageId the stable language identifier
+     * @return {@code true} if a persistence adapter is registered
+     */
     public boolean hasPersistence(String languageId) {
         Objects.requireNonNull(languageId, "languageId");
         return persistenceByLanguageId.containsKey(languageId);
     }
 
+    /**
+     * Returns the registered project indexer for a language.
+     *
+     * @param languageId the stable language identifier
+     * @return the indexer, or {@code null} if absent
+     */
     public @Nullable ProjectLanguageIndexer<?, ?> getIndexer(String languageId) {
         Objects.requireNonNull(languageId, "languageId");
         return indexersByLanguageId.get(languageId);
     }
 
+    /**
+     * Returns the registered index persistence adapter for a language.
+     *
+     * @param languageId the stable language identifier
+     * @return the persistence adapter, or {@code null} if absent
+     */
     public @Nullable ProjectLanguageIndexPersistence<?> getPersistence(String languageId) {
         Objects.requireNonNull(languageId, "languageId");
         return persistenceByLanguageId.get(languageId);
     }
 
+    /**
+     * Returns a project index already held in memory without building or loading one.
+     *
+     * @param project the project whose files and configuration are used
+     * @param languageId the stable language identifier
+     * @return the current index, or {@code null} if unavailable
+     */
     public @Nullable ProjectLanguageIndex<?> current(Project project, String languageId) {
         Objects.requireNonNull(project, "project");
         return current(new DefaultProjectIndexContextResolver().resolve(project), languageId);
     }
 
+    /**
+     * Returns a project index already held in memory without building or loading one.
+     *
+     * @param context the project indexing context
+     * @param languageId the stable language identifier
+     * @return the current index, or {@code null} if unavailable
+     */
     public @Nullable ProjectLanguageIndex<?> current(ProjectIndexContext context, String languageId) {
         Objects.requireNonNull(context, "context");
         if (context.language(languageId) == null)
@@ -71,6 +121,16 @@ public final class ProjectLanguageIndexService {
         return indexesByProjectAndLanguage.get(key(context.projectRoot(), languageId));
     }
 
+    /**
+     * Returns a project index already held in memory without building or loading one. The caller must supply
+     * type parameters matching the language's registered indexer.
+     *
+     * @param <I> the project index type
+     * @param <F> the per-file index type
+     * @param project the project whose files and configuration are used
+     * @param languageId the stable language identifier
+     * @return the current index, or {@code null} if unavailable
+     */
     @SuppressWarnings("unchecked")
     public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I currentTyped(
         Project project,
@@ -79,6 +139,16 @@ public final class ProjectLanguageIndexService {
         return (I) current(project, languageId);
     }
 
+    /**
+     * Returns a project index already held in memory without building or loading one. The caller must supply
+     * type parameters matching the language's registered indexer.
+     *
+     * @param <I> the project index type
+     * @param <F> the per-file index type
+     * @param context the project indexing context
+     * @param languageId the stable language identifier
+     * @return the current index, or {@code null} if unavailable
+     */
     @SuppressWarnings("unchecked")
     public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I currentTyped(
         ProjectIndexContext context,
@@ -87,11 +157,25 @@ public final class ProjectLanguageIndexService {
         return (I) current(context, languageId);
     }
 
+    /**
+     * Returns an in-memory index or loads a current persisted index, building and saving one when necessary.
+     *
+     * @param project the project whose files and configuration are used
+     * @param languageId the stable language identifier
+     * @return the project index, or {@code null} if the language context or indexer is unavailable
+     */
     public @Nullable ProjectLanguageIndex<?> index(Project project, String languageId) {
         Objects.requireNonNull(project, "project");
         return index(new DefaultProjectIndexContextResolver().resolve(project), languageId);
     }
 
+    /**
+     * Returns an in-memory index or loads a current persisted index, building and saving one when necessary.
+     *
+     * @param context the project indexing context
+     * @param languageId the stable language identifier
+     * @return the project index, or {@code null} if the language context or indexer is unavailable
+     */
     public @Nullable ProjectLanguageIndex<?> index(ProjectIndexContext context, String languageId) {
         Objects.requireNonNull(context, "context");
         return index(context, context.projectRoot(), languageId);
@@ -126,6 +210,16 @@ public final class ProjectLanguageIndexService {
         return built;
     }
 
+    /**
+     * Returns an in-memory index or loads a current persisted index, building and saving one when necessary. The
+     * caller must supply type parameters matching the language's registered indexer.
+     *
+     * @param <I> the project index type
+     * @param <F> the per-file index type
+     * @param project the project whose files and configuration are used
+     * @param languageId the stable language identifier
+     * @return the project index, or {@code null} if the language context or indexer is unavailable
+     */
     @SuppressWarnings("unchecked")
     public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I indexTyped(
         Project project,
@@ -134,6 +228,16 @@ public final class ProjectLanguageIndexService {
         return (I) index(project, languageId);
     }
 
+    /**
+     * Returns an in-memory index or loads a current persisted index, building and saving one when necessary. The
+     * caller must supply type parameters matching the language's registered indexer.
+     *
+     * @param <I> the project index type
+     * @param <F> the per-file index type
+     * @param context the project indexing context
+     * @param languageId the stable language identifier
+     * @return the project index, or {@code null} if the language context or indexer is unavailable
+     */
     @SuppressWarnings("unchecked")
     public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I indexTyped(
         ProjectIndexContext context,
@@ -142,11 +246,25 @@ public final class ProjectLanguageIndexService {
         return (I) index(context, languageId);
     }
 
+    /**
+     * Rebuilds a project index from source files and replaces its persisted and in-memory copies.
+     *
+     * @param project the project whose files and configuration are used
+     * @param languageId the stable language identifier
+     * @return the rebuilt index, or {@code null} if the language context or indexer is unavailable
+     */
     public @Nullable ProjectLanguageIndex<?> rebuild(Project project, String languageId) {
         Objects.requireNonNull(project, "project");
         return rebuild(new DefaultProjectIndexContextResolver().resolve(project), languageId);
     }
 
+    /**
+     * Rebuilds a project index from source files and replaces its persisted and in-memory copies.
+     *
+     * @param context the project indexing context
+     * @param languageId the stable language identifier
+     * @return the rebuilt index, or {@code null} if the language context or indexer is unavailable
+     */
     public @Nullable ProjectLanguageIndex<?> rebuild(ProjectIndexContext context, String languageId) {
         Objects.requireNonNull(context, "context");
         return rebuild(context, context.projectRoot(), languageId);
@@ -172,6 +290,16 @@ public final class ProjectLanguageIndexService {
         return rebuilt;
     }
 
+    /**
+     * Rebuilds a project index from source files and replaces its persisted and in-memory copies. The caller
+     * must supply type parameters matching the language's registered indexer.
+     *
+     * @param <I> the project index type
+     * @param <F> the per-file index type
+     * @param project the project whose files and configuration are used
+     * @param languageId the stable language identifier
+     * @return the rebuilt index, or {@code null} if the language context or indexer is unavailable
+     */
     @SuppressWarnings("unchecked")
     public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I rebuildTyped(
         Project project,
@@ -180,6 +308,16 @@ public final class ProjectLanguageIndexService {
         return (I) rebuild(project, languageId);
     }
 
+    /**
+     * Rebuilds a project index from source files and replaces its persisted and in-memory copies. The caller
+     * must supply type parameters matching the language's registered indexer.
+     *
+     * @param <I> the project index type
+     * @param <F> the per-file index type
+     * @param context the project indexing context
+     * @param languageId the stable language identifier
+     * @return the rebuilt index, or {@code null} if the language context or indexer is unavailable
+     */
     @SuppressWarnings("unchecked")
     public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable I rebuildTyped(
         ProjectIndexContext context,
@@ -188,6 +326,16 @@ public final class ProjectLanguageIndexService {
         return (I) rebuild(context, languageId);
     }
 
+    /**
+     * Reads and reindexes one file, replacing its entry in memory and persistence.
+     *
+     * @param <I> the project index type
+     * @param <F> the per-file index type
+     * @param context the project indexing context
+     * @param languageId the stable language identifier
+     * @param file the source file to process
+     * @return the updated file index, or {@code null} when the file or language cannot be indexed
+     */
     public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> @Nullable F updateFile(
         ProjectIndexContext context,
         String languageId,
@@ -216,6 +364,15 @@ public final class ProjectLanguageIndexService {
         return indexedFile;
     }
 
+    /**
+     * Removes one file from the project index and updates persistence when indexing is available.
+     *
+     * @param <I> the project index type
+     * @param <F> the per-file index type
+     * @param context the project indexing context
+     * @param languageId the stable language identifier
+     * @param file the source file to process
+     */
     public <I extends ProjectLanguageIndex<F>, F extends LanguageFileIndex> void removeFile(
         ProjectIndexContext context,
         String languageId,
@@ -242,11 +399,23 @@ public final class ProjectLanguageIndexService {
         indexesByProjectAndLanguage.put(key, updated);
     }
 
+    /**
+     * Evicts the in-memory index for one project and language.
+     *
+     * @param project the project whose files and configuration are used
+     * @param languageId the stable language identifier
+     */
     public void invalidate(Project project, String languageId) {
         Objects.requireNonNull(project, "project");
         indexesByProjectAndLanguage.remove(key(project.getPath(), languageId));
     }
 
+    /**
+     * Deletes a project language's persisted index through its registered persistence adapter.
+     *
+     * @param project the project whose files and configuration are used
+     * @param languageId the stable language identifier
+     */
     public void deletePersisted(Project project, String languageId) {
         ProjectLanguageKey key = key(project.getPath(), languageId);
         ProjectLanguageIndexPersistence<?> persistence = persistenceByLanguageId.get(key.languageId());
@@ -255,6 +424,11 @@ public final class ProjectLanguageIndexService {
         }
     }
 
+    /**
+     * Evicts all in-memory language indexes for a project.
+     *
+     * @param project the project whose files and configuration are used
+     */
     public void invalidateProject(Project project) {
         Path normalizedRoot = normalize(project.getPath());
         indexesByProjectAndLanguage.keySet().removeIf(key -> key.projectRoot().equals(normalizedRoot));

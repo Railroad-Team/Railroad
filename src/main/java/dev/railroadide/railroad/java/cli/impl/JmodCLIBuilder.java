@@ -34,6 +34,13 @@ public class JmodCLIBuilder implements CLIBuilder<Process, JmodCLIBuilder> {
         this.jdk = Objects.requireNonNull(jdk, "JDK cannot be null");
     }
 
+    /**
+     * Creates a builder that uses {@code jmod} from the supplied JDK.
+     *
+     * @param jdk the JDK providing the executable; must not be null
+     * @return a new builder ready for configuration
+     * @throws NullPointerException if jdk is null
+     */
     public static JmodCLIBuilder create(JDK jdk) {
         return new JmodCLIBuilder(jdk);
     }
@@ -468,7 +475,11 @@ public class JmodCLIBuilder implements CLIBuilder<Process, JmodCLIBuilder> {
     }
 
     private enum OperationMode {
-        CREATE("create"), EXTRACT("extract"), LIST("list"), DESCRIBE("describe"), HASH("hash");
+        CREATE("create"),
+        EXTRACT("extract"),
+        LIST("list"),
+        DESCRIBE("describe"),
+        HASH("hash");
 
         private final String command;
 

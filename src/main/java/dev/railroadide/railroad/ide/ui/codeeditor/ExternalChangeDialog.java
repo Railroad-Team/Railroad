@@ -22,6 +22,9 @@ import org.fxmisc.richtext.LineNumberFactory;
 
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Presents conflicting editor and disk contents with reload and keep-local actions.
+ */
 public final class ExternalChangeDialog implements AutoCloseable {
     private final Stage stage;
     private final RRVBox content;
@@ -32,6 +35,13 @@ public final class ExternalChangeDialog implements AutoCloseable {
     private String mine;
     private String disk;
 
+    /**
+     * Creates the external-change dialog and its resolution actions.
+     *
+     * @param editor editor containing the local version of the file
+     * @param reload action that accepts the disk version
+     * @param keepMine action that retains the editor version
+     */
     public ExternalChangeDialog(TextEditorPane editor, Runnable reload, Runnable keepMine) {
         editorStyle = editor.getStyle();
         var title = new LocalizedLabel("editor.external_change.title");
@@ -67,6 +77,12 @@ public final class ExternalChangeDialog implements AutoCloseable {
         stage.setOnCloseRequest(event -> event.consume());
     }
 
+    /**
+     * Replaces the editor and disk snapshots and refreshes any visible comparison.
+     *
+     * @param mine current editor contents
+     * @param disk current contents read from disk
+     */
     public void update(String mine, String disk) {
         this.mine = mine;
         this.disk = disk;
@@ -75,6 +91,9 @@ public final class ExternalChangeDialog implements AutoCloseable {
         }
     }
 
+    /**
+     * Displays the message indicating that the disk version could not be read.
+     */
     public void showReadError() {
         message.setKey("editor.external_change.read_error");
     }

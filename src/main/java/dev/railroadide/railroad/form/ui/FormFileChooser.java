@@ -23,6 +23,14 @@ import java.util.Objects;
 public class FormFileChooser extends InformativeLabeledHBox<FormFileChooser.TextFieldWithButton>
     implements
         HasSetValue {
+    /**
+     * Creates a file chooser field.
+     *
+     * @param labelKey the localization key for the field label
+     * @param required whether the field is required
+     * @param defaultPath the initial path, or {@code null} for an empty field
+     * @param includeButton whether to include the file-browse button
+     */
     public FormFileChooser(String labelKey, boolean required, @Nullable String defaultPath, boolean includeButton) {
         super(labelKey, required, createParams(defaultPath, includeButton));
     }
@@ -81,6 +89,12 @@ public class FormFileChooser extends InformativeLabeledHBox<FormFileChooser.Text
         private final RRTextField textField;
         private final @Nullable BrowseButton browseButton;
 
+        /**
+         * Creates a container for a file path text field and optional browse button.
+         *
+         * @param textField the text field displaying the selected path
+         * @param browseButton the browse button, or {@code null} when omitted
+         */
         public TextFieldWithButton(RRTextField textField, @Nullable BrowseButton browseButton) {
             super(5);
 

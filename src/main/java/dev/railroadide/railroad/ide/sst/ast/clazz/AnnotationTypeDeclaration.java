@@ -12,6 +12,15 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * An annotation type declaration with its modifiers, name, and body declarations.
+ *
+ * @param span source range occupied by this node
+ * @param modifiers modifiers attached to the declaration
+ * @param annotations annotations attached to this node
+ * @param name declared annotation type name
+ * @param declarations contained declarations in source order
+ */
 public record AnnotationTypeDeclaration(
     Span span,
     List<Modifier> modifiers,

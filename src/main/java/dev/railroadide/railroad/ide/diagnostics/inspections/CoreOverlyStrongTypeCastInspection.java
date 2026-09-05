@@ -12,8 +12,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#OVERLY_STRONG_TYPE_CAST}.
+ */
 @RegisteredInspection
 public class CoreOverlyStrongTypeCastInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-overly-strong-type-cast";
 
     @Override

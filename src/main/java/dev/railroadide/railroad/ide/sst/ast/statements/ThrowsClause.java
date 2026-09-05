@@ -9,6 +9,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * The exception types declared by a callable's throws clause.
+ *
+ * @param span source range occupied by this node
+ * @param exceptions declared exception type nodes
+ */
 public record ThrowsClause(
     Span span,
     List<ExceptionType> exceptions
@@ -28,6 +34,12 @@ public record ThrowsClause(
         return visitor.visitThrowsClause(this);
     }
 
+    /**
+     * A class or interface type reference listed in a throws clause.
+     *
+     * @param span source range occupied by this node
+     * @param type exception type named in the throws clause
+     */
     public record ExceptionType(
         Span span,
         ClassOrInterfaceTypeRef type

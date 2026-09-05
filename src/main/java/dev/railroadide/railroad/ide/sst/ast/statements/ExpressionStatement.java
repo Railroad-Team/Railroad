@@ -9,6 +9,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * An expression evaluated as a standalone statement.
+ *
+ * @param span source range occupied by this node
+ * @param expression expression evaluated by the statement
+ */
 public record ExpressionStatement(Span span, Expression expression) implements Statement {
     @Override
     public AstKind kind() {

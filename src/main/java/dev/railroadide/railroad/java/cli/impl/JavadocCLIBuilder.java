@@ -1813,41 +1813,91 @@ public class JavadocCLIBuilder implements CLIBuilder<Process, JavadocCLIBuilder>
      * Represents the type of module expansion.
      */
     public enum ExpansionType {
-        TRANSITIVE, ALL
+        /**
+         * Expands the module set through transitive dependencies.
+         */
+        TRANSITIVE,
+        /**
+         * Expands the module set through all dependencies.
+         */
+        ALL
     }
 
     /**
      * Represents the visibility levels for members.
      */
     public enum Visibility {
-        PUBLIC, PROTECTED, PACKAGE, PRIVATE
+        /**
+         * Includes only public declarations.
+         */
+        PUBLIC,
+        /**
+         * Includes public and protected declarations.
+         */
+        PROTECTED,
+        /**
+         * Includes public, protected, and package-private declarations.
+         */
+        PACKAGE,
+        /**
+         * Includes declarations at every access level, including private declarations.
+         */
+        PRIVATE
     }
 
     /**
      * Represents the granularity levels for module contents.
      */
     public enum ModuleGranularity {
-        API, ALL
+        /**
+         * Shows the module API.
+         */
+        API,
+        /**
+         * Shows all module details.
+         */
+        ALL
     }
 
     /**
      * Represents the granularity levels for packages.
      */
     public enum PackageGranularity {
-        EXPORTED, ALL
+        /**
+         * Includes exported packages.
+         */
+        EXPORTED,
+        /**
+         * Includes all packages, including unexported packages.
+         */
+        ALL
     }
 
     /**
      * Represents how to handle modularity mismatches when linking.
      */
     public enum LinkModularityMismatch {
-        WARN, INFO
+        /**
+         * Reports link modularity mismatches as warnings.
+         */
+        WARN,
+        /**
+         * Reports link modularity mismatches as informational messages.
+         */
+        INFO
     }
 
     /**
      * Represents how to handle method override documentation.
      */
     public enum MethodOverrideHandling {
-        DETAIL, SUMMARY
+        /**
+         * Documents overriding methods in detail sections.
+         */
+        DETAIL,
+        /**
+         * Documents overriding methods in summary sections.
+         */
+        SUMMARY
     }
 }

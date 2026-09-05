@@ -8,6 +8,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * The diamond syntax requesting inferred type arguments.
+ *
+ * @param span source range occupied by this node
+ */
 public record TypeDiamond(Span span) implements TypeRef {
     @Override
     public AstKind kind() {

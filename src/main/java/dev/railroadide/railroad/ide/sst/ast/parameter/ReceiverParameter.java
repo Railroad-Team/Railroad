@@ -11,6 +11,14 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * An explicit receiver parameter carrying annotations and its declared receiver type.
+ *
+ * @param span source range occupied by this node
+ * @param annotations annotations attached to this node
+ * @param type declared type of the receiver
+ * @param receiverType receiver keyword represented by the parameter
+ */
 public record ReceiverParameter(
     Span span,
     List<Annotation> annotations,
@@ -35,7 +43,17 @@ public record ReceiverParameter(
         return visitor.visitReceiverParameter(this);
     }
 
+    /**
+     * Identifies the receiver keyword represented in the AST.
+     */
     public enum ReceiverType {
-        THIS, SUPER
+        /**
+         * The this receiver keyword.
+         */
+        THIS,
+        /**
+         * The super receiver keyword.
+         */
+        SUPER
     }
 }

@@ -11,6 +11,9 @@ import javafx.scene.text.Text;
 
 import java.util.Objects;
 
+/**
+ * Renders a change-tree entry with its icon, text, context menu, and interaction handlers.
+ */
 public class CommitChangeTreeCell extends RRCheckBoxTreeCell<ChangeItem> {
     private final RRHBox container = new RRHBox(8);
     private final RRStackPane iconContainer = new RRStackPane();
@@ -18,6 +21,9 @@ public class CommitChangeTreeCell extends RRCheckBoxTreeCell<ChangeItem> {
     private final Text titleText = new Text();
     private final Text subtitleText = new Text();
 
+    /**
+     * Creates the icon and text containers used to render a change item.
+     */
     public CommitChangeTreeCell() {
         container.getStyleClass().add("git-commit-change-tree-cell");
         iconContainer.getStyleClass().add("git-commit-change-icon-container");

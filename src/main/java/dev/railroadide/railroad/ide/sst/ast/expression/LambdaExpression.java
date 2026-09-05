@@ -11,6 +11,14 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A lambda expression with declared or inferred parameters and an expression or block body.
+ *
+ * @param span source range occupied by this node
+ * @param parameters formal parameters in declaration order
+ * @param inferredParameters whether parameter types are inferred
+ * @param body expression or block implementing the lambda
+ */
 public record LambdaExpression(
     Span span,
     List<Parameter> parameters,

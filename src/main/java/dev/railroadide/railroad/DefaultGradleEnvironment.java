@@ -13,6 +13,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Default implementation of the {@link GradleEnvironment} interface.
+ *
+ * @param project The project associated with this Gradle environment.
+ * @param gradleInstallationPath The path to the Gradle installation.
+ * @param settings The Gradle settings for this environment.
+ */
 public record DefaultGradleEnvironment(
     Project project,
     Path gradleInstallationPath,

@@ -21,6 +21,14 @@ import java.util.List;
  * This class extends {@link URLClassLoader} to allow dynamic loading of classes from JAR files.
  */
 public class PluginClassLoader extends URLClassLoader {
+    /**
+     * Creates a loader for a plugin JAR and resolves its Maven dependencies.
+     * The application class loader is used as the parent.
+     *
+     * @param jarPath path to the plugin JAR
+     * @param deps repositories and artifacts needed by the plugin
+     * @throws IOException if a JAR path cannot be converted to a URL
+     */
     public PluginClassLoader(@NotNull Path jarPath, @NotNull MavenDeps deps) throws IOException {
         super(new URL[]{jarPath.toUri().toURL()}, PluginManager.class.getClassLoader());
 

@@ -49,6 +49,12 @@ public final class RunControlsPane extends RRHBox {
     private final LocalizedTooltip debugRestartTooltip = new LocalizedTooltip(
         "railroad.ide.toolbar.debug.restart.tooltip");
 
+    /**
+     * Creates project run-configuration selection and execution controls.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @return run controls node
+     */
     public static Node create(Project project) {
         return new RunControlsPane(project);
     }

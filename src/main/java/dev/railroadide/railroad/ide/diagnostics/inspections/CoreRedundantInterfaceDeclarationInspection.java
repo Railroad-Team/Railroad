@@ -11,8 +11,14 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 
 import java.util.*;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#REDUNDANT_INTERFACE_DECLARATION}.
+ */
 @RegisteredInspection
 public class CoreRedundantInterfaceDeclarationInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-redundant-interface-declaration";
 
     @Override

@@ -13,8 +13,17 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#INVALID_INHERITANCE},
+ * {@link JavaSemanticRules#MISSING_IMPLEMENTATION}, {@link JavaSemanticRules#INVALID_OVERRIDE},
+ * {@link JavaSemanticRules#INTERFACE_METHOD_CLASHES_WITH_OBJECT_METHOD},
+ * {@link JavaSemanticRules#PUBLIC_METHOD_NOT_EXPOSED_BY_INTERFACE}.
+ */
 @RegisteredInspection
 public final class CoreInheritanceInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-inheritance";
 
     private static final String JAVA_CLASS_DECLARATION = "JAVA_CLASS_DECLARATION";

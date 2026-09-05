@@ -46,3 +46,14 @@ jobs:
             FORMAT_RATCHET_FROM="$(git rev-list --max-parents=0 HEAD)"
           fi
           ./gradlew -PformatRatchetFrom="$FORMAT_RATCHET_FROM" formatCheck :compileJava
+
+      - name: Generate Javadoc coverage report
+        run: ./gradlew javadocCoverage
+
+      - name: Upload Javadoc coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: javadoc-coverage
+          path: build/reports/javadoc-coverage
+          if-no-files-found: ignore

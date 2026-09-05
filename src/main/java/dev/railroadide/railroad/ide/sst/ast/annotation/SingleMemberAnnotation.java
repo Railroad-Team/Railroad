@@ -9,6 +9,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * An annotation use supplying a single unnamed value argument.
+ *
+ * @param span source range occupied by this node
+ * @param name annotation type name
+ * @param value argument supplied to the annotation's value element
+ */
 public record SingleMemberAnnotation(
     Span span,
     NameExpression name,

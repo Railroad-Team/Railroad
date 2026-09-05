@@ -18,8 +18,14 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#NEGATIVE_HEX_INT_IN_LONG_CONTEXT}.
+ */
 @RegisteredInspection
 public class CoreNegativeHexIntInLongContextInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-negative-hex-int-in-long-context";
 
     @Override

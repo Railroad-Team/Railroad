@@ -14,7 +14,16 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 
+/**
+ * Displays a project's Gradle dependencies grouped by module and configuration.
+ */
 public class GradleDependenciesPane extends GradleTreeViewPane<RailroadConfiguration> {
+    /**
+     * Creates a dependency pane backed by the project's Gradle model service.
+     *
+     * @param project the Gradle project whose dependencies are displayed
+     * @throws IllegalStateException if the project is not a Gradle project
+     */
     public GradleDependenciesPane(Project project) {
         super(project);
 

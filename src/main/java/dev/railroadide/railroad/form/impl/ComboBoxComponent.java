@@ -38,6 +38,8 @@ import java.util.function.Supplier;
  * @see FormComponent
  * @see FormComponent#comboBox(String, String, Class)
  * @see Builder
+ *
+ * @param <T> the type of item displayed by the combo box
  */
 public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBoxComponent.Data<T>, ComboBox<T>, T> {
     private final Supplier<T> defaultValue;
@@ -182,7 +184,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
     /**
      * A builder for constructing a {@link ComboBoxComponent}.
      *
-     * @param <T> the type of the combobox
+     * @param <T> the type of item displayed by the combo box
      */
     public static class Builder<T> implements FormComponentBuilder<ComboBoxComponent<T>, ComboBox<T>, T, Builder<T>> {
         private final String dataKey;
@@ -243,6 +245,12 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
             return this;
         }
 
+        /**
+         * Sets a collection of items for the combo box.
+         *
+         * @param items the items to display
+         * @return this builder
+         */
         public Builder<T> items(Collection<T> items) {
             return items(() -> items);
         }
@@ -378,6 +386,16 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
             return this;
         }
 
+        /**
+         * Adds an asynchronous transformer for values selected in the combo
+         * box.
+         *
+         * @param fromComponent the observable containing the source combo box
+         * @param toComponentFunction the consumer that receives the mapped value
+         * @param valueMapper the function that asynchronously maps the selected value
+         * @param <W> the target value type
+         * @return this builder
+         */
         public <W> Builder<T> addAsyncTransformer(
             ObservableValue<ComboBox<T>> fromComponent,
             Consumer<W> toComponentFunction,

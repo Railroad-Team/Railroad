@@ -12,6 +12,12 @@ import java.util.Objects;
  * @param uri current physical or virtual document URI
  */
 public record DocumentIdentity(DocumentId id, DocumentUri uri) {
+    /**
+     * Pairs a stable logical document ID with its current address.
+     *
+     * @param id the stable logical document ID
+     * @param uri the current physical or virtual address
+     */
     public DocumentIdentity {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(uri, "uri");

@@ -6,6 +6,9 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.HashMap;
 
+/**
+ * Command-line benchmark comparing Java parser modes over source-file datasets.
+ */
 public final class JavaParserBenchmarkRunner {
     private static final int DEFAULT_WARMUP_ITERATIONS = 5;
     private static final int DEFAULT_MEASURE_ITERATIONS = 20;
@@ -18,6 +21,11 @@ public final class JavaParserBenchmarkRunner {
     private JavaParserBenchmarkRunner() {
     }
 
+    /**
+     * Runs parser benchmarks over the requested source inputs and prints timing results.
+     *
+     * @param args the command-line source paths and benchmark options
+     */
     public static void main(String[] args) throws IOException {
         BenchmarkOptions options = parseOptions(args);
         List<SourceUnit> corpus = loadCorpus(options.inputs());
@@ -420,7 +428,9 @@ public final class JavaParserBenchmarkRunner {
     }
 
     private enum SizeBucket {
-        SMALL("small"), MEDIUM("medium"), LARGE("large");
+        SMALL("small"),
+        MEDIUM("medium"),
+        LARGE("large");
 
         private final String id;
 

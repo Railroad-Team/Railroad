@@ -18,6 +18,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Owns a project's observable run configurations and selection and persists configuration-list changes.
+ */
 public class RunConfigurationManager {
     private static final String RUN_CONFIGURATIONS_FILE = "run_configs.json";
 
@@ -28,6 +31,11 @@ public class RunConfigurationManager {
 
     private final Project project;
 
+    /**
+     * Loads a project's persisted configurations and registers automatic persistence for list changes.
+     *
+     * @param project the project whose configurations are managed
+     */
     public RunConfigurationManager(Project project) {
         this.project = project;
         readConfigurations();
@@ -60,6 +68,8 @@ public class RunConfigurationManager {
      * Remove a run configuration from this project.
      *
      * @param configuration The run configuration to remove.
+     *
+     * @return whether the configuration was present and removed
      */
     public boolean removeConfiguration(RunConfiguration<?> configuration) {
         return this.configurations.remove(configuration);
@@ -82,6 +92,8 @@ public class RunConfigurationManager {
      * Update an existing run configuration.
      *
      * @param configuration The run configuration to update.
+     *
+     * @return the replaced configuration, or {@code null} if no configuration with the same UUID exists
      */
     public @Nullable RunConfiguration<?> updateConfiguration(@NotNull RunConfiguration<?> configuration) {
         int index = getIndexByUUID(configuration.uuid());

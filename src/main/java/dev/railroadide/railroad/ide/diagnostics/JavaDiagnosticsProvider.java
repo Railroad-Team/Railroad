@@ -24,20 +24,41 @@ import java.util.Map;
 
 /**
  * Diagnostics provider backed by the SST semantic analyzer.
+ *
+ * @param project project being analyzed
+ * @param filePath path identifying the analyzed source file
+ * @param projectIndex shared symbol index, or null to resolve it from the project
  */
 public record JavaDiagnosticsProvider(
     Project project,
     Path filePath,
     @Nullable JavaSymbolIndex projectIndex
 ) implements DiagnosticsProvider {
+    /**
+     * Creates diagnostics for a source file without project indexing.
+     *
+     * @param filePath path identifying the analyzed source file
+     */
     public JavaDiagnosticsProvider(Path filePath) {
         this(null, filePath, null);
     }
 
+    /**
+     * Creates diagnostics that resolve a symbol index from the supplied project.
+     *
+     * @param project project being analyzed
+     * @param filePath path identifying the analyzed source file
+     */
     public JavaDiagnosticsProvider(Project project, Path filePath) {
         this(project, filePath, null);
     }
 
+    /**
+     * Creates diagnostics using the symbol index shared by a project scan.
+     *
+     * @param context source and semantic context to inspect
+     * @param filePath path identifying the analyzed source file
+     */
     public JavaDiagnosticsProvider(ProjectDiagnosticsContext context, Path filePath) {
         this(context.project(), filePath, context.javaSymbolIndex());
     }

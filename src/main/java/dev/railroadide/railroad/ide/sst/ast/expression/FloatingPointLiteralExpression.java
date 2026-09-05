@@ -8,6 +8,14 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A floating-point literal retaining its source spelling, numeric value, and precision flag.
+ *
+ * @param span source range occupied by this node
+ * @param rawValue original literal spelling
+ * @param value numeric value stored as a double
+ * @param isFloat whether the literal has float precision
+ */
 public record FloatingPointLiteralExpression(
     Span span,
     String rawValue,

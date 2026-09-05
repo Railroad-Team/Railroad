@@ -3,7 +3,7 @@ package dev.railroadide.railroad.ide.ui.git.sync;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRListView;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
-import dev.railroadide.railroad.utility.TimeFormatter;
+import dev.railroadide.railroad.utility.TimeFormatingUtils;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -22,12 +22,18 @@ import javafx.util.Duration;
 
 import java.util.List;
 
+/**
+ * Displays incoming or outgoing commits with a localized empty state and elapsed times.
+ */
 public class GitSyncCommitsList extends RRListView<GitCommit> {
     private final LongProperty elapsedTick = new SimpleLongProperty();
     private final Timeline elapsedTimeline = new Timeline(
         new KeyFrame(Duration.seconds(1), _ -> elapsedTick.set(elapsedTick.get() + 1)));
     private String noCommitsTextKey;
 
+    /**
+     * Creates an empty synchronization commit list with elapsed-time refresh.
+     */
     public GitSyncCommitsList() {
         getStyleClass().add("git-sync-commits-list");
         setCellFactory(_ -> new GitSyncCommitCell(elapsedTick));
@@ -45,11 +51,21 @@ public class GitSyncCommitsList extends RRListView<GitCommit> {
         getItems().addListener((ListChangeListener<? super GitCommit>) _ -> updatePlaceholder());
     }
 
+    /**
+     * Updates the localized empty-list message and refreshes the placeholder.
+     *
+     * @param noCommitsTextKey localization key shown when the commit list is empty
+     */
     public void setNoCommitsText(String noCommitsTextKey) {
         this.noCommitsTextKey = noCommitsTextKey;
         updatePlaceholder();
     }
 
+    /**
+     * Replaces the displayed synchronization commits.
+     *
+     * @param commits commits to display in list order
+     */
     public void setCommits(List<GitCommit> commits) {
         getItems().setAll(commits);
     }
@@ -62,9 +78,17 @@ public class GitSyncCommitsList extends RRListView<GitCommit> {
         }
     }
 
+    /**
+     * Reuses a commit row while rendering synchronization commits.
+     */
     public static class GitSyncCommitCell extends ListCell<GitCommit> {
         private final GitSyncCommitCellPane pane;
 
+        /**
+         * Creates a reusable cell for a synchronization commit.
+         *
+         * @param elapsedTick observable tick used to refresh relative timestamps
+         */
         public GitSyncCommitCell(ReadOnlyLongProperty elapsedTick) {
             getStyleClass().add("git-sync-commit-cell");
             this.pane = new GitSyncCommitCellPane(elapsedTick);
@@ -85,6 +109,9 @@ public class GitSyncCommitsList extends RRListView<GitCommit> {
         }
     }
 
+    /**
+     * Displays a synchronization commit subject, author, and elapsed time.
+     */
     public static class GitSyncCommitCellPane extends RRHBox {
         private final Text message = new Text();
         private final Text author = new Text();
@@ -92,6 +119,11 @@ public class GitSyncCommitsList extends RRListView<GitCommit> {
         private long commitTimestampMillis = -1L;
         private final InvalidationListener elapsedTickListener = _ -> refreshDate();
 
+        /**
+         * Creates a commit summary row connected to elapsed-time updates.
+         *
+         * @param elapsedTick observable tick used to refresh relative timestamps
+         */
         public GitSyncCommitCellPane(ReadOnlyLongProperty elapsedTick) {
             getStyleClass().add("git-sync-commit-cell-pane");
 
@@ -113,6 +145,11 @@ public class GitSyncCommitsList extends RRListView<GitCommit> {
             elapsedTick.addListener(new WeakInvalidationListener(elapsedTickListener));
         }
 
+        /**
+         * Populates a reusable row with commit subject, author, and elapsed time.
+         *
+         * @param commit commit to display or act on
+         */
         public void setCommit(GitCommit commit) {
             message.setText(commit.subject());
             author.setText(commit.authorName());
@@ -120,6 +157,9 @@ public class GitSyncCommitsList extends RRListView<GitCommit> {
             refreshDate();
         }
 
+        /**
+         * Clears the reusable commit row and resets its timestamp.
+         */
         public void clear() {
             message.setText(null);
             author.setText(null);
@@ -133,7 +173,7 @@ public class GitSyncCommitsList extends RRListView<GitCommit> {
                 return;
             }
 
-            date.setText(TimeFormatter.formatElapsed(commitTimestampMillis));
+            date.setText(TimeFormatingUtils.formatElapsed(commitTimestampMillis));
         }
     }
 }

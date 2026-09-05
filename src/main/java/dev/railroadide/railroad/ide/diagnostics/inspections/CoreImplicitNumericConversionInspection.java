@@ -18,8 +18,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#IMPLICIT_NUMERIC_CONVERSION}.
+ */
 @RegisteredInspection
 public class CoreImplicitNumericConversionInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-implicit-numeric-conversion";
 
     private static final Map<String, Set<String>> WIDENING_CONVERSIONS = Map.of(
@@ -366,7 +372,8 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
     }
 
     private enum ConversionKind {
-        WIDENING("widening"), NARROWING("narrowing");
+        WIDENING("widening"),
+        NARROWING("narrowing");
 
         private final String displayName;
 

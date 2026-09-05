@@ -12,6 +12,9 @@ import java.util.List;
  * Signature help provider backed by Eclipse JDT. Responsible solely for
  * analysing the document and producing {@link SignatureHelp} records; UI logic
  * remains in the editor.
+ *
+ * @param filePath source file path used for analysis
+ * @param systemModulePaths paths supplied to the JDT binding environment
  */
 public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModulePaths) implements SignatureHelpProvider {
     @Override

@@ -8,6 +8,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 
+/**
+ * Computes file checksums with Java message digests as lowercase hexadecimal strings.
+ * Verification compares hexadecimal checksums without regard to case.
+ */
 public class MessageDigestChecksumService implements ChecksumService {
     @Override
     public String compute(Path file, String algorithm) throws Exception {

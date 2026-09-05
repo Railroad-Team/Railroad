@@ -135,7 +135,8 @@ public final class JavadocCoverage {
             var memberPath = new TreePath(path, member);
             switch (member) {
                 case ClassTree classTree -> collectType(memberPath, name, isInterface, root, docs, classes);
-                case MethodTree method when isPublic(method.getModifiers().getFlags(), isInterface) -> {
+                case MethodTree method when isPublic(method.getModifiers().getFlags(), isInterface)
+                    && !isOverride(method) -> {
                     var parameters = new ArrayList<String>();
                     method.getTypeParameters().forEach(parameter -> parameters.add("<" + parameter.getName() + ">"));
                     method.getParameters().forEach(parameter -> parameters.add(parameter.getName().toString()));
@@ -167,6 +168,13 @@ public final class JavadocCoverage {
         // Type summary first, then constants, constructors, and methods, with overloads sorted by signature.
         entries.subList(1, entries.size()).sort(Comparator.comparing(Entry::kind).thenComparing(Entry::name));
         classes.add(new TypeCoverage(packageName, name, List.copyOf(entries)));
+    }
+
+    private static boolean isOverride(MethodTree method) {
+        // Keep coverage source-only: the annotation identifies overrides without resolving dependencies.
+        return method.getModifiers().getAnnotations().stream()
+            .map(annotation -> annotation.getAnnotationType().toString())
+            .anyMatch(name -> name.equals("Override") || name.equals("java.lang.Override"));
     }
 
     private static boolean isPublic(Set<Modifier> flags, boolean implicitPublic) {

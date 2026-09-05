@@ -14,6 +14,11 @@ import org.jetbrains.annotations.ApiStatus;
 import java.util.*;
 import java.util.function.Predicate;
 
+/**
+ * Parses Java lexer tokens into immutable green syntax nodes, retaining trivia and
+ * representing malformed input with error nodes and missing tokens.
+ * The supplied lexer is consumed through EOF and remains owned by the caller.
+ */
 @ApiStatus.Internal
 public final class JavaGreenParser {
     private static final Set<JavaTokenType> CONTEXTUAL_IDENTIFIER_TOKENS = Set.of(
@@ -138,14 +143,29 @@ public final class JavaGreenParser {
     private int position;
     private int pendingTypeArgumentClosers;
 
+    /**
+     * Creates a parser that reads from the supplied lexer's current position.
+     *
+     * @param lexer Java token source to consume, including its EOF token
+     */
     public JavaGreenParser(Lexer<JavaTokenType> lexer) {
         this.lexer = Objects.requireNonNull(lexer, "lexer");
     }
 
+    /**
+     * Consumes the lexer and wraps the parsed compilation unit in a syntax tree.
+     *
+     * @return syntax tree containing the parsed nodes, tokens, and recovery markers
+     */
     public SyntaxTree parseSyntaxTree() {
         return SyntaxInternalFactory.treeFromGreenRoot(parseGreenTree());
     }
 
+    /**
+     * Consumes the lexer through EOF and parses a compilation unit.
+     *
+     * @return immutable compilation-unit root, including any syntax recovery nodes
+     */
     public GreenNode parseGreenTree() {
         readAllTokens();
         position = 0;

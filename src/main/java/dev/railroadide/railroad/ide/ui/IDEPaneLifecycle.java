@@ -28,12 +28,22 @@ public final class IDEPaneLifecycle implements AutoCloseable {
         }
     }
 
+    /**
+     * Tracks a node attachment and disposes registered resources after it leaves its scene.
+     *
+     * @param owner node whose scene attachment controls the resource lifetime
+     */
     public IDEPaneLifecycle(Node owner) {
         this.owner = Objects.requireNonNull(owner, "Lifecycle owner cannot be null");
         this.wasAttached = owner.getScene() != null;
         owner.sceneProperty().addListener(sceneListener);
     }
 
+    /**
+     * Registers a cleanup action, or runs it immediately if the lifecycle is already closed.
+     *
+     * @param cleanupAction cleanup callback, run immediately if the lifecycle is already closed
+     */
     public void onDispose(Runnable cleanupAction) {
         Objects.requireNonNull(cleanupAction, "Cleanup action cannot be null");
         if (closed) {

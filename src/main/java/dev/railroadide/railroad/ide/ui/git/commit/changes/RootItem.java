@@ -7,7 +7,13 @@ import javafx.scene.input.MouseEvent;
 
 import java.util.function.Consumer;
 
+/**
+ * Represents the hidden root of the commit changes tree.
+ */
 public class RootItem implements ChangeItem {
+    /**
+     * Shared hidden root entry for the commit tree.
+     */
     public static final RootItem INSTANCE = new RootItem();
 
     @Override

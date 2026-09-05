@@ -111,6 +111,12 @@ public final class GradleManager {
         }
     }
 
+    /**
+     * Gets the Gradle settings for this project.
+     *
+     * @return the Gradle settings
+     * @throws IllegalStateException if the project is not a Gradle project
+     */
     public GradleSettings getGradleSettings() {
         ensureIsGradleProject();
 
@@ -230,6 +236,12 @@ public final class GradleManager {
             throw new IllegalStateException("Project at " + path + " is not a Gradle project.");
     }
 
+    /**
+     * Determines whether the project is a Gradle project by checking for the presence of a Gradle wrapper or build
+     * files.
+     *
+     * @return true if the project is a Gradle project, false otherwise
+     */
     public boolean isGradleProject() {
         Path path = project.getPath();
         Path groovyBuildFile = path.resolve("build.gradle");
@@ -360,6 +372,9 @@ public final class GradleManager {
         }
     }
 
+    /**
+     * Saves the current Gradle settings to the project's data store.
+     */
     public void saveSettings() {
         synchronized (lock) {
             project.getDataStore().writeJson(

@@ -19,6 +19,12 @@ public class LocalizedText extends Text {
         setKey(key);
     }
 
+    /**
+     * Creates a text node whose translation is formatted with the supplied arguments.
+     *
+     * @param key the localization key
+     * @param args the arguments used to format the translation
+     */
     public LocalizedText(final String key, final Object... args) {
         super();
         textProperty().bindBidirectional(localizedText);
@@ -35,8 +41,8 @@ public class LocalizedText extends Text {
     }
 
     /**
-     * Sets the key and then updates the text of the label.
-     * Adds a listener to the current language property to update the text when the language changes.
+     * Sets the key and refreshes the text using the existing formatting arguments.
+     * The backing property also refreshes the text when the language changes.
      *
      * @param key The localization key
      */

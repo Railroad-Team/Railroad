@@ -8,7 +8,18 @@ import javafx.geometry.Pos;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Combines header, actions, metadata, and message cards for a commit.
+ */
 public class GitCommitDetailsView extends RRVBox {
+    /**
+     * Creates the complete details view for a commit and its references.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param commit commit to display or act on
+     * @param headCommitHash hash of the current HEAD commit
+     * @param tagsByCommit tag names indexed by commit hash
+     */
     public GitCommitDetailsView(
         Project project,
         GitCommit commit,

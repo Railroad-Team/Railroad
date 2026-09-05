@@ -7,6 +7,9 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.Set;
 
+/**
+ * Provides language identity and immutable extensions with optional text features disabled by default.
+ */
 public abstract class BaseLanguageSupport implements LanguageSupport {
     private final String languageId;
     private final String displayName;
