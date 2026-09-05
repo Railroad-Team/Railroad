@@ -42,7 +42,7 @@ public final class ProjectPathIdentityUtils {
     /**
      * Compares two paths for equality based on their normalized keys.
      *
-     * @param first  the first path to compare
+     * @param first the first path to compare
      * @param second the second path to compare
      * @return true if the paths are considered equal, false otherwise
      */

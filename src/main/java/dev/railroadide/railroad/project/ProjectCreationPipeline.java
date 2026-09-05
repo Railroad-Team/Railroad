@@ -26,7 +26,7 @@ public class ProjectCreationPipeline {
     /**
      * Executes the project creation pipeline, running each creation step in order.
      *
-     * @param ctx      the project context containing necessary information for creation
+     * @param ctx the project context containing necessary information for creation
      * @param reporter the progress reporter to report progress and information during execution
      * @throws Exception if any step in the pipeline fails
      */

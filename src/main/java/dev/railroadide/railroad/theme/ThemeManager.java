@@ -66,7 +66,8 @@ public class ThemeManager {
     }
 
     /**
-     * Applies the current theme to the given JavaFX scene and sets up key event handlers for debug toggling and theme reloading.
+     * Applies the current theme to the given JavaFX scene and sets up key event handlers for debug toggling and theme
+     * reloading.
      *
      * @param scene the JavaFX scene to apply the theme to
      */
@@ -90,7 +91,7 @@ public class ThemeManager {
      * Prepares a scene transition by applying the stylesheets from the previous scene to the next scene.
      *
      * @param previousScene the previous JavaFX scene
-     * @param nextScene     the next JavaFX scene
+     * @param nextScene the next JavaFX scene
      */
     public static void prepareSceneTransition(Scene previousScene, Scene nextScene) {
         if (nextScene == null)
@@ -104,7 +105,8 @@ public class ThemeManager {
     }
 
     /**
-     * Releases the resources associated with a JavaFX scene, removing it from tracking and clearing its key event handlers.
+     * Releases the resources associated with a JavaFX scene, removing it from tracking and clearing its key event
+     * handlers.
      *
      * @param scene the JavaFX scene to release
      */
@@ -171,7 +173,8 @@ public class ThemeManager {
     }
 
     /**
-     * Applies the specified theme to the given JavaFX scene, clearing existing stylesheets and adding the base and component CSS files.
+     * Applies the specified theme to the given JavaFX scene, clearing existing stylesheets and adding the base and
+     * component CSS files.
      *
      * @param theme the theme to apply
      * @param scene the JavaFX scene to apply the theme to
@@ -218,7 +221,7 @@ public class ThemeManager {
      *
      * @return a list of component CSS file paths in external form
      * @throws URISyntaxException if the URL syntax is incorrect
-     * @throws IOException        if an I/O error occurs while accessing the resources
+     * @throws IOException if an I/O error occurs while accessing the resources
      */
     public static List<String> getComponentCssFiles() throws URISyntaxException, IOException {
         final List<String> componentCss = new ArrayList<>();

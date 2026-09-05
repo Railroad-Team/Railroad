@@ -16,8 +16,10 @@ import java.sql.SQLException;
 /**
  * Provides the application-wide Switchboard repositories.
  *
- * <p>Loading this class creates the cache manager and registers each repository in
- * {@link SwitchboardRepository#REGISTRY}.</p>
+ * <p>
+ * Loading this class creates the cache manager and registers each repository in
+ * {@link SwitchboardRepository#REGISTRY}.
+ * </p>
  */
 public final class SwitchboardRepositories {
     private static final SwitchboardClient CLIENT = new SwitchboardClient("https://switchboard.railroadide.dev/");
@@ -70,8 +72,10 @@ public final class SwitchboardRepositories {
     /**
      * Initializes Switchboard repository registration.
      *
-     * <p>This method intentionally does nothing; invoking it forces this class to
-     * initialize when callers need deterministic registration timing.</p>
+     * <p>
+     * This method intentionally does nothing; invoking it forces this class to
+     * initialize when callers need deterministic registration timing.
+     * </p>
      */
     public static void initialize() {
         // NO-OP: accessing this class ensures the repositories are registered.

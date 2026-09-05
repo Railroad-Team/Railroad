@@ -5,8 +5,10 @@ import org.kordamp.ikonli.Ikon;
 /**
  * Application-specific glyphs supplied by the Railroad icon font.
  *
- * <p>Each constant records the description understood by Ikonli and the glyph's
- * Unicode private-use code point.</p>
+ * <p>
+ * Each constant records the description understood by Ikonli and the glyph's
+ * Unicode private-use code point.
+ * </p>
  */
 public enum RailroadIcon implements Ikon {
     /** The {@code rr-jar-file} file-type icon at glyph {@code U+ECA6}. */

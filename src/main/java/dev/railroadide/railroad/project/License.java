@@ -41,7 +41,7 @@ public class License {
      *
      * @param spdxId the SPDX identifier to search for
      * @return the matching license, or {@code null} if no license is registered
-     * with the identifier
+     *         with the identifier
      */
     public static License fromSpdxId(String spdxId) {
         for (License license : REGISTRY.values()) {
@@ -57,7 +57,7 @@ public class License {
      *
      * @param name the license name to search for
      * @return the matching license, or {@code null} if no license is registered
-     * with the name
+     *         with the name
      */
     public static License fromName(String name) {
         for (License license : REGISTRY.values()) {

@@ -5,8 +5,10 @@ import org.kordamp.ikonli.Ikon;
 /**
  * Brand glyphs supplied by the Railroad brand-icon font.
  *
- * <p>Each constant records the description understood by Ikonli and the glyph's
- * Unicode private-use code point.</p>
+ * <p>
+ * Each constant records the description understood by Ikonli and the glyph's
+ * Unicode private-use code point.
+ * </p>
  */
 public enum RailroadBrandsIcon implements Ikon {
     /** The {@code rrb-1password} brand icon at glyph {@code U+E900}. */

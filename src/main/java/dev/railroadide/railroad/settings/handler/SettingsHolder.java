@@ -23,7 +23,9 @@ public class SettingsHolder implements JsonSerializable<JsonObject> {
     /**
      * Forces every currently registered setting to refresh its value.
      *
-     * <p>Settings that have become unavailable are reported and skipped.</p>
+     * <p>
+     * Settings that have become unavailable are reported and skipped.
+     * </p>
      */
     public void updateAll() {
         for (Map.Entry<String, Setting<?>> entry : SettingsHandler.SETTINGS_REGISTRY.entries().entrySet()) {

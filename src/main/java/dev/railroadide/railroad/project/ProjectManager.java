@@ -40,7 +40,8 @@ public final class ProjectManager {
     }
 
     /**
-     * Updates the project information in the list of projects. If the project already exists, it updates the last opened time.
+     * Updates the project information in the list of projects. If the project already exists, it updates the last
+     * opened time.
      * If it does not exist, it adds the new project to the list.
      *
      * @param project the project to update or add

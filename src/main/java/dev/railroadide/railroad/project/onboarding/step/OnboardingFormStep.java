@@ -87,7 +87,7 @@ public final class OnboardingFormStep implements OnboardingStep {
      * @param builder builder used to create the form component
      * @param transformer conversion from the component value to the stored context value; {@code null} means identity
      * @param reverseTransformer conversion from the stored context value to the component value; {@code null} means
-     *     identity
+     *            identity
      * @return the component and context mapping specification
      * @throws IllegalArgumentException if no component source is supplied
      */
@@ -119,7 +119,7 @@ public final class OnboardingFormStep implements OnboardingStep {
      * @param contextKey context key for the component value, or {@code null} to use its data key
      * @param transformer conversion from the component value to the stored context value; {@code null} means identity
      * @param reverseTransformer conversion from the stored context value to the component value; {@code null} means
-     *     identity
+     *            identity
      * @return the component and context mapping specification
      * @throws IllegalArgumentException if no component source is supplied
      */
@@ -152,7 +152,7 @@ public final class OnboardingFormStep implements OnboardingStep {
      * @param component existing form component to include
      * @param transformer conversion from the component value to the stored context value; {@code null} means identity
      * @param reverseTransformer conversion from the stored context value to the component value; {@code null} means
-     *     identity
+     *            identity
      * @return the component and context mapping specification
      * @throws IllegalArgumentException if no component source is supplied
      */
@@ -185,7 +185,7 @@ public final class OnboardingFormStep implements OnboardingStep {
      * @param contextKey context key for the component value, or {@code null} to use its data key
      * @param transformer conversion from the component value to the stored context value; {@code null} means identity
      * @param reverseTransformer conversion from the stored context value to the component value; {@code null} means
-     *     identity
+     *            identity
      * @return the component and context mapping specification
      * @throws IllegalArgumentException if no component source is supplied
      */
@@ -222,7 +222,7 @@ public final class OnboardingFormStep implements OnboardingStep {
      * @param contextKey context key for the component value, or {@code null} to use its data key
      * @param transformer conversion from the component value to the stored context value; {@code null} means identity
      * @param reverseTransformer conversion from the stored context value to the component value; {@code null} means
-     *     identity
+     *            identity
      * @param customizer callback applied to the component before it is added, or {@code null} for no customization
      * @return the component and context mapping specification
      * @throws IllegalArgumentException if no component source is supplied
@@ -261,7 +261,7 @@ public final class OnboardingFormStep implements OnboardingStep {
      * @param contextKey context key for the component value, or {@code null} to use its data key
      * @param transformer conversion from the component value to the stored context value; {@code null} means identity
      * @param reverseTransformer conversion from the stored context value to the component value; {@code null} means
-     *     identity
+     *            identity
      * @param customizer callback applied to the component before it is added, or {@code null} for no customization
      * @return the component and context mapping specification
      * @throws IllegalArgumentException if no component source is supplied
@@ -285,7 +285,7 @@ public final class OnboardingFormStep implements OnboardingStep {
      * @param contextKey context key for the component value, or {@code null} to use its data key
      * @param transformer conversion from the component value to the stored context value; {@code null} means identity
      * @param reverseTransformer conversion from the stored context value to the component value; {@code null} means
-     *     identity
+     *            identity
      * @param customizer callback applied to the component before it is added, or {@code null} for no customization
      */
     public record ComponentSpec(
@@ -303,9 +303,9 @@ public final class OnboardingFormStep implements OnboardingStep {
          * @param component existing component, required when the builder is {@code null}
          * @param contextKey context key for the component value, or {@code null} to use its data key
          * @param transformer conversion from the component value to the stored context value; {@code null} means
-         *     identity
+         *            identity
          * @param reverseTransformer conversion from the stored context value to the component value; {@code null} means
-         *     identity
+         *            identity
          * @param customizer callback applied to the component before it is added, or {@code null} for no customization
          * @throws IllegalArgumentException if both the builder and component are null
          */
@@ -452,7 +452,7 @@ public final class OnboardingFormStep implements OnboardingStep {
          * Sets the validity property used to enable navigation.
          *
          * @param validProperty property determining whether the user may advance; a writable property is updated by
-         *     tracked component validation
+         *            tracked component validation
          * @return this builder
          */
         public Builder validProperty(ReadOnlyBooleanProperty validProperty) {

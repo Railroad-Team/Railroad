@@ -6,7 +6,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * A utility class for managing shutdown hooks.
  * <p>
- * This class allows you to register and run shutdown hooks, which are tasks that will be executed when the application is shutting down.
+ * This class allows you to register and run shutdown hooks, which are tasks that will be executed when the application
+ * is shutting down.
  * It provides methods to add hooks, register hooks with automatic removal, and run all registered hooks.
  */
 public final class ShutdownHooks {
@@ -50,7 +51,8 @@ public final class ShutdownHooks {
     /**
      * A registration object that allows for the removal of a registered shutdown hook.
      * <p>
-     * This class implements {@link AutoCloseable}, allowing it to be used in try-with-resources statements for automatic removal of the hook.
+     * This class implements {@link AutoCloseable}, allowing it to be used in try-with-resources statements for
+     * automatic removal of the hook.
      */
     public static final class Registration implements AutoCloseable {
         private Runnable removal;

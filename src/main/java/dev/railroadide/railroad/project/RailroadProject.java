@@ -90,7 +90,7 @@ public class RailroadProject implements Project {
     /**
      * Creates a project with a path and display alias.
      *
-     * @param path  the project directory
+     * @param path the project directory
      * @param alias the display alias for the project
      */
     public RailroadProject(Path path, String alias) {
@@ -100,9 +100,9 @@ public class RailroadProject implements Project {
     /**
      * Creates a project with a path, display alias, and optional icon.
      *
-     * @param path  the project directory
+     * @param path the project directory
      * @param alias the display alias for the project
-     * @param icon  the project icon, or {@code null} to generate a default icon
+     * @param icon the project icon, or {@code null} to generate a default icon
      */
     public RailroadProject(Path path, String alias, Image icon) {
         this.path.set(ProjectPathIdentityUtils.normalize(path));
@@ -387,7 +387,8 @@ public class RailroadProject implements Project {
                 } else if (pathPrimitive.isNumber()) {
                     try {
                         this.path
-                            .set(ProjectPathIdentityUtils.normalize(Path.of(String.valueOf(pathPrimitive.getAsNumber()))));
+                            .set(ProjectPathIdentityUtils
+                                .normalize(Path.of(String.valueOf(pathPrimitive.getAsNumber()))));
                     } catch (Exception exception) {
                         Railroad.LOGGER.warn("Project JSON 'Path' is not a valid path: {}", pathElement, exception);
                     }
@@ -657,8 +658,10 @@ public class RailroadProject implements Project {
     /**
      * Starts an asynchronous project build using the supplied JDK.
      *
-     * <p>The returned future completes with a task that can be used to observe
-     * or control the build when the project's build facet supports it.</p>
+     * <p>
+     * The returned future completes with a task that can be used to observe
+     * or control the build when the project's build facet supports it.
+     * </p>
      *
      * @param jdk the JDK to use for the build
      * @return a future completed with the build task, or exceptionally when the project cannot be built

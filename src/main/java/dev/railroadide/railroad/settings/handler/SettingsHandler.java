@@ -22,8 +22,10 @@ import java.util.Map;
  * Coordinates registration, persistence, and typed access to application
  * settings.
  *
- * <p>The handler keeps settings in a shared registry and stores persisted
- * values in the application's settings file.</p>
+ * <p>
+ * The handler keeps settings in a shared registry and stores persisted
+ * values in the application's settings file.
+ * </p>
  */
 public class SettingsHandler {
     private static final SettingsHolder SETTINGS_HOLDER = new SettingsHolder();
@@ -33,8 +35,10 @@ public class SettingsHandler {
     /**
      * Registry containing all settings available to the application.
      *
-     * <p>Registering through this registry also hydrates a setting when a value
-     * for it was loaded before the setting itself was registered.</p>
+     * <p>
+     * Registering through this registry also hydrates a setting when a value
+     * for it was loaded before the setting itself was registered.
+     * </p>
      */
     public static final Registry<Setting<?>> SETTINGS_REGISTRY = new Registry<>() {
         @Override
@@ -90,8 +94,10 @@ public class SettingsHandler {
      * Initializes the settings file and loads its values into registered
      * settings.
      *
-     * <p>If the file does not exist, it is created before loading. Initialization
-     * failures are logged and do not escape this method.</p>
+     * <p>
+     * If the file does not exist, it is created before loading. Initialization
+     * failures are logged and do not escape this method.
+     * </p>
      */
     public static void init() {
         try {
@@ -108,7 +114,9 @@ public class SettingsHandler {
     /**
      * Creates the settings directory and an initial settings file.
      *
-     * <p>If the file cannot be written, the failure is logged.</p>
+     * <p>
+     * If the file cannot be written, the failure is logged.
+     * </p>
      */
     public static void createSettings() {
         try {
@@ -122,8 +130,10 @@ public class SettingsHandler {
     /**
      * Loads persisted values from the settings file.
      *
-     * <p>An empty or malformed file is replaced with the current default
-     * settings. I/O failures are surfaced as runtime exceptions.</p>
+     * <p>
+     * An empty or malformed file is replaced with the current default
+     * settings. I/O failures are surfaced as runtime exceptions.
+     * </p>
      */
     public static void loadSettings() {
         try {
@@ -146,7 +156,9 @@ public class SettingsHandler {
     /**
      * Serializes the current persisted settings to the settings file.
      *
-     * <p>Write failures are logged and do not escape this method.</p>
+     * <p>
+     * Write failures are logged and do not escape this method.
+     * </p>
      */
     public static void saveSettings() {
         Railroad.LOGGER.debug("Saving settings file");

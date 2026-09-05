@@ -25,7 +25,7 @@ public final class ExpiringCache<T> {
      * Creates a new expiring cache with the specified time-to-live (TTL).
      *
      * @param ttl the time-to-live for cached values; must not be negative
-     * @throws NullPointerException     if ttl is null
+     * @throws NullPointerException if ttl is null
      * @throws IllegalArgumentException if ttl is negative
      */
     public ExpiringCache(Duration ttl) {
@@ -80,9 +80,11 @@ public final class ExpiringCache<T> {
     }
 
     /**
-     * Returns an Optional containing the cached value if it is still valid, or an empty Optional if the cached value has expired.
+     * Returns an Optional containing the cached value if it is still valid, or an empty Optional if the cached value
+     * has expired.
      *
-     * @return an Optional containing the cached value if it is still valid, or an empty Optional if the cached value has expired
+     * @return an Optional containing the cached value if it is still valid, or an empty Optional if the cached value
+     *         has expired
      */
     public Optional<T> getIfPresent() {
         synchronized (lock) {

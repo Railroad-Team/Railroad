@@ -68,9 +68,9 @@ public final class XMLUtils {
     /**
      * Converts an XML string to a JSON object of the specified type.
      *
-     * @param xml  the XML string to convert
+     * @param xml the XML string to convert
      * @param type the class of the JSON object to return
-     * @param <T>  the type of the JSON object
+     * @param <T> the type of the JSON object
      * @return the converted JSON object
      */
     public static <T> T xmlToJson(String xml, Class<T> type) {
@@ -92,7 +92,7 @@ public final class XMLUtils {
      *
      * @param file the XML file to convert
      * @param type the class of the JSON object to return
-     * @param <T>  the type of the JSON object
+     * @param <T> the type of the JSON object
      * @return the converted JSON object
      */
     public static <T> T xmlToJson(File file, Class<T> type) {
@@ -104,7 +104,7 @@ public final class XMLUtils {
      *
      * @param path the path to the XML file to convert
      * @param type the class of the JSON object to return
-     * @param <T>  the type of the JSON object
+     * @param <T> the type of the JSON object
      * @return the converted JSON object
      */
     public static <T> T xmlToJson(Path path, Class<T> type) {

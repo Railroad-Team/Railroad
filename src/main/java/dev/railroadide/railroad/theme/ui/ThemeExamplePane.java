@@ -313,8 +313,8 @@ public class ThemeExamplePane {
         /**
          * Constructs a new ProjectData instance with the specified name, type, and status.
          *
-         * @param name   The name of the project.
-         * @param type   The type of the project.
+         * @param name The name of the project.
+         * @param type The type of the project.
          * @param status The status of the project.
          */
         public ProjectData(String name, String type, String status) {

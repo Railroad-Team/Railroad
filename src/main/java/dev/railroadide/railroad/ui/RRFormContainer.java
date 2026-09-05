@@ -33,7 +33,7 @@ public class RRFormContainer extends VBox {
      * Creates an empty form container with a title and default padding.
      *
      * @param title title text, interpreted as a localization key when it contains a period;
-     *              {@code null} or blank text hides the title
+     *            {@code null} or blank text hides the title
      */
     public RRFormContainer(@Nullable String title) {
         this(title, null);
@@ -43,7 +43,7 @@ public class RRFormContainer extends VBox {
      * Creates an empty form container with a title and optional custom padding.
      *
      * @param title title text, interpreted as a localization key when it contains a period;
-     *              {@code null} or blank text hides the title
+     *            {@code null} or blank text hides the title
      * @param padding container padding, or {@code null} to use stylesheet defaults
      */
     public RRFormContainer(@Nullable String title, Insets padding) {

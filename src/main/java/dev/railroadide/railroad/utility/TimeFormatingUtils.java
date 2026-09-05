@@ -82,7 +82,7 @@ public final class TimeFormatingUtils {
      * Helper method to pluralize a unit based on the amount.
      *
      * @param amount The amount of time units.
-     * @param unit   The time unit (e.g., "year", "month").
+     * @param unit The time unit (e.g., "year", "month").
      * @return A string representing the pluralized time unit.
      */
     public static String pluralize(long amount, String unit) {

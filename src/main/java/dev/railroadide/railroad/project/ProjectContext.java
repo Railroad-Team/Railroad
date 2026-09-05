@@ -23,7 +23,7 @@ public final class ProjectContext {
     /**
      * Constructs a new ProjectContext with the given data and project directory.
      *
-     * @param data       The project data.
+     * @param data The project data.
      * @param projectDir The path to the project directory.
      */
     public ProjectContext(ProjectData data, Path projectDir) {
@@ -52,9 +52,9 @@ public final class ProjectContext {
     /**
      * Stores a value in the context associated with the given key.
      *
-     * @param key   The key to associate with the value.
+     * @param key The key to associate with the value.
      * @param value The value to store.
-     * @param <T>   The type of the value.
+     * @param <T> The type of the value.
      */
     public <T> void put(Key<T> key, T value) {
         extras.put(key, value);
@@ -75,9 +75,9 @@ public final class ProjectContext {
     /**
      * Retrieves a value from the context associated with the given key, or returns a fallback value if not found.
      *
-     * @param key      The key to retrieve the value for.
+     * @param key The key to retrieve the value for.
      * @param fallback The fallback value to return if the key is not found.
-     * @param <T>      The type of the value.
+     * @param <T> The type of the value.
      * @return The value associated with the key, or the fallback value if not found.
      */
     public <T> T getOrDefault(Key<T> key, T fallback) {

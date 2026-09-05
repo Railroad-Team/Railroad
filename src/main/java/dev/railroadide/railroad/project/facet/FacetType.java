@@ -27,7 +27,8 @@ public record FacetType<D>(
      * @param description the description, or null for an empty description
      * @param iconPath the icon resource path, or null for no icon
      * @param dataClass the facet data class
-     * @throws IllegalArgumentException if a required value is null or an identifier, name, or supplied icon path is blank
+     * @throws IllegalArgumentException if a required value is null or an identifier, name, or supplied icon path is
+     *             blank
      */
     public FacetType {
         if (id == null || id.isBlank())

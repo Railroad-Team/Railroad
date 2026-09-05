@@ -8,9 +8,11 @@ import java.util.function.Predicate;
 /**
  * Thread-safe storage for arbitrary project properties keyed by name.
  *
- * <p>The typed accessors return a fallback when a value is absent or has a
+ * <p>
+ * The typed accessors return a fallback when a value is absent or has a
  * different type, while their overloads without a fallback throw an
- * exception in those cases.</p>
+ * exception in those cases.
+ * </p>
  */
 public final class ProjectData {
     private final Map<String, Object> data = new ConcurrentHashMap<>();
@@ -28,9 +30,9 @@ public final class ProjectData {
     /**
      * Returns the value associated with a key when it has the requested type.
      *
-     * @param key  the property key
+     * @param key the property key
      * @param type the expected value type
-     * @param <T>  the expected value type
+     * @param <T> the expected value type
      * @return the typed value, or {@code null} when the key is absent or the value has another type
      */
     public <T> T get(String key, Class<T> type) {
@@ -44,7 +46,7 @@ public final class ProjectData {
     /**
      * Returns the value associated with a key, or a fallback when the key is absent.
      *
-     * @param key          the property key
+     * @param key the property key
      * @param defaultValue the value to return when the key is absent
      * @return the stored value, or {@code defaultValue} when the key is absent
      */
@@ -55,10 +57,10 @@ public final class ProjectData {
     /**
      * Returns the value associated with a key when it has the requested type, or a fallback otherwise.
      *
-     * @param key          the property key
+     * @param key the property key
      * @param defaultValue the value to return when the key is absent or has another type
-     * @param type         the expected value type
-     * @param <T>          the expected value type
+     * @param type the expected value type
+     * @param <T> the expected value type
      * @return the typed value, or {@code defaultValue} when no matching value is stored
      */
     public <T> T getOrDefault(String key, T defaultValue, Class<T> type) {
@@ -72,7 +74,7 @@ public final class ProjectData {
     /**
      * Returns an integer property, or a fallback when it is absent or not an integer.
      *
-     * @param key          the property key
+     * @param key the property key
      * @param defaultValue the value to return when no integer is stored
      * @return the stored integer, or {@code defaultValue}
      */
@@ -102,7 +104,7 @@ public final class ProjectData {
     /**
      * Returns a boolean property, or a fallback when it is absent or not a boolean.
      *
-     * @param key          the property key
+     * @param key the property key
      * @param defaultValue the value to return when no boolean is stored
      * @return the stored boolean, or {@code defaultValue}
      */
@@ -132,7 +134,7 @@ public final class ProjectData {
     /**
      * Returns a string property, or a fallback when it is absent or not a string.
      *
-     * @param key          the property key
+     * @param key the property key
      * @param defaultValue the value to return when no string is stored
      * @return the stored string, or {@code defaultValue}
      */
@@ -162,7 +164,7 @@ public final class ProjectData {
     /**
      * Returns a floating-point property, or a fallback when it is absent or not a float.
      *
-     * @param key          the property key
+     * @param key the property key
      * @param defaultValue the value to return when no float is stored
      * @return the stored float, or {@code defaultValue}
      */
@@ -192,7 +194,7 @@ public final class ProjectData {
     /**
      * Returns a double-precision property, or a fallback when it is absent or not a double.
      *
-     * @param key          the property key
+     * @param key the property key
      * @param defaultValue the value to return when no double is stored
      * @return the stored double, or {@code defaultValue}
      */
@@ -222,7 +224,7 @@ public final class ProjectData {
     /**
      * Returns a long property, or a fallback when it is absent or not a long.
      *
-     * @param key          the property key
+     * @param key the property key
      * @param defaultValue the value to return when no long is stored
      * @return the stored long, or {@code defaultValue}
      */
@@ -252,7 +254,7 @@ public final class ProjectData {
     /**
      * Returns a short property, or a fallback when it is absent or not a short.
      *
-     * @param key          the property key
+     * @param key the property key
      * @param defaultValue the value to return when no short is stored
      * @return the stored short, or {@code defaultValue}
      */
@@ -282,7 +284,7 @@ public final class ProjectData {
     /**
      * Returns a byte property, or a fallback when it is absent or not a byte.
      *
-     * @param key          the property key
+     * @param key the property key
      * @param defaultValue the value to return when no byte is stored
      * @return the stored byte, or {@code defaultValue}
      */
@@ -312,7 +314,7 @@ public final class ProjectData {
     /**
      * Returns a character property, or a fallback when it is absent or not a character.
      *
-     * @param key          the property key
+     * @param key the property key
      * @param defaultValue the value to return when no character is stored
      * @return the stored character, or {@code defaultValue}
      */
@@ -342,7 +344,7 @@ public final class ProjectData {
     /**
      * Returns a byte-array property, or a fallback when it is absent or not a byte array.
      *
-     * @param key          the property key
+     * @param key the property key
      * @param defaultValue the value to return when no byte array is stored
      * @return the stored byte array, or {@code defaultValue}
      */
@@ -372,10 +374,10 @@ public final class ProjectData {
     /**
      * Returns an enum property, or a fallback when it is absent or is not an instance of the enum type.
      *
-     * @param key          the property key
-     * @param enumType     the enum type to accept
+     * @param key the property key
+     * @param enumType the enum type to accept
      * @param defaultValue the value to return when no matching enum is stored
-     * @param <E>          the enum type
+     * @param <E> the enum type
      * @return the stored enum value, or {@code defaultValue}
      */
     public <E extends Enum<E>> E getAsEnum(String key, Class<E> enumType, E defaultValue) {
@@ -389,9 +391,9 @@ public final class ProjectData {
     /**
      * Returns an enum property.
      *
-     * @param key      the property key
+     * @param key the property key
      * @param enumType the enum type to accept
-     * @param <E>      the enum type
+     * @param <E> the enum type
      * @return the stored enum value
      * @throws NoSuchElementException if the key is absent
      * @throws ClassCastException if the value is not an instance of {@code enumType}
@@ -411,7 +413,7 @@ public final class ProjectData {
     /**
      * Returns a path property, or a fallback when it is absent or not a path.
      *
-     * @param key          the property key
+     * @param key the property key
      * @param defaultValue the value to return when no path is stored
      * @return the stored path, or {@code defaultValue}
      */
@@ -441,7 +443,7 @@ public final class ProjectData {
     /**
      * Returns the value for a key, storing and returning the fallback if the key is absent.
      *
-     * @param key          the property key
+     * @param key the property key
      * @param defaultValue the value to store and return when the key is absent
      * @return the existing value, or {@code defaultValue} when it was stored for the first time
      */
@@ -452,7 +454,7 @@ public final class ProjectData {
     /**
      * Stores or replaces a property value.
      *
-     * @param key   the property key
+     * @param key the property key
      * @param value the value to store
      */
     public void set(String key, Object value) {

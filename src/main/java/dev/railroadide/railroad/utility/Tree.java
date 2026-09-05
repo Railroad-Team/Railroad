@@ -34,7 +34,8 @@ public class Tree<T> {
     }
 
     /**
-     * Sets the root node of the tree. This method can only be called once; if the root is already set, it will throw an exception.
+     * Sets the root node of the tree. This method can only be called once; if the root is already set, it will throw an
+     * exception.
      *
      * @param root the root node to set
      * @throws IllegalStateException if the root node is already set
@@ -66,7 +67,7 @@ public class Tree<T> {
         /**
          * Constructs a node with the specified value and an optional list of child nodes.
          *
-         * @param value    the value of the node
+         * @param value the value of the node
          * @param children the child nodes of this node
          */
         @SafeVarargs

@@ -18,8 +18,8 @@ public record Either<L, R>(L left, R right, boolean isLeft) {
      * Creates a new Either instance with a left value.
      *
      * @param value The left value.
-     * @param <L>   The type of the left value.
-     * @param <R>   The type of the right value.
+     * @param <L> The type of the left value.
+     * @param <R> The type of the right value.
      * @return A new Either instance containing the left value.
      */
     public static <L, R> Either<L, R> left(L value) {
@@ -30,8 +30,8 @@ public record Either<L, R>(L left, R right, boolean isLeft) {
      * Creates a new Either instance with a right value.
      *
      * @param value The right value.
-     * @param <L>   The type of the left value.
-     * @param <R>   The type of the right value.
+     * @param <L> The type of the left value.
+     * @param <R> The type of the right value.
      * @return A new Either instance containing the right value.
      */
     public static <L, R> Either<L, R> right(R value) {
@@ -75,9 +75,9 @@ public record Either<L, R>(L left, R right, boolean isLeft) {
     /**
      * Maps the value contained in the Either instance to a new value using the provided mapping functions.
      *
-     * @param leftMapper  The function to apply if the instance contains a left value.
+     * @param leftMapper The function to apply if the instance contains a left value.
      * @param rightMapper The function to apply if the instance contains a right value.
-     * @param <T>         The type of the resulting value after mapping.
+     * @param <T> The type of the resulting value after mapping.
      * @return The mapped value.
      */
     public <T> T map(

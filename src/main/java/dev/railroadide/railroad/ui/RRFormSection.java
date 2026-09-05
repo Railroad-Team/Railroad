@@ -33,7 +33,7 @@ public class RRFormSection extends VBox {
      * Creates an empty form section with a header and default padding.
      *
      * @param headerText header text, interpreted as a localization key when it contains a period;
-     *                   {@code null} or blank text hides the header
+     *            {@code null} or blank text hides the header
      */
     public RRFormSection(@Nullable String headerText) {
         this(headerText, null);
@@ -43,7 +43,7 @@ public class RRFormSection extends VBox {
      * Creates an empty form section with a header and optional custom padding.
      *
      * @param headerText header text, interpreted as a localization key when it contains a period;
-     *                   {@code null} or blank text hides the header
+     *            {@code null} or blank text hides the header
      * @param padding section padding, or {@code null} to use stylesheet defaults
      */
     public RRFormSection(@Nullable String headerText, Insets padding) {

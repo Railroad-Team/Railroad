@@ -86,7 +86,7 @@ public final class UrlUtils {
     /**
      * Writes the body of a URL to a specified file path.
      *
-     * @param url  the URL to read from
+     * @param url the URL to read from
      * @param path the file path to write to
      */
     public static void writeBody(String url, Path path) {

@@ -34,7 +34,7 @@ public record HTTPCheck(HttpClientMode clientMode) implements NetworkCheck {
      *
      * @param address absolute HTTP or HTTPS URL to probe
      * @param timeout timeout in milliseconds; must be positive for {@link HttpClientMode#JAVA_NET}, while zero
-     *                disables the configured timeouts for the other clients
+     *            disables the configured timeouts for the other clients
      * @return true for a response code from 200 through 399, or false for other responses or a handled failure
      * @throws NullPointerException if the client mode or address is null
      * @throws IllegalArgumentException if the selected client rejects an argument and does not handle the exception
