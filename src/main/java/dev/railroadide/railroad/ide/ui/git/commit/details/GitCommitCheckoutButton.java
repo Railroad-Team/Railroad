@@ -18,7 +18,16 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Provides an action to check out a commit with handling for uncommitted changes.
+ */
 public class GitCommitCheckoutButton extends RRButton {
+    /**
+     * Creates the action for checking out the supplied commit.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param commit commit to display or act on
+     */
     public GitCommitCheckoutButton(Project project, GitCommit commit) {
         super("railroad.git.commit.details.button.checkout_commit", FontAwesomeSolid.CHECK);
         setVariant(ButtonVariant.PRIMARY);
@@ -33,8 +42,11 @@ public class GitCommitCheckoutButton extends RRButton {
         });
     }
 
-    private static void onCheckoutWithUncommittedChanges(GitManager gitManager, Optional<GitCommit> fromCommit,
-        GitCommit toCommit) {
+    private static void onCheckoutWithUncommittedChanges(
+        GitManager gitManager,
+        Optional<GitCommit> fromCommit,
+        GitCommit toCommit
+    ) {
         GitRepoStatus repoStatus = gitManager.getRepoStatus();
 
         var content = new RRVBox(2);

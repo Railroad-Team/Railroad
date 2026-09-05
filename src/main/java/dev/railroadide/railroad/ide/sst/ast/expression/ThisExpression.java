@@ -10,9 +10,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * A {@code this} reference with an optional enclosing-type qualifier.
+ *
+ * @param span source range occupied by this node
+ * @param qualifier optional enclosing type qualifier
+ */
 public record ThisExpression(
     Span span,
-    Optional<Expression> qualifier) implements Expression {
+    Optional<Expression> qualifier
+) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.THIS_EXPRESSION;

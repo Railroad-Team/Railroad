@@ -127,6 +127,7 @@ public class Setting<T> {
     /**
      * Constructs a new Setting builder.
      *
+     * @param <T> type of the setting's value
      * @return A new Builder instance for creating a Setting.
      */
     public static <T> Builder<T> builder() {
@@ -137,6 +138,7 @@ public class Setting<T> {
      * Constructs a new Setting builder with the specified type.
      *
      * @param type The class type of the setting's value.
+     * @param <T> type of the setting's value
      * @return A new Builder instance for creating a Setting with the specified type.
      */
     public static <T> Builder<T> builder(Class<T> type) {
@@ -148,6 +150,7 @@ public class Setting<T> {
      *
      * @param type The class type of the setting's value.
      * @param id The unique identifier for the setting.
+     * @param <T> type of the setting's value
      * @return A new Builder instance for creating a Setting with the specified type and ID.
      */
     public static <T> Builder<T> builder(Class<T> type, String id) {
@@ -158,6 +161,8 @@ public class Setting<T> {
      * Constructs a new Setting builder with the specified TypeToken.
      *
      * @param typeToken The TypeToken representing the type of the setting's value.
+     * @param id The unique identifier for the setting.
+     * @param <T> type of the setting's value
      * @return A new Builder instance for creating a Setting with the specified TypeToken.
      */
     @SuppressWarnings("unchecked")
@@ -174,11 +179,27 @@ public class Setting<T> {
      * @param type The type of the setting's value.
      * @param canBeNull Indicates if the setting's value can be null.
      * @param defaultValue The default value for the setting, can be null if allowed.
+     * @param category category used to organize the setting in the UI
+     * @param title localized title key or explicit title, when present
+     * @param description localized description key or explicit description, when present
+     * @param hasTitle whether the setting displays a title
+     * @param hasDescription whether the setting displays a description
+     * @param persisted whether the setting is written to persistent settings storage
      */
-    public Setting(String id, String treePath, SettingCodec<T, ?> codec, Class<T> type, boolean canBeNull,
-        @Nullable T defaultValue, SettingCategory category,
-        @Nullable String title, @Nullable String description, boolean hasTitle, boolean hasDescription,
-        boolean persisted) {
+    public Setting(
+        String id,
+        String treePath,
+        SettingCodec<T, ?> codec,
+        Class<T> type,
+        boolean canBeNull,
+        @Nullable T defaultValue,
+        SettingCategory category,
+        @Nullable String title,
+        @Nullable String description,
+        boolean hasTitle,
+        boolean hasDescription,
+        boolean persisted
+    ) {
         this.id = id;
         this.treePath = treePath;
         this.codec = codec;
@@ -254,8 +275,11 @@ public class Setting<T> {
     }
 
     /**
-     * Gets the current value of the setting.
+     * Sets the current value of the setting and notifies registered listeners.
      * If the value is null and the setting does not allow nulls, it returns the default value.
+     *
+     * @param value new value, which must be non-null when this setting disallows nulls
+     * @throws IllegalArgumentException if {@code value} is null and this setting disallows nulls
      */
     public void setValue(T value) {
         if (value == null && !canBeNull)
@@ -355,6 +379,7 @@ public class Setting<T> {
      * If the node cannot be converted to the expected type, it throws a ClassCastException.
      *
      * @param node The Node to read the value from.
+     * @param <N> type of the UI node
      * @return The value read from the Node, or null if the codec is not set.
      * @throws IllegalStateException If the codec does not support reading from nodes.
      */

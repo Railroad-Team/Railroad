@@ -16,7 +16,15 @@ import javafx.scene.control.ComboBox;
 import javafx.util.StringConverter;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
+/**
+ * Provides remote selection and synchronization actions.
+ */
 public class GitSyncControlsPane extends RRVBox {
+    /**
+     * Creates remote selection and synchronization controls for a repository.
+     *
+     * @param gitManager repository service supplying state and Git operations
+     */
     public GitSyncControlsPane(GitManager gitManager) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_SYNC_CONTROLS, this);
         getStyleClass().add("git-sync-controls-pane-root");

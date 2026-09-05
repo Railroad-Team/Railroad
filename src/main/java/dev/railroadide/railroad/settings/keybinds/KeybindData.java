@@ -15,14 +15,31 @@ import javafx.scene.input.MouseEvent;
  * @param modifiers An array of KeyCombination.Modifier, which can include SHIFT, CTRL, ALT, etc. Can be empty
  */
 public record KeybindData(KeyCode keyCode, MouseButton mouseButton, KeyCombination.Modifier[] modifiers) {
+    /**
+     * Creates a keyboard binding.
+     *
+     * @param keyCode the keyboard key
+     * @param modifiers optional modifier keys
+     */
     public KeybindData(KeyCode keyCode, KeyCombination.Modifier[] modifiers) {
         this(keyCode, null, modifiers);
     }
 
+    /**
+     * Creates a mouse binding.
+     *
+     * @param mouseButton the mouse button
+     * @param modifiers optional modifier keys
+     */
     public KeybindData(MouseButton mouseButton, KeyCombination.Modifier[] modifiers) {
         this(null, mouseButton, modifiers);
     }
 
+    /**
+     * Converts this binding to a JavaFX keyboard combination.
+     *
+     * @return the keyboard combination, or {@code null} for a mouse binding
+     */
     public KeyCodeCombination getKeyCodeCombination() {
         if (keyCode == null)
             return null;
@@ -31,6 +48,12 @@ public record KeybindData(KeyCode keyCode, MouseButton mouseButton, KeyCombinati
             : new KeyCodeCombination(keyCode, modifiers);
     }
 
+    /**
+     * Checks whether a mouse event matches this binding.
+     *
+     * @param event the mouse event to inspect
+     * @return whether the button and modifiers match
+     */
     public boolean matches(MouseEvent event) {
         if (mouseButton == null || event.getButton() != mouseButton)
             return false;

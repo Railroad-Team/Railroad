@@ -15,6 +15,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
+/**
+ * Parsed hierarchy of layout items that can be materialized as JavaFX panes.
+ * The current builder supports horizontal and vertical containers, terminals, and placeholder explorer and
+ * Gradle panes; text editor items are skipped and child size properties are not yet applied.
+ *
+ * @param tree hierarchy describing the layout, retained without copying
+ */
 public record Layout(Tree<LayoutItem> tree) {
     private static Either<Pane, DetachableTabPane> createPaneForItem(LayoutItem node) {
         switch (node.getName()) {
@@ -39,8 +46,11 @@ public record Layout(Tree<LayoutItem> tree) {
         }
     }
 
-    private static void bindChildSize(Either<Pane, DetachableTabPane> child, LayoutItem node,
-        Either<Pane, DetachableTabPane> parent) {
+    private static void bindChildSize(
+        Either<Pane, DetachableTabPane> child,
+        LayoutItem node,
+        Either<Pane, DetachableTabPane> parent
+    ) {
         // TODO: Can't get size of a node, so I'm not sure how we can do this
         // if (node.hasProperty("size")) {
         // String size = node.getProperty("size").toString().replace("%", "");
@@ -62,10 +72,18 @@ public record Layout(Tree<LayoutItem> tree) {
         // }
     }
 
+    /** Prints the item hierarchy using the tree's diagnostic output. */
     public void print() {
         tree.print();
     }
 
+    /**
+     * Builds the supported items and appends the root pane to the supplied container.
+     * The root's minimum dimensions are bound to the primary stage. Unsupported items are skipped;
+     * an unsupported root is logged and leaves the container untouched. Call on the JavaFX application thread.
+     *
+     * @param pane container that receives the constructed layout
+     */
     public void apply(RRBorderPane pane) {
         Tree.Node<LayoutItem> root = tree.getRoot();
         Either<Pane, DetachableTabPane> parent = parseItem(root.getValue(), Either.left(pane));
@@ -103,8 +121,10 @@ public record Layout(Tree<LayoutItem> tree) {
         }
     }
 
-    private @Nullable Either<Pane, DetachableTabPane> parseItem(LayoutItem node,
-        Either<Pane, DetachableTabPane> parent) {
+    private @Nullable Either<Pane, DetachableTabPane> parseItem(
+        LayoutItem node,
+        Either<Pane, DetachableTabPane> parent
+    ) {
         Railroad.LOGGER.info("[LayoutBuilder] Adding new Item: {}", node.getName());
         try {
             Either<Pane, DetachableTabPane> pane = createPaneForItem(node);

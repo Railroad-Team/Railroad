@@ -17,7 +17,13 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeBrands;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+/**
+ * Displays the empty-editor welcome view with feature information and getting-started links.
+ */
 public class IDEWelcomePane extends ScrollPane {
+    /**
+     * Creates the empty-editor welcome view.
+     */
     public IDEWelcomePane() {
         var content = new RRVBox();
         content.setAlignment(Pos.CENTER);

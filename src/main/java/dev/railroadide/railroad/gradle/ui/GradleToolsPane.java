@@ -6,6 +6,7 @@ import dev.railroadide.railroad.gradle.GradleSettings;
 import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.gradle.model.GradleModelListener;
 import dev.railroadide.railroad.gradle.project.GradleManager;
+import dev.railroadide.railroad.gradle.service.GradleModelService;
 import dev.railroadide.railroad.gradle.ui.deps.GradleDependenciesPane;
 import dev.railroadide.railroad.gradle.ui.task.GradleTasksPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -32,27 +33,35 @@ import org.kordamp.ikonli.javafx.StackedFontIcon;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * A pane that provides tools for interacting with Gradle, including task execution and dependency management.
+ */
 @Getter
 public class GradleToolsPane extends RRVBox {
     private final TabPane tabPane;
     private final Tab tasksTab;
     private final Tab dependenciesTab;
 
+    /**
+     * Constructs a new GradleToolsPane for the specified project.
+     *
+     * @param project the project for which to create the Gradle tools pane
+     */
     public GradleToolsPane(Project project) {
         super();
         getStyleClass().add("gradle-tools-pane");
 
         GradleManager gradleManager = project.getGradleManager();
-        var modelService = gradleManager.getGradleModelService();
+        GradleModelService modelService = gradleManager.getGradleModelService();
 
-        var syncButton = createButtonBarButton(
+        ButtonBase syncButton = createButtonBarButton(
             FontAwesomeSolid.SYNC,
             "railroad.gradle.tools.button.sync.tooltip",
             "sync-button",
             false);
         syncButton.setOnAction(_ -> gradleManager.getGradleModelService().refreshModel(true));
 
-        var downloadSourcesButton = createButtonBarButton(
+        ButtonBase downloadSourcesButton = createButtonBarButton(
             FontAwesomeSolid.DOWNLOAD,
             "railroad.gradle.tools.button.downloadsources.tooltip",
             "download-sources-button",
@@ -73,7 +82,7 @@ public class GradleToolsPane extends RRVBox {
 
         var offlineIcon = new StackedFontIcon();
         offlineIcon.setIconCodes(FontAwesomeSolid.WIFI, FontAwesomeSolid.SLASH);
-        var toggleOfflineButton = createButtonBarButton(
+        ButtonBase toggleOfflineButton = createButtonBarButton(
             offlineIcon,
             "railroad.gradle.tools.button.toggleoffline.tooltip",
             "toggle-offline-button",
@@ -192,10 +201,20 @@ public class GradleToolsPane extends RRVBox {
         return button;
     }
 
+    /**
+     * Checks if the tasks tab is currently selected.
+     *
+     * @return true if the tasks tab is selected, false otherwise
+     */
     public boolean isTasksTabSelected() {
         return this.tabPane.getSelectionModel().getSelectedItem() == tasksTab;
     }
 
+    /**
+     * Checks if the dependencies tab is currently selected.
+     *
+     * @return true if the dependencies tab is selected, false otherwise
+     */
     public boolean isDependenciesTabSelected() {
         return this.tabPane.getSelectionModel().getSelectedItem() == dependenciesTab;
     }

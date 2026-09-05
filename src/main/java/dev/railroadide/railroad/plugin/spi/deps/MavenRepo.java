@@ -5,6 +5,9 @@ import org.jspecify.annotations.NonNull;
 /**
  * Represents a Maven repository.
  * This record holds the details of a Maven repository including its ID, and URL.
+ *
+ * @param id the unique identifier of the repository
+ * @param url the URL of the repository
  */
 public record MavenRepo(String id, String url) {
     /**

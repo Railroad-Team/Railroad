@@ -8,6 +8,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A type intersection requiring both constituent types, written with {@code &}.
+ *
+ * @param span source range occupied by this node
+ * @param left first required type
+ * @param right second required type
+ */
 public record IntersectionTypeRef(Span span, TypeRef left, TypeRef right) implements TypeRef {
     @Override
     public AstKind kind() {

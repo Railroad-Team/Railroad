@@ -9,9 +9,16 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A module directive declaring consumption of a service type.
+ *
+ * @param span source range occupied by this node
+ * @param serviceName service type consumed by the module
+ */
 public record UsesDirective(
     Span span,
-    NameExpression serviceName) implements ModuleDirective {
+    NameExpression serviceName
+) implements ModuleDirective {
     @Override
     public AstKind kind() {
         return AstKind.USES_DIRECTIVE;

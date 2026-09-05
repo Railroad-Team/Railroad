@@ -5,10 +5,20 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import java.util.ArrayList;
 import java.util.List;
 
-final class RedNode extends RedElement {
+/**
+ * Positioned syntax node that lazily materializes and caches its child views.
+ */
+public final class RedNode extends RedElement {
     private volatile List<SyntaxNode> children;
 
-    RedNode(GreenNode green, RedNode parent, int start) {
+    /**
+     * Creates a positioned syntax view over the supplied green element.
+     *
+     * @param green the immutable backing element
+     * @param parent the containing syntax node, or {@code null} for a root
+     * @param start the nonnegative absolute UTF-16 start offset
+     */
+    public RedNode(GreenNode green, RedNode parent, int start) {
         super(green, parent, start);
     }
 

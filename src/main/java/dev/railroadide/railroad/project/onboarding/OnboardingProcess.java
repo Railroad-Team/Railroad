@@ -27,35 +27,88 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+/**
+ * Runs an onboarding flow, coordinating asynchronous step hooks, navigation, and completion.
+ *
+ * @param <N> JavaFX parent type implementing the onboarding view contract
+ */
 public class OnboardingProcess<N extends Parent & OnboardingUI> {
     private final OnboardingFlow flow;
     private final OnboardingContext context;
     private final N ui;
     private final Consumer<OnboardingContext> onFinish;
 
-    protected OnboardingProcess(OnboardingFlow flow, OnboardingContext context, N ui,
-        Consumer<OnboardingContext> onFinish) {
+    protected OnboardingProcess(
+        OnboardingFlow flow,
+        OnboardingContext context,
+        N ui,
+        Consumer<OnboardingContext> onFinish
+    ) {
         this.flow = flow;
         this.context = context;
         this.ui = ui;
         this.onFinish = onFinish;
     }
 
-    public static <N extends Parent & OnboardingUI> OnboardingProcess<N> create(OnboardingFlow flow,
-        OnboardingContext context, N ui, Consumer<OnboardingContext> onFinish) {
+    /**
+     * Creates a process using a caller-supplied onboarding view.
+     *
+     * @param <N> JavaFX parent type implementing the onboarding view contract
+     * @param flow step factories and transitions to navigate
+     * @param context shared values and executor for this onboarding session
+     * @param ui view used as the scene root while onboarding runs
+     * @param onFinish callback receiving the final context after the last step finishes
+     * @return a process ready to run in a scene
+     */
+    public static <N extends Parent & OnboardingUI> OnboardingProcess<N> create(
+        OnboardingFlow flow,
+        OnboardingContext context,
+        N ui,
+        Consumer<OnboardingContext> onFinish
+    ) {
         return new OnboardingProcess<>(flow, context, ui, onFinish);
     }
 
-    public static OnboardingProcess<BasicOnboardingUI> createBasic(OnboardingFlow flow, OnboardingContext context,
-        Node content, Consumer<OnboardingContext> onFinish) {
+    /**
+     * Creates a process using the standard onboarding view.
+     *
+     * @param flow step factories and transitions to navigate
+     * @param context shared values and executor for this onboarding session
+     * @param content content to display, or {@code null} to leave the content area empty
+     * @param onFinish callback receiving the final context after the last step finishes
+     * @return a process ready to run in a scene
+     */
+    public static OnboardingProcess<BasicOnboardingUI> createBasic(
+        OnboardingFlow flow,
+        OnboardingContext context,
+        Node content,
+        Consumer<OnboardingContext> onFinish
+    ) {
         return create(flow, context, new BasicOnboardingUI(content), onFinish);
     }
 
-    public static OnboardingProcess<BasicOnboardingUI> createBasic(OnboardingFlow flow, OnboardingContext context,
-        Consumer<OnboardingContext> onFinish) {
+    /**
+     * Creates a process using the standard onboarding view with an initially empty content pane.
+     *
+     * @param flow step factories and transitions to navigate
+     * @param context shared values and executor for this onboarding session
+     * @param onFinish callback receiving the final context after the last step finishes
+     * @return a process ready to run in a scene
+     */
+    public static OnboardingProcess<BasicOnboardingUI> createBasic(
+        OnboardingFlow flow,
+        OnboardingContext context,
+        Consumer<OnboardingContext> onFinish
+    ) {
         return createBasic(flow, context, new RRBorderPane(), onFinish);
     }
 
+    /**
+     * Installs the onboarding view and schedules the first step.
+     * Does nothing when the flow has no first-step identifier.
+     *
+     * @param scene scene whose root will be replaced with the onboarding view
+     */
     public void run(Scene scene) {
         String firstStepId = flow.getFirstStepId();
         if (firstStepId == null || firstStepId.isEmpty())
@@ -79,13 +132,13 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
         private final Map<String, OnboardingStep> stepCache = new HashMap<>();
         private final Map<String, Node> cachedUIs = new HashMap<>();
 
-        Navigator(N ui) {
+        private Navigator(N ui) {
             this.ui = ui;
             busy.addListener((obs, oldValue, newValue) -> this.ui.onBusyStateChanged(newValue));
             this.ui.onBusyStateChanged(busy.get());
         }
 
-        void showStep(String stepId) {
+        private void showStep(String stepId) {
             if (stepId == null || stepId.isEmpty())
                 return;
 

@@ -13,6 +13,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+/**
+ * Reads the Forge {@code mods.toml} template and prepares optional metadata lines from project data.
+ * The current implementation modifies the lines in memory without writing them back to disk.
+ *
+ * @param files service used to locate and read the TOML template
+ */
 public record UpdateForgeModsTomlStep(FilesService files) implements CreationStep {
     private static final Pattern TOML_COMMENT_PATTERN = Pattern.compile("^#(\\w+=)|(\\[.+\\])");
 

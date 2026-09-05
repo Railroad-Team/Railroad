@@ -14,12 +14,14 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 
+/** Repository card cell displaying its name, URL, and optional icon in the import browser. */
 public class ImportProjectListCell extends ListCell<Repository> {
     private final RRCard card = new RRCard(12);
     private final HBox content = new RRHBox();
     private final ImageView icon = new ImageView();
     private final VBox infoBox = new RRVBox();
 
+    /** Creates the reusable repository card with a 32-pixel icon area and text container. */
     public ImportProjectListCell() {
         card.getStyleClass().add("import-project-card");
         icon.setFitWidth(32);
@@ -45,6 +47,12 @@ public class ImportProjectListCell extends ListCell<Repository> {
         getStyleClass().add("import-project-list-cell");
     }
 
+    /**
+     * Refreshes repository details and selection styling, removing the icon when none is available.
+     *
+     * @param repository repository to display, or null
+     * @param empty whether the cell has no item
+     */
     @Override
     protected void updateItem(Repository repository, boolean empty) {
         super.updateItem(repository, empty);

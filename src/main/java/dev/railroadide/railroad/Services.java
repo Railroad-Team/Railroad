@@ -39,6 +39,9 @@ import java.util.Properties;
 public class Services {
     private static final String APPLICATION_VERSION = loadApplicationVersion();
 
+    /**
+     * Provides application information such as version, name, and build timestamp.
+     */
     public static final ApplicationInfoService APPLICATION_INFO = new ApplicationInfoService() {
         @Override
         public String getVersion() {
@@ -73,14 +76,29 @@ public class Services {
         return manifestVersion == null || manifestVersion.isBlank() ? "development" : manifestVersion;
     }
 
+    /**
+     * Provides access to the IDE state service, which manages the state of the IDE.
+     */
     public static final DefaultIDEStateService IDE_STATE = DefaultIDEStateService.getInstance();
 
+    /**
+     * Provides access to the workspace service, which manages the workspace and its related operations.
+     */
     public static final DefaultWorkspaceService WORKSPACE = new DefaultWorkspaceService();
 
+    /**
+     * Provides access to the document editor state service, which manages the state of document editors.
+     */
     public static final DefaultDocumentEditorStateService DOCUMENT_EDITOR_STATE = new DefaultDocumentEditorStateService();
 
+    /**
+     * Provides access to the editor tab manager, which manages the tabs in the editor.
+     */
     public static final EditorTabManager EDITOR_TAB_MANAGER = new EditorTabManager();
 
+    /**
+     * Provides access to the localization service, which handles localization and internationalization.
+     */
     public static final LocalizationService LOCALIZATION_SERVICE = new LocalizationService() {
         @Override
         public String get(String key, Object... args) {
@@ -98,6 +116,10 @@ public class Services {
         }
     };
 
+    /**
+     * Provides access to the project service registry, which manages various services related to project creation and
+     * management.
+     */
     public static final ProjectServiceRegistry PROJECT_SERVICE_REGISTRY = new ProjectServiceRegistry() {
         {
             bind(ChecksumService.class, new MessageDigestChecksumService());
@@ -110,10 +132,25 @@ public class Services {
         }
     };
 
+    /**
+     * Provides access to the project creation pipeline service, which manages the pipeline for creating new projects.
+     */
     public static final DefaultProjectCreationPipelineService PROJECT_CREATION_PIPELINE = new DefaultProjectCreationPipelineService();
+
+    /**
+     * Provides access to the project language index service, which manages the indexing of languages used in projects.
+     */
     public static final ProjectLanguageIndexService PROJECT_LANGUAGE_INDEX_SERVICE = new ProjectLanguageIndexService();
+
+    /**
+     * Provides access to the language inspection provider registry, which manages the registration of language
+     * inspection providers.
+     */
     public static final Registry<LanguageInspectionProvider> LANGUAGE_INSPECTION_PROVIDER_REGISTRY = LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY;
 
+    /**
+     * Provides access to the UI manager, which manages the user interface components and their interactions.
+     */
     public static final UIManager UI_MANAGER = new UIManager();
 
     /**

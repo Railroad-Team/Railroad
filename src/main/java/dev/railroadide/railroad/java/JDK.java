@@ -126,13 +126,56 @@ public final class JDK {
      * Represents the brand or vendor of a JDK distribution.
      */
     public enum Brand {
-        ORACLE("oracle", "/images/Oracle-icon.svg"), ADOPTIUM("temurin", "/images/Adoptium-icon.svg", "adoptopenjdk",
-            "adoptium", "eclipse"), AZUL("zulu", "/images/Azul-icon.svg", "azul"), CORRETTO("corretto",
-                FontAwesomeBrands.AMAZON, "amazon"), BELL_SOFT("liberica", "/images/Liberica-icon.svg",
-                    "bellsoft"), GRAAL("graalvm", "/images/GraalVM-icon.svg", "graal"), SAP("sapmachine",
-                        "/images/SAP-icon.svg", "sap"), RED_HAT("redhat", FontAwesomeBrands.REDHAT, "red hat",
-                            "rhel"), MICROSOFT("microsoft", FontAwesomeBrands.MICROSOFT, "ms"), IBM("ibm",
-                                "/images/IBM-icon.svg", "semeru"), UNKNOWN("java", FontAwesomeBrands.JAVA);
+        /**
+         * Oracle JDK distributions identified by the {@code oracle} vendor key.
+         */
+        ORACLE("oracle", "/images/Oracle-icon.svg"),
+        /**
+         * Eclipse Temurin and AdoptOpenJDK distributions associated with Adoptium.
+         */
+        ADOPTIUM("temurin", "/images/Adoptium-icon.svg", "adoptopenjdk",
+            "adoptium", "eclipse"),
+        /**
+         * Azul distributions identified by the {@code zulu} or {@code azul} vendor names.
+         */
+        AZUL("zulu", "/images/Azul-icon.svg", "azul"),
+        /**
+         * Amazon Corretto distributions.
+         */
+        CORRETTO("corretto",
+            FontAwesomeBrands.AMAZON, "amazon"),
+        /**
+         * BellSoft Liberica distributions.
+         */
+        BELL_SOFT("liberica", "/images/Liberica-icon.svg",
+            "bellsoft"),
+        /**
+         * GraalVM distributions identified by the {@code graalvm} or {@code graal} vendor names.
+         */
+        GRAAL("graalvm", "/images/GraalVM-icon.svg", "graal"),
+        /**
+         * SAP SapMachine distributions.
+         */
+        SAP("sapmachine",
+            "/images/SAP-icon.svg", "sap"),
+        /**
+         * Red Hat distributions, including installations identified by {@code rhel}.
+         */
+        RED_HAT("redhat", FontAwesomeBrands.REDHAT, "red hat",
+            "rhel"),
+        /**
+         * Microsoft JDK distributions.
+         */
+        MICROSOFT("microsoft", FontAwesomeBrands.MICROSOFT, "ms"),
+        /**
+         * IBM distributions, including Semeru.
+         */
+        IBM("ibm",
+            "/images/IBM-icon.svg", "semeru"),
+        /**
+         * Fallback brand when release metadata, installation name, and path do not identify a known vendor.
+         */
+        UNKNOWN("java", FontAwesomeBrands.JAVA);
 
         private final String key;
         private final String[] aliases;

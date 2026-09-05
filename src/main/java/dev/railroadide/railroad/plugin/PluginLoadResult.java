@@ -19,6 +19,8 @@ public final class PluginLoadResult {
     private List<String> javaInspectionRuleProviderRegistrationIds = List.of();
 
     /**
+     * Creates a load result before the plugin instance and class loader are assigned.
+     *
      * @param pluginPath The path to the loaded plugin JAR file.
      * @param descriptor The descriptor of the loaded plugin.
      */
@@ -28,6 +30,8 @@ public final class PluginLoadResult {
     }
 
     /**
+     * Returns the source JAR path.
+     *
      * @return The path to the loaded plugin JAR file.
      */
     public Path pluginPath() {
@@ -35,6 +39,8 @@ public final class PluginLoadResult {
     }
 
     /**
+     * Returns the loaded plugin's metadata.
+     *
      * @return The descriptor of the loaded plugin.
      */
     public PluginDescriptor descriptor() {
@@ -42,6 +48,8 @@ public final class PluginLoadResult {
     }
 
     /**
+     * Returns the plugin instance assigned to this result.
+     *
      * @return The instance of the loaded plugin, or null if not set.
      */
     public Plugin pluginInstance() {
@@ -49,6 +57,8 @@ public final class PluginLoadResult {
     }
 
     /**
+     * Returns the class loader assigned to this result.
+     *
      * @return The class loader used to load the plugin, or null if not set.
      */
     public PluginClassLoader classLoader() {
@@ -56,6 +66,8 @@ public final class PluginLoadResult {
     }
 
     /**
+     * Returns the inspection provider registrations tracked for cleanup.
+     *
      * @return Registry ids auto-registered for this plugin's Java inspection rule providers.
      */
     public List<String> javaInspectionRuleProviderRegistrationIds() {
@@ -75,6 +87,9 @@ public final class PluginLoadResult {
 
     /**
      * Replaces the tracked Java inspection rule provider registration ids for this plugin.
+     *
+     * @param registrationIds IDs to copy, or {@code null} to clear the tracked registrations
+     * @throws NullPointerException if the collection contains a null ID
      */
     public void setJavaInspectionRuleProviderRegistrationIds(Collection<String> registrationIds) {
         if (registrationIds == null || registrationIds.isEmpty()) {

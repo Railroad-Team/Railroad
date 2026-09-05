@@ -6,7 +6,7 @@ import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
-import dev.railroadide.railroad.utility.TimeFormatter;
+import dev.railroadide.railroad.utility.TimeFormatingUtils;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.branch.GitBranch;
 import dev.railroadide.railroad.vcs.git.branch.GitBranchLastCommit;
@@ -48,7 +48,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListView<T> {
+/**
+ * Provides filtering, selection, details, and shared actions for a list of Git branches.
+ *
+ * @param <T> branch model displayed by the list
+ */
+public abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListView<T> {
     private final Project project;
     private final ObservableList<T> branches = FXCollections.observableArrayList();
     private final StringProperty filterText = new SimpleStringProperty("");
@@ -58,7 +63,8 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         Project project,
         String styleClass,
         Function<Project, List<T>> branchProvider,
-        Callback<ListView<T>, ListCell<T>> cellFactory) {
+        Callback<ListView<T>, ListCell<T>> cellFactory
+    ) {
         this.project = project;
 
         Callback<ListView<T>, ListCell<T>> newCellFactory = cellFactory == null ? null : listView -> {
@@ -133,7 +139,7 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         activeDetailsPopup = popup;
     }
 
-    abstract Node createDetailsNode(T branch);
+    protected abstract Node createDetailsNode(T branch);
 
     protected final Node createCommonDetailsNode(T branch, List<Node> extraRows) {
         var root = new RRVBox(8);
@@ -281,9 +287,13 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         var confirmButton = (RRButton) dialog.getScene().lookup(".rr-button.success");
         if (confirmButton != null) {
             validateUpstreamSelection(upstreamComboBox.getEditor().getText(), remoteBranches, errorText, confirmButton);
-            upstreamComboBox.getEditor().textProperty().addListener((obs, oldText,
+            upstreamComboBox.getEditor().textProperty().addListener((
+                obs,
+                oldText,
                 newText) -> validateUpstreamSelection(newText, remoteBranches, errorText, confirmButton));
-            upstreamComboBox.valueProperty().addListener((obs, oldValue,
+            upstreamComboBox.valueProperty().addListener((
+                obs,
+                oldValue,
                 newValue) -> validateUpstreamSelection(newValue, remoteBranches, errorText, confirmButton));
         }
     }
@@ -292,7 +302,8 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         @Nullable String selectedUpstream,
         List<String> remoteBranches,
         LocalizedText errorText,
-        RRButton confirmButton) {
+        RRButton confirmButton
+    ) {
         String value = Objects.requireNonNullElse(selectedUpstream, "").trim();
         if (value.isBlank()) {
             errorText.setKeyAndArgs("");
@@ -383,7 +394,9 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         var confirmButton = (RRButton) dialog.getScene().lookup(".rr-button.success");
         if (confirmButton != null) {
             validateRenameBranchName(localBranch.name(), newNameField.getText(), errorText, confirmButton);
-            newNameField.textProperty().addListener((obs, oldText,
+            newNameField.textProperty().addListener((
+                obs,
+                oldText,
                 newText) -> validateRenameBranchName(localBranch.name(), newText, errorText, confirmButton));
         }
     }
@@ -397,7 +410,8 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         String currentName,
         @Nullable String proposedName,
         LocalizedText errorText,
-        RRButton confirmButton) {
+        RRButton confirmButton
+    ) {
         String value = Objects.requireNonNullElse(proposedName, "").trim();
         if (value.isBlank()) {
             errorText.setKeyAndArgs("");
@@ -528,7 +542,8 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         GitManager gitManager,
         Optional<GitCommit> fromCommit,
         String targetBranchName,
-        GitRepoStatus repoStatus) {
+        GitRepoStatus repoStatus
+    ) {
         var content = new RRVBox();
         content.getStyleClass().add("git-commit-checkout-uncommitted-changes-dialog-content");
 
@@ -716,7 +731,7 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
             return;
         }
 
-        String formattedDateTime = TimeFormatter.formatDateTime(timestampSeconds * 1000L);
+        String formattedDateTime = TimeFormatingUtils.formatDateTime(timestampSeconds * 1000L);
         rows.add(createElapsedDetailsRow(timestampSeconds * 1000L, formattedDateTime));
     }
 
@@ -727,7 +742,7 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
         Runnable refresh = () -> value.setKey(
             "railroad.git.branches.details.last_commit_time_value",
             formattedDateTime,
-            TimeFormatter.formatElapsed(timestampMillis));
+            TimeFormatingUtils.formatElapsed(timestampMillis));
         refresh.run();
 
         var elapsedTimeline = new Timeline(new KeyFrame(Duration.seconds(1), _ -> refresh.run()));
@@ -758,6 +773,11 @@ abstract class AbstractGitBranchesListView<T extends GitBranch> extends RRListVi
             branch -> branch.name().toLowerCase(Locale.ROOT).contains(filterText.get().toLowerCase(Locale.ROOT))));
     }
 
+    /**
+     * Updates the branch-name filter using case-insensitive text.
+     *
+     * @param newValue branch filter text; null clears the filter
+     */
     public void filterBranches(String newValue) {
         filterText.set(Objects.requireNonNullElse(newValue, "").toLowerCase(Locale.ROOT));
     }

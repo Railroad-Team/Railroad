@@ -33,6 +33,13 @@ public class JinfoCLIBuilder implements CLIBuilder<Process, JinfoCLIBuilder> {
         this.jdk = Objects.requireNonNull(jdk, "JDK cannot be null");
     }
 
+    /**
+     * Creates a builder that uses {@code jinfo} from the supplied JDK.
+     *
+     * @param jdk the JDK providing the executable; must not be null
+     * @return a new builder ready for configuration
+     * @throws NullPointerException if jdk is null
+     */
     public static JinfoCLIBuilder create(JDK jdk) {
         return new JinfoCLIBuilder(jdk);
     }

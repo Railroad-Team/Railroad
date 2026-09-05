@@ -16,6 +16,8 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Represents a single run configuration entry that can be exposed through the IDE toolbar.
  * A configuration stores presentation metadata and callbacks for run, debug, and stop actions.
+ *
+ * @param <D> the type-specific run configuration data
  */
 @EqualsAndHashCode
 @ToString
@@ -185,6 +187,8 @@ public final class RunConfiguration<D extends RunConfigurationData> {
      *
      * @param json the JSON object to deserialize
      * @return the deserialized run configuration
+     *
+     * @param <D> the type-specific run configuration data
      */
     @SuppressWarnings("unchecked")
     public static <D extends RunConfigurationData> RunConfiguration<D> fromJson(JsonObject json) {

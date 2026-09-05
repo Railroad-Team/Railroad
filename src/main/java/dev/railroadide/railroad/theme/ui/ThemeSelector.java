@@ -6,6 +6,7 @@ import dev.railroadide.railroad.theme.ThemeDownloadManager;
 import dev.railroadide.railroad.theme.ThemeManager;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRFormSection;
+import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.ui.styling.ButtonSize;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import javafx.beans.property.SimpleStringProperty;
@@ -24,16 +25,24 @@ import java.util.List;
  * A modern theme selector component that provides a better UI for theme selection.
  * Features a clean layout with theme preview and easy switching.
  */
-public class ThemeSelector extends VBox {
+public class ThemeSelector extends RRVBox {
     private final StringProperty selectedThemeProperty;
     private ComboBox<String> themeComboBox;
     private RRButton previewButton;
     private RRButton downloadButton;
 
+    /**
+     * Constructs a ThemeSelector with the current theme loaded from settings.
+     */
     public ThemeSelector() {
         this(SettingsHandler.getValue(Settings.THEME));
     }
 
+    /**
+     * Constructs a ThemeSelector with the specified current theme.
+     *
+     * @param currentTheme The currently selected theme.
+     */
     public ThemeSelector(String currentTheme) {
         selectedThemeProperty = new SimpleStringProperty(currentTheme);
 
@@ -116,14 +125,29 @@ public class ThemeSelector extends VBox {
         ThemeManager.setTheme(themeName);
     }
 
+    /**
+     * Returns the property representing the selected theme.
+     *
+     * @return The StringProperty for the selected theme.
+     */
     public StringProperty selectedThemeProperty() {
         return selectedThemeProperty;
     }
 
+    /**
+     * Gets the currently selected theme.
+     *
+     * @return The name of the selected theme.
+     */
     public String getSelectedTheme() {
         return selectedThemeProperty.get();
     }
 
+    /**
+     * Sets the selected theme and updates the ComboBox value.
+     *
+     * @param theme The name of the theme to select.
+     */
     public void setSelectedTheme(String theme) {
         selectedThemeProperty.set(theme);
         themeComboBox.setValue(theme);

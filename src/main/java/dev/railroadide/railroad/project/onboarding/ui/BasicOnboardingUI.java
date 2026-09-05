@@ -14,6 +14,9 @@ import lombok.Getter;
 
 import java.util.Optional;
 
+/**
+ * Standard onboarding layout with localized headings, progress, navigation buttons, and a busy overlay.
+ */
 @Getter
 public class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
     private final RRButton backButton, nextButton, finishButton;
@@ -26,6 +29,11 @@ public class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
     private final BorderPane buttonBar;
     private Node content;
 
+    /**
+     * Creates the standard view and installs its initial content.
+     *
+     * @param content content to display, or {@code null} to leave the content area empty
+     */
     public BasicOnboardingUI(Node content) {
         getStyleClass().add("onboarding-root");
 

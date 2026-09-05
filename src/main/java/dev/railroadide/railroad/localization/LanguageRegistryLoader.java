@@ -11,6 +11,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Loads language files from the classpath and registers them in the {@link Language} registry.
+ */
 public final class LanguageRegistryLoader {
     // TODO: This needs to load from any plugin identifier (or railroad) rather than only railroad.
     private static final String FOLDER = "assets/railroad/lang";
@@ -19,6 +22,9 @@ public final class LanguageRegistryLoader {
     private LanguageRegistryLoader() {
     }
 
+    /**
+     * Loads language files from the classpath and registers them in the {@link Language} registry.
+     */
     public static void load() {
         try {
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();

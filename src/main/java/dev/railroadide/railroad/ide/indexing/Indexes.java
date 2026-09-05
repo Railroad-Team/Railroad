@@ -20,7 +20,15 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+/**
+ * Scans the Java runtime library into class-file stubs.
+ */
 public class Indexes {
+    /**
+     * Scans runtime classes from rt.jar, JMOD archives, or the runtime image.
+     *
+     * @return collected class stubs; logged scan failures may leave a partial or empty result
+     */
     public static List<ClassStub> scanStandardLibrary() {
         List<ClassStub> stubs = new ArrayList<>();
 

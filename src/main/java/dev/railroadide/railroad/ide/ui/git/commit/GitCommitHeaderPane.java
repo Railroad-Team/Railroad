@@ -10,7 +10,16 @@ import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
+/**
+ * Provides repository refresh and tree-expansion controls alongside pending rollback and shelf actions.
+ */
 public class GitCommitHeaderPane extends RRHBox {
+    /**
+     * Creates repository and tree controls for the selected commit changes.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param gitCommitChangesPane change-selection pane controlled by the header
+     */
     public GitCommitHeaderPane(Project project, GitCommitChangesPane gitCommitChangesPane) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_COMMIT_HEADER, this);
         RRButton refreshButton = createButton(FontAwesomeSolid.SYNC,

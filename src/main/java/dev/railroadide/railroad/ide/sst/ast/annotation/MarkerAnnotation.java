@@ -9,9 +9,16 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * An annotation use with no element arguments, such as {@code @Override}.
+ *
+ * @param span source range occupied by this node
+ * @param name annotation type name
+ */
 public record MarkerAnnotation(
     Span span,
-    NameExpression name) implements Annotation {
+    NameExpression name
+) implements Annotation {
     @Override
     public AstKind kind() {
         return AstKind.MARKER_ANNOTATION;

@@ -26,6 +26,7 @@ import javafx.scene.layout.*;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.util.*;
+/** Settings view that lists, filters, and edits the application's keybinds. */
 public class KeybindsList extends RRVBox {
     private final Map<String, List<KeybindData>> keybinds = new LinkedHashMap<>();
 
@@ -42,10 +43,16 @@ public class KeybindsList extends RRVBox {
     private String pendingEditKey;
     private int pendingEditIndex = -1;
 
+    /** Creates a keybind list initialized from the registered defaults. */
     public KeybindsList() {
         this(null);
     }
 
+    /**
+     * Creates a keybind list with the supplied saved bindings.
+     *
+     * @param initialKeybinds saved bindings to load, or {@code null} to use defaults
+     */
     public KeybindsList(Map<String, List<KeybindData>> initialKeybinds) {
         getStyleClass().add("keybinds-pane");
         setFillWidth(true);
@@ -57,12 +64,22 @@ public class KeybindsList extends RRVBox {
         loadKeybinds(initialKeybinds);
     }
 
+    /**
+     * Returns a defensive copy of the currently edited bindings.
+     *
+     * @return keybind IDs mapped to their configured combinations
+     */
     public Map<String, List<KeybindData>> getKeybinds() {
         Map<String, List<KeybindData>> copy = new LinkedHashMap<>();
         keybinds.forEach((id, bindings) -> copy.put(id, new ArrayList<>(bindings)));
         return copy;
     }
 
+    /**
+     * Replaces the edited bindings and refreshes the visible list.
+     *
+     * @param incoming saved bindings to apply after loading registered defaults, or {@code null}
+     */
     public void loadKeybinds(Map<String, List<KeybindData>> incoming) {
         keybinds.clear();
 
@@ -322,8 +339,8 @@ public class KeybindsList extends RRVBox {
     /**
      * Converts the keybinds map to a JSON representation.
      *
-     * @param keybinds
-     * @return a JsonElement representing the keybinds.
+     * @param keybinds keybind IDs mapped to their configured combinations
+     * @return a JSON object containing the serialized bindings
      */
     public static JsonElement toJson(Map<String, List<KeybindData>> keybinds) {
         var jsonObject = new JsonObject();

@@ -39,25 +39,108 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Repository import view supporting account-based browsing and direct URL cloning.
+ * Account connections are cached per profile, with controls for filtering, refreshing, and choosing a destination.
+ */
 @Getter
 public class WelcomeImportProjectsPane extends RRHBox {
+    /**
+     * Source selector containing the URL-import entry and configured VCS profiles.
+     *
+     * @return the live source list
+     */
     private final RRListView<Object> sidebar = new RRListView<>();
     private static final String REPO_URL_OPTION = "REPO_URL_OPTION";
+    /**
+     * Container rebuilt for the selected import source or loading state.
+     *
+     * @return the source-specific content pane
+     */
     private final RRVBox rightPane = new RRVBox(18);
+    /**
+     * Repository list after applying the current account filter.
+     *
+     * @return the live repository selection list
+     */
     private final RRListView<Repository> repositoryListView = new RRListView<>();
+    /**
+     * Indeterminate progress indicator used while account repositories load.
+     *
+     * @return the repository-loading indicator
+     */
     private final ProgressIndicator progressIndicator = new ProgressIndicator();
+    /**
+     * Input filtering account repositories by name or URL.
+     *
+     * @return the live repository search field
+     */
     private final RRTextField searchField = new RRTextField();
+    /**
+     * Container for the account browser's heading, filter, and repository or status content.
+     *
+     * @return the account browser content container
+     */
     private final RRVBox contentBox = new RRVBox(12);
+    /**
+     * Auxiliary repository collection, currently not populated or read by the account-loading workflow.
+     *
+     * @return the mutable auxiliary repository list
+     */
     private final ObservableList<Repository> allRepositories = FXCollections.observableArrayList();
+    /**
+     * Message displayed while account repositories are loading.
+     *
+     * @return the localized loading label
+     */
     private final LocalizedLabel loadingLabel = new LocalizedLabel("railroad.importprojects.loading");
+    /**
+     * Error-state label retained by the browser but not currently added by its loading workflow.
+     *
+     * @return the localized error label
+     */
     private final LocalizedLabel errorLabel = new LocalizedLabel("railroad.importprojects.error");
+    /**
+     * Message shown when the selected account's filtered repository list is empty.
+     *
+     * @return the localized empty-state label
+     */
     private final LocalizedLabel emptyLabel = new LocalizedLabel("railroad.importprojects.empty");
+    /**
+     * Connections retained for profiles whose repositories have been requested.
+     *
+     * @return the live profile-to-connection cache
+     */
     private final Map<VCSProfile, AbstractConnection> connectionCache = new HashMap<>();
+    /**
+     * Whether the view is awaiting repository-list updates for an account load.
+     *
+     * @return true while the repository-loading state is active
+     */
     private boolean isLoading = false;
+    /**
+     * Profile most recently marked loaded or restored from the cache.
+     *
+     * @return the last loaded profile, or null before any account is loaded
+     */
     private VCSProfile lastLoadedProfile = null;
+    /**
+     * Latest text supplied by the repository search field.
+     *
+     * @return the current repository filter
+     */
     private String currentFilter = "";
+    /**
+     * Base directory retained by account-based import destination selection.
+     *
+     * @return the last chosen base directory, initially the user's home directory
+     */
     private String lastBaseDirectory = System.getProperty("user.home");
 
+    /**
+     * Builds the import browser, initially showing direct URL import, and installs account and search listeners.
+     * Registers the import pane's UI identifier while attached to a scene.
+     */
     public WelcomeImportProjectsPane() {
         getStyleClass().add("welcome-import-projects-pane");
         sidebar.getStyleClass().add("welcome-import-sidebar");

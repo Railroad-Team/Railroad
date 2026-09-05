@@ -24,9 +24,12 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+/**
+ * Utility class for file operations.
+ */
 public final class FileUtils {
     private FileUtils() {
-        // Utility class, no instantiation
+        throw new UnsupportedOperationException("Instantiated utility class");
     }
 
     /**
@@ -401,6 +404,14 @@ public final class FileUtils {
         return String.format("%.1f %sB", size / Math.pow(unit, exp), pre);
     }
 
+    /**
+     * Copies the contents of a directory to another directory.
+     *
+     * @param src the source directory
+     * @param dst the destination directory
+     * @param options options specifying how the copy should be done
+     * @throws RuntimeException if an error occurs during copying
+     */
     public static void copyDirectoryContents(Path src, Path dst, CopyOption... options) {
         try (Stream<Path> files = Files.walk(src)) {
             files.forEach(source -> {
@@ -451,6 +462,11 @@ public final class FileUtils {
         return path.toAbsolutePath().normalize();
     }
 
+    /**
+     * Opens a terminal in the specified path.
+     *
+     * @param path the path to open the terminal in
+     */
     public static void openInTerminal(Path path) {
         Services.UI_MANAGER.lookup(UIIds.IDE.IDE_BOTTOM_DOCK).ifPresent(pane -> {
             Terminal terminal = TerminalFactory.create(Files.isDirectory(path) ? path : path.getParent());

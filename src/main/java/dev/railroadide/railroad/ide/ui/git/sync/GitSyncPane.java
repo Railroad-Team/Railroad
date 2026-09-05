@@ -8,12 +8,20 @@ import dev.railroadide.railroad.vcs.git.GitManager;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
+/**
+ * Combines synchronization status, controls, and incoming and outgoing commit lists.
+ */
 public class GitSyncPane extends RRVBox {
     private final GitSyncInfoPane infoPane;
     private final GitSyncControlsPane controlsPane;
     private final GitSyncIncomingChangesPane incomingChangesPane;
     private final GitSyncOutgoingChangesPane outgoingChangesPane;
 
+    /**
+     * Creates synchronization information, controls, and commit lists for a project.
+     *
+     * @param project project whose files and workspace are being displayed
+     */
     public GitSyncPane(Project project) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_SYNC, this);
         getStyleClass().add("git-sync-pane-root");

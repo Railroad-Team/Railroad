@@ -21,15 +21,18 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
+import java.lang.reflect.Modifier;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JavaSemanticAnalyzerTest {
+public class JavaSemanticAnalyzerTest {
     @TempDir
-    Path tempDir;
+    public Path tempDir;
 
     @Test
-    void preservesNestedGenericClosersAroundArrayTypeArguments() {
+    public void preservesNestedGenericClosersAroundArrayTypeArguments() {
         String source = """
             import java.util.concurrent.atomic.AtomicReference;
             import java.util.function.Consumer;
@@ -55,7 +58,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesGenericSupertypeWithoutTreatingNestedTypeArgumentAsSuperclass() {
+    public void resolvesGenericSupertypeWithoutTreatingNestedTypeArgumentAsSuperclass() {
         String source = """
             package demo;
 
@@ -72,7 +75,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesGenericInterfaceHierarchyWithoutRecursingThroughTypeArguments() {
+    public void resolvesGenericInterfaceHierarchyWithoutRecursingThroughTypeArguments() {
         String source = """
             package demo;
 
@@ -89,7 +92,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void realGenericSupertypesDoNotOverflowHierarchyResolution() throws IOException {
+    public void realGenericSupertypesDoNotOverflowHierarchyResolution() throws IOException {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         JavaProjectSemanticIndex projectIndex = new JavaProjectSemanticIndexer().build(sourceRoot);
         var symbolIndex = new CompositeJavaSymbolIndex(List.of(
@@ -109,7 +112,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesRealAlertBuilderVarAndJavaFxLambdaReceivers() throws Exception {
+    public void resolvesRealAlertBuilderVarAndJavaFxLambdaReceivers() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path alertBuilder = sourceRoot.resolve("dev/railroadide/railroad/window/AlertBuilder.java");
         List<Path> javaFxRoots = List.of(
@@ -156,7 +159,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesRealWelcomeProjectsPaneCastLambdaAndThreadConstructors() throws Exception {
+    public void resolvesRealWelcomeProjectsPaneCastLambdaAndThreadConstructors() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path sourceFile = sourceRoot.resolve("dev/railroadide/railroad/welcome/WelcomeProjectsPane.java");
         JavaLibrarySymbolIndex javaFxIndex = JavaLibrarySymbolIndex.build(List.of(
@@ -198,7 +201,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void collectsTopLevelAndMemberDeclarations() {
+    public void collectsTopLevelAndMemberDeclarations() {
         String source = """
             package demo.sample;
             import java.util.List;
@@ -259,14 +262,14 @@ class JavaSemanticAnalyzerTest {
         assertEquals(2, classes.size());
         boolean sawInner = classes.stream()
             .map(model::declaredSymbol)
-            .filter(java.util.Optional::isPresent)
-            .map(java.util.Optional::get)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
             .anyMatch(symbol -> symbol.kind() == SymbolKind.CLASS && "Inner".equals(symbol.simpleName()));
         assertTrue(sawInner);
     }
 
     @Test
-    void emitsDuplicateDeclarationDiagnostics() {
+    public void emitsDuplicateDeclarationDiagnostics() {
         String source = """
             class DuplicateMembers {
                 int value;
@@ -287,7 +290,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesNameExpressionsAndReportsUnresolvedNames() {
+    public void resolvesNameExpressionsAndReportsUnresolvedNames() {
         String source = """
             class ResolverSample {
                 int field;
@@ -320,7 +323,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void infersBasicTypesAndReportsIncompatibleAssignments() {
+    public void infersBasicTypesAndReportsIncompatibleAssignments() {
         String source = """
             class TypeSample {
                 void run() {
@@ -346,7 +349,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void reportsUnresolvedImportForUnknownNonPlatformType() {
+    public void reportsUnresolvedImportForUnknownNonPlatformType() {
         String source = """
             package demo;
             import demo.LocalType;
@@ -367,7 +370,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void reportsDuplicateImports() {
+    public void reportsDuplicateImports() {
         String source = """
             import java.util.List;
             import java.util.List;
@@ -385,7 +388,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void reportsAmbiguousSingleTypeImports() {
+    public void reportsAmbiguousSingleTypeImports() {
         String source = """
             import java.util.List;
             import java.awt.List;
@@ -403,7 +406,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void reportsUnresolvedStaticImportOwner() {
+    public void reportsUnresolvedStaticImportOwner() {
         String source = """
             import static missing.pkg.Utility.value;
 
@@ -420,7 +423,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesSingleStaticImportsForFieldAndMethod() {
+    public void resolvesSingleStaticImportsForFieldAndMethod() {
         String source = """
             import static java.lang.Math.PI;
             import static java.lang.Math.max;
@@ -450,7 +453,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesWildcardStaticImportsForFieldAndMethod() {
+    public void resolvesWildcardStaticImportsForFieldAndMethod() {
         String source = """
             import static java.lang.Math.*;
 
@@ -479,7 +482,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void reportsUnresolvedStaticImportMember() {
+    public void reportsUnresolvedStaticImportMember() {
         String source = """
             import static java.lang.Math.notARealMember;
 
@@ -496,7 +499,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void staticImportMethodResolutionUsesArity() {
+    public void staticImportMethodResolutionUsesArity() {
         String source = """
             import static java.lang.Math.max;
 
@@ -530,7 +533,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void reportsAmbiguousNameFromStaticOnDemandImports() {
+    public void reportsAmbiguousNameFromStaticOnDemandImports() {
         String source = """
             import static java.lang.Math.*;
             import static java.lang.StrictMath.*;
@@ -551,7 +554,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesTypeNamesFromProjectIndexInSamePackage() throws IOException {
+    public void resolvesTypeNamesFromProjectIndexInSamePackage() throws IOException {
         JavaProjectSemanticIndex index = buildProjectIndex(
             "src/main/java/demo/Shared.java", """
                 package demo;
@@ -574,7 +577,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesTypeNamesFromProjectIndexViaExplicitImport() throws IOException {
+    public void resolvesTypeNamesFromProjectIndexViaExplicitImport() throws IOException {
         JavaProjectSemanticIndex index = buildProjectIndex(
             "src/main/java/lib/Shared.java", """
                 package lib;
@@ -598,7 +601,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesTypeNamesFromProjectIndexViaWildcardImport() throws IOException {
+    public void resolvesTypeNamesFromProjectIndexViaWildcardImport() throws IOException {
         JavaProjectSemanticIndex index = buildProjectIndex(
             "src/main/java/lib/Shared.java", """
                 package lib;
@@ -622,7 +625,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesStaticImportsFromProjectIndex() throws IOException {
+    public void resolvesStaticImportsFromProjectIndex() throws IOException {
         JavaProjectSemanticIndex index = buildProjectIndex(
             "src/main/java/lib/Util.java", """
                 package lib;
@@ -664,7 +667,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesDirectProjectMemberAccessAndConstructors() throws IOException {
+    public void resolvesDirectProjectMemberAccessAndConstructors() throws IOException {
         JavaProjectSemanticIndex index = buildProjectIndex(
             "src/main/java/lib/Util.java", """
                 package lib;
@@ -730,7 +733,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesExplicitMemberAccessAndMethodCalls() {
+    public void resolvesExplicitMemberAccessAndMethodCalls() {
         String source = """
             class Members {
                 void run(String text) {
@@ -776,7 +779,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesConstructorsAndReportsUnresolvedCallsAndMembers() {
+    public void resolvesConstructorsAndReportsUnresolvedCallsAndMembers() {
         String source = """
             class Calls {
                 static class Box {
@@ -822,7 +825,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesBinaryConstructorsAndFluentCalls() throws Exception {
+    public void resolvesBinaryConstructorsAndFluentCalls() throws Exception {
         String source = """
             import com.google.gson.Gson;
             import com.google.gson.GsonBuilder;
@@ -894,7 +897,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesImplicitRecordConstructorsAndListOfVarargs() {
+    public void resolvesImplicitRecordConstructorsAndListOfVarargs() {
         String source = """
             import java.util.List;
 
@@ -916,7 +919,7 @@ class JavaSemanticAnalyzerTest {
             .anyMatch(method -> method.name().equals("of")));
         assertTrue(JavaSemanticAnalyzer.loadJdkClassStubsByQualifiedName().get("java.util.List").methods().stream()
             .filter(method -> method.name().equals("of"))
-            .anyMatch(method -> java.lang.reflect.Modifier.isStatic(method.modifiers())));
+            .anyMatch(method -> Modifier.isStatic(method.modifiers())));
 
         SemanticModel model = JavaSemanticAnalyzer.analyze(source);
 
@@ -958,7 +961,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesRailroadStyleInitializationCalls() throws Exception {
+    public void resolvesRailroadStyleInitializationCalls() throws Exception {
         String source = """
             import javafx.application.Application;
             import javafx.application.Preloader;
@@ -1038,7 +1041,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesProjectRecordConstructorsAndAccessors() throws Exception {
+    public void resolvesProjectRecordConstructorsAndAccessors() throws Exception {
         String railroad = """
             package dev.railroadide.railroad;
 
@@ -1117,7 +1120,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesProjectInterfaceMethodsThroughStaticFieldType() throws Exception {
+    public void resolvesProjectInterfaceMethodsThroughStaticFieldType() throws Exception {
         String railroad = """
             package dev.railroadide.railroad;
 
@@ -1184,7 +1187,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesProjectInterfaceMethodWithProjectParameterThroughStaticFieldType() throws Exception {
+    public void resolvesProjectInterfaceMethodWithProjectParameterThroughStaticFieldType() throws Exception {
         String railroad = """
             package dev.railroadide.railroad;
 
@@ -1263,7 +1266,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesFluentBuilderMethodChainReturnTypes() {
+    public void resolvesFluentBuilderMethodChainReturnTypes() {
         String source = """
             class Demo {
                 void run() {
@@ -1305,7 +1308,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesProjectIndexedGitCommandBuilderChain() throws Exception {
+    public void resolvesProjectIndexedGitCommandBuilderChain() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path gitCommands = sourceRoot.resolve("dev/railroadide/railroad/vcs/git/GitCommands.java");
         var symbolIndex = new CompositeJavaSymbolIndex(List.of(
@@ -1324,7 +1327,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesProjectIndexedSemanticApiCallChains() throws Exception {
+    public void resolvesProjectIndexedSemanticApiCallChains() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path accessibilityInspection = sourceRoot.resolve(
             "dev/railroadide/railroad/ide/diagnostics/inspections/CoreAccessibilityInspection.java");
@@ -1344,7 +1347,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesRailroadStyleInitializationMethodReferences() throws Exception {
+    public void resolvesRailroadStyleInitializationMethodReferences() throws Exception {
         String source = """
             class Demo {
                 static void one() {
@@ -1384,7 +1387,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void unresolvedDirectSuperTypeDoesNotReenterHierarchyResolution() {
+    public void unresolvedDirectSuperTypeDoesNotReenterHierarchyResolution() {
         String source = """
             class Child extends Missing {
             }
@@ -1394,7 +1397,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void malformedMissingParameterTypeDoesNotCreateBlankDeclaredType() {
+    public void malformedMissingParameterTypeDoesNotCreateBlankDeclaredType() {
         String source = """
             class Broken {
                 void run( {
@@ -1405,7 +1408,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void resolvesMethodCallOnCrossFileEnumConstant() throws Exception {
+    public void resolvesMethodCallOnCrossFileEnumConstant() throws Exception {
         String iconSource = """
             package demo;
             public enum Icon {
@@ -1445,7 +1448,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     @Test
-    void specializesFunctionReturnTypeInLexicallyGenericMethod() {
+    public void specializesFunctionReturnTypeInLexicallyGenericMethod() {
         String source = """
             import java.util.function.Function;
             class Example<T> {
@@ -1535,7 +1538,7 @@ class JavaSemanticAnalyzerTest {
     }
 
     private static String syntaxText(SyntaxNode node) {
-        if (node instanceof dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken token)
+        if (node instanceof SyntaxToken token)
             return token.text();
 
         var builder = new StringBuilder();
@@ -1545,8 +1548,11 @@ class JavaSemanticAnalyzerTest {
         return builder.toString();
     }
 
-    private JavaProjectSemanticIndex buildProjectIndex(String relativePath, String source,
-        String... additionalPathAndSourcePairs) throws IOException {
+    private JavaProjectSemanticIndex buildProjectIndex(
+        String relativePath,
+        String source,
+        String... additionalPathAndSourcePairs
+    ) throws IOException {
         writeProjectSource(relativePath, source);
         for (int index = 0; index < additionalPathAndSourcePairs.length; index += 2) {
             writeProjectSource(additionalPathAndSourcePairs[index], additionalPathAndSourcePairs[index + 1]);

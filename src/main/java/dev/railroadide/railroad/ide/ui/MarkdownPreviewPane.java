@@ -42,9 +42,21 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 
+/**
+ * Displays Markdown source, rendered preview, or both with editing and layout controls.
+ */
 public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
+    /**
+     * Matches a decimal list marker followed by a word.
+     */
     public static final Pattern NUMBERED_LIST_PATTERN = Pattern.compile("\\d+\\. \\w+");
+    /**
+     * Matches an asterisk list marker followed by text.
+     */
     public static final Pattern BULLET_LIST_PATTERN = Pattern.compile("\\* .+");
+    /**
+     * Matches a dash list marker followed by text.
+     */
     public static final Pattern DASH_LIST_PATTERN = Pattern.compile("- .+");
     private static final Pattern HTML_LIST_ITEM_PATTERN = Pattern.compile("\\s*<li>.*</li>\\s*");
 
@@ -76,6 +88,12 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         Settings.THEME.removeListener(themeListener);
     }
 
+    /**
+     * Loads a Markdown file and restores the project preview layout.
+     *
+     * @param markdownFile Markdown file to load and edit
+     * @param project project whose files and workspace are being displayed
+     */
     public MarkdownPreviewPane(Path markdownFile, Project project) {
         this.markdownFile = markdownFile;
         this.project = project;
@@ -401,8 +419,12 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         }
     }
 
-    private void createDialogButtons(RRButton cancelButton, RRButton insertButton, RRTextField uriTextField,
-        RRTextField altTextField) {
+    private void createDialogButtons(
+        RRButton cancelButton,
+        RRButton insertButton,
+        RRTextField uriTextField,
+        RRTextField altTextField
+    ) {
         insertButton.setVariant(ButtonVariant.PRIMARY);
         insertButton.setButtonSize(ButtonSize.LARGE);
         insertButton.getStyleClass().add("markdown-image-dialog-button");
@@ -449,10 +471,29 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         editor.requestFocus();
     }
 
+    /**
+     * Stores the selected Markdown editor layout.
+     *
+     * @param layoutType source, preview, or split layout to display
+     */
     public record MarkdownLayout(MarkdownLayoutType layoutType) {
     }
 
+    /**
+     * Selects which Markdown source and preview panes are visible.
+     */
     public enum MarkdownLayoutType {
-        SPLIT, PREVIEW, CODE
+        /**
+         * Display source and rendered Markdown side by side.
+         */
+        SPLIT,
+        /**
+         * Display only the rendered Markdown preview.
+         */
+        PREVIEW,
+        /**
+         * Display only the Markdown source editor.
+         */
+        CODE
     }
 }

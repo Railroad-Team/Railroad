@@ -11,7 +11,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Converts Fabric icon paths and width-to-path objects to and from {@link IconInfo}.
+ */
 public class IconTypeAdapter extends TypeAdapter<IconInfo> {
+    /**
+     * Reads icon metadata, storing a single string path under the {@code default} key.
+     *
+     * @param in the reader positioned at a string, object, or null
+     * @return the icon metadata, or {@code null} for JSON null
+     * @throws IOException if reading fails or the JSON token is unsupported
+     */
     @Override
     public IconInfo read(JsonReader in) throws IOException {
         JsonToken token = in.peek();
@@ -42,6 +52,14 @@ public class IconTypeAdapter extends TypeAdapter<IconInfo> {
         throw new IOException("Expected string, object, or null for icon field but got " + token);
     }
 
+    /**
+     * Writes a lone {@code default} path as a string and other icon maps as objects.
+     * Missing or empty icon metadata is written as JSON null.
+     *
+     * @param out the destination JSON writer
+     * @param value the icon metadata to serialize, or {@code null}
+     * @throws IOException if writing fails
+     */
     @Override
     public void write(JsonWriter out, IconInfo value) throws IOException {
         if (value == null || value.getIconsByWidth() == null || value.getIconsByWidth().isEmpty()) {

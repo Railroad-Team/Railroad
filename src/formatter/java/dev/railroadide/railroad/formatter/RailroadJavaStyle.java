@@ -36,8 +36,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -46,8 +48,8 @@ import java.util.stream.Stream;
  *
  * <p>
  * The JDK compiler tree API is used deliberately: style rules operate on Java statements rather than text and
- * automatically understand the same language level as the project toolchain. Rules that need symbols can extend this
- * tool to run javac attribution and inspect elements through {@link Trees}.
+ * automatically understand the same language level as the project toolchain. Qualified type names are shortened only
+ * after javac attribution identifies their symbols and checks for name conflicts.
  * </p>
  */
 public final class RailroadJavaStyle {
@@ -75,7 +77,18 @@ public final class RailroadJavaStyle {
             return;
         }
 
-        if (pathStart >= args.length) {
+        List<String> compilerOptions = new ArrayList<>(JAVAC_OPTIONS);
+        String classpathFile = System.getenv("RAILROAD_FORMAT_CLASSPATH_FILE");
+        if (classpathFile != null) {
+            compilerOptions
+                .addAll(List.of("--class-path", Files.readString(Path.of(classpathFile), StandardCharsets.UTF_8)));
+        }
+        while (pathStart + 1 < args.length
+            && ("--class-path".equals(args[pathStart]) || "--source-path".equals(args[pathStart]))) {
+            compilerOptions.add(args[pathStart++]);
+            compilerOptions.add(args[pathStart++]);
+        }
+        if (pathStart >= args.length || args[pathStart].startsWith("--")) {
             printUsageAndExit();
             return;
         }
@@ -87,10 +100,20 @@ public final class RailroadJavaStyle {
         }
 
         int changedFiles = 0;
+        int visibilityViolations = 0;
 
+        Map<URI, String> sources = new LinkedHashMap<>();
         for (Path file : files) {
-            String source = Files.readString(file, StandardCharsets.UTF_8);
-            RewriteResult result = rewrite(source, file.toUri());
+            sources.put(file.toUri(), Files.readString(file, StandardCharsets.UTF_8));
+        }
+        Map<URI, RewriteResult> results = rewrite(sources, compilerOptions);
+        for (Path file : files) {
+            String source = sources.get(file.toUri());
+            RewriteResult result = results.get(file.toUri());
+            for (ExplicitVisibilityStyle.Violation violation : result.visibilityViolations()) {
+                System.err.printf("%s:%d: %s%n", file, violation.line(), violation.message());
+                visibilityViolations++;
+            }
             if (result.source().equals(source))
                 continue;
 
@@ -108,51 +131,113 @@ public final class RailroadJavaStyle {
         if (checkOnly && changedFiles > 0) {
             System.err.printf(Locale.ROOT, "%d Java file%s require structural formatting. Run './gradlew format'.%n",
                 changedFiles, changedFiles == 1 ? "" : "s");
+        }
+        if (visibilityViolations > 0) {
+            System.err.printf(Locale.ROOT, "%d package-private declaration%s require an explicit access modifier. "
+                + "Choose visibility manually; format does not change access levels.%n",
+                visibilityViolations, visibilityViolations == 1 ? "" : "s");
+        }
+        if (checkOnly && (changedFiles > 0 || visibilityViolations > 0)) {
             System.exit(1);
         }
     }
 
     private static void printUsageAndExit() {
         System.err.println("Usage: RailroadJavaStyle (--apply|--check) "
-            + "(--all|--ratchet-from <revision> <repository>) <file-or-directory>...");
+            + "(--all|--ratchet-from <revision> <repository>) "
+            + "[--class-path <classpath>] [--source-path <sourcepath>] <file-or-directory>...");
         System.exit(2);
     }
 
     public static String rewrite(String source) {
-        return rewrite(source, URI.create("string:///RailroadStyleInput.java")).source();
+        URI uri = URI.create("string:///RailroadStyleInput.java");
+        return rewrite(Map.of(uri, source), JAVAC_OPTIONS).get(uri).source();
     }
 
-    private static RewriteResult rewrite(String source, URI sourceUri) {
+    private static Map<URI, RewriteResult> rewrite(Map<URI, String> sources, List<String> compilerOptions) {
+        if (sources.isEmpty())
+            return Map.of();
+
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         if (compiler == null)
             throw new IllegalStateException("A full JDK is required to run Railroad's Java formatter");
 
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-        JavaFileObject input = new SourceFile(sourceUri, source);
-        JavacTask task = (JavacTask) compiler.getTask(null, null, diagnostics, JAVAC_OPTIONS, null, List.of(input));
-
-        try {
-            CompilationUnitTree unit = task.parse().iterator().next();
+        List<SourceFile> inputs = sources.entrySet().stream()
+            .map(entry -> new SourceFile(entry.getKey(), entry.getValue())).toList();
+        try (var fileManager = compiler.getStandardFileManager(diagnostics, Locale.ROOT, StandardCharsets.UTF_8)) {
+            JavacTask task = (JavacTask) compiler.getTask(null, fileManager, diagnostics, compilerOptions, null,
+                inputs);
+            List<CompilationUnitTree> units = new ArrayList<>();
+            task.parse().forEach(units::add);
             failOnParseErrors(diagnostics);
 
             Trees trees = Trees.instance(task);
             SourcePositions positions = trees.getSourcePositions();
-            List<TextEdit> edits = new ArrayList<>();
-            List<Integer> changedLines = new ArrayList<>();
+            Map<CompilationUnitTree, List<TextEdit>> unitEdits = new LinkedHashMap<>();
+            Map<CompilationUnitTree, List<Integer>> unitLines = new LinkedHashMap<>();
+            Map<CompilationUnitTree, QualifiedNameStyle> qualifiedNames = new LinkedHashMap<>();
+            Map<CompilationUnitTree, List<ExplicitVisibilityStyle.Violation>> visibilityViolations = new LinkedHashMap<>();
+            for (CompilationUnitTree unit : units) {
+                String source = sources.get(unit.getSourceFile().toUri());
+                List<TextEdit> edits = new ArrayList<>();
+                List<Integer> changedLines = new ArrayList<>();
+                new SemanticStyleScanner(unit, positions, source, edits, changedLines).scan(unit, null);
+                unitEdits.put(unit, edits);
+                unitLines.put(unit, changedLines);
+                qualifiedNames.put(unit, new QualifiedNameStyle(unit, trees, source));
+                visibilityViolations.put(unit, ExplicitVisibilityStyle.inspect(unit, positions));
+            }
 
-            new SemanticStyleScanner(unit, positions, source, edits, changedLines).scan(unit, null);
+            // Attribution may report unrelated errors (including missing generated Lombok members).
+            // The import rule only uses successfully resolved symbols; parsing must still succeed.
+            if (qualifiedNames.values().stream().anyMatch(QualifiedNameStyle::hasCandidates)) {
+                task.analyze();
+            }
+
+            Map<URI, RewriteResult> results = new LinkedHashMap<>();
+            for (CompilationUnitTree unit : units) {
+                URI uri = unit.getSourceFile().toUri();
+                List<TextEdit> edits = unitEdits.get(unit);
+                List<Integer> changedLines = unitLines.get(unit);
+                qualifiedNames.get(unit).addEdits(task.getElements(), edits, changedLines);
+                edits.sort(Comparator.<TextEdit>comparingInt(TextEdit::start).reversed()
+                    .thenComparing(Comparator.comparingInt(TextEdit::end).reversed()));
+                var rewritten = new StringBuilder(sources.get(uri));
+                for (TextEdit edit : edits) {
+                    rewritten.replace(edit.start(), edit.end(), edit.replacement());
+                }
+                changedLines.sort(Integer::compareTo);
+                // Shortening a type can make a mixed qualified/simple construction eligible for var.
+                String result = edits.isEmpty()
+                    ? rewritten.toString()
+                    : rewriteStructuralStyle(rewritten.toString(), uri);
+                results.put(uri, new RewriteResult(result, List.copyOf(changedLines), visibilityViolations.get(unit)));
+            }
+            return results;
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to parse Java sources", exception);
+        }
+    }
+
+    private static String rewriteStructuralStyle(String source, URI uri) throws IOException {
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+        try (var fileManager = compiler.getStandardFileManager(diagnostics, Locale.ROOT, StandardCharsets.UTF_8)) {
+            JavacTask task = (JavacTask) compiler.getTask(null, fileManager, diagnostics, JAVAC_OPTIONS, null,
+                List.of(new SourceFile(uri, source)));
+            CompilationUnitTree unit = task.parse().iterator().next();
+            failOnParseErrors(diagnostics);
+            List<TextEdit> edits = new ArrayList<>();
+            new SemanticStyleScanner(unit, Trees.instance(task).getSourcePositions(), source, edits, new ArrayList<>())
+                .scan(unit, null);
             edits.sort(Comparator.<TextEdit>comparingInt(TextEdit::start).reversed()
                 .thenComparing(Comparator.comparingInt(TextEdit::end).reversed()));
-
             var rewritten = new StringBuilder(source);
             for (TextEdit edit : edits) {
                 rewritten.replace(edit.start(), edit.end(), edit.replacement());
             }
-
-            changedLines.sort(Integer::compareTo);
-            return new RewriteResult(rewritten.toString(), List.copyOf(changedLines));
-        } catch (IOException exception) {
-            throw new IllegalStateException("Unable to parse " + sourceUri, exception);
+            return rewritten.toString();
         }
     }
 
@@ -224,10 +309,14 @@ public final class RailroadJavaStyle {
             throw new IllegalArgumentException("Java formatter could not parse source:\n" + String.join("\n", errors));
     }
 
-    private record RewriteResult(String source, List<Integer> changedLines) {
+    private record RewriteResult(
+        String source,
+        List<Integer> changedLines,
+        List<ExplicitVisibilityStyle.Violation> visibilityViolations
+    ) {
     }
 
-    private record TextEdit(int start, int end, String replacement) {
+    public record TextEdit(int start, int end, String replacement) {
     }
 
     private static final class SourceFile extends SimpleJavaFileObject {
@@ -251,8 +340,13 @@ public final class RailroadJavaStyle {
         private final List<TextEdit> edits;
         private final List<Integer> changedLines;
 
-        private SemanticStyleScanner(CompilationUnitTree unit, SourcePositions positions, String source,
-            List<TextEdit> edits, List<Integer> changedLines) {
+        private SemanticStyleScanner(
+            CompilationUnitTree unit,
+            SourcePositions positions,
+            String source,
+            List<TextEdit> edits,
+            List<Integer> changedLines
+        ) {
             this.unit = unit;
             this.positions = positions;
             this.source = source;

@@ -34,6 +34,15 @@ public class RegistryManager {
         return createRegistry(id, type, false);
     }
 
+    /**
+     * Creates and stores an insertion-ordered registry with the specified ID and value type.
+     * A later registry created with the same ID replaces the previous entry in the manager.
+     *
+     * @param id unique identifier for the registry
+     * @param type reflective type of values in the registry
+     * @param <T> type of elements in the registry
+     * @return the newly created ordered registry
+     */
     public static <T> Registry<T> createOrderedRegistry(String id, Type type) {
         return createRegistry(id, type, true);
     }
@@ -67,6 +76,15 @@ public class RegistryManager {
         return createRegistry(id, type.getType());
     }
 
+    /**
+     * Creates and stores an insertion-ordered registry using a Gson type token.
+     *
+     * @param id unique identifier for the registry
+     * @param type token describing the registry value type
+     * @param <T> type of elements in the registry
+     * @return the newly created ordered registry
+     * @throws IllegalArgumentException if the type token is null or the identifier is blank
+     */
     public static <T> Registry<T> createOrderedRegistry(String id, TypeToken<T> type) {
         if (type == null)
             throw new IllegalArgumentException("TypeToken cannot be null");

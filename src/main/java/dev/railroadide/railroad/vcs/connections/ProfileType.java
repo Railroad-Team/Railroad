@@ -13,8 +13,24 @@ import java.util.Objects;
  */
 @Getter
 public final class ProfileType {
+    /**
+     * Display name identifying the profile type.
+     *
+     * @return the name supplied at construction
+     */
     private final String name;
+    /**
+     * Icon code used to represent the profile type.
+     *
+     * @return the icon code supplied at construction
+     */
     private final String icon;
+    /**
+     * Provider used to resolve the profile type's icon code.
+     *
+     * @param iconProvider replacement icon provider
+     * @return the currently configured icon provider
+     */
     @Setter
     private IconProvider iconProvider;
 
@@ -41,6 +57,12 @@ public final class ProfileType {
         this(name, icon, IconsProviders.defaultProvider());
     }
 
+    /**
+     * Compares the name, icon code, and current icon provider.
+     *
+     * @param obj object to compare
+     * @return true if the other object is a profile type with equal field values
+     */
     @Override
     public boolean equals(Object obj) {
         if (obj == this)
@@ -53,11 +75,21 @@ public final class ProfileType {
             Objects.equals(this.iconProvider, that.iconProvider);
     }
 
+    /**
+     * Computes a hash from the name, icon code, and current icon provider.
+     *
+     * @return the hash code, which may change when the icon provider changes
+     */
     @Override
     public int hashCode() {
         return Objects.hash(name, icon, iconProvider);
     }
 
+    /**
+     * Describes the profile type's name and icon code for diagnostics.
+     *
+     * @return the profile type description
+     */
     @Override
     public String toString() {
         return "ProfileType[" +

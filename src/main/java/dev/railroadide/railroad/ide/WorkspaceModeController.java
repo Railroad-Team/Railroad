@@ -30,22 +30,48 @@ public final class WorkspaceModeController implements AutoCloseable {
     private boolean closed;
     private boolean updatingState;
 
+    /**
+     * Creates a controller bound to shared workspace mode state. All modes are accepted. Changes use the JavaFX
+     * application thread.
+     *
+     * @param stateProperty shared workspace mode property
+     */
     public WorkspaceModeController(ObjectProperty<WorkspaceMode> stateProperty) {
         this(stateProperty, _ -> true);
     }
 
+    /**
+     * Creates a controller bound to shared workspace mode state. Changes use the JavaFX application thread.
+     *
+     * @param stateProperty shared workspace mode property
+     * @param availability predicate deciding whether a mode can be activated
+     */
     public WorkspaceModeController(ObjectProperty<WorkspaceMode> stateProperty, Predicate<WorkspaceMode> availability) {
         this(stateProperty, availability, JavaFXUtils::runOnApplicationThread);
     }
 
-    WorkspaceModeController(ObjectProperty<WorkspaceMode> stateProperty, Executor applicationThreadExecutor) {
+    /**
+     * Creates a controller bound to shared workspace mode state. All modes are accepted.
+     *
+     * @param stateProperty shared workspace mode property
+     * @param applicationThreadExecutor executor that delivers changes on the application thread
+     */
+    public WorkspaceModeController(ObjectProperty<WorkspaceMode> stateProperty, Executor applicationThreadExecutor) {
         this(stateProperty, _ -> true, applicationThreadExecutor);
     }
 
-    WorkspaceModeController(
+    /**
+     * Creates a controller bound to shared workspace mode state.
+     *
+     * @param stateProperty shared workspace mode property
+     * @param availability predicate deciding whether a mode can be activated
+     * @param applicationThreadExecutor executor that delivers changes on the application thread
+     */
+    public WorkspaceModeController(
         ObjectProperty<WorkspaceMode> stateProperty,
         Predicate<WorkspaceMode> availability,
-        Executor applicationThreadExecutor) {
+        Executor applicationThreadExecutor
+    ) {
         this.stateProperty = Objects.requireNonNull(stateProperty, "State property cannot be null");
         this.availability = Objects.requireNonNull(availability, "Availability predicate cannot be null");
         this.applicationThreadExecutor = Objects.requireNonNull(applicationThreadExecutor,
@@ -59,10 +85,20 @@ public final class WorkspaceModeController implements AutoCloseable {
         restoreStateProperty(initialMode);
     }
 
+    /**
+     * Returns the mode currently exposed by this controller.
+     *
+     * @return current workspace mode
+     */
     public WorkspaceMode getCurrentViewMode() {
         return currentViewMode.get();
     }
 
+    /**
+     * Exposes observable mode state for this controller.
+     *
+     * @return read-only current mode property
+     */
     public ReadOnlyObjectProperty<WorkspaceMode> currentViewModeProperty() {
         return currentViewMode.getReadOnlyProperty();
     }
@@ -71,6 +107,8 @@ public final class WorkspaceModeController implements AutoCloseable {
      * Requests a transition through this controller's availability policy.
      *
      * @return whether the request was accepted for delivery to the application thread
+     *
+     * @param viewMode requested mode, or null for the default
      */
     public boolean requestViewMode(WorkspaceMode viewMode) {
         WorkspaceMode resolvedMode = resolve(viewMode);
@@ -160,6 +198,9 @@ public final class WorkspaceModeController implements AutoCloseable {
         listeners.clear();
     }
 
+    /**
+     * A lifecycle handle that unregisters a workspace mode callback when closed.
+     */
     public static final class Registration implements AutoCloseable {
         private Runnable removal;
 

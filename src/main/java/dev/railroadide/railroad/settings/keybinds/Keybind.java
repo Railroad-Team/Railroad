@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+/** Defines a user-configurable keyboard or mouse action and its dispatch behavior. */
 public class Keybind {
     @Getter
     private final String id;
@@ -41,9 +42,13 @@ public class Keybind {
      * @param actions A map of contexts to actions, when the keybind is pressed in that context, the corresponding
      *            action will be executed.
      */
-    private Keybind(String id, KeybindCategory category, List<KeybindData> defaultKeys,
+    private Keybind(
+        String id,
+        KeybindCategory category,
+        List<KeybindData> defaultKeys,
         List<KeybindContexts.KeybindContext> contexts,
-        Map<KeybindContexts.KeybindContext, Consumer<KeybindActionContext>> actions) {
+        Map<KeybindContexts.KeybindContext, Consumer<KeybindActionContext>> actions
+    ) {
         this.id = id;
         this.category = category;
         this.defaultKeys = defaultKeys;
@@ -61,6 +66,12 @@ public class Keybind {
         keys.add(new KeybindData(keyCode, modifiers));
     }
 
+    /**
+     * Adds a mouse-button binding with optional modifiers.
+     *
+     * @param mouseButton the mouse button to bind
+     * @param modifiers optional modifier keys
+     */
     public void addMouseButton(MouseButton mouseButton, KeyCombination.Modifier... modifiers) {
         keys.add(new KeybindData(mouseButton, modifiers));
     }
@@ -94,6 +105,12 @@ public class Keybind {
         return findMatchingBinding(keyEvent).isPresent();
     }
 
+    /**
+     * Checks whether a mouse event matches one of this keybind's configured bindings.
+     *
+     * @param mouseEvent the mouse event to match
+     * @return whether a binding matches
+     */
     public boolean matches(MouseEvent mouseEvent) {
         return findMatchingBinding(mouseEvent).isPresent();
     }
@@ -125,6 +142,11 @@ public class Keybind {
             .findFirst();
     }
 
+    /**
+     * Creates a builder for a keybind.
+     *
+     * @return a new keybind builder
+     */
     public static Builder builder() {
         return new Builder();
     }
@@ -174,6 +196,13 @@ public class Keybind {
             return this;
         }
 
+        /**
+         * Adds a mouse-button default binding.
+         *
+         * @param mouseButton the mouse button to bind
+         * @param modifiers optional modifier keys
+         * @return this builder
+         */
         public Builder addDefaultMouseButton(MouseButton mouseButton, KeyCombination.Modifier... modifiers) {
             defaultKeys.add(new KeybindData(mouseButton, modifiers));
             return this;

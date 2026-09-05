@@ -3,6 +3,12 @@ package dev.railroadide.railroad.settings;
 /**
  * Represents a category for settings in the Railroad application.
  * Each category has an ID, title, description, and flags indicating whether it has a title or description.
+ *
+ * @param id unique category identifier, normally in {@code pluginId:categoryId} form
+ * @param title localized title key or display title
+ * @param description localized description key or display description
+ * @param hasTitle whether the category should display its title
+ * @param hasDescription whether the category should display its description
  */
 public record SettingCategory(String id, String title, String description, boolean hasTitle, boolean hasDescription) {
     /**

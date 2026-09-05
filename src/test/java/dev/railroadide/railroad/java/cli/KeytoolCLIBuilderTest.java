@@ -14,17 +14,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Tests for the {@link KeytoolCLIBuilder} class, ensuring correct argument construction and behavior
  * for the `keytool` command-line utility.
  */
-class KeytoolCLIBuilderTest {
+public class KeytoolCLIBuilderTest {
 
     @Test
-    void commandSelectionIsExclusive() {
+    public void commandSelectionIsExclusive() {
         KeytoolCLIBuilder builder = KeytoolCLIBuilder.create(TestJdks.create(21));
         builder.listEntries();
         assertThrows(IllegalStateException.class, builder::generateKeyPair);
     }
 
     @Test
-    void keystorePathAddsExpectedArgument() {
+    public void keystorePathAddsExpectedArgument() {
         KeytoolCLIBuilder builder = KeytoolCLIBuilder.create(TestJdks.create(21));
         Path keystorePath = Path.of("certs", "keys.jks");
         builder.keystore(keystorePath);
@@ -34,7 +34,7 @@ class KeytoolCLIBuilderTest {
     }
 
     @Test
-    void tlsInfoAndSslServerArgumentsAreFormatted() {
+    public void tlsInfoAndSslServerArgumentsAreFormatted() {
         KeytoolCLIBuilder builder = KeytoolCLIBuilder.create(TestJdks.create(21));
         builder.tlsInfo("TLSv1.3");
         builder.sslServer("example.com:443");
@@ -45,7 +45,7 @@ class KeytoolCLIBuilderTest {
     }
 
     @Test
-    void timeoutCannotBeNegative() {
+    public void timeoutCannotBeNegative() {
         KeytoolCLIBuilder builder = KeytoolCLIBuilder.create(TestJdks.create(21));
         assertThrows(IllegalArgumentException.class, () -> builder.setTimeout(-1, TimeUnit.SECONDS));
     }

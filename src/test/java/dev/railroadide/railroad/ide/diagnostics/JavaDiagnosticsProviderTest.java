@@ -35,12 +35,12 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JavaDiagnosticsProviderTest {
+public class JavaDiagnosticsProviderTest {
     private static final String PLUGIN_RULE_PROVIDER_ID = "test:plugin-rule-provider";
     private static final String PLUGIN_RULE_ID = "PLUGIN_RULE_WARNING";
 
     @Test
-    void coreSemanticInspectionIsRegisteredAndProducesDiagnostics() {
+    public void coreSemanticInspectionIsRegisteredAndProducesDiagnostics() {
         JavaInspectionRuleProvider core = JavaInspectionRegistries.getRuleProvider(CoreNameResolutionInspection.ID);
         assertNotNull(core);
 
@@ -57,7 +57,7 @@ class JavaDiagnosticsProviderTest {
     }
 
     @Test
-    void runsRegisteredPluginRuleProviders() {
+    public void runsRegisteredPluginRuleProviders() {
         String id = PLUGIN_RULE_PROVIDER_ID + "-" + UUID.randomUUID();
         JavaInspectionRuleProvider provider = new TestJavaInspectionRuleProvider(id);
 
@@ -75,7 +75,7 @@ class JavaDiagnosticsProviderTest {
     }
 
     @Test
-    void supportsRuleSettingsOverridesAndDisabling() {
+    public void supportsRuleSettingsOverridesAndDisabling() {
         try {
             JavaInspectionRuleSettings.setRuleEnabled("SEM_UNRESOLVED_NAME", false);
             var provider = new JavaDiagnosticsProvider(Path.of("Example.java"));
@@ -115,7 +115,7 @@ class JavaDiagnosticsProviderTest {
     }
 
     @Test
-    void exportPathResolvesGitCommandBuilderCallsForSingleFile() throws Exception {
+    public void exportPathResolvesGitCommandBuilderCallsForSingleFile() throws Exception {
         ensureJavaLanguageSupportRegistered();
         Path projectRoot = Path.of(".").toAbsolutePath().normalize();
         Path file = projectRoot.resolve("src/main/java/dev/railroadide/railroad/vcs/git/GitCommands.java");

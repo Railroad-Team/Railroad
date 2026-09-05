@@ -15,6 +15,11 @@ public final class JavaIndexBenchmarkRunner {
     private JavaIndexBenchmarkRunner() {
     }
 
+    /**
+     * Prints cold-build and persisted-load timings for a project's Java indexes.
+     *
+     * @param args an optional project-root path, {@code --binary-indexes}, and {@code --save-cache} flags
+     */
     public static void main(String[] args) throws Exception {
         Path projectRoot = args.length == 0
             ? Path.of("").toAbsolutePath().normalize()

@@ -12,6 +12,9 @@ import java.util.List;
  * Signature help provider backed by Eclipse JDT. Responsible solely for
  * analysing the document and producing {@link SignatureHelp} records; UI logic
  * remains in the editor.
+ *
+ * @param filePath source file path used for analysis
+ * @param systemModulePaths paths supplied to the JDT binding environment
  */
 public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModulePaths) implements SignatureHelpProvider {
     @Override
@@ -61,7 +64,8 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
     private @Nullable SignatureHelp buildSignatureHelpForMethodInvocation(
         MethodInvocation invocation,
         int caretPosition,
-        String text) {
+        String text
+    ) {
         if (isInvalidBounds(caretPosition, findParenthesisBounds(invocation, text)))
             return null;
 
@@ -76,7 +80,8 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
     private @Nullable SignatureHelp buildSignatureHelpForSuperMethodInvocation(
         SuperMethodInvocation invocation,
         int caretPosition,
-        String text) {
+        String text
+    ) {
         if (isInvalidBounds(caretPosition, findParenthesisBounds(invocation, text)))
             return null;
 
@@ -91,7 +96,8 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
     private @Nullable SignatureHelp buildSignatureHelpForClassInstanceCreation(
         ClassInstanceCreation creation,
         int caretPosition,
-        String text) {
+        String text
+    ) {
         if (isInvalidBounds(caretPosition, findParenthesisBounds(creation, text)))
             return null;
 
@@ -106,7 +112,8 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
     private @Nullable SignatureHelp buildSignatureHelpForConstructorInvocation(
         ConstructorInvocation invocation,
         int caretPosition,
-        String text) {
+        String text
+    ) {
         if (isInvalidBounds(caretPosition, findParenthesisBounds(invocation, text)))
             return null;
 
@@ -121,7 +128,8 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
     private @Nullable SignatureHelp buildSignatureHelpForSuperConstructorInvocation(
         SuperConstructorInvocation invocation,
         int caretPosition,
-        String text) {
+        String text
+    ) {
         if (isInvalidBounds(caretPosition, findParenthesisBounds(invocation, text)))
             return null;
 

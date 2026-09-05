@@ -6,7 +6,7 @@ import dev.railroadide.railroad.ui.RRGridPane;
 import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
-import dev.railroadide.railroad.utility.TimeFormatter;
+import dev.railroadide.railroad.utility.TimeFormatingUtils;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.remote.GitRemote;
 import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
@@ -24,6 +24,9 @@ import javafx.util.Duration;
 
 import java.util.Optional;
 
+/**
+ * Displays a selected remote configuration and its last-fetch information.
+ */
 public class GitRemoteDetailsPane extends RRVBox {
     private final ObjectProperty<GitRemote> remote = new SimpleObjectProperty<>();
     private final GitManager gitManager;
@@ -37,6 +40,12 @@ public class GitRemoteDetailsPane extends RRVBox {
     private final Text pruningEnabledText = new Text();
     private final Timeline fetchElapsedAnimation;
 
+    /**
+     * Creates the details grid and elapsed-fetch refresh for an initial remote.
+     *
+     * @param gitManager repository service supplying state and Git operations
+     * @param remote remote to display, or null for no selection
+     */
     public GitRemoteDetailsPane(GitManager gitManager, GitRemote remote) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_REMOTE_DETAILS, this);
         this.gitManager = gitManager;
@@ -65,6 +74,11 @@ public class GitRemoteDetailsPane extends RRVBox {
         }
     }
 
+    /**
+     * Selects the remote whose configuration is displayed.
+     *
+     * @param remote remote to display, or null for no selection
+     */
     public void displayRemote(GitRemote remote) {
         this.remote.set(remote);
     }
@@ -146,7 +160,7 @@ public class GitRemoteDetailsPane extends RRVBox {
 
                 long lastFetchTimestamp = gitManager.getLastFetchTimestamp(remote);
                 if (lastFetchTimestamp > 0L) {
-                    lastFetchedText.setText(TimeFormatter.formatElapsed(lastFetchTimestamp));
+                    lastFetchedText.setText(TimeFormatingUtils.formatElapsed(lastFetchTimestamp));
                 } else {
                     lastFetchedText.setText(L18n.localize("railroad.git.remotes.details.never"));
                 }
@@ -173,6 +187,11 @@ public class GitRemoteDetailsPane extends RRVBox {
         });
     }
 
+    /**
+     * Exposes the remote selected in the details pane.
+     *
+     * @return mutable selected-remote property
+     */
     public ObjectProperty<GitRemote> remoteProperty() {
         return remote;
     }
@@ -184,7 +203,7 @@ public class GitRemoteDetailsPane extends RRVBox {
 
         long lastFetchTimestamp = gitManager.getLastFetchTimestamp(currentRemote);
         if (lastFetchTimestamp > 0L) {
-            lastFetchedText.setText(TimeFormatter.formatElapsed(lastFetchTimestamp));
+            lastFetchedText.setText(TimeFormatingUtils.formatElapsed(lastFetchTimestamp));
         } else {
             lastFetchedText.setText(L18n.localize("railroad.git.remotes.details.never"));
         }

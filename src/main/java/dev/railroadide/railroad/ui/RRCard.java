@@ -5,23 +5,38 @@ import javafx.scene.Node;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 import org.jetbrains.annotations.Nullable;
+import javafx.geometry.Insets;
 
 /**
- * A modern card component with enhanced styling and hover effects.
- * Provides a clean, elevated design that's perfect for content containers.
+ * A vertically arranged card with rounded clipping and an elevation style that increases on hover.
+ * Content is held in an inner container that is hidden and unmanaged while empty.
  */
 public class RRCard extends VBox {
     private final VBox content;
 
+    /**
+     * Creates an empty card with a clipping arc size of eight pixels and default content padding.
+     */
     public RRCard() {
         this(8);
     }
 
+    /**
+     * Creates an empty card with the specified rounded clipping and default content padding.
+     *
+     * @param cornerRadius width and height of the clipping rectangle's corner arcs, in pixels
+     */
     public RRCard(double cornerRadius) {
         this(cornerRadius, null);
     }
 
-    public RRCard(double cornerRadius, @Nullable javafx.geometry.Insets padding) {
+    /**
+     * Creates an empty card with the specified rounded clipping and content padding.
+     *
+     * @param cornerRadius width and height of the clipping rectangle's corner arcs, in pixels
+     * @param padding padding for the inner content container, or {@code null} to retain its default
+     */
+    public RRCard(double cornerRadius, @Nullable Insets padding) {
         content = new VBox();
         content.getStyleClass().add("rr-card-content");
         if (padding != null) {
@@ -53,21 +68,25 @@ public class RRCard extends VBox {
     }
 
     /**
-     * Add content to the card
+     * Appends nodes to the card's inner vertical content container.
+     *
+     * @param nodes nodes to append in layout order
      */
     public void addContent(Node... nodes) {
         content.getChildren().addAll(nodes);
     }
 
     /**
-     * Clear all content from the card
+     * Removes all content, causing the empty inner container to become hidden and unmanaged.
      */
     public void clearContent() {
         content.getChildren().clear();
     }
 
     /**
-     * Set the card as interactive (clickable)
+     * Toggles the interactive CSS style without installing a click handler.
+     *
+     * @param interactive whether to apply the interactive style
      */
     public void setInteractive(boolean interactive) {
         if (interactive) {
@@ -78,7 +97,9 @@ public class RRCard extends VBox {
     }
 
     /**
-     * Set the card as highlighted
+     * Toggles the highlighted CSS style.
+     *
+     * @param highlighted whether to apply the highlighted style
      */
     public void setHighlighted(boolean highlighted) {
         if (highlighted) {
@@ -89,7 +110,9 @@ public class RRCard extends VBox {
     }
 
     /**
-     * Set the card as selected
+     * Toggles the selected CSS style.
+     *
+     * @param selected whether to apply the selected style
      */
     public void setSelected(boolean selected) {
         if (selected) {

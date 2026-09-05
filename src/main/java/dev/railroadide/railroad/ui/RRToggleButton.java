@@ -19,8 +19,14 @@ import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+/**
+ * Railroad toggle button with localized text, optional graphics, press animations, and a loading indicator.
+ */
 public class RRToggleButton extends ToggleButton {
 
+    /**
+     * CSS classes installed when this control is initialized.
+     */
     public static final String[] DEFAULT_STYLE_CLASSES = {"rr-button", "rr-toggle-button", "toggle-button"};
 
     private FontIcon icon;
@@ -30,6 +36,11 @@ public class RRToggleButton extends ToggleButton {
     private RotateTransition loadingSpinnerAnimation;
 
     private final BooleanProperty isLoading = new SimpleBooleanProperty(this, "isLoading", false);
+    /**
+     * Reports whether the loading presentation is active.
+     *
+     * @return true while the control displays its loading indicator
+     */
     public boolean getIsLoading() {
         return isLoading.get();
     }
@@ -42,10 +53,20 @@ public class RRToggleButton extends ToggleButton {
         ButtonVariant.PRIMARY);
     private final ObjectProperty<ButtonSize> size = new SimpleObjectProperty<>(this, "size", ButtonSize.MEDIUM);
 
+    /**
+     * Creates a toggle button with empty text and default styling.
+     */
     public RRToggleButton() {
         this("");
     }
 
+    /**
+     * Creates a toggle button with an icon.
+     *
+     * @param localizationKey the translation key for the label
+     * @param icon the icon to display, or null for no icon
+     * @param args formatting arguments for the translation
+     */
     public RRToggleButton(String localizationKey, Ikon icon, Object... args) {
         super();
 
@@ -53,6 +74,13 @@ public class RRToggleButton extends ToggleButton {
         setIcon(icon);
     }
 
+    /**
+     * Creates a toggle button with a custom graphic.
+     *
+     * @param localizationKey the translation key for the label
+     * @param graphic the graphic to display, or null for none
+     * @param args formatting arguments for the translation
+     */
     public RRToggleButton(String localizationKey, Node graphic, Object... args) {
         super();
 
@@ -60,6 +88,12 @@ public class RRToggleButton extends ToggleButton {
         setGraphic(graphic);
     }
 
+    /**
+     * Creates a toggle button with localized text.
+     *
+     * @param localizationKey the translation key for the label
+     * @param args formatting arguments for the translation
+     */
     public RRToggleButton(String localizationKey, Object... args) {
         super();
 
@@ -67,7 +101,10 @@ public class RRToggleButton extends ToggleButton {
     }
 
     /**
-     * Create a primary toggle button
+     * Creates a toggle button with the primary visual variant.
+     *
+     * @param text the translation key for the button label
+     * @return a new primary toggle button
      */
     public static RRToggleButton primary(String text) {
         var button = new RRToggleButton(text);
@@ -76,7 +113,10 @@ public class RRToggleButton extends ToggleButton {
     }
 
     /**
-     * Create a secondary toggle button
+     * Creates a toggle button with the secondary visual variant.
+     *
+     * @param text the translation key for the button label
+     * @return a new secondary toggle button
      */
     public static RRToggleButton secondary(String text) {
         var button = new RRToggleButton(text);
@@ -85,7 +125,10 @@ public class RRToggleButton extends ToggleButton {
     }
 
     /**
-     * Create a ghost toggle button
+     * Creates a toggle button with the ghost visual variant.
+     *
+     * @param text the translation key for the button label
+     * @return a new ghost toggle button
      */
     public static RRToggleButton ghost(String text) {
         var button = new RRToggleButton(text);
@@ -94,7 +137,10 @@ public class RRToggleButton extends ToggleButton {
     }
 
     /**
-     * Create a danger toggle button
+     * Creates a toggle button with the danger visual variant.
+     *
+     * @param text the translation key for the button label
+     * @return a new danger toggle button
      */
     public static RRToggleButton danger(String text) {
         var button = new RRToggleButton(text);
@@ -103,7 +149,10 @@ public class RRToggleButton extends ToggleButton {
     }
 
     /**
-     * Create a success toggle button
+     * Creates a toggle button with the success visual variant.
+     *
+     * @param text the translation key for the button label
+     * @return a new success toggle button
      */
     public static RRToggleButton success(String text) {
         var button = new RRToggleButton(text);
@@ -112,7 +161,10 @@ public class RRToggleButton extends ToggleButton {
     }
 
     /**
-     * Create a warning toggle button
+     * Creates a toggle button with the warning visual variant.
+     *
+     * @param text the translation key for the button label
+     * @return a new warning toggle button
      */
     public static RRToggleButton warning(String text) {
         var button = new RRToggleButton(text);
@@ -120,6 +172,12 @@ public class RRToggleButton extends ToggleButton {
         return button;
     }
 
+    /**
+     * Installs default styling, localization bindings, loading feedback, and press animations.
+     *
+     * @param localizationKey the initial label translation key
+     * @param args formatting arguments for the translation
+     */
     protected void initialize(String localizationKey, Object... args) {
         getStyleClass().setAll(RRToggleButton.DEFAULT_STYLE_CLASSES);
 
@@ -181,21 +239,27 @@ public class RRToggleButton extends ToggleButton {
     }
 
     /**
-     * Set the button variant
+     * Sets the semantic color and emphasis variant.
+     *
+     * @param variant the visual variant to apply; must not be null
      */
     public void setVariant(ButtonVariant variant) {
         this.variant.set(variant);
     }
 
     /**
-     * Set the button size
+     * Sets the CSS size variant.
+     *
+     * @param size the button size to apply; must not be null
      */
     public void setButtonSize(ButtonSize size) {
         this.size.set(size);
     }
 
     /**
-     * Set an icon for the button
+     * Sets the icon used by the control's normal presentation.
+     *
+     * @param iconCode the icon to display, or null to remove the configured icon
      */
     public void setIcon(Ikon iconCode) {
         if (icon != null && getGraphic() == icon) {
@@ -250,7 +314,9 @@ public class RRToggleButton extends ToggleButton {
     }
 
     /**
-     * Set the button as rounded
+     * Adds or removes rounded-corner styling.
+     *
+     * @param rounded true to enable rounded corners
      */
     public void setRounded(boolean rounded) {
         if (rounded) {
@@ -261,28 +327,34 @@ public class RRToggleButton extends ToggleButton {
     }
 
     /**
-     * Force the button into a square shape.
+     * Adds or removes square button styling.
+     *
+     * @param square true to request a square shape
      */
     public void setSquare(boolean square) {
         isSquare.set(square);
     }
 
     /**
-     * Set the button as outlined
+     * Adds or removes outlined button styling.
+     *
+     * @param outlined true to enable an outline
      */
     public void setOutlined(boolean outlined) {
         isOutlined.set(outlined);
     }
 
     /**
-     * Set the button as flat
+     * Adds or removes flat button styling.
+     *
+     * @param flat true to enable the flat variant
      */
     public void setFlat(boolean flat) {
         isFlat.set(flat);
     }
 
     /**
-     * Called when the button has started loading
+     * Disables the control, replaces its graphic with a spinner, and temporarily replaces localized text.
      */
     protected void onLoading() {
         textProperty().unbindBidirectional(localizedText);
@@ -307,7 +379,7 @@ public class RRToggleButton extends ToggleButton {
     }
 
     /**
-     * Called when the button has stopped loading
+     * Stops the spinner, re-enables the control, and restores its localized text and graphic.
      */
     protected void onNotLoading() {
         loadingSpinnerAnimation.stop();

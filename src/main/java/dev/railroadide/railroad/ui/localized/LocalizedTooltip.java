@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 @Getter
 public class LocalizedTooltip extends Tooltip {
 
+    /** The localization property bidirectionally bound to the tooltip text. */
     private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
 
     /**
@@ -26,7 +27,7 @@ public class LocalizedTooltip extends Tooltip {
 
     /**
      * Updates the key and args, and then updates the text of the tooltip.
-     * Adds a listener to the current language property to update the text when the language changes.
+     * The backing property keeps the translated text current when the language changes.
      *
      * @param key The localization key
      * @param args The args to be applied to the localized key

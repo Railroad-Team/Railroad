@@ -29,7 +29,13 @@ import org.json.JSONTokener;
 import java.nio.file.Path;
 import java.util.*;
 
+/**
+ * Adds JSON syntax highlighting, formatting, and schema validation to the code editor.
+ */
 public class JsonCodeEditorPane extends CodeEditorPane {
+    /**
+     * Language identifier used for JSON documents.
+     */
     public static final String LANGUAGE_ID = "json";
 
     private static final String DEFAULT_SCHEMA = """
@@ -46,6 +52,13 @@ public class JsonCodeEditorPane extends CodeEditorPane {
     private final ObservableMap<ValidationException, ValidationEntry> errors = FXCollections.observableHashMap();
     private Schema schema;
 
+    /**
+     * Creates a JSON editor with schema validation and syntax highlighting.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param item file to open in the editor
+     * @param config language-service configuration for the editor
+     */
     public JsonCodeEditorPane(Project project, Path item, CodeEditorConfig config) {
         super(project, item, config);
         autoInsertPairs();
@@ -302,6 +315,11 @@ public class JsonCodeEditorPane extends CodeEditorPane {
         this.schema = SchemaLoader.load(raw);
     }
 
+    /**
+     * Loads a replacement JSON schema and immediately validates the current text.
+     *
+     * @param schemaJson JSON schema used to validate the editor contents
+     */
     public void setSchema(JSONObject schemaJson) {
         this.schema = SchemaLoader.load(schemaJson);
         validateAndHighlight();

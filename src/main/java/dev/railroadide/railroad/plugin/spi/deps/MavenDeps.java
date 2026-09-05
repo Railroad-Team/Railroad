@@ -5,6 +5,9 @@ import java.util.List;
 /**
  * Represents the dependencies of a plugin, including Maven repositories and artifacts.
  * This class encapsulates the repositories and artifacts required for the plugin to function.
+ *
+ * @param repositories the list of Maven repositories
+ * @param artifacts the list of Maven dependencies
  */
 public record MavenDeps(List<MavenRepo> repositories, List<MavenDep> artifacts) {
     /**

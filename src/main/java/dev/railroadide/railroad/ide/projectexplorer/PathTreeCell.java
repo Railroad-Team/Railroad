@@ -23,11 +23,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 // TODO: Tons of localization issues here, need to fix that
+/**
+ * An editable project explorer cell with file icons and rename support.
+ */
 public class PathTreeCell extends TreeCell<PathItem> {
     private final StringProperty messageProperty;
     private TextField textField;
     private Path editingPath;
     private boolean allowEdit = false;
+    /**
+     * Creates an editable file cell that publishes operation messages.
+     *
+     * @param messageProperty property receiving file operation messages
+     */
     public PathTreeCell(StringProperty messageProperty) {
         super();
 

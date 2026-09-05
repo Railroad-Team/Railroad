@@ -19,7 +19,17 @@ public record KeybindActionContext(
     KeybindContexts.KeybindContext context,
     KeybindData binding,
     InputEvent event,
-    Node target) {
+    Node target
+) {
+    /**
+     * Validates the required parts of a dispatched action context.
+     *
+     * @param keybind the keybind whose input matched
+     * @param context the logical dispatch context
+     * @param binding the binding that matched
+     * @param event the original input event
+     * @param target the node associated with the action
+     */
     public KeybindActionContext {
         Objects.requireNonNull(keybind, "Keybind cannot be null");
         Objects.requireNonNull(context, "Keybind context cannot be null");

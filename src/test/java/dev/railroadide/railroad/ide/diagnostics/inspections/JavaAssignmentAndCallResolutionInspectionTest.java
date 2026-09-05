@@ -13,13 +13,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import dev.railroadide.railroad.ide.sst.semantic.api.Type;
+import javafx.beans.property.StringProperty;
 
 import static dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectionTestSupport.runProvider;
 import static org.junit.jupiter.api.Assertions.*;
 
-class JavaAssignmentAndCallResolutionInspectionTest {
+public class JavaAssignmentAndCallResolutionInspectionTest {
     @Test
-    void assignmentRuleInfersGenericMethodReturnsFromArgumentsAndClassLiterals() {
+    public void assignmentRuleInfersGenericMethodReturnsFromArgumentsAndClassLiterals() {
         String source = """
             class Example {
                 static final class Jdk {}
@@ -71,7 +73,7 @@ class JavaAssignmentAndCallResolutionInspectionTest {
     }
 
     @Test
-    void assignmentRuleUsesTargetTypeForStaticImportedFunctionalOverloads() {
+    public void assignmentRuleUsesTargetTypeForStaticImportedFunctionalOverloads() {
         String source = """
             package sample;
 
@@ -101,7 +103,7 @@ class JavaAssignmentAndCallResolutionInspectionTest {
     }
 
     @Test
-    void assignmentRuleSupportsJavaBoxingAndUnboxingConversions() {
+    public void assignmentRuleSupportsJavaBoxingAndUnboxingConversions() {
         String source = """
             class Example {
                 void run() {
@@ -134,18 +136,18 @@ class JavaAssignmentAndCallResolutionInspectionTest {
     }
 
     @Test
-    void assignmentRuleTreatsJvmAndSourceNestedTypeNamesAsEquivalent() {
+    public void assignmentRuleTreatsJvmAndSourceNestedTypeNamesAsEquivalent() {
         String source = "class Example {}";
         var context = new JavaRuleContext(
             Path.of("Example.java"), source, JavaSemanticAnalyzer.analyzeFacts(source));
 
         assertTrue(context.isAssignable(
-            new dev.railroadide.railroad.ide.sst.semantic.api.Type.DeclaredType("example.Outer.Inner", List.of()),
-            new dev.railroadide.railroad.ide.sst.semantic.api.Type.DeclaredType("example.Outer$Inner", List.of())));
+            new Type.DeclaredType("example.Outer.Inner", List.of()),
+            new Type.DeclaredType("example.Outer$Inner", List.of())));
     }
 
     @Test
-    void assignmentRuleSpecializesGenericMethodsInheritedThroughBinarySupertypes() throws Exception {
+    public void assignmentRuleSpecializesGenericMethodsInheritedThroughBinarySupertypes() throws Exception {
         String source = """
             import javafx.beans.property.SimpleStringProperty;
             import javafx.beans.property.StringProperty;
@@ -162,7 +164,7 @@ class JavaAssignmentAndCallResolutionInspectionTest {
             }
             """;
         Path javafxJar = Path.of(
-            javafx.beans.property.StringProperty.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            StringProperty.class.getProtectionDomain().getCodeSource().getLocation().toURI());
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             JavaLibrarySymbolIndex.build(List.of(javafxJar)),
             JavaJdkSymbolIndex.fromCurrentRuntime()));
@@ -176,7 +178,7 @@ class JavaAssignmentAndCallResolutionInspectionTest {
     }
 
     @Test
-    void assignmentRuleAcceptsLambdasAndMethodReferencesForFunctionalInterfaces() {
+    public void assignmentRuleAcceptsLambdasAndMethodReferencesForFunctionalInterfaces() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), """
             import java.util.ArrayList;
             import java.util.List;
@@ -204,7 +206,7 @@ class JavaAssignmentAndCallResolutionInspectionTest {
     }
 
     @Test
-    void assignmentRuleInfersArrayCreationTypesFromTheCreatedTypeAndDimensions() {
+    public void assignmentRuleInfersArrayCreationTypesFromTheCreatedTypeAndDimensions() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), """
             class Example {
                 void run() {
@@ -222,7 +224,7 @@ class JavaAssignmentAndCallResolutionInspectionTest {
     }
 
     @Test
-    void assignmentRuleInfersGenericReturnsFromFunctionalArguments() {
+    public void assignmentRuleInfersGenericReturnsFromFunctionalArguments() {
         String source = """
             import java.util.Arrays;
             import java.util.List;
@@ -269,7 +271,7 @@ class JavaAssignmentAndCallResolutionInspectionTest {
     }
 
     @Test
-    void callResolutionUsesFunctionalTargetTypesForPolyExpressionOverloads() {
+    public void callResolutionUsesFunctionalTargetTypesForPolyExpressionOverloads() {
         String source = """
             import java.util.Collection;
             import java.util.ArrayList;
@@ -454,7 +456,7 @@ class JavaAssignmentAndCallResolutionInspectionTest {
     }
 
     @Test
-    void callResolutionContextuallyTypesAssignedLambdasAndPrefersFieldsOverMethods() {
+    public void callResolutionContextuallyTypesAssignedLambdasAndPrefersFieldsOverMethods() {
         String source = """
             import java.util.function.Consumer;
 
@@ -477,7 +479,7 @@ class JavaAssignmentAndCallResolutionInspectionTest {
     }
 
     @Test
-    void callResolutionSpecializesUnqualifiedInheritedGenericMethods() {
+    public void callResolutionSpecializesUnqualifiedInheritedGenericMethods() {
         String source = """
             import java.util.List;
             import java.util.function.BiConsumer;
@@ -583,7 +585,7 @@ class JavaAssignmentAndCallResolutionInspectionTest {
     }
 
     @Test
-    void callResolutionResolvesExplicitConstructorInvocations() {
+    public void callResolutionResolvesExplicitConstructorInvocations() {
         String source = """
             import java.util.ArrayList;
             import java.util.function.Consumer;
@@ -639,7 +641,8 @@ class JavaAssignmentAndCallResolutionInspectionTest {
     }
 
     @Test
-    void assignmentRuleFindsSupertypesOfNestedTypesDeclaredInIndexedSources(@TempDir Path sourceRoot) throws Exception {
+    public void assignmentRuleFindsSupertypesOfNestedTypesDeclaredInIndexedSources(@TempDir Path sourceRoot)
+        throws Exception {
         Path contractFile = sourceRoot.resolve("api/Contract.java");
         Path keyFile = sourceRoot.resolve("api/Key.java");
         Path contextFile = sourceRoot.resolve("api/Context.java");

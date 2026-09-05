@@ -12,7 +12,15 @@ import javafx.scene.layout.VBox;
 
 import java.util.List;
 
+/**
+ * Displays commits available from the tracked remote but not yet incorporated locally.
+ */
 public class GitSyncIncomingChangesPane extends RRVBox {
+    /**
+     * Creates the incoming commit list and subscribes to repository status changes.
+     *
+     * @param gitManager repository service supplying state and Git operations
+     */
     public GitSyncIncomingChangesPane(GitManager gitManager) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_SYNC_INCOMING_CHANGES, this);
         getStyleClass().add("git-sync-incoming-changes-pane");

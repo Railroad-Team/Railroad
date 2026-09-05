@@ -11,6 +11,9 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.*;
 
+/**
+ * Immutable project source index supporting file, package, type, and member lookups.
+ */
 public final class JavaProjectSemanticIndex
     implements
         ProjectLanguageIndex<JavaProjectSemanticIndex.SourceFileIndex>,
@@ -44,26 +47,59 @@ public final class JavaProjectSemanticIndex
         this.typeNames = Set.copyOf(names);
     }
 
+    /**
+     * Creates a project index containing no source files.
+     *
+     * @return an empty immutable project index
+     */
     public static JavaProjectSemanticIndex empty() {
         return new JavaProjectSemanticIndex(Map.of());
     }
 
+    /**
+     * Creates a builder for collecting source-file index entries.
+     *
+     * @return a new empty index builder
+     */
     public static Builder builder() {
         return new Builder();
     }
 
+    /**
+     * Returns all indexed source files keyed by normalized path.
+     *
+     * @return the immutable file index map
+     */
     public Map<Path, SourceFileIndex> files() {
         return filesByPath;
     }
 
+    /**
+     * Tests whether the supplied path is present as a key in the file index.
+     *
+     * @param path the normalized source file path to test
+     * @return whether the exact path key is indexed
+     */
     public boolean containsFile(Path path) {
         return filesByPath.containsKey(path);
     }
 
+    /**
+     * Looks up a source file after normalizing its path.
+     *
+     * @param path the source file path to find
+     * @return the matching entry, or an empty optional if the file is absent
+     */
     public Optional<SourceFileIndex> getFile(Path path) {
         return Optional.ofNullable(filesByPath.get(FileUtils.normalizePath(path)));
     }
 
+    /**
+     * Finds files declaring the specified named package after trimming the package name.
+     *
+     * @param packageName the package name to look up
+     * @return the matching files, or an empty list for an absent, null, or blank package name
+     */
     public List<SourceFileIndex> getFilesByPackage(String packageName) {
         packageName = normalizeOptionalName(packageName);
         if (packageName == null)
@@ -194,7 +230,8 @@ public final class JavaProjectSemanticIndex
     }
 
     private static Map<String, List<SymbolDescriptor>> buildMembersByOwnerQualifiedName(
-        Iterable<SourceFileIndex> files) {
+        Iterable<SourceFileIndex> files
+    ) {
         Map<String, List<SymbolDescriptor>> index = new LinkedHashMap<>();
         for (SourceFileIndex file : files) {
             for (SymbolDescriptor symbol : file.declaredSymbols()) {
@@ -241,33 +278,70 @@ public final class JavaProjectSemanticIndex
         return filesByPath.get(FileUtils.normalizePath(path));
     }
 
+    /**
+     * Accumulates source-file entries used to create an immutable project semantic index.
+     */
     public static final class Builder {
         private final Map<Path, SourceFileIndex> filesByPath = new LinkedHashMap<>();
 
         private Builder() {
         }
 
+        /**
+         * Adds or replaces the index entry for the source file's path.
+         *
+         * @param fileIndex the source-file entry to store
+         * @return this builder
+         */
         public Builder putFile(@NotNull SourceFileIndex fileIndex) {
             fileIndex = Objects.requireNonNull(fileIndex, "fileIndex");
             filesByPath.put(fileIndex.path(), fileIndex);
             return this;
         }
 
+        /**
+         * Removes the source-file entry at the normalized path, if present.
+         *
+         * @param path the source file path to remove
+         * @return this builder
+         */
         public Builder removeFile(Path path) {
             filesByPath.remove(FileUtils.normalizePath(path));
             return this;
         }
 
+        /**
+         * Copies the collected files and builds immutable symbol lookup tables.
+         *
+         * @return the completed project index
+         */
         public JavaProjectSemanticIndex build() {
             return new JavaProjectSemanticIndex(filesByPath);
         }
     }
 
+    /**
+     * Immutable declarations and imports extracted from one Java source file.
+     *
+     * @param path the source file path, normalized on construction
+     * @param packageName the declared package name, or {@code null} for the unnamed package
+     * @param imports the source file's import descriptors
+     * @param declaredSymbols the source file's indexed type and member descriptors
+     */
     public record SourceFileIndex(
         Path path,
         @Nullable String packageName,
         List<ImportDescriptor> imports,
-        List<SymbolDescriptor> declaredSymbols) implements LanguageFileIndex {
+        List<SymbolDescriptor> declaredSymbols
+    ) implements LanguageFileIndex {
+        /**
+         * Normalizes the source path and optional package name and copies the import and declaration lists.
+         *
+         * @param path the source file path, normalized on construction
+         * @param packageName the declared package name, or {@code null} for the unnamed package
+         * @param imports the source file's import descriptors
+         * @param declaredSymbols the source file's indexed type and member descriptors
+         */
         public SourceFileIndex {
             path = FileUtils.normalizePath(path);
             packageName = normalizeOptionalName(packageName);
@@ -275,6 +349,11 @@ public final class JavaProjectSemanticIndex
             declaredSymbols = List.copyOf(Objects.requireNonNull(declaredSymbols, "declaredSymbols"));
         }
 
+        /**
+         * Collects the nonnull qualified names of every symbol declared by this file.
+         *
+         * @return an immutable set of declared symbol names
+         */
         public Set<String> declaredQualifiedNames() {
             Set<String> names = new LinkedHashSet<>();
             for (SymbolDescriptor symbol : declaredSymbols) {
@@ -287,15 +366,42 @@ public final class JavaProjectSemanticIndex
         }
     }
 
+    /**
+     * Describes the target and modifiers of a Java import declaration.
+     *
+     * @param qualifiedName the nonblank qualified import target
+     * @param isStatic whether the declaration has the {@code static} modifier
+     * @param isWildcard whether the import selects all names from its target
+     */
     public record ImportDescriptor(
         String qualifiedName,
         boolean isStatic,
-        boolean isWildcard) {
+        boolean isWildcard
+    ) {
+        /**
+         * Creates an import descriptor, requiring a nonblank target name.
+         *
+         * @param qualifiedName the nonblank qualified import target
+         * @param isStatic whether the declaration has the {@code static} modifier
+         * @param isWildcard whether the import selects all names from its target
+         */
         public ImportDescriptor {
             qualifiedName = requireName(qualifiedName, "qualifiedName");
         }
     }
 
+    /**
+     * Describes an indexed Java type or member and its source location.
+     *
+     * @param kind the symbol category
+     * @param simpleName the nonblank unqualified symbol name
+     * @param qualifiedName the qualified symbol name, or {@code null} when unavailable
+     * @param ownerQualifiedName the owning type's qualified name, or {@code null} for a nonmember
+     * @param signature the callable signature, or {@code null} when unavailable
+     * @param sourceFile the symbol's originating source path
+     * @param isStatic whether the declaration has the {@code static} modifier
+     * @param isTopLevel whether the symbol is a top-level type declaration
+     */
     public record SymbolDescriptor(
         @NotNull SymbolKind kind,
         String simpleName,
@@ -304,7 +410,20 @@ public final class JavaProjectSemanticIndex
         @Nullable String signature,
         Path sourceFile,
         boolean isStatic,
-        boolean isTopLevel) {
+        boolean isTopLevel
+    ) {
+        /**
+         * Creates a symbol descriptor, normalizing optional names and the source path.
+         *
+         * @param kind the symbol category
+         * @param simpleName the nonblank unqualified symbol name
+         * @param qualifiedName the qualified symbol name, or {@code null} when unavailable
+         * @param ownerQualifiedName the owning type's qualified name, or {@code null} for a nonmember
+         * @param signature the callable signature, or {@code null} when unavailable
+         * @param sourceFile the symbol's originating source path
+         * @param isStatic whether the declaration has the {@code static} modifier
+         * @param isTopLevel whether the symbol is a top-level type declaration
+         */
         public SymbolDescriptor {
             kind = Objects.requireNonNull(kind, "kind");
             simpleName = requireName(simpleName, "simpleName");
@@ -314,18 +433,38 @@ public final class JavaProjectSemanticIndex
             sourceFile = FileUtils.normalizePath(Objects.requireNonNull(sourceFile, "sourceFile"));
         }
 
+        /**
+         * Tests whether this symbol has a qualified name.
+         *
+         * @return whether a qualified name is available
+         */
         public boolean hasQualifiedName() {
             return qualifiedName != null;
         }
 
+        /**
+         * Tests whether this symbol has an owning type.
+         *
+         * @return whether an owner qualified name is available
+         */
         public boolean isMember() {
             return ownerQualifiedName != null;
         }
 
+        /**
+         * Returns the symbol's qualified name when present.
+         *
+         * @return the qualified name, or an empty optional
+         */
         public Optional<String> qualifiedNameOptional() {
             return Optional.ofNullable(qualifiedName);
         }
 
+        /**
+         * Returns the owning type's qualified name when present.
+         *
+         * @return the owner qualified name, or an empty optional
+         */
         public Optional<String> ownerQualifiedNameOptional() {
             return Optional.ofNullable(ownerQualifiedName);
         }

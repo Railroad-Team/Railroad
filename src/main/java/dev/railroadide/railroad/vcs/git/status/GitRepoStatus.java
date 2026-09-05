@@ -14,5 +14,6 @@ public record GitRepoStatus(
     String branch,
     int ahead,
     int behind,
-    List<GitFileChange> changes) {
+    List<GitFileChange> changes
+) {
 }

@@ -8,6 +8,12 @@ import dev.railroadide.railroad.project.creation.service.ZipService;
 
 import java.nio.file.Path;
 
+/**
+ * Extracts {@code forge-mdk.zip} into the project root and deletes the archive after extraction.
+ *
+ * @param files service used to check for and delete the archive
+ * @param zip service used to extract the MDK
+ */
 public record ExtractForgeMdkStep(FilesService files, ZipService zip) implements CreationStep {
     @Override
     public String id() {

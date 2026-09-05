@@ -18,8 +18,16 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#UNCAUGHT_CHECKED_EXCEPTION},
+ * {@link JavaSemanticRules#UNREACHABLE_CATCH}, {@link JavaSemanticRules#INVALID_EXCEPTION_TYPE},
+ * {@link JavaSemanticRules#DISALLOWED_EXCEPTION_IN_METHOD_SIGNATURE}.
+ */
 @RegisteredInspection
 public final class CoreExceptionInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-exceptions";
 
     private static final String JAVA_METHOD_DECLARATION = "JAVA_METHOD_DECLARATION";
@@ -176,8 +184,10 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
 
     // TODO: We need to make these exceptions a user-defined policy decision rather than hardcoding them in the
     // inspection
-    private static void reportDisallowedExceptionInMethodSignature(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportDisallowedExceptionInMethodSignature(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode syntaxNode : context.nodesOfKinds(JavaSyntaxKinds.METHOD_DECLARATION.id(),
             JavaSyntaxKinds.CONSTRUCTOR_DECLARATION.id(), JavaSyntaxKinds.RECORD_COMPACT_CONSTRUCTOR.id())) {
             Symbol methodSymbol = context.declaredSymbol(syntaxNode).orElse(null);
@@ -213,8 +223,11 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         return false;
     }
 
-    private static List<ThrownException> collectUnhandledCheckedExceptions(JavaRuleContext context, SyntaxNode node,
-        Set<String> allowed) {
+    private static List<ThrownException> collectUnhandledCheckedExceptions(
+        JavaRuleContext context,
+        SyntaxNode node,
+        Set<String> allowed
+    ) {
         String kindId = node.kind().id();
         if (EXCEPTION_ANALYSIS_BARRIERS.contains(kindId))
             return List.of();
@@ -240,8 +253,11 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         return List.copyOf(exceptions);
     }
 
-    private static List<ThrownException> collectUnhandledFromTry(JavaRuleContext context, SyntaxNode tryStatement,
-        Set<String> allowed) {
+    private static List<ThrownException> collectUnhandledFromTry(
+        JavaRuleContext context,
+        SyntaxNode tryStatement,
+        Set<String> allowed
+    ) {
         List<ThrownException> exceptions = new ArrayList<>();
         List<ThrownException> tryExceptions = new ArrayList<>();
 
@@ -298,7 +314,8 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
     private static boolean isRethrowOfCatchParameter(
         JavaRuleContext context,
         SyntaxNode thrownExpression,
-        SyntaxNode catchClause) {
+        SyntaxNode catchClause
+    ) {
         SyntaxNode parameter = context.directChild(catchClause, JavaSyntaxKinds.PARAMETER.id());
         if (parameter == null)
             return false;
@@ -307,8 +324,11 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         return parameterName != null && parameterName.equals(expressionName);
     }
 
-    private static void addResourceCloseExceptions(JavaRuleContext context, SyntaxNode resource,
-        List<ThrownException> out) {
+    private static void addResourceCloseExceptions(
+        JavaRuleContext context,
+        SyntaxNode resource,
+        List<ThrownException> out
+    ) {
         String resourceTypeName = context.tryResourceTypeName(resource);
         if (resourceTypeName == null || !context.isAutoCloseableType(resourceTypeName))
             return;
@@ -320,8 +340,11 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         }
     }
 
-    private static void addThrownExpressionException(JavaRuleContext context, SyntaxNode throwStatement,
-        List<ThrownException> out) {
+    private static void addThrownExpressionException(
+        JavaRuleContext context,
+        SyntaxNode throwStatement,
+        List<ThrownException> out
+    ) {
         SyntaxNode expression = context.firstDirectExpressionChild(throwStatement);
         if (expression == null)
             return;
@@ -337,8 +360,11 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         out.add(new ThrownException(expression, qualifiedTypeName));
     }
 
-    private static void addCallableThrownExceptions(JavaRuleContext context, SyntaxNode node,
-        List<ThrownException> out) {
+    private static void addCallableThrownExceptions(
+        JavaRuleContext context,
+        SyntaxNode node,
+        List<ThrownException> out
+    ) {
         Symbol symbol = context.resolvedSymbol(node).orElse(null);
         if (symbol == null || (symbol.kind() != SymbolKind.METHOD && symbol.kind() != SymbolKind.CONSTRUCTOR))
             return;
@@ -371,8 +397,11 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         return false;
     }
 
-    private static boolean isCoveredByAny(String qualifiedTypeName, Iterable<String> candidates,
-        JavaRuleContext context) {
+    private static boolean isCoveredByAny(
+        String qualifiedTypeName,
+        Iterable<String> candidates,
+        JavaRuleContext context
+    ) {
         for (String candidate : candidates) {
             if (qualifiedTypeName.equals(candidate) || context.isSubtype(qualifiedTypeName, candidate))
                 return true;
@@ -384,7 +413,8 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         JavaRuleContext context,
         JavaInspectionRuleReporter reporter,
         SyntaxNode root,
-        String role) {
+        String role
+    ) {
         reportInvalidTypeReferences(context, reporter, directTypeNodes(root), role);
     }
 
@@ -392,7 +422,8 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         JavaRuleContext context,
         JavaInspectionRuleReporter reporter,
         List<SyntaxNode> typeNodes,
-        String role) {
+        String role
+    ) {
         for (SyntaxNode typeNode : typeNodes) {
             String qualifiedTypeName = context.resolveQualifiedTypeName(typeNode);
             if (qualifiedTypeName == null || context.isThrowableType(qualifiedTypeName))

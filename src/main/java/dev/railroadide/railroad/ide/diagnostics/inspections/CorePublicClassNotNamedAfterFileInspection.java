@@ -13,8 +13,14 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#PUBLIC_CLASS_NOT_NAMED_AFTER_FILE}.
+ */
 @RegisteredInspection
 public class CorePublicClassNotNamedAfterFileInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-public-class-not-named-after-file";
 
     private static final List<JavaInspectionRule> RULES = List.of(
@@ -42,8 +48,10 @@ public class CorePublicClassNotNamedAfterFileInspection implements JavaInspectio
         return RULES;
     }
 
-    private static void reportPublicClassNotNamedAfterFile(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportPublicClassNotNamedAfterFile(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         String fileName = context.filePath().getFileName().toString();
         if (!fileName.endsWith(".java"))
             return;

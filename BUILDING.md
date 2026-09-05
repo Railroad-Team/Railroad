@@ -113,6 +113,21 @@ control-flow body uses braces. `else if` chains remain compact. An exact local c
 anonymous classes, fields, or multiple variables retain their explicit type. Unused-variable conventions named
 `ignored`, `$`, or `$` followed by digits use Java 25's unnamed variable `_` where the declaration context permits it;
 the original name is retained if it is referenced or cannot legally be unnamed.
+Package-qualified type references such as `java.util.List` use `List` with an import when the compiler can resolve the
+type without name conflicts. This also covers constructors, annotations, class literals, method references, and static
+member access; nested types retain their enclosing type (for example, `Map.Entry`). Existing imports are reused, and
+types in `java.lang` or the current package need no added import. Unresolved or shadowed names and references containing
+comments are retained. The Gradle tasks supply the project's compile classpath and source roots for type resolution.
+Wrapped method and constructor parameter lists, and record component lists, start on the line after the opening
+parenthesis, with one parameter or component per line. The closing parenthesis sits on its own line, aligned with the
+declaration; single-line lists remain inline when they fit.
+
+Package-private types, fields, methods, and constructors are rejected: choose `public`, `protected`, or `private`
+explicitly where legal. `formatCheck` reports these declarations and fails until they are resolved. `format` reports
+them but completes all formatting, including with `-PformatAll`, without failing or changing access levels. Implicitly
+public interface members,
+implicitly private enum constructors, enum constants, record components, and local/anonymous class declarations are
+exempt. This rule follows the same changed-file ratchet as the other formatting checks.
 
 To check formatting without modifying files, run:
 
@@ -129,6 +144,52 @@ To intentionally reformat every Java source file instead of only current changes
 The canonical whitespace and wrapping settings are stored in
 `config/format/railroad-eclipse-formatter.xml`. Structural rules and their tests live under `src/formatter/java` and
 `src/test/java/dev/railroadide/railroad/formatter`, respectively.
+
+## Javadoc coverage
+
+Generate a searchable, self-contained HTML report for the public API in `sourceSets.main.allJava`:
+
+```sh
+./gradlew javadocCoverage
+```
+
+Open `build/reports/javadoc-coverage/index.html`. The report includes overall, package, and class coverage,
+expandable package → class → member navigation, search, an incomplete-only filter, and source file/line locations.
+Each declaration counts as complete only when all its documentation requirements pass.
+
+Coverage requires a nonempty Javadoc description on public types, explicitly declared public methods and constructors,
+and public `static final` fields (including interface constants and enum constants). Every method/constructor value
+and type parameter needs a nonempty `@param` tag; non-void methods also need a nonempty `@return` tag (block or inline).
+Type parameters and record components need `@param` tags on the type. Java 25 Markdown Javadocs are supported.
+
+Public interfaces, enums, records, annotation types, and publicly accessible nested types are included. Private,
+protected, and package-private declarations, members inside inaccessible types, test/tool sources, inherited members,
+and generated members (including Lombok methods and implicit record accessors) are excluded. Methods annotated with
+`@Override` or `@java.lang.Override` are also excluded from checks and coverage totals, including their parameter and
+return documentation. Unannotated methods are still checked; `{@inheritDoc}` on those methods is reported as unverified
+because this source-only check does not resolve inheritance.
+This checks documentation presence, not prose accuracy or full Javadoc validity.
+
+To enforce complete coverage, run:
+
+```sh
+./gradlew javadocCoverageCheck
+```
+
+This generates the same report, then fails if any declarations are incomplete. The reporting task itself succeeds
+with incomplete coverage, so it can be used while improving documentation. Neither task compiles the application or
+requires its dependencies; invalid Java syntax fails report generation. `javadocCoverageCheck` is opt-in and is not
+attached to `check`, since the existing documentation is not yet complete.
+
+Run the coverage tool's focused tests with `./gradlew javadocCoverageTest` (also included in `check`). The implementation,
+report assets, and tests live in `src/javadocCoverageTool` and `src/javadocCoverageTest`; Gradle wiring is in
+`gradle/javadoc-coverage.gradle`. Both Java source sets are included in `format` and `formatCheck`, including the
+semantic style rules and Spotless checks.
+
+The HTML layout lives in `src/javadocCoverageTool/resources/dev/railroadide/railroad/docs/report.ftlh`, rendered with
+FreeMarker and automatic HTML escaping. Edit that template to change the report structure; `report.css` and `report.js`
+are embedded verbatim so the output remains a single self-contained HTML file. FreeMarker is a coverage-tool dependency
+and is not added to the application.
 
 ## Running
 

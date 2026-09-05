@@ -12,14 +12,31 @@ import java.util.Objects;
  * Selected tab IDs, per-mode navigation histories, and detached tool windows are restored on a best-effort basis.
  * Tabs which no longer exist are ignored, and layouts saved before tool-window persistence was introduced keep the
  * default docked placement.
+ *
+ * @param schemaVersion version of the persisted layout format
+ * @param currentModeId identifier of the selected workspace mode
+ * @param modes saved layouts keyed by workspace mode
+ * @param toolWindows detached tool window snapshots
  */
 public record IDELayoutState(
     int schemaVersion,
     String currentModeId,
     Map<String, ModeLayout> modes,
-    List<ToolWindowState> toolWindows) {
+    List<ToolWindowState> toolWindows
+) {
+    /**
+     * Version written by the current workspace layout serializer.
+     */
     public static final int CURRENT_SCHEMA_VERSION = 1;
 
+    /**
+     * Normalizes saved identifiers and copies layout and tool-window state.
+     *
+     * @param schemaVersion version of the persisted layout format
+     * @param currentModeId identifier of the selected workspace mode
+     * @param modes saved layouts keyed by workspace mode
+     * @param toolWindows detached tool window snapshots
+     */
     public IDELayoutState {
         currentModeId = normalizeModeId(currentModeId);
         if (currentModeId == null) {
@@ -43,14 +60,28 @@ public record IDELayoutState(
                 .toList();
     }
 
+    /**
+     * Creates a snapshot in the current schema from registered workspace modes.
+     *
+     * @param currentMode selected mode, or null for the default
+     * @param modes saved layouts keyed by workspace mode
+     */
     public IDELayoutState(WorkspaceMode currentMode, Map<WorkspaceMode, ModeLayout> modes) {
         this(currentMode, modes, List.of());
     }
 
+    /**
+     * Creates a snapshot in the current schema from registered workspace modes.
+     *
+     * @param currentMode selected mode, or null for the default
+     * @param modes saved layouts keyed by workspace mode
+     * @param toolWindows detached tool window snapshots
+     */
     public IDELayoutState(
         WorkspaceMode currentMode,
         Map<WorkspaceMode, ModeLayout> modes,
-        List<ToolWindowState> toolWindows) {
+        List<ToolWindowState> toolWindows
+    ) {
         this(
             CURRENT_SCHEMA_VERSION,
             resolve(currentMode).getId(),
@@ -58,14 +89,29 @@ public record IDELayoutState(
             toolWindows);
     }
 
+    /**
+     * Checks whether this snapshot uses the current layout schema.
+     *
+     * @return whether the schema version is supported
+     */
     public boolean isSupported() {
         return schemaVersion == CURRENT_SCHEMA_VERSION;
     }
 
+    /**
+     * Resolves the saved mode identifier, falling back to the default mode.
+     *
+     * @return registered workspace mode
+     */
     public WorkspaceMode currentMode() {
         return WorkspaceMode.fromId(currentModeId).orElseGet(WorkspaceMode::defaultMode);
     }
 
+    /**
+     * Resolves saved layouts for modes that are currently registered.
+     *
+     * @return immutable layouts keyed by registered mode
+     */
     public Map<WorkspaceMode, ModeLayout> knownModeLayouts() {
         var knownModes = new LinkedHashMap<WorkspaceMode, ModeLayout>();
         modes.forEach((modeId, layout) -> WorkspaceMode.fromId(modeId)
@@ -100,6 +146,21 @@ public record IDELayoutState(
         return mode == null ? WorkspaceMode.defaultMode() : mode;
     }
 
+    /**
+     * Persisted dock selections, divider positions, visibility, and editor history for one mode.
+     *
+     * @param selectedLeftTab selected left dock item identifier
+     * @param selectedEditorTab selected editor tab identifier
+     * @param selectedRightTab selected right dock item identifier
+     * @param selectedBottomTab selected bottom dock item identifier
+     * @param leftDividerPosition normalized left divider position
+     * @param rightDividerPosition normalized right divider position
+     * @param bottomDividerPosition normalized bottom divider position
+     * @param leftDockVisible whether the left dock is visible
+     * @param rightDockVisible whether the right dock is visible
+     * @param bottomDockVisible whether the bottom dock is visible
+     * @param editorNavigation editor tab history, or null for an empty history
+     */
     public record ModeLayout(
         String selectedLeftTab,
         String selectedEditorTab,
@@ -111,7 +172,23 @@ public record IDELayoutState(
         boolean leftDockVisible,
         boolean rightDockVisible,
         boolean bottomDockVisible,
-        TabNavigationState editorNavigation) {
+        TabNavigationState editorNavigation
+    ) {
+        /**
+         * Creates a mode layout, replacing invalid divider positions with defaults.
+         *
+         * @param selectedLeftTab selected left dock item identifier
+         * @param selectedEditorTab selected editor tab identifier
+         * @param selectedRightTab selected right dock item identifier
+         * @param selectedBottomTab selected bottom dock item identifier
+         * @param leftDividerPosition normalized left divider position
+         * @param rightDividerPosition normalized right divider position
+         * @param bottomDividerPosition normalized bottom divider position
+         * @param leftDockVisible whether the left dock is visible
+         * @param rightDockVisible whether the right dock is visible
+         * @param bottomDockVisible whether the bottom dock is visible
+         * @param editorNavigation editor tab history, or null for an empty history
+         */
         public ModeLayout {
             leftDividerPosition = validDivider(leftDividerPosition, 0.15);
             rightDividerPosition = validDivider(rightDividerPosition, 0.85);
@@ -119,6 +196,20 @@ public record IDELayoutState(
             editorNavigation = editorNavigation == null ? TabNavigationState.empty() : editorNavigation;
         }
 
+        /**
+         * Creates a mode layout, replacing invalid divider positions with defaults.
+         *
+         * @param selectedLeftTab selected left dock item identifier
+         * @param selectedEditorTab selected editor tab identifier
+         * @param selectedRightTab selected right dock item identifier
+         * @param selectedBottomTab selected bottom dock item identifier
+         * @param leftDividerPosition normalized left divider position
+         * @param rightDividerPosition normalized right divider position
+         * @param bottomDividerPosition normalized bottom divider position
+         * @param leftDockVisible whether the left dock is visible
+         * @param rightDockVisible whether the right dock is visible
+         * @param bottomDockVisible whether the bottom dock is visible
+         */
         public ModeLayout(
             String selectedLeftTab,
             String selectedEditorTab,
@@ -129,7 +220,8 @@ public record IDELayoutState(
             double bottomDividerPosition,
             boolean leftDockVisible,
             boolean rightDockVisible,
-            boolean bottomDockVisible) {
+            boolean bottomDockVisible
+        ) {
             this(
                 selectedLeftTab,
                 selectedEditorTab,
@@ -144,6 +236,11 @@ public record IDELayoutState(
                 TabNavigationState.empty());
         }
 
+        /**
+         * Creates a layout with visible docks, default divider positions, and no selected tabs.
+         *
+         * @return default mode layout
+         */
         public static ModeLayout defaults() {
             return new ModeLayout(
                 null,
@@ -159,6 +256,12 @@ public record IDELayoutState(
                 TabNavigationState.empty());
         }
 
+        /**
+         * Copies this layout with replacement editor navigation history.
+         *
+         * @param navigation replacement editor tab history
+         * @return layout containing the supplied history
+         */
         public ModeLayout withEditorNavigation(TabNavigationState navigation) {
             return new ModeLayout(
                 selectedLeftTab,
@@ -179,7 +282,19 @@ public record IDELayoutState(
         }
     }
 
+    /**
+     * Persisted tab navigation entries and the current cursor.
+     *
+     * @param entries visited tab identifiers in navigation order
+     * @param currentIndex index of the current history entry
+     */
     public record TabNavigationState(List<String> entries, int currentIndex) {
+        /**
+         * Normalizes tab identifiers and clamps the cursor to the retained entries.
+         *
+         * @param entries visited tab identifiers in navigation order
+         * @param currentIndex index of the current history entry
+         */
         public TabNavigationState {
             entries = entries == null
                 ? List.of()
@@ -190,11 +305,29 @@ public record IDELayoutState(
             currentIndex = entries.isEmpty() ? -1 : Math.clamp(currentIndex, 0, entries.size() - 1);
         }
 
+        /**
+         * Creates navigation state with no entries and cursor {@code -1}.
+         *
+         * @return empty navigation state
+         */
         public static TabNavigationState empty() {
             return new TabNavigationState(List.of(), -1);
         }
     }
 
+    /**
+     * Persisted tab arrangement and window geometry for a detached tool window.
+     *
+     * @param id stable identifier
+     * @param dockItemIds identifiers of tabs in the detached window
+     * @param selectedDockItemId identifier of the selected detached tab
+     * @param x window horizontal screen position
+     * @param y window vertical screen position
+     * @param width window width
+     * @param height window height
+     * @param maximized whether the window is maximized
+     * @param visible whether the window is visible
+     */
     public record ToolWindowState(
         String id,
         List<String> dockItemIds,
@@ -204,7 +337,21 @@ public record IDELayoutState(
         double width,
         double height,
         boolean maximized,
-        boolean visible) {
+        boolean visible
+    ) {
+        /**
+         * Normalizes detached tab identifiers, selection, and window geometry.
+         *
+         * @param id stable identifier
+         * @param dockItemIds identifiers of tabs in the detached window
+         * @param selectedDockItemId identifier of the selected detached tab
+         * @param x window horizontal screen position
+         * @param y window vertical screen position
+         * @param width window width
+         * @param height window height
+         * @param maximized whether the window is maximized
+         * @param visible whether the window is visible
+         */
         public ToolWindowState {
             id = normalizeValue(id);
             dockItemIds = dockItemIds == null

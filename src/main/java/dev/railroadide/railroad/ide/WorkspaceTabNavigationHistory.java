@@ -7,11 +7,23 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 
+/**
+ * Maintains bounded back and forward tab histories independently for each workspace mode.
+ */
 public final class WorkspaceTabNavigationHistory {
+    /**
+     * Maximum number of tab visits retained for each mode.
+     */
     public static final int MAX_ENTRIES_PER_MODE = 100;
 
     private final Map<String, Cursor> cursors = new LinkedHashMap<>();
 
+    /**
+     * Records a tab visit, discarding forward history and bounding the history size.
+     *
+     * @param modeId workspace mode identifier
+     * @param tabId visited tab identifier
+     */
     public void visit(String modeId, String tabId) {
         String normalizedModeId = normalize(modeId);
         String normalizedTabId = normalize(tabId);
@@ -33,22 +45,57 @@ public final class WorkspaceTabNavigationHistory {
         }
     }
 
+    /**
+     * Moves to the nearest earlier available tab.
+     *
+     * @param modeId workspace mode identifier
+     * @param available predicate identifying tabs that still exist
+     * @return tab identifier, or empty if no earlier available tab exists
+     */
     public Optional<String> back(String modeId, Predicate<String> available) {
         return move(modeId, -1, available);
     }
 
+    /**
+     * Moves to the nearest later available tab.
+     *
+     * @param modeId workspace mode identifier
+     * @param available predicate identifying tabs that still exist
+     * @return tab identifier, or empty if no later available tab exists
+     */
     public Optional<String> forward(String modeId, Predicate<String> available) {
         return move(modeId, 1, available);
     }
 
+    /**
+     * Checks for an earlier available tab without moving the cursor.
+     *
+     * @param modeId workspace mode identifier
+     * @param available predicate identifying tabs that still exist
+     * @return whether backward navigation is possible
+     */
     public boolean canGoBack(String modeId, Predicate<String> available) {
         return canMove(modeId, -1, available);
     }
 
+    /**
+     * Checks for a later available tab without moving the cursor.
+     *
+     * @param modeId workspace mode identifier
+     * @param available predicate identifying tabs that still exist
+     * @return whether forward navigation is possible
+     */
     public boolean canGoForward(String modeId, Predicate<String> available) {
         return canMove(modeId, 1, available);
     }
 
+    /**
+     * Removes unavailable entries and captures the remaining history for a mode.
+     *
+     * @param modeId workspace mode identifier
+     * @param available predicate identifying tabs that still exist
+     * @return normalized history snapshot
+     */
     public IDELayoutState.TabNavigationState snapshot(String modeId, Predicate<String> available) {
         String normalizedModeId = normalize(modeId);
         if (normalizedModeId == null)
@@ -66,6 +113,12 @@ public final class WorkspaceTabNavigationHistory {
         return new IDELayoutState.TabNavigationState(cursor.entries, cursor.index);
     }
 
+    /**
+     * Replaces a mode's tab history from saved state.
+     *
+     * @param modeId workspace mode identifier
+     * @param state history to restore, or null to clear it
+     */
     public void restore(String modeId, IDELayoutState.TabNavigationState state) {
         String normalizedModeId = normalize(modeId);
         if (normalizedModeId == null)
@@ -81,6 +134,9 @@ public final class WorkspaceTabNavigationHistory {
         cursors.put(normalizedModeId, new Cursor(normalizedState.entries(), normalizedState.currentIndex()));
     }
 
+    /**
+     * Removes the tab histories for all workspace modes.
+     */
     public void clear() {
         cursors.clear();
     }

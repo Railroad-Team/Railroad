@@ -8,6 +8,9 @@ import org.objectweb.asm.signature.SignatureVisitor;
 import java.util.*;
 import java.util.function.Consumer;
 
+/**
+ * Collects class, member, annotation, and generic signature metadata through ASM visits.
+ */
 public class ClassStubVisitor extends ClassVisitor {
     private final List<FieldStub> fields = new ArrayList<>();
     private final List<MethodStub> methods = new ArrayList<>();
@@ -20,6 +23,9 @@ public class ClassStubVisitor extends ClassVisitor {
     private Type superClass;
     private List<Type> interfaces;
 
+    /**
+     * Creates a visitor using the supported ASM API version.
+     */
     public ClassStubVisitor() {
         super(Opcodes.ASM9);
     }
@@ -82,8 +88,13 @@ public class ClassStubVisitor extends ClassVisitor {
     }
 
     @Override
-    public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
-        String[] exceptions) {
+    public MethodVisitor visitMethod(
+        int access,
+        String name,
+        String descriptor,
+        String signature,
+        String[] exceptions
+    ) {
         if (name.equals("<clinit>"))
             return null; // Skip static initializer
 
@@ -134,6 +145,11 @@ public class ClassStubVisitor extends ClassVisitor {
             thrownTypes);
     }
 
+    /**
+     * Builds a class stub from the metadata collected so far.
+     *
+     * @return the class stub, or {@code null} if no class header was visited
+     */
     public ClassStub createClassStub() {
         if (className == null)
             return null; // Class name is not available
@@ -372,10 +388,17 @@ public class ClassStubVisitor extends ClassVisitor {
         private final List<Type> thrownTypes;
         private int parameterIndex = 0;
 
-        public MethodStubVisitor(int access, String name, List<Type> parameterTypes, Type returnType,
-            List<String> parameterNames, List<List<AnnotationStub>> parameterAnnotations,
-            List<AnnotationStub> methodAnnotations, List<TypeParameter> finalMethodTypeParameters,
-            List<Type> thrownTypes) {
+        public MethodStubVisitor(
+            int access,
+            String name,
+            List<Type> parameterTypes,
+            Type returnType,
+            List<String> parameterNames,
+            List<List<AnnotationStub>> parameterAnnotations,
+            List<AnnotationStub> methodAnnotations,
+            List<TypeParameter> finalMethodTypeParameters,
+            List<Type> thrownTypes
+        ) {
             super(Opcodes.ASM9);
             this.access = access;
             this.name = name;

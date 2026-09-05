@@ -22,7 +22,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /** Flushes editor autosaves and protects failed documents when the IDE window closes. */
-final class IDEWindowCloseGuard implements AutoCloseable {
+public final class IDEWindowCloseGuard implements AutoCloseable {
     private final Node owner;
     private final EventHandler<WindowEvent> closeRequestHandler = this::handleCloseRequest;
     private final ChangeListener<Scene> sceneListener = (_, oldScene, newScene) -> changeScene(oldScene, newScene);
@@ -35,7 +35,12 @@ final class IDEWindowCloseGuard implements AutoCloseable {
     private Label dialogContent;
     private boolean allowClose;
 
-    IDEWindowCloseGuard(Node owner) {
+    /**
+     * Installs window-close handling for the window containing the owner node.
+     *
+     * @param owner node whose containing window receives the close guard
+     */
+    public IDEWindowCloseGuard(Node owner) {
         this.owner = Objects.requireNonNull(owner, "Owner cannot be null");
         owner.sceneProperty().addListener(sceneListener);
         changeScene(null, owner.getScene());

@@ -20,8 +20,23 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-public record UpdateGradleFilesStep(FilesService files, HttpService http, TemplateEngineService templateEngine,
-    String branch, boolean includeSettingsGradle) implements CreationStep {
+/**
+ * Downloads and renders Gradle build templates using the project's mappings and mod-loader options.
+ * Looks up templates for the resolved MDK version, falling back to the selected Minecraft version.
+ *
+ * @param files service used to read templates, write build files, and delete downloaded templates
+ * @param http service used to check template availability and download templates
+ * @param templateEngine engine used to substitute project bindings into each template
+ * @param branch Railroad repository branch from which templates are downloaded
+ * @param includeSettingsGradle whether to render {@code settings.gradle} as well as {@code build.gradle}
+ */
+public record UpdateGradleFilesStep(
+    FilesService files,
+    HttpService http,
+    TemplateEngineService templateEngine,
+    String branch,
+    boolean includeSettingsGradle
+) implements CreationStep {
     private static final String TEMPLATE_BUILD_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/%s/templates/fabric/%s/template_build.gradle";
     private static final String TEMPLATE_SETTINGS_GRADLE_URL = "https://raw.githubusercontent.com/Railroad-Team/Railroad/%s/templates/fabric/%s/template_settings.gradle";
 
@@ -115,8 +130,13 @@ public record UpdateGradleFilesStep(FilesService files, HttpService http, Templa
         updateContent(ctx, projectDir, settingsGradlePath, templateSettingsGradlePath, templateContent);
     }
 
-    private void updateContent(ProjectContext ctx, Path projectDir, Path settingsGradlePath,
-        Path templateSettingsGradlePath, String templateContent) throws Exception {
+    private void updateContent(
+        ProjectContext ctx,
+        Path projectDir,
+        Path settingsGradlePath,
+        Path templateSettingsGradlePath,
+        String templateContent
+    ) throws Exception {
         Map<String, Object> args = createGradleBindings(ctx.data());
         var binding = new Binding(args);
         binding.setVariable("defaultName", projectDir.relativize(settingsGradlePath.toAbsolutePath()).toString());
@@ -163,6 +183,13 @@ public record UpdateGradleFilesStep(FilesService files, HttpService http, Templa
         return args;
     }
 
+    /**
+     * Selects the default mappings for a supported mod-loader project type.
+     *
+     * @param projectType project type for which mappings are needed
+     * @return Yarn for Fabric, Mojmap for Forge, or Parchment for NeoForge
+     * @throws IllegalStateException if the project type is unsupported
+     */
     public static MappingChannel getDefaultMappingChannel(ProjectType projectType) {
         if (projectType.equals(ProjectTypeRegistry.FABRIC))
             return MappingChannelRegistry.YARN;

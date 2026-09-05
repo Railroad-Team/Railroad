@@ -6,17 +6,33 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 
 import java.util.Objects;
 
-final class DefaultLanguageInspectionRuleReporter<C extends LanguageRuleContext>
+/**
+ * Converts rule reports into diagnostics using the rule ID and configured severity.
+ * Messages are formatted with {@link String#format(String, Object...)}; formatting failures
+ * are logged and fall back to the rule's unformatted template.
+ *
+ * @param <C> context type consumed by the inspection rule
+ */
+public final class DefaultLanguageInspectionRuleReporter<C extends LanguageRuleContext>
     implements
         LanguageInspectionRuleReporter {
     private final LanguageInspectionRule<C> rule;
     private final LanguageInspectionReporter sink;
     private final InspectionSettingsAccess settings;
 
-    DefaultLanguageInspectionRuleReporter(
+    /**
+     * Creates a reporter bound to one inspection rule.
+     *
+     * @param rule rule supplying diagnostic metadata and the message template
+     * @param sink destination for constructed diagnostics
+     * @param settings settings used to resolve diagnostic severity
+     * @throws NullPointerException if any argument is null
+     */
+    public DefaultLanguageInspectionRuleReporter(
         LanguageInspectionRule<C> rule,
         LanguageInspectionReporter sink,
-        InspectionSettingsAccess settings) {
+        InspectionSettingsAccess settings
+    ) {
         this.rule = Objects.requireNonNull(rule, "rule");
         this.sink = Objects.requireNonNull(sink, "sink");
         this.settings = Objects.requireNonNull(settings, "settings");

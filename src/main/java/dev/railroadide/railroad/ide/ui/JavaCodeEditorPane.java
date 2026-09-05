@@ -11,6 +11,9 @@ import java.util.ArrayDeque;
 import java.util.Set;
 import java.util.stream.Stream;
 
+/**
+ * Adds Java call-context detection for signature help to the configured code editor.
+ */
 public class JavaCodeEditorPane extends CodeEditorPane {
     private static final int SIGNATURE_SCAN_WINDOW = 2048;
     private static final Set<String> NON_CALLABLE_PREFIX_KEYWORDS = Set.of(
@@ -23,10 +26,22 @@ public class JavaCodeEditorPane extends CodeEditorPane {
         "try",
         "do");
 
+    /**
+     * Creates a Java editor with the supplied language-service configuration.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param item file to open in the editor
+     * @param config language-service configuration for the editor
+     */
     public JavaCodeEditorPane(Project project, Path item, CodeEditorConfig config) {
         super(project, item, config);
     }
 
+    /**
+     * Lists entries in the running JDK's jmods directory for Java analysis.
+     *
+     * @return module paths, or an empty array if the directory cannot be resolved
+     */
     public static String[] resolveSystemModules() {
         try {
             Path javaHome = Path.of(System.getProperty("java.home"));

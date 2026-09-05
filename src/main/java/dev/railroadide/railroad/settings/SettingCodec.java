@@ -11,12 +11,23 @@ import java.util.function.Function;
  *
  * @param <T> The type of the setting value.
  * @param <N> The type of the node to display.
+ * @param id unique codec identifier
+ * @param nodeToValue converts a UI node to a setting value
+ * @param valueToNode applies a setting value to a UI node
+ * @param jsonDecoder decodes a JSON value
+ * @param jsonEncoder encodes a setting value as JSON
+ * @param createNode creates a UI node for a setting value
  * @see Setting
  * @see DefaultSettingCodecs
  */
-public record SettingCodec<T, N extends Node>(String id, Function<N, T> nodeToValue, BiConsumer<T, N> valueToNode,
+public record SettingCodec<T, N extends Node>(
+    String id,
+    Function<N, T> nodeToValue,
+    BiConsumer<T, N> valueToNode,
     Function<JsonElement, T> jsonDecoder,
-    Function<T, JsonElement> jsonEncoder, Function<T, N> createNode) {
+    Function<T, JsonElement> jsonEncoder,
+    Function<T, N> createNode
+) {
     /**
      * Serializes the setting value to JSON.
      *

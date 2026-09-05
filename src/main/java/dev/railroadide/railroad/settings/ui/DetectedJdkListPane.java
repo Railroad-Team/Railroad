@@ -40,6 +40,9 @@ public class DetectedJdkListPane extends RRVBox {
     private final LocalizedLabel countLabel = new LocalizedLabel("railroad.settings.ide.jdk_management.detected.count",
         0);
 
+    /**
+     * Creates a pane that lists the JDK installations currently detected on the system.
+     */
     public DetectedJdkListPane() {
         setFillWidth(true);
         getStyleClass().add("detected-jdk-list-pane");
@@ -77,6 +80,9 @@ public class DetectedJdkListPane extends RRVBox {
         countLabel.setKey("railroad.settings.ide.jdk_management.detected.count", detected.size());
     }
 
+    /**
+     * Renders a detected JDK with its brand icon, version, name, and installation path.
+     */
     public static class JdkCell extends ListCell<JDK> {
         private final HBox container = new HBox();
         private final VBox textContainer = new VBox();
@@ -84,6 +90,9 @@ public class DetectedJdkListPane extends RRVBox {
         private final LocalizedLabel nameLabel = new LocalizedLabel("");
         private final LocalizedLabel pathLabel = new LocalizedLabel("");
 
+        /**
+         * Creates an empty JDK list cell and initializes its layout and styles.
+         */
         public JdkCell() {
             container.setAlignment(Pos.CENTER_LEFT);
             container.getStyleClass().add("detected-jdk-cell");
@@ -97,6 +106,12 @@ public class DetectedJdkListPane extends RRVBox {
             HBox.setHgrow(textContainer, Priority.ALWAYS);
         }
 
+        /**
+         * Updates the cell graphic and labels for the supplied JDK.
+         *
+         * @param item JDK represented by the cell
+         * @param empty whether the cell has no item
+         */
         @Override
         protected void updateItem(JDK item, boolean empty) {
             super.updateItem(item, empty);

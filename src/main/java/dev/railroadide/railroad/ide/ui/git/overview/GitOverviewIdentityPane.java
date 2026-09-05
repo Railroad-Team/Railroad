@@ -15,6 +15,9 @@ import javafx.scene.layout.*;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 
+/**
+ * Displays repository identity and configuration information.
+ */
 public class GitOverviewIdentityPane extends RRVBox {
     private final GridPane identityGrid = new RRGridPane();
     private final Text userNameText = new Text();
@@ -22,6 +25,11 @@ public class GitOverviewIdentityPane extends RRVBox {
     private final Text signedText = new Text();
     private final Text gitVersionText = new Text();
 
+    /**
+     * Creates repository identity rows and subscribes to information updates.
+     *
+     * @param project project whose files and workspace are being displayed
+     */
     public GitOverviewIdentityPane(Project project) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_OVERVIEW_IDENTITY, this);
         getStyleClass().add("git-overview-identity-pane");

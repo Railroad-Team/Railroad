@@ -9,6 +9,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A class body block executed during class initialization.
+ *
+ * @param span source range occupied by this node
+ * @param body class initialization statements
+ */
 public record StaticInitializerBlock(Span span, BlockStatement body) implements ClassBodyDeclaration {
     @Override
     public AstKind kind() {

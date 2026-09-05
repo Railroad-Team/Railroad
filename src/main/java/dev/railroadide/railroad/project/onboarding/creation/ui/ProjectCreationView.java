@@ -33,6 +33,10 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+/**
+ * JavaFX view displaying project creation progress, the current task, elapsed time, and expandable logs.
+ * Construct and bind this view on the JavaFX application thread.
+ */
 public class ProjectCreationView extends RRBorderPane {
     private final StackPane progressStack = new RRStackPane();
     private final MFXProgressSpinner spinner = new MFXProgressSpinner();
@@ -50,6 +54,11 @@ public class ProjectCreationView extends RRBorderPane {
     private final ObjectProperty<Instant> startInstant = new SimpleObjectProperty<>();
     private Timeline elapsedTicker;
 
+    /**
+     * Builds the progress display and log controls for the named project.
+     *
+     * @param data project data supplying the name displayed in the subtitle
+     */
     public ProjectCreationView(ProjectData data) {
         StackPane bg = fancyBackground();
         setCenter(bg);
@@ -135,10 +144,21 @@ public class ProjectCreationView extends RRBorderPane {
         });
     }
 
-    public void bindToService(Service<?> service,
+    /**
+     * Binds progress and task text to a service and installs its running, success, and failure handlers.
+     * The service message is interpreted as a localization key. This method does not start the service.
+     *
+     * @param service service whose progress and lifecycle are displayed
+     * @param onCancel action invoked by the cancel button, or {@code null} for no action
+     * @param onSuccess action invoked on successful completion, or {@code null} for no action
+     * @param onError consumer of the service failure, or {@code null} for no action
+     */
+    public void bindToService(
+        Service<?> service,
         Runnable onCancel,
         Runnable onSuccess,
-        Consumer<Throwable> onError) {
+        Consumer<Throwable> onError
+    ) {
         spinner.progressProperty().bind(service.progressProperty());
 
         // Task message → task chip

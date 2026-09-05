@@ -40,6 +40,7 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
      *
      * @param labelKey The key of the label.
      * @param required Whether the component is required.
+     * @param params Parameters used to construct the primary component.
      */
     public InformativeLabeledHBox(String labelKey, boolean required, Map<String, Object> params) {
         super(5);
@@ -64,8 +65,12 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
      * @see String#format(String, Object...)
      * @see InformationType
      */
-    public void addInformationLabel(@NotNull String informativeText, @NotNull InformationType informationType,
-        @Nullable StringProperty bindTo, Object... args) {
+    public void addInformationLabel(
+        @NotNull String informativeText,
+        @NotNull InformationType informationType,
+        @Nullable StringProperty bindTo,
+        Object... args
+    ) {
         addInformationLabel(informativeText, t -> TRUE_BINDING, informationType, bindTo, args);
     }
 
@@ -78,8 +83,11 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
      * @see String#format(String, Object...)
      * @see InformationType
      */
-    public void addInformationLabel(@NotNull String informativeText, @NotNull InformationType informationType,
-        Object... args) {
+    public void addInformationLabel(
+        @NotNull String informativeText,
+        @NotNull InformationType informationType,
+        Object... args
+    ) {
         addInformationLabel(informativeText, informationType, null, args);
     }
 
@@ -118,9 +126,12 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
      * @see String#format(String, Object...)
      * @see InformationType
      */
-    public void addInformationLabel(@NotNull String informativeText,
-        @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding, @NotNull InformationType informationType,
-        Object... args) {
+    public void addInformationLabel(
+        @NotNull String informativeText,
+        @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding,
+        @NotNull InformationType informationType,
+        Object... args
+    ) {
         addInformationLabel(informativeText, informativeTextVisibleBinding, informationType, null, args);
     }
 
@@ -135,9 +146,13 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
      * @see String#format(String, Object...)
      * @see InformationType
      */
-    public void addInformationLabel(@NotNull String informativeText,
-        @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding, @NotNull InformationType informationType,
-        @Nullable StringProperty bindTo, Object... args) {
+    public void addInformationLabel(
+        @NotNull String informativeText,
+        @NotNull Function<T, BooleanBinding> informativeTextVisibleBinding,
+        @NotNull InformationType informationType,
+        @Nullable StringProperty bindTo,
+        Object... args
+    ) {
         var informationLabel = new InformationLabel(informativeText, informationType, args);
         informationLabel.visibleProperty().bind(informativeTextVisibleBinding.apply(labeledHBox.getPrimaryComponent()));
         informationLabels.add(informationLabel);
@@ -176,7 +191,14 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
      * The type of the information label.
      */
     public enum InformationType {
-        INFO, NOTE, WARNING, ERROR
+        /** General informational message. */
+        INFO,
+        /** Informational note or hint. */
+        NOTE,
+        /** Warning that does not make the value invalid. */
+        WARNING,
+        /** Error indicating that the value is invalid. */
+        ERROR
     }
 
     /**

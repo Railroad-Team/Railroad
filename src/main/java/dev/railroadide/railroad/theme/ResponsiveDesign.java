@@ -10,16 +10,21 @@ import java.util.WeakHashMap;
 /**
  * Applies responsive style classes based on the scene width.
  */
-final class ResponsiveDesign {
-    static final double COMPACT_BREAKPOINT = 768;
-    static final String COMPACT_STYLE_CLASS = "compact-layout";
+public final class ResponsiveDesign {
+    private static final double COMPACT_BREAKPOINT = 768;
+    private static final String COMPACT_STYLE_CLASS = "compact-layout";
 
     private static final Set<Scene> INSTALLED_SCENES = Collections.newSetFromMap(new WeakHashMap<>());
 
     private ResponsiveDesign() {
     }
 
-    static void install(Scene scene) {
+    /**
+     * Installs the responsive design behavior on the given scene.
+     *
+     * @param scene the scene to install the responsive design on
+     */
+    public static void install(Scene scene) {
         if (scene == null || !INSTALLED_SCENES.add(scene))
             return;
 

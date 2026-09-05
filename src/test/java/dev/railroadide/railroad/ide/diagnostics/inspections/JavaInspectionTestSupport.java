@@ -18,26 +18,28 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-final class JavaInspectionTestSupport {
+public final class JavaInspectionTestSupport {
     private JavaInspectionTestSupport() {
     }
 
-    static List<SemanticDiagnostic> runProvider(JavaInspectionRuleProvider provider, String document) {
+    public static List<SemanticDiagnostic> runProvider(JavaInspectionRuleProvider provider, String document) {
         return runProvider(provider, Path.of("Example.java"), document);
     }
 
-    static List<SemanticDiagnostic> runProvider(
+    public static List<SemanticDiagnostic> runProvider(
         JavaInspectionRuleProvider provider,
         Path filePath,
-        String document) {
+        String document
+    ) {
         return runProvider(provider, filePath, document, null);
     }
 
-    static List<SemanticDiagnostic> runProvider(
+    public static List<SemanticDiagnostic> runProvider(
         JavaInspectionRuleProvider provider,
         Path filePath,
         String document,
-        JavaSymbolIndex symbolIndex) {
+        JavaSymbolIndex symbolIndex
+    ) {
         JavaInspectionRuleSettings.resetAll();
         var model = symbolIndex == null
             ? JavaSemanticAnalyzer.analyzeFacts(document)
@@ -49,11 +51,12 @@ final class JavaInspectionTestSupport {
         return List.copyOf(diagnostics);
     }
 
-    static List<SemanticDiagnostic> runProviders(
+    public static List<SemanticDiagnostic> runProviders(
         List<? extends JavaInspectionRuleProvider> providers,
         Path filePath,
         String document,
-        JavaSymbolIndex symbolIndex) {
+        JavaSymbolIndex symbolIndex
+    ) {
         JavaInspectionRuleSettings.resetAll();
         var model = JavaSemanticAnalyzer.analyzeFacts(document, symbolIndex);
         var context = new JavaRuleContext(filePath, document, model, symbolIndex);
@@ -63,7 +66,7 @@ final class JavaInspectionTestSupport {
         return List.copyOf(diagnostics);
     }
 
-    static void assertRuleIds(JavaInspectionRuleProvider provider, Set<String> expectedIds) {
+    public static void assertRuleIds(JavaInspectionRuleProvider provider, Set<String> expectedIds) {
         Set<String> actual = provider.rules().stream()
             .map(JavaInspectionRule::id)
             .collect(Collectors.toSet());

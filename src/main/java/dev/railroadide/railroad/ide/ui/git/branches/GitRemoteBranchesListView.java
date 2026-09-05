@@ -19,7 +19,15 @@ import javafx.scene.layout.VBox;
 import java.util.ArrayList;
 import java.util.Locale;
 
+/**
+ * Displays remote Git branches and their remote-specific details and actions.
+ */
 public class GitRemoteBranchesListView extends AbstractGitBranchesListView<GitBranch.RemoteGitBranch> {
+    /**
+     * Creates the remote branch list for the project repository.
+     *
+     * @param project project whose files and workspace are being displayed
+     */
     public GitRemoteBranchesListView(Project project) {
         super(
             project,
@@ -29,7 +37,7 @@ public class GitRemoteBranchesListView extends AbstractGitBranchesListView<GitBr
     }
 
     @Override
-    Node createDetailsNode(GitBranch.RemoteGitBranch branch) {
+    protected Node createDetailsNode(GitBranch.RemoteGitBranch branch) {
         var rows = new ArrayList<Node>();
         rows.add(createTextDetailsRow("railroad.git.branches.details.remote", branch.remoteName()));
         return createCommonDetailsNode(branch, rows);

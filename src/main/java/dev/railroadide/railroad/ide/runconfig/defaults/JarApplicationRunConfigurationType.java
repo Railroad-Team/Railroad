@@ -17,16 +17,24 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Launches executable JARs with configured Java runtime options and tracks their processes.
+ */
 public class JarApplicationRunConfigurationType extends RunConfigurationType<JarApplicationRunConfigurationData> {
     private final Map<RunConfiguration<?>, Process> runningProcesses = new ConcurrentHashMap<>();
 
+    /**
+     * Creates the JAR application type with its localized label and JAR icon.
+     */
     public JarApplicationRunConfigurationType() {
         super("railroad.runconfig.jar_application", RailroadIcon.JAR_FILE, Color.web("#e67e22"));
     }
 
     @Override
-    public CompletableFuture<Void> run(Project project,
-        RunConfiguration<JarApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> run(
+        Project project,
+        RunConfiguration<JarApplicationRunConfigurationData> configuration
+    ) {
         return CompletableFuture.runAsync(() -> {
             JarApplicationRunConfigurationData data = configuration.data();
             JDK jre = requireJre(data);
@@ -77,15 +85,19 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
     }
 
     @Override
-    public CompletableFuture<Void> debug(Project project,
-        RunConfiguration<JarApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> debug(
+        Project project,
+        RunConfiguration<JarApplicationRunConfigurationData> configuration
+    ) {
         return CompletableFuture.failedFuture(
             new UnsupportedOperationException("Debugging is not supported for Jar Application run configurations."));
     }
 
     @Override
-    public CompletableFuture<Void> stop(Project project,
-        RunConfiguration<JarApplicationRunConfigurationData> configuration) {
+    public CompletableFuture<Void> stop(
+        Project project,
+        RunConfiguration<JarApplicationRunConfigurationData> configuration
+    ) {
         Process process = runningProcesses.get(configuration);
         if (process != null && process.isAlive()) {
             process.destroy();

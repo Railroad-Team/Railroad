@@ -34,25 +34,45 @@ public class FormTransformer<T extends Node, V, W> {
      * @param toComponentFunction The function to set the value to the component.
      * @param valueMapper The function to map the value to the component.
      */
-    public FormTransformer(@NotNull ObservableValue<T> fromComponent, @NotNull Function<T, V> fromComponentFunction,
-        @NotNull Consumer<W> toComponentFunction, @NotNull Function<V, W> valueMapper) {
+    public FormTransformer(
+        @NotNull ObservableValue<T> fromComponent,
+        @NotNull Function<T, V> fromComponentFunction,
+        @NotNull Consumer<W> toComponentFunction,
+        @NotNull Function<V, W> valueMapper
+    ) {
         this(fromComponent, fromComponentFunction, toComponentFunction,
             value -> CompletableFuture.completedFuture(valueMapper.apply(value)),
             false);
     }
 
-    public static <T extends Node, V, W> FormTransformer<T, V, W> async(@NotNull ObservableValue<T> fromComponent,
+    /**
+     * Creates an asynchronous form transformer.
+     *
+     * @param fromComponent the observable containing the source component
+     * @param fromComponentFunction the function that reads the source value
+     * @param toComponentFunction the consumer that receives the mapped value
+     * @param futureMapper the function that asynchronously maps the source value
+     * @param <T> the source component type
+     * @param <V> the source value type
+     * @param <W> the target value type
+     * @return a transformer that dispatches target updates on the JavaFX thread
+     */
+    public static <T extends Node, V, W> FormTransformer<T, V, W> async(
+        @NotNull ObservableValue<T> fromComponent,
         @NotNull Function<T, V> fromComponentFunction,
         @NotNull Consumer<W> toComponentFunction,
-        @NotNull Function<V, CompletableFuture<W>> futureMapper) {
+        @NotNull Function<V, CompletableFuture<W>> futureMapper
+    ) {
         return new FormTransformer<>(fromComponent, fromComponentFunction, toComponentFunction, futureMapper, true);
     }
 
-    private FormTransformer(@NotNull ObservableValue<T> fromComponent,
+    private FormTransformer(
+        @NotNull ObservableValue<T> fromComponent,
         @NotNull Function<T, V> fromComponentFunction,
         @NotNull Consumer<W> toComponentFunction,
         @NotNull Function<V, CompletableFuture<W>> futureMapper,
-        boolean asynchronous) {
+        boolean asynchronous
+    ) {
         this.fromComponent.bind(fromComponent);
         this.fromComponentFunction = fromComponentFunction;
         this.toComponentFunction = toComponentFunction;

@@ -17,6 +17,9 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Stores script source, interpreter, argument, working-directory, and environment options.
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ShellScriptRunConfigurationData extends RunConfigurationData {
@@ -30,6 +33,9 @@ public class ShellScriptRunConfigurationData extends RunConfigurationData {
     private String[] interpreterArgs = new String[0];
     private boolean executeInTerminal = true;
 
+    /**
+     * Initializes the interpreter to PowerShell on Windows, Bash on macOS or Linux, or an empty path on other systems.
+     */
     public ShellScriptRunConfigurationData() {
         this.interpreterPath = switch (OperatingSystem.CURRENT) {
             case WINDOWS -> "powershell.exe";
@@ -139,7 +145,17 @@ public class ShellScriptRunConfigurationData extends RunConfigurationData {
         this.executeInTerminal = formData.get("executeInTerminal", Boolean.class);
     }
 
+    /**
+     * Selects whether a shell run configuration reads a script file or uses supplied script text.
+     */
     public enum ExecuteMode {
-        FILE, TEXT
+        /**
+         * Executes an existing script file.
+         */
+        FILE,
+        /**
+         * Executes script text supplied in the configuration.
+         */
+        TEXT
     }
 }

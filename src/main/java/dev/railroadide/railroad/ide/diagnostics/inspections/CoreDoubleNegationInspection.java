@@ -14,8 +14,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#DOUBLE_NEGATION}.
+ */
 @RegisteredInspection
 public class CoreDoubleNegationInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-double-negation";
 
     private static final List<JavaInspectionRule> RULES = List.of(

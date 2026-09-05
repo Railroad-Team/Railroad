@@ -11,10 +11,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * An assertion condition with an optional diagnostic detail expression.
+ *
+ * @param span source range occupied by this node
+ * @param condition condition expression
+ * @param message optional assertion detail expression
+ */
 public record AssertStatement(
     Span span,
     Expression condition,
-    Optional<Expression> message) implements Statement {
+    Optional<Expression> message
+) implements Statement {
     @Override
     public AstKind kind() {
         return AstKind.ASSERT_STATEMENT;

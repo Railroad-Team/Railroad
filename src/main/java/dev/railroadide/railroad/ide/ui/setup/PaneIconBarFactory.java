@@ -25,11 +25,21 @@ public final class PaneIconBarFactory {
     private PaneIconBarFactory() {
     }
 
+    /**
+     * Creates tool-tab toggle buttons synchronized with pane visibility and selection.
+     *
+     * @param pane editor or tool tab pane to manage
+     * @param split split pane containing the tool pane
+     * @param orientation direction in which child panes are arranged
+     * @param originalIndex position at which a hidden tool pane should be reinserted
+     * @return icon bar arranged in the requested orientation
+     */
     public static Node create(
         DetachableTabPane pane,
         SplitPane split,
         Orientation orientation,
-        int originalIndex) {
+        int originalIndex
+    ) {
         var bar = orientation == Orientation.HORIZONTAL ? new RRHBox(4) : new RRVBox(4);
         bar.getStyleClass().add("icon-bar-" + orientation.name().toLowerCase(Locale.ROOT));
 

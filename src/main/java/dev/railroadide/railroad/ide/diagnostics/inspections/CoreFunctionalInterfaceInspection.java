@@ -14,8 +14,14 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#INTERFACE_SHOULD_BE_FUNCTIONAL}.
+ */
 @RegisteredInspection
 public final class CoreFunctionalInterfaceInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-functional-interface";
 
     private static final List<JavaInspectionRule> RULES = List
@@ -34,8 +40,10 @@ public final class CoreFunctionalInterfaceInspection implements JavaInspectionRu
         return RULES;
     }
 
-    private static void reportInterfaceShouldBeFunctional(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportInterfaceShouldBeFunctional(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode node : context.nodesOfKind(JavaSyntaxKinds.INTERFACE_DECLARATION.id())) {
             Symbol declaredName = context.declaredSymbol(node).orElse(null);
             if (declaredName == null)

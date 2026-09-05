@@ -8,6 +8,9 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
+/**
+ * Exposes cursor, selection, and language state from the active text editor.
+ */
 public class DefaultDocumentEditorStateService implements DocumentEditorStateService {
     private TextEditorPane activeEditorPane;
     private String activeLanguageId = "";

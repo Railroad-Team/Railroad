@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.Assumptions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -16,12 +17,12 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class DocumentIdentityRegistryTest {
+public class DocumentIdentityRegistryTest {
     @TempDir
-    Path tempDirectory;
+    public Path tempDirectory;
 
     @Test
-    void normalizedAndAbsoluteSpellingsShareOneIdentity() throws IOException {
+    public void normalizedAndAbsoluteSpellingsShareOneIdentity() throws IOException {
         Path nested = Files.createDirectories(tempDirectory.resolve("nested"));
         Path file = Files.writeString(tempDirectory.resolve("Example.java"), "class Example {}");
         Path alternateSpelling = nested.resolve("..").resolve(file.getFileName());
@@ -35,13 +36,13 @@ class DocumentIdentityRegistryTest {
     }
 
     @Test
-    void physicalAliasesShareOneIdentity() throws IOException {
+    public void physicalAliasesShareOneIdentity() throws IOException {
         Path file = Files.writeString(tempDirectory.resolve("source.bin"), "content");
         Path hardLink = tempDirectory.resolve("alias.bin");
         try {
             Files.createLink(hardLink, file);
         } catch (UnsupportedOperationException | SecurityException | IOException _) {
-            org.junit.jupiter.api.Assumptions.abort("Hard links are unavailable on this filesystem");
+            Assumptions.abort("Hard links are unavailable on this filesystem");
         }
 
         var registry = new DocumentIdentityRegistry();
@@ -49,7 +50,7 @@ class DocumentIdentityRegistryTest {
     }
 
     @Test
-    void pathlessDocumentsReceiveIndependentIdentities() {
+    public void pathlessDocumentsReceiveIndependentIdentities() {
         var registry = new DocumentIdentityRegistry();
 
         DocumentId generatedText = registry.create();
@@ -61,7 +62,7 @@ class DocumentIdentityRegistryTest {
     }
 
     @Test
-    void versionsAdvanceAtomicallyForOneDocument() {
+    public void versionsAdvanceAtomicallyForOneDocument() {
         var registry = new DocumentIdentityRegistry();
         DocumentId documentId = registry.create();
 
@@ -75,7 +76,7 @@ class DocumentIdentityRegistryTest {
     }
 
     @Test
-    void persistedVersionsCanOnlyBeRestoredForward() {
+    public void persistedVersionsCanOnlyBeRestoredForward() {
         var registry = new DocumentIdentityRegistry();
         DocumentId documentId = DocumentId.create();
 
@@ -89,7 +90,7 @@ class DocumentIdentityRegistryTest {
     }
 
     @Test
-    void explicitAssociationSupportsPathlessDocumentsThatGainALocation() throws IOException {
+    public void explicitAssociationSupportsPathlessDocumentsThatGainALocation() throws IOException {
         Path generatedOutput = Files.writeString(tempDirectory.resolve("Generated.java"), "class Generated {}");
         var registry = new DocumentIdentityRegistry();
         DocumentId documentId = registry.create();
@@ -100,7 +101,7 @@ class DocumentIdentityRegistryTest {
     }
 
     @Test
-    void fileUriAndPathResolveToTheSameIdentity() throws IOException {
+    public void fileUriAndPathResolveToTheSameIdentity() throws IOException {
         Path file = Files.writeString(tempDirectory.resolve("Physical.java"), "class Physical {}");
         var registry = new DocumentIdentityRegistry();
 
@@ -111,7 +112,7 @@ class DocumentIdentityRegistryTest {
     }
 
     @Test
-    void virtualUriResolutionIsStableAndIndependent() {
+    public void virtualUriResolutionIsStableAndIndependent() {
         DocumentUri generated = DocumentUri.virtual("generated", "demo/Generated.java");
         DocumentUri inMemory = DocumentUri.virtual("memory", "demo/Generated.java");
         var registry = new DocumentIdentityRegistry();
@@ -123,7 +124,7 @@ class DocumentIdentityRegistryTest {
     }
 
     @Test
-    void identityRetainsItsLogicalIdWhenItsCurrentUriChanges() {
+    public void identityRetainsItsLogicalIdWhenItsCurrentUriChanges() {
         var registry = new DocumentIdentityRegistry();
         DocumentIdentity identity = registry.identify(DocumentUri.virtual("memory", "before"));
         DocumentUri newUri = DocumentUri.virtual("memory", "after");
@@ -137,7 +138,7 @@ class DocumentIdentityRegistryTest {
     }
 
     @Test
-    void rebindPreservesIdentityAcrossVirtualUriChanges() {
+    public void rebindPreservesIdentityAcrossVirtualUriChanges() {
         DocumentUri previous = DocumentUri.virtual("generated", "first/Generated.java");
         DocumentUri current = DocumentUri.virtual("generated", "second/Generated.java");
         var registry = new DocumentIdentityRegistry();
@@ -152,7 +153,7 @@ class DocumentIdentityRegistryTest {
     }
 
     @Test
-    void rebindPreservesIdentityAcrossRename() throws IOException {
+    public void rebindPreservesIdentityAcrossRename() throws IOException {
         Path previous = Files.writeString(tempDirectory.resolve("Before.java"), "class Before {}");
         Path renamed = tempDirectory.resolve("After.java");
         var registry = new DocumentIdentityRegistry();
@@ -166,7 +167,7 @@ class DocumentIdentityRegistryTest {
     }
 
     @Test
-    void conflictingAssociationIsRejected() throws IOException {
+    public void conflictingAssociationIsRejected() throws IOException {
         Path file = Files.writeString(tempDirectory.resolve("Owned.java"), "class Owned {}");
         var registry = new DocumentIdentityRegistry();
         registry.getOrCreate(file);
@@ -175,7 +176,7 @@ class DocumentIdentityRegistryTest {
     }
 
     @Test
-    void concurrentResolutionReturnsOneIdentity() throws IOException {
+    public void concurrentResolutionReturnsOneIdentity() throws IOException {
         Path file = Files.writeString(tempDirectory.resolve("Concurrent.java"), "class Concurrent {}");
         var registry = new DocumentIdentityRegistry();
 
@@ -188,7 +189,7 @@ class DocumentIdentityRegistryTest {
     }
 
     @Test
-    void releaseForgetsAssociationsWithoutReusingTheIdentity() throws IOException {
+    public void releaseForgetsAssociationsWithoutReusingTheIdentity() throws IOException {
         Path file = Files.writeString(tempDirectory.resolve("Released.java"), "class Released {}");
         var registry = new DocumentIdentityRegistry();
         DocumentId released = registry.getOrCreate(file);

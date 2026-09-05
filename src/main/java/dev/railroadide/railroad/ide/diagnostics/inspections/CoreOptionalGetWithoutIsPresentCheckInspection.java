@@ -13,8 +13,14 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 
 import java.util.*;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK}.
+ */
 @RegisteredInspection
 public class CoreOptionalGetWithoutIsPresentCheckInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-optional-get-without-is-present-check";
 
     private static final Map<String, String> OPTIONAL_TYPE_TO_GET_METHOD = Map.of(
@@ -39,8 +45,10 @@ public class CoreOptionalGetWithoutIsPresentCheckInspection implements JavaInspe
                 CoreOptionalGetWithoutIsPresentCheckInspection::reportOptionalGetWithoutIsPresentCheck));
     }
 
-    private static void reportOptionalGetWithoutIsPresentCheck(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportOptionalGetWithoutIsPresentCheck(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         Set<SyntaxNode> guardedGets = new HashSet<>();
         collectGuardedGetsFromIfStatements(context, guardedGets);
         collectGuardedGetsFromWhileStatements(context, guardedGets);
@@ -148,16 +156,24 @@ public class CoreOptionalGetWithoutIsPresentCheckInspection implements JavaInspe
         return null;
     }
 
-    private static void collectMatchingGetsInBranch(JavaRuleContext context, SyntaxNode body, OptionalPresenceFact fact,
-        Set<SyntaxNode> guardedGets) {
+    private static void collectMatchingGetsInBranch(
+        JavaRuleContext context,
+        SyntaxNode body,
+        OptionalPresenceFact fact,
+        Set<SyntaxNode> guardedGets
+    ) {
         if (body == null)
             return;
 
         collectMatchingGetsInBranchRecursive(context, body, fact, guardedGets);
     }
 
-    private static void collectMatchingGetsInBranchRecursive(JavaRuleContext context, SyntaxNode node,
-        OptionalPresenceFact fact, Set<SyntaxNode> guardedGets) {
+    private static void collectMatchingGetsInBranchRecursive(
+        JavaRuleContext context,
+        SyntaxNode node,
+        OptionalPresenceFact fact,
+        Set<SyntaxNode> guardedGets
+    ) {
         if (isOptionalGetInvocation(context, node)) {
             String receiverName = context.simpleReceiverName(node);
             if (fact.receiverName().equals(receiverName)) {

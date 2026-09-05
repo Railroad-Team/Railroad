@@ -10,6 +10,9 @@ import java.util.stream.Collectors;
 
 /**
  * Default completion provider using Eclipse JDT to resolve types and members.
+ *
+ * @param filePath source file path used for analysis
+ * @param systemModulePaths paths supplied to the JDT binding environment
  */
 public record JdtCompletionProvider(Path filePath, String[] systemModulePaths) implements CompletionProvider {
     @Override
@@ -134,8 +137,13 @@ public record JdtCompletionProvider(Path filePath, String[] systemModulePaths) i
         return declaration.getName().getFullyQualifiedName();
     }
 
-    private void addMembers(ITypeBinding type, boolean staticContext, String currentPackage,
-        LinkedHashSet<CompletionItem> results, Set<String> visited) {
+    private void addMembers(
+        ITypeBinding type,
+        boolean staticContext,
+        String currentPackage,
+        LinkedHashSet<CompletionItem> results,
+        Set<String> visited
+    ) {
         if (type == null)
             return;
 
@@ -253,6 +261,12 @@ public record JdtCompletionProvider(Path filePath, String[] systemModulePaths) i
         return new CompletionItem(name, prefix + name + " (type)");
     }
 
+    /**
+     * Renders a JDT type using qualified names and erased type variables.
+     *
+     * @param type type represented in the signature or binding
+     * @return type name, or {@code ?} when unavailable
+     */
     public static String renderType(ITypeBinding type) {
         if (type == null)
             return "?";

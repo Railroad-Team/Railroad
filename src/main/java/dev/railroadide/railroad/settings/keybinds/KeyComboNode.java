@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+/** Button control that displays and records one editable keybind combination. */
 public class KeyComboNode extends RRButton {
     @Setter
     private Consumer<KeybindData> onComboModified;
@@ -33,6 +34,11 @@ public class KeyComboNode extends RRButton {
     private final EventHandler<KeyEvent> keyReleasedHandler = this::handleKeyReleased;
     private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
 
+    /**
+     * Creates a shortcut chip for the supplied binding.
+     *
+     * @param data initial binding, or {@code null} for an empty recording chip
+     */
     public KeyComboNode(KeybindData data) {
         super("");
         this.keybindData = data == null
@@ -45,6 +51,11 @@ public class KeyComboNode extends RRButton {
         updateLabel();
     }
 
+    /**
+     * Starts recording the next keyboard or mouse combination for this control.
+     *
+     * @throws IllegalStateException if the control is not attached to a scene
+     */
     public void toggleEditing() {
         if (editing)
             return;
@@ -96,7 +107,8 @@ public class KeyComboNode extends RRButton {
         boolean controlDown,
         boolean altDown,
         boolean shiftDown,
-        boolean metaDown) {
+        boolean metaDown
+    ) {
         List<KeyCombination.Modifier> modifiers = new ArrayList<>();
         if (shortcutDown) {
             modifiers.add(KeyCombination.SHORTCUT_DOWN);

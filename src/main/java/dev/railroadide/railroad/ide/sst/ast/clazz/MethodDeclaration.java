@@ -19,6 +19,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * A method declaration with its full signature and optional implementation body.
+ *
+ * @param span source range occupied by this node
+ * @param annotations annotations attached to this node
+ * @param modifiers modifiers attached to the declaration
+ * @param typeParameters declared type parameters
+ * @param returnType declared method return type
+ * @param name declared method name
+ * @param receiverParameter optional explicit receiver parameter
+ * @param parameters formal parameters in declaration order
+ * @param thrownTypes declared exception types
+ * @param body optional method implementation block
+ */
 public record MethodDeclaration(
     Span span,
     List<Annotation> annotations,
@@ -29,7 +43,8 @@ public record MethodDeclaration(
     Optional<ReceiverParameter> receiverParameter,
     List<Parameter> parameters,
     List<TypeRef> thrownTypes,
-    Optional<BlockStatement> body) implements ClassMember {
+    Optional<BlockStatement> body
+) implements ClassMember {
     @Override
     public AstKind kind() {
         return AstKind.METHOD_DECLARATION;

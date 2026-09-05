@@ -10,11 +10,20 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A method reference binding a qualifying expression to a named method.
+ *
+ * @param span source range occupied by this node
+ * @param expression expression qualifying the method reference
+ * @param typeArguments explicit type arguments
+ * @param name referenced method name
+ */
 public record MethodReferenceExpression(
     Span span,
     Expression expression,
     List<TypeRef> typeArguments,
-    NameExpression name) implements Expression {
+    NameExpression name
+) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.METHOD_REFERENCE_EXPRESSION;

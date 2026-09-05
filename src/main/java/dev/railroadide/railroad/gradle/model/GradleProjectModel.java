@@ -15,7 +15,11 @@ import java.util.List;
  * @param tasks the tasks exposed by this project
  * @param configurationTrees the configuration trees for dependencies in this project
  */
-public record GradleProjectModel(String path, String name, Path projectDir,
+public record GradleProjectModel(
+    String path,
+    String name,
+    Path projectDir,
     List<? extends RailroadGradleTask> tasks,
-    List<? extends RailroadConfiguration> configurationTrees) {
+    List<? extends RailroadConfiguration> configurationTrees
+) {
 }

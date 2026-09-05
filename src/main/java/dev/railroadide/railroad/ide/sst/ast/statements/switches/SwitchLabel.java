@@ -8,7 +8,16 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A case or default label selecting a switch rule.
+ */
 public sealed interface SwitchLabel extends AstNode permits SwitchLabel.CaseLabel, SwitchLabel.DefaultLabel {
+    /**
+     * A switch case label containing constant, null, or pattern alternatives.
+     *
+     * @param span source range occupied by this node
+     * @param items case alternatives
+     */
     record CaseLabel(Span span, List<CaseItem> items) implements SwitchLabel {
         @Override
         public AstKind kind() {
@@ -26,6 +35,11 @@ public sealed interface SwitchLabel extends AstNode permits SwitchLabel.CaseLabe
         }
     }
 
+    /**
+     * The default label of a switch rule.
+     *
+     * @param span source range occupied by this node
+     */
     record DefaultLabel(Span span) implements SwitchLabel {
         @Override
         public AstKind kind() {

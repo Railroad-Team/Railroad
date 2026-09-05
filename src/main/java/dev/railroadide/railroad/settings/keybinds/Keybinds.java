@@ -15,6 +15,7 @@ import javafx.scene.input.MouseButton;
 
 import java.util.function.Consumer;
 
+/** Built-in keybind definitions for project navigation, editing, and workspace controls. */
 public class Keybinds {
     private static final KeybindCategory GENERAL = new KeybindCategory("railroad:general",
         "railroad.settings.keybinds.category.general");
@@ -23,13 +24,16 @@ public class Keybinds {
     private static final KeybindContexts.KeybindContext PROJECT_EXPLORER = KeybindContexts
         .of("railroad:project_explorer");
     private static final KeybindContexts.KeybindContext IDE = KeybindContexts.of("railroad:ide");
+    /** Context used while interacting with editor tabs. */
     public static final KeybindContexts.KeybindContext EDITOR_TABS = KeybindContexts.of("railroad:editor_tabs");
 
+    /** Opens the selected project-explorer item. */
     public static final Keybind OPEN_PROJECT_EXPLORER_ITEM = registerProjectExplorerKeybind(
         "railroad:open_project_explorer_item",
         KeyCode.ENTER,
         ProjectExplorerPane::openSelectedItem);
 
+    /** Deletes the selected project-explorer item. */
     public static final Keybind DELETE = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:delete_project_explorer_item")
         .category(GENERAL)
@@ -37,6 +41,7 @@ public class Keybinds {
         .addAction(PROJECT_EXPLORER, _ -> projectExplorer().deleteSelectedItem())
         .build());
 
+    /** Cuts the selected project-explorer item. */
     public static final Keybind CUT = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:cut")
         .category(GENERAL)
@@ -44,6 +49,7 @@ public class Keybinds {
         .addAction(PROJECT_EXPLORER, _ -> projectExplorer().cutSelectedItem())
         .build());
 
+    /** Copies the selected project-explorer item. */
     public static final Keybind COPY = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:copy")
         .category(GENERAL)
@@ -51,6 +57,7 @@ public class Keybinds {
         .addAction(PROJECT_EXPLORER, _ -> projectExplorer().copySelectedItem())
         .build());
 
+    /** Pastes into the selected project-explorer item. */
     public static final Keybind PASTE = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:paste")
         .category(GENERAL)
@@ -58,12 +65,14 @@ public class Keybinds {
         .addAction(PROJECT_EXPLORER, _ -> projectExplorer().pasteIntoSelectedItem())
         .build());
 
+    /** Creates a file beneath the selected project-explorer item. */
     public static final Keybind CREATE_FILE = registerProjectExplorerKeybind(
         "railroad:create_file",
         KeyCode.N,
         pane -> pane.createFileInSelectedItem(FileCreateType.FILE),
         KeyCombination.CONTROL_DOWN);
 
+    /** Creates a folder beneath the selected project-explorer item. */
     public static final Keybind CREATE_FOLDER = registerProjectExplorerKeybind(
         "railroad:create_folder",
         KeyCode.N,
@@ -71,24 +80,28 @@ public class Keybinds {
         KeyCombination.CONTROL_DOWN,
         KeyCombination.SHIFT_DOWN);
 
+    /** Renames the selected project-explorer item. */
     public static final Keybind RENAME_PROJECT_EXPLORER_ITEM = registerProjectExplorerKeybind(
         "railroad:rename_project_explorer_item",
         KeyCode.R,
         ProjectExplorerPane::renameSelectedItem,
         KeyCombination.CONTROL_DOWN);
 
+    /** Opens the selected item in the operating system's file explorer. */
     public static final Keybind OPEN_IN_FILE_EXPLORER = registerProjectExplorerKeybind(
         "railroad:open_in_file_explorer",
         KeyCode.O,
         ProjectExplorerPane::openSelectedItemInExplorer,
         KeyCombination.CONTROL_DOWN);
 
+    /** Opens a terminal for the selected project-explorer item. */
     public static final Keybind OPEN_IN_TERMINAL = registerProjectExplorerKeybind(
         "railroad:open_in_terminal",
         KeyCode.T,
         ProjectExplorerPane::openSelectedItemInTerminal,
         KeyCombination.CONTROL_DOWN);
 
+    /** Toggles the application window's fullscreen state. */
     public static final Keybind FULLSCREEN = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:fullscreen")
         .category(GENERAL)
@@ -96,16 +109,19 @@ public class Keybinds {
         .addAction(IDE, _ -> WindowManager.toggleFullScreen())
         .build());
 
+    /** Switches to the code workspace view. */
     public static final Keybind VIEW_MODE_CODE = registerViewModeKeybind(
         "railroad:view_mode_code",
         WorkspaceModes.CODE,
         KeyCode.DIGIT1);
 
+    /** Switches to the Git workspace view. */
     public static final Keybind VIEW_MODE_GIT = registerViewModeKeybind(
         "railroad:view_mode_git",
         WorkspaceModes.GIT,
         KeyCode.DIGIT2);
 
+    /** Navigates backward in the IDE navigation history. */
     public static final Keybind NAVIGATE_BACK = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:navigate_back")
         .category(GENERAL)
@@ -115,6 +131,7 @@ public class Keybinds {
             .ifPresent(idePane -> idePane.navigateBack()))
         .build());
 
+    /** Navigates forward in the IDE navigation history. */
     public static final Keybind NAVIGATE_FORWARD = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:navigate_forward")
         .category(GENERAL)
@@ -124,6 +141,7 @@ public class Keybinds {
             .ifPresent(idePane -> idePane.navigateForward()))
         .build());
 
+    /** Closes the active or targeted editor tab. */
     public static final Keybind CLOSE_EDITOR_TAB = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:close_editor_tab")
         .category(GENERAL)
@@ -142,6 +160,7 @@ public class Keybinds {
             _ -> Services.EDITOR_TAB_MANAGER.activeTab().ifPresent(Services.EDITOR_TAB_MANAGER::close))
         .build());
 
+    /** Reopens the most recently closed editor tab. */
     public static final Keybind REOPEN_CLOSED_EDITOR_TAB = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:reopen_closed_editor_tab")
         .category(GENERAL)
@@ -149,6 +168,7 @@ public class Keybinds {
         .addAction(IDE, _ -> Services.EDITOR_TAB_MANAGER.reopenLastClosed())
         .build());
 
+    /** Selects an editor tab by its number. */
     public static final Keybind SELECT_EDITOR_TAB_BY_NUMBER = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:select_editor_tab_by_number")
         .category(GENERAL)
@@ -188,6 +208,7 @@ public class Keybinds {
         })
         .build());
 
+    /** Selects the next editor tab. */
     public static final Keybind SELECT_NEXT_EDITOR_TAB = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:select_next_editor_tab")
         .category(GENERAL)
@@ -195,6 +216,7 @@ public class Keybinds {
         .addAction(IDE, _ -> Services.EDITOR_TAB_MANAGER.selectNextTab())
         .build());
 
+    /** Selects the previous editor tab. */
     public static final Keybind SELECT_PREVIOUS_EDITOR_TAB = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:select_previous_editor_tab")
         .category(GENERAL)
@@ -202,6 +224,7 @@ public class Keybinds {
         .addAction(IDE, _ -> Services.EDITOR_TAB_MANAGER.selectPreviousTab())
         .build());
 
+    /** Moves the active editor tab to the left. */
     public static final Keybind MOVE_EDITOR_TAB_LEFT = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:move_editor_tab_left")
         .category(GENERAL)
@@ -209,6 +232,7 @@ public class Keybinds {
         .addAction(IDE, _ -> Services.EDITOR_TAB_MANAGER.moveActiveTabLeft())
         .build());
 
+    /** Moves the active editor tab to the right. */
     public static final Keybind MOVE_EDITOR_TAB_RIGHT = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:move_editor_tab_right")
         .category(GENERAL)
@@ -216,6 +240,7 @@ public class Keybinds {
         .addAction(IDE, _ -> Services.EDITOR_TAB_MANAGER.moveActiveTabRight())
         .build());
 
+    /** Toggles the pinned state of the active editor tab. */
     public static final Keybind TOGGLE_PIN_EDITOR_TAB = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:toggle_pin_editor_tab")
         .category(GENERAL)
@@ -224,6 +249,7 @@ public class Keybinds {
             _ -> Services.EDITOR_TAB_MANAGER.activeTab().ifPresent(Services.EDITOR_TAB_MANAGER::togglePin))
         .build());
 
+    /** Closes every editor tab except the active or targeted tab. */
     public static final Keybind CLOSE_OTHER_EDITOR_TABS = KeybindHandler.registerKeybind(Keybind.builder()
         .id("railroad:close_other_editor_tabs")
         .category(GENERAL)
@@ -242,6 +268,7 @@ public class Keybinds {
             _ -> Services.EDITOR_TAB_MANAGER.activeTab().ifPresent(Services.EDITOR_TAB_MANAGER::closeOthers))
         .build());
 
+    /** Restores persisted keybinds that support user-configurable combinations. */
     public static void initialize() {
         NAVIGATE_BACK.resetKeys();
         NAVIGATE_FORWARD.resetKeys();
@@ -257,9 +284,11 @@ public class Keybinds {
     }
 
     private static Keybind registerProjectExplorerKeybind(
-        String id, KeyCode keyCode,
+        String id,
+        KeyCode keyCode,
         Consumer<ProjectExplorerPane> action,
-        KeyCombination.Modifier... modifiers) {
+        KeyCombination.Modifier... modifiers
+    ) {
         Keybind keybind = KeybindHandler.registerKeybind(Keybind.builder()
             .id(id)
             .category(GENERAL)

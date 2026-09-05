@@ -4,16 +4,19 @@ import javafx.scene.control.TableColumn;
 
 /**
  * An extension of the JavaFX TableColumn that allows for the TableColumn's label to be localised.
+ *
+ * @param <S> the type of row items in the table
+ * @param <T> the type of values displayed by this column
  */
 public class LocalizedTableColumn<S, T> extends TableColumn<S, T> {
 
     private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
 
     /**
-     * Sets the key and then the set the text to the localized key.
+     * Creates a column with a translated header that updates when the language changes.
      *
      * @param translationKey The key to be localized
-     * @param args Optional arguments to format the localized string
+     * @param args reserved formatting arguments; this constructor currently does not apply them
      */
     public LocalizedTableColumn(final String translationKey, Object... args) {
         super();
@@ -31,8 +34,8 @@ public class LocalizedTableColumn<S, T> extends TableColumn<S, T> {
     }
 
     /**
-     * Sets the key and then updates the text of the label.
-     * Adds a listener to the current language property to update the text when the language changes.
+     * Sets the key and updates the column header. The backing property refreshes the header
+     * when the language changes.
      *
      * @param translationKey The localization key
      */

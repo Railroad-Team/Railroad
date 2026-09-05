@@ -18,5 +18,6 @@ public record DiffHunk(
     int newStart,
     int newCount,
     String sectionHeader,
-    List<DiffHunkLine> lines) {
+    List<DiffHunkLine> lines
+) {
 }

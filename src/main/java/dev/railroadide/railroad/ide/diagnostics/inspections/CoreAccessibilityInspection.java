@@ -14,8 +14,15 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#INACCESSIBLE_TYPE},
+ * {@link JavaSemanticRules#INACCESSIBLE_MEMBER}, {@link JavaSemanticRules#INACCESSIBLE_CALL}.
+ */
 @RegisteredInspection
 public final class CoreAccessibilityInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-accessibility";
 
     private static final List<JavaInspectionRule> RULES = List.of(

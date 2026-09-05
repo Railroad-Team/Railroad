@@ -12,10 +12,11 @@ import java.util.function.Function;
  */
 public class LocalizedComboBox<T> extends ComboBox<T> {
 
+    /** CSS style classes installed when a localized combo box is initialized. */
     public static final String[] DEFAULT_STYLE_CLASSES = {"combo-box-base", "rr-combo-box", "combo-box"};
 
     /**
-     * Create a new ComboBox that can localize it's items with a given key function
+     * Creates an empty styled combo box. Call {@link #setKeyFunction(Function)} to enable localized cells.
      */
     public LocalizedComboBox() {
         super();
@@ -23,7 +24,7 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
     }
 
     /**
-     * Create a new ComboBox that can localize it's items with a given key function
+     * Creates an empty styled combo box whose popup and selected value use localized cells.
      *
      * @param keyFunction A function that for any value T returns a localization key
      */
@@ -34,10 +35,10 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
     }
 
     /**
-     * Creates a new LocalizedComboBox from a list of localizationKeys
+     * Creates a combo box whose items are themselves localization keys.
      *
      * @param localizationKeys A list of localization keys
-     * @return
+     * @return a localized combo box backed by the supplied observable list
      */
     public static LocalizedComboBox<String> fromLocalizationKeys(ObservableList<String> localizationKeys) {
         LocalizedComboBox<String> combo = new LocalizedComboBox<>();
@@ -47,12 +48,13 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
         return combo;
     }
 
+    /** Replaces the control's style classes with {@link #DEFAULT_STYLE_CLASSES}. */
     protected void initialize() {
         getStyleClass().setAll(LocalizedComboBox.DEFAULT_STYLE_CLASSES);
     }
 
     /**
-     * Assign a new key function to the LocalizedComboBox
+     * Replaces the popup cell factory and selected-value cell with cells using the supplied key function.
      *
      * @param keyFunction A function that for any value T returns a localization key
      */

@@ -6,5 +6,5 @@ package dev.railroadide.railroad.plugin.spi.state;
  * @param start The starting cursor of the selection.
  * @param end The ending cursor of the selection.
  */
-public record Selection(dev.railroadide.railroad.plugin.spi.state.Cursor start, Cursor end) {
+public record Selection(Cursor start, Cursor end) {
 }

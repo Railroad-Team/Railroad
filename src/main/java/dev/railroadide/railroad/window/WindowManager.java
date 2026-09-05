@@ -14,14 +14,25 @@ import org.joml.Matrix3x2d;
 
 import java.io.InputStream;
 import java.util.*;
+import dev.railroadide.railroad.Railroad;
 
 /**
  * Centralized manager for all application windows and popups.
  * Handles the primary window, sub-windows, and dialog-style popups.
  */
 public class WindowManager {
+    /**
+     * The primary application stage.
+     *
+     * @return the primary stage, or null if none has been assigned
+     */
     @Getter
     private Stage primaryStage;
+    /**
+     * The scene captured when the primary stage is configured or shown.
+     *
+     * @return the primary scene, or null if none has been configured
+     */
     @Getter
     private Scene primaryScene;
 
@@ -37,9 +48,19 @@ public class WindowManager {
         this.primaryStage = primaryStage;
     }
 
+    /**
+     * Creates a window manager without a primary stage.
+     */
     public WindowManager() {
     }
 
+    /**
+     * Assigns the primary stage, captures and themes its scene, adds the application icon,
+     * and begins forwarding its input events. Stops tracking the previous primary stage.
+     *
+     * @param primaryStage the new primary application stage
+     * @throws NullPointerException if primaryStage is null
+     */
     public void setPrimaryStage(@NotNull Stage primaryStage) {
         if (this.primaryStage != null) {
             untrackWindowEvents(this.primaryStage);
@@ -57,6 +78,7 @@ public class WindowManager {
      * Show the primary application window with the given scene.
      * The window size is set to 75% of the screen size by default.
      *
+     * @param primaryStage Main application stage to configure and show
      * @param scene Main content scene
      * @param title Window title
      */
@@ -152,6 +174,12 @@ public class WindowManager {
         }
     }
 
+    /**
+     * Registers a child window and begins forwarding its input events.
+     * The registration and event handlers are removed when the window is hidden.
+     *
+     * @param stage the child stage to register
+     */
     public void registerChildWindow(Stage stage) {
         childWindows.add(stage);
         trackWindowEvents(stage);
@@ -161,6 +189,14 @@ public class WindowManager {
         });
     }
 
+    /**
+     * Creates and starts an input event tracker for a stage.
+     * Call {@link #untrackWindowEvents(Stage)} before tracking an already tracked stage
+     * to remove its previous handlers.
+     *
+     * @param stage the stage whose events should be forwarded
+     * @return the newly registered event tracker
+     */
     public WindowEvents trackWindowEvents(Stage stage) {
         var events = new WindowEvents(stage);
         windowEventMap.put(stage, events);
@@ -168,6 +204,12 @@ public class WindowManager {
         return events;
     }
 
+    /**
+     * Removes the registered input event tracker for a stage and stops its handlers.
+     *
+     * @param stage the stage to stop tracking
+     * @return the removed tracker, or null if the stage was not tracked
+     */
     public WindowEvents untrackWindowEvents(Stage stage) {
         WindowEvents events = windowEventMap.remove(stage);
         if (events != null) {
@@ -177,8 +219,11 @@ public class WindowManager {
         return events;
     }
 
+    /**
+     * Toggles full-screen mode on the application window manager's primary stage.
+     */
     public static void toggleFullScreen() {
-        Stage primaryStage = dev.railroadide.railroad.Railroad.WINDOW_MANAGER.getPrimaryStage();
+        Stage primaryStage = Railroad.WINDOW_MANAGER.getPrimaryStage();
         primaryStage.setFullScreen(!primaryStage.isFullScreen());
     }
 }

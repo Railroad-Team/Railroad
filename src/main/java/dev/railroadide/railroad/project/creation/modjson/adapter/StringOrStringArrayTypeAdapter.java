@@ -10,7 +10,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Converts metadata that permits either a single string or an array of strings.
+ */
 public class StringOrStringArrayTypeAdapter extends TypeAdapter<List<String>> {
+    /**
+     * Reads a string as a singleton list or reads all values from an array.
+     *
+     * @param in the reader positioned at a string, array, or null
+     * @return the string values, or {@code null} for JSON null
+     * @throws IOException if reading fails or the JSON token is unsupported
+     */
     @Override
     public List<String> read(JsonReader in) throws IOException {
         JsonToken token = in.peek();
@@ -37,6 +47,14 @@ public class StringOrStringArrayTypeAdapter extends TypeAdapter<List<String>> {
         throw new IOException("Expected string or array for environment/license but got " + token);
     }
 
+    /**
+     * Writes one value as a string and multiple values as an array.
+     * A null or empty list is written as JSON null.
+     *
+     * @param out the destination JSON writer
+     * @param value the string values to serialize, or {@code null}
+     * @throws IOException if writing fails
+     */
     @Override
     public void write(JsonWriter out, List<String> value) throws IOException {
         if (value == null || value.isEmpty()) {

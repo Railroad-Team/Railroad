@@ -8,13 +8,27 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Cache manager that forwards operations to a replaceable backend.
+ */
 public class DelegatingCacheManager implements CacheManager {
     private volatile CacheManager delegate;
 
+    /**
+     * Creates a cache manager using the supplied backend.
+     *
+     * @param initial the initial cache backend
+     */
     public DelegatingCacheManager(CacheManager initial) {
         this.delegate = initial;
     }
 
+    /**
+     * Replaces the active backend, optionally migrating entries first.
+     *
+     * @param newBackend the backend to use for subsequent operations
+     * @param migrate whether entries should be copied before switching
+     */
     public void switchBackend(CacheManager newBackend, boolean migrate) {
         if (migrate) {
             migrate(delegate, newBackend);

@@ -12,6 +12,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * A constructor call with optional qualification and an optional anonymous class body.
+ *
+ * @param span source range occupied by this node
+ * @param scope optional qualifying expression
+ * @param typeArguments explicit type arguments
+ * @param type type being instantiated
+ * @param constructorTypeArguments explicit constructor type arguments
+ * @param arguments argument expressions in source order
+ * @param anonymousClassDeclaration optional anonymous class body
+ */
 public record ObjectCreationExpression(
     Span span,
     Optional<Expression> scope,
@@ -19,7 +30,8 @@ public record ObjectCreationExpression(
     TypeRef type,
     List<TypeRef> constructorTypeArguments,
     List<Expression> arguments,
-    Optional<AnonymousClassDeclaration> anonymousClassDeclaration) implements Expression {
+    Optional<AnonymousClassDeclaration> anonymousClassDeclaration
+) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.OBJECT_CREATION_EXPRESSION;

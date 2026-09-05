@@ -16,8 +16,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#CONDITIONAL_EXPRESSION_WITH_IDENTICAL_BRANCHES}.
+ */
 @RegisteredInspection
 public class CoreConditionalExpressionWithIdenticalBranchesInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-conditional-expression-with-identical-branches";
 
     private static final List<JavaInspectionRule> RULES = List.of(
@@ -38,8 +44,10 @@ public class CoreConditionalExpressionWithIdenticalBranchesInspection implements
         return RULES;
     }
 
-    private static void reportConditionalExpressionWithIdenticalBranches(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportConditionalExpressionWithIdenticalBranches(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode syntaxNode : context.nodesOfKind(JavaSyntaxKinds.CONDITIONAL_EXPRESSION.id())) {
             List<SyntaxNode> expressions = context.directExpressionChildren(syntaxNode);
             SyntaxNode thenExpr = context.unwrapTransparentExpression(expressions.get(1));

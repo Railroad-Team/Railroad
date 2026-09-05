@@ -8,10 +8,18 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * An indexed access to an array element.
+ *
+ * @param span source range occupied by this node
+ * @param array expression producing the array
+ * @param index array index expression
+ */
 public record ArrayAccessExpression(
     Span span,
     Expression array,
-    Expression index) implements Expression {
+    Expression index
+) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.ARRAY_ACCESS_EXPRESSION;

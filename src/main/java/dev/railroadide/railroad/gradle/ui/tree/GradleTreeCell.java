@@ -4,9 +4,16 @@ import dev.railroadide.railroad.gradle.ui.task.GradleTaskContextMenu;
 import javafx.scene.control.TreeCell;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+/**
+ * Renders a Gradle tree element's name, icon, tooltip, and context menu.
+ * Double-clicking a task cell runs the corresponding Gradle task.
+ */
 public class GradleTreeCell extends TreeCell<GradleTreeElement> {
     private final FontIcon icon = new FontIcon();
 
+    /**
+     * Creates a tree cell with a 16-pixel icon.
+     */
     public GradleTreeCell() {
         super();
         icon.setIconSize(16);

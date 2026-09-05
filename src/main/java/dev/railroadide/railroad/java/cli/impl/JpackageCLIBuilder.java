@@ -10,6 +10,10 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Fluent builder for configuring and launching {@code jpackage} from a {@link JDK}.
+ * Supports application packaging options, process environment configuration, and execution timeouts.
+ */
 public class JpackageCLIBuilder implements CLIBuilder<Process, JpackageCLIBuilder> {
     private static final String EXECUTABLE_NAME = OperatingSystem.isWindows() ? "jpackage.exe" : "jpackage";
 

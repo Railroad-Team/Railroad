@@ -4,12 +4,20 @@ import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 
 import java.util.*;
 
+/**
+ * Combines symbol indexes, deduplicating lookup results and preferring earlier delegates for binary class stubs.
+ */
 public final class CompositeJavaSymbolIndex implements JavaSymbolIndex {
     private final List<JavaSymbolIndex> delegates;
     private final Set<String> declaredQualifiedNames;
     private final Set<String> typeNames;
     private final Map<String, ClassStub> classStubsByQualifiedName;
 
+    /**
+     * Copies the delegates and merges their type-name and class-stub indexes in precedence order.
+     *
+     * @param delegates the indexes to combine, ordered from highest to lowest binary-stub precedence
+     */
     public CompositeJavaSymbolIndex(List<? extends JavaSymbolIndex> delegates) {
         this.delegates = List.copyOf(Objects.requireNonNull(delegates, "delegates"));
         Set<String> qualifiedNames = new LinkedHashSet<>();

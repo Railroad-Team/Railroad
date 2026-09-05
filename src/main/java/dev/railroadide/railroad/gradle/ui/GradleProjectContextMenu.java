@@ -14,7 +14,16 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import java.io.File;
 import java.nio.file.Path;
 
+/**
+ * A context menu for Gradle projects, providing options to open the Gradle configuration and synchronize the project.
+ */
 public class GradleProjectContextMenu extends ContextMenu {
+    /**
+     * Constructs a new GradleProjectContextMenu for the specified project and module.
+     *
+     * @param project the project associated with this context menu
+     * @param module the RailroadModule associated with this context menu
+     */
     public GradleProjectContextMenu(Project project, RailroadModule module) {
         super();
 

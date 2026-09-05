@@ -13,8 +13,18 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public record DefaultGradleEnvironment(Project project, Path gradleInstallationPath,
-    GradleSettings settings) implements GradleEnvironment {
+/**
+ * Default implementation of the {@link GradleEnvironment} interface.
+ *
+ * @param project The project associated with this Gradle environment.
+ * @param gradleInstallationPath The path to the Gradle installation.
+ * @param settings The Gradle settings for this environment.
+ */
+public record DefaultGradleEnvironment(
+    Project project,
+    Path gradleInstallationPath,
+    GradleSettings settings
+) implements GradleEnvironment {
     @Override
     public boolean useWrapper() {
         return settings.isUseWrapper();
@@ -66,9 +76,11 @@ public record DefaultGradleEnvironment(Project project, Path gradleInstallationP
         return Optional.ofNullable(settings.getDaemonIdleTimeout());
     }
 
-    private boolean matchesConfiguration(GradleTaskExecutionRequest request,
+    private boolean matchesConfiguration(
+        GradleTaskExecutionRequest request,
         JDK jvm,
-        GradleRunConfigurationData data) {
+        GradleRunConfigurationData data
+    ) {
         if (request == null || data == null)
             return false;
 

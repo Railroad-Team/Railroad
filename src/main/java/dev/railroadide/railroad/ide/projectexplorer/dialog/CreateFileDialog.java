@@ -23,7 +23,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 // TODO: Refactor this to use WindowBuilder(?)
+/**
+ * Creates files or directories from the user's selected type and name.
+ */
 public class CreateFileDialog {
+    /**
+     * Shows a modal creation dialog owned by the supplied window.
+     *
+     * @param owner window owning the creation dialog
+     * @param path filesystem path to operate on
+     * @param type kind of file or directory to create
+     */
     public static void open(Window owner, Path path, FileCreateType type) {
         var dialog = new Stage(StageStyle.UTILITY);
         dialog.initOwner(owner);
@@ -131,8 +141,14 @@ public class CreateFileDialog {
         dialog.showAndWait();
     }
 
+    /**
+     * File templates available in the creation dialog.
+     */
     @Getter
     public enum TypeSelection {
+        /**
+         * Creates a Java class source file.
+         */
         JAVA_CLASS("Java Class", "java", null, """
             package <package_loc>.<class_name>;
 
@@ -141,29 +157,49 @@ public class CreateFileDialog {
 
                 }
             }
-            """), JAVA_INTERFACE("Java Interface", "java", null, """
+            """),
+        /**
+         * Creates a Java interface source file.
+         */
+        JAVA_INTERFACE("Java Interface", "java", null, """
             package <package_loc>.<class_name>;
 
             public interface <class_name> {
 
             }
-            """), JAVA_ENUM("Java Enum", "java", null, """
+            """),
+        /**
+         * Creates a Java enum source file.
+         */
+        JAVA_ENUM("Java Enum", "java", null, """
             package <package_loc>.<class_name>;
 
             public enum <class_name> {
 
             }
-            """), JAVA_ANNOTATION("Java Annotation", "java", null, """
+            """),
+        /**
+         * Creates a Java annotation type source file.
+         */
+        JAVA_ANNOTATION("Java Annotation", "java", null, """
             package <package_loc>.<class_name>;
 
             public @interface <class_name> {
 
             }
-            """), JSON("JSON File", "json", null, """
+            """),
+        /**
+         * Creates a JSON file.
+         */
+        JSON("JSON File", "json", null, """
             {
 
             }
-            """), TXT("Text File", "txt", null, "");
+            """),
+        /**
+         * Creates a plain text file.
+         */
+        TXT("Text File", "txt", null, "");
 
         private final String name;
         private final String extension;
@@ -178,6 +214,9 @@ public class CreateFileDialog {
         }
     }
 
+    /**
+     * Displays a file template with its label and icon.
+     */
     public static class TypeSelectorCell extends ListCell<TypeSelection> {
         @Override
         protected void updateItem(TypeSelection item, boolean empty) {

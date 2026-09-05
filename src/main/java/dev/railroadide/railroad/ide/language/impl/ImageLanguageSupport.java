@@ -8,7 +8,13 @@ import dev.railroadide.railroad.utility.FileUtils;
 
 import java.nio.file.Path;
 
+/**
+ * Opens recognized image formats in an image viewer.
+ */
 public class ImageLanguageSupport extends BaseBinaryLanguageSupport {
+    /**
+     * Shared instance of this language support implementation.
+     */
     public static final ImageLanguageSupport INSTANCE = new ImageLanguageSupport();
 
     private ImageLanguageSupport() {

@@ -8,6 +8,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * An array of annotation element values enclosed in braces.
+ *
+ * @param span source range occupied by this node
+ * @param values element values in source order
+ */
 public record ElementValueArray(Span span, List<ElementValue> values) implements ElementValue {
     @Override
     public AstKind kind() {

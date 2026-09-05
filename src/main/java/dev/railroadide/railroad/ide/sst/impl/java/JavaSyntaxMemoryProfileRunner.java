@@ -14,12 +14,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
+/**
+ * Command-line profiler measuring retained Java syntax trees and optional red-node materialization.
+ */
 public final class JavaSyntaxMemoryProfileRunner {
     private static final int DEFAULT_MAX_FILES = Integer.MAX_VALUE;
 
     private JavaSyntaxMemoryProfileRunner() {
     }
 
+    /**
+     * Parses the requested Java sources and prints heap and syntax-node measurements.
+     *
+     * @param args the source paths and profiling options
+     */
     public static void main(String[] args) throws IOException {
         ProfileOptions options = parseOptions(args);
         List<SourceUnit> units = loadSources(options.inputs(), options.maxFiles());
@@ -275,7 +283,8 @@ public final class JavaSyntaxMemoryProfileRunner {
         List<Path> inputs,
         int maxFiles,
         boolean materializeRed,
-        boolean measureHeap) {
+        boolean measureHeap
+    ) {
     }
 
     private record GreenFrame(GreenElement element, int depth) {
@@ -290,36 +299,36 @@ public final class JavaSyntaxMemoryProfileRunner {
         private long tokenChars;
         private int maxDepth;
 
-        void recordNode() {
+        private void recordNode() {
             nodeCount++;
         }
 
-        void recordToken(int chars) {
+        private void recordToken(int chars) {
             tokenCount++;
             tokenChars += chars;
         }
 
-        void recordDepth(int depth) {
+        private void recordDepth(int depth) {
             maxDepth = Math.max(maxDepth, depth);
         }
 
-        long nodeCount() {
+        private long nodeCount() {
             return nodeCount;
         }
 
-        long tokenCount() {
+        private long tokenCount() {
             return tokenCount;
         }
 
-        long tokenChars() {
+        private long tokenChars() {
             return tokenChars;
         }
 
-        int maxDepth() {
+        private int maxDepth() {
             return maxDepth;
         }
 
-        long totalElements() {
+        private long totalElements() {
             return nodeCount + tokenCount;
         }
     }

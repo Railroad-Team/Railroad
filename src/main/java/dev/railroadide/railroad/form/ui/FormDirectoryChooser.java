@@ -33,8 +33,12 @@ public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryCh
      * @param defaultPath the default path to display in the text field, or null for empty
      * @param includeButton whether to include a browse button for directory selection
      */
-    public FormDirectoryChooser(String labelKey, boolean required, @Nullable String defaultPath,
-        boolean includeButton) {
+    public FormDirectoryChooser(
+        String labelKey,
+        boolean required,
+        @Nullable String defaultPath,
+        boolean includeButton
+    ) {
         super(labelKey, required, createParams(defaultPath, includeButton));
     }
 

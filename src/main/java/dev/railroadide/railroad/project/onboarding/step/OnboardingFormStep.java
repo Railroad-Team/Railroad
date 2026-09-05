@@ -41,8 +41,11 @@ public final class OnboardingFormStep implements OnboardingStep {
     private final Consumer<OnboardingContext> onDispose;
     private final Function<OnboardingContext, CompletableFuture<Void>> beforeNext;
 
-    private OnboardingFormStep(Builder builder, Supplier<OnboardingSection> section,
-        ReadOnlyBooleanProperty validProperty) {
+    private OnboardingFormStep(
+        Builder builder,
+        Supplier<OnboardingSection> section,
+        ReadOnlyBooleanProperty validProperty
+    ) {
         this.id = Objects.requireNonNull(builder.id, "id");
         this.title = Objects.requireNonNull(builder.title, "title");
         this.description = Objects.requireNonNull(builder.description, "description");
@@ -55,80 +58,265 @@ public final class OnboardingFormStep implements OnboardingStep {
         this.beforeNext = Objects.requireNonNull(builder.beforeNext, "beforeNext");
     }
 
+    /**
+     * Creates a builder for a form-backed onboarding step.
+     *
+     * @return a new step builder
+     */
     public static Builder builder() {
         return new Builder();
     }
 
+    /**
+     * Creates a component specification for synchronizing form data with the onboarding context.
+     * Uses the component source's data key as the context key. Values are transferred without conversion.
+     *
+     * @param builder builder used to create the form component
+     * @return the component and context mapping specification
+     * @throws IllegalArgumentException if no component source is supplied
+     */
     public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder) {
         return component(builder, builder != null ? builder.dataKey() : null, Function.identity(), Function.identity(),
             null);
     }
 
-    public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder,
-        Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {
+    /**
+     * Creates a component specification for synchronizing form data with the onboarding context.
+     * Uses the component source's data key as the context key.
+     *
+     * @param builder builder used to create the form component
+     * @param transformer conversion from the component value to the stored context value; {@code null} means identity
+     * @param reverseTransformer conversion from the stored context value to the component value; {@code null} means
+     *            identity
+     * @return the component and context mapping specification
+     * @throws IllegalArgumentException if no component source is supplied
+     */
+    public static ComponentSpec component(
+        FormComponentBuilder<?, ?, ?, ?> builder,
+        Function<Object, Object> transformer,
+        Function<Object, Object> reverseTransformer
+    ) {
         return component(builder, builder != null ? builder.dataKey() : null, transformer, reverseTransformer, null);
     }
 
+    /**
+     * Creates a component specification for synchronizing form data with the onboarding context. Values are transferred
+     * without conversion.
+     *
+     * @param builder builder used to create the form component
+     * @param contextKey context key for the component value, or {@code null} to use its data key
+     * @return the component and context mapping specification
+     * @throws IllegalArgumentException if no component source is supplied
+     */
     public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder, String contextKey) {
         return component(builder, contextKey, Function.identity(), Function.identity(), null);
     }
 
-    public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder, String contextKey,
-        Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {
+    /**
+     * Creates a component specification for synchronizing form data with the onboarding context.
+     *
+     * @param builder builder used to create the form component
+     * @param contextKey context key for the component value, or {@code null} to use its data key
+     * @param transformer conversion from the component value to the stored context value; {@code null} means identity
+     * @param reverseTransformer conversion from the stored context value to the component value; {@code null} means
+     *            identity
+     * @return the component and context mapping specification
+     * @throws IllegalArgumentException if no component source is supplied
+     */
+    public static ComponentSpec component(
+        FormComponentBuilder<?, ?, ?, ?> builder,
+        String contextKey,
+        Function<Object, Object> transformer,
+        Function<Object, Object> reverseTransformer
+    ) {
         return new ComponentSpec(builder, null, contextKey, transformer, reverseTransformer, null);
     }
 
+    /**
+     * Creates a component specification for synchronizing form data with the onboarding context.
+     * Uses the component source's data key as the context key. Values are transferred without conversion.
+     *
+     * @param component existing form component to include
+     * @return the component and context mapping specification
+     * @throws IllegalArgumentException if no component source is supplied
+     */
     public static ComponentSpec component(FormComponent<?, ?, ?, ?> component) {
         return component(component, component != null ? component.dataKey() : null, Function.identity(),
             Function.identity(), null);
     }
 
-    public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, Function<Object, Object> transformer,
-        Function<Object, Object> reverseTransformer) {
+    /**
+     * Creates a component specification for synchronizing form data with the onboarding context.
+     * Uses the component source's data key as the context key.
+     *
+     * @param component existing form component to include
+     * @param transformer conversion from the component value to the stored context value; {@code null} means identity
+     * @param reverseTransformer conversion from the stored context value to the component value; {@code null} means
+     *            identity
+     * @return the component and context mapping specification
+     * @throws IllegalArgumentException if no component source is supplied
+     */
+    public static ComponentSpec component(
+        FormComponent<?, ?, ?, ?> component,
+        Function<Object, Object> transformer,
+        Function<Object, Object> reverseTransformer
+    ) {
         return component(component, component != null ? component.dataKey() : null, transformer, reverseTransformer,
             null);
     }
 
+    /**
+     * Creates a component specification for synchronizing form data with the onboarding context. Values are transferred
+     * without conversion.
+     *
+     * @param component existing form component to include
+     * @param contextKey context key for the component value, or {@code null} to use its data key
+     * @return the component and context mapping specification
+     * @throws IllegalArgumentException if no component source is supplied
+     */
     public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, String contextKey) {
         return component(component, contextKey, Function.identity(), Function.identity(), null);
     }
 
-    public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, String contextKey,
-        Function<Object, Object> transformer, Function<Object, Object> reverseTransformer) {
+    /**
+     * Creates a component specification for synchronizing form data with the onboarding context.
+     *
+     * @param component existing form component to include
+     * @param contextKey context key for the component value, or {@code null} to use its data key
+     * @param transformer conversion from the component value to the stored context value; {@code null} means identity
+     * @param reverseTransformer conversion from the stored context value to the component value; {@code null} means
+     *            identity
+     * @return the component and context mapping specification
+     * @throws IllegalArgumentException if no component source is supplied
+     */
+    public static ComponentSpec component(
+        FormComponent<?, ?, ?, ?> component,
+        String contextKey,
+        Function<Object, Object> transformer,
+        Function<Object, Object> reverseTransformer
+    ) {
         return new ComponentSpec(null, component, contextKey, transformer, reverseTransformer, null);
     }
 
-    public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder,
-        Consumer<FormComponent<?, ?, ?, ?>> customizer) {
+    /**
+     * Creates a component specification for synchronizing form data with the onboarding context.
+     * Uses the component source's data key as the context key. Values are transferred without conversion.
+     *
+     * @param builder builder used to create the form component
+     * @param customizer callback applied to the component before it is added, or {@code null} for no customization
+     * @return the component and context mapping specification
+     * @throws IllegalArgumentException if no component source is supplied
+     */
+    public static ComponentSpec component(
+        FormComponentBuilder<?, ?, ?, ?> builder,
+        Consumer<FormComponent<?, ?, ?, ?>> customizer
+    ) {
         return component(builder, builder != null ? builder.dataKey() : null, Function.identity(), Function.identity(),
             customizer);
     }
 
-    public static ComponentSpec component(FormComponentBuilder<?, ?, ?, ?> builder, String contextKey,
-        Function<Object, Object> transformer, Function<Object, Object> reverseTransformer,
-        Consumer<FormComponent<?, ?, ?, ?>> customizer) {
+    /**
+     * Creates a component specification for synchronizing form data with the onboarding context.
+     *
+     * @param builder builder used to create the form component
+     * @param contextKey context key for the component value, or {@code null} to use its data key
+     * @param transformer conversion from the component value to the stored context value; {@code null} means identity
+     * @param reverseTransformer conversion from the stored context value to the component value; {@code null} means
+     *            identity
+     * @param customizer callback applied to the component before it is added, or {@code null} for no customization
+     * @return the component and context mapping specification
+     * @throws IllegalArgumentException if no component source is supplied
+     */
+    public static ComponentSpec component(
+        FormComponentBuilder<?, ?, ?, ?> builder,
+        String contextKey,
+        Function<Object, Object> transformer,
+        Function<Object, Object> reverseTransformer,
+        Consumer<FormComponent<?, ?, ?, ?>> customizer
+    ) {
         return new ComponentSpec(builder, null, contextKey, transformer, reverseTransformer, customizer);
     }
 
-    public static ComponentSpec component(FormComponent<?, ?, ?, ?> component,
-        Consumer<FormComponent<?, ?, ?, ?>> customizer) {
+    /**
+     * Creates a component specification for synchronizing form data with the onboarding context.
+     * Uses the component source's data key as the context key. Values are transferred without conversion.
+     *
+     * @param component existing form component to include
+     * @param customizer callback applied to the component before it is added, or {@code null} for no customization
+     * @return the component and context mapping specification
+     * @throws IllegalArgumentException if no component source is supplied
+     */
+    public static ComponentSpec component(
+        FormComponent<?, ?, ?, ?> component,
+        Consumer<FormComponent<?, ?, ?, ?>> customizer
+    ) {
         return component(component, component != null ? component.dataKey() : null, Function.identity(),
             Function.identity(), customizer);
     }
 
-    public static ComponentSpec component(FormComponent<?, ?, ?, ?> component, String contextKey,
-        Function<Object, Object> transformer, Function<Object, Object> reverseTransformer,
-        Consumer<FormComponent<?, ?, ?, ?>> customizer) {
+    /**
+     * Creates a component specification for synchronizing form data with the onboarding context.
+     *
+     * @param component existing form component to include
+     * @param contextKey context key for the component value, or {@code null} to use its data key
+     * @param transformer conversion from the component value to the stored context value; {@code null} means identity
+     * @param reverseTransformer conversion from the stored context value to the component value; {@code null} means
+     *            identity
+     * @param customizer callback applied to the component before it is added, or {@code null} for no customization
+     * @return the component and context mapping specification
+     * @throws IllegalArgumentException if no component source is supplied
+     */
+    public static ComponentSpec component(
+        FormComponent<?, ?, ?, ?> component,
+        String contextKey,
+        Function<Object, Object> transformer,
+        Function<Object, Object> reverseTransformer,
+        Consumer<FormComponent<?, ?, ?, ?>> customizer
+    ) {
         return new ComponentSpec(null, component, contextKey, transformer, reverseTransformer, customizer);
     }
 
-    public record ComponentSpec(FormComponentBuilder<?, ?, ?, ?> builder, FormComponent<?, ?, ?, ?> component,
-        String contextKey, Function<Object, Object> transformer,
+    /**
+     * Describes a component source and the conversions between its value and the onboarding context.
+     * When both sources are supplied, the builder takes precedence.
+     *
+     * @param builder component builder, or {@code null} to use the existing component
+     * @param component existing component, required when the builder is {@code null}
+     * @param contextKey context key for the component value, or {@code null} to use its data key
+     * @param transformer conversion from the component value to the stored context value; {@code null} means identity
+     * @param reverseTransformer conversion from the stored context value to the component value; {@code null} means
+     *            identity
+     * @param customizer callback applied to the component before it is added, or {@code null} for no customization
+     */
+    public record ComponentSpec(
+        FormComponentBuilder<?, ?, ?, ?> builder,
+        FormComponent<?, ?, ?, ?> component,
+        String contextKey,
+        Function<Object, Object> transformer,
         Function<Object, Object> reverseTransformer,
-        Consumer<FormComponent<?, ?, ?, ?>> customizer) {
-        public ComponentSpec(FormComponentBuilder<?, ?, ?, ?> builder, FormComponent<?, ?, ?, ?> component,
-            String contextKey, Function<Object, Object> transformer, Function<Object, Object> reverseTransformer,
-            Consumer<FormComponent<?, ?, ?, ?>> customizer) {
+        Consumer<FormComponent<?, ?, ?, ?>> customizer
+    ) {
+        /**
+         * Creates a specification, substituting identity functions for null transformations.
+         *
+         * @param builder component builder, or {@code null} to use the existing component
+         * @param component existing component, required when the builder is {@code null}
+         * @param contextKey context key for the component value, or {@code null} to use its data key
+         * @param transformer conversion from the component value to the stored context value; {@code null} means
+         *            identity
+         * @param reverseTransformer conversion from the stored context value to the component value; {@code null} means
+         *            identity
+         * @param customizer callback applied to the component before it is added, or {@code null} for no customization
+         * @throws IllegalArgumentException if both the builder and component are null
+         */
+        public ComponentSpec(
+            FormComponentBuilder<?, ?, ?, ?> builder,
+            FormComponent<?, ?, ?, ?> component,
+            String contextKey,
+            Function<Object, Object> transformer,
+            Function<Object, Object> reverseTransformer,
+            Consumer<FormComponent<?, ?, ?, ?>> customizer
+        ) {
             if (builder == null && component == null)
                 throw new IllegalArgumentException(
                     "Component specification must provide a builder or component instance");
@@ -196,6 +384,9 @@ public final class OnboardingFormStep implements OnboardingStep {
         return beforeNext.apply(ctx);
     }
 
+    /**
+     * Configures a form step, its validation, lifecycle callbacks, and context data mappings.
+     */
     public static final class Builder {
         private String id;
         private String title;
@@ -224,53 +415,115 @@ public final class OnboardingFormStep implements OnboardingStep {
         private Form form;
         private Supplier<OnboardingSection> section;
 
+        /**
+         * Sets the identifier used to navigate to this step.
+         *
+         * @param id identifier of the step
+         * @return this builder
+         */
         public Builder id(String id) {
             this.id = id;
             return this;
         }
 
+        /**
+         * Sets the localization key for the step heading.
+         *
+         * @param title localization key for the step heading
+         * @return this builder
+         */
         public Builder title(String title) {
             this.title = title;
             return this;
         }
 
+        /**
+         * Sets the localization key for the step description.
+         *
+         * @param description localization key for the step description
+         * @return this builder
+         */
         public Builder description(String description) {
             this.description = description;
             return this;
         }
 
+        /**
+         * Sets the validity property used to enable navigation.
+         *
+         * @param validProperty property determining whether the user may advance; a writable property is updated by
+         *            tracked component validation
+         * @return this builder
+         */
         public Builder validProperty(ReadOnlyBooleanProperty validProperty) {
             this.validProperty = validProperty;
             return this;
         }
 
+        /**
+         * Uses an existing form and clears any custom section factory.
+         *
+         * @param form form displayed by the onboarding section
+         * @return this builder
+         */
         public Builder form(Form form) {
             this.form = form;
             this.section = null;
             return this;
         }
 
+        /**
+         * Adds a callback to configure the generated form before it is built.
+         *
+         * @param formConfigurer callback applied to the generated form builder before building the form
+         * @return this builder
+         */
         public Builder form(Consumer<Form.Builder> formConfigurer) {
             this.formCustomizers.add(formConfigurer);
             return this;
         }
 
+        /**
+         * Uses a custom section factory and clears any existing form.
+         *
+         * @param section factory for a custom onboarding section
+         * @return this builder
+         */
         public Builder section(Supplier<OnboardingSection> section) {
             this.section = section;
             this.form = null;
             return this;
         }
 
+        /**
+         * Appends a section to the generated form.
+         *
+         * @param formSection existing form section to append
+         * @return this builder
+         */
         public Builder appendSection(FormSection formSection) {
             this.formSections.add(formSection);
             return this;
         }
 
+        /**
+         * Queues a section configuration callback for when the form is created.
+         *
+         * @param sectionConfigurer callback configuring a section when the form is created
+         * @return this builder
+         */
         public Builder appendSection(Consumer<FormSection.Builder> sectionConfigurer) {
             this.sectionConfigurators.add(sectionConfigurer);
             return this;
         }
 
+        /**
+         * Appends a titled section and tracks its components for validation and context synchronization.
+         *
+         * @param titleKey localization key for the section title
+         * @param components components to append in their supplied order
+         * @return this builder
+         */
         public Builder appendSection(String titleKey, FormComponent<?, ?, ?, ?>... components) {
             ComponentSpec[] specs = Arrays.stream(components)
                 .map(OnboardingFormStep::component)
@@ -279,14 +532,32 @@ public final class OnboardingFormStep implements OnboardingStep {
             }, specs);
         }
 
-        public Builder appendSection(String titleKey, Consumer<FormSection.Builder> customizer,
-            FormComponent<?, ?, ?, ?>... components) {
+        /**
+         * Appends a titled section and tracks its components for validation and context synchronization.
+         *
+         * @param titleKey localization key for the section title
+         * @param customizer callback applied to the section builder before its components are appended
+         * @param components components to append in their supplied order
+         * @return this builder
+         */
+        public Builder appendSection(
+            String titleKey,
+            Consumer<FormSection.Builder> customizer,
+            FormComponent<?, ?, ?, ?>... components
+        ) {
             ComponentSpec[] specs = Arrays.stream(components)
                 .map(OnboardingFormStep::component)
                 .toArray(ComponentSpec[]::new);
             return appendSection(titleKey, customizer, specs);
         }
 
+        /**
+         * Appends a titled section and tracks its components for validation and context synchronization.
+         *
+         * @param titleKey localization key for the section title
+         * @param componentBuilders builders for the components to append in their supplied order
+         * @return this builder
+         */
         public Builder appendSection(String titleKey, FormComponentBuilder<?, ?, ?, ?>... componentBuilders) {
             ComponentSpec[] specs = Arrays.stream(componentBuilders)
                 .map(OnboardingFormStep::component)
@@ -295,21 +566,50 @@ public final class OnboardingFormStep implements OnboardingStep {
             }, specs);
         }
 
-        public Builder appendSection(String titleKey, Consumer<FormSection.Builder> customizer,
-            FormComponentBuilder<?, ?, ?, ?>... componentBuilders) {
+        /**
+         * Appends a titled section and tracks its components for validation and context synchronization.
+         *
+         * @param titleKey localization key for the section title
+         * @param customizer callback applied to the section builder before its components are appended
+         * @param componentBuilders builders for the components to append in their supplied order
+         * @return this builder
+         */
+        public Builder appendSection(
+            String titleKey,
+            Consumer<FormSection.Builder> customizer,
+            FormComponentBuilder<?, ?, ?, ?>... componentBuilders
+        ) {
             ComponentSpec[] specs = Arrays.stream(componentBuilders)
                 .map(OnboardingFormStep::component)
                 .toArray(ComponentSpec[]::new);
             return appendSection(titleKey, customizer, specs);
         }
 
+        /**
+         * Appends a titled section and tracks its components for validation and context synchronization.
+         *
+         * @param titleKey localization key for the section title
+         * @param components component specifications, including context keys and value transformations
+         * @return this builder
+         */
         public Builder appendSection(String titleKey, ComponentSpec... components) {
             return appendSection(titleKey, builder -> {
             }, components);
         }
 
-        public Builder appendSection(String titleKey, Consumer<FormSection.Builder> customizer,
-            ComponentSpec... components) {
+        /**
+         * Appends a titled section and tracks its components for validation and context synchronization.
+         *
+         * @param titleKey localization key for the section title
+         * @param customizer callback applied to the section builder before its components are appended
+         * @param components component specifications, including context keys and value transformations
+         * @return this builder
+         */
+        public Builder appendSection(
+            String titleKey,
+            Consumer<FormSection.Builder> customizer,
+            ComponentSpec... components
+        ) {
             Objects.requireNonNull(titleKey, "titleKey");
             Objects.requireNonNull(customizer, "customizer");
             Objects.requireNonNull(components, "components");
@@ -321,74 +621,162 @@ public final class OnboardingFormStep implements OnboardingStep {
             });
         }
 
+        /**
+         * Sets the spacing between generated form sections.
+         *
+         * @param spacing spacing between form sections, in pixels
+         * @return this builder
+         */
         public Builder spacing(int spacing) {
             this.spacing = spacing;
             return this;
         }
 
+        /**
+         * Sets the padding of the generated form.
+         *
+         * @param padding padding around the form content, in pixels
+         * @return this builder
+         */
         public Builder padding(Insets padding) {
             this.padding = padding;
             return this;
         }
 
+        /**
+         * Sets the padding of the generated form.
+         *
+         * @param padding padding around the form content, in pixels
+         * @return this builder
+         */
         public Builder padding(int padding) {
             return padding(new Insets(padding));
         }
 
+        /**
+         * Sets the padding of the generated form.
+         *
+         * @param top top padding, in pixels
+         * @param right right padding, in pixels
+         * @param bottom bottom padding, in pixels
+         * @param left left padding, in pixels
+         * @return this builder
+         */
         public Builder padding(int top, int right, int bottom, int left) {
             return padding(new Insets(top, right, bottom, left));
         }
 
+        /**
+         * Disables the generated form's submit button, as is the default for onboarding.
+         *
+         * @return this builder
+         */
         public Builder disableSubmitButton() {
             this.disableSubmitButton = true;
             return this;
         }
 
+        /**
+         * Allows the generated form's submit button to be shown.
+         *
+         * @return this builder
+         */
         public Builder enableSubmitButton() {
             this.disableSubmitButton = false;
             return this;
         }
 
+        /**
+         * Disables the generated form's reset button, as is the default for onboarding.
+         *
+         * @return this builder
+         */
         public Builder disableResetButton() {
             this.disableResetButton = true;
             return this;
         }
 
+        /**
+         * Allows the generated form's reset button to be shown.
+         *
+         * @return this builder
+         */
         public Builder enableResetButton() {
             this.disableResetButton = false;
             return this;
         }
 
+        /**
+         * Adds a callback to customize the generated form before it is built.
+         *
+         * @param customizer callback applied to the generated form builder
+         * @return this builder
+         */
         public Builder customizeForm(Consumer<Form.Builder> customizer) {
             this.formCustomizers.add(customizer);
             return this;
         }
 
+        /**
+         * Sets the callback run asynchronously before displaying the step.
+         *
+         * @param onEnter callback invoked before the step UI is displayed
+         * @return this builder
+         */
         public Builder onEnter(Consumer<OnboardingContext> onEnter) {
             this.onEnter = onEnter;
             return this;
         }
 
+        /**
+         * Sets the callback run on the JavaFX application thread after displaying and restoring the form.
+         *
+         * @param onEnterAfterUI callback invoked after context values are restored into the displayed form
+         * @return this builder
+         */
         public Builder onEnterAfterUI(Consumer<OnboardingContext> onEnterAfterUI) {
             this.onEnterAfterUI = onEnterAfterUI;
             return this;
         }
 
+        /**
+         * Sets the callback run after saving the form values when leaving the step.
+         *
+         * @param onExit callback invoked after form values have been saved to the context
+         * @return this builder
+         */
         public Builder onExit(Consumer<OnboardingContext> onExit) {
             this.onExit = onExit;
             return this;
         }
 
+        /**
+         * Sets the callback run when the step is discarded or onboarding finishes.
+         *
+         * @param onDispose callback that releases resources when the step is discarded
+         * @return this builder
+         */
         public Builder onDispose(Consumer<OnboardingContext> onDispose) {
             this.onDispose = onDispose;
             return this;
         }
 
+        /**
+         * Sets asynchronous work that must finish successfully before advancing or finishing.
+         *
+         * @param beforeNext asynchronous action that must succeed before advancing or finishing
+         * @return this builder
+         */
         public Builder beforeNext(Function<OnboardingContext, CompletableFuture<Void>> beforeNext) {
             this.beforeNext = beforeNext;
             return this;
         }
 
+        /**
+         * Builds a step that lazily creates its section and synchronizes tracked components with the context.
+         *
+         * @return the configured step
+         */
         public OnboardingFormStep build() {
             AtomicReference<BooleanProperty> managedValid = new AtomicReference<>(null);
             ReadOnlyBooleanProperty valid;
@@ -584,8 +972,11 @@ public final class OnboardingFormStep implements OnboardingStep {
             return null;
         }
 
-        private record DataMapping(String contextKey, Function<Object, Object> transformer,
-            Function<Object, Object> reverseTransformer) {
+        private record DataMapping(
+            String contextKey,
+            Function<Object, Object> transformer,
+            Function<Object, Object> reverseTransformer
+        ) {
         }
     }
 }

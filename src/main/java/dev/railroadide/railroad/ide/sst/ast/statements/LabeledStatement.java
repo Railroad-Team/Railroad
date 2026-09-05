@@ -9,6 +9,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A statement preceded by a label that can be targeted by control flow.
+ *
+ * @param span source range occupied by this node
+ * @param label name identifying the labeled statement
+ * @param statement labeled statement
+ */
 public record LabeledStatement(Span span, NameExpression label, Statement statement) implements Statement {
     @Override
     public AstKind kind() {

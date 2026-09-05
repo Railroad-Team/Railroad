@@ -9,11 +9,15 @@ import javafx.beans.property.StringProperty;
  * and methods for creating connections and retrieving profile types.
  */
 public abstract class VCSProfile {
-    /**
+    /*
      * The alias of the VCS profile, represented as a JavaFX StringProperty.
      * This allows for binding and observing changes to the alias.
      */
     private final StringProperty alias = new SimpleStringProperty();
+
+    /** Creates a profile whose alias is initially null. */
+    public VCSProfile() {
+    }
 
     /**
      * Retrieves the alias of the VCS profile.

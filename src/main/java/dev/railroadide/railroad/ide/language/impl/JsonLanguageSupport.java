@@ -10,7 +10,13 @@ import dev.railroadide.railroad.plugin.spi.dto.Project;
 import java.nio.file.Path;
 import java.util.Set;
 
+/**
+ * Provides JSON text editing with JSON syntax highlighting.
+ */
 public final class JsonLanguageSupport extends BaseLanguageSupport {
+    /**
+     * Creates language support for JSON source files.
+     */
     public JsonLanguageSupport() {
         super("json", "JSON", Set.of("json"));
     }

@@ -20,10 +20,17 @@ import lombok.Getter;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
+/** Welcome navigation sidebar showing application branding and the available start-screen actions. */
 public class WelcomeLeftPane extends RRSidebar {
+    /**
+     * Navigation list whose selection is handled by the enclosing welcome pane.
+     *
+     * @return the live menu list
+     */
     @Getter
     private final RRListView<MenuType> listView;
 
+    /** Builds the branding and menu list, registering the sidebar's UI identifier while attached. */
     public WelcomeLeftPane() {
         getStyleClass().add("welcome-left-pane");
         setAlignment(Pos.TOP_CENTER);
@@ -58,15 +65,40 @@ public class WelcomeLeftPane extends RRSidebar {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Welcome.WELCOME_LEFT, this);
     }
 
+    /** Navigation destinations and actions offered by the welcome sidebar. */
     @Getter
     public enum MenuType {
-        HOME("railroad.home.welcome.home", FontAwesomeSolid.HOME), NEW_PROJECT("railroad.home.welcome.newproject",
-            FontAwesomeSolid.PLUS), OPEN_PROJECT("railroad.home.welcome.openproject",
-                FontAwesomeSolid.FOLDER_OPEN), IMPORT_PROJECT("railroad.home.welcome.importproject",
-                    FontAwesomeSolid.FILE_IMPORT), SETTINGS("railroad.home.welcome.settings", FontAwesomeSolid.COG);
+        /** Displays the search header and known projects. */
+        HOME("railroad.home.welcome.home", FontAwesomeSolid.HOME),
+        /** Displays project-type selection and onboarding. */
+        NEW_PROJECT("railroad.home.welcome.newproject",
+            FontAwesomeSolid.PLUS),
+        /** Opens a directory chooser for an existing project. */
+        OPEN_PROJECT("railroad.home.welcome.openproject",
+            FontAwesomeSolid.FOLDER_OPEN),
+        /** Displays repository browsing and cloning controls. */
+        IMPORT_PROJECT("railroad.home.welcome.importproject",
+            FontAwesomeSolid.FILE_IMPORT),
+        /** Opens the application settings window. */
+        SETTINGS("railroad.home.welcome.settings", FontAwesomeSolid.COG);
 
+        /**
+         * Translation key for the menu label.
+         *
+         * @return the label's translation key
+         */
         private final String key;
+        /**
+         * Icon displayed beside the menu label.
+         *
+         * @return the menu icon
+         */
         private final Ikon icon;
+        /**
+         * Configured menu color, currently unused by the menu cell renderer.
+         *
+         * @return the configured paint
+         */
         private final Paint color;
 
         MenuType(String key, Ikon icon, Paint color) {
@@ -80,7 +112,18 @@ public class WelcomeLeftPane extends RRSidebar {
         }
     }
 
+    /** Renders menu entries as localized navigation items with synchronized selection styling. */
     public static class MenuTypeCell extends ListCell<MenuType> {
+        /** Creates an empty menu cell. */
+        public MenuTypeCell() {
+        }
+
+        /**
+         * Replaces the navigation graphic for the current menu entry, clearing it for an empty cell.
+         *
+         * @param item menu entry to display, or null
+         * @param empty whether the cell has no item
+         */
         @Override
         protected void updateItem(MenuType item, boolean empty) {
             super.updateItem(item, empty);

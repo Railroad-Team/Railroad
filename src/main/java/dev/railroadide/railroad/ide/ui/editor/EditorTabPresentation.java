@@ -17,6 +17,9 @@ public final class EditorTabPresentation {
     /**
      * Returns one title per path. Unique filenames are left alone; duplicate filenames
      * receive the shortest parent-path suffix that distinguishes them.
+     *
+     * @param paths document paths for which display titles should be generated
+     * @return titles in the same order as the supplied paths
      */
     public static List<String> disambiguatedTitles(List<Path> paths) {
         Objects.requireNonNull(paths, "Paths cannot be null");
@@ -46,6 +49,12 @@ public final class EditorTabPresentation {
         return List.copyOf(titles);
     }
 
+    /**
+     * Returns the final path component, falling back to the full path for a root.
+     *
+     * @param path path of the document file
+     * @return file name or root path text
+     */
     public static String fileName(Path path) {
         Objects.requireNonNull(path, "Path cannot be null");
         Path fileName = path.getFileName();
@@ -56,7 +65,8 @@ public final class EditorTabPresentation {
         Path path,
         int pathIndex,
         List<Integer> duplicateIndexes,
-        List<Path> paths) {
+        List<Path> paths
+    ) {
         Path parent = path.getParent();
         int maximumDepth = parent == null ? 1 : parent.getNameCount() + 1;
         for (int depth = 1; depth <= maximumDepth; depth++) {

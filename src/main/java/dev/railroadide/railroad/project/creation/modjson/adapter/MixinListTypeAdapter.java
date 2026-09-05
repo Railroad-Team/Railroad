@@ -11,9 +11,19 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Converts Fabric mixin arrays containing resource paths or configuration objects.
+ */
 public class MixinListTypeAdapter extends TypeAdapter<List<MixinEnvironment>> {
     private final Gson gson = new Gson();
 
+    /**
+     * Reads mixin configurations, treating string paths as unrestricted and skipping null entries.
+     *
+     * @param in the reader positioned at the array
+     * @return the mixin configurations in their input order
+     * @throws IOException if reading fails or an entry has an unsupported JSON token
+     */
     @Override
     public List<MixinEnvironment> read(JsonReader in) throws IOException {
         List<MixinEnvironment> configs = new ArrayList<>();
@@ -41,6 +51,14 @@ public class MixinListTypeAdapter extends TypeAdapter<List<MixinEnvironment>> {
         return configs;
     }
 
+    /**
+     * Writes unrestricted mixin configurations as strings and environment-specific ones as objects.
+     * A null list is written as JSON null.
+     *
+     * @param out the destination JSON writer
+     * @param value the configuration list to serialize, or {@code null}
+     * @throws IOException if writing fails
+     */
     @Override
     public void write(JsonWriter out, List<MixinEnvironment> value) throws IOException {
         if (value == null) {

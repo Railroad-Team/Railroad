@@ -11,6 +11,9 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Searches files recursively using a filename glob prefix and publishes each matching path.
+ */
 public class SearchTask extends Task<Void> {
     private final Path path;
     private final String searchQuery;
@@ -18,6 +21,12 @@ public class SearchTask extends Task<Void> {
     @Getter
     private final List<Path> matchedPaths = new ArrayList<>();
 
+    /**
+     * Creates a recursive filename search task.
+     *
+     * @param path filesystem path to operate on
+     * @param searchQuery filename glob prefix; a trailing wildcard is appended
+     */
     public SearchTask(Path path, String searchQuery) {
         this.path = path;
         this.searchQuery = searchQuery;
@@ -48,6 +57,11 @@ public class SearchTask extends Task<Void> {
         return null;
     }
 
+    /**
+     * Exposes the most recently matched absolute path.
+     *
+     * @return property updated as matching files are found
+     */
     public StringProperty resultProperty() {
         return resultProperty;
     }

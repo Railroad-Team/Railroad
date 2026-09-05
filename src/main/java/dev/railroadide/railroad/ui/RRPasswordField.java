@@ -15,7 +15,13 @@ import lombok.Getter;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+/**
+ * Password input with Railroad styling, localized prompt text, validation feedback, and optional icons.
+ */
 public class RRPasswordField extends PasswordField implements TextFieldControl {
+    /**
+     * CSS classes installed when the field is initialized.
+     */
     public static final String[] DEFAULT_STYLE_CLASSES = {"rr-text-field", "rr-password-field", "text-field",
         "password-field"};
 
@@ -24,6 +30,11 @@ public class RRPasswordField extends PasswordField implements TextFieldControl {
     private FontIcon prefixIcon;
     private FontIcon suffixIcon;
 
+    /**
+     * Container populated with the field and its optional icons when an icon is configured.
+     *
+     * @return the container used to lay out the field and icons
+     */
     @Getter
     private HBox container;
 
@@ -61,6 +72,9 @@ public class RRPasswordField extends PasswordField implements TextFieldControl {
         setLocalizedPlaceholder(localizationKey, args);
     }
 
+    /**
+     * Installs styling, binds localized prompt text, prepares the icon container, and adds focus feedback.
+     */
     protected void initialize() {
         getStyleClass().setAll(RRPasswordField.DEFAULT_STYLE_CLASSES);
         setCursor(Cursor.TEXT);
@@ -81,18 +95,33 @@ public class RRPasswordField extends PasswordField implements TextFieldControl {
         updateStyle();
     }
 
+    /**
+     * Sets the CSS size variant.
+     *
+     * @param size the field size to apply; must not be null
+     */
     @Override
     public void setTextFieldSize(TextFieldSize size) {
         this.size = size;
         updateStyle();
     }
 
+    /**
+     * Sets the visual validation state without validating the text.
+     *
+     * @param state the validation feedback to display; must not be null
+     */
     @Override
     public void setValidationState(ValidationState state) {
         this.validationState = state;
         updateStyle();
     }
 
+    /**
+     * Sets the icon before the field and rebuilds the icon container.
+     *
+     * @param iconCode the prefix icon, or null to remove it
+     */
     @Override
     public void setPrefixIcon(Ikon iconCode) {
         if (iconCode != null) {
@@ -106,6 +135,11 @@ public class RRPasswordField extends PasswordField implements TextFieldControl {
         updateIcons();
     }
 
+    /**
+     * Sets the icon after the field and rebuilds the icon container.
+     *
+     * @param iconCode the suffix icon, or null to remove it
+     */
     @Override
     public void setSuffixIcon(Ikon iconCode) {
         if (iconCode != null) {
@@ -119,6 +153,11 @@ public class RRPasswordField extends PasswordField implements TextFieldControl {
         updateIcons();
     }
 
+    /**
+     * Adds or removes rounded-corner styling.
+     *
+     * @param rounded true to enable rounded corners
+     */
     @Override
     public void setRounded(boolean rounded) {
         if (rounded) {
@@ -128,6 +167,11 @@ public class RRPasswordField extends PasswordField implements TextFieldControl {
         }
     }
 
+    /**
+     * Adds or removes outlined field styling.
+     *
+     * @param outlined true to enable an outline
+     */
     @Override
     public void setOutlined(boolean outlined) {
         if (outlined) {
@@ -137,6 +181,11 @@ public class RRPasswordField extends PasswordField implements TextFieldControl {
         }
     }
 
+    /**
+     * Updates both JavaFX disable state and the disabled CSS class.
+     *
+     * @param disabled true to disable the field
+     */
     @Override
     public void setDisabledState(boolean disabled) {
         setDisable(disabled);
@@ -148,16 +197,30 @@ public class RRPasswordField extends PasswordField implements TextFieldControl {
         }
     }
 
+    /**
+     * Sets the literal prompt displayed when the field is empty.
+     *
+     * @param placeholder the prompt text
+     */
     @Override
     public void setPlaceholder(String placeholder) {
         setPromptText(placeholder);
     }
 
+    /**
+     * Sets prompt text that follows the application's selected language.
+     *
+     * @param localizationKey the translation key for the prompt
+     * @param args formatting arguments for the translation
+     */
     @Override
     public void setLocalizedPlaceholder(String localizationKey, Object... args) {
         localizedPromptText.setTranslation(localizationKey, args);
     }
 
+    /**
+     * Fades the field out, clears its text when that fade finishes, then restores full opacity.
+     */
     @Override
     public void clearWithAnimation() {
         var fade = new FadeTransition(Duration.millis(200), this);

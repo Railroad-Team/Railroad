@@ -12,11 +12,20 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * An exception handler binding one or more exception types to a named variable.
+ *
+ * @param span source range occupied by this node
+ * @param exceptionTypes exception types handled by the catch clause
+ * @param variableName name of the caught exception variable
+ * @param body exception handler block
+ */
 public record CatchClause(
     Span span,
     List<SugarTypeRef> exceptionTypes,
     NameExpression variableName,
-    BlockStatement body) implements AstNode {
+    BlockStatement body
+) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.CATCH_CLAUSE;

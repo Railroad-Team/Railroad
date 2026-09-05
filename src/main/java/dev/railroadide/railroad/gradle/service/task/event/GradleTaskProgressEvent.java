@@ -15,6 +15,12 @@ import java.util.UUID;
  * @param progress a fraction between {@code 0.0} and {@code 1.0}
  * @param timestamp when the progress event was emitted
  */
-public record GradleTaskProgressEvent(UUID taskId, GradleTaskState state, String messageKey, Object[] messageArgs,
-    double progress, Instant timestamp) {
+public record GradleTaskProgressEvent(
+    UUID taskId,
+    GradleTaskState state,
+    String messageKey,
+    Object[] messageArgs,
+    double progress,
+    Instant timestamp
+) {
 }

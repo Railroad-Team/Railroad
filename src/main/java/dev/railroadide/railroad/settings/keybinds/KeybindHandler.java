@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/** Central registry and dispatcher for application keybinds. */
 public class KeybindHandler {
     private static final Registry<Keybind> KEYBIND_REGISTRY = RegistryManager.createOrderedRegistry("keybinds",
         Keybind.class);

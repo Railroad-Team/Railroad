@@ -17,7 +17,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
+/** Parses Railroad layout files into a tree of named items and their properties. */
 public class LayoutParser {
+    /** Creates a stateless parser; layout parsing operations are exposed as static methods. */
+    public LayoutParser() {
+    }
+
+    /**
+     * Reads a UTF-8 layout file and parses its contents.
+     *
+     * @param file path to the layout file
+     * @return the parsed layout
+     * @throws LayoutParseException if the file cannot be read or the layout cannot be parsed
+     */
     public static Layout parse(Path file) throws LayoutParseException {
         try {
             return parse(Files.readString(file));
@@ -26,10 +38,24 @@ public class LayoutParser {
         }
     }
 
+    /**
+     * Parses layout contents encoded as UTF-8.
+     *
+     * @param content encoded layout text
+     * @return the parsed layout
+     * @throws LayoutParseException if the layout cannot be parsed
+     */
     public static Layout parse(byte[] content) throws LayoutParseException {
         return parse(new String(content, StandardCharsets.UTF_8));
     }
 
+    /**
+     * Reads the remaining bytes of a stream as a UTF-8 layout. The caller retains responsibility for closing it.
+     *
+     * @param input stream positioned at the layout contents
+     * @return the parsed layout
+     * @throws LayoutParseException if the stream cannot be read or the layout cannot be parsed
+     */
     public static Layout parse(InputStream input) throws LayoutParseException {
         try {
             return parse(input.readAllBytes());
@@ -38,6 +64,13 @@ public class LayoutParser {
         }
     }
 
+    /**
+     * Reads a UTF-8 layout file and parses its contents.
+     *
+     * @param file layout file to read
+     * @return the parsed layout
+     * @throws LayoutParseException if the file cannot be read or the layout cannot be parsed
+     */
     public static Layout parse(File file) throws LayoutParseException {
         try {
             return parse(Files.readString(file.toPath()));
@@ -52,6 +85,14 @@ public class LayoutParser {
         return new Layout(tree);
     }
 
+    /**
+     * Builds an item hierarchy by consuming tokens from the front of a mutable list.
+     * Parsing stops when the root closes or the list is exhausted; any trailing tokens after the root remain.
+     *
+     * @param tokens mutable token sequence beginning with the root identifier
+     * @return the constructed item tree
+     * @throws LayoutParseException if the sequence is empty or contains an invalid token or property
+     */
     public static Tree<LayoutItem> constructTree(List<Token> tokens) throws LayoutParseException {
         if (tokens.isEmpty())
             throw new LayoutParseException("The layout is empty");
@@ -380,6 +421,13 @@ public class LayoutParser {
         return -1;
     }
 
+    /**
+     * Loads {@code .railroad/.railayout} beneath the project directory.
+     * Read or parse failures are logged and represented by a layout with a single item named {@code error}.
+     *
+     * @param project project whose layout should be loaded
+     * @return the parsed layout, or the error layout if loading fails
+     */
     public static Layout loadLayout(Project project) {
         Path projectPath = project.getPath();
         Path layoutPath = projectPath.resolve(".railroad").resolve(".railayout");
@@ -392,12 +440,49 @@ public class LayoutParser {
         }
     }
 
+    /**
+     * A lexical token with source coordinates used in parse diagnostics.
+     *
+     * @param type token category
+     * @param value token text or normalized property text
+     * @param startLine one-based starting line
+     * @param startColumn one-based starting column
+     * @param endLine ending line recorded by the tokenizer
+     * @param endColumn ending column recorded by the tokenizer
+     */
     public record Token(Type type, String value, int startLine, int startColumn, int endLine, int endColumn) {
+        /** Token categories recognized by the layout parser. */
         @Getter
         public enum Type {
-            OPEN_BRACE("{"), CLOSE_BRACE("}"), COMMA(","), PERCENT("%"), IDENTIFIER(""), PROPERTY_OBJECT(
-                ":"), PROPERTY_ARRAY(":"), PROPERTY_STRING(":"), PROPERTY_NUMBER(":"), PROPERTY_BOOLEAN(":"), EOF("");
+            /** Opens a group of child items or properties. */
+            OPEN_BRACE("{"),
+            /** Closes the current group. */
+            CLOSE_BRACE("}"),
+            /** Separates sibling items. */
+            COMMA(","),
+            /** Percentage assigned to an item's size property. */
+            PERCENT("%"),
+            /** Name identifying a layout element. */
+            IDENTIFIER(""),
+            /** Property containing a nested object. */
+            PROPERTY_OBJECT(
+                ":"),
+            /** Property containing an array, currently retained as text. */
+            PROPERTY_ARRAY(":"),
+            /** Property containing a quoted string. */
+            PROPERTY_STRING(":"),
+            /** Property parsed as a double-precision number. */
+            PROPERTY_NUMBER(":"),
+            /** Property parsed as a boolean. */
+            PROPERTY_BOOLEAN(":"),
+            /** Marks the end of the source text. */
+            EOF("");
 
+            /**
+             * Representative punctuation for this category, or an empty string for variable text and EOF.
+             *
+             * @return the category's representative punctuation
+             */
             private final String value;
 
             Type(String value) {

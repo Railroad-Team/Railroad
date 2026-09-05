@@ -450,7 +450,26 @@ public class JshellCLIBuilder implements CLIBuilder<Process, JshellCLIBuilder> {
      */
     @Getter
     public enum FeedbackMode {
-        VERBOSE("verbose"), NORMAL("normal"), CONCISE("concise"), SILENT("silent"), CUSTOM("custom");
+        /**
+         * Selects verbose feedback for evaluated snippets.
+         */
+        VERBOSE("verbose"),
+        /**
+         * Selects normal feedback for evaluated snippets.
+         */
+        NORMAL("normal"),
+        /**
+         * Selects concise feedback for evaluated snippets.
+         */
+        CONCISE("concise"),
+        /**
+         * Suppresses ordinary feedback for evaluated snippets.
+         */
+        SILENT("silent"),
+        /**
+         * Selects the feedback mode named {@code custom}, which must be defined in JShell.
+         */
+        CUSTOM("custom");
 
         private final String mode;
 

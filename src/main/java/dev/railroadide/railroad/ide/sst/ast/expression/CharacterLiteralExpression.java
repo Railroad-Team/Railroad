@@ -8,10 +8,18 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A character literal retaining both its source spelling and character value.
+ *
+ * @param span source range occupied by this node
+ * @param rawValue original literal spelling
+ * @param value character value of the literal
+ */
 public record CharacterLiteralExpression(
     Span span,
     String rawValue,
-    char value) implements LiteralExpression {
+    char value
+) implements LiteralExpression {
     @Override
     public AstKind kind() {
         return AstKind.CHARACTER_LITERAL;

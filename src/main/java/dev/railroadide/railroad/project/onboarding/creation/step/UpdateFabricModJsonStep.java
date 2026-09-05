@@ -22,6 +22,14 @@ import dev.railroadide.railroad.switchboard.pojo.MinecraftVersion;
 import java.nio.file.Path;
 import java.util.*;
 
+/**
+ * Removes example assets and customizes schema-version-1 Fabric metadata from the onboarding data.
+ * Updates entrypoints, dependencies, mixins, contact details, and the optional access widener,
+ * then stores the written metadata under {@link ProjectContextKeys#FABRIC_MOD_JSON}.
+ * Other metadata schema versions are left unchanged.
+ *
+ * @param files service used to remove example assets and read or write project resources
+ */
 public record UpdateFabricModJsonStep(FilesService files) implements CreationStep {
     @Override
     public String id() {

@@ -13,11 +13,27 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * A pattern used for Java pattern matching.
+ */
 public sealed interface Pattern extends AstNode
     permits Pattern.MatchAllPattern, Pattern.RecordPattern, Pattern.TypeTestPattern {
-    record TypeTestPattern(Span span,
-        List<Annotation> annotations, List<Modifier> modifiers,
-        TypeRef type, Optional<NameExpression> variable) implements Pattern {
+    /**
+     * A pattern testing a type and optionally binding the matched value to a variable.
+     *
+     * @param span source range occupied by this node
+     * @param annotations annotations attached to this node
+     * @param modifiers modifiers attached to the declaration
+     * @param type type tested by the pattern
+     * @param variable optional name receiving the matched value
+     */
+    record TypeTestPattern(
+        Span span,
+        List<Annotation> annotations,
+        List<Modifier> modifiers,
+        TypeRef type,
+        Optional<NameExpression> variable
+    ) implements Pattern {
         @Override
         public AstKind kind() {
             return AstKind.TYPE_TEST_PATTERN;
@@ -39,6 +55,13 @@ public sealed interface Pattern extends AstNode
         }
     }
 
+    /**
+     * A pattern deconstructing a record into component patterns.
+     *
+     * @param span source range occupied by this node
+     * @param type record type to deconstruct
+     * @param components patterns applied to record components in declaration order
+     */
     record RecordPattern(Span span, TypeRef type, List<Pattern> components) implements Pattern {
         @Override
         public AstKind kind() {
@@ -59,6 +82,11 @@ public sealed interface Pattern extends AstNode
         }
     }
 
+    /**
+     * A pattern accepting any matched value without binding a variable.
+     *
+     * @param span source range occupied by this node
+     */
     record MatchAllPattern(Span span) implements Pattern {
         @Override
         public AstKind kind() {

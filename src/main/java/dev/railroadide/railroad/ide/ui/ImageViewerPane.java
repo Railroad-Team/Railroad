@@ -22,6 +22,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 
+/**
+ * Displays an image document with controls for inspecting its contents.
+ */
 public class ImageViewerPane extends BorderPane {
     private static final double ZOOM_BUTTON_FACTOR = 1.2;
     private static final double ZOOM_SCROLL_FACTOR = 1.1;
@@ -54,6 +57,11 @@ public class ImageViewerPane extends BorderPane {
     private StackPane canvasContainer;
     private StackPane infoPaneContainer;
 
+    /**
+     * Loads an image file and creates its viewing controls.
+     *
+     * @param imagePath image file to load, or null to create an empty viewer
+     */
     public ImageViewerPane(Path imagePath) {
         super();
         initComponents();
@@ -71,6 +79,11 @@ public class ImageViewerPane extends BorderPane {
         }
     }
 
+    /**
+     * Returns the path of the displayed image.
+     *
+     * @return image file path, or null if no image path was accepted
+     */
     public Path getImagePath() {
         return imagePath;
     }

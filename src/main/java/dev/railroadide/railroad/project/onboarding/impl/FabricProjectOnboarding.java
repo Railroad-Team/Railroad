@@ -48,9 +48,17 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+/**
+ * Collects Fabric project settings and starts project creation when onboarding finishes.
+ */
 public class FabricProjectOnboarding {
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
+    /**
+     * Starts the project settings wizard in the supplied scene and launches project creation when it finishes.
+     *
+     * @param scene scene whose root will be replaced with the onboarding view
+     */
     public void start(Scene scene) {
         var flow = OnboardingFlow.builder()
             .addStep("project_details", this::createProjectDetailsStep)
@@ -676,13 +684,19 @@ public class FabricProjectOnboarding {
             .build();
     }
 
-    private static OnboardingFormStep.ComponentSpec described(FormComponentBuilder<?, ?, ?, ?> builder,
-        String descriptionKey) {
+    private static OnboardingFormStep.ComponentSpec described(
+        FormComponentBuilder<?, ?, ?, ?> builder,
+        String descriptionKey
+    ) {
         return OnboardingFormStep.component(builder, createDescriptionCustomizer(descriptionKey));
     }
 
-    private static OnboardingFormStep.ComponentSpec described(FormComponentBuilder<?, ?, ?, ?> builder,
-        Function<Object, Object> transformer, Function<Object, Object> reverseTransformer, String descriptionKey) {
+    private static OnboardingFormStep.ComponentSpec described(
+        FormComponentBuilder<?, ?, ?, ?> builder,
+        Function<Object, Object> transformer,
+        Function<Object, Object> reverseTransformer,
+        String descriptionKey
+    ) {
         return OnboardingFormStep.component(builder, builder != null ? builder.dataKey() : null, transformer,
             reverseTransformer, createDescriptionCustomizer(descriptionKey));
     }

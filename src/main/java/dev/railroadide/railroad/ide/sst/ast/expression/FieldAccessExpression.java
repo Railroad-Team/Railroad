@@ -8,10 +8,18 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A named field selected from a qualifying expression.
+ *
+ * @param span source range occupied by this node
+ * @param expression qualifying expression whose field is selected
+ * @param name selected field name
+ */
 public record FieldAccessExpression(
     Span span,
     Expression expression,
-    NameExpression name) implements Expression {
+    NameExpression name
+) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.FIELD_ACCESS_EXPRESSION;

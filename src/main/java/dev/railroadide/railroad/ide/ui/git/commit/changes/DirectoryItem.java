@@ -14,8 +14,27 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Consumer;
 
-public record DirectoryItem(Project project, Path path, List<GitFileChange> changes,
-    String displayTitle) implements ChangeItem {
+/**
+ * Represents changed files grouped under a directory in the commit tree.
+ *
+ * @param project project whose files and workspace are being displayed
+ * @param path directory containing the grouped changes
+ * @param changes file changes grouped under this directory
+ * @param displayTitle directory title, including any collapsed parent path segments
+ */
+public record DirectoryItem(
+    Project project,
+    Path path,
+    List<GitFileChange> changes,
+    String displayTitle
+) implements ChangeItem {
+    /**
+     * Creates a directory group using the final path component as its display title.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param path directory containing the grouped changes
+     * @param changes file changes grouped under this directory
+     */
     public DirectoryItem(Project project, Path path, List<GitFileChange> changes) {
         this(project, path, changes, path.getFileName().toString());
     }

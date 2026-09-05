@@ -49,7 +49,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javafx.scene.Parent;
 
+/**
+ * Hosts a project workspace, coordinating editor groups, docked tools, modes, and window lifecycles.
+ */
 public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWorkspaceActions {
     private final Project project;
     private final IDEPaneLifecycle lifecycle;
@@ -78,6 +82,11 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     private boolean layoutInitialized;
     private boolean layoutTransitioning;
 
+    /**
+     * Creates the editor workspace and tool docks for a project.
+     *
+     * @param project project whose files and workspace are being displayed
+     */
     public IDEPane(Project project) {
         this.project = Objects.requireNonNull(project, "Project cannot be null");
         this.lifecycle = new IDEPaneLifecycle(this);
@@ -173,7 +182,12 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         return pane;
     }
 
-    IDEContentRouter getContentRouter() {
+    /**
+     * Returns the router used to open content in this workspace.
+     *
+     * @return workspace content router
+     */
+    public IDEContentRouter getContentRouter() {
         return contentRouter;
     }
 
@@ -197,7 +211,8 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
 
     private DetachableTabPane getOrCreateEditorPane(
         Map<WorkspaceMode, DetachableTabPane> editorPanesByMode,
-        WorkspaceMode viewMode) {
+        WorkspaceMode viewMode
+    ) {
         WorkspaceMode resolvedMode = viewMode == null ? WorkspaceModes.CODE : viewMode;
         return editorPanesByMode.computeIfAbsent(resolvedMode, mode -> {
             if (mode == WorkspaceModes.CODE)
@@ -292,11 +307,23 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         }
     }
 
+    /**
+     * Returns a workspace mode's current editor layout root.
+     *
+     * @param viewMode workspace mode whose editor layout is addressed
+     * @return layout root, or null if the mode has no editor content
+     */
     public Node getEditorLayoutRoot(WorkspaceMode viewMode) {
         StackPane host = editorHostsByMode.get(viewMode);
         return host == null || host.getChildren().isEmpty() ? null : host.getChildren().getFirst();
     }
 
+    /**
+     * Removes and returns the editor layout from a workspace mode's host.
+     *
+     * @param viewMode workspace mode whose editor layout is addressed
+     * @return detached root, or null if the host has no content
+     */
     public Node detachEditorLayoutRoot(WorkspaceMode viewMode) {
         StackPane host = editorHostsByMode.get(viewMode);
         if (host == null || host.getChildren().isEmpty())
@@ -304,6 +331,12 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         return host.getChildren().removeFirst();
     }
 
+    /**
+     * Replaces the editor layout in a workspace mode and updates the visible root when active.
+     *
+     * @param viewMode workspace mode whose editor layout is addressed
+     * @param root editor layout root node
+     */
     public void setEditorLayoutRoot(WorkspaceMode viewMode, Node root) {
         Objects.requireNonNull(viewMode, "Workspace mode cannot be null");
         Objects.requireNonNull(root, "Editor layout root cannot be null");
@@ -359,7 +392,8 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     private void restoreModeLayout(
         WorkspaceMode viewMode,
         IDELayoutState.ModeLayout layout,
-        DetachableTabPane editorPane) {
+        DetachableTabPane editorPane
+    ) {
         setDockVisible(mainSplit, leftPane, layout.leftDockVisible(), 0);
         setDockVisible(mainSplit, rightPane, layout.rightDockVisible() && !rightPane.getTabs().isEmpty(), 2);
         setDockVisible(centerBottomSplit, bottomPane, layout.bottomDockVisible(), 1);
@@ -888,6 +922,11 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         };
     }
 
+    /**
+     * Captures workspace layouts, editor navigation, and detached tool-window state.
+     *
+     * @return current workspace layout snapshot
+     */
     public IDELayoutState captureLayoutState() {
         if (Platform.isFxApplicationThread() && layoutInitialized && activeViewMode != null) {
             layoutsByMode.put(activeViewMode, captureModeLayout(activeViewMode));
@@ -951,6 +990,11 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         return List.copyOf(states);
     }
 
+    /**
+     * Restores saved layouts and tool windows, retaining available workspace mode state.
+     *
+     * @param layoutState saved workspace modes, dock layouts, and tool-window states
+     */
     public void restoreLayoutState(IDELayoutState layoutState) {
         if (layoutState == null || !layoutState.isSupported())
             return;
@@ -1157,6 +1201,11 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         }
     }
 
+    /**
+     * Tracks a pane's owned tabs and editor navigation when its workspace mode is known.
+     *
+     * @param pane editor or tool tab pane to manage
+     */
     public void trackEditorPane(DetachableTabPane pane) {
         Objects.requireNonNull(pane, "Editor pane cannot be null");
         trackOwnedTabs(pane);
@@ -1166,8 +1215,14 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         }
     }
 
+    /**
+     * Creates an owned editor window using the workspace styles and close guard.
+     *
+     * @param root editor layout root node
+     * @return configured stage, not yet shown
+     */
     public Stage createDetachedEditorStage(Node root) {
-        if (!(root instanceof javafx.scene.Parent parent))
+        if (!(root instanceof Parent parent))
             throw new IllegalArgumentException("Detached editor root must be a Parent");
 
         var stage = new Stage();

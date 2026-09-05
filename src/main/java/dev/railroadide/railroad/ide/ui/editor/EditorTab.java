@@ -16,7 +16,7 @@ import dev.railroadide.railroad.ui.localized.LocalizedMenu;
 import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
 import dev.railroadide.railroad.utility.FileUtils;
-import dev.railroadide.railroad.utility.TimeFormatter;
+import dev.railroadide.railroad.utility.TimeFormatingUtils;
 import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.animation.RotateTransition;
@@ -44,6 +44,9 @@ import java.nio.file.Path;
 import java.io.IOException;
 import java.util.Objects;
 
+/**
+ * Owns a document view and its JavaFX tab, exposing observable identity, presentation, and save state.
+ */
 public final class EditorTab {
     private final ObjectProperty<DocumentIdentity> identity;
     private final Document document;
@@ -66,13 +69,24 @@ public final class EditorTab {
     private final WeakInvalidationListener weakLocalizationListener = new WeakInvalidationListener(
         localizationListener);
 
+    /**
+     * Creates a document tab and binds its presentation to the editor save state.
+     *
+     * @param identity logical identity of the document
+     * @param document document displayed by the tab
+     * @param view content view and optional text editor
+     * @param editorGroupId identifier of the editor group containing the tab
+     * @param pinned whether the tab is pinned against automatic eviction
+     * @param preview whether the tab occupies the reusable preview slot
+     */
     public EditorTab(
         DocumentIdentity identity,
         Document document,
         EditorOpenView view,
         String editorGroupId,
         boolean pinned,
-        boolean preview) {
+        boolean preview
+    ) {
         this.identity = new SimpleObjectProperty<>(this, "identity", Objects.requireNonNull(identity));
         this.document = Objects.requireNonNull(document);
         Path path = document.getPath().toAbsolutePath().normalize();
@@ -128,102 +142,227 @@ public final class EditorTab {
         updateFilePresentation();
     }
 
+    /**
+     * Returns the logical document identifier.
+     *
+     * @return document identifier independent of its current path
+     */
     public DocumentId documentId() {
         return identity().id();
     }
 
+    /**
+     * Returns the current document identity.
+     *
+     * @return logical document identity
+     */
     public DocumentIdentity identity() {
         return identity.get();
     }
 
+    /**
+     * Exposes changes to the document identity.
+     *
+     * @return observable document identity
+     */
     public ReadOnlyObjectProperty<DocumentIdentity> identityProperty() {
         return identity;
     }
 
+    /**
+     * Returns the document displayed by this tab.
+     *
+     * @return backing document model
+     */
     public Document document() {
         return document;
     }
 
+    /**
+     * Returns the JavaFX control presenting the document view.
+     *
+     * @return tab control
+     */
     public Tab tab() {
         return tab;
     }
 
+    /**
+     * Returns the current document path.
+     *
+     * @return document file path
+     */
     public Path path() {
         return path.get();
     }
 
+    /**
+     * Exposes the document path for observation and updates.
+     *
+     * @return mutable document path property
+     */
     public ObjectProperty<Path> pathProperty() {
         return path;
     }
 
+    /**
+     * Returns the document content view.
+     *
+     * @return view containing the content node and optional text editor
+     */
     public EditorOpenView view() {
         return view;
     }
 
+    /**
+     * Returns the containing editor group identifier.
+     *
+     * @return editor group identifier
+     */
     public String editorGroupId() {
         return editorGroupId.get();
     }
 
+    /**
+     * Exposes the containing editor group identifier.
+     *
+     * @return mutable editor group property
+     */
     public StringProperty editorGroupIdProperty() {
         return editorGroupId;
     }
 
+    /**
+     * Reports whether the tab is pinned.
+     *
+     * @return true when the tab is pinned
+     */
     public boolean pinned() {
         return pinned.get();
     }
 
+    /**
+     * Exposes whether the tab is pinned.
+     *
+     * @return mutable pinned-state property
+     */
     public BooleanProperty pinnedProperty() {
         return pinned;
     }
 
+    /**
+     * Reports whether the tab occupies the reusable preview slot.
+     *
+     * @return true for a temporary preview tab
+     */
     public boolean preview() {
         return preview.get();
     }
 
+    /**
+     * Exposes whether the tab is a temporary preview.
+     *
+     * @return mutable preview-state property
+     */
     public BooleanProperty previewProperty() {
         return preview;
     }
 
+    /**
+     * Returns the current save state.
+     *
+     * @return current editor save state
+     */
     public EditorSaveState saveState() {
         return saveState.get();
     }
 
+    /**
+     * Exposes changes to the editor save state.
+     *
+     * @return read-only observable save state
+     */
     public ReadOnlyObjectProperty<EditorSaveState> saveStateProperty() {
         return saveState.getReadOnlyProperty();
     }
 
+    /**
+     * Reports whether the editor is in any state other than clean.
+     *
+     * @return true when the save state is not CLEAN
+     */
     public boolean dirty() {
         return dirty.get();
     }
 
+    /**
+     * Exposes changes to whether the editor is not clean.
+     *
+     * @return read-only observable dirty flag
+     */
     public ReadOnlyBooleanProperty dirtyProperty() {
         return dirty.getReadOnlyProperty();
     }
 
+    /**
+     * Reports whether a save is in progress.
+     *
+     * @return true when the save state is SAVING
+     */
     public boolean saving() {
         return saving.get();
     }
 
+    /**
+     * Exposes changes to whether a save is in progress.
+     *
+     * @return read-only observable saving flag
+     */
     public ReadOnlyBooleanProperty savingProperty() {
         return saving.getReadOnlyProperty();
     }
 
+    /**
+     * Reports whether the editor is clean.
+     *
+     * @return true when the save state is CLEAN
+     */
     public boolean saved() {
         return saved.get();
     }
 
+    /**
+     * Exposes changes to whether the editor is clean.
+     *
+     * @return read-only observable clean-state flag
+     */
     public ReadOnlyBooleanProperty savedProperty() {
         return saved.getReadOnlyProperty();
     }
 
+    /**
+     * Reports whether the latest save failed.
+     *
+     * @return true when the save state is ERROR
+     */
     public boolean saveFailed() {
         return saveFailed.get();
     }
 
+    /**
+     * Returns the document language identifier.
+     *
+     * @return language identifier used to resolve language support
+     */
     public String languageId() {
         return document.getLanguageId();
     }
 
+    /**
+     * Resolves a localized language name with a language-support fallback.
+     *
+     * @return display name of the document language
+     */
     public String languageDisplayName() {
         String displayName = LanguageSupportRegistry.get(languageId())
             .map(support -> support.displayName())
@@ -237,18 +376,39 @@ public final class EditorTab {
         return L18n.hasTranslation(localizationKey) ? L18n.localize(localizationKey) : displayName;
     }
 
+    /**
+     * Returns the title currently shown in the tab header.
+     *
+     * @return displayed tab title
+     */
     public String displayTitle() {
         return titleLabel.getText();
     }
 
+    /**
+     * Exposes changes to the title shown in the tab header.
+     *
+     * @return observable title property
+     */
     public ReadOnlyStringProperty displayTitleProperty() {
         return titleLabel.textProperty();
     }
 
+    /**
+     * Exposes changes to whether the latest save failed.
+     *
+     * @return read-only observable save-failure flag
+     */
     public ReadOnlyBooleanProperty saveFailedProperty() {
         return saveFailed.getReadOnlyProperty();
     }
 
+    /**
+     * Updates the document identity and normalized absolute file path.
+     *
+     * @param identity logical identity of the document
+     * @param path path of the document file
+     */
     public void rebind(DocumentIdentity identity, Path path) {
         this.identity.set(Objects.requireNonNull(identity));
         Path normalizedPath = Objects.requireNonNull(path).toAbsolutePath().normalize();
@@ -256,6 +416,11 @@ public final class EditorTab {
         this.tab.setId(normalizedPath.toString());
     }
 
+    /**
+     * Updates the tab title, header label, and accessible description.
+     *
+     * @param displayTitle title displayed in the tab header and accessible text
+     */
     public void setDisplayTitle(String displayTitle) {
         String title = Objects.requireNonNull(displayTitle, "Display title cannot be null");
         this.tab.setText(title);
@@ -263,14 +428,29 @@ public final class EditorTab {
         updateAccessibleText();
     }
 
+    /**
+     * Updates the pinned flag and its bound presentation.
+     *
+     * @param pinned whether the tab is pinned against automatic eviction
+     */
     public void setPinned(boolean pinned) {
         this.pinned.set(pinned);
     }
 
+    /**
+     * Updates the identifier of the group containing this tab.
+     *
+     * @param editorGroupId identifier of the editor group containing the tab
+     */
     public void setEditorGroupId(String editorGroupId) {
         this.editorGroupId.set(Objects.requireNonNull(editorGroupId));
     }
 
+    /**
+     * Updates the temporary preview flag and its bound presentation.
+     *
+     * @param preview whether the tab occupies the reusable preview slot
+     */
     public void setPreview(boolean preview) {
         this.preview.set(preview);
     }
@@ -375,7 +555,7 @@ public final class EditorTab {
             try {
                 text.append('\n').append(L18n.localize(
                     "editor.tab.tooltip.modified",
-                    TimeFormatter.formatDateTime(Files.getLastModifiedTime(editorPath).toMillis())));
+                    TimeFormatingUtils.formatDateTime(Files.getLastModifiedTime(editorPath).toMillis())));
             } catch (IOException _) {
                 // The file can disappear while its tab is still open.
             }
@@ -435,7 +615,8 @@ public final class EditorTab {
         FontIcon icon,
         LocalizedTooltip tooltip,
         RotateTransition savingAnimation,
-        EditorSaveState state) {
+        EditorSaveState state
+    ) {
         savingAnimation.stop();
         icon.setRotate(0);
         icon.getStyleClass().removeAll(
@@ -458,6 +639,11 @@ public final class EditorTab {
         }
     }
 
+    /**
+     * Creates the tab menu for closing, pinning, navigation, and group actions.
+     *
+     * @return new context menu for this tab
+     */
     public ContextMenu createContextMenu() {
         var contextMenu = new ContextMenu();
 
@@ -577,7 +763,8 @@ public final class EditorTab {
     private static void updatePinMenuItem(
         LocalizedMenuItem menuItem,
         StackedFontIcon icon,
-        boolean pinned) {
+        boolean pinned
+    ) {
         menuItem.setKey(pinned ? "editor.tab.contextmenu.unpin" : "editor.tab.contextmenu.pin");
         if (pinned) {
             icon.setIconCodes(FontAwesomeSolid.THUMBTACK);

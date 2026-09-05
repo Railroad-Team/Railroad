@@ -14,6 +14,13 @@ public final class RunConfigurationContextMenuManager {
     private RunConfigurationContextMenuManager() {
     }
 
+    /**
+     * Hides a different active configuration menu and shows this menu beside its anchor, preserving its hidden handler.
+     *
+     * @param anchor the node beside which the menu is shown
+     * @param menu the context menu to display
+     * @param side the side of the anchor on which to place the menu
+     */
     public static synchronized void show(Node anchor, ContextMenu menu, Side side) {
         if (currentlyShown != null && currentlyShown != menu) {
             currentlyShown.hide();

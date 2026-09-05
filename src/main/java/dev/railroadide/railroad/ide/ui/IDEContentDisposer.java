@@ -13,13 +13,19 @@ import java.util.IdentityHashMap;
 import java.util.Set;
 
 /** Disposes resources held by an IDE-owned content tree. */
-final class IDEContentDisposer {
+public final class IDEContentDisposer {
     private static final Object DISPOSED_MARKER = new Object();
 
     private IDEContentDisposer() {
     }
 
-    static void dispose(Tab tab, Set<Object> disposed) {
+    /**
+     * Disposes supported content resources once, traversing child nodes and tab contents.
+     *
+     * @param tab tab whose content is detached and disposed; null is ignored
+     * @param disposed identity-based set shared across disposal traversal to prevent duplicate cleanup
+     */
+    public static void dispose(Tab tab, Set<Object> disposed) {
         if (tab == null || !disposed.add(tab) || tab.getProperties().putIfAbsent(DISPOSED_MARKER, true) != null)
             return;
 
@@ -28,11 +34,22 @@ final class IDEContentDisposer {
         dispose(content, disposed);
     }
 
-    static void dispose(Node root) {
+    /**
+     * Disposes supported content resources once, traversing child nodes and tab contents.
+     *
+     * @param root root of the content subtree to dispose; null is ignored
+     */
+    public static void dispose(Node root) {
         dispose(root, Collections.newSetFromMap(new IdentityHashMap<>()));
     }
 
-    static void dispose(Node node, Set<Object> disposed) {
+    /**
+     * Disposes supported content resources once, traversing child nodes and tab contents.
+     *
+     * @param node content node to dispose; null is ignored
+     * @param disposed identity-based set shared across disposal traversal to prevent duplicate cleanup
+     */
+    public static void dispose(Node node, Set<Object> disposed) {
         if (node == null || !disposed.add(node) || node.getProperties().putIfAbsent(DISPOSED_MARKER, true) != null)
             return;
 

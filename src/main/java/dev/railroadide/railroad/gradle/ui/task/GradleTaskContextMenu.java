@@ -16,7 +16,16 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.Optional;
 
+/**
+ * Provides run and debug actions for a Gradle task using the project's run configurations.
+ */
 public class GradleTaskContextMenu extends ContextMenu {
+    /**
+     * Creates a menu that runs or debugs the supplied task, reusing or creating its run configuration.
+     *
+     * @param project the project that owns the run configurations
+     * @param task the Gradle task targeted by the menu actions
+     */
     public GradleTaskContextMenu(Project project, RailroadGradleTask task) {
         super();
 
@@ -49,8 +58,10 @@ public class GradleTaskContextMenu extends ContextMenu {
      * @param task the Gradle task
      * @return the run configuration
      */
-    public static @NotNull RunConfiguration<GradleRunConfigurationData> getOrCreateRunConfig(Project project,
-        RailroadGradleTask task) {
+    public static @NotNull RunConfiguration<GradleRunConfigurationData> getOrCreateRunConfig(
+        Project project,
+        RailroadGradleTask task
+    ) {
         RunConfigurationManager runConfigManager = project.getRunConfigManager();
         @SuppressWarnings("unchecked")
         Optional<RunConfiguration<GradleRunConfigurationData>> existingRunConfig = runConfigManager.getConfigurations()
@@ -69,8 +80,10 @@ public class GradleTaskContextMenu extends ContextMenu {
      * @param runConfigManager the run configuration manager
      * @return the newly created run configuration
      */
-    public static @NotNull RunConfiguration<GradleRunConfigurationData> createRunConfig(RailroadGradleTask task,
-        RunConfigurationManager runConfigManager) {
+    public static @NotNull RunConfiguration<GradleRunConfigurationData> createRunConfig(
+        RailroadGradleTask task,
+        RunConfigurationManager runConfigManager
+    ) {
         var configurationData = new GradleRunConfigurationData();
         RailroadModule module = task.module();
         if (module == null || module.getGradleProject() == null)

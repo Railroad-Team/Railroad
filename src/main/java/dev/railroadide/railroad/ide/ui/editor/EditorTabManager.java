@@ -64,6 +64,9 @@ import java.util.stream.Collectors;
 
 import static dev.railroadide.railroad.ide.ui.editor.EditorTabSessionState.DEFAULT_EDITOR_GROUP_ID;
 
+/**
+ * Coordinates editor tabs, preview replacement, saving, group layouts, and session restoration.
+ */
 @SuppressWarnings("resource")
 public class EditorTabManager {
     private final Map<DocumentId, EditorTab> openTabs = new LinkedHashMap<>();
@@ -90,11 +93,26 @@ public class EditorTabManager {
     private long selectionGeneration;
     private long editorGroupSequence;
 
+    /**
+     * Reports editor tabs whose requested save did not succeed.
+     *
+     * @param failedTabs tabs whose save failed
+     */
     public record SaveResult(List<EditorTab> failedTabs) {
+        /**
+         * Creates a save result with an immutable copy of the failed tabs.
+         *
+         * @param failedTabs tabs whose save failed
+         */
         public SaveResult {
             failedTabs = List.copyOf(failedTabs);
         }
 
+        /**
+         * Reports whether all requested saves succeeded.
+         *
+         * @return true when no tabs were reported as failed
+         */
         public boolean successful() {
             return failedTabs.isEmpty();
         }
@@ -107,7 +125,8 @@ public class EditorTabManager {
         boolean pinned,
         boolean preview,
         String editorGroupId,
-        int insertionIndex) {
+        int insertionIndex
+    ) {
         private static TabOpenRequest normal() {
             return new TabOpenRequest(
                 true,
@@ -153,6 +172,9 @@ public class EditorTabManager {
         }
     }
 
+    /**
+     * Creates a tab manager and subscribes to project, document, and tab-setting changes.
+     */
     public EditorTabManager() {
         Railroad.EVENT_BUS.subscribe(ProjectEvent.class, this::handleProjectClosed);
         Railroad.EVENT_BUS.subscribe(DocumentRenamedEvent.class, this::handleRenamed);
@@ -174,7 +196,11 @@ public class EditorTabManager {
         });
     }
 
-    /** Registers a pane created by a drag split or detached-window operation. */
+    /**
+     * Registers a pane created by a drag split or detached-window operation.
+     *
+     * @param tabPane editor group tab pane
+     */
     public void registerEditorPane(DetachableTabPane tabPane) {
         Objects.requireNonNull(tabPane, "Tab pane cannot be null");
         JavaFXUtils.runOnApplicationThread(() -> registerEditorPaneOnApplicationThread(tabPane));
@@ -194,6 +220,11 @@ public class EditorTabManager {
         });
     }
 
+    /**
+     * Opens a file through the active project's language support, selecting an existing tab when possible.
+     *
+     * @param path path of the document file
+     */
     public void open(Path path) {
         Objects.requireNonNull(path, "Path cannot be null");
         if (Files.isDirectory(path))
@@ -211,6 +242,8 @@ public class EditorTabManager {
      * Opens a path in the reusable preview slot. When preview tabs are disabled this
      * behaves like a normal open. Existing permanent tabs are only selected; they are
      * never demoted back into previews.
+     *
+     * @param path path of the document file
      */
     public void openPreview(Path path) {
         Objects.requireNonNull(path, "Path cannot be null");
@@ -233,7 +266,8 @@ public class EditorTabManager {
     private EditorTab openPreviewInTabPane(
         Project project,
         Path path,
-        DetachableTabPane fallbackPane) {
+        DetachableTabPane fallbackPane
+    ) {
         Path normalizedPath = path.toAbsolutePath().normalize();
         if (!Files.isRegularFile(normalizedPath))
             return null;
@@ -297,6 +331,11 @@ public class EditorTabManager {
         return tab.tab().getTabPane() instanceof DetachableTabPane tabPane ? tabPane : fallbackPane;
     }
 
+    /**
+     * Moves the editor tab into a detached editor window.
+     *
+     * @param tab editor tab to act on
+     */
     public void openInNewWindow(EditorTab tab) {
         Objects.requireNonNull(tab, "Tab cannot be null");
         if (openTabs.get(tab.documentId()) != tab)
@@ -338,6 +377,12 @@ public class EditorTabManager {
         }
     }
 
+    /**
+     * Restores file paths as legacy tabs and selects the requested active path.
+     *
+     * @param paths document paths to open in their saved order
+     * @param activePath document path to activate after restoration
+     */
     public void restore(Iterable<Path> paths, Path activePath) {
         Objects.requireNonNull(paths, "Paths cannot be null");
         var legacyState = new ArrayList<EditorTabSessionState>();
@@ -350,11 +395,21 @@ public class EditorTabManager {
         restoreSession(legacyState);
     }
 
+    /**
+     * Restores tab states using the default workspace layout.
+     *
+     * @param sessionState saved tab states to restore
+     */
     public void restoreSession(List<EditorTabSessionState> sessionState) {
         Objects.requireNonNull(sessionState, "Session state cannot be null");
         restoreWorkspaceSession(EditorWorkspaceSessionState.legacy(sessionState));
     }
 
+    /**
+     * Restores editor layouts, detached windows, and saved tabs for the active project.
+     *
+     * @param workspaceState saved layout, windows, and tab states to restore
+     */
     public void restoreWorkspaceSession(EditorWorkspaceSessionState workspaceState) {
         Objects.requireNonNull(workspaceState, "Editor workspace state cannot be null");
         if (!workspaceState.isSupported()) {
@@ -380,7 +435,8 @@ public class EditorTabManager {
         Project project,
         Path path,
         DetachableTabPane tabPane,
-        TabOpenRequest request) {
+        TabOpenRequest request
+    ) {
         if (primaryEditorPane == null && DEFAULT_EDITOR_GROUP_ID.equals(request.editorGroupId())) {
             primaryEditorPane = tabPane;
         }
@@ -484,7 +540,8 @@ public class EditorTabManager {
         IDEPane idePane,
         DetachableTabPane primaryPane,
         EditorWorkspaceSessionState workspaceState,
-        List<EditorTabSessionState> tabsToRestore) {
+        List<EditorTabSessionState> tabsToRestore
+    ) {
         restoring = true;
         try {
             primaryEditorPane = primaryPane;
@@ -592,7 +649,8 @@ public class EditorTabManager {
         EditorLayoutNodeState state,
         DetachableTabPane template,
         Deque<DetachableTabPane> reusablePanes,
-        Map<String, DetachableTabPane> groups) {
+        Map<String, DetachableTabPane> groups
+    ) {
         if (state == null || state.group()) {
             DetachableTabPane pane = reusablePanes.pollFirst();
             if (pane == null) {
@@ -652,7 +710,8 @@ public class EditorTabManager {
     private static void restoreGroupSelections(
         EditorLayoutNodeState state,
         Map<String, DetachableTabPane> groups,
-        Map<String, EditorTab> restoredTabs) {
+        Map<String, EditorTab> restoredTabs
+    ) {
         if (state.group()) {
             DetachableTabPane pane = groups.get(state.groupId());
             EditorTab selected = restoredTabs.get(state.selectedDocumentId());
@@ -1066,6 +1125,11 @@ public class EditorTabManager {
             EditorTabRetentionPolicy.normalizeLimit(limit));
     }
 
+    /**
+     * Resolves the selected managed tab, falling back to the active document.
+     *
+     * @return active editor tab, or an empty optional when none is available
+     */
     public Optional<EditorTab> activeTab() {
         EditorTab activeTab = Optional.ofNullable(Services.IDE_STATE.getActiveDocument())
             .map(Services.IDE_STATE::identifyDocument)
@@ -1106,18 +1170,30 @@ public class EditorTabManager {
             .ifPresent(tabPane -> selectFromKeyboard(tabPane, tabPane.getTabs().getLast()));
     }
 
+    /**
+     * Selects the next tab in the active group, wrapping at the end.
+     */
     public void selectNextTab() {
         selectAdjacentTab(1);
     }
 
+    /**
+     * Selects the previous tab in the active group, wrapping at the beginning.
+     */
     public void selectPreviousTab() {
         selectAdjacentTab(-1);
     }
 
+    /**
+     * Moves the active tab one position to the left within its editor group.
+     */
     public void moveActiveTabLeft() {
         moveActiveTab(-1);
     }
 
+    /**
+     * Moves the active tab one position to the right within its editor group.
+     */
     public void moveActiveTabRight() {
         moveActiveTab(1);
     }
@@ -1192,6 +1268,11 @@ public class EditorTabManager {
         tabPane.getSelectionModel().select(editorTab.tab());
     }
 
+    /**
+     * Saves the active text editor when one is available.
+     *
+     * @return save outcome, with no failures when there is no active editor
+     */
     public SaveResult saveActive() {
         EditorTab activeTab = activeTab().orElse(null);
         if (activeTab == null || save(activeTab))
@@ -1199,6 +1280,11 @@ public class EditorTabManager {
         return new SaveResult(List.of(activeTab));
     }
 
+    /**
+     * Attempts to save every managed tab in a non-clean state.
+     *
+     * @return save outcome listing the tabs that could not be saved
+     */
     public SaveResult saveAll() {
         List<EditorTab> failedTabs = openTabs.values().stream()
             .filter(EditorTab::dirty)
@@ -1207,10 +1293,21 @@ public class EditorTabManager {
         return new SaveResult(failedTabs);
     }
 
+    /**
+     * Checks whether any managed tab is in a non-clean save state.
+     *
+     * @return true when at least one tab is dirty
+     */
     public boolean hasUnsavedChanges() {
         return openTabs.values().stream().anyMatch(EditorTab::dirty);
     }
 
+    /**
+     * Saves the active editor to a destination and rebinds its document identity and path.
+     *
+     * @param targetPath destination file for the active document
+     * @return true if saving and any required rebinding succeed
+     */
     public boolean saveAsActive(Path targetPath) {
         Objects.requireNonNull(targetPath, "Target path cannot be null");
         EditorTab editorTab = activeTab().orElse(null);
@@ -1259,6 +1356,9 @@ public class EditorTabManager {
         }
     }
 
+    /**
+     * Marks dirty text editors to discard their changes when closed.
+     */
     public void discardUnsavedChangesOnClose() {
         openTabs.values().stream()
             .filter(EditorTab::dirty)
@@ -1285,6 +1385,11 @@ public class EditorTabManager {
         openTabs.putAll(reboundTabs);
     }
 
+    /**
+     * Captures the main layout, detached windows, and open editor tabs.
+     *
+     * @return complete editor workspace session snapshot
+     */
     public EditorWorkspaceSessionState captureWorkspaceSession() {
         List<EditorTabSessionState> tabs = captureSessionState();
         IDEPane idePane = Services.UI_MANAGER.lookup(UIIds.IDE.IDE).orElse(null);
@@ -1369,6 +1474,11 @@ public class EditorTabManager {
         return null;
     }
 
+    /**
+     * Captures open tabs after applying pending selection and reconciling group membership.
+     *
+     * @return tab states with document identity, ordering, selection, and view state
+     */
     public List<EditorTabSessionState> captureSessionState() {
         if (selectionUpdateScheduled) {
             applyPendingSelection(selectionGeneration);
@@ -1659,11 +1769,22 @@ public class EditorTabManager {
         Services.DOCUMENT_EDITOR_STATE.setActiveEditor(null, null);
     }
 
+    /**
+     * Requests closure of a managed tab through its close lifecycle.
+     *
+     * @param tab editor tab to act on
+     */
     public void close(EditorTab tab) {
         requireManaged(tab);
         requestClose(tab);
     }
 
+    /**
+     * Resolves a managed tab from a tab-pane selection or a node identifier.
+     *
+     * @param target node identifying a tab or tab pane
+     * @return matching editor tab, or null when the target does not identify one
+     */
     public EditorTab getTabAt(Node target) {
         if (target == null)
             return null;
@@ -1703,6 +1824,11 @@ public class EditorTabManager {
         return null;
     }
 
+    /**
+     * Requests closure of other unpinned tabs in the same editor group.
+     *
+     * @param tab editor tab to act on
+     */
     public void closeOthers(EditorTab tab) {
         requireManaged(tab);
         closeInDescendingOrder(tabsInSamePane(tab).stream()
@@ -1710,6 +1836,11 @@ public class EditorTabManager {
             .toList());
     }
 
+    /**
+     * Requests closure of unpinned tabs to the right in the same editor group.
+     *
+     * @param tab editor tab to act on
+     */
     public void closeToRight(EditorTab tab) {
         requireManaged(tab);
         int tabIndex = tabIndex(tab);
@@ -1718,6 +1849,11 @@ public class EditorTabManager {
             .toList());
     }
 
+    /**
+     * Requests closure of unpinned tabs to the left in the same editor group.
+     *
+     * @param tab editor tab to act on
+     */
     public void closeToLeft(EditorTab tab) {
         requireManaged(tab);
         int tabIndex = tabIndex(tab);
@@ -1726,28 +1862,45 @@ public class EditorTabManager {
             .toList());
     }
 
+    /**
+     * Requests closure of all managed editor tabs.
+     */
     public void closeAll() {
         closeInDescendingOrder(new ArrayList<>(openTabs.values()));
     }
 
+    /**
+     * Requests closure of all unpinned editor tabs.
+     */
     public void closeAllUnpinned() {
         closeInDescendingOrder(openTabs.values().stream()
             .filter(tab -> !tab.pinned())
             .toList());
     }
 
+    /**
+     * Requests closure of tabs whose editor state is clean.
+     */
     public void closeAllUnmodified() {
         closeInDescendingOrder(openTabs.values().stream()
             .filter(tab -> !tab.dirty())
             .toList());
     }
 
+    /**
+     * Requests closure of tabs whose editor state is clean.
+     */
     public void closeAllSaved() {
         closeInDescendingOrder(openTabs.values().stream()
             .filter(tab -> !tab.dirty())
             .toList());
     }
 
+    /**
+     * Promotes a managed preview to a permanent tab and pins it.
+     *
+     * @param tab editor tab to act on
+     */
     public void pin(EditorTab tab) {
         Objects.requireNonNull(tab, "Tab cannot be null");
         if (openTabs.containsKey(tab.documentId())) {
@@ -1756,6 +1909,11 @@ public class EditorTabManager {
         }
     }
 
+    /**
+     * Clears the pinned flag of a managed editor tab.
+     *
+     * @param tab editor tab to act on
+     */
     public void unpin(EditorTab tab) {
         Objects.requireNonNull(tab, "Tab cannot be null");
         if (openTabs.containsKey(tab.documentId())) {
@@ -1763,6 +1921,11 @@ public class EditorTabManager {
         }
     }
 
+    /**
+     * Toggles a managed tab's pin status, promoting previews before pinning.
+     *
+     * @param tab editor tab to act on
+     */
     public void togglePin(EditorTab tab) {
         Objects.requireNonNull(tab, "Tab cannot be null");
         if (openTabs.containsKey(tab.documentId())) {
@@ -1773,6 +1936,12 @@ public class EditorTabManager {
         }
     }
 
+    /**
+     * Updates preview status, refusing pinned or dirty previews and promoting any previous preview.
+     *
+     * @param tab editor tab to act on
+     * @param preview whether the tab occupies the reusable preview slot
+     */
     public void setPreview(EditorTab tab, boolean preview) {
         Objects.requireNonNull(tab, "Tab cannot be null");
         if (openTabs.containsKey(tab.documentId())) {
@@ -1788,12 +1957,20 @@ public class EditorTabManager {
         }
     }
 
-    /** Returns the single reusable preview tab, if one is currently open. */
+    /**
+     * Returns the single reusable preview tab, if one is currently open.
+     *
+     * @return preview tab, or an empty optional when none exists
+     */
     public Optional<EditorTab> previewTab() {
         return openTabs.values().stream().filter(EditorTab::preview).findFirst();
     }
 
-    /** Makes a temporary preview a normal document tab. */
+    /**
+     * Makes a temporary preview a normal document tab.
+     *
+     * @param tab editor tab to act on
+     */
     public void promote(EditorTab tab) {
         Objects.requireNonNull(tab, "Tab cannot be null");
         if (openTabs.get(tab.documentId()) == tab && tab.preview()) {
@@ -1801,6 +1978,9 @@ public class EditorTabManager {
         }
     }
 
+    /**
+     * Reopens and activates the most recently closed retained tab.
+     */
     public void reopenLastClosed() {
         ClosedEditorTab lastClosed = recentlyClosedTabs.peekFirst();
         if (lastClosed != null) {
@@ -1808,6 +1988,11 @@ public class EditorTabManager {
         }
     }
 
+    /**
+     * Reopens and activates a tab if it remains in the closed-tab history.
+     *
+     * @param tab editor tab to act on
+     */
     public void reopenClosed(ClosedEditorTab tab) {
         Objects.requireNonNull(tab, "Closed tab cannot be null");
         if (recentlyClosedTabs.contains(tab)) {
@@ -1815,6 +2000,9 @@ public class EditorTabManager {
         }
     }
 
+    /**
+     * Reopens retained closed tabs in their previous placement order.
+     */
     public void reopenAllClosed() {
         if (recentlyClosedTabs.isEmpty())
             return;
@@ -1849,6 +2037,11 @@ public class EditorTabManager {
         });
     }
 
+    /**
+     * Reveals an existing managed document in the operating system file explorer.
+     *
+     * @param tab editor tab to act on
+     */
     public void revealInFileExplorer(EditorTab tab) {
         Objects.requireNonNull(tab, "Tab cannot be null");
         if (!openTabs.containsKey(tab.documentId()))
@@ -1861,6 +2054,11 @@ public class EditorTabManager {
         FileUtils.openInExplorer(path);
     }
 
+    /**
+     * Reveals an existing managed document in the project explorer.
+     *
+     * @param tab editor tab to act on
+     */
     public void revealInProjectExplorer(EditorTab tab) {
         Objects.requireNonNull(tab, "Tab cannot be null");
         if (!openTabs.containsKey(tab.documentId()))
@@ -1874,6 +2072,11 @@ public class EditorTabManager {
             explorer -> explorer.revealPath(path));
     }
 
+    /**
+     * Opens a terminal at the parent directory of an existing document file.
+     *
+     * @param tab editor tab to act on
+     */
     public void openInTerminal(EditorTab tab) {
         Objects.requireNonNull(tab, "Tab cannot be null");
         if (!openTabs.containsKey(tab.documentId()))
@@ -1886,10 +2089,20 @@ public class EditorTabManager {
         FileUtils.openInTerminal(path.getParent());
     }
 
+    /**
+     * Moves a managed tab to the previous editor group when available.
+     *
+     * @param tab editor tab to act on
+     */
     public void moveToPreviousGroup(EditorTab tab) {
         moveToAdjacentGroup(tab, -1);
     }
 
+    /**
+     * Moves a managed tab to the next editor group when available.
+     *
+     * @param tab editor tab to act on
+     */
     public void moveToNextGroup(EditorTab tab) {
         moveToAdjacentGroup(tab, 1);
     }
@@ -1982,22 +2195,50 @@ public class EditorTabManager {
         }
     }
 
+    /**
+     * Moves the tab into a new editor group to the right of its current group.
+     *
+     * @param tab editor tab to act on
+     */
     public void splitRight(EditorTab tab) {
         split(tab, Orientation.HORIZONTAL);
     }
 
+    /**
+     * Moves the tab into a new editor group below its current group.
+     *
+     * @param tab editor tab to act on
+     */
     public void splitDown(EditorTab tab) {
         split(tab, Orientation.VERTICAL);
     }
 
+    /**
+     * Checks for unpinned tabs to the left in the same editor group.
+     *
+     * @param tab editor tab to act on
+     * @return true when an unpinned tab precedes this tab
+     */
     public boolean hasTabsToLeft(EditorTab tab) {
         return hasTabsBeside(tab, index -> index < tabIndex(tab));
     }
 
+    /**
+     * Checks for unpinned tabs to the right in the same editor group.
+     *
+     * @param tab editor tab to act on
+     * @return true when an unpinned tab follows this tab
+     */
     public boolean hasTabsToRight(EditorTab tab) {
         return hasTabsBeside(tab, index -> index > tabIndex(tab));
     }
 
+    /**
+     * Checks for other unpinned tabs in the same editor group.
+     *
+     * @param tab editor tab to act on
+     * @return true when another unpinned tab exists
+     */
     public boolean hasOtherClosableTabs(EditorTab tab) {
         Objects.requireNonNull(tab, "Tab cannot be null");
         if (openTabs.get(tab.documentId()) != tab)
@@ -2007,10 +2248,22 @@ public class EditorTabManager {
             .anyMatch(candidate -> candidate != tab && !candidate.pinned());
     }
 
+    /**
+     * Checks whether the tab has a preceding editor group.
+     *
+     * @param tab editor tab to act on
+     * @return true when the tab can move to the previous group
+     */
     public boolean hasPreviousEditorGroup(EditorTab tab) {
         return hasAdjacentEditorGroup(tab, -1);
     }
 
+    /**
+     * Checks whether the tab has a following editor group.
+     *
+     * @param tab editor tab to act on
+     * @return true when the tab can move to the next group
+     */
     public boolean hasNextEditorGroup(EditorTab tab) {
         return hasAdjacentEditorGroup(tab, 1);
     }
@@ -2106,7 +2359,8 @@ public class EditorTabManager {
     private boolean insertAdjacent(
         DetachableTabPane sourceTabPane,
         DetachableTabPane targetTabPane,
-        Orientation orientation) {
+        Orientation orientation
+    ) {
         SplitPane containingSplitPane = findContainingSplitPane(sourceTabPane);
         if (editorSplitPanes.contains(containingSplitPane)
             && containingSplitPane.getOrientation() == orientation) {
@@ -2319,7 +2573,8 @@ public class EditorTabManager {
         Project project,
         DetachableTabPane tabPane,
         ClosedEditorTab closedTab,
-        boolean activate) {
+        boolean activate
+    ) {
         EditorTab reopenedTab = openInTabPane(
             project,
             closedTab.path(),

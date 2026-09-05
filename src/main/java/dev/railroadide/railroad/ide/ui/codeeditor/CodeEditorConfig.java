@@ -10,21 +10,50 @@ import org.jspecify.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.Objects;
 
+/**
+ * Collects a language identifier and optional language services for a code editor.
+ *
+ * @param languageId identifier of the document language
+ * @param completionProvider completion service, or null to disable completion
+ * @param diagnosticsProvider diagnostics service, or null when unavailable
+ * @param signatureHelpProvider signature help service, or null when unavailable
+ * @param highlightingProvider syntax style provider, or null when unavailable
+ */
 public record CodeEditorConfig(
     String languageId,
     @Nullable CompletionProvider completionProvider,
     @Nullable DiagnosticsProvider diagnosticsProvider,
     @Nullable SignatureHelpProvider signatureHelpProvider,
-    @Nullable SyntaxHighlightingProvider highlightingProvider) {
+    @Nullable SyntaxHighlightingProvider highlightingProvider
+) {
+    /**
+     * Creates editor configuration with a non-null language identifier and optional providers.
+     *
+     * @param languageId identifier of the document language
+     * @param completionProvider completion service, or null to disable completion
+     * @param diagnosticsProvider diagnostics service, or null when unavailable
+     * @param signatureHelpProvider signature help service, or null when unavailable
+     * @param highlightingProvider syntax style provider, or null when unavailable
+     */
     public CodeEditorConfig {
         Objects.requireNonNull(languageId, "languageId");
     }
 
+    /**
+     * Creates document-specific providers from the available language-support factories.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param filePath document file for which the view or services are created
+     * @param languageSupport language support whose provider factories should be used
+     * @param highlightingProvider syntax style provider, or null when unavailable
+     * @return configuration with null entries for unavailable services
+     */
     public static CodeEditorConfig fromLanguageSupport(
         Project project,
         Path filePath,
         LanguageSupport languageSupport,
-        @Nullable SyntaxHighlightingProvider highlightingProvider) {
+        @Nullable SyntaxHighlightingProvider highlightingProvider
+    ) {
         Objects.requireNonNull(project, "project");
         Objects.requireNonNull(filePath, "filePath");
         Objects.requireNonNull(languageSupport, "languageSupport");

@@ -10,6 +10,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A switch rule pairing one or more labels with a statement body.
+ *
+ * @param span source range occupied by this node
+ * @param labels labels selecting this rule
+ * @param body statement executed when a label matches
+ */
 public record SwitchRule(Span span, List<SwitchLabel> labels, Statement body) implements Statement {
     @Override
     public AstKind kind() {

@@ -27,8 +27,14 @@ import javafx.scene.layout.Region;
 import java.util.Objects;
 import java.util.function.Function;
 
+/**
+ * Adds tab overflow controls and drag handling to an editor tab strip.
+ */
 public final class EditorTabStripSupport implements AutoCloseable {
-    static final String DRAG_ACTIVE_PROPERTY = "railroad:editor-tab-drag-active";
+    /**
+     * Node-property key marking a tab pane with an active drag.
+     */
+    public static final String DRAG_ACTIVE_PROPERTY = "railroad:editor-tab-drag-active";
     private static final double AUTO_SCROLL_EDGE_SIZE = 48;
     private static final double AUTO_SCROLL_DELTA = 9;
     private static final long AUTO_SCROLL_INTERVAL_NANOS = 20_000_000L;
@@ -90,10 +96,18 @@ public final class EditorTabStripSupport implements AutoCloseable {
     private double stabilizedLabelPrefWidth;
     private double stabilizedLabelMaxWidth;
 
+    /**
+     * Installs overflow and drag support on an editor tab pane.
+     *
+     * @param tabPane editor group tab pane
+     * @param editorTabResolver maps JavaFX tabs to their managed editor tabs
+     * @param dragFinished callback invoked when a tab drag finishes
+     */
     public EditorTabStripSupport(
         DetachableTabPane tabPane,
         Function<Tab, EditorTab> editorTabResolver,
-        Runnable dragFinished) {
+        Runnable dragFinished
+    ) {
         this.tabPane = tabPane;
         this.dragFinished = Objects.requireNonNull(dragFinished, "Drag-finished action cannot be null");
         this.allTabsMenu = new EditorAllTabsMenu(tabPane, editorTabResolver);
@@ -507,7 +521,8 @@ public final class EditorTabStripSupport implements AutoCloseable {
         double delta,
         Point2D local,
         double screenX,
-        double screenY) {
+        double screenY
+    ) {
         var scrollEvent = new ScrollEvent(
             ScrollEvent.SCROLL,
             local.getX(),

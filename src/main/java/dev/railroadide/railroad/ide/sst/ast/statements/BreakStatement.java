@@ -11,9 +11,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * A break from an enclosing loop or switch, optionally targeting a label.
+ *
+ * @param span source range occupied by this node
+ * @param label optional target label; empty for the innermost enclosing loop or switch
+ */
 public record BreakStatement(
     Span span,
-    Optional<NameExpression> label) implements Statement {
+    Optional<NameExpression> label
+) implements Statement {
     @Override
     public AstKind kind() {
         return AstKind.BREAK_STATEMENT;

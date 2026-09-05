@@ -9,13 +9,13 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class JavaJavaProjectSemanticIndexerTest {
+public class JavaJavaProjectSemanticIndexerTest {
 
     @TempDir
-    Path tempDir;
+    public Path tempDir;
 
     @Test
-    void buildsProjectIndexAcrossMultipleFiles() throws Exception {
+    public void buildsProjectIndexAcrossMultipleFiles() throws Exception {
         Path root = tempDir.resolve("project");
         Path sourceRoot = root.resolve("src/main/java/demo");
         Files.createDirectories(sourceRoot);

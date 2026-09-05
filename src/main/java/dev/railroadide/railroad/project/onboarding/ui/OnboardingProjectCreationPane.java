@@ -15,9 +15,17 @@ import javafx.stage.Screen;
 
 import java.util.function.Consumer;
 
+/**
+ * Launches project onboarding in a separate window from the project creation screen.
+ */
 public class OnboardingProjectCreationPane extends RRVBox {
     private final Consumer<Scene> onStartOnboarding;
 
+    /**
+     * Creates a launch pane that opens an onboarding window when activated.
+     *
+     * @param onStartOnboarding callback receiving the scene of the newly created onboarding window
+     */
     public OnboardingProjectCreationPane(Consumer<Scene> onStartOnboarding) {
         super();
 

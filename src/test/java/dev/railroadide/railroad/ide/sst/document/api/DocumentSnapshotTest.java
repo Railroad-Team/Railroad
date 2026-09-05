@@ -10,10 +10,10 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class DocumentSnapshotTest {
+public class DocumentSnapshotTest {
 
     @Test
-    void rootIsSealedToTextAndBinarySnapshots() {
+    public void rootIsSealedToTextAndBinarySnapshots() {
         assertTrue(DocumentSnapshot.class.isSealed());
         assertEquals(
             Set.of(TextDocumentSnapshot.class, BinaryDocumentSnapshot.class),
@@ -21,7 +21,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void textSnapshotCopiesMutableInputAndCarriesMetadata() {
+    public void textSnapshotCopiesMutableInputAndCarriesMetadata() {
         DocumentId id = DocumentId.create();
         DocumentUri uri = DocumentUri.virtual("generated", "sources/Example.java");
         var version = new DocumentVersion(8);
@@ -45,7 +45,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void textSnapshotAlsoAcceptsPhysicalDocumentLocations() {
+    public void textSnapshotAlsoAcceptsPhysicalDocumentLocations() {
         DocumentUri physicalUri = DocumentUri.fromPath(Path.of("Example.java").toAbsolutePath());
 
         var snapshot = new TextDocumentSnapshot(
@@ -60,7 +60,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void binarySnapshotCopiesInputsAndExposesIndependentReadOnlyViews() {
+    public void binarySnapshotCopiesInputsAndExposesIndependentReadOnlyViews() {
         byte[] content = {1, 2, 3, 4};
         var snapshot = new BinaryDocumentSnapshot(
             DocumentId.create(),
@@ -85,7 +85,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void binarySnapshotCopiesOnlyRemainingBytesWithoutMovingSourcePosition() {
+    public void binarySnapshotCopiesOnlyRemainingBytesWithoutMovingSourcePosition() {
         ByteBuffer source = ByteBuffer.wrap(new byte[]{10, 20, 30, 40});
         source.position(1);
         source.limit(3);
@@ -102,7 +102,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void snapshotsRejectMissingMetadataAndBlankLanguages() {
+    public void snapshotsRejectMissingMetadataAndBlankLanguages() {
         DocumentId id = DocumentId.create();
         DocumentUri uri = DocumentUri.inMemory(id);
         DocumentVersion version = DocumentVersion.initial();

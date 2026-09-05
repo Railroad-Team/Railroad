@@ -18,24 +18,44 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Stores child configuration UUIDs and their parallel or sequential execution mode.
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class CompoundRunConfigurationData extends RunConfigurationData {
     private RunMode runMode = RunMode.PARALLEL;
     private final List<String> configurationIds = new ArrayList<>();
 
+    /**
+     * Appends a child configuration's UUID to the stored execution order; null input is ignored.
+     *
+     * @param configuration the child configuration to append, or {@code null}
+     */
     public void addConfiguration(RunConfiguration<?> configuration) {
         if (configuration != null) {
             configurationIds.add(configuration.uuid().toString());
         }
     }
 
+    /**
+     * Removes the first stored occurrence of a child configuration's UUID; null input is ignored.
+     *
+     * @param configuration the child configuration to remove, or {@code null}
+     */
     public void removeConfiguration(RunConfiguration<?> configuration) {
         if (configuration != null) {
             configurationIds.remove(configuration.uuid().toString());
         }
     }
 
+    /**
+     * Resolves stored UUIDs against available configurations while preserving their stored order.
+     *
+     * @param availableConfigurations the configurations to search, or {@code null} when unavailable
+     * @return matching configurations with null entries for unresolved UUIDs, or an empty list when no choices are
+     *         available
+     */
     public List<RunConfiguration<?>> resolveConfigurations(List<RunConfiguration<?>> availableConfigurations) {
         if (configurationIds.isEmpty() || availableConfigurations == null || availableConfigurations.isEmpty())
             return List.of();
@@ -105,9 +125,19 @@ public class CompoundRunConfigurationData extends RunConfigurationData {
         return RunConfigurationTypes.COMPOUND;
     }
 
+    /**
+     * Determines when a compound configuration starts each child run operation.
+     */
     @Getter
     public enum RunMode {
-        PARALLEL, SEQUENTIAL;
+        /**
+         * Starts child run operations together and waits for all of their futures.
+         */
+        PARALLEL,
+        /**
+         * Starts each child after the preceding child's run future completes successfully.
+         */
+        SEQUENTIAL;
 
         private final String localizationKey;
 

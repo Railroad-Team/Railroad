@@ -53,6 +53,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+/**
+ * Provides a text editor with configurable highlighting, completion, diagnostics, and signature help.
+ */
 public abstract class CodeEditorPane extends TextEditorPane {
     protected final Project project;
     protected final @Nullable CompletionProvider completionProvider;
@@ -789,7 +792,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     private static StyleSpans<Collection<String>> mergeDiagnosticStyles(
         StyleSpans<Collection<String>> baseSpans,
-        List<EditorDiagnostic> diagnostics) {
+        List<EditorDiagnostic> diagnostics
+    ) {
         if (baseSpans == null || diagnostics == null || diagnostics.isEmpty())
             return baseSpans;
 
@@ -872,7 +876,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     private static boolean styleSpansEqual(
         StyleSpans<Collection<String>> left,
-        StyleSpans<Collection<String>> right) {
+        StyleSpans<Collection<String>> right
+    ) {
         if (left == right)
             return true;
 

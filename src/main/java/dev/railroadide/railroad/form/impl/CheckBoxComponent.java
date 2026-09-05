@@ -38,9 +38,15 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
      * @param transformers the transformers for the checkbox
      * @param visible the visibility of the checkbox
      */
-    public CheckBoxComponent(String dataKey, Data data, FormComponentValidator<CheckBox> validator,
-        FormComponentChangeListener<CheckBox, Boolean> listener, Property<CheckBox> bindCheckboxTo,
-        List<FormTransformer<CheckBox, Boolean, ?>> transformers, @Nullable BooleanBinding visible) {
+    public CheckBoxComponent(
+        String dataKey,
+        Data data,
+        FormComponentValidator<CheckBox> validator,
+        FormComponentChangeListener<CheckBox, Boolean> listener,
+        Property<CheckBox> bindCheckboxTo,
+        List<FormTransformer<CheckBox, Boolean, ?>> transformers,
+        @Nullable BooleanBinding visible
+    ) {
         super(dataKey, data,
             dataCurrent -> new FormCheckBox(dataCurrent.label, dataCurrent.required, dataCurrent.selected), validator,
             listener, transformers, visible);
@@ -186,8 +192,11 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
          * @return this builder
          */
         @Override
-        public <X> Builder addTransformer(ObservableValue<CheckBox> fromComponent, Consumer<X> toComponentFunction,
-            Function<Boolean, X> valueMapper) {
+        public <X> Builder addTransformer(
+            ObservableValue<CheckBox> fromComponent,
+            Consumer<X> toComponentFunction,
+            Function<Boolean, X> valueMapper
+        ) {
             transformers
                 .add(new FormTransformer<>(fromComponent, CheckBox::isSelected, toComponentFunction, valueMapper));
             return this;
@@ -204,8 +213,11 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
          * @return this builder
          */
         @Override
-        public <U extends Node, X> Builder addTransformer(ObservableValue<CheckBox> fromComponent,
-            ObservableValue<U> toComponent, Function<Boolean, X> valueMapper) {
+        public <U extends Node, X> Builder addTransformer(
+            ObservableValue<CheckBox> fromComponent,
+            ObservableValue<U> toComponent,
+            Function<Boolean, X> valueMapper
+        ) {
             this.transformers.add(new FormTransformer<>(fromComponent, CheckBox::isSelected, value -> {
                 if (toComponent.getValue() instanceof TextField textField) {
                     textField.setText(value.toString());
@@ -262,9 +274,10 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
         }
 
         /**
-         * Gets the label for the checkbox.
+         * Sets the initial selected state of the checkbox.
          *
-         * @return the label
+         * @param selected whether the checkbox is initially selected
+         * @return this data object
          */
         public Data selected(boolean selected) {
             this.selected = selected;
@@ -272,9 +285,10 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
         }
 
         /**
-         * Gets whether the checkbox is required.
+         * Sets whether the checkbox is required.
          *
-         * @return whether the checkbox is required
+         * @param required whether the checkbox is required
+         * @return this data object
          */
         public Data required(boolean required) {
             this.required = required;

@@ -8,6 +8,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A block comment retained as source text in the AST.
+ *
+ * @param span source range occupied by this node
+ * @param content source text preserved by this node
+ */
 public record BlockComment(Span span, String content) implements Comment {
     @Override
     public AstKind kind() {

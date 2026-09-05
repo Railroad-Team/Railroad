@@ -20,6 +20,13 @@ public final class UIAnimations {
     private UIAnimations() {
     }
 
+    /**
+     * Creates an unstarted, linear animation that rotates a node through 360 degrees every second indefinitely.
+     *
+     * @param node node to rotate
+     * @return the transition, ready for the caller to start and stop
+     * @throws NullPointerException if {@code node} is null
+     */
     public static RotateTransition spinner(Node node) {
         var transition = new RotateTransition(SPINNER_DURATION, Objects.requireNonNull(node));
         transition.setByAngle(360);
@@ -28,6 +35,13 @@ public final class UIAnimations {
         return transition;
     }
 
+    /**
+     * Creates an unstarted 300-millisecond transition from transparent to fully opaque, with eased endpoints.
+     *
+     * @param node node whose opacity is animated
+     * @return the configured fade transition
+     * @throws NullPointerException if {@code node} is null
+     */
     public static FadeTransition fadeIn(Node node) {
         var transition = new FadeTransition(ENTRANCE_DURATION, Objects.requireNonNull(node));
         transition.setFromValue(0);
@@ -36,10 +50,26 @@ public final class UIAnimations {
         return transition;
     }
 
+    /**
+     * Creates an unstarted 300-millisecond slide from one node width to the left to zero horizontal translation.
+     * The distance uses the node's local bounds at the time this method is called.
+     *
+     * @param node node to translate
+     * @return the configured transition with eased endpoints
+     * @throws NullPointerException if {@code node} is null
+     */
     public static TranslateTransition slideInFromLeft(Node node) {
         return slideIn(node, -1);
     }
 
+    /**
+     * Creates an unstarted 300-millisecond slide from one node width to the right to zero horizontal translation.
+     * The distance uses the node's local bounds at the time this method is called.
+     *
+     * @param node node to translate
+     * @return the configured transition with eased endpoints
+     * @throws NullPointerException if {@code node} is null
+     */
     public static TranslateTransition slideInFromRight(Node node) {
         return slideIn(node, 1);
     }

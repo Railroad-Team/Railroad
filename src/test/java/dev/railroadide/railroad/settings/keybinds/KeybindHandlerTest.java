@@ -13,9 +13,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-class KeybindHandlerTest {
+public class KeybindHandlerTest {
     @Test
-    void actionReceivesMatchedInputContext() {
+    public void actionReceivesMatchedInputContext() {
         var logicalContext = KeybindContexts.of("test:action-context-" + System.nanoTime());
         var invocation = new AtomicReference<KeybindActionContext>();
         Keybind keybind = Keybind.builder()

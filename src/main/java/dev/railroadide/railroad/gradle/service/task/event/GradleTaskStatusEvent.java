@@ -16,5 +16,6 @@ public record GradleTaskStatusEvent(
     UUID taskId,
     GradleTaskState state,
     String messageKey,
-    Object[] messageArgs) {
+    Object[] messageArgs
+) {
 }

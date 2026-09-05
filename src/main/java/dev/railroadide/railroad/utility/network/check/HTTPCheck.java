@@ -12,11 +12,33 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 
+/**
+ * Tests an HTTP endpoint with a synchronous HEAD request, accepting response codes from 200 through 399.
+ * Redirect handling follows the selected client's defaults. Caught failures are logged when
+ * {@link #shouldLogFailures()} is true.
+ *
+ * @param clientMode HTTP client implementation to use; must be non-null when running a check
+ */
 public record HTTPCheck(HttpClientMode clientMode) implements NetworkCheck {
+    /** Creates an HTTP probe using {@link HttpClientMode#URL_CONNECTION}. */
     public HTTPCheck() {
         this(HttpClientMode.URL_CONNECTION);
     }
 
+    /**
+     * Sends a HEAD request using the configured client.
+     * URL connections receive connect and read timeouts; the JDK HTTP client receives connect and request timeouts;
+     * OkHttp receives call, connect, read, and write timeouts. An interrupted JDK HTTP request restores the thread's
+     * interrupt flag and returns false. Invalid URL or timeout arguments are handled differently by each client:
+     * OkHttp catches illegal arguments, while the other clients may propagate them.
+     *
+     * @param address absolute HTTP or HTTPS URL to probe
+     * @param timeout timeout in milliseconds; must be positive for {@link HttpClientMode#JAVA_NET}, while zero
+     *            disables the configured timeouts for the other clients
+     * @return true for a response code from 200 through 399, or false for other responses or a handled failure
+     * @throws NullPointerException if the client mode or address is null
+     * @throws IllegalArgumentException if the selected client rejects an argument and does not handle the exception
+     */
     @Override
     public boolean check(String address, int timeout) {
         return switch (this.clientMode) {
@@ -121,7 +143,13 @@ public record HTTPCheck(HttpClientMode clientMode) implements NetworkCheck {
         };
     }
 
+    /** HTTP client implementations available to the probe. */
     public enum HttpClientMode {
-        URL_CONNECTION, JAVA_NET, OKHTTP
+        /** Uses {@link HttpURLConnection} with connect and read timeouts. */
+        URL_CONNECTION,
+        /** Uses the JDK {@link HttpClient} with connect and request timeouts. */
+        JAVA_NET,
+        /** Uses {@link OkHttpClient} with call, connect, read, and write timeouts. */
+        OKHTTP
     }
 }

@@ -9,6 +9,9 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * A custom Gson TypeAdapter for serializing and deserializing LocalDateTime objects.
+ */
 public final class LocalDateTimeTypeAdapter extends TypeAdapter<LocalDateTime> {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 

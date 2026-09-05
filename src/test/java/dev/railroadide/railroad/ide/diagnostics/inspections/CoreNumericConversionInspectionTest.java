@@ -8,9 +8,9 @@ import java.util.List;
 import static dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectionTestSupport.runProvider;
 import static org.junit.jupiter.api.Assertions.*;
 
-class CoreNumericConversionInspectionTest {
+public class CoreNumericConversionInspectionTest {
     @Test
-    void coreNegativeHexIntInLongContextRuleEmitsDiagnosticForParenthesizedAndNestedLongContexts() {
+    public void coreNegativeHexIntInLongContextRuleEmitsDiagnosticForParenthesizedAndNestedLongContexts() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
             class Example {
                 long parenthesized = (0x8000_0000);
@@ -26,7 +26,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreNegativeHexIntInLongContextRuleEmitsDiagnosticForJdkMethodInvocationArgument() {
+    public void coreNegativeHexIntInLongContextRuleEmitsDiagnosticForJdkMethodInvocationArgument() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
             class Example {
                 long run() {
@@ -39,7 +39,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreNegativeHexIntInLongContextRuleEmitsDiagnosticForFieldInitializer() {
+    public void coreNegativeHexIntInLongContextRuleEmitsDiagnosticForFieldInitializer() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
             class Example {
                 long field = 0x8000_0000;
@@ -50,7 +50,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreNegativeHexIntInLongContextRuleEmitsDiagnosticForArrayInitializer() {
+    public void coreNegativeHexIntInLongContextRuleEmitsDiagnosticForArrayInitializer() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
             class Example {
                 long[] values = { 0x8000_0000 };
@@ -61,7 +61,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreNegativeHexIntInLongContextRuleEmitsDiagnosticForConditionalArm() {
+    public void coreNegativeHexIntInLongContextRuleEmitsDiagnosticForConditionalArm() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
             class Example {
                 long conditional(boolean flag) {
@@ -74,7 +74,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreNegativeHexIntInLongContextRuleEmitsDiagnosticForCastContext() {
+    public void coreNegativeHexIntInLongContextRuleEmitsDiagnosticForCastContext() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
             class Example {
                 long casted() {
@@ -87,7 +87,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreNegativeHexIntInLongContextRuleDoesNotEmitForDecimalLongLiteral() {
+    public void coreNegativeHexIntInLongContextRuleDoesNotEmitForDecimalLongLiteral() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
             class Example {
                 long value = 2147483648L;
@@ -98,7 +98,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreNegativeHexIntInLongContextRuleDoesNotEmitForHexLiteralWithLongSuffix() {
+    public void coreNegativeHexIntInLongContextRuleDoesNotEmitForHexLiteralWithLongSuffix() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
             class Example {
                 long value = 0x8000_0000L;
@@ -109,7 +109,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreNegativeHexIntInLongContextRuleDoesNotEmitForNonNegativeHexInt() {
+    public void coreNegativeHexIntInLongContextRuleDoesNotEmitForNonNegativeHexInt() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
             class Example {
                 long value = 0x7FFF_FFFF;
@@ -120,7 +120,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreNegativeHexIntInLongContextRuleDoesNotEmitForOutOfRangeHexLiteral() {
+    public void coreNegativeHexIntInLongContextRuleDoesNotEmitForOutOfRangeHexLiteral() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreNegativeHexIntInLongContextInspection(), """
             class Example {
                 long value = 0x1_0000_0000;
@@ -131,7 +131,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreImplicitNumericConversionRuleEmitsDiagnosticForVariableInitializerWidening() {
+    public void coreImplicitNumericConversionRuleEmitsDiagnosticForVariableInitializerWidening() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
             class Example {
                 void run() {
@@ -148,7 +148,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreImplicitNumericConversionRuleEmitsDiagnosticForAssignmentWidening() {
+    public void coreImplicitNumericConversionRuleEmitsDiagnosticForAssignmentWidening() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
             class Example {
                 void run() {
@@ -166,7 +166,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreImplicitNumericConversionRuleEmitsDiagnosticForReturnWidening() {
+    public void coreImplicitNumericConversionRuleEmitsDiagnosticForReturnWidening() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
             class Example {
                 long run() {
@@ -183,7 +183,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreImplicitNumericConversionRuleEmitsDiagnosticForMethodInvocationArgument() {
+    public void coreImplicitNumericConversionRuleEmitsDiagnosticForMethodInvocationArgument() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
             class Example {
                 void accept(long value) {
@@ -203,7 +203,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreImplicitNumericConversionRuleEmitsDiagnosticForConstructorArgument() {
+    public void coreImplicitNumericConversionRuleEmitsDiagnosticForConstructorArgument() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
             class Example {
                 Example(long value) {
@@ -223,7 +223,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreImplicitNumericConversionRuleEmitsDiagnosticForMultipleMethodArguments() {
+    public void coreImplicitNumericConversionRuleEmitsDiagnosticForMultipleMethodArguments() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
             class Example {
                 void accept(long first, long second) {
@@ -244,7 +244,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreImplicitNumericConversionRuleEmitsDiagnosticForArithmeticCompoundAssignmentNarrowing() {
+    public void coreImplicitNumericConversionRuleEmitsDiagnosticForArithmeticCompoundAssignmentNarrowing() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
             class Example {
                 void run() {
@@ -261,7 +261,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreImplicitNumericConversionRuleEmitsDiagnosticForShiftCompoundAssignmentNarrowing() {
+    public void coreImplicitNumericConversionRuleEmitsDiagnosticForShiftCompoundAssignmentNarrowing() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
             class Example {
                 void run() {
@@ -278,7 +278,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreImplicitNumericConversionRuleDoesNotEmitForSameTypeAssignment() {
+    public void coreImplicitNumericConversionRuleDoesNotEmitForSameTypeAssignment() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
             class Example {
                 void run() {
@@ -292,7 +292,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreImplicitNumericConversionRuleDoesNotEmitForExplicitCast() {
+    public void coreImplicitNumericConversionRuleDoesNotEmitForExplicitCast() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
             class Example {
                 void run() {
@@ -306,7 +306,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreImplicitNumericConversionRuleDoesNotEmitForCompoundAssignmentWithoutNarrowing() {
+    public void coreImplicitNumericConversionRuleDoesNotEmitForCompoundAssignmentWithoutNarrowing() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
             class Example {
                 void run() {
@@ -320,7 +320,7 @@ class CoreNumericConversionInspectionTest {
     }
 
     @Test
-    void coreImplicitNumericConversionRuleDoesNotEmitForLambdaReturn() {
+    public void coreImplicitNumericConversionRuleDoesNotEmitForLambdaReturn() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreImplicitNumericConversionInspection(), """
             interface Factory {
                 long create();

@@ -73,8 +73,11 @@ public class SettingsUIHandler {
      * @param applyListeners A list of listeners to be notified when settings are applied.
      * @return A VBox containing the settings organized by category.
      */
-    public static VBox createSettingsSection(Collection<Setting<?>> settings, @NotNull String parent,
-        List<Runnable> applyListeners) {
+    public static VBox createSettingsSection(
+        Collection<Setting<?>> settings,
+        @NotNull String parent,
+        List<Runnable> applyListeners
+    ) {
         var searchHandler = new SettingsSearchHandler(settings);
         final Map<String, VBox> folderBoxes = new HashMap<>();
         final Map<String, SettingCategory> categoryMap = new HashMap<>();

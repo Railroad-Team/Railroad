@@ -31,10 +31,36 @@ public class GradleSettings {
     private boolean daemonEnabled;
     private Long daemonIdleTimeout;
 
-    public GradleSettings(boolean useWrapper, String wrapperVersion, Path customGradleHome, Path gradleUserHome,
-        JDK gradleJvm, boolean offlineMode, boolean enableBuildCache, boolean parallelExecution,
-        int maxWorkerCount, List<RunConfiguration<?>> configurations,
-        boolean daemonEnabled, Long daemonIdleTimeout) {
+    /**
+     * Constructs a new GradleSettings instance with the specified settings.
+     *
+     * @param useWrapper whether to use the Gradle wrapper
+     * @param wrapperVersion the version of the Gradle wrapper to use
+     * @param customGradleHome the custom Gradle home directory
+     * @param gradleUserHome the Gradle user home directory
+     * @param gradleJvm the JDK to use for Gradle
+     * @param offlineMode whether to enable offline mode
+     * @param enableBuildCache whether to enable the build cache
+     * @param parallelExecution whether to enable parallel execution
+     * @param maxWorkerCount the maximum number of worker threads for parallel execution
+     * @param configurations the list of run configurations to apply
+     * @param daemonEnabled whether to enable the Gradle daemon
+     * @param daemonIdleTimeout the idle timeout for the Gradle daemon in milliseconds
+     */
+    public GradleSettings(
+        boolean useWrapper,
+        String wrapperVersion,
+        Path customGradleHome,
+        Path gradleUserHome,
+        JDK gradleJvm,
+        boolean offlineMode,
+        boolean enableBuildCache,
+        boolean parallelExecution,
+        int maxWorkerCount,
+        List<RunConfiguration<?>> configurations,
+        boolean daemonEnabled,
+        Long daemonIdleTimeout
+    ) {
         this.useWrapper = useWrapper;
         this.wrapperVersion = wrapperVersion;
         this.customGradleHome = customGradleHome;

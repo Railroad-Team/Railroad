@@ -11,11 +11,19 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 
+/**
+ * A filesystem tree item that loads directory children on first access.
+ */
 public class PathTreeItem extends TreeItem<PathItem> {
     private boolean isLeaf = false;
     private boolean isFirstTimeChildren = true;
     private boolean isFirstTimeLeft = true;
 
+    /**
+     * Creates a tree item whose children will be loaded lazily.
+     *
+     * @param pathItem filesystem tree item
+     */
     public PathTreeItem(PathItem pathItem) {
         super(pathItem);
     }
@@ -30,10 +38,20 @@ public class PathTreeItem extends TreeItem<PathItem> {
         return super.getChildren();
     }
 
+    /**
+     * Checks whether directory children have already been loaded.
+     *
+     * @return whether the initial child load has occurred
+     */
     public boolean areChildrenLoaded() {
         return !isFirstTimeChildren;
     }
 
+    /**
+     * Returns the current child list without triggering directory loading.
+     *
+     * @return live list of already loaded children
+     */
     public ObservableList<TreeItem<PathItem>> getLoadedChildren() {
         return super.getChildren();
     }

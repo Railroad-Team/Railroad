@@ -6,6 +6,9 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 /** Registers Railroad's built-in workspace modes. */
 public final class WorkspaceModes {
+    /**
+     * Built-in code editing workspace mode.
+     */
     public static final WorkspaceMode CODE = WorkspaceMode.register(
         "railroad:code",
         "railroad.ide.view_mode.code",
@@ -13,6 +16,9 @@ public final class WorkspaceModes {
         "railroad:view_mode_code",
         _ -> true,
         _ -> null);
+    /**
+     * Built-in Git workspace mode, available for an active repository.
+     */
     public static final WorkspaceMode GIT = WorkspaceMode.register(
         "railroad:git",
         "railroad.ide.view_mode.git",
@@ -25,6 +31,9 @@ public final class WorkspaceModes {
     private WorkspaceModes() {
     }
 
+    /**
+     * Triggers class initialization and registration of the built-in modes.
+     */
     public static void initialize() {
     }
 }

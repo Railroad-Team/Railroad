@@ -15,13 +15,13 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ProjectLanguageIndexCoordinatorTest {
+public class ProjectLanguageIndexCoordinatorTest {
 
     @TempDir
-    Path tempDir;
+    public Path tempDir;
 
     @Test
-    void warmIndexesBuildsRegisteredLanguageIndexes() throws Exception {
+    public void warmIndexesBuildsRegisteredLanguageIndexes() throws Exception {
         Path root = createProject("""
             package demo;
 
@@ -42,7 +42,7 @@ class ProjectLanguageIndexCoordinatorTest {
     }
 
     @Test
-    void handleFileChangeUpdatesAndRemovesIndexedFiles() throws Exception {
+    public void handleFileChangeUpdatesAndRemovesIndexedFiles() throws Exception {
         Path root = createProject("""
             package demo;
 

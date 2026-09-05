@@ -11,12 +11,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * A for loop with optional initialization and condition, followed by per-iteration updates.
+ *
+ * @param span source range occupied by this node
+ * @param initStatement optional loop initialization statement
+ * @param condition optional continuation condition; empty for an unconditional loop
+ * @param updaters expressions evaluated after each iteration
+ * @param body statement executed on each iteration
+ */
 public record BasicForStatement(
     Span span,
     Optional<Statement> initStatement,
     Optional<Expression> condition,
     List<Expression> updaters,
-    Statement body) implements ForStatement {
+    Statement body
+) implements ForStatement {
     @Override
     public AstKind kind() {
         return AstKind.BASIC_FOR_STATEMENT;

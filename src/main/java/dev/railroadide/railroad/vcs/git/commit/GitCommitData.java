@@ -18,5 +18,6 @@ public record GitCommitData(
     String description,
     boolean amend,
     boolean signOff,
-    List<GitFileChange> selectedChanges) {
+    List<GitFileChange> selectedChanges
+) {
 }

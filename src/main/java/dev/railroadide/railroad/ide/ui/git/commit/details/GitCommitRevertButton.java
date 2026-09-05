@@ -10,7 +10,16 @@ import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.stage.Stage;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
+/**
+ * Requests confirmation before reverting a selected commit.
+ */
 public class GitCommitRevertButton extends RRButton {
+    /**
+     * Creates a confirmed revert action for the supplied commit.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param commit commit to display or act on
+     */
     public GitCommitRevertButton(Project project, GitCommit commit) {
         super("railroad.git.commit.details.button.revert_commit", FontAwesomeSolid.UNDO);
         setVariant(ButtonVariant.DANGER);

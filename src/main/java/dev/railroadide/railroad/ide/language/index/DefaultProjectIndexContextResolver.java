@@ -10,6 +10,9 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * Combines contexts from registered language contributors and normalizes the project root.
+ */
 public final class DefaultProjectIndexContextResolver implements ProjectIndexContextResolver {
     @Override
     public ProjectIndexContext resolve(Project project) {

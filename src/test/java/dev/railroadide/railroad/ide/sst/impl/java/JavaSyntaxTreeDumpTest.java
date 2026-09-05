@@ -9,11 +9,11 @@ import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class JavaSyntaxTreeDumpTest {
+public class JavaSyntaxTreeDumpTest {
     private static final String EMPTY_SNAPSHOT_RESOURCE = "/dev/railroadide/railroad/ide/sst/impl/java/fixtures/tree-dump/empty.snapshot.txt";
 
     @Test
-    void dumpsEmptyCompilationUnitUsingSnapshot() throws IOException {
+    public void dumpsEmptyCompilationUnitUsingSnapshot() throws IOException {
         String actual = SyntaxTreeDumper.dump(JavaSyntaxParser.parse(""));
         String expected;
         try (var stream = JavaSyntaxTreeDumpTest.class.getResourceAsStream(EMPTY_SNAPSHOT_RESOURCE)) {

@@ -8,6 +8,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * Whitespace retained as source text to preserve formatting.
+ *
+ * @param span source range occupied by this node
+ * @param content source text preserved by this node
+ */
 public record Whitespace(Span span, String content) implements AstNode {
     @Override
     public AstKind kind() {

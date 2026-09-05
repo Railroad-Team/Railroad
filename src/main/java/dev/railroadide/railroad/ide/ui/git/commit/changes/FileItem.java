@@ -17,6 +17,12 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 
+/**
+ * Represents one changed file and its Git actions in the commit tree.
+ *
+ * @param project project whose files and workspace are being displayed
+ * @param change file change represented by the tree entry
+ */
 public record FileItem(Project project, GitFileChange change) implements ChangeItem {
     @Override
     public Node getIcon() {
