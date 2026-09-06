@@ -1,6 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.stash;
 
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.GitCommands;
 import dev.railroadide.railroad.ide.ui.IDEContentRouter;
 import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
 import dev.railroadide.railroad.ide.ui.git.commit.changes.*;
@@ -135,11 +138,16 @@ public class GitStashPane extends RRVBox {
 
             openDiffForStashFile(selectedStashRef, fileItem.change());
         });
-        createButton.setOnAction(_ -> onCreateStash());
-        refreshButton.setOnAction(_ -> refreshStashes());
-        applyButton.setOnAction(_ -> onApplyStash());
-        popButton.setOnAction(_ -> onPopStash());
-        dropButton.setOnAction(_ -> onDropStash());
+        CommandButtons.bind(createButton, GitCommands.STASH_CREATE,
+            () -> CommandContext.withArgument(project, this, this));
+        CommandButtons.bind(refreshButton, GitCommands.STASH_REFRESH,
+            () -> CommandContext.withArgument(project, this, this));
+        CommandButtons.bind(applyButton, GitCommands.STASH_APPLY,
+            () -> CommandContext.withArgument(project, this, this));
+        CommandButtons.bind(popButton, GitCommands.STASH_POP,
+            () -> CommandContext.withArgument(project, this, this));
+        CommandButtons.bind(dropButton, GitCommands.STASH_DROP,
+            () -> CommandContext.withArgument(project, this, this));
         gitManager.repoStatusProperty().addListener((_, _, _) -> refreshStashes());
 
         elapsedTimeline.setCycleCount(Timeline.INDEFINITE);
@@ -156,7 +164,10 @@ public class GitStashPane extends RRVBox {
         refreshStashes();
     }
 
-    private void onCreateStash() {
+    /**
+     * Runs the existing create stash operation.
+     */
+    public void onCreateStash() {
         String message = messageField.getText() == null ? "" : messageField.getText().trim();
         if (message.isBlank()) {
             message = "Railroad: stash changes";
@@ -165,21 +176,30 @@ public class GitStashPane extends RRVBox {
         gitManager.stashChanges(message, includeUntrackedCheckBox.isSelected());
     }
 
-    private void onApplyStash() {
+    /**
+     * Runs the existing apply stash operation.
+     */
+    public void onApplyStash() {
         GitStashEntry selected = stashesList.getSelectionModel().getSelectedItem();
         if (selected != null) {
             gitManager.stashApply(selected.reference());
         }
     }
 
-    private void onPopStash() {
+    /**
+     * Runs the existing pop stash operation.
+     */
+    public void onPopStash() {
         GitStashEntry selected = stashesList.getSelectionModel().getSelectedItem();
         if (selected != null) {
             gitManager.stashPop(selected.reference());
         }
     }
 
-    private void onDropStash() {
+    /**
+     * Runs the existing drop stash operation.
+     */
+    public void onDropStash() {
         GitStashEntry selected = stashesList.getSelectionModel().getSelectedItem();
         if (selected != null) {
             DialogBuilder dialogBuilder = DialogBuilder.create()
@@ -192,7 +212,10 @@ public class GitStashPane extends RRVBox {
         }
     }
 
-    private void refreshStashes() {
+    /**
+     * Runs the existing refresh stash operation.
+     */
+    public void refreshStashes() {
         refreshButton.setDisable(true);
         CompletableFuture
             .supplyAsync(gitManager::getStashes)
@@ -209,6 +232,24 @@ public class GitStashPane extends RRVBox {
                     clearStashChanges();
                 }
             }));
+    }
+
+    /**
+     * Checks whether a stash is selected for apply, pop, or drop.
+     *
+     * @return whether a stash is selected
+     */
+    public boolean hasSelectedStash() {
+        return stashesList.getSelectionModel().getSelectedItem() != null;
+    }
+
+    /**
+     * Checks whether another stash refresh can start.
+     *
+     * @return whether no refresh is running
+     */
+    public boolean canRefreshStashes() {
+        return !refreshButton.isDisable();
     }
 
     private void updateActionState() {

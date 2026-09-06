@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.ui.localized;
 
-import dev.railroadide.railroad.utility.DesktopUtils;
+import dev.railroadide.railroad.command.ApplicationCommands;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.CommandMenuItems;
 import dev.railroadide.railroad.settings.keybinds.KeybindData;
 import javafx.scene.Node;
 import javafx.scene.control.MenuItem;
@@ -44,7 +46,8 @@ public class LocalizedMenuItem extends MenuItem {
      */
     public LocalizedMenuItem(final String key, String url) {
         this(key);
-        setOnAction(_ -> DesktopUtils.openUrl(url));
+        CommandMenuItems.bind(this, ApplicationCommands.OPEN_LINK,
+            () -> CommandContext.withArgument(null, null, url));
     }
 
     /**

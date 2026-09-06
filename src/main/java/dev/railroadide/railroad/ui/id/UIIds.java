@@ -18,7 +18,6 @@ import dev.railroadide.railroad.ide.ui.git.commit.details.GitCommitDetailsPane;
 import dev.railroadide.railroad.ide.ui.git.commit.list.GitCommitListHeaderPane;
 import dev.railroadide.railroad.ide.ui.git.commit.list.GitCommitListPane;
 import dev.railroadide.railroad.ide.ui.git.commit.list.GitCommitListViewPane;
-import dev.railroadide.railroad.ide.ui.git.diff.GitDiffPane;
 import dev.railroadide.railroad.ide.ui.git.overview.GitOverviewHeaderPane;
 import dev.railroadide.railroad.ide.ui.git.overview.GitOverviewIdentityPane;
 import dev.railroadide.railroad.ide.ui.git.overview.GitOverviewPane;
@@ -29,6 +28,7 @@ import dev.railroadide.railroad.ide.ui.git.remote.GitRemotesListPane;
 import dev.railroadide.railroad.ide.ui.git.remote.GitRemotesPane;
 import dev.railroadide.railroad.ide.ui.git.stash.GitStashPane;
 import dev.railroadide.railroad.ide.ui.git.sync.*;
+import dev.railroadide.railroad.ide.ui.setup.RunControlsPane;
 import dev.railroadide.railroad.plugin.ui.PluginsPane;
 import dev.railroadide.railroad.project.onboarding.creation.ui.ProjectCreationPane;
 import dev.railroadide.railroad.project.onboarding.ui.BasicOnboardingUI;
@@ -102,6 +102,10 @@ public final class UIIds {
         /** The project file and directory explorer. */
         public static final UIId<ProjectExplorerPane> PROJECT_EXPLORER = internal("project_explorer",
             ProjectExplorerPane.class);
+        /**
+         * Identifies the run toolbar for the current project.
+         */
+        public static final UIId<RunControlsPane> RUN_CONTROLS = internal("run_controls", RunControlsPane.class);
         /** The IDE's top bar. */
         public static final UIId<IDETopBarPane> IDE_TOP_BAR = internal("ide_top_bar", IDETopBarPane.class);
         /** The IDE's status bar. */

@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.ide.runconfig;
 
-import dev.railroadide.railroad.ide.IDESetup;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.CommandMenuItems;
+import dev.railroadide.railroad.command.RunCommands;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.registry.Registry;
 import dev.railroadide.railroad.registry.RegistryManager;
@@ -128,15 +130,15 @@ public abstract class RunConfigurationType<D extends RunConfigurationData> {
         var menu = new ContextMenu();
 
         var editItem = new LocalizedMenuItem("railroad.run_configuration.edit");
-        editItem.setOnAction(event -> IDESetup.showEditRunConfigurationsWindow(project, runConfiguration));
+        CommandMenuItems.bind(editItem, RunCommands.EDIT,
+            () -> CommandContext.withArgument(project, null, runConfiguration));
 
         var pinItem = new LocalizedMenuItem("railroad.run_configuration.pin");
-        pinItem.setOnAction(event -> {
-
-        });
+        pinItem.setDisable(true);
 
         var deleteItem = new LocalizedMenuItem("railroad.run_configuration.delete");
-        deleteItem.setOnAction(event -> project.getRunConfigManager().removeConfiguration(runConfiguration));
+        CommandMenuItems.bind(deleteItem, RunCommands.DELETE,
+            () -> CommandContext.withArgument(project, null, runConfiguration));
 
         menu.getItems().addAll(editItem, pinItem, deleteItem);
         return menu;

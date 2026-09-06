@@ -3,6 +3,7 @@ package dev.railroadide.railroad.ide.ui.editor;
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.language.EditorOpenView;
 import dev.railroadide.railroad.ide.language.LanguageSupport;
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
@@ -11,12 +12,7 @@ import dev.railroadide.railroad.ide.language.impl.PlainTextLanguageSupport;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
-import dev.railroadide.railroad.ide.ui.IDEContentRouter;
-import dev.railroadide.railroad.ide.ui.IDEPane;
-import dev.railroadide.railroad.ide.ui.IDETabLifecycle;
-import dev.railroadide.railroad.ide.ui.IDEWelcomePane;
-import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
-import dev.railroadide.railroad.ide.WorkspaceModes;
+import dev.railroadide.railroad.ide.ui.*;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -32,8 +28,8 @@ import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.javafx.JavaFXUtils;
-import dev.railroadide.railroad.window.WindowBoundsRestorer;
 import dev.railroadide.railroad.window.DialogBuilder;
+import dev.railroadide.railroad.window.WindowBoundsRestorer;
 import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -1986,6 +1982,15 @@ public class EditorTabManager {
         if (lastClosed != null) {
             reopen(lastClosed, true);
         }
+    }
+
+    /**
+     * Checks whether an editor tab can be reopened.
+     *
+     * @return whether the closed-tab history is nonempty
+     */
+    public boolean hasRecentlyClosedTabs() {
+        return !recentlyClosedTabs.isEmpty();
     }
 
     /**

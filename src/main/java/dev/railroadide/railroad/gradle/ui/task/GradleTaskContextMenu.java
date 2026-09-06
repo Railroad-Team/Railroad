@@ -1,5 +1,8 @@
 package dev.railroadide.railroad.gradle.ui.task;
 
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.CommandMenuItems;
+import dev.railroadide.railroad.command.GradleCommands;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationManager;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
@@ -33,20 +36,15 @@ public class GradleTaskContextMenu extends ContextMenu {
         runIcon.getStyleClass().add("run-button");
 
         var runItem = new LocalizedMenuItem("railroad.runconfig.run.tooltip", runIcon);
-        runItem.setOnAction(event -> {
-            var runConfiguration = getOrCreateRunConfig(project, task);
-            runConfiguration.run(project);
-        });
+        CommandMenuItems.bind(runItem, GradleCommands.RUN_TASK,
+            () -> CommandContext.withArgument(project, null, task));
 
         var debugIcon = new FontIcon(FontAwesomeSolid.BUG);
         debugIcon.getStyleClass().add("debug-button");
 
         var debugItem = new LocalizedMenuItem("railroad.runconfig.debug.tooltip", debugIcon);
-        debugItem.setOnAction(event -> {
-            var runConfiguration = getOrCreateRunConfig(project, task);
-
-            runConfiguration.debug(project);
-        });
+        CommandMenuItems.bind(debugItem, GradleCommands.DEBUG_TASK,
+            () -> CommandContext.withArgument(project, null, task));
 
         getItems().addAll(runItem, debugItem);
     }

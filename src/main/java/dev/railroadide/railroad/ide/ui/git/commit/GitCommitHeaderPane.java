@@ -1,6 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.commit;
 
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.GitCommands;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRHBox;
@@ -41,10 +44,13 @@ public class GitCommitHeaderPane extends RRHBox {
             collapseAllButton);
         getStyleClass().add("git-commit-header-pane");
 
-        refreshButton.setOnAction(event -> project.getGitManager().refreshStatus());
+        CommandButtons.bind(refreshButton, GitCommands.REFRESH,
+            () -> CommandContext.withArgument(null, this, project.getGitManager()));
 
-        expandAllButton.setOnAction(event -> gitCommitChangesPane.expandAll());
-        collapseAllButton.setOnAction(event -> gitCommitChangesPane.collapseAll());
+        CommandButtons.bind(expandAllButton, GitCommands.EXPAND_CHANGES,
+            () -> CommandContext.withArgument(project, this, gitCommitChangesPane));
+        CommandButtons.bind(collapseAllButton, GitCommands.COLLAPSE_CHANGES,
+            () -> CommandContext.withArgument(project, this, gitCommitChangesPane));
 
         // TODO: Implement rollback and shelve functionality
         // rollbackButton.setOnAction(event ->

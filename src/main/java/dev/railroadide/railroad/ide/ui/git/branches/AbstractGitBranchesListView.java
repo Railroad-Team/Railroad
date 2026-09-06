@@ -1,5 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.branches;
 
+import dev.railroadide.railroad.command.BranchTarget;
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.GitCommands;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.*;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
@@ -207,13 +211,18 @@ public abstract class AbstractGitBranchesListView<T extends GitBranch> extends R
             }
         }
 
-        checkoutButton.setOnAction(event -> checkoutBranch(branch));
+        CommandButtons.bind(checkoutButton, GitCommands.BRANCH_CHECKOUT,
+            () -> CommandContext.withArgument(project, this, new BranchTarget(this, branch)));
         if (localBranch != null) {
             GitBranch.LocalGitBranch finalLocalBranch = localBranch;
-            setUpstreamButton.setOnAction(event -> openSetUpstreamDialog(finalLocalBranch));
-            unsetUpstreamButton.setOnAction(event -> openUnsetUpstreamDialog(finalLocalBranch));
-            renameButton.setOnAction(event -> openRenameBranchDialog(finalLocalBranch));
-            deleteButton.setOnAction(event -> openDeleteBranchDialog(finalLocalBranch));
+            CommandButtons.bind(setUpstreamButton, GitCommands.BRANCH_SET_UPSTREAM,
+                () -> CommandContext.withArgument(project, this, new BranchTarget(this, finalLocalBranch)));
+            CommandButtons.bind(unsetUpstreamButton, GitCommands.BRANCH_UNSET_UPSTREAM,
+                () -> CommandContext.withArgument(project, this, new BranchTarget(this, finalLocalBranch)));
+            CommandButtons.bind(renameButton, GitCommands.BRANCH_RENAME,
+                () -> CommandContext.withArgument(project, this, new BranchTarget(this, finalLocalBranch)));
+            CommandButtons.bind(deleteButton, GitCommands.BRANCH_DELETE,
+                () -> CommandContext.withArgument(project, this, new BranchTarget(this, finalLocalBranch)));
         }
 
         setUpstreamButton.setVisible(showSetUpstream);
@@ -527,7 +536,7 @@ public abstract class AbstractGitBranchesListView<T extends GitBranch> extends R
         });
     }
 
-    private void checkoutBranch(T branch) {
+    private void checkoutBranch(GitBranch branch) {
         GitManager gitManager = project.getGitManager();
         GitRepoStatus repoStatus = gitManager.getRepoStatus();
         if (repoStatus != null && !repoStatus.changes().isEmpty()) {
@@ -780,5 +789,44 @@ public abstract class AbstractGitBranchesListView<T extends GitBranch> extends R
      */
     public void filterBranches(String newValue) {
         filterText.set(Objects.requireNonNullElse(newValue, "").toLowerCase(Locale.ROOT));
+    }
+
+    /**
+     * Checks the branch type and current-branch restrictions for an existing action.
+     *
+     * @param action action name used by the branch command definitions
+     * @param branch target branch
+     * @return whether that action is available for the branch
+     */
+    public boolean canExecuteBranchAction(String action, GitBranch branch) {
+        if (branch == null || !project.getGitManager().isActive())
+            return false;
+        if (action.equals("checkout"))
+            return !(branch instanceof GitBranch.LocalGitBranch local) || !local.isCurrent();
+        if (!(branch instanceof GitBranch.LocalGitBranch local))
+            return false;
+        return !action.equals("delete") || !local.isCurrent();
+    }
+
+    /**
+     * Opens the existing workflow for the supplied branch.
+     *
+     * @param action registered branch action name
+     * @param branch branch to operate on
+     */
+    public void executeBranchAction(String action, GitBranch branch) {
+        if (!canExecuteBranchAction(action, branch))
+            return;
+        if (action.equals("checkout")) {
+            checkoutBranch(branch);
+            return;
+        }
+        var local = (GitBranch.LocalGitBranch) branch;
+        switch (action) {
+            case "set_upstream" -> openSetUpstreamDialog(local);
+            case "unset_upstream" -> openUnsetUpstreamDialog(local);
+            case "rename" -> openRenameBranchDialog(local);
+            case "delete" -> openDeleteBranchDialog(local);
+        }
     }
 }

@@ -1,66 +1,35 @@
 package dev.railroadide.railroad.ide.ui.setup;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.RailroadProcessLauncher;
-import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.command.*;
 import dev.railroadide.railroad.ide.WorkspaceMode;
 import dev.railroadide.railroad.ide.WorkspaceModeController;
-import dev.railroadide.railroad.ide.projectexplorer.FileCreateType;
-import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
-import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import dev.railroadide.railroad.ide.ui.IDEDockItem;
 import dev.railroadide.railroad.ide.ui.IDEWorkspaceActions;
-import dev.railroadide.railroad.ide.ui.editor.EditorTabManager;
-import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
-import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.settings.keybinds.Keybind;
 import dev.railroadide.railroad.settings.keybinds.KeybindData;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
-import dev.railroadide.railroad.settings.keybinds.Keybinds;
-import dev.railroadide.railroad.settings.ui.SettingsPane;
-import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRMenuBar;
-import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedCheckMenuItem;
 import dev.railroadide.railroad.ui.localized.LocalizedMenu;
 import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.ui.localized.LocalizedRadioMenuItem;
 import dev.railroadide.railroad.utility.OperatingSystem;
 import dev.railroadide.railroad.vcs.git.GitRepositoryState;
-import dev.railroadide.railroad.window.DialogBuilder;
-import dev.railroadide.railroad.window.AlertType;
-import dev.railroadide.railroad.window.WindowBuilder;
-import dev.railroadide.railroad.window.WindowManager;
-import javafx.application.Platform;
 import javafx.beans.value.ObservableBooleanValue;
 import javafx.collections.ListChangeListener;
-import javafx.event.Event;
 import javafx.collections.WeakListChangeListener;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyCodeCombination;
-import javafx.scene.input.KeyCombination;
-import javafx.stage.DirectoryChooser;
-import javafx.stage.FileChooser;
-import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Builds the main IDE menu bar with all menu items, accelerators, and icons.
@@ -84,53 +53,19 @@ public final class IDEMenuBarFactory {
         Consumer<WorkspaceMode> viewModeRequester,
         IDEWorkspaceActions workspaceActions
     ) {
-        var newFileItem = new LocalizedMenuItem("railroad.menu.file.new_file");
+        var menuBar = new RRMenuBar(true);
+
+        var newFileItem = CommandMenuItems.create(Commands.NEW_FILE,
+            () -> CommandContext.forProject(project, menuBar));
         newFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FILE));
-        newFileItem
-            .setKeybindData(new KeybindData(KeyCode.N, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN}));
-        newFileItem.setOnAction(_ -> {
-            Path directoryPath = Services.UI_MANAGER.lookup(UIIds.IDE.PROJECT_EXPLORER)
-                .map(ProjectExplorerPane::getSelectedDirectory)
-                .orElseGet(project::getPath);
-            CreateFileDialog.open(Railroad.WINDOW_MANAGER.getPrimaryStage(), directoryPath, FileCreateType.FILE);
-        });
 
-        var openFileItem = new LocalizedMenuItem("railroad.menu.file.open_file");
+        var openFileItem = CommandMenuItems.create(Commands.OPEN_FILE,
+            () -> CommandContext.forProject(project, menuBar));
         openFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FOLDER_OPEN));
-        openFileItem.setAccelerator(new KeyCodeCombination(KeyCode.O, KeyCombination.SHORTCUT_DOWN));
-        openFileItem.setOnAction(_ -> {
-            Path directoryPath = Services.UI_MANAGER.lookup(UIIds.IDE.PROJECT_EXPLORER)
-                .map(ProjectExplorerPane::getSelectedDirectory)
-                .orElseGet(project::getPath);
-            var fileChooser = new FileChooser();
-            fileChooser.setTitle(L18n.localize("railroad.menu.file.open_file"));
-            fileChooser.setInitialDirectory(directoryPath.toFile());
-            File file = fileChooser.showOpenDialog(Railroad.WINDOW_MANAGER.getPrimaryStage());
-            if (file == null)
-                return;
 
-            Services.EDITOR_TAB_MANAGER.open(file.toPath());
-        });
-
-        var openProjectItem = new LocalizedMenuItem("railroad.menu.file.open_project");
+        var openProjectItem = CommandMenuItems.create(Commands.OPEN_PROJECT,
+            () -> CommandContext.forProject(project, menuBar));
         openProjectItem.setGraphic(new FontIcon(FontAwesomeSolid.FOLDER_OPEN));
-        openProjectItem.setAccelerator(new KeyCodeCombination(KeyCode.O, KeyCombination.SHORTCUT_DOWN,
-            KeyCombination.SHIFT_DOWN, KeyCombination.ALT_DOWN));
-        openProjectItem.setOnAction(_ -> {
-            Path directoryPath = Services.UI_MANAGER.lookup(UIIds.IDE.PROJECT_EXPLORER)
-                .map(ProjectExplorerPane::getSelectedDirectory)
-                .orElseGet(project::getPath);
-            var directoryChooser = new DirectoryChooser();
-            directoryChooser.setTitle(L18n.localize("railroad.menu.file.open_project"));
-            directoryChooser.setInitialDirectory(directoryPath.toFile());
-            File file = directoryChooser.showDialog(Railroad.WINDOW_MANAGER.getPrimaryStage());
-
-            if (file == null)
-                return;
-
-            Project createdProject = Railroad.PROJECT_MANAGER.newProject(new RailroadProject(Path.of(file.getPath())));
-            showOpenProjectDialog(createdProject);
-        });
 
         var recentProjects = new LocalizedMenu("railroad.menu.file.recent_projects");
         recentProjects.setGraphic(new FontIcon(FontAwesomeSolid.FOLDER_OPEN));
@@ -139,107 +74,93 @@ public final class IDEMenuBarFactory {
             .limit(5)
             .map(recentProject -> {
                 var menuItem = new MenuItem(recentProject.getAlias());
-                menuItem.setOnAction(_ -> showOpenProjectDialog(recentProject));
+                CommandMenuItems.bind(menuItem, Commands.OPEN_RECENT_PROJECT,
+                    () -> CommandContext.withArgument(project, menuBar, recentProject));
                 return menuItem;
             }).toList());
 
-        var saveItem = new LocalizedMenuItem("railroad.menu.file.save");
+        var saveItem = CommandMenuItems.create(Commands.SAVE,
+            () -> CommandContext.forProject(project, menuBar));
         saveItem.setGraphic(new FontIcon(FontAwesomeSolid.SAVE));
-        saveItem.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN));
-        saveItem.setOnAction(_ -> showSaveFailures(Services.EDITOR_TAB_MANAGER.saveActive()));
 
-        var saveAsItem = new LocalizedMenuItem("railroad.menu.file.save_as");
+        var saveAsItem = CommandMenuItems.create(Commands.SAVE_AS,
+            () -> CommandContext.forProject(project, menuBar));
         saveAsItem.setGraphic(new FontIcon(FontAwesomeSolid.SAVE));
-        saveAsItem
-            .setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN));
-        saveAsItem.setOnAction(_ -> saveActiveAs());
 
-        var saveAllItem = new LocalizedMenuItem("railroad.menu.file.save_all");
+        var saveAllItem = CommandMenuItems.create(Commands.SAVE_ALL,
+            () -> CommandContext.forProject(project, menuBar));
         saveAllItem.setGraphic(new FontIcon(FontAwesomeSolid.SAVE));
-        saveAllItem.setAccelerator(
-            new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN, KeyCombination.ALT_DOWN));
-        saveAllItem.setOnAction(_ -> showSaveFailures(Services.EDITOR_TAB_MANAGER.saveAll()));
 
-        var exitItem = new LocalizedMenuItem("railroad.menu.file.exit");
+        var exitItem = CommandMenuItems.create(Commands.EXIT,
+            () -> CommandContext.forProject(project, menuBar));
         exitItem.setGraphic(new FontIcon(FontAwesomeSolid.SIGN_OUT_ALT));
-        exitItem.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.SHORTCUT_DOWN));
-        exitItem.setOnAction(_ -> {
-            Stage stage = Railroad.WINDOW_MANAGER.getPrimaryStage();
-            var closeRequest = new WindowEvent(stage, WindowEvent.WINDOW_CLOSE_REQUEST);
-            Event.fireEvent(stage, closeRequest);
-            if (!closeRequest.isConsumed()) {
-                Platform.exit();
-            }
-        });
 
-        var undoItem = new LocalizedMenuItem("railroad.menu.edit.undo");
+        var undoItem = CommandMenuItems.create(EditCommands.UNDO, () -> CommandContext.forProject(project, menuBar));
         undoItem.setGraphic(new FontIcon(FontAwesomeSolid.UNDO));
-        undoItem.setAccelerator(new KeyCodeCombination(KeyCode.Z, KeyCombination.SHORTCUT_DOWN));
 
-        var redoItem = new LocalizedMenuItem("railroad.menu.edit.redo");
+        var redoItem = CommandMenuItems.create(EditCommands.REDO, () -> CommandContext.forProject(project, menuBar));
         redoItem.setGraphic(new FontIcon(FontAwesomeSolid.REDO));
-        redoItem.setAccelerator(new KeyCodeCombination(KeyCode.Y, KeyCombination.SHORTCUT_DOWN));
 
-        var cutItem = new LocalizedMenuItem("railroad.menu.edit.cut");
+        var cutItem = CommandMenuItems.create(EditCommands.CUT, () -> CommandContext.forProject(project, menuBar));
         cutItem.setGraphic(new FontIcon(FontAwesomeSolid.CUT));
-        cutItem.setAccelerator(new KeyCodeCombination(KeyCode.X, KeyCombination.SHORTCUT_DOWN));
 
-        var copyItem = new LocalizedMenuItem("railroad.menu.edit.copy");
+        var copyItem = CommandMenuItems.create(EditCommands.COPY, () -> CommandContext.forProject(project, menuBar));
         copyItem.setGraphic(new FontIcon(FontAwesomeSolid.COPY));
-        copyItem.setAccelerator(new KeyCodeCombination(KeyCode.C, KeyCombination.SHORTCUT_DOWN));
 
-        var pasteItem = new LocalizedMenuItem("railroad.menu.edit.paste");
+        var pasteItem = CommandMenuItems.create(EditCommands.PASTE, () -> CommandContext.forProject(project, menuBar));
         pasteItem.setGraphic(new FontIcon(FontAwesomeSolid.PASTE));
-        pasteItem.setAccelerator(new KeyCodeCombination(KeyCode.V, KeyCombination.SHORTCUT_DOWN));
 
         var findItem = new LocalizedMenuItem("railroad.menu.edit.find");
         findItem.setGraphic(new FontIcon(FontAwesomeSolid.SEARCH));
-        findItem.setAccelerator(new KeyCodeCombination(KeyCode.F, KeyCombination.SHORTCUT_DOWN));
 
         var replaceItem = new LocalizedMenuItem("railroad.menu.edit.replace");
         replaceItem.setGraphic(new FontIcon(FontAwesomeSolid.SEARCH_PLUS));
-        replaceItem.setAccelerator(new KeyCodeCombination(KeyCode.H, KeyCombination.CONTROL_DOWN));
 
-        var toolWindowsMenu = createToolWindowsMenu(workspaceActions);
+        var toolWindowsMenu = createToolWindowsMenu(project, menuBar, workspaceActions);
 
-        var navigateBackItem = new LocalizedMenuItem("railroad.menu.view.navigate_back");
+        var navigateBackItem = CommandMenuItems.create(Commands.NAVIGATE_BACK,
+            () -> CommandContext.withArgument(project, menuBar, workspaceActions));
         navigateBackItem.setGraphic(new FontIcon(FontAwesomeSolid.ARROW_LEFT));
-        navigateBackItem.setOnAction(_ -> workspaceActions.navigateBack());
-        bindConfiguredAccelerator(navigateBackItem, Keybinds.NAVIGATE_BACK);
 
-        var navigateForwardItem = new LocalizedMenuItem("railroad.menu.view.navigate_forward");
+        var navigateForwardItem = CommandMenuItems.create(Commands.NAVIGATE_FORWARD,
+            () -> CommandContext.withArgument(project, menuBar, workspaceActions));
         navigateForwardItem.setGraphic(new FontIcon(FontAwesomeSolid.ARROW_RIGHT));
-        navigateForwardItem.setOnAction(_ -> workspaceActions.navigateForward());
-        bindConfiguredAccelerator(navigateForwardItem, Keybinds.NAVIGATE_FORWARD);
 
-        var resetCurrentLayoutItem = new LocalizedMenuItem("railroad.menu.view.reset_current_layout");
+        var resetCurrentLayoutItem = CommandMenuItems.create(Commands.RESET_CURRENT_LAYOUT,
+            () -> CommandContext.withArgument(project, menuBar, workspaceActions));
         resetCurrentLayoutItem.setGraphic(new FontIcon(FontAwesomeSolid.UNDO));
-        resetCurrentLayoutItem.setOnAction(_ -> workspaceActions.resetCurrentLayout());
 
-        var resetAllLayoutsItem = new LocalizedMenuItem("railroad.menu.view.reset_all_layouts");
+        var resetAllLayoutsItem = CommandMenuItems.create(Commands.RESET_ALL_LAYOUTS,
+            () -> CommandContext.withArgument(project, menuBar, workspaceActions));
         resetAllLayoutsItem.setGraphic(new FontIcon(FontAwesomeSolid.HISTORY));
-        resetAllLayoutsItem.setOnAction(_ -> workspaceActions.resetAllLayouts());
 
-        var fullScreenItem = new LocalizedMenuItem("railroad.menu.view.full_screen");
+        var fullScreenItem = CommandMenuItems.create(Commands.FULLSCREEN,
+            () -> CommandContext.forProject(project, menuBar));
         fullScreenItem.setGraphic(new FontIcon(FontAwesomeSolid.EXPAND));
-        fullScreenItem.setOnAction(_ -> WindowManager.toggleFullScreen());
 
         var viewModeToggleGroup = new ToggleGroup();
         Map<WorkspaceMode, LocalizedRadioMenuItem> viewModeItems = new LinkedHashMap<>();
         for (WorkspaceMode viewMode : WorkspaceMode.REGISTRY.values()) {
             var item = new LocalizedRadioMenuItem(viewMode.getLocalizationKey());
             item.setToggleGroup(viewModeToggleGroup);
-            item.setOnAction(_ -> viewModeRequester.accept(viewMode));
             if (viewMode.getGraphic() != null) {
                 item.setGraphic(new FontIcon(viewMode.getGraphic()));
             }
-            Keybind accelerator = KeybindHandler.getKeybind(viewMode.getAcceleratorId());
-            if (accelerator != null) {
-                bindConfiguredAccelerator(item, accelerator);
-            }
-            ObservableBooleanValue unavailable = viewMode.createUnavailableBinding(project);
-            if (unavailable != null) {
-                item.disableProperty().bind(unavailable);
+            var command = Commands.viewMode(viewMode);
+            if (command != null) {
+                CommandMenuItems.bind(item, command, () -> CommandContext.forProject(project, menuBar));
+            } else {
+                CommandMenuItems.bind(item, ApplicationCommands.WORKSPACE_MODE,
+                    () -> CommandContext.withArgument(project, menuBar,
+                        new ApplicationCommands.ModeRequest(viewMode, viewModeRequester)));
+                Keybind accelerator = KeybindHandler.getKeybind(viewMode.getAcceleratorId());
+                if (accelerator != null) {
+                    bindConfiguredAccelerator(item, accelerator);
+                }
+                ObservableBooleanValue unavailable = viewMode.createUnavailableBinding(project);
+                if (unavailable != null) {
+                    item.disableProperty().bind(unavailable);
+                }
             }
             viewModeItems.put(viewMode, item);
         }
@@ -257,7 +178,8 @@ public final class IDEMenuBarFactory {
         var gitDetectionFailedItem = new LocalizedMenuItem("railroad.ide.view_mode.git_detection_failed");
         gitDetectionFailedItem.visibleProperty().bind(project.getGitManager().repositoryStateProperty()
             .isEqualTo(GitRepositoryState.FAILED));
-        gitDetectionFailedItem.setOnAction(_ -> project.getGitManager().detectRepository());
+        CommandMenuItems.bind(gitDetectionFailedItem, Commands.RETRY_GIT_DETECTION,
+            () -> CommandContext.forProject(project, menuBar));
 
         viewModeController.onViewModeChanged(viewMode -> viewModeToggleGroup.selectToggle(viewModeItems.get(viewMode)));
 
@@ -268,44 +190,30 @@ public final class IDEMenuBarFactory {
             gitUnavailableItem,
             gitDetectionFailedItem);
 
-        var runItem = new LocalizedMenuItem("railroad.menu.run.run");
+        var runItem = CommandMenuItems.create(RunCommands.RUN, () -> CommandContext.forProject(project, menuBar));
         runItem.setGraphic(new FontIcon(FontAwesomeSolid.PLAY));
-        runItem.setAccelerator(new KeyCodeCombination(KeyCode.F5));
 
-        var debugItem = new LocalizedMenuItem("railroad.menu.run.debug");
+        var debugItem = CommandMenuItems.create(RunCommands.DEBUG, () -> CommandContext.forProject(project, menuBar));
         debugItem.setGraphic(new FontIcon(FontAwesomeSolid.BUG));
-        debugItem.setAccelerator(new KeyCodeCombination(KeyCode.F6));
 
-        var stopItem = new LocalizedMenuItem("railroad.menu.run.stop");
+        var stopItem = CommandMenuItems.create(RunCommands.STOP, () -> CommandContext.forProject(project, menuBar));
         stopItem.setGraphic(new FontIcon(FontAwesomeSolid.STOP));
-        stopItem.setAccelerator(new KeyCodeCombination(KeyCode.F7));
 
-        var settingsItem = new LocalizedMenuItem("railroad.menu.tools.settings");
+        var settingsItem = CommandMenuItems.create(Commands.OPEN_SETTINGS,
+            () -> CommandContext.forProject(project, menuBar));
         settingsItem.setGraphic(new FontIcon(FontAwesomeSolid.COG));
-        settingsItem.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.SHORTCUT_DOWN));
-        settingsItem.setOnAction(_ -> SettingsPane.openSettingsWindow());
 
-        var pluginsItem = new LocalizedMenuItem("railroad.menu.tools.plugins");
+        var pluginsItem = CommandMenuItems.create(Commands.OPEN_PLUGINS,
+            () -> CommandContext.forProject(project, menuBar));
         pluginsItem.setGraphic(new FontIcon(FontAwesomeSolid.PUZZLE_PIECE));
-        pluginsItem.setOnAction(_ -> SettingsPane.openPluginsWindow());
 
-        var terminalItem = new LocalizedMenuItem("railroad.menu.tools.terminal");
+        var terminalItem = CommandMenuItems.create(Commands.toggleDockItem(IDEDockItem.TERMINAL),
+            () -> CommandContext.withArgument(project, menuBar, workspaceActions));
         terminalItem.setGraphic(new FontIcon(FontAwesomeSolid.TERMINAL));
-        terminalItem
-            .setAccelerator(new KeyCodeCombination(KeyCode.T, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN));
-        terminalItem.setOnAction(_ -> workspaceActions.toggleDockItem(IDEDockItem.TERMINAL));
 
         var fileMenu = new LocalizedMenu("railroad.menu.file");
         fileMenu.getItems().addAll(newFileItem, openFileItem, openProjectItem, recentProjects, saveItem, saveAsItem,
             saveAllItem, new SeparatorMenuItem(), exitItem);
-        fileMenu.setOnShowing(_ -> {
-            boolean hasTextEditor = Services.EDITOR_TAB_MANAGER.activeTab()
-                .map(tab -> tab.view().activeEditor() != null)
-                .orElse(false);
-            saveItem.setDisable(!hasTextEditor);
-            saveAsItem.setDisable(!hasTextEditor);
-            saveAllItem.setDisable(!Services.EDITOR_TAB_MANAGER.hasUnsavedChanges());
-        });
         fileMenu.getStyleClass().add("rr-menu");
 
         var editMenu = new LocalizedMenu("railroad.menu.edit");
@@ -333,10 +241,6 @@ public final class IDEMenuBarFactory {
             resetAllLayoutsItem,
             new SeparatorMenuItem(),
             fullScreenItem);
-        viewMenu.setOnShowing(_ -> {
-            navigateBackItem.setDisable(!workspaceActions.canNavigateBack());
-            navigateForwardItem.setDisable(!workspaceActions.canNavigateForward());
-        });
         viewMenu.getStyleClass().add("rr-menu");
 
         var runMenu = new LocalizedMenu("railroad.menu.run");
@@ -347,7 +251,7 @@ public final class IDEMenuBarFactory {
         toolsMenu.getItems().addAll(settingsItem, pluginsItem, terminalItem);
         toolsMenu.getStyleClass().add("rr-menu");
 
-        var menuBar = new RRMenuBar(true, fileMenu, editMenu, viewMenu, runMenu, toolsMenu);
+        menuBar.getMenus().addAll(0, List.of(fileMenu, editMenu, viewMenu, runMenu, toolsMenu));
         if (OperatingSystem.isMac()) {
             menuBar.useSystemMenuBarProperty().set(true);
         }
@@ -355,7 +259,11 @@ public final class IDEMenuBarFactory {
         return menuBar;
     }
 
-    private static LocalizedMenu createToolWindowsMenu(IDEWorkspaceActions workspaceActions) {
+    private static LocalizedMenu createToolWindowsMenu(
+        Project project,
+        MenuBar menuBar,
+        IDEWorkspaceActions workspaceActions
+    ) {
         var toolWindowsMenu = new LocalizedMenu("railroad.menu.view.tool_windows");
         Map<IDEDockItem, LocalizedCheckMenuItem> menuItems = new EnumMap<>(IDEDockItem.class);
         IDEDockItem.DockPosition previousPosition = null;
@@ -367,17 +275,14 @@ public final class IDEMenuBarFactory {
 
             var menuItem = new LocalizedCheckMenuItem(dockItem.localizationKey(), false);
             menuItem.setGraphic(new FontIcon(dockItem.icon()));
-            menuItem.setOnAction(_ -> {
-                workspaceActions.toggleDockItem(dockItem);
-                menuItem.setSelected(workspaceActions.isDockItemActive(dockItem));
-            });
+            CommandMenuItems.bind(menuItem, Commands.toggleDockItem(dockItem),
+                () -> CommandContext.withArgument(project, menuBar, workspaceActions));
             menuItems.put(dockItem, menuItem);
             toolWindowsMenu.getItems().add(menuItem);
             previousPosition = dockItem.preferredDockPosition();
         }
 
         toolWindowsMenu.setOnShowing(_ -> menuItems.forEach((dockItem, menuItem) -> {
-            menuItem.setDisable(!workspaceActions.isDockItemAvailable(dockItem));
             menuItem.setSelected(workspaceActions.isDockItemActive(dockItem));
         }));
         return toolWindowsMenu;
@@ -390,43 +295,6 @@ public final class IDEMenuBarFactory {
         updateConfiguredAccelerator(menuItem, keybind);
     }
 
-    private static void saveActiveAs() {
-        var activeTab = Services.EDITOR_TAB_MANAGER.activeTab().orElse(null);
-        if (activeTab == null || activeTab.view().activeEditor() == null)
-            return;
-
-        var fileChooser = new FileChooser();
-        fileChooser.setTitle(L18n.localize("railroad.menu.file.save_as"));
-        Path parent = activeTab.path().getParent();
-        if (parent != null && parent.toFile().isDirectory()) {
-            fileChooser.setInitialDirectory(parent.toFile());
-        }
-        fileChooser.setInitialFileName(activeTab.path().getFileName().toString());
-        File targetFile = fileChooser.showSaveDialog(Railroad.WINDOW_MANAGER.getPrimaryStage());
-        if (targetFile == null)
-            return;
-
-        if (!Services.EDITOR_TAB_MANAGER.saveAsActive(targetFile.toPath())) {
-            showSaveFailures(new EditorTabManager.SaveResult(List.of(activeTab)));
-        }
-    }
-
-    private static void showSaveFailures(EditorTabManager.SaveResult result) {
-        if (result.successful())
-            return;
-
-        String paths = result.failedTabs().stream()
-            .map(tab -> tab.path().toString())
-            .collect(Collectors.joining(System.lineSeparator()));
-        WindowBuilder.createAlert(
-            AlertType.ERROR,
-            "railroad.generic.error",
-            "railroad.ide.save_failed.title",
-            L18n.localize("railroad.ide.save_failed.content", paths),
-            alert -> alert.translateContent(false),
-            null).build();
-    }
-
     private static void updateConfiguredAccelerator(MenuItem menuItem, Keybind keybind) {
         keybind.getKeys().stream()
             .filter(keybindData -> keybindData.keyCode() != null && keybindData.keyCode() != KeyCode.UNDEFINED)
@@ -435,30 +303,4 @@ public final class IDEMenuBarFactory {
             .ifPresentOrElse(menuItem::setAccelerator, () -> menuItem.setAccelerator(null));
     }
 
-    private static void showOpenProjectDialog(Project project) {
-        var thisWindowButton = new RRButton("railroad.recent_projects.dialog.this_window_button");
-        var newWindowButton = new RRButton("railroad.recent_projects.dialog.new_window_button");
-        var cancelButton = new RRButton("railroad.recent_projects.dialog.cancel_button");
-
-        Stage dialog = WindowBuilder.createDialog("railroad.recent_projects.dialog.title", new DialogBuilder()
-            .title("railroad.recent_projects.dialog.title")
-            .content(L18n.localize("railroad.recent_projects.dialog.description", project.getAlias()), false)
-            .buttons(thisWindowButton, newWindowButton, cancelButton));
-
-        thisWindowButton.setOnAction(_ -> {
-            dialog.close();
-            project.open(Railroad.WINDOW_MANAGER.getPrimaryStage());
-        });
-
-        newWindowButton.setOnAction(_ -> {
-            try {
-                RailroadProcessLauncher.openProject(project.getPath());
-                dialog.close();
-            } catch (IOException exception) {
-                Railroad.LOGGER.error("An error occurred trying to start a new Railroad process", exception);
-            }
-        });
-
-        cancelButton.setOnAction(_ -> dialog.close());
-    }
 }

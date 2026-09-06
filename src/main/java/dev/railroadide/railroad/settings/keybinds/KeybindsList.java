@@ -4,6 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.command.Command;
+import dev.railroadide.railroad.command.CommandRegistry;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRCard;
@@ -26,6 +28,7 @@ import javafx.scene.layout.*;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.util.*;
+
 /** Settings view that lists, filters, and edits the application's keybinds. */
 public class KeybindsList extends RRVBox {
     private final Map<String, List<KeybindData>> keybinds = new LinkedHashMap<>();
@@ -331,9 +334,13 @@ public class KeybindsList extends RRVBox {
     }
 
     private String localizationKeyFor(String keybindId) {
-        if (keybindId == null || !keybindId.contains(":"))
-            return "railroad.settings.keybinds." + keybindId;
-        return "railroad.settings.keybinds." + keybindId.split(":", 2)[1];
+        return CommandRegistry.find(keybindId)
+            .map(Command::displayNameKey)
+            .orElseGet(() -> {
+                if (keybindId == null || !keybindId.contains(":"))
+                    return "railroad.settings.keybinds." + keybindId;
+                return "railroad.settings.keybinds." + keybindId.split(":", 2)[1];
+            });
     }
 
     /**

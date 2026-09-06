@@ -1,6 +1,9 @@
 package dev.railroadide.railroad.ide.ui.editor;
 
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.CommandMenuItems;
+import dev.railroadide.railroad.command.Commands;
 import dev.railroadide.railroad.ide.language.EditorOpenView;
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
@@ -9,7 +12,6 @@ import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
-import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRStackPane;
 import dev.railroadide.railroad.ui.localized.LocalizedMenu;
@@ -20,28 +22,22 @@ import dev.railroadide.railroad.utility.TimeFormatingUtils;
 import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.animation.RotateTransition;
-import javafx.beans.property.*;
 import javafx.beans.InvalidationListener;
 import javafx.beans.WeakInvalidationListener;
+import javafx.beans.property.*;
 import javafx.geometry.Pos;
-import javafx.scene.Cursor;
 import javafx.scene.AccessibleRole;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.Label;
-import javafx.scene.control.SeparatorMenuItem;
-import javafx.scene.control.Tab;
-import javafx.scene.control.Tooltip;
-import javafx.scene.input.Clipboard;
-import javafx.scene.input.ClipboardContent;
+import javafx.scene.Cursor;
+import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 import javafx.util.Duration;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 import org.kordamp.ikonli.javafx.StackedFontIcon;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.io.IOException;
 import java.util.Objects;
 
 /**
@@ -650,73 +646,87 @@ public final class EditorTab {
         var pinUnpinIcon = new StackedFontIcon();
         pinUnpinIcon.setIconSize(16);
         var pinUnpin = new LocalizedMenuItem("editor.tab.contextmenu.pin", pinUnpinIcon);
-        pinUnpin.setOnAction(_ -> Services.EDITOR_TAB_MANAGER.togglePin(this));
+        CommandMenuItems.bind(pinUnpin, Commands.TOGGLE_PIN_EDITOR_TAB, this::editorTabCommandContext);
         pinnedProperty().addListener(
             (_, _, isPinned) -> updatePinMenuItem(pinUnpin, pinUnpinIcon, isPinned));
         updatePinMenuItem(pinUnpin, pinUnpinIcon, pinned());
 
-        var close = new LocalizedMenuItem("editor.tab.contextmenu.close");
-        close.setOnAction(_ -> Services.EDITOR_TAB_MANAGER.close(this));
+        var close = CommandMenuItems.create(
+            Commands.CLOSE_EDITOR_TAB,
+            this::editorTabCommandContext);
 
-        var closeOthers = new LocalizedMenuItem("editor.tab.contextmenu.close_others");
-        closeOthers.setOnAction(_ -> Services.EDITOR_TAB_MANAGER.closeOthers(this));
+        var closeOthers = CommandMenuItems.create(
+            Commands.CLOSE_OTHER_EDITOR_TABS,
+            this::editorTabCommandContext);
 
-        var closeAll = new LocalizedMenuItem("editor.tab.contextmenu.close_all");
-        closeAll.setOnAction(_ -> Services.EDITOR_TAB_MANAGER.closeAll());
+        var closeAll = CommandMenuItems.create(
+            Commands.CLOSE_ALL_EDITOR_TABS,
+            this::commandContext);
 
-        var closeAllUnpinned = new LocalizedMenuItem("editor.tab.contextmenu.close_all_unpinned");
-        closeAllUnpinned.setOnAction(_ -> Services.EDITOR_TAB_MANAGER.closeAllUnpinned());
+        var closeAllUnpinned = CommandMenuItems.create(
+            Commands.CLOSE_ALL_UNPINNED_EDITOR_TABS,
+            this::commandContext);
 
-        var closeToLeft = new LocalizedMenuItem("editor.tab.contextmenu.close_to_left");
-        closeToLeft.setOnAction(_ -> Services.EDITOR_TAB_MANAGER.closeToLeft(this));
+        var closeToLeft = CommandMenuItems.create(
+            Commands.CLOSE_EDITOR_TABS_TO_LEFT,
+            this::editorTabCommandContext);
 
-        var closeToRight = new LocalizedMenuItem("editor.tab.contextmenu.close_to_right");
-        closeToRight.setOnAction(_ -> Services.EDITOR_TAB_MANAGER.closeToRight(this));
+        var closeToRight = CommandMenuItems.create(
+            Commands.CLOSE_EDITOR_TABS_TO_RIGHT,
+            this::editorTabCommandContext);
 
-        var closeAllUnmodified = new LocalizedMenuItem("editor.tab.contextmenu.close_all_unmodified");
-        closeAllUnmodified.setOnAction(_ -> Services.EDITOR_TAB_MANAGER.closeAllUnmodified());
+        var closeAllUnmodified = CommandMenuItems.create(
+            Commands.CLOSE_ALL_UNMODIFIED_EDITOR_TABS,
+            this::commandContext);
 
-        var closeAllSaved = new LocalizedMenuItem("editor.tab.contextmenu.close_all_saved");
-        closeAllSaved.setOnAction(_ -> Services.EDITOR_TAB_MANAGER.closeAllSaved());
+        var closeAllSaved = CommandMenuItems.create(
+            Commands.CLOSE_ALL_SAVED_EDITOR_TABS,
+            this::commandContext);
 
-        var reopenClosedTab = new LocalizedMenuItem("editor.tab.contextmenu.reopen_closed_tab");
-        reopenClosedTab.setOnAction(_ -> Services.EDITOR_TAB_MANAGER.reopenLastClosed());
+        var reopenClosedTab = CommandMenuItems.create(
+            Commands.REOPEN_CLOSED_EDITOR_TAB,
+            this::commandContext);
 
         var copyPath = new LocalizedMenu("editor.tab.contextmenu.copy_path");
-        var copyAbsolutePath = new LocalizedMenuItem("editor.tab.contextmenu.copy_absolute_path");
-        copyAbsolutePath.setOnAction(_ -> copyToClipboard(path().toAbsolutePath().normalize().toString()));
-        var copyProjectRelativePath = new LocalizedMenuItem("editor.tab.contextmenu.copy_project_relative_path");
-        copyProjectRelativePath.setOnAction(_ -> {
-            Path relativePath = projectRelativePath();
-            if (relativePath != null) {
-                copyToClipboard(relativePath.toString());
-            }
-        });
+        var copyAbsolutePath = CommandMenuItems.create(
+            Commands.COPY_EDITOR_TAB_ABSOLUTE_PATH,
+            this::editorTabCommandContext);
+        var copyProjectRelativePath = CommandMenuItems.create(
+            Commands.COPY_EDITOR_TAB_PROJECT_RELATIVE_PATH,
+            this::editorTabCommandContext);
         copyPath.getItems().addAll(copyAbsolutePath, copyProjectRelativePath);
 
-        var revealInFileExplorer = new LocalizedMenuItem("editor.tab.contextmenu.reveal_in_file_explorer");
-        revealInFileExplorer.setOnAction(_ -> Services.EDITOR_TAB_MANAGER.revealInFileExplorer(this));
+        var revealInFileExplorer = CommandMenuItems.create(
+            Commands.REVEAL_EDITOR_TAB_IN_FILE_EXPLORER,
+            this::editorTabCommandContext);
 
-        var revealInProjectExplorer = new LocalizedMenuItem("editor.tab.contextmenu.reveal_in_project_explorer");
-        revealInProjectExplorer.setOnAction(_ -> Services.EDITOR_TAB_MANAGER.revealInProjectExplorer(this));
+        var revealInProjectExplorer = CommandMenuItems.create(
+            Commands.REVEAL_EDITOR_TAB_IN_PROJECT_EXPLORER,
+            this::editorTabCommandContext);
 
-        var openInTerminal = new LocalizedMenuItem("editor.tab.contextmenu.open_in_terminal");
-        openInTerminal.setOnAction(_ -> Services.EDITOR_TAB_MANAGER.openInTerminal(this));
+        var openInTerminal = CommandMenuItems.create(
+            Commands.OPEN_EDITOR_TAB_IN_TERMINAL,
+            this::editorTabCommandContext);
 
-        var moveToPreviousGroup = new LocalizedMenuItem("editor.tab.contextmenu.move_to_previous_group");
-        moveToPreviousGroup.setOnAction(_ -> Services.EDITOR_TAB_MANAGER.moveToPreviousGroup(this));
+        var moveToPreviousGroup = CommandMenuItems.create(
+            Commands.MOVE_EDITOR_TAB_TO_PREVIOUS_GROUP,
+            this::editorTabCommandContext);
 
-        var moveToNextGroup = new LocalizedMenuItem("editor.tab.contextmenu.move_to_next_group");
-        moveToNextGroup.setOnAction(_ -> Services.EDITOR_TAB_MANAGER.moveToNextGroup(this));
+        var moveToNextGroup = CommandMenuItems.create(
+            Commands.MOVE_EDITOR_TAB_TO_NEXT_GROUP,
+            this::editorTabCommandContext);
 
-        var splitRight = new LocalizedMenuItem("editor.tab.contextmenu.split_right");
-        splitRight.setOnAction(_ -> Services.EDITOR_TAB_MANAGER.splitRight(this));
+        var splitRight = CommandMenuItems.create(
+            Commands.SPLIT_EDITOR_TAB_RIGHT,
+            this::editorTabCommandContext);
 
-        var splitDown = new LocalizedMenuItem("editor.tab.contextmenu.split_down");
-        splitDown.setOnAction(_ -> Services.EDITOR_TAB_MANAGER.splitDown(this));
+        var splitDown = CommandMenuItems.create(
+            Commands.SPLIT_EDITOR_TAB_DOWN,
+            this::editorTabCommandContext);
 
-        var openInNewWindow = new LocalizedMenuItem("editor.tab.contextmenu.open_in_new_window");
-        openInNewWindow.setOnAction(_ -> Services.EDITOR_TAB_MANAGER.openInNewWindow(this));
+        var openInNewWindow = CommandMenuItems.create(
+            Commands.OPEN_EDITOR_TAB_IN_NEW_WINDOW,
+            this::editorTabCommandContext);
 
         contextMenu.getItems().addAll(
             pinUnpin,
@@ -749,12 +759,6 @@ public final class EditorTab {
             closeToRight.setVisible(Services.EDITOR_TAB_MANAGER.hasTabsToRight(this));
             moveToPreviousGroup.setVisible(Services.EDITOR_TAB_MANAGER.hasPreviousEditorGroup(this));
             moveToNextGroup.setVisible(Services.EDITOR_TAB_MANAGER.hasNextEditorGroup(this));
-            copyProjectRelativePath.setDisable(projectRelativePath() == null);
-
-            boolean pathExists = Files.exists(path());
-            revealInFileExplorer.setDisable(!pathExists);
-            revealInProjectExplorer.setDisable(!pathExists);
-            openInTerminal.setDisable(!pathExists || path().getParent() == null);
         });
 
         return contextMenu;
@@ -773,19 +777,17 @@ public final class EditorTab {
         }
     }
 
-    private Path projectRelativePath() {
-        Project project = Services.IDE_STATE.getCurrentProject();
-        if (project == null)
-            return null;
-
-        Path projectPath = project.getPath().toAbsolutePath().normalize();
-        Path documentPath = path().toAbsolutePath().normalize();
-        return documentPath.startsWith(projectPath) ? projectPath.relativize(documentPath) : null;
+    private CommandContext<Void> commandContext() {
+        return CommandContext.forProject(
+            Services.IDE_STATE.getCurrentProject(),
+            view.content());
     }
 
-    private static void copyToClipboard(String text) {
-        var content = new ClipboardContent();
-        content.putString(text);
-        Clipboard.getSystemClipboard().setContent(content);
+    private CommandContext<EditorTab> editorTabCommandContext() {
+        return CommandContext.withArgument(
+            Services.IDE_STATE.getCurrentProject(),
+            view.content(),
+            this);
     }
+
 }

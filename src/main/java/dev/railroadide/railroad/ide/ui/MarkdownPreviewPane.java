@@ -1,6 +1,10 @@
 package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.CommandMenuItems;
+import dev.railroadide.railroad.command.MarkdownCommands;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.data.ProjectDataStore;
@@ -237,24 +241,14 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         var switchButtons = new RRHBox(codeView, splitView, previewView);
         switchButtons.setAlignment(Pos.TOP_RIGHT);
 
-        codeView.setOnAction(_ -> {
-            switchLayout(MarkdownLayoutType.CODE);
-            showContent(codeView(), topRow);
-            project.getDataStore().writeJson(MARKDOWN_LAYOUT_LOCATION, new MarkdownLayout(MarkdownLayoutType.CODE));
-        });
+        CommandButtons.bind(codeView, MarkdownCommands.CODE,
+            () -> CommandContext.withArgument(project, this, this));
 
-        splitView.setOnAction(_ -> {
-            switchLayout(MarkdownLayoutType.SPLIT);
-            showContent(splitView(), topRow);
-            project.getDataStore().writeJson(MARKDOWN_LAYOUT_LOCATION, new MarkdownLayout(MarkdownLayoutType.SPLIT));
-        });
+        CommandButtons.bind(splitView, MarkdownCommands.SPLIT,
+            () -> CommandContext.withArgument(project, this, this));
 
-        previewView.setOnAction(_ -> {
-            // hide markdown buttons in preview-only mode
-            switchLayout(MarkdownLayoutType.PREVIEW);
-            showContent(previewView(), topRow);
-            project.getDataStore().writeJson(MARKDOWN_LAYOUT_LOCATION, new MarkdownLayout(MarkdownLayoutType.PREVIEW));
-        });
+        CommandButtons.bind(previewView, MarkdownCommands.PREVIEW,
+            () -> CommandContext.withArgument(project, this, this));
 
         return switchButtons;
     }
@@ -310,7 +304,8 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         setButtonOnAction(codeBlockButton, "```", "```");
 
         Button imageButton = createButton(FontAwesomeSolid.IMAGE);
-        imageButton.setOnAction(event -> imageDialog());
+        CommandButtons.bind(imageButton, MarkdownCommands.IMAGE,
+            () -> CommandContext.withArgument(project, this, this));
 
         return new RRHBox(headingButton, boldButton, italicButton, quoteButton, codeButton, linkButton,
             unorderedListButton, orderedListButton, taskListButton, horizontalRuleButton, strikethroughButton,
@@ -326,12 +321,8 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
 
         var item = new CustomMenuItem(preview, true);
 
-        item.setOnAction(_ -> {
-            headingMenu.hide();
-            TextEditorPane editor = editorForInsertion();
-            editor.insertText(editor.getCaretPosition(), "#".repeat(level) + " ");
-            editor.requestFocus();
-        });
+        CommandMenuItems.bind(item, MarkdownCommands.heading(level),
+            () -> CommandContext.withArgument(project, this, this));
 
         return item;
     }
@@ -344,28 +335,54 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     }
 
     private void setButtonOnAction(Button button, String prefix) {
-        button.setOnAction(_ -> {
-            TextEditorPane editor = editorForInsertion();
-            editor.insertText(editor.getCaretPosition(), prefix + " ");
-            editor.requestFocus();
-        });
+        CommandButtons.bind(button, MarkdownCommands.insertion(prefix),
+            () -> CommandContext.withArgument(project, this, this));
     }
 
     private void setButtonOnAction(Button button, String prefix, String postfix) {
-        button.setOnAction(_ -> {
-            TextEditorPane editor = editorForInsertion();
-            int caretPosition = editor.getCaretPosition();
-            editor.insertText(caretPosition, prefix + postfix);
-            editor.moveTo(caretPosition + prefix.length());
-            editor.requestFocus();
-        });
+        CommandButtons.bind(button, MarkdownCommands.insertion(prefix),
+            () -> CommandContext.withArgument(project, this, this));
+    }
+
+    /**
+     * Applies and persists the layout selected by an existing toolbar action.
+     *
+     * @param layoutType requested layout
+     */
+    public void applyLayout(MarkdownLayoutType layoutType) {
+        switchLayout(layoutType);
+        showContent(switch (layoutType) {
+            case CODE -> codeView();
+            case SPLIT -> splitView();
+            case PREVIEW -> previewView();
+        }, topRow);
+        project.getDataStore().writeJson(MARKDOWN_LAYOUT_LOCATION, new MarkdownLayout(layoutType));
+    }
+
+    /**
+     * Inserts the syntax used by the existing Markdown formatting toolbar.
+     *
+     * @param prefix syntax inserted before the caret
+     * @param postfix closing syntax, or null for a prefix followed by a space
+     */
+    public void insertMarkdown(String prefix, String postfix) {
+        TextEditorPane editor = editorForInsertion();
+        int caret = editor.getCaretPosition();
+        editor.insertText(caret, prefix + (postfix == null ? " " : postfix));
+        if (postfix != null) {
+            editor.moveTo(caret + prefix.length());
+        }
+        editor.requestFocus();
     }
 
     private TextEditorPane editorForInsertion() {
         return textEditorPane == null ? codeView() : textEditorPane;
     }
 
-    private void imageDialog() {
+    /**
+     * Opens the existing image-insertion dialog.
+     */
+    public void imageDialog() {
         var altTextField = new RRTextField("railroad.markdown.image_dialog.image_alt_text", FontAwesomeSolid.IMAGE);
         var uriTextField = new RRTextField("railroad.markdown.image_dialog.image_uri_prompt", FontAwesomeSolid.LINK);
 

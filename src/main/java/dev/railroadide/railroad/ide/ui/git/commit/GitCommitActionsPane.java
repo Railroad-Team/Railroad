@@ -1,6 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.commit;
 
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.GitCommands;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.*;
 import dev.railroadide.railroad.ui.id.UIIds;
@@ -60,8 +63,10 @@ public class GitCommitActionsPane extends RRVBox {
         footer.getChildren().addAll(commitButton, commitAndPushButton);
         getChildren().add(footer);
 
-        commitButton.setOnAction(event -> commitChanges(false));
-        commitAndPushButton.setOnAction(event -> commitChanges(true));
+        CommandButtons.bind(commitButton, GitCommands.COMMIT,
+            () -> CommandContext.withArgument(project, this, this));
+        CommandButtons.bind(commitAndPushButton, GitCommands.COMMIT_AND_PUSH,
+            () -> CommandContext.withArgument(project, this, this));
     }
 
     /**

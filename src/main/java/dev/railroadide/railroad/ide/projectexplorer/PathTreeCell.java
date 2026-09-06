@@ -2,27 +2,26 @@ package dev.railroadide.railroad.ide.projectexplorer;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
-import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
-import dev.railroadide.railroad.ide.projectexplorer.dialog.DeleteDialog;
-import dev.railroadide.railroad.ide.ui.editor.EditorTabManager;
+import dev.railroadide.railroad.command.*;
+import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.events.DocumentRenamedEvent;
 import dev.railroadide.railroad.ui.RRHBox;
+import dev.railroadide.railroad.ui.localized.LocalizedMenu;
+import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.utility.FileUtils;
+import dev.railroadide.railroad.utility.OperatingSystem;
 import javafx.application.Platform;
 import javafx.beans.property.StringProperty;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
-import javafx.stage.Window;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-// TODO: Tons of localization issues here, need to fix that
 /**
  * An editable project explorer cell with file icons and rename support.
  */
@@ -30,7 +29,6 @@ public class PathTreeCell extends TreeCell<PathItem> {
     private final StringProperty messageProperty;
     private TextField textField;
     private Path editingPath;
-    private boolean allowEdit = false;
     /**
      * Creates an editable file cell that publishes operation messages.
      *
@@ -43,81 +41,44 @@ public class PathTreeCell extends TreeCell<PathItem> {
     }
 
     private static ContextMenu createContextMenu(PathTreeCell cell) {
-        Path currentPath = cell.getItem().getPath();
-        Path directoryPath = Files.isDirectory(currentPath) ? currentPath : currentPath.getParent();
-        Window window = cell.getScene().getWindow();
-
-        var menu = new ContextMenu();
-
-        var newMenu = new Menu("New");
-        var newFile = new MenuItem("File");
-        var newFolder = new MenuItem("Folder");
-        var newClass = new MenuItem("Java Class");
-        var newJson = new MenuItem("JSON File");
-        var newTxt = new MenuItem("Text File");
-
-        newFile.setOnAction(_ -> CreateFileDialog.open(window, directoryPath, FileCreateType.FILE));
-        newFolder.setOnAction(_ -> CreateFileDialog.open(window, directoryPath, FileCreateType.FOLDER));
-        newClass.setOnAction(_ -> CreateFileDialog.open(window, directoryPath, FileCreateType.JAVA_CLASS));
-        newJson.setOnAction(_ -> CreateFileDialog.open(window, directoryPath, FileCreateType.JSON));
-        newTxt.setOnAction(_ -> CreateFileDialog.open(window, directoryPath, FileCreateType.TXT));
-
-        var cut = new MenuItem("Cut");
-        var copy = new MenuItem("Copy");
-        var paste = new MenuItem("Paste");
-        cell.itemProperty().flatMap(PathItem::cutProperty).addListener((observable, oldValue, newValue) -> {
-            if (newValue != null && newValue) {
-                cut.setDisable(true);
-                copy.setDisable(true);
-            } else {
-                cut.setDisable(false);
-                copy.setDisable(false);
-            }
-        });
-
-        cut.setOnAction(_ -> ProjectExplorerPane.cut((PathTreeItem) cell.getTreeItem(), cell.getTreeView()));
-        copy.setOnAction(_ -> ProjectExplorerPane.copy(cell.getItem()));
-        paste.setOnAction(_ -> ProjectExplorerPane.paste(cell.getItem()));
-
-        var rename = new MenuItem("Rename");
-        var delete = new MenuItem("Delete");
-
-        rename.setOnAction(_ -> {
-            cell.allowEdit = true;
-            cell.startEdit();
-        });
-        delete.setOnAction(_ -> DeleteDialog.open(currentPath));
-
-        var openIn = new Menu("Open In");
-        var openInExplorer = new MenuItem("Explorer");
-        if (System.getProperty("os.name").toLowerCase().contains("mac")) {
-            openInExplorer.setText("Finder");
-        } else if (System.getProperty("os.name").toLowerCase().contains("linux")) {
-            openInExplorer.setText("File Manager");
+        var newMenu = new LocalizedMenu("railroad.project_explorer.menu.new");
+        newMenu.getItems().addAll(
+            commandItem("railroad.project_explorer.menu.file", Commands.CREATE_PROJECT_EXPLORER_FILE, cell),
+            commandItem("railroad.project_explorer.menu.folder", Commands.CREATE_PROJECT_EXPLORER_FOLDER, cell),
+            commandItem("railroad.project_explorer.menu.java_class", Commands.CREATE_JAVA_CLASS, cell),
+            commandItem("railroad.project_explorer.menu.json", Commands.CREATE_JSON, cell),
+            commandItem("railroad.project_explorer.menu.text", Commands.CREATE_TEXT, cell));
+        var openIn = new LocalizedMenu("railroad.project_explorer.menu.open_in");
+        openIn.getItems().addAll(
+            commandItem(OperatingSystem.isMac()
+                ? "railroad.project_explorer.menu.finder"
+                : OperatingSystem.isLinux()
+                    ? "railroad.project_explorer.menu.file_manager"
+                    : "railroad.project_explorer.menu.explorer",
+                Commands.REVEAL_PROJECT_EXPLORER_ITEM, cell),
+            commandItem("railroad.project_explorer.menu.terminal", Commands.OPEN_PROJECT_EXPLORER_ITEM_IN_TERMINAL,
+                cell));
+        var menu = new ContextMenu(newMenu,
+            commandItem("railroad.project_explorer.menu.cut", Commands.CUT_PROJECT_EXPLORER_ITEM, cell),
+            commandItem("railroad.project_explorer.menu.copy", Commands.COPY_PROJECT_EXPLORER_ITEM, cell),
+            commandItem("railroad.project_explorer.menu.paste", Commands.PASTE_PROJECT_EXPLORER_ITEM, cell),
+            commandItem("railroad.project_explorer.menu.rename", Commands.RENAME_PROJECT_EXPLORER_ITEM, cell),
+            commandItem("railroad.project_explorer.menu.delete", Commands.DELETE_PROJECT_EXPLORER_ITEM, cell), openIn);
+        if (Files.isDirectory(cell.getItem().getPath())) {
+            menu.getItems().addAll(new SeparatorMenuItem(),
+                commandItem("railroad.project_explorer.menu.expand_all", Commands.EXPAND_EXPLORER, cell),
+                commandItem("railroad.project_explorer.menu.collapse_all", Commands.COLLAPSE_EXPLORER, cell));
         }
-        var openInTerminal = new MenuItem("Terminal");
-
-        openInExplorer.setOnAction(_ -> FileUtils.openInExplorer(currentPath));
-        openInTerminal.setOnAction(_ -> FileUtils.openInTerminal(cell.getItem().getPath()));
-
-        newMenu.getItems().addAll(newFile, newFolder, newClass, newJson, newTxt);
-        openIn.getItems().addAll(openInExplorer, openInTerminal);
-
-        menu.getItems().addAll(newMenu, cut, copy, paste, rename, delete, openIn);
-
-        if (Files.isDirectory(currentPath)) {
-            var expandAll = new MenuItem("Expand All");
-            expandAll.setOnAction(_ -> ProjectExplorerPane.expandAll(cell.getTreeItem()));
-
-            var collapseAll = new MenuItem("Collapse All");
-            collapseAll.setOnAction(_ -> ProjectExplorerPane.collapseAll(cell.getTreeItem()));
-
-            menu.getItems().addAll(new SeparatorMenuItem(), expandAll, collapseAll);
-        }
-
-        menu.setOnShown(_ -> paste.setDisable(!Clipboard.getSystemClipboard().hasFiles()));
-
         return menu;
+    }
+
+    private static MenuItem commandItem(String labelKey, Command<ExplorerTarget> command, PathTreeCell cell) {
+        var item = new LocalizedMenuItem(labelKey);
+        CommandMenuItems.bind(item, command, () -> CommandContext.withArgument(
+            Railroad.PROJECT_MANAGER.getOpenProject(), cell,
+            new ExplorerTarget(cell.getTreeView(), cell.getTreeItem(),
+                cell.getScene() == null ? null : cell.getScene().getWindow())));
+        return item;
     }
 
     @Override
@@ -125,6 +86,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
         super.updateItem(item, empty);
 
         if (empty) {
+            setContextMenu(null);
             setText(null);
             setGraphic(null);
             setOnMouseClicked(null);
@@ -161,7 +123,9 @@ public class PathTreeCell extends TreeCell<PathItem> {
                             TreeItem<PathItem> treeItem = getTreeItem();
                             treeItem.setExpanded(!treeItem.isExpanded());
                         } else {
-                            Services.EDITOR_TAB_MANAGER.open(path);
+                            CommandDispatcher.execute(Commands.OPEN_PROJECT_EXPLORER_ITEM,
+                                CommandContext.withArgument(Railroad.PROJECT_MANAGER.getOpenProject(), this,
+                                    new ExplorerTarget(getTreeView(), getTreeItem(), getScene().getWindow())));
                         }
                         event.consume();
                     }
@@ -176,8 +140,8 @@ public class PathTreeCell extends TreeCell<PathItem> {
      */
     @Override
     public void startEdit() {
-        if (allowEdit) {
-            allowEdit = false;
+        if (getTreeView().getProperties().get("railroad:rename-item") == getTreeItem() && getItem() != null) {
+            getTreeView().getProperties().remove("railroad:rename-item");
             super.startEdit();
             if (textField == null) {
                 createTextField();
@@ -221,7 +185,8 @@ public class PathTreeCell extends TreeCell<PathItem> {
                     .publish(new DocumentRenamedEvent(new FileSystemDocument(newValue.getPath()), oldName, newName));
             } catch (IOException exception) {
                 cancelEdit();
-                messageProperty.setValue("Renaming %s failed".formatted(editingPath.getFileName()));
+                messageProperty
+                    .setValue(L18n.localize("railroad.project_explorer.rename_failed", editingPath.getFileName()));
             } finally {
                 Platform.runLater(ProjectExplorerPane::enableFileChangeListener);
             }

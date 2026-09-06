@@ -1,5 +1,8 @@
 package dev.railroadide.railroad.ide.ui.git.commit.details;
 
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.GitCommands;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRTextField;
@@ -31,15 +34,8 @@ public class GitCommitCheckoutButton extends RRButton {
     public GitCommitCheckoutButton(Project project, GitCommit commit) {
         super("railroad.git.commit.details.button.checkout_commit", FontAwesomeSolid.CHECK);
         setVariant(ButtonVariant.PRIMARY);
-        setOnAction(event -> {
-            GitManager gitManager = project.getGitManager();
-            if (!gitManager.getRepoStatus().changes().isEmpty()) {
-                onCheckoutWithUncommittedChanges(gitManager, gitManager.getCurrentCommit(), commit);
-                return;
-            }
-
-            gitManager.checkoutCommit(commit.hash());
-        });
+        CommandButtons.bind(this, GitCommands.CHECKOUT,
+            () -> CommandContext.withArgument(project, this, commit));
     }
 
     private static void onCheckoutWithUncommittedChanges(
@@ -152,5 +148,21 @@ public class GitCommitCheckoutButton extends RRButton {
             }
 
         });
+    }
+
+    /**
+     * Runs the existing checkout workflow.
+     *
+     * @param project project owning the repository
+     * @param commit target commit
+     */
+    public static void execute(Project project, GitCommit commit) {
+        GitManager gitManager = project.getGitManager();
+        if (!gitManager.getRepoStatus().changes().isEmpty()) {
+            onCheckoutWithUncommittedChanges(gitManager, gitManager.getCurrentCommit(), commit);
+            return;
+        }
+
+        gitManager.checkoutCommit(commit.hash());
     }
 }

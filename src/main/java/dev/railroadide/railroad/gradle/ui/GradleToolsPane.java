@@ -2,6 +2,9 @@ package dev.railroadide.railroad.gradle.ui;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.GradleCommands;
 import dev.railroadide.railroad.gradle.GradleSettings;
 import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.gradle.model.GradleModelListener;
@@ -38,6 +41,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Getter
 public class GradleToolsPane extends RRVBox {
+    private final GradleManager gradleManager;
+    private ButtonBase downloadSourcesButton;
+    private ButtonBase toggleOfflineButton;
     private final TabPane tabPane;
     private final Tab tasksTab;
     private final Tab dependenciesTab;
@@ -51,7 +57,7 @@ public class GradleToolsPane extends RRVBox {
         super();
         getStyleClass().add("gradle-tools-pane");
 
-        GradleManager gradleManager = project.getGradleManager();
+        this.gradleManager = project.getGradleManager();
         GradleModelService modelService = gradleManager.getGradleModelService();
 
         ButtonBase syncButton = createButtonBarButton(
@@ -59,41 +65,26 @@ public class GradleToolsPane extends RRVBox {
             "railroad.gradle.tools.button.sync.tooltip",
             "sync-button",
             false);
-        syncButton.setOnAction(_ -> gradleManager.getGradleModelService().refreshModel(true));
+        CommandButtons.bind(syncButton, GradleCommands.SYNC,
+            () -> CommandContext.withArgument(project, this, gradleManager));
 
-        ButtonBase downloadSourcesButton = createButtonBarButton(
+        downloadSourcesButton = createButtonBarButton(
             FontAwesomeSolid.DOWNLOAD,
             "railroad.gradle.tools.button.downloadsources.tooltip",
             "download-sources-button",
             false);
-        downloadSourcesButton.setOnAction(_ -> {
-            Railroad.LOGGER.info("Downloading Gradle sources...");
-            downloadSourcesButton.setDisable(true);
-            gradleManager.downloadAllSources().whenComplete((_, throwable) -> {
-                if (throwable != null) {
-                    Railroad.LOGGER.error("Failed to download Gradle sources", throwable);
-                } else {
-                    Railroad.LOGGER.info("Gradle sources downloaded successfully");
-                }
-
-                Platform.runLater(() -> downloadSourcesButton.setDisable(false));
-            });
-        });
+        CommandButtons.bind(downloadSourcesButton, GradleCommands.DOWNLOAD_SOURCES,
+            () -> CommandContext.withArgument(project, this, this));
 
         var offlineIcon = new StackedFontIcon();
         offlineIcon.setIconCodes(FontAwesomeSolid.WIFI, FontAwesomeSolid.SLASH);
-        ButtonBase toggleOfflineButton = createButtonBarButton(
+        toggleOfflineButton = createButtonBarButton(
             offlineIcon,
             "railroad.gradle.tools.button.toggleoffline.tooltip",
             "toggle-offline-button",
             true);
-        toggleOfflineButton.setOnAction(_ -> {
-            GradleSettings gradleSettings = gradleManager.getGradleSettings();
-            boolean newOfflineMode = !gradleSettings.isOfflineMode();
-            gradleSettings.setOfflineMode(newOfflineMode);
-            gradleManager.saveSettings();
-            ((RRToggleButton) toggleOfflineButton).setSelected(newOfflineMode);
-        });
+        CommandButtons.bind(toggleOfflineButton, GradleCommands.TOGGLE_OFFLINE,
+            () -> CommandContext.withArgument(project, this, this));
 
         var modelListener = new GradleModelListener() {
             private void setButtonsDisabled(boolean disabled) {
@@ -217,5 +208,42 @@ public class GradleToolsPane extends RRVBox {
      */
     public boolean isDependenciesTabSelected() {
         return this.tabPane.getSelectionModel().getSelectedItem() == dependenciesTab;
+    }
+
+    /**
+     * Runs the existing download sources operation.
+     */
+    public void downloadSources() {
+        Railroad.LOGGER.info("Downloading Gradle sources...");
+        downloadSourcesButton.setDisable(true);
+        gradleManager.downloadAllSources().whenComplete((_, throwable) -> {
+            if (throwable != null) {
+                Railroad.LOGGER.error("Failed to download Gradle sources", throwable);
+            } else {
+                Railroad.LOGGER.info("Gradle sources downloaded successfully");
+            }
+
+            Platform.runLater(() -> downloadSourcesButton.setDisable(false));
+        });
+    }
+
+    /**
+     * Runs the existing toggle offline operation.
+     */
+    public void toggleOffline() {
+        GradleSettings gradleSettings = gradleManager.getGradleSettings();
+        boolean newOfflineMode = !gradleSettings.isOfflineMode();
+        gradleSettings.setOfflineMode(newOfflineMode);
+        gradleManager.saveSettings();
+        ((RRToggleButton) toggleOfflineButton).setSelected(newOfflineMode);
+    }
+
+    /**
+     * Checks whether the source-download control is available.
+     *
+     * @return whether downloading can be started
+     */
+    public boolean canDownloadSources() {
+        return !downloadSourcesButton.isDisable();
     }
 }

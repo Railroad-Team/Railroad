@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.ide.ui;
 
-import dev.railroadide.railroad.utility.DesktopUtils;
+import dev.railroadide.railroad.command.ApplicationCommands;
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRCard;
 import dev.railroadide.railroad.ui.RRHBox;
@@ -147,26 +149,20 @@ public class IDEWelcomePane extends ScrollPane {
 
         var wikiButton = new RRButton("railroad.ide.welcome.getting_started.wiki", FontAwesomeSolid.BOOK);
         wikiButton.setVariant(ButtonVariant.PRIMARY);
-        wikiButton.setOnAction(event -> {
-            event.consume();
-            DesktopUtils.openUrl("https://railroadide.dev");
-        });
+        CommandButtons.bind(wikiButton, ApplicationCommands.OPEN_LINK,
+            () -> CommandContext.withArgument(null, this, "https://railroadide.dev"));
 
         var tutorialsButton = new RRButton("railroad.ide.welcome.getting_started.tutorials",
             FontAwesomeSolid.GRADUATION_CAP);
         tutorialsButton.setVariant(ButtonVariant.SECONDARY);
-        tutorialsButton.setOnAction(event -> {
-            event.consume();
-            DesktopUtils.openUrl("https://railroadide.dev/tutorials");
-        });
+        CommandButtons.bind(tutorialsButton, ApplicationCommands.OPEN_LINK,
+            () -> CommandContext.withArgument(null, this, "https://railroadide.dev/tutorials"));
 
         var discordButton = new RRButton("", FontAwesomeBrands.DISCORD);
         discordButton.setText("Discord");
         discordButton.setVariant(ButtonVariant.GHOST);
-        discordButton.setOnAction(event -> {
-            event.consume();
-            DesktopUtils.openUrl("https://discord.turtywurty.dev/");
-        });
+        CommandButtons.bind(discordButton, ApplicationCommands.OPEN_LINK,
+            () -> CommandContext.withArgument(null, this, "https://discord.turtywurty.dev/"));
 
         buttonsContainer.getChildren().addAll(wikiButton, tutorialsButton, discordButton);
 

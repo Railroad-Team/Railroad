@@ -1,5 +1,8 @@
 package dev.railroadide.railroad.ide.ui.git.commit.details;
 
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.GitCommands;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
@@ -23,31 +26,40 @@ public class GitCommitRevertButton extends RRButton {
     public GitCommitRevertButton(Project project, GitCommit commit) {
         super("railroad.git.commit.details.button.revert_commit", FontAwesomeSolid.UNDO);
         setVariant(ButtonVariant.DANGER);
-        setOnAction(event -> {
-            var content = new LocalizedText(
-                "railroad.git.commit.details.revert_dialog.content",
-                commit.shortHash());
-            content.getStyleClass().add("git-commit-revert-dialog-content");
+        CommandButtons.bind(this, GitCommands.REVERT,
+            () -> CommandContext.withArgument(project, this, commit));
+    }
 
-            var cancelButton = new RRButton("railroad.generic.cancel");
-            cancelButton.setVariant(ButtonVariant.SECONDARY);
-            cancelButton.getStyleClass().add("git-commit-revert-dialog-cancel-button");
+    /**
+     * Runs the existing revert workflow.
+     *
+     * @param project project owning the repository
+     * @param commit target commit
+     */
+    public static void execute(Project project, GitCommit commit) {
+        var content = new LocalizedText(
+            "railroad.git.commit.details.revert_dialog.content",
+            commit.shortHash());
+        content.getStyleClass().add("git-commit-revert-dialog-content");
 
-            var confirmButton = new RRButton("railroad.git.commit.details.revert_dialog.confirm");
-            confirmButton.setVariant(ButtonVariant.DANGER);
-            confirmButton.getStyleClass().add("git-commit-revert-dialog-confirm-button");
+        var cancelButton = new RRButton("railroad.generic.cancel");
+        cancelButton.setVariant(ButtonVariant.SECONDARY);
+        cancelButton.getStyleClass().add("git-commit-revert-dialog-cancel-button");
 
-            DialogBuilder dialogBuilder = DialogBuilder.create()
-                .title("railroad.git.commit.details.revert_dialog.subtitle")
-                .contentNode(content)
-                .buttons(cancelButton, confirmButton);
-            Stage dialog = WindowBuilder.createDialog("railroad.git.commit.details.revert_dialog.title", dialogBuilder);
+        var confirmButton = new RRButton("railroad.git.commit.details.revert_dialog.confirm");
+        confirmButton.setVariant(ButtonVariant.DANGER);
+        confirmButton.getStyleClass().add("git-commit-revert-dialog-confirm-button");
 
-            cancelButton.setOnAction(_ -> dialog.close());
-            confirmButton.setOnAction(_ -> {
-                project.getGitManager().revertCommit(commit.hash());
-                dialog.close();
-            });
+        DialogBuilder dialogBuilder = DialogBuilder.create()
+            .title("railroad.git.commit.details.revert_dialog.subtitle")
+            .contentNode(content)
+            .buttons(cancelButton, confirmButton);
+        Stage dialog = WindowBuilder.createDialog("railroad.git.commit.details.revert_dialog.title", dialogBuilder);
+
+        cancelButton.setOnAction(_ -> dialog.close());
+        confirmButton.setOnAction(_ -> {
+            project.getGitManager().revertCommit(commit.hash());
+            dialog.close();
         });
     }
 }

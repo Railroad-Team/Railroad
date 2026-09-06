@@ -1,10 +1,6 @@
 package dev.railroadide.railroad.ui.animation;
 
-import javafx.animation.Animation;
-import javafx.animation.FadeTransition;
-import javafx.animation.Interpolator;
-import javafx.animation.RotateTransition;
-import javafx.animation.TranslateTransition;
+import javafx.animation.*;
 import javafx.scene.Node;
 import javafx.util.Duration;
 

@@ -1,11 +1,11 @@
 package dev.railroadide.railroad.ui;
 
 import javafx.beans.binding.Bindings;
+import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 import org.jetbrains.annotations.Nullable;
-import javafx.geometry.Insets;
 
 /**
  * A vertically arranged card with rounded clipping and an elevation style that increases on hover.

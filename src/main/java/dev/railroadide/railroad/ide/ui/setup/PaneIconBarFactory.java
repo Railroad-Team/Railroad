@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.ide.ui.setup;
 
 import com.panemu.tiwulfx.control.dock.DetachableTabPane;
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.Commands;
 import dev.railroadide.railroad.ide.ui.IDEDockTab;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRVBox;
@@ -58,20 +60,24 @@ public final class PaneIconBarFactory {
             }
             btn.getStyleClass().add("icon-button");
 
-            btn.setOnAction(e -> {
-                boolean isVisible = split.getItems().contains(pane);
-                Tab selected = pane.getSelectionModel().getSelectedItem();
+            if (tab instanceof IDEDockTab dockTab) {
+                CommandButtons.bind(btn, Commands.toggleDockItem(dockTab.getDockItem()), dockTab::commandContext);
+            } else {
+                btn.setOnAction(e -> {
+                    boolean isVisible = split.getItems().contains(pane);
+                    Tab selected = pane.getSelectionModel().getSelectedItem();
 
-                if (isVisible && selected == tab) {
-                    split.getItems().remove(pane);
-                } else {
-                    if (!isVisible) {
-                        split.getItems().add(Math.min(originalIndex, split.getItems().size()), pane);
+                    if (isVisible && selected == tab) {
+                        split.getItems().remove(pane);
+                    } else {
+                        if (!isVisible) {
+                            split.getItems().add(Math.min(originalIndex, split.getItems().size()), pane);
+                        }
+                        pane.getSelectionModel().select(tab);
                     }
-                    pane.getSelectionModel().select(tab);
-                }
-                updateButtonStates.run();
-            });
+                    updateButtonStates.run();
+                });
+            }
 
             btnMap.put(tab, btn);
             bar.getChildren().add(btn);

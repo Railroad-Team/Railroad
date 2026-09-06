@@ -1,6 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.overview;
 
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.GitCommands;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.*;
 import dev.railroadide.railroad.ui.id.UIIds;
@@ -66,17 +69,20 @@ public class GitOverviewHeaderPane extends RRVBox {
         actionsBox.setAlignment(Pos.CENTER);
         var fetchButton = new RRButton("railroad.git.overview.header.fetch.button", FontAwesomeSolid.SYNC_ALT);
         fetchButton.setVariant(ButtonVariant.PRIMARY);
-        fetchButton.setOnAction(_ -> project.getGitManager().fetch());
+        CommandButtons.bind(fetchButton, GitCommands.FETCH,
+            () -> CommandContext.withArgument(null, this, project.getGitManager()));
         actionsBox.getChildren().add(fetchButton);
 
         var pullButton = new RRButton("railroad.git.overview.header.pull.button", FontAwesomeSolid.DOWNLOAD);
         pullButton.setVariant(ButtonVariant.PRIMARY);
-        pullButton.setOnAction(_ -> project.getGitManager().pull());
+        CommandButtons.bind(pullButton, GitCommands.PULL,
+            () -> CommandContext.withArgument(null, this, project.getGitManager()));
         actionsBox.getChildren().add(pullButton);
 
         var pushButton = new RRButton("railroad.git.overview.header.push.button", FontAwesomeSolid.PAPER_PLANE);
         pushButton.setVariant(ButtonVariant.PRIMARY);
-        pushButton.setOnAction(_ -> project.getGitManager().push());
+        CommandButtons.bind(pushButton, GitCommands.PUSH,
+            () -> CommandContext.withArgument(null, this, project.getGitManager()));
         actionsBox.getChildren().add(pushButton);
 
         getChildren().add(actionsBox);

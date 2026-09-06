@@ -2,6 +2,10 @@ package dev.railroadide.railroad.ide.projectexplorer;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.Commands;
+import dev.railroadide.railroad.command.ExplorerTarget;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexCoordinator;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CopyModalDialog;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
@@ -9,7 +13,6 @@ import dev.railroadide.railroad.ide.projectexplorer.dialog.DeleteDialog;
 import dev.railroadide.railroad.ide.projectexplorer.task.FileCopyTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.SearchTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.WatchTask;
-import dev.railroadide.railroad.ide.ui.editor.EditorTabManager;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
@@ -188,7 +191,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
      * Starts inline editing of the selected entry's name.
      */
     public void renameSelectedItem() {
-        selectedTreeItem().ifPresent(selectedItem -> ((PathTreeCell) selectedItem.getGraphic()).startEdit());
+        selectedTreeItem().ifPresent(selectedItem -> commandTarget().rename());
     }
 
     /**
@@ -203,6 +206,20 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
      */
     public void openSelectedItemInTerminal() {
         selectedTreeItem().ifPresent(selectedItem -> FileUtils.openInTerminal(selectedItem.getValue().getPath()));
+    }
+
+    /**
+     * Captures the current explorer selection for command dispatch.
+     *
+     * @return explicit selected-entry target
+     */
+    public ExplorerTarget commandTarget() {
+        return new ExplorerTarget(treeView, treeView.getSelectionModel().getSelectedItem(),
+            getScene() == null ? null : getScene().getWindow());
+    }
+
+    private ExplorerTarget rootCommandTarget() {
+        return new ExplorerTarget(treeView, treeView.getRoot(), getScene().getWindow());
     }
 
     private Optional<TreeItem<PathItem>> selectedTreeItem() {
@@ -368,21 +385,24 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         refreshButton.setButtonSize(ButtonSize.SMALL);
         refreshButton.getStyleClass().add("project-explorer-button");
         refreshButton.setTooltip(new LocalizedTooltip("railroad.generic.refresh"));
-        refreshButton.setOnAction(e -> refreshProjectExplorer());
+        CommandButtons.bind(refreshButton, Commands.REFRESH_EXPLORER,
+            () -> CommandContext.withArgument(project, this, this));
 
         var collapseAllButton = new RRButton("", FontAwesomeSolid.COMPRESS_ALT);
         collapseAllButton.setVariant(ButtonVariant.GHOST);
         collapseAllButton.setButtonSize(ButtonSize.SMALL);
         collapseAllButton.getStyleClass().add("project-explorer-button");
         collapseAllButton.setTooltip(new LocalizedTooltip("railroad.generic.collapse_all"));
-        collapseAllButton.setOnAction(e -> ProjectExplorerPane.collapseAll(this.treeView.getRoot()));
+        CommandButtons.bind(collapseAllButton, Commands.COLLAPSE_EXPLORER,
+            () -> CommandContext.withArgument(project, this, rootCommandTarget()));
 
         var expandAllButton = new RRButton("", FontAwesomeSolid.EXPAND_ALT);
         expandAllButton.setVariant(ButtonVariant.GHOST);
         expandAllButton.setButtonSize(ButtonSize.SMALL);
         expandAllButton.getStyleClass().add("project-explorer-button");
         expandAllButton.setTooltip(new LocalizedTooltip("railroad.generic.expand_all"));
-        expandAllButton.setOnAction(e -> ProjectExplorerPane.expandAll(this.treeView.getRoot()));
+        CommandButtons.bind(expandAllButton, Commands.EXPAND_EXPLORER,
+            () -> CommandContext.withArgument(project, this, rootCommandTarget()));
 
         actionButtons.getChildren().addAll(refreshButton, collapseAllButton, expandAllButton);
 
@@ -395,7 +415,10 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         return header;
     }
 
-    private void refreshProjectExplorer() {
+    /**
+     * Refreshes the project tree using the existing filesystem scan.
+     */
+    public void refreshProjectExplorer() {
         Path rootPath = Path.of(this.treeView.getRoot().getValue().getPath().toString());
         this.treeView.setRoot(new PathTreeItem(new PathItem(rootPath)));
         this.treeView.getRoot().setExpanded(true);

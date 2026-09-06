@@ -1,5 +1,8 @@
 package dev.railroadide.railroad.ide.ui.git.commit.details;
 
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.GitCommands;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRVBox;
@@ -33,24 +36,8 @@ public class GitCommitCherryPickButton extends RRButton {
     public GitCommitCherryPickButton(Project project, GitCommit commit) {
         super("railroad.git.commit.details.button.cherry_pick", FontAwesomeSolid.MAGNET);
         setVariant(ButtonVariant.PRIMARY);
-        setOnAction(event -> {
-            GitManager gitManager = project.getGitManager();
-            if (!gitManager.getRepoStatus().changes().isEmpty()) {
-                CompletableFuture<boolean[]> canContinue = confirmCherryPickWithUncommittedChanges(gitManager,
-                    gitManager.getCurrentCommit(), commit);
-                canContinue.thenAccept(canContinueResult -> {
-                    boolean canContinueCherryPick = canContinueResult[0];
-                    boolean shouldStash = canContinueResult[1];
-                    if (canContinueCherryPick) {
-                        continueCherryPick(gitManager, commit, shouldStash);
-                    }
-                });
-
-                return;
-            }
-
-            continueCherryPick(gitManager, commit, false);
-        });
+        CommandButtons.bind(this, GitCommands.CHERRY_PICK,
+            () -> CommandContext.withArgument(project, this, commit));
     }
 
     private static void continueCherryPick(GitManager gitManager, GitCommit commit, boolean stashedChanges) {
@@ -246,5 +233,30 @@ public class GitCommitCherryPickButton extends RRButton {
         });
 
         return canContinueRef;
+    }
+
+    /**
+     * Runs the existing cherry pick workflow.
+     *
+     * @param project project owning the repository
+     * @param commit target commit
+     */
+    public static void execute(Project project, GitCommit commit) {
+        GitManager gitManager = project.getGitManager();
+        if (!gitManager.getRepoStatus().changes().isEmpty()) {
+            CompletableFuture<boolean[]> canContinue = confirmCherryPickWithUncommittedChanges(gitManager,
+                gitManager.getCurrentCommit(), commit);
+            canContinue.thenAccept(canContinueResult -> {
+                boolean canContinueCherryPick = canContinueResult[0];
+                boolean shouldStash = canContinueResult[1];
+                if (canContinueCherryPick) {
+                    continueCherryPick(gitManager, commit, shouldStash);
+                }
+            });
+
+            return;
+        }
+
+        continueCherryPick(gitManager, commit, false);
     }
 }

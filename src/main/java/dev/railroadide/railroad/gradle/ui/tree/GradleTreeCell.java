@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.gradle.ui.tree;
 
-import dev.railroadide.railroad.gradle.ui.task.GradleTaskContextMenu;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.CommandDispatcher;
+import dev.railroadide.railroad.command.GradleCommands;
 import javafx.scene.control.TreeCell;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -38,10 +40,8 @@ public class GradleTreeCell extends TreeCell<GradleTreeElement> {
             setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && !isEmpty()) {
                     if (item instanceof GradleTaskElement taskElement) {
-                        var runConfiguration = GradleTaskContextMenu.getOrCreateRunConfig(
-                            taskElement.getProject(),
-                            taskElement.getTask());
-                        runConfiguration.run(taskElement.getProject());
+                        CommandDispatcher.execute(GradleCommands.RUN_TASK, CommandContext.withArgument(
+                            taskElement.getProject(), this, taskElement.getTask()));
                     }
                 }
             });

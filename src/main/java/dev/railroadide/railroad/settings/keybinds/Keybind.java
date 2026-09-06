@@ -2,18 +2,10 @@ package dev.railroadide.railroad.settings.keybinds;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyCombination;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.input.*;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 
 /** Defines a user-configurable keyboard or mouse action and its dispatch behavior. */
@@ -239,6 +231,17 @@ public class Keybind {
          */
         public Builder addAction(KeybindContexts.KeybindContext context, Consumer<KeybindActionContext> action) {
             actions.put(context, action);
+            return this;
+        }
+
+        /**
+         * Adds a keyboard or mouse combination to the default shortcut list.
+         *
+         * @param binding default keyboard or mouse combination
+         * @return this builder
+         */
+        public Builder addDefaultBinding(KeybindData binding) {
+            defaultKeys.add(binding);
             return this;
         }
 

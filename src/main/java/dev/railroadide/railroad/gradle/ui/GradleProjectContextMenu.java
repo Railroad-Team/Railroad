@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.gradle.ui;
 
-import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.CommandMenuItems;
+import dev.railroadide.railroad.command.GradleCommands;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.utility.icon.RailroadBrandsIcon;
@@ -29,22 +31,24 @@ public class GradleProjectContextMenu extends ContextMenu {
 
         var openGradleConfig = new LocalizedMenuItem("railroad.gradle.tools.ctx_menu.open_gradle_config",
             new FontIcon(RailroadBrandsIcon.GRADLE));
-        openGradleConfig.setOnAction(_ -> {
-            Path buildFile = findBuildScript(module);
-            if (buildFile == null)
-                return;
-
-            Services.EDITOR_TAB_MANAGER.open(buildFile);
-        });
+        CommandMenuItems.bind(openGradleConfig, GradleCommands.OPEN_BUILD_SCRIPT,
+            () -> CommandContext.withArgument(project, null, module));
 
         var syncItem = new LocalizedMenuItem("railroad.gradle.tools.ctx_menu.sync",
             new FontIcon(FontAwesomeSolid.SYNC));
-        syncItem.setOnAction(_ -> project.getGradleManager().getGradleModelService().refreshModel(true));
+        CommandMenuItems.bind(syncItem, GradleCommands.SYNC,
+            () -> CommandContext.withArgument(project, null, project.getGradleManager()));
 
         getItems().addAll(openGradleConfig, syncItem);
     }
 
-    private Path findBuildScript(RailroadModule module) {
+    /**
+     * Resolves a module build script from its Gradle model.
+     *
+     * @param module target module
+     * @return build-script path, or null when unavailable
+     */
+    public static Path findBuildScript(RailroadModule module) {
         if (module == null || module.getProjectDir() == null)
             return null;
 
