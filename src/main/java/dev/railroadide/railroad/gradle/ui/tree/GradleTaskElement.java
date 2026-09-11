@@ -7,7 +7,7 @@ import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Tooltip;
 import lombok.Getter;
 import org.kordamp.ikonli.Ikon;
-import org.kordamp.ikonli.devicons.Devicons;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 /**
  * Represents a Gradle task with its description as a tooltip and run and debug context menu actions.
@@ -37,7 +37,7 @@ public class GradleTaskElement extends GradleTreeElement {
 
     @Override
     public Ikon getIcon() {
-        return Devicons.TERMINAL;
+        return FontAwesomeSolid.TERMINAL;
     }
 
     @Override

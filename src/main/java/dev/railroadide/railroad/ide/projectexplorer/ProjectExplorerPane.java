@@ -44,6 +44,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.File;
@@ -370,7 +371,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         var projectInfo = new HBox();
         projectInfo.getStyleClass().add("project-explorer-project-info");
         projectInfo.setAlignment(Pos.CENTER_LEFT);
-        var projectIcon = new FontIcon(FontAwesomeSolid.FOLDER_OPEN);
+        var projectIcon = new FontIcon(FontAwesomeRegular.FOLDER);
         projectIcon.getStyleClass().add("project-icon");
         var projectName = new Label(project.getAlias());
         projectName.getStyleClass().add("project-name");

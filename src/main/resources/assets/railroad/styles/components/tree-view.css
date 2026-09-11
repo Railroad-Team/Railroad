@@ -19,6 +19,8 @@
 .rr-tree-view .tree-cell,
 .gradle-tasks-tree-view .tree-cell {
     -fx-background-color: -color-surface-panel;
+    -fx-alignment: CENTER_LEFT;
+    -fx-graphic-text-gap: 0.25em;
 }
 
 .rr-tree-view > .virtual-flow > .corner,
@@ -67,14 +69,12 @@
     -fx-background-color: -color-accent-emphasis;
 }
 
-/* File type icons in tree cells */
+/* Neutral navigation icons share their size with dock and toolbar icons. */
 .rr-tree-view .ikonli-font-icon {
-    -fx-icon-size: 14px;
-    -fx-fill: -color-fg-default;
-    -fx-opacity: 0.8;
+    -fx-icon-color: -color-fg-muted;
+    -fx-opacity: 1;
 }
 
 .rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:selected .ikonli-font-icon {
-    -fx-fill: -color-fg-default;
-    -fx-opacity: 1;
+    -fx-icon-color: -color-fg-default;
 }

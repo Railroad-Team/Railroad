@@ -38,8 +38,7 @@
 }
 
 .project-icon {
-    -fx-fill: -color-accent-emphasis;
-    -fx-opacity: 0.9;
+    -fx-icon-color: -color-fg-muted;
 }
 
 .project-name {

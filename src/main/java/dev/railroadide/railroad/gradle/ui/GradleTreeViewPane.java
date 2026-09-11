@@ -53,7 +53,7 @@ public abstract class GradleTreeViewPane<T> extends RRVBox {
         loadingContainer.prefHeightProperty().bind(heightProperty());
         loadingContainer.prefWidthProperty().bind(widthProperty());
 
-        treeView.getStyleClass().add("gradle-tasks-tree-view");
+        treeView.getStyleClass().addAll("rr-tree-view", "gradle-tasks-tree-view");
         treeView.setShowRoot(false);
         treeView.setCellFactory(param -> new GradleTreeCell());
         treeView.prefHeightProperty().bind(heightProperty());

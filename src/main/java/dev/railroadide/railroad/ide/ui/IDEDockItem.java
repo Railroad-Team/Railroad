@@ -17,6 +17,7 @@ import dev.railroadide.railroad.utility.icon.RailroadBrandsIcon;
 import javafx.scene.Node;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeBrands;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeRegular;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.jspecify.annotations.Nullable;
 
@@ -38,7 +39,7 @@ public enum IDEDockItem {
     PROJECT(
         "dock-item:project",
         "railroad.ide.dock_item.project",
-        FontAwesomeSolid.FOLDER,
+        FontAwesomeRegular.FOLDER,
         DockPosition.LEFT,
         WorkspaceModes.CODE,
         InitializationPolicy.EAGER,

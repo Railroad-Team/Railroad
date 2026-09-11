@@ -52,8 +52,28 @@
 .project-explorer-button .ikonli-font-icon,
 .gradle-tools-buttonbar-button .ikonli-font-icon,
 .icon-button .ikonli-font-icon,
-.project-explorer-project-info .project-icon {
+.project-explorer-project-info .project-icon,
+.rr-tree-view .ikonli-font-icon,
+.gradle-tasks-tree-view .ikonli-font-icon {
     -fx-icon-size: 16px;
+}
+
+.toolbar-button .ikonli-font-icon,
+.project-explorer-button .ikonli-font-icon,
+.gradle-tools-buttonbar-button .ikonli-font-icon,
+.icon-button .ikonli-font-icon {
+    -fx-icon-color: -color-fg-muted;
+}
+
+.toolbar-button:hover .ikonli-font-icon,
+.project-explorer-button:hover .ikonli-font-icon,
+.gradle-tools-buttonbar-button:hover .ikonli-font-icon,
+.icon-button:hover .ikonli-font-icon {
+    -fx-icon-color: -color-fg-default;
+}
+
+.icon-button:selected .ikonli-font-icon {
+    -fx-icon-color: -color-accent-fg;
 }
 
 .combo-box.ide-toolbar-selector,
