@@ -41,6 +41,7 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import org.jetbrains.annotations.NotNull;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -107,7 +108,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             }
         });
         this.treeView.getRoot().setExpanded(true);
-        this.treeView.prefHeightProperty().bind(heightProperty().subtract(60));
+        this.treeView.setMinHeight(0);
+        VBox.setVgrow(this.treeView, Priority.ALWAYS);
         sortTreeItems(this.treeView.getRoot());
 
         handleSearchEvents(rootPath);
@@ -354,9 +356,11 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     }
 
     private Node createModernHeader(Project project) {
-        var header = new HBox();
+        var header = new VBox();
         header.getStyleClass().add("project-explorer-header");
-        header.setAlignment(Pos.CENTER_LEFT);
+        var titleRow = new HBox();
+        titleRow.getStyleClass().add("project-explorer-title-row");
+        titleRow.setAlignment(Pos.CENTER_LEFT);
 
         // Project icon and name
         var projectInfo = new HBox();
@@ -364,16 +368,18 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         projectInfo.setAlignment(Pos.CENTER_LEFT);
         var projectIcon = new FontIcon(FontAwesomeSolid.FOLDER_OPEN);
         projectIcon.getStyleClass().add("project-icon");
-        projectIcon.setIconSize(16);
         var projectName = new Label(project.getAlias());
         projectName.getStyleClass().add("project-name");
-        projectName.setMinWidth(Label.USE_PREF_SIZE); // Prevent truncation
+        projectName.setMinWidth(0);
+        projectName.setTooltip(new Tooltip(project.getAlias()));
+        projectInfo.setMinWidth(0);
+        HBox.setHgrow(projectInfo, Priority.ALWAYS);
         projectInfo.getChildren().addAll(projectIcon, projectName);
 
         // Search field
         this.searchField.setPromptText("Search files...");
         this.searchField.getStyleClass().add("project-explorer-search-field");
-        HBox.setHgrow(this.searchField, Priority.ALWAYS);
+        this.searchField.setMaxWidth(Double.MAX_VALUE);
 
         // Action buttons
         var actionButtons = new HBox();
@@ -406,11 +412,11 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         actionButtons.getChildren().addAll(refreshButton, collapseAllButton, expandAllButton);
 
-        // Layout: projectInfo | searchField | actionButtons
-        header.getChildren().addAll(projectInfo, this.searchField, actionButtons);
+        // Keep search usable even when the dock is narrow or the project name is long.
+        titleRow.getChildren().addAll(projectInfo, actionButtons);
+        header.getChildren().addAll(titleRow, this.searchField);
         HBox.setHgrow(actionButtons, Priority.NEVER);
-        HBox.setHgrow(projectInfo, Priority.NEVER);
-        // The search field will take up the remaining space, but not shrink projectInfo
+        actionButtons.setMinWidth(HBox.USE_PREF_SIZE);
 
         return header;
     }

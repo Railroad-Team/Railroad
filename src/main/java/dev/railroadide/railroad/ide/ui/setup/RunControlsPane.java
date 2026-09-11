@@ -63,6 +63,7 @@ public final class RunControlsPane extends RRHBox {
 
     private RunControlsPane(Project project) {
         super(4);
+        getStyleClass().add("ide-run-controls");
         this.project = project;
         setAlignment(Pos.CENTER_LEFT);
 
@@ -86,6 +87,7 @@ public final class RunControlsPane extends RRHBox {
             return object.uuid().toString();
         });
 
+        comboBox.getStyleClass().add("ide-toolbar-selector");
         comboBox.getItems().setAll(project.getRunConfigManager().getConfigurations());
         comboBox.getItems().add(null);
 
