@@ -6,8 +6,7 @@
 /* Modern Project Explorer Styles */
 .rr-project-explorer {
     -fx-background-color: -color-bg-default;
-    -fx-border-color: -color-border-subtle;
-    -fx-border-width: 0 1 0 0;
+    -fx-border-width: 0;
 }
 
 .project-explorer-header {

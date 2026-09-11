@@ -110,10 +110,12 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         this.bottomPane = createBottomPane();
 
         this.centerBottomSplit = new SplitPane(codeEditorHost, bottomPane);
+        centerBottomSplit.getStyleClass().add("ide-dock-split");
         centerBottomSplit.setOrientation(Orientation.VERTICAL);
         centerBottomSplit.setDividerPositions(0.75);
 
         this.mainSplit = new SplitPane(leftPane, centerBottomSplit);
+        mainSplit.getStyleClass().add("ide-dock-split");
         mainSplit.setOrientation(Orientation.HORIZONTAL);
         mainSplit.setDividerPositions(0.15);
         setCenter(mainSplit);

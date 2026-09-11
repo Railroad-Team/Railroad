@@ -1,4 +1,36 @@
 /* IDE styles */
+/* One painted pixel, with a wider hit area for resizing the docks. */
+.ide-dock-split > .split-pane-divider {
+    -fx-background-color: -color-border-subtle;
+    -fx-background-radius: 0;
+    -fx-border-width: 0;
+    -fx-opacity: 1;
+}
+
+.ide-dock-split:horizontal > .split-pane-divider {
+    -fx-padding: 0 3px 0 2px;
+    -fx-background-insets: 0 2px;
+}
+
+.ide-dock-split:vertical > .split-pane-divider {
+    -fx-padding: 2px 0 3px 0;
+    -fx-background-insets: 2px 0;
+}
+
+.ide-dock-split > .split-pane-divider > .horizontal-grabber,
+.ide-dock-split > .split-pane-divider > .vertical-grabber {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+
+.ide-dock-split > .split-pane-divider:hover {
+    -fx-background-color: -color-border-default;
+}
+
+.ide-dock-split > .split-pane-divider:pressed {
+    -fx-background-color: -color-accent-emphasis;
+}
+
 .ide-welcome-text {
     -fx-font-weight: bold;
     -fx-font-size: 30px;
