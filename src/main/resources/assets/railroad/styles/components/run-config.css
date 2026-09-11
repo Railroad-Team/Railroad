@@ -91,7 +91,15 @@
 }
 
 .run-config-combobox {
-    -fx-pref-width: 200px;
+    -fx-min-width: 16em;
+    -fx-pref-width: 20em;
+}
+
+.add-run-configuration-button {
+    -fx-font-size: 1em;
+    -fx-min-height: 2em;
+    -fx-pref-height: 2em;
+    -fx-padding: 0 0.5em;
 }
 
 .runconfig-gradle-jdk-combobox {

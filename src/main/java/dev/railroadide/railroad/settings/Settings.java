@@ -100,6 +100,16 @@ public final class Settings {
             .canBeNull(false)
             .build());
 
+    /** Whether single-child Java package chains share one row in the project explorer. */
+    public static final Setting<Boolean> COMPACT_MIDDLE_PACKAGES = registerSetting(
+        Setting.builder(Boolean.class, "railroad:compact_middle_packages")
+            .treePath("ide")
+            .category(SettingCategory.simple("railroad:ide.project_explorer"))
+            .codec(DefaultSettingCodecs.BOOLEAN)
+            .defaultValue(true)
+            .canBeNull(false)
+            .build());
+
     /** Whether importing a project switches to the IDE workspace afterward. */
     public static final Setting<Boolean> SWITCH_TO_IDE_AFTER_IMPORT = registerSetting(
         Setting.builder(Boolean.class, "railroad:switch_to_ide_after_import")

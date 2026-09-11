@@ -40,6 +40,18 @@ public class PathTreeCell extends TreeCell<PathItem> {
         this.messageProperty = messageProperty;
     }
 
+    @Override
+    protected void layoutChildren() {
+        super.layoutChildren();
+        Node disclosure = getDisclosureNode();
+        if (disclosure != null && disclosure.isVisible()) {
+            // TreeCellSkin positions this at the top of its preferred-height area.
+            // Center it in the row instead, including when fixed cell sizing is active.
+            disclosure.relocate(disclosure.getLayoutX(),
+                snapPositionY((getHeight() - disclosure.getLayoutBounds().getHeight()) / 2));
+        }
+    }
+
     private static ContextMenu createContextMenu(PathTreeCell cell) {
         var newMenu = new LocalizedMenu("railroad.project_explorer.menu.new");
         newMenu.getItems().addAll(
@@ -89,13 +101,15 @@ public class PathTreeCell extends TreeCell<PathItem> {
             setContextMenu(null);
             setText(null);
             setGraphic(null);
+            setTooltip(null);
             setOnMouseClicked(null);
         } else {
             String text = getString();
+            setTooltip(new Tooltip(item.getPath().toString()));
             Node image = FileUtils.getIcon(item.getPath());
             if (isEditing()) {
                 if (textField != null) {
-                    textField.setText(text);
+                    textField.setText(item.toString());
                 }
 
                 setText(null);
@@ -146,6 +160,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
             if (textField == null) {
                 createTextField();
             }
+            textField.setText(getItem().toString());
 
             setText(null);
 
@@ -188,7 +203,12 @@ public class PathTreeCell extends TreeCell<PathItem> {
                 messageProperty
                     .setValue(L18n.localize("railroad.project_explorer.rename_failed", editingPath.getFileName()));
             } finally {
-                Platform.runLater(ProjectExplorerPane::enableFileChangeListener);
+                Platform.runLater(() -> {
+                    ProjectExplorerPane.enableFileChangeListener();
+                    if (getTreeView().getParent() instanceof ProjectExplorerPane explorer) {
+                        explorer.refreshProjectExplorer();
+                    }
+                });
             }
         }
 
@@ -204,10 +224,12 @@ public class PathTreeCell extends TreeCell<PathItem> {
     public void cancelEdit() {
         super.cancelEdit();
         setText(getString());
-        setGraphic(null);
+        setGraphic(getItem() == null ? null : FileUtils.getIcon(getItem().getPath()));
     }
 
     private String getString() {
+        if (getTreeItem() instanceof PathTreeItem pathTreeItem)
+            return pathTreeItem.getDisplayName();
         return getItem() == null ? "" : getItem().toString();
     }
 

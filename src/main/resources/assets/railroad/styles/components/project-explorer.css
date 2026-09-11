@@ -9,6 +9,10 @@
     -fx-border-width: 0;
 }
 
+.rr-project-explorer .tree-cell {
+    -fx-indent: 0.75em;
+}
+
 .project-explorer-header {
     -fx-background-color: -color-surface-panel;
     -fx-border-color: -color-border-subtle;

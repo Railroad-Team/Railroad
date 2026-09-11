@@ -14,6 +14,7 @@ import dev.railroadide.railroad.ide.projectexplorer.task.FileCopyTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.SearchTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.WatchTask;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.ui.RRButton;
@@ -31,8 +32,8 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.concurrent.WorkerStateEvent;
 import javafx.geometry.Pos;
+import javafx.geometry.Side;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
@@ -42,19 +43,19 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import org.jetbrains.annotations.NotNull;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.BiConsumer;
+import javafx.beans.binding.Bindings;
 
 /**
  * Project filesystem browser with search, file operations, watching, and editor navigation.
@@ -67,11 +68,13 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     private final StringProperty messageProperty = new SimpleStringProperty();
     private final TreeView<PathItem> treeView = new TreeView<>();
     private final TextField searchField;
-    private final ObservableList<String> searchListItems = FXCollections.observableArrayList();
-    private final StringProperty searchProperty = new SimpleStringProperty();
-    private final List<String> searchList = new ArrayList<>();
     private final ShutdownHooks.Registration shutdownRegistration;
     private boolean closed;
+    private final BiConsumer<Boolean, Boolean> compactPackagesListener = (_, _) -> Platform.runLater(() -> {
+        if (!closed) {
+            refreshProjectExplorer();
+        }
+    });
 
     /**
      * Builds the project tree and starts filesystem watching and index warming.
@@ -90,7 +93,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         var header = createModernHeader(project);
 
         this.treeView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-        this.treeView.setRoot(new PathTreeItem(new PathItem(rootPath)));
+        this.treeView.setRoot(new PathTreeItem(new PathItem(rootPath), Settings.COMPACT_MIDDLE_PACKAGES.getValue()));
         this.treeView.setEditable(true);
         this.treeView.getStyleClass().add("rr-tree-view");
         this.treeView.setCellFactory(_ -> {
@@ -125,6 +128,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         shutdownRegistration = ShutdownHooks.registerHook(this.executorService::shutdownNow);
         Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.PROJECT_EXPLORER, this);
+        Settings.COMPACT_MIDDLE_PACKAGES.addListener(compactPackagesListener);
     }
 
     @Override
@@ -133,6 +137,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             return;
 
         closed = true;
+        Settings.COMPACT_MIDDLE_PACKAGES.removeListener(compactPackagesListener);
         shutdownRegistration.close();
         executorService.shutdownNow();
     }
@@ -263,8 +268,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
                 // we need to find the cells that match the path and set them to not cut
                 TreeItem<PathItem> rootItem = treeView.getRoot();
-                TreeItem<PathItem> item = ((ProjectExplorerPane) treeView.getParent()).findOrCreateTreeItem(rootItem,
-                    path);
+                TreeItem<PathItem> item = PathTreeItem.find(rootItem, path);
                 if (item == null)
                     continue;
 
@@ -377,7 +381,6 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         projectInfo.getChildren().addAll(projectIcon, projectName);
 
         // Search field
-        this.searchField.setPromptText("Search files...");
         this.searchField.getStyleClass().add("project-explorer-search-field");
         this.searchField.setMaxWidth(Double.MAX_VALUE);
 
@@ -418,6 +421,45 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         HBox.setHgrow(actionButtons, Priority.NEVER);
         actionButtons.setMinWidth(HBox.USE_PREF_SIZE);
 
+        var searchButton = new RRButton("", FontAwesomeSolid.SEARCH);
+        searchButton.setVariant(ButtonVariant.GHOST);
+        searchButton.setButtonSize(ButtonSize.SMALL);
+        searchButton.getStyleClass().add("project-explorer-button");
+        var searchTooltip = new LocalizedTooltip("railroad.ide.project_explorer.search_field");
+        searchButton.setTooltip(searchTooltip);
+        searchButton.accessibleTextProperty().bind(searchTooltip.textProperty());
+
+        var popupSearch = new RRTextField("railroad.ide.project_explorer.search_field");
+        popupSearch.getStyleClass().add("project-explorer-search-field");
+        popupSearch.textProperty().bindBidirectional(searchField.textProperty());
+        popupSearch.prefWidthProperty().bind(searchField.fontProperty().map(font -> font.getSize() * 20));
+        popupSearch.setMinWidth(TextField.USE_PREF_SIZE);
+        var searchMenu = new ContextMenu(new CustomMenuItem(popupSearch, false));
+        searchButton.setOnAction(_ -> {
+            searchMenu.show(searchButton, Side.BOTTOM, 0, 0);
+            popupSearch.requestFocus();
+        });
+        searchMenu.setOnHidden(_ -> searchButton.requestFocus());
+        sceneProperty().addListener((_, _, scene) -> {
+            if (scene == null) {
+                searchMenu.hide();
+            }
+        });
+        var narrow = Bindings.createBooleanBinding(
+            () -> header.getWidth() - header.getInsets().getLeft()
+                - header.getInsets().getRight() < searchField.getFont().getSize() * 14,
+            header.widthProperty(), header.insetsProperty(), searchField.fontProperty());
+        searchField.visibleProperty().bind(narrow.not());
+        searchField.managedProperty().bind(searchField.visibleProperty());
+        searchButton.visibleProperty().bind(narrow);
+        searchButton.managedProperty().bind(searchButton.visibleProperty());
+        narrow.addListener((_, _, isNarrow) -> {
+            if (!isNarrow) {
+                searchMenu.hide();
+            }
+        });
+        actionButtons.getChildren().addFirst(searchButton);
+
         return header;
     }
 
@@ -425,10 +467,35 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
      * Refreshes the project tree using the existing filesystem scan.
      */
     public void refreshProjectExplorer() {
-        Path rootPath = Path.of(this.treeView.getRoot().getValue().getPath().toString());
-        this.treeView.setRoot(new PathTreeItem(new PathItem(rootPath)));
-        this.treeView.getRoot().setExpanded(true);
-        sortTreeItems(this.treeView.getRoot());
+        if (!searchField.getText().isBlank()) {
+            search(searchField.getText());
+            return;
+        }
+        List<Path> expanded = new ArrayList<>();
+        collectExpandedPaths(treeView.getRoot(), expanded);
+        Path selected = selectedTreeItem().map(item -> item.getValue().getPath()).orElse(null);
+        treeView
+            .setRoot(new PathTreeItem(new PathItem(project.getPath()), Settings.COMPACT_MIDDLE_PACKAGES.getValue()));
+        treeView.getRoot().setExpanded(true);
+        for (Path path : expanded) {
+            TreeItem<PathItem> item = PathTreeItem.find(treeView.getRoot(), path);
+            while (item != null) {
+                item.setExpanded(true);
+                item = item.getParent();
+            }
+        }
+        if (selected != null) {
+            revealPath(selected);
+        }
+    }
+
+    private static void collectExpandedPaths(TreeItem<PathItem> item, List<Path> expanded) {
+        if (!item.isExpanded())
+            return;
+        expanded.add(item.getValue().getPath());
+        for (TreeItem<PathItem> child : getLoadedChildren(item)) {
+            collectExpandedPaths(child, expanded);
+        }
     }
 
     @Override
@@ -440,23 +507,28 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         if (kind != StandardWatchEventKinds.ENTRY_CREATE && kind != StandardWatchEventKinds.ENTRY_DELETE)
             return;
 
+        // A new sibling can split a compact package; deletion can join it again.
         Platform.runLater(() -> {
-            // Refresh the tree view based on the kind of event
-            if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
-                addPathToTree(path);
-            } else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
-                removePathFromTree(path);
-            } /*
-               * else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
-               *
-               * }
-               */
-
-            String searchValue = searchField.getText();
-            if (!searchValue.isBlank()) {
-                var searchTask = new SearchTask(treeView.getRoot().getValue().getPath(), searchValue);
-                searchTask.setOnSucceeded(event -> updateTreeViewWithSearchResults(searchTask.getMatchedPaths()));
-                executorService.submit(searchTask);
+            if (closed)
+                return;
+            if (!searchField.getText().isBlank()) {
+                search(searchField.getText());
+                return;
+            }
+            List<Path> expanded = new ArrayList<>();
+            collectExpandedPaths(treeView.getRoot(), expanded);
+            TreeItem<PathItem> selected = treeView.getSelectionModel().getSelectedItem();
+            ((PathTreeItem) treeView.getRoot()).refresh(path);
+            for (Path expandedPath : expanded) {
+                TreeItem<PathItem> item = PathTreeItem.find(treeView.getRoot(), expandedPath);
+                while (item != null) {
+                    item.setExpanded(true);
+                    item = item.getParent();
+                }
+            }
+            if (selected != null) {
+                treeView.getSelectionModel()
+                    .select(PathTreeItem.find(treeView.getRoot(), selected.getValue().getPath()));
             }
         });
     }
@@ -533,8 +605,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                     this.executorService.submit(task);
 
                     task.setOnSucceeded(_ -> Platform.runLater(() -> {
-                        var item = new PathTreeItem(new PathItem(targetPath));
-                        cell.getTreeItem().getChildren().add(item);
+                        refreshProjectExplorer();
                     }));
                 }
 
@@ -547,110 +618,52 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     }
 
     private void handleSearchEvents(Path rootPath) {
-        this.searchField.textProperty().addListener((_, _, newValue) -> {
-            this.searchListItems.clear();
-
-            if (newValue.isBlank()) {
-                resetTreeView(rootPath);
-                return;
-            }
-
-            var searchTask = new SearchTask(rootPath, newValue);
-            this.searchList.clear();
-            this.searchProperty.bind(searchTask.resultProperty());
-            searchTask.setOnSucceeded((WorkerStateEvent _) -> {
-                this.searchListItems.addAll(this.searchList);
-                updateTreeViewWithSearchResults(searchTask.getMatchedPaths());
-            });
-
-            this.executorService.submit(searchTask);
-        });
-
-        this.searchProperty.addListener((_, _, newValue) -> {
-            if (newValue != null) {
-                this.searchList.add(newValue);
+        searchField.textProperty().addListener((_, _, query) -> {
+            if (query.isBlank()) {
+                searchGeneration++;
+                treeView.setRoot(new PathTreeItem(new PathItem(rootPath), Settings.COMPACT_MIDDLE_PACKAGES.getValue()));
+                treeView.getRoot().setExpanded(true);
+            } else {
+                search(query);
             }
         });
     }
 
-    private void updateTreeViewWithSearchResults(List<Path> matchedPaths) {
-        TreeItem<PathItem> rootItem = treeView.getRoot();
-        rootItem.getChildren().clear();
+    private long searchGeneration;
 
-        for (Path path : matchedPaths) {
-            TreeItem<PathItem> parentItem = findOrCreateTreeItem(rootItem, path.getParent());
-            if (isMissingPath(parentItem, path)) {
-                TreeItem<PathItem> newItem = new PathTreeItem(new PathItem(path));
-                parentItem.getChildren().add(newItem);
+    private void search(String query) {
+        long generation = ++searchGeneration;
+        var task = new SearchTask(project.getPath(), query);
+        task.setOnSucceeded(_ -> {
+            if (!closed && generation == searchGeneration) {
+                updateTreeViewWithSearchResults(task.getMatchedPaths());
             }
-        }
+        });
+        executorService.submit(task);
+    }
 
-        filterTreeItems(rootItem, matchedPaths);
-        sortTreeItems(rootItem);
-        expandAllFolders(rootItem);
+    private void updateTreeViewWithSearchResults(List<Path> matchedPaths) {
+        var root = PathTreeItem.filtered(project.getPath());
+        for (Path path : matchedPaths) {
+            findOrCreateTreeItem(root, path);
+        }
+        PathTreeItem.compactFilteredPackages(root, Settings.COMPACT_MIDDLE_PACKAGES.getValue());
+        sortTreeItems(root);
+        treeView.setRoot(root);
+        expandAllFolders(root);
     }
 
     private TreeItem<PathItem> findOrCreateTreeItem(TreeItem<PathItem> rootItem, Path path) {
         if (path == null || path.equals(rootItem.getValue().getPath()))
             return rootItem;
-
-        // Recursively create parent items
-        TreeItem<PathItem> parentItem = findOrCreateTreeItem(rootItem, path.getParent());
-
-        // Check if the current item already exists
-        TreeItem<PathItem> currentItem = findTreeItemRecursive(parentItem, path);
-        if (currentItem == null) {
-            currentItem = new PathTreeItem(new PathItem(path));
-            parentItem.getChildren().add(currentItem);
+        TreeItem<PathItem> parent = findOrCreateTreeItem(rootItem, path.getParent());
+        for (TreeItem<PathItem> child : parent.getChildren()) {
+            if (child.getValue().getPath().equals(path))
+                return child;
         }
-
-        return currentItem;
-    }
-
-    private void filterTreeItems(TreeItem<PathItem> parentItem, List<Path> matchedPaths) {
-        if (parentItem != null && !parentItem.getChildren().isEmpty()) {
-            parentItem.getChildren().removeIf(child -> !isPathMatched(child.getValue().getPath(), matchedPaths));
-            for (TreeItem<PathItem> child : parentItem.getChildren()) {
-                filterTreeItems(child, matchedPaths);
-            }
-        }
-    }
-
-    private boolean isPathMatched(Path path, List<Path> matchedPaths) {
-        for (Path matchedPath : matchedPaths) {
-            if (matchedPath.startsWith(path))
-                return true;
-        }
-
-        return false;
-    }
-
-    private void resetTreeView(Path rootPath) {
-        TreeItem<PathItem> rootItem = treeView.getRoot();
-        rootItem.getChildren().clear();
-
-        try {
-            Files.walkFileTree(rootPath, new SimpleFileVisitor<>() {
-                @Override
-                public @NotNull FileVisitResult visitFile(@NotNull Path file, @NotNull BasicFileAttributes attrs) {
-                    addPathToTree(file);
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public @NotNull FileVisitResult preVisitDirectory(
-                    @NotNull Path dir,
-                    @NotNull BasicFileAttributes attrs
-                ) {
-                    addPathToTree(dir);
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        } catch (IOException exception) {
-            Railroad.LOGGER.error("Error while walking file tree", exception);
-        }
-
-        sortTreeItems(rootItem);
+        var item = PathTreeItem.filtered(path);
+        parent.getChildren().add(item);
+        return item;
     }
 
     private void sortTreeItems(TreeItem<PathItem> parentItem) {
@@ -664,41 +677,6 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 sortTreeItems(child);
             }
         }
-    }
-
-    private void addPathToTree(Path path) {
-        TreeItem<PathItem> parentItem = findTreeItem(path.getParent());
-        if (parentItem != null && isMissingPath(parentItem, path)) {
-            var newItem = new PathItem(path);
-            TreeItem<PathItem> newTreeItem = new PathTreeItem(newItem);
-            parentItem.getChildren().add(newTreeItem);
-            sortTreeItems(parentItem);
-        }
-    }
-
-    private void removePathFromTree(Path path) {
-        TreeItem<PathItem> itemToRemove = findTreeItem(path);
-        if (itemToRemove != null && itemToRemove.getParent() != null) {
-            TreeItem<PathItem> parentItem = itemToRemove.getParent();
-            parentItem.getChildren().remove(itemToRemove);
-            sortTreeItems(parentItem);
-        }
-    }
-
-    private TreeItem<PathItem> findTreeItem(Path path) {
-        return findTreeItemRecursive(treeView.getRoot(), path);
-    }
-
-    private TreeItem<PathItem> findTreeItemRecursive(TreeItem<PathItem> currentItem, Path path) {
-        if (currentItem.getValue().getPath().equals(path))
-            return currentItem;
-
-        for (TreeItem<PathItem> child : getLoadedChildren(currentItem)) {
-            TreeItem<PathItem> result = findTreeItemRecursive(child, path);
-            if (result != null)
-                return result;
-        }
-        return null;
     }
 
     private static ObservableList<TreeItem<PathItem>> getLoadedChildren(TreeItem<PathItem> item) {
@@ -715,15 +693,6 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 expandAllFolders(child);
             }
         }
-    }
-
-    private boolean isMissingPath(TreeItem<PathItem> parentItem, Path path) {
-        for (TreeItem<PathItem> child : parentItem.getChildren()) {
-            if (child.getValue().getPath().equals(path))
-                return false;
-        }
-
-        return true;
     }
 
     /**
@@ -761,27 +730,6 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     }
 
     private TreeItem<PathItem> findTreeItemForReveal(Path path) {
-        if (path == null || treeView.getRoot() == null)
-            return null;
-
-        TreeItem<PathItem> currentItem = treeView.getRoot();
-        Path rootPath = currentItem.getValue().getPath().toAbsolutePath().normalize();
-        Path targetPath = path.toAbsolutePath().normalize();
-        if (!targetPath.startsWith(rootPath))
-            return null;
-
-        Path currentPath = rootPath;
-        for (Path segment : rootPath.relativize(targetPath)) {
-            currentPath = currentPath.resolve(segment);
-            Path expectedPath = currentPath;
-            currentItem = currentItem.getChildren().stream()
-                .filter(child -> child.getValue().getPath().toAbsolutePath().normalize().equals(expectedPath))
-                .findFirst()
-                .orElse(null);
-            if (currentItem == null)
-                return null;
-        }
-
-        return currentItem;
+        return PathTreeItem.find(treeView.getRoot(), path);
     }
 }
