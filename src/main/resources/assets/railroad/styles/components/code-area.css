@@ -3,7 +3,7 @@
 }
 
 .code-area {
-    -fx-background-color: -color-bg-overlay;
+    -fx-background-color: -color-surface-editor;
 }
 
 .code-area .paragraph-box .paragraph-text, .paragraph-text .text {
@@ -18,7 +18,7 @@
     -fx-background-radius: 0;
     -fx-box-border: none;
 
-    -fx-background-color: -color-bg-inset;
+    -fx-background-color: -color-surface-editor;
     -fx-text-fill: -color-fg-subtle;
 
     -fx-padding: 0 35 0 5;
@@ -44,7 +44,11 @@
 }
 
 .paragraph-box:has-caret, .has-caret {
-    -fx-background-color: -color-base-8;
+    -fx-background-color: -color-neutral-subtle;
+}
+
+.code-area .ide-code-editor-grid {
+    -fx-background-color: -color-surface-editor;
 }
 
 .code-area .class {

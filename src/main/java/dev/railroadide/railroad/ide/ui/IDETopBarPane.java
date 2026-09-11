@@ -39,6 +39,7 @@ public final class IDETopBarPane extends RRHBox {
         Objects.requireNonNull(workspaceActions, "Workspace actions cannot be null");
 
         var spacer = new Region();
+        getStyleClass().add("ide-frame");
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         getChildren().addAll(

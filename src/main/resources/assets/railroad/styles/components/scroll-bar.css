@@ -45,3 +45,13 @@
     -fx-background-color: -color-bg-default;
     -fx-opacity: 1;
 }
+
+.rr-tree-view .scroll-bar,
+.gradle-tasks-tree-view .scroll-bar {
+    -fx-background-color: -color-surface-panel;
+}
+
+.editor-tab-pane .scroll-bar,
+.code-area .scroll-bar {
+    -fx-background-color: -color-surface-editor;
+}

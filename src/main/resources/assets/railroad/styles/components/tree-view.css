@@ -1,7 +1,8 @@
 /* Dock trees share the panel surface; only input focus draws an outline. */
 .rr-tree-view,
 .gradle-tasks-tree-view {
-    -fx-background-color: -color-bg-default;
+    -color-cell-bg: -color-surface-panel;
+    -fx-background-color: -color-surface-panel;
     -fx-background-insets: 0;
     -fx-background-radius: 0;
     -fx-border-color: transparent;
@@ -15,9 +16,14 @@
     -fx-border-color: -color-accent-fg;
 }
 
+.rr-tree-view .tree-cell,
+.gradle-tasks-tree-view .tree-cell {
+    -fx-background-color: -color-surface-panel;
+}
+
 .rr-tree-view > .virtual-flow > .corner,
 .gradle-tasks-tree-view > .virtual-flow > .corner {
-    -fx-background-color: -color-bg-default;
+    -fx-background-color: -color-surface-panel;
     -fx-opacity: 1;
 }
 

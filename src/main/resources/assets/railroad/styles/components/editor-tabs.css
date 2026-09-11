@@ -2,6 +2,11 @@
     -fx-close-tab-animation: NONE;
 }
 
+.tab-pane.editor-tab-pane > .tab-header-area,
+.tab-pane.editor-tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: -color-surface-panel;
+}
+
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab {
     -fx-padding: 0 0.25em 0 0.25em;
 }
@@ -53,7 +58,7 @@
 }
 
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab:selected {
-    -fx-background-color: -color-accent-emphasis, -color-accent-muted;
+    -fx-background-color: -color-accent-emphasis, -color-surface-editor;
 }
 
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.attention,
