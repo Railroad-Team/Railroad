@@ -9,8 +9,9 @@
     -fx-border-width: 0;
 }
 
-.rr-project-explorer .tree-cell {
+.rr-project-explorer .rr-tree-view .tree-cell {
     -fx-indent: 0.75em;
+    -fx-graphic-text-gap: 5px;
 }
 
 .project-explorer-header {

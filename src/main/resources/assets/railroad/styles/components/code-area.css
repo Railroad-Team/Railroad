@@ -49,6 +49,26 @@
 
 .code-area .ide-code-editor-grid {
     -fx-background-color: -color-surface-editor;
+    -fx-padding: 0 12px 0 5px;
+    -fx-hgap: 8px;
+    -fx-alignment: center-left;
+}
+
+.code-area .editor-line-number {
+    -fx-text-fill: -color-fg-subtle;
+    -fx-font-weight: normal;
+}
+
+.code-area .paragraph-box:has-caret .editor-line-number {
+    -fx-text-fill: -color-fg-default;
+}
+
+.code-area .editor-diagnostic-error {
+    -mfx-color: -color-danger-emphasis;
+}
+
+.code-area .editor-diagnostic-warning {
+    -mfx-color: -color-warning-emphasis;
 }
 
 /* Colourful syntax roles, with separate colours for light and dark canvases. */

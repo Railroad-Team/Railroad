@@ -56,12 +56,14 @@
 
 .editor-tab-title {
     -fx-font-size: 1em;
-    -fx-text-fill: -color-fg-muted;
+    -fx-text-fill: -color-fg-default;
+    -fx-opacity: 0.8;
 }
 
 .editor-tab:selected .editor-tab-title {
     -fx-font-weight: bold;
     -fx-text-fill: -color-fg-default;
+    -fx-opacity: 1;
 }
 
 /* Editor tab states deliberately use semantic palette colours so they remain
