@@ -759,7 +759,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (position < 0 || position >= getLength())
             return;
 
-        List<String> styles = new ArrayList<>(getStyleAtPosition(position));
+        List<String> styles = new ArrayList<>(getStyleOfChar(position));
         if (!styles.contains("bracket-highlight")) {
             styles.add("bracket-highlight");
         }
@@ -771,7 +771,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (position < 0 || position >= getLength())
             return;
 
-        List<String> styles = new ArrayList<>(getStyleAtPosition(position));
+        List<String> styles = new ArrayList<>(getStyleOfChar(position));
         if (styles.remove("bracket-highlight")) {
             setStyle(position, position + 1, styles);
         }

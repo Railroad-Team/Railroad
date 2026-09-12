@@ -220,6 +220,18 @@ public class TreeSitterJavaSyntaxHighlightingTest {
         assertStyle(source, "\\n", "escape");
     }
 
+    @Test
+    public void endsStringHighlightingBeforeClosingParentheses() {
+        String source = "class Railroad { Object logger = LoggerService.builder()"
+            + ".configFile(ConfigHandler.getConfigDirectory().resolve(\"logger_config.json\")); }";
+        assertStyle(source, "\"logger_config.json\"", "string");
+        var styles = styles(source);
+        int closingParentheses = source.indexOf("\"logger_config.json\"))") + "\"logger_config.json\"".length();
+        assertEquals(List.of("punctuation"), styles.get(closingParentheses));
+        assertEquals(List.of("punctuation"), styles.get(closingParentheses + 1));
+        assertEquals(source.length(), styles.size());
+    }
+
     private static List<Collection<String>> styles(String source) {
         var result = new ArrayList<Collection<String>>();
         for (var span : TreeSitterJavaSyntaxHighlighting.computeHighlighting(source)) {
