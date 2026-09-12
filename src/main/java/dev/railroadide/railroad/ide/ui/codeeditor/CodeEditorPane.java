@@ -205,7 +205,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
                 : FontAwesomeSolid.TRIANGLE_EXCLAMATION;
             var icon = new MFXFontIcon(iconType, 12);
             icon.getStyleClass().add(severity == Diagnostic.Kind.ERROR
-                ? "editor-diagnostic-error" : "editor-diagnostic-warning");
+                ? "editor-diagnostic-error"
+                : "editor-diagnostic-warning");
             grid.add(icon, 1, 0);
 
             String tooltipText = lineDiagnosticMessages.getOrDefault(
