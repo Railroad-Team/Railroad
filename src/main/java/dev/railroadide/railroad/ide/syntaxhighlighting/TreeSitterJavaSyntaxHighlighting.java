@@ -40,7 +40,12 @@ public final class TreeSitterJavaSyntaxHighlighting {
     private TreeSitterJavaSyntaxHighlighting() {
     }
 
-    /** Computes spans in JavaFX's UTF-16 coordinates, including whitespace and incomplete code. */
+    /**
+     * Computes spans in JavaFX's UTF-16 coordinates, including whitespace and incomplete code.
+     *
+     * @param text Java source text to highlight
+     * @return syntax style classes covering the entire source in UTF-16 code units
+     */
     public static StyleSpans<Collection<String>> computeHighlighting(String text) {
         var parser = new TSParser();
         parser.setLanguage(new TreeSitterJava());

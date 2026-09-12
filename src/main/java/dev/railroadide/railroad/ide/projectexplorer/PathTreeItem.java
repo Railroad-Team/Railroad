@@ -43,14 +43,23 @@ public class PathTreeItem extends TreeItem<PathItem> {
         this.compactMiddlePackages = compactMiddlePackages;
     }
 
-    /** Creates an initially empty item for a filtered tree without scanning the filesystem. */
+    /**
+     * Creates an initially empty item for a filtered tree without scanning the filesystem.
+     *
+     * @param path filesystem path represented by the item
+     * @return tree item whose children can be populated with filtered results
+     */
     public static PathTreeItem filtered(Path path) {
         var item = new PathTreeItem(new PathItem(path));
         item.isFirstTimeChildren = false;
         return item;
     }
 
-    /** Returns the dotted package label, while the value retains the actual operation target. */
+    /**
+     * Returns the dotted package label, while the value retains the actual operation target.
+     *
+     * @return dotted path from the first represented directory, or the full path for a filesystem root
+     */
     public String getDisplayName() {
         Path path = getValue().getPath();
         return firstPath.getParent() == null
@@ -58,7 +67,12 @@ public class PathTreeItem extends TreeItem<PathItem> {
             : firstPath.getParent().relativize(path).toString().replace(path.getFileSystem().getSeparator(), ".");
     }
 
-    /** Checks whether a path is one of the directories represented by this row. */
+    /**
+     * Checks whether a path is one of the directories represented by this row.
+     *
+     * @param path path to check, or {@code null}
+     * @return whether the normalized path lies within this row's compacted directory chain
+     */
     public boolean represents(Path path) {
         if (path == null)
             return false;
@@ -67,7 +81,11 @@ public class PathTreeItem extends TreeItem<PathItem> {
             getValue().getPath().toAbsolutePath().normalize().startsWith(target);
     }
 
-    /** Reloads the affected loaded directory, retaining unrelated rows and their state. */
+    /**
+     * Reloads the affected loaded directory, retaining unrelated rows and their state.
+     *
+     * @param changedPath path of the filesystem entry that changed
+     */
     public void refresh(Path changedPath) {
         if (!areChildrenLoaded())
             return;
@@ -97,7 +115,13 @@ public class PathTreeItem extends TreeItem<PathItem> {
         }
     }
 
-    /** Resolves a path, loading only its ancestors and accounting for compact package rows. */
+    /**
+     * Resolves a path, loading only its ancestors and accounting for compact package rows.
+     *
+     * @param root root of the subtree to search, or {@code null}
+     * @param path path to locate, or {@code null}
+     * @return row representing the path, or {@code null} if no row matches or either argument is null
+     */
     public static TreeItem<PathItem> find(TreeItem<PathItem> root, Path path) {
         if (root == null || path == null)
             return null;
@@ -148,7 +172,12 @@ public class PathTreeItem extends TreeItem<PathItem> {
         return path;
     }
 
-    /** Compacts filtered results only where the real filesystem also has a single package child. */
+    /**
+     * Compacts filtered results only where the real filesystem also has a single package child.
+     *
+     * @param parent parent whose filtered descendants will be compacted in place
+     * @param compactMiddlePackages whether to compact package chains; false leaves the tree unchanged
+     */
     public static void compactFilteredPackages(TreeItem<PathItem> parent, boolean compactMiddlePackages) {
         if (!compactMiddlePackages)
             return;
