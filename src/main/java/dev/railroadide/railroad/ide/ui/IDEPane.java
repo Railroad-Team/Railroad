@@ -4,11 +4,7 @@ import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import com.panemu.tiwulfx.control.dock.DetachableTabPaneFactory;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
-import dev.railroadide.railroad.ide.IDELayoutState;
-import dev.railroadide.railroad.ide.WorkspaceMode;
-import dev.railroadide.railroad.ide.WorkspaceModeController;
-import dev.railroadide.railroad.ide.WorkspaceModes;
-import dev.railroadide.railroad.ide.WorkspaceTabNavigationHistory;
+import dev.railroadide.railroad.ide.*;
 import dev.railroadide.railroad.ide.ui.setup.PaneIconBarFactory;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.event.EventListener;
@@ -18,7 +14,7 @@ import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.ui.RRBorderPane;
-import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.id.UIId;
 import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.utility.javafx.JavaFXUtils;
@@ -28,6 +24,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
@@ -37,19 +34,8 @@ import javafx.stage.Window;
 import javafx.stage.WindowEvent;
 
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
-import javafx.scene.Parent;
 
 /**
  * Hosts a project workspace, coordinating editor groups, docked tools, modes, and window lifecycles.
@@ -1363,10 +1349,9 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             Orientation.VERTICAL,
             0);
     }
-
-    private static RRVBox createBottomBar(DetachableTabPane consolePane, SplitPane centerBottomSplit) {
-        var bottomBar = new RRVBox();
-        bottomBar.getStyleClass().add("ide-frame");
+    
+    private static RRHBox createBottomBar(DetachableTabPane consolePane, SplitPane centerBottomSplit) {
+        var bottomBar = new RRHBox();
         var bottomIcons = PaneIconBarFactory.create(
             consolePane,
             centerBottomSplit,
