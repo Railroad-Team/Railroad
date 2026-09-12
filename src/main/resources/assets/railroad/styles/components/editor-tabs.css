@@ -9,6 +9,9 @@
 
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab {
     -fx-padding: 0 0.25em 0 0.25em;
+    -fx-background-color: -color-surface-panel;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
 }
 
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label {
@@ -16,11 +19,6 @@
     -fx-graphic-text-gap: 0.3em;
     -fx-padding: 0 0.15em 0 0.15em;
     -fx-alignment: CENTER_LEFT;
-}
-
-.tab-pane:focused > .tab-header-area > .headers-region > .tab.editor-tab:selected .focus-indicator {
-    -fx-border-color: transparent;
-    -fx-border-width: 0;
 }
 
 .editor-tab-graphic,
@@ -58,39 +56,32 @@
 
 .editor-tab-title {
     -fx-font-size: 1em;
-    -fx-text-fill: -color-fg-default;
+    -fx-text-fill: -color-fg-muted;
 }
 
 .editor-tab:selected .editor-tab-title {
     -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
 }
 
 /* Editor tab states deliberately use semantic palette colours so they remain
  * distinguishable in both bundled themes and in compatible custom themes. */
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab:hover {
-    -fx-background-color: -color-neutral-emphasis, -color-neutral-subtle;
-}
-
-.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.pinned {
-    -fx-background-color: -color-warning-muted, -color-warning-subtle;
-}
-
-.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.preview {
-    -fx-background-color: -color-accent-muted, -color-accent-subtle;
+    -fx-background-color: -color-neutral-subtle;
 }
 
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.preview .editor-tab-title {
     -fx-font-style: italic;
-    -fx-text-fill: -color-fg-muted;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab:selected {
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.attention {
+    -fx-background-color: -color-danger-subtle;
+}
+
+/* The top accent identifies selection; the canvas meets the tab without a seam. */
+.tab-pane.editor-tab-pane > .tab-header-area > .headers-region > .tab.editor-tab:selected {
     -fx-background-color: -color-accent-emphasis, -color-surface-editor;
-}
-
-.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.attention,
-.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.attention:selected {
-    -fx-background-color: -color-danger-emphasis, -color-danger-subtle;
+    -fx-background-insets: 0, 2px 0 0 0;
 }
 
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-action-slot .ikonli-font-icon {

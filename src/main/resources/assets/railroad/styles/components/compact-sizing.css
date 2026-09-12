@@ -140,7 +140,6 @@
 .tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label,
 .tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label {
     -fx-font-size: 1em;
-    -fx-font-weight: bold;
     -fx-padding: 0;
 }
 

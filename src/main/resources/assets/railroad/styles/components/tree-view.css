@@ -1,4 +1,4 @@
-/* Dock trees share the panel surface; only input focus draws an outline. */
+/* Dock trees share the panel surface without a decorative outer outline. */
 .rr-tree-view,
 .gradle-tasks-tree-view {
     -color-cell-bg: -color-surface-panel;
@@ -11,16 +11,13 @@
     -fx-padding: 0;
 }
 
-.rr-tree-view:focused,
-.gradle-tasks-tree-view:focused {
-    -fx-border-color: -color-accent-fg;
-}
-
 .rr-tree-view .tree-cell,
 .gradle-tasks-tree-view .tree-cell {
     -fx-background-color: -color-surface-panel;
     -fx-alignment: CENTER_LEFT;
     -fx-graphic-text-gap: 0.25em;
+    -fx-border-color: transparent;
+    -fx-border-width: 1px;
 }
 
 .rr-tree-view > .virtual-flow > .corner,
@@ -43,6 +40,11 @@
     -fx-background-color: -color-accent-muted;
 }
 
+/* Focus follows the keyboard row, even when selection remains elsewhere. */
+.rr-tree-view:focused > .virtual-flow > .clipped-container > .sheet > .tree-cell:filled:focused {
+    -fx-border-color: -color-accent-fg;
+}
+
 .rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell > .tree-disclosure-node {
     -fx-padding: 2px 4px 2px 2px;
     -fx-background-color: transparent;
@@ -58,7 +60,7 @@
 
 .rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:expanded > .tree-disclosure-node > .arrow {
     -fx-rotate: 90;
-    -fx-background-color: -color-accent-emphasis;
+    -fx-background-color: -color-fg-muted;
 }
 
 .rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell > .tree-disclosure-node:hover > .arrow {
@@ -66,7 +68,7 @@
 }
 
 .rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:expanded > .tree-disclosure-node:hover > .arrow {
-    -fx-background-color: -color-accent-emphasis;
+    -fx-background-color: -color-fg-default;
 }
 
 /* Neutral navigation icons share their size with dock and toolbar icons. */

@@ -33,6 +33,66 @@
     -color-tab-bg-selected: -color-surface-panel;
 }
 
+/* Tool titles keep the same selected label and underline in every dock. */
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+}
+
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-weight: normal;
+}
+
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label > *,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label > * {
+    -fx-fill: -color-fg-muted;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab:hover,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab:hover {
+    -fx-background-color: -color-neutral-subtle;
+}
+
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab:selected,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab:selected {
+    -fx-background-color: -color-accent-emphasis, -color-surface-panel;
+    -fx-background-insets: 0, 0 0 2px 0;
+}
+
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab:selected > .tab-container > .tab-label,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab:selected > .tab-container > .tab-label {
+    -fx-text-fill: -color-accent-fg;
+    -fx-font-weight: bold;
+}
+
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab:selected > .tab-container > .tab-label > *,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab:selected > .tab-container > .tab-label > * {
+    -fx-fill: -color-accent-fg;
+    -fx-icon-color: -color-accent-fg;
+}
+
+/* Only keyboard navigation of the tab strip draws a focus ring. Selection and
+ * focus inside the tab's content do not outline its title. */
+.tab-pane.editor-tab-pane > .tab-header-area > .headers-region > .tab .focus-indicator,
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab .focus-indicator,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab .focus-indicator {
+    -fx-border-color: transparent;
+    -fx-border-width: 1px;
+    -fx-border-style: solid;
+    -fx-border-radius: 2px;
+}
+
+.tab-pane.editor-tab-pane:focus-visible > .tab-header-area > .headers-region > .tab:selected .focus-indicator,
+.tab-pane.ide-tool-dock:focus-visible > .tab-header-area > .headers-region > .tab:selected .focus-indicator,
+.tab-pane.gradle-tools-tabpane:focus-visible > .tab-header-area > .headers-region > .tab:selected .focus-indicator {
+    -fx-border-color: -color-accent-fg;
+}
+
 .ide-editor-host,
 .editor-tab-pane,
 .editor-tab-pane > .tab-content-area,
@@ -42,6 +102,7 @@
 
 .ide-terminal {
     -fx-background-color: -color-surface-terminal;
+    -fx-padding: 0.5em;
 }
 
 /* One painted pixel, with a wider hit area for resizing the docks. */

@@ -11,10 +11,13 @@ import dev.railroadide.railroad.settings.TerminalFontMode;
 import dev.railroadide.railroad.utility.OperatingSystem;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
+import javafx.collections.ListChangeListener;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.paint.Color;
+import javafx.scene.web.WebView;
 import javafx.stage.Window;
 
 import java.io.IOException;
@@ -120,6 +123,15 @@ public final class TerminalFactory {
 
     private static void installTerminalSurface(Terminal terminal) {
         terminal.getStyleClass().add("ide-terminal");
+        // TerminalFX binds its WebView to the entire pane, ignoring CSS insets.
+        terminal.getChildren().addListener((ListChangeListener<Node>) change -> {
+            while (change.next()) {
+                for (Node child : change.getAddedSubList()) {
+                    insetTerminalViewport(terminal, child);
+                }
+            }
+        });
+        terminal.getChildren().forEach(child -> insetTerminalViewport(terminal, child));
         var ready = new AtomicBoolean();
         // CSS is the source of truth for both the surrounding pane and the WebView terminal.
         terminal.backgroundProperty().addListener((_, _, _) -> {
@@ -135,6 +147,22 @@ public final class TerminalFactory {
             ready.set(true);
             terminal.updatePrefs(createTerminalConfig(terminal));
         }));
+    }
+
+    private static void insetTerminalViewport(Terminal terminal, Node child) {
+        if (!(child instanceof WebView view))
+            return;
+
+        view.layoutXProperty().bind(Bindings.createDoubleBinding(
+            () -> terminal.getInsets().getLeft(), terminal.insetsProperty()));
+        view.layoutYProperty().bind(Bindings.createDoubleBinding(
+            () -> terminal.getInsets().getTop(), terminal.insetsProperty()));
+        view.prefWidthProperty().bind(Bindings.createDoubleBinding(
+            () -> Math.max(0, terminal.getWidth() - terminal.getInsets().getLeft() - terminal.getInsets().getRight()),
+            terminal.widthProperty(), terminal.insetsProperty()));
+        view.prefHeightProperty().bind(Bindings.createDoubleBinding(
+            () -> Math.max(0, terminal.getHeight() - terminal.getInsets().getTop() - terminal.getInsets().getBottom()),
+            terminal.heightProperty(), terminal.insetsProperty()));
     }
 
     private static void collectTerminals(Node node, Set<Terminal> terminals) {
