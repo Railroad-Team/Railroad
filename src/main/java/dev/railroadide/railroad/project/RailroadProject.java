@@ -199,8 +199,8 @@ public class RailroadProject implements Project {
     }
 
     private void discoverFacets() {
-        this.facets.clear();
         FacetManager.scan(this).thenAccept(discoveredFacets -> Platform.runLater(() -> {
+            this.facets.clear();
             for (Facet<?> facet : discoveredFacets) {
                 if (facet != null) {
                     this.facets.add(facet);
