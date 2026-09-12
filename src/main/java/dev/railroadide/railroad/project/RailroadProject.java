@@ -65,6 +65,7 @@ public class RailroadProject implements Project {
     private final ObjectProperty<Repository> repository = new SimpleObjectProperty<>();
     private final StringProperty id = new SimpleStringProperty();
     private final ObservableSet<Facet<?>> facets = FXCollections.observableSet();
+    private volatile CompletableFuture<Void> facetDiscovery = CompletableFuture.completedFuture(null);
     private final StringProperty description = new SimpleStringProperty();
     private final ObjectProperty<License> license = new SimpleObjectProperty<>();
     @Getter
@@ -199,20 +200,43 @@ public class RailroadProject implements Project {
     }
 
     private void discoverFacets() {
+        var ready = new CompletableFuture<Void>();
+        facetDiscovery = ready;
         FacetManager.scan(this).thenAccept(discoveredFacets -> Platform.runLater(() -> {
-            this.facets.clear();
-            for (Facet<?> facet : discoveredFacets) {
-                if (facet != null) {
-                    this.facets.add(facet);
-                    Railroad.EVENT_BUS.publish(new FacetDetectedEvent(this, facet));
-                } else {
-                    Railroad.LOGGER.warn("Discovered null facet for project: {}", getPathString());
+            try {
+                this.facets.clear();
+                for (Facet<?> facet : discoveredFacets) {
+                    if (facet != null) {
+                        this.facets.add(facet);
+                    } else {
+                        Railroad.LOGGER.warn("Discovered null facet for project: {}", getPathString());
+                    }
                 }
+                for (Facet<?> facet : this.facets) {
+                    Railroad.EVENT_BUS.publish(new FacetDetectedEvent(this, facet));
+                }
+                ready.complete(null);
+            } catch (Throwable exception) {
+                ready.completeExceptionally(exception);
+                Railroad.LOGGER.error("Failed to apply facets for project: {}", getPathString(), exception);
             }
         })).exceptionally(ex -> {
+            ready.completeExceptionally(ex);
             Railroad.LOGGER.error("Failed to discover facets for project: {}", getPathString(), ex);
             return null;
         });
+    }
+
+    /**
+     * Waits for the current facet scan to be applied before resolving background project indexes.
+     *
+     * @throws IllegalStateException if called on the application thread while discovery is pending
+     */
+    public void awaitFacetDiscovery() {
+        CompletableFuture<Void> ready = facetDiscovery;
+        if (!ready.isDone() && Platform.isFxApplicationThread())
+            throw new IllegalStateException("Cannot wait for facet discovery on the application thread");
+        ready.join();
     }
 
     @Override
@@ -252,11 +276,11 @@ public class RailroadProject implements Project {
         setLastOpened(System.currentTimeMillis());
         Project project = Railroad.PROJECT_MANAGER.updateProjectInfo(this);
         project.getGitManager().detectRepository();
-        IDESetup.switchToIDE(project, stage);
         if (project instanceof RailroadProject railroadProject) {
+            // Start discovery before creating workers that resolve project index contexts.
             railroadProject.discoverFacets();
         }
-
+        IDESetup.switchToIDE(project, stage);
         ProjectDataStore dataStore = project.getDataStore();
         ProjectConfig projectConfig = dataStore.readJson(PROJECT_CONFIG_LOCATION, ProjectConfig.class)
             .orElseGet(ProjectConfig::new);
