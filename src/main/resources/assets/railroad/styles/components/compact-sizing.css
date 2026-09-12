@@ -1,0 +1,160 @@
+/* Compact UI scale: quarter-em steps for layout, logical pixels for artwork.
+ * At the default 14px UI font: toolbar ~39px, tabs ~32px,
+ * headers/targets 28px, rows ~25px, icons ~16px.
+ * Spacing uses 0.25 / 0.5 / 0.75em (roughly 4 / 7 / 11px).
+ * Layout grows with UI text; code typography is independent.
+ * Ikonli icon sizes must use px: em feeds back into the icon's own font size. */
+.ide-main-toolbar {
+    -fx-min-height: 2.75em;
+    -fx-pref-height: 2.75em;
+    -fx-padding: 0 0.5em;
+    -fx-spacing: 0.5em;
+}
+
+.ide-main-toolbar .rr-menu-bar > .container > .menu-button {
+    -fx-padding: 0.25em 0.5em;
+}
+
+.ide-main-toolbar .rr-menu-bar > .container > .menu-button > .label {
+    -fx-font-size: 1em;
+}
+
+.ide-run-controls,
+.gradle-tools-buttonbar {
+    -fx-spacing: 0.25em;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.gradle-tools-buttonbar {
+    -fx-padding: 0 0.5em;
+    -fx-min-height: 2em;
+}
+
+.rr-button.toolbar-button,
+.rr-button.project-explorer-button,
+.rr-button.gradle-tools-buttonbar-button,
+.rr-toggle-button.gradle-tools-buttonbar-button,
+.icon-bar-horizontal > .icon-button,
+.icon-bar-vertical > .icon-button {
+    -fx-font-size: 1em;
+    -fx-min-width: 2em;
+    -fx-pref-width: 2em;
+    -fx-max-width: 2em;
+    -fx-min-height: 2em;
+    -fx-pref-height: 2em;
+    -fx-max-height: 2em;
+    -fx-padding: 0;
+    -fx-background-radius: 0.25em;
+    -fx-border-radius: 0.25em;
+}
+
+.toolbar-button .ikonli-font-icon,
+.project-explorer-button .ikonli-font-icon,
+.gradle-tools-buttonbar-button .ikonli-font-icon,
+.icon-button .ikonli-font-icon,
+.project-explorer-project-info .project-icon,
+.rr-tree-view .ikonli-font-icon,
+.gradle-tasks-tree-view .ikonli-font-icon {
+    -fx-icon-size: 16px;
+}
+
+.toolbar-button .ikonli-font-icon,
+.project-explorer-button .ikonli-font-icon,
+.gradle-tools-buttonbar-button .ikonli-font-icon,
+.icon-button .ikonli-font-icon {
+    -fx-icon-color: -color-fg-muted;
+}
+
+.toolbar-button:hover .ikonli-font-icon,
+.project-explorer-button:hover .ikonli-font-icon,
+.gradle-tools-buttonbar-button:hover .ikonli-font-icon,
+.icon-button:hover .ikonli-font-icon {
+    -fx-icon-color: -color-fg-default;
+}
+
+.icon-button:selected .ikonli-font-icon {
+    -fx-icon-color: -color-accent-fg;
+}
+
+.combo-box.ide-toolbar-selector,
+.text-field.project-explorer-search-field {
+    -fx-font-size: 1em;
+    -fx-min-height: 2em;
+    -fx-pref-height: 2em;
+    -fx-max-height: 2em;
+    -fx-background-radius: 0.25em;
+    -fx-border-radius: 0.25em;
+    -fx-border-width: 1px;
+    -fx-padding: 0 0.5em;
+}
+
+.combo-box.ide-toolbar-selector:focused,
+.text-field.project-explorer-search-field:focused {
+    -fx-border-width: 1px;
+    -fx-border-color: -color-accent-fg;
+    -fx-effect: none;
+}
+
+.combo-box.ide-toolbar-selector > .list-cell {
+    -fx-font-size: 1em;
+    -fx-padding: 0;
+}
+
+.combo-box.ide-toolbar-selector > .arrow-button {
+    -fx-padding: 0 0 0 0.5em;
+}
+
+.text-field.project-explorer-search-field {
+    -fx-min-width: 0;
+}
+
+.tab-pane.editor-tab-pane {
+    -fx-tab-min-height: 2.25em;
+    -fx-tab-max-height: 2.25em;
+}
+
+.tab-pane.ide-tool-dock,
+.tab-pane.gradle-tools-tabpane {
+    -fx-tab-min-height: 2em;
+    -fx-tab-max-height: 2em;
+}
+
+.tab-pane.editor-tab-pane > .tab-header-area,
+.tab-pane.ide-tool-dock > .tab-header-area,
+.tab-pane.gradle-tools-tabpane > .tab-header-area {
+    -fx-padding: 0;
+}
+
+.tab-pane.editor-tab-pane > .tab-header-area > .headers-region > .tab,
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab {
+    -fx-padding: 0 0.5em;
+}
+
+.tab-pane.editor-tab-pane > .tab-header-area > .headers-region > .tab > .tab-container,
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab > .tab-container,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab > .tab-container {
+    -fx-padding: 0;
+}
+
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label {
+    -fx-font-size: 1em;
+    -fx-padding: 0;
+}
+
+.tree-view.rr-tree-view,
+.tree-view.gradle-tasks-tree-view {
+    -fx-fixed-cell-size: 1.75em;
+}
+
+.rr-tree-view .tree-cell,
+.gradle-tasks-tree-view .tree-cell {
+    -fx-padding: 0 0.25em;
+}
+
+.icon-bar-horizontal,
+.icon-bar-vertical {
+    -fx-padding: 0.25em;
+    -fx-spacing: 0.25em;
+}

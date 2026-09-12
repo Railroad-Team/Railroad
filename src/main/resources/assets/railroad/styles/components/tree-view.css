@@ -1,3 +1,31 @@
+/* Dock trees share the panel surface without a decorative outer outline. */
+.rr-tree-view,
+.gradle-tasks-tree-view {
+    -color-cell-bg: -color-surface-panel;
+    -fx-background-color: -color-surface-panel;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 1px;
+    -fx-border-radius: 0;
+    -fx-padding: 0;
+}
+
+.rr-tree-view .tree-cell,
+.gradle-tasks-tree-view .tree-cell {
+    -fx-background-color: -color-surface-panel;
+    -fx-alignment: CENTER_LEFT;
+    -fx-graphic-text-gap: 0.25em;
+    -fx-border-color: transparent;
+    -fx-border-width: 1px;
+}
+
+.rr-tree-view > .virtual-flow > .corner,
+.gradle-tasks-tree-view > .virtual-flow > .corner {
+    -fx-background-color: -color-surface-panel;
+    -fx-opacity: 1;
+}
+
 /* Modern Tree View Styles */
 .rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:filled:hover {
     -fx-background-color: -color-bg-subtle;
@@ -10,6 +38,11 @@
 
 .rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:filled:selected:hover {
     -fx-background-color: -color-accent-muted;
+}
+
+/* Focus follows the keyboard row, even when selection remains elsewhere. */
+.rr-tree-view:focused > .virtual-flow > .clipped-container > .sheet > .tree-cell:filled:focused {
+    -fx-border-color: -color-accent-fg;
 }
 
 .rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell > .tree-disclosure-node {
@@ -27,7 +60,7 @@
 
 .rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:expanded > .tree-disclosure-node > .arrow {
     -fx-rotate: 90;
-    -fx-background-color: -color-accent-emphasis;
+    -fx-background-color: -color-fg-muted;
 }
 
 .rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell > .tree-disclosure-node:hover > .arrow {
@@ -35,53 +68,15 @@
 }
 
 .rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:expanded > .tree-disclosure-node:hover > .arrow {
-    -fx-background-color: -color-accent-emphasis;
+    -fx-background-color: -color-fg-default;
 }
 
-/* File type icons in tree cells */
+/* Neutral navigation icons share their size with dock and toolbar icons. */
 .rr-tree-view .ikonli-font-icon {
-    -fx-icon-size: 14px;
-    -fx-fill: -color-fg-default;
-    -fx-opacity: 0.8;
-}
-
-.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:selected .ikonli-font-icon {
-    -fx-fill: -color-fg-default;
+    -fx-icon-color: -color-fg-muted;
     -fx-opacity: 1;
 }
 
-/* Scroll bar styling for tree view */
-.rr-tree-view > .virtual-flow > .scroll-bar {
-    -fx-background-color: transparent;
-    -fx-background: transparent;
-}
-
-.rr-tree-view > .virtual-flow > .scroll-bar .thumb {
-    -fx-background-color: -color-border-subtle;
-    -fx-background-radius: 4;
-    -fx-background-insets: 2;
-}
-
-.rr-tree-view > .virtual-flow > .scroll-bar .thumb:hover {
-    -fx-background-color: -color-border-default;
-}
-
-.rr-tree-view > .virtual-flow > .scroll-bar .track {
-    -fx-background-color: transparent;
-    -fx-background: transparent;
-}
-
-.rr-tree-view > .virtual-flow > .scroll-bar .increment-button,
-.rr-tree-view > .virtual-flow > .scroll-bar .decrement-button {
-    -fx-background-color: transparent;
-    -fx-background: transparent;
-    -fx-padding: 0;
-    -fx-shape: "";
-}
-
-.rr-tree-view > .virtual-flow > .scroll-bar .increment-arrow,
-.rr-tree-view > .virtual-flow > .scroll-bar .decrement-arrow {
-    -fx-background-color: transparent;
-    -fx-background: transparent;
-    -fx-shape: "";
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:selected .ikonli-font-icon {
+    -fx-icon-color: -color-fg-default;
 }

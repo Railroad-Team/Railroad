@@ -8,6 +8,7 @@ import dev.railroadide.railroad.ide.ui.setup.RunControlsPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.id.UIIds;
+import javafx.geometry.Pos;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -39,6 +40,8 @@ public final class IDETopBarPane extends RRHBox {
         Objects.requireNonNull(workspaceActions, "Workspace actions cannot be null");
 
         var spacer = new Region();
+        getStyleClass().addAll("ide-frame", "ide-main-toolbar");
+        setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         getChildren().addAll(

@@ -464,9 +464,6 @@ public final class EditorTab {
     private RRHBox createTabGraphic() {
         fileIconSlot.getStyleClass().removeAll("Railroad", "Pane", "StackPane", "background-2");
         fileIconSlot.getStyleClass().add("editor-tab-file-icon");
-        fileIconSlot.setMinSize(22, 22);
-        fileIconSlot.setPrefSize(22, 22);
-        fileIconSlot.setMaxSize(22, 22);
         titleLabel.getStyleClass().add("editor-tab-title");
 
         var closeIcon = new FontIcon(FontAwesomeSolid.TIMES);
@@ -489,9 +486,6 @@ public final class EditorTab {
 
         var actionSlot = createIconSlot(closeIcon, "editor-tab-action-slot");
         actionSlot.getChildren().addAll(pinIcon, statusIcon);
-        actionSlot.setMinSize(14, 14);
-        actionSlot.setPrefSize(14, 14);
-        actionSlot.setMaxSize(14, 14);
         actionSlot.setCursor(Cursor.HAND);
         closeIcon.visibleProperty().bind(
             pinnedProperty().not().and(savedProperty().or(actionSlot.hoverProperty())));

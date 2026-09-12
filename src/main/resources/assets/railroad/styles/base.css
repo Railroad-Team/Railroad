@@ -1,4 +1,14 @@
 @import "components/project-list.css";
+/* Workspace roles derive from the theme palette, including custom themes.
+ * Light themes keep a light editing canvas; the terminal remains dark. */
+.root {
+    -fx-font-family: "System";
+    -color-surface-frame: ladder(-color-bg-default, derive(-color-bg-default, 6%) 49%, -color-bg-inset 50%);
+    -color-surface-panel: ladder(-color-bg-default, -color-bg-default 49%, -color-bg-subtle 50%);
+    -color-surface-editor: ladder(-color-bg-default, derive(-color-bg-default, -12%) 49%, -color-bg-default 50%);
+    -color-surface-terminal: ladder(-color-bg-default, derive(-color-bg-default, -22%) 49%, derive(-color-fg-default, -22%) 50%);
+}
+
 .Railroad, .split-pane, .scroll-pane {
     -fx-background-color: -color-bg-default;
     -fx-text-fill: -color-fg-default;

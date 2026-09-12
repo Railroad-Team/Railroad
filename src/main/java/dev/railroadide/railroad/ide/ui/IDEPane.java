@@ -88,6 +88,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
      * @param project project whose files and workspace are being displayed
      */
     public IDEPane(Project project) {
+        getStyleClass().add("ide-workspace");
         this.project = Objects.requireNonNull(project, "Project cannot be null");
         this.lifecycle = new IDEPaneLifecycle(this);
         var windowCloseGuard = new IDEWindowCloseGuard(this);
@@ -101,6 +102,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
 
         this.leftPane = createLeftPane();
         this.rightPane = new DetachableTabPane();
+        rightPane.getStyleClass().add("ide-tool-dock");
         rightPane.setScope(toolDockScope(IDEDockItem.DockPosition.RIGHT));
         trackOwnedTabs(rightPane);
         assignWhileAttached(UIIds.IDE.IDE_RIGHT_DOCK, rightPane);
@@ -110,10 +112,12 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         this.bottomPane = createBottomPane();
 
         this.centerBottomSplit = new SplitPane(codeEditorHost, bottomPane);
+        centerBottomSplit.getStyleClass().add("ide-dock-split");
         centerBottomSplit.setOrientation(Orientation.VERTICAL);
         centerBottomSplit.setDividerPositions(0.75);
 
         this.mainSplit = new SplitPane(leftPane, centerBottomSplit);
+        mainSplit.getStyleClass().add("ide-dock-split");
         mainSplit.setOrientation(Orientation.HORIZONTAL);
         mainSplit.setDividerPositions(0.15);
         setCenter(mainSplit);
@@ -140,6 +144,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
 
     private DetachableTabPane createLeftPane() {
         var pane = new DetachableTabPane();
+        pane.getStyleClass().add("ide-tool-dock");
         pane.setScope(toolDockScope(IDEDockItem.DockPosition.LEFT));
         trackOwnedTabs(pane);
         var projectTab = createDockTab(IDEDockItem.PROJECT, IDEDockItem.DockPosition.LEFT);
@@ -233,7 +238,11 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     }
 
     private StackPane getOrCreateEditorHost(WorkspaceMode viewMode, DetachableTabPane editorPane) {
-        return editorHostsByMode.computeIfAbsent(viewMode, _ -> new StackPane(editorPane));
+        return editorHostsByMode.computeIfAbsent(viewMode, _ -> {
+            var host = new StackPane(editorPane);
+            host.getStyleClass().add("ide-editor-host");
+            return host;
+        });
     }
 
     private static String editorScope(WorkspaceMode viewMode) {
@@ -1150,6 +1159,9 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         pane.setDetachableTabPaneFactory(new DetachableTabPaneFactory() {
             @Override
             protected void init(DetachableTabPane detachedPane) {
+                if (pane.getStyleClass().contains("ide-tool-dock")) {
+                    detachedPane.getStyleClass().add("ide-tool-dock");
+                }
                 trackOwnedTabs(detachedPane);
                 WorkspaceMode editorMode = editorMode(detachedPane);
                 if (editorMode != null) {
@@ -1295,6 +1307,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
 
     private DetachableTabPane createBottomPane() {
         var pane = new DetachableTabPane();
+        pane.getStyleClass().add("ide-tool-dock");
         pane.setScope(toolDockScope(IDEDockItem.DockPosition.BOTTOM));
         trackOwnedTabs(pane);
         pane.getTabs().addAll(
@@ -1353,6 +1366,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
 
     private static RRVBox createBottomBar(DetachableTabPane consolePane, SplitPane centerBottomSplit) {
         var bottomBar = new RRVBox();
+        bottomBar.getStyleClass().add("ide-frame");
         var bottomIcons = PaneIconBarFactory.create(
             consolePane,
             centerBottomSplit,

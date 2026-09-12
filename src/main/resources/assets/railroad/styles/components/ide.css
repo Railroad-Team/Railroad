@@ -1,4 +1,142 @@
 /* IDE styles */
+.ide-workspace,
+.ide-frame,
+.ide-frame > .Railroad,
+.ide-frame > .rr-menu-bar,
+.ide-workspace .icon-bar-horizontal,
+.ide-workspace .icon-bar-vertical {
+    -fx-background-color: -color-surface-frame;
+}
+
+.ide-frame > .rr-menu-bar {
+    -fx-border-width: 0;
+    -fx-effect: none;
+}
+
+.ide-tool-dock,
+.ide-tool-dock > .tab-content-area,
+.gradle-tools-pane,
+.gradle-tools-pane .Railroad,
+.gradle-tool-content-pane {
+    -fx-background-color: -color-surface-panel;
+}
+
+.ide-tool-dock > .tab-header-area,
+.ide-tool-dock > .tab-header-area > .tab-header-background,
+.gradle-tools-pane .tab-pane > .tab-header-area,
+.gradle-tools-pane .tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: -color-surface-panel;
+}
+
+.ide-tool-dock,
+.gradle-tools-pane .tab-pane {
+    -color-tab-bg-selected: -color-surface-panel;
+}
+
+/* Tool titles keep the same selected label and underline in every dock. */
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+}
+
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-weight: normal;
+}
+
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label > *,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label > * {
+    -fx-fill: -color-fg-muted;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab:hover,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab:hover {
+    -fx-background-color: -color-neutral-subtle;
+}
+
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab:selected,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab:selected {
+    -fx-background-color: -color-accent-emphasis, -color-surface-panel;
+    -fx-background-insets: 0, 0 0 2px 0;
+}
+
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab:selected > .tab-container > .tab-label,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab:selected > .tab-container > .tab-label {
+    -fx-text-fill: -color-accent-fg;
+    -fx-font-weight: bold;
+}
+
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab:selected > .tab-container > .tab-label > *,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab:selected > .tab-container > .tab-label > * {
+    -fx-fill: -color-accent-fg;
+    -fx-icon-color: -color-accent-fg;
+}
+
+/* Only keyboard navigation of the tab strip draws a focus ring. Selection and
+ * focus inside the tab's content do not outline its title. */
+.tab-pane.editor-tab-pane > .tab-header-area > .headers-region > .tab .focus-indicator,
+.tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab .focus-indicator,
+.tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab .focus-indicator {
+    -fx-border-color: transparent;
+    -fx-border-width: 1px;
+    -fx-border-style: solid;
+    -fx-border-radius: 2px;
+}
+
+.tab-pane.editor-tab-pane:focus-visible > .tab-header-area > .headers-region > .tab:selected .focus-indicator,
+.tab-pane.ide-tool-dock:focus-visible > .tab-header-area > .headers-region > .tab:selected .focus-indicator,
+.tab-pane.gradle-tools-tabpane:focus-visible > .tab-header-area > .headers-region > .tab:selected .focus-indicator {
+    -fx-border-color: -color-accent-fg;
+}
+
+.ide-editor-host,
+.editor-tab-pane,
+.editor-tab-pane > .tab-content-area,
+.editor-tab-pane > .tab-content-area > .Railroad {
+    -fx-background-color: -color-surface-editor;
+}
+
+.ide-terminal {
+    -fx-background-color: -color-surface-terminal;
+    -fx-padding: 0.5em;
+}
+
+/* One painted pixel, with a wider hit area for resizing the docks. */
+.ide-dock-split > .split-pane-divider {
+    -fx-background-color: -color-border-subtle;
+    -fx-background-radius: 0;
+    -fx-border-width: 0;
+    -fx-opacity: 1;
+}
+
+.ide-dock-split:horizontal > .split-pane-divider {
+    -fx-padding: 0 3px 0 2px;
+    -fx-background-insets: 0 2px;
+}
+
+.ide-dock-split:vertical > .split-pane-divider {
+    -fx-padding: 2px 0 3px 0;
+    -fx-background-insets: 2px 0;
+}
+
+.ide-dock-split > .split-pane-divider > .horizontal-grabber,
+.ide-dock-split > .split-pane-divider > .vertical-grabber {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+
+.ide-dock-split > .split-pane-divider:hover {
+    -fx-background-color: -color-border-default;
+}
+
+.ide-dock-split > .split-pane-divider:pressed {
+    -fx-background-color: -color-accent-emphasis;
+}
+
 .ide-welcome-text {
     -fx-font-weight: bold;
     -fx-font-size: 30px;

@@ -17,6 +17,7 @@ import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
 import dev.railroadide.railroad.ui.styling.ButtonSize;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
@@ -63,6 +64,7 @@ public final class RunControlsPane extends RRHBox {
 
     private RunControlsPane(Project project) {
         super(4);
+        getStyleClass().add("ide-run-controls");
         this.project = project;
         setAlignment(Pos.CENTER_LEFT);
 
@@ -70,7 +72,21 @@ public final class RunControlsPane extends RRHBox {
         configureButtons();
         Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.RUN_CONTROLS, this);
 
+        var addConfiguration = new RRButton("railroad.ide.toolbar.add_configuration", FontAwesomeSolid.PLUS);
+        addConfiguration.setVariant(ButtonVariant.GHOST);
+        addConfiguration.setButtonSize(ButtonSize.SMALL);
+        addConfiguration.getStyleClass().add("add-run-configuration-button");
+        addConfiguration.setMinWidth(USE_PREF_SIZE);
+        CommandButtons.bind(addConfiguration, RunCommands.EDIT, () -> CommandContext.forProject(project, this));
+        var noConfigurations = Bindings.isEmpty(project.getRunConfigManager().getConfigurations());
+        addConfiguration.visibleProperty().bind(noConfigurations);
+        addConfiguration.managedProperty().bind(addConfiguration.visibleProperty());
+        runConfigurationsComboBox.visibleProperty().bind(noConfigurations.not());
+        runConfigurationsComboBox.managedProperty().bind(runConfigurationsComboBox.visibleProperty());
+        setMinWidth(USE_PREF_SIZE);
+
         getChildren().addAll(
+            addConfiguration,
             runConfigurationsComboBox,
             runButton,
             debugButton,
@@ -86,6 +102,7 @@ public final class RunControlsPane extends RRHBox {
             return object.uuid().toString();
         });
 
+        comboBox.getStyleClass().add("ide-toolbar-selector");
         comboBox.getItems().setAll(project.getRunConfigManager().getConfigurations());
         comboBox.getItems().add(null);
 
@@ -124,7 +141,7 @@ public final class RunControlsPane extends RRHBox {
 
                 if (item == null) {
                     if (project.getRunConfigManager().getConfigurations().isEmpty()) {
-                        setText(L18n.localize("railroad.ide.toolbar.no_run_configurations"));
+                        setText(L18n.localize("railroad.ide.toolbar.add_configuration"));
                     } else {
                         setText(L18n.localize("railroad.ide.toolbar.edit_run_configurations"));
                     }

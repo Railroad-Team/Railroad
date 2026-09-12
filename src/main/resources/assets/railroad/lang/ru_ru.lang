@@ -44,6 +44,7 @@ railroad.ide.toolbar.stop.all=Остановить всё
 railroad.ide.toolbar.restart.tooltip=Перезапустить конфигурацию
 railroad.ide.toolbar.run_configurations.more_actions.tooltip=Показать дополнительные действия для выбранной конфигурации
 railroad.ide.toolbar.no_run_configurations=Нет конфигураций запуска
+railroad.ide.toolbar.add_configuration=Добавить конфигурацию…
 railroad.window.ide.toolbar.edit_run_configurations=Редактировать конфигурации запуска/отладки
 railroad.runconfig.tree.empty=Конфигураций запуска пока нет.
 railroad.runconfig.tree.empty_filtered=Нет конфигураций, соответствующих фильтру.
@@ -350,6 +351,8 @@ railroad.ide.welcome.getting_started.description=Узнайте, как рабо
 railroad.ide.welcome.getting_started.wiki=Вики
 railroad.ide.welcome.getting_started.tutorials=Обучения
 
+railroad.settings.ide.project_explorer.compact_middle_packages.title=Объединять промежуточные пакеты
+railroad.settings.ide.project_explorer.compact_middle_packages.description=Показывать цепочки пакетов Java с единственным вложенным пакетом в одной строке, например dev.railroadide.railroad. Отключите, чтобы показывать каждый каталог пакета отдельно.
 railroad.ide.project_explorer.search_field=Поиск файлов...
 
 # =============================================================================

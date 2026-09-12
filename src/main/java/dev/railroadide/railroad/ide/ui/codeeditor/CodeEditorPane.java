@@ -17,6 +17,7 @@ import io.github.palexdev.mfxresources.fonts.fontawesome.FontAwesomeSolid;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.geometry.Bounds;
+import javafx.geometry.HPos;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -29,7 +30,6 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
-import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.text.TextFlow;
@@ -179,21 +179,23 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     private Node createParagraphGraphic(int line) {
         var grid = new GridPane();
-        grid.setHgap(5);
         grid.getStyleClass().add("ide-code-editor-grid");
 
         var numberColumn = new ColumnConstraints();
         numberColumn.setHgrow(Priority.ALWAYS);
 
         var iconColumn = new ColumnConstraints();
-        iconColumn.setPrefWidth(12);
+        iconColumn.setMinWidth(18);
+        iconColumn.setPrefWidth(18);
+        iconColumn.setMaxWidth(18);
+        iconColumn.setHalignment(HPos.CENTER);
         iconColumn.setHgrow(Priority.NEVER);
 
         grid.getColumnConstraints().addAll(numberColumn, iconColumn);
 
         var label = new Label(String.format("%4d", line + 1));
         label.setTextAlignment(TextAlignment.RIGHT);
-        label.setTextFill(Color.LIGHTGRAY);
+        label.getStyleClass().add("editor-line-number");
         grid.add(label, 0, 0);
 
         Diagnostic.Kind severity = lineSeverity.get(line + 1);
@@ -201,9 +203,10 @@ public abstract class CodeEditorPane extends TextEditorPane {
             FontAwesomeSolid iconType = severity == Diagnostic.Kind.ERROR
                 ? FontAwesomeSolid.CIRCLE_EXCLAMATION
                 : FontAwesomeSolid.TRIANGLE_EXCLAMATION;
-            Color color = severity == Diagnostic.Kind.ERROR ? Color.RED : Color.YELLOW;
-
-            var icon = new MFXFontIcon(iconType, 12, color);
+            var icon = new MFXFontIcon(iconType, 12);
+            icon.getStyleClass().add(severity == Diagnostic.Kind.ERROR
+                ? "editor-diagnostic-error"
+                : "editor-diagnostic-warning");
             grid.add(icon, 1, 0);
 
             String tooltipText = lineDiagnosticMessages.getOrDefault(
@@ -757,7 +760,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (position < 0 || position >= getLength())
             return;
 
-        List<String> styles = new ArrayList<>(getStyleAtPosition(position));
+        List<String> styles = new ArrayList<>(getStyleOfChar(position));
         if (!styles.contains("bracket-highlight")) {
             styles.add("bracket-highlight");
         }
@@ -769,7 +772,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (position < 0 || position >= getLength())
             return;
 
-        List<String> styles = new ArrayList<>(getStyleAtPosition(position));
+        List<String> styles = new ArrayList<>(getStyleOfChar(position));
         if (styles.remove("bracket-highlight")) {
             setStyle(position, position + 1, styles);
         }

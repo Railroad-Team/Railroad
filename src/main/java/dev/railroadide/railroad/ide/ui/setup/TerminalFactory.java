@@ -11,10 +11,13 @@ import dev.railroadide.railroad.settings.TerminalFontMode;
 import dev.railroadide.railroad.utility.OperatingSystem;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
+import javafx.collections.ListChangeListener;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.paint.Color;
+import javafx.scene.web.WebView;
 import javafx.stage.Window;
 
 import java.io.IOException;
@@ -22,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Creates configured TerminalFX instances pointing at a specific project path.
@@ -60,6 +64,7 @@ public final class TerminalFactory {
         terminalBuilder.setTerminalPath(path);
         Terminal terminal = terminalBuilder.newTerminal().getTerminal();
         registerTerminal(terminal);
+        installTerminalSurface(terminal);
         return terminal;
     }
 
@@ -70,7 +75,7 @@ public final class TerminalFactory {
      */
     public static TerminalConfig createTerminalConfig() {
         var terminalConfig = new TerminalConfig();
-        terminalConfig.setBackgroundColor(Color.rgb(16, 16, 16));
+        terminalConfig.setBackgroundColor(Color.web("#242932"));
         terminalConfig.setForegroundColor(Color.rgb(240, 240, 240));
         terminalConfig.setCursorColor(Color.rgb(255, 0, 0, 0.5));
         terminalConfig.setFontFamily(resolveTerminalFontFamily());
@@ -92,7 +97,6 @@ public final class TerminalFactory {
             return;
         }
 
-        TerminalConfig terminalConfig = createTerminalConfig();
         Set<Terminal> terminals = new LinkedHashSet<>();
         for (Window window : Window.getWindows()) {
             Scene scene = window.getScene();
@@ -103,8 +107,62 @@ public final class TerminalFactory {
         }
 
         for (Terminal terminal : terminals) {
-            terminal.updatePrefs(terminalConfig);
+            terminal.updatePrefs(createTerminalConfig(terminal));
         }
+    }
+
+    private static TerminalConfig createTerminalConfig(Terminal terminal) {
+        TerminalConfig config = createTerminalConfig();
+        var background = terminal.getBackground();
+        if (background != null && !background.getFills().isEmpty()
+            && background.getFills().getFirst().getFill() instanceof Color color) {
+            config.setBackgroundColor(color);
+        }
+        return config;
+    }
+
+    private static void installTerminalSurface(Terminal terminal) {
+        terminal.getStyleClass().add("ide-terminal");
+        // TerminalFX binds its WebView to the entire pane, ignoring CSS insets.
+        terminal.getChildren().addListener((ListChangeListener<Node>) change -> {
+            while (change.next()) {
+                for (Node child : change.getAddedSubList()) {
+                    insetTerminalViewport(terminal, child);
+                }
+            }
+        });
+        terminal.getChildren().forEach(child -> insetTerminalViewport(terminal, child));
+        var ready = new AtomicBoolean();
+        // CSS is the source of truth for both the surrounding pane and the WebView terminal.
+        terminal.backgroundProperty().addListener((_, _, _) -> {
+            TerminalConfig config = createTerminalConfig(terminal);
+            if (ready.get()) {
+                terminal.updatePrefs(config);
+            }
+        });
+        terminal.onTerminalFxReady(() -> Platform.runLater(() -> {
+            if (!OPEN_TERMINALS.contains(terminal))
+                return;
+
+            ready.set(true);
+            terminal.updatePrefs(createTerminalConfig(terminal));
+        }));
+    }
+
+    private static void insetTerminalViewport(Terminal terminal, Node child) {
+        if (!(child instanceof WebView view))
+            return;
+
+        view.layoutXProperty().bind(Bindings.createDoubleBinding(
+            () -> terminal.getInsets().getLeft(), terminal.insetsProperty()));
+        view.layoutYProperty().bind(Bindings.createDoubleBinding(
+            () -> terminal.getInsets().getTop(), terminal.insetsProperty()));
+        view.prefWidthProperty().bind(Bindings.createDoubleBinding(
+            () -> Math.max(0, terminal.getWidth() - terminal.getInsets().getLeft() - terminal.getInsets().getRight()),
+            terminal.widthProperty(), terminal.insetsProperty()));
+        view.prefHeightProperty().bind(Bindings.createDoubleBinding(
+            () -> Math.max(0, terminal.getHeight() - terminal.getInsets().getTop() - terminal.getInsets().getBottom()),
+            terminal.heightProperty(), terminal.insetsProperty()));
     }
 
     private static void collectTerminals(Node node, Set<Terminal> terminals) {

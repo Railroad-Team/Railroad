@@ -2,8 +2,16 @@
     -fx-close-tab-animation: NONE;
 }
 
+.tab-pane.editor-tab-pane > .tab-header-area,
+.tab-pane.editor-tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: -color-surface-panel;
+}
+
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab {
     -fx-padding: 0 0.25em 0 0.25em;
+    -fx-background-color: -color-surface-panel;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
 }
 
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label {
@@ -13,64 +21,81 @@
     -fx-alignment: CENTER_LEFT;
 }
 
-.tab-pane:focused > .tab-header-area > .headers-region > .tab.editor-tab:selected .focus-indicator {
-    -fx-border-color: transparent;
-    -fx-border-width: 0;
-}
-
 .editor-tab-graphic,
 .editor-tab-action-slot {
     -fx-background-color: transparent;
 }
 
+.editor-tab-graphic {
+    -fx-spacing: 0.25em;
+}
+
+.editor-tab-file-icon {
+    -fx-min-width: 1.5em;
+    -fx-pref-width: 1.5em;
+    -fx-max-width: 1.5em;
+    -fx-min-height: 1.5em;
+    -fx-pref-height: 1.5em;
+    -fx-max-height: 1.5em;
+}
+
+.editor-tab-action-slot {
+    -fx-min-width: 1.75em;
+    -fx-pref-width: 1.75em;
+    -fx-max-width: 1.75em;
+    -fx-min-height: 1.75em;
+    -fx-pref-height: 1.75em;
+    -fx-max-height: 1.75em;
+}
+
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-file-icon .ikonli-font-icon {
-    -fx-icon-size: 20px !important;
+    -fx-icon-size: 16px;
     -fx-fill: -color-fg-muted;
     -fx-icon-color: -color-fg-muted;
 }
 
 .editor-tab-title {
+    -fx-font-size: 1em;
     -fx-text-fill: -color-fg-default;
+    -fx-opacity: 0.8;
+}
+
+.editor-tab:selected .editor-tab-title {
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+    -fx-opacity: 1;
 }
 
 /* Editor tab states deliberately use semantic palette colours so they remain
  * distinguishable in both bundled themes and in compatible custom themes. */
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab:hover {
-    -fx-background-color: -color-neutral-emphasis, -color-neutral-subtle;
-}
-
-.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.pinned {
-    -fx-background-color: -color-warning-muted, -color-warning-subtle;
-}
-
-.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.preview {
-    -fx-background-color: -color-accent-muted, -color-accent-subtle;
+    -fx-background-color: -color-neutral-subtle;
 }
 
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.preview .editor-tab-title {
     -fx-font-style: italic;
-    -fx-text-fill: -color-fg-muted;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab:selected {
-    -fx-background-color: -color-accent-emphasis, -color-accent-muted;
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.attention {
+    -fx-background-color: -color-danger-subtle;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.attention,
-.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.attention:selected {
-    -fx-background-color: -color-danger-emphasis, -color-danger-subtle;
+/* The top accent identifies selection; the canvas meets the tab without a seam. */
+.tab-pane.editor-tab-pane > .tab-header-area > .headers-region > .tab.editor-tab:selected {
+    -fx-background-color: -color-accent-emphasis, -color-surface-editor;
+    -fx-background-insets: 0, 2px 0 0 0;
 }
 
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-action-slot .ikonli-font-icon {
-    -fx-icon-size: 8px !important;
+    -fx-icon-size: 12px;
 }
 
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-pin-icon {
-    -fx-icon-size: 10px !important;
+    -fx-icon-size: 12px;
 }
 
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-action-slot.combined-status .editor-tab-status-icon {
-    -fx-icon-size: 6px !important;
+    -fx-icon-size: 6px;
     -fx-translate-x: 4px;
     -fx-translate-y: -4px;
 }
