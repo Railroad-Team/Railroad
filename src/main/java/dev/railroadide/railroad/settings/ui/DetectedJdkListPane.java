@@ -1,6 +1,5 @@
 package dev.railroadide.railroad.settings.ui;
 
-import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
@@ -19,7 +18,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -94,6 +92,11 @@ public class DetectedJdkListPane extends RRVBox {
          * Creates an empty JDK list cell and initializes its layout and styles.
          */
         public JdkCell() {
+            setMinWidth(0);
+            setPrefWidth(0);
+            container.setMaxWidth(Double.MAX_VALUE);
+            textContainer.setMinWidth(0);
+            pathLabel.setWrapText(true);
             container.setAlignment(Pos.CENTER_LEFT);
             container.getStyleClass().add("detected-jdk-cell");
 
@@ -124,9 +127,12 @@ public class DetectedJdkListPane extends RRVBox {
             Node iconView = null;
             if (brand.isImage()) {
                 try {
-                    var image = new Image(AppResources.getResourceAsStream(brand.getImagePath()), 20, 20, true, true);
-                    iconView = new ImageView(image);
-                } catch (Exception exception) {
+                    var imageView = new ImageView(JdkBrandIcons.get(brand));
+                    imageView.setFitWidth(20);
+                    imageView.setFitHeight(20);
+                    imageView.setPreserveRatio(true);
+                    iconView = imageView;
+                } catch (Exception | LinkageError exception) {
                     Railroad.LOGGER.error("Failed to load image icon for JDK brand {}", brand.name(), exception);
                 }
             } else if (brand.isIkon()) {

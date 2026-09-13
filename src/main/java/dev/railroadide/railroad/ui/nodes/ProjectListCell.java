@@ -63,6 +63,12 @@ public class ProjectListCell extends ListCell<Project> {
     public ProjectListCell() {
         super();
         getStyleClass().add("project-list-cell");
+        setMinWidth(0);
+        setPrefWidth(0);
+        card.setMaxWidth(Double.MAX_VALUE);
+        infoBox.setMinWidth(0);
+        nameLabel.setWrapText(true);
+        pathLabel.setWrapText(true);
 
         card.getStyleClass().add("project-list-card");
         root.setAlignment(Pos.CENTER_LEFT);

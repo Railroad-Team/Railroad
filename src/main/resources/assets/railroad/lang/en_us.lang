@@ -57,7 +57,9 @@ railroad.runconfig.moreactions.tooltip=Show more actions for this configuration
 railroad.runconfig.action.run=Run
 railroad.runconfig.action.debug=Debug
 railroad.runconfig.details.empty.title=Create a run configuration
-railroad.runconfig.details.empty.description=Use the + button to add your first configuration.
+railroad.runconfig.details.empty.description=Add a configuration to choose what to run and how to launch it.
+railroad.runconfig.details.select.title=Select a run configuration
+railroad.runconfig.details.select.description=Choose a configuration from the sidebar to edit its launch settings.
 railroad.runconfig.gradle.configuration.task.invalid=Invalid Gradle task.
 railroad.run_configuration.edit=Edit configuration
 railroad.run_configuration.pin=Pin to toolbar
@@ -142,6 +144,7 @@ railroad.runconfig.shell_script.configuration.executeMode.label=Execution mode
 railroad.runconfig.shell_script.configuration.scriptPath.label=Script file
 railroad.runconfig.shell_script.configuration.scriptText.label=Inline script
 railroad.runconfig.shell_script.configuration.scriptText.prompt=Paste the script contents here
+railroad.runconfig.shell_script.configuration.scriptText.required=Enter a script to run.
 railroad.runconfig.shell_script.configuration.scriptArgs.label=Script arguments
 railroad.runconfig.shell_script.configuration.scriptArgs.prompt=Arguments separated by spaces
 railroad.runconfig.shell_script.configuration.workingDirectory.label=Working directory
@@ -209,7 +212,7 @@ settings.tree.appearance=Appearance
 settings.tree.ide=IDE
 settings.tree.plugins=Plugins
 settings.tree.projects=Projects
-settings.tree.keybinds=Keybinds
+settings.tree.keybinds=Keybindings
 
 # General settings
 railroad.settings.general.language.title=Language
@@ -459,7 +462,7 @@ railroad.settings.ide.project_explorer.synchronize_project_explorer_with_active_
 railroad.settings.ide.project_explorer.synchronize_project_explorer_with_active_tab.description=Automatically select and reveal the active editor file in the Project Explorer.
 
 # VCS Settings
-settings.tree.vcs=VCS
+settings.tree.vcs=Version Control
 railroad.settings.vcs.title=VCS
 railroad.settings.vcs.description=Settings relating to VCS (Version Control System) such as Git.
 railroad.settings.vcs.git_binary_command_search_timeout_ms.title=Git binary search command timeout(ms)
@@ -1231,3 +1234,31 @@ railroad.command.markdown.heading_6=Markdown: heading 6
 railroad.command.open_link=Open Link
 railroad.project_explorer.menu.finder=Finder
 railroad.project_explorer.menu.file_manager=File Manager
+
+settings.tree.editor=Editor
+settings.tree.inspections=Code Inspections
+settings.tree.project_explorer=Project Explorer
+settings.tree.java=Java / JDKs
+settings.tree.terminal=Terminal
+railroad.settings.editor.font.title=Font
+railroad.settings.editor.font.description=Choose the font used in the code editor.
+railroad.settings.editor.indentation.title=Indentation
+railroad.settings.editor.indentation.description=Configure indentation characters and widths.
+railroad.settings.editor.typing.title=Typing Assistance
+railroad.settings.editor.typing.description=Control automatic behavior while typing.
+railroad.settings.java.installations.title=Additional Installations
+railroad.settings.java.installations.description=Include JDK installations that are not discovered automatically.
+railroad.settings.java.discovery.title=Automatic Discovery
+railroad.settings.java.discovery.description=Configure where Railroad scans for JDKs and how long version detection may take.
+railroad.settings.projects.defaults.title=New Project Defaults
+railroad.settings.projects.defaults.description=Default group ID, version, and author for new projects.
+railroad.settings.terminal.integration.title=Windows Terminal Integration
+railroad.settings.terminal.integration.description=Configure access to Windows Terminal settings.
+railroad.settings.terminal.font.title=Font
+railroad.settings.terminal.font.description=Choose how the embedded terminal selects its font.
+
+railroad.project.creation.status.creating.title=Creating project
+railroad.project.creation.status.creating.subtitle=Setting up %s
+railroad.project.creation.status.logs=Build output
+railroad.project.creation.status.task=Preparing project?
+railroad.project.creation.cancel.tooltip=Cancel project creation

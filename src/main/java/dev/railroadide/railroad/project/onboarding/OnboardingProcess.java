@@ -110,11 +110,20 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
      * @param scene scene whose root will be replaced with the onboarding view
      */
     public void run(Scene scene) {
+        runIn(scene::setRoot);
+    }
+
+    /**
+     * Starts onboarding inside a caller-owned container.
+     *
+     * @param showView callback that displays the onboarding UI in the caller's container
+     */
+    public void runIn(Consumer<? super N> showView) {
         String firstStepId = flow.getFirstStepId();
         if (firstStepId == null || firstStepId.isEmpty())
             return;
 
-        scene.setRoot(ui);
+        showView.accept(ui);
 
         Runnable runnable = () -> new Navigator(ui).showStep(firstStepId);
         JavaFXUtils.runOnApplicationThread(runnable);

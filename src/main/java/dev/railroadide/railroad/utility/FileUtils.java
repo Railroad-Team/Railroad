@@ -79,15 +79,20 @@ public final class FileUtils {
     public static void updateKeyValuePair(String key, String value, Path file) throws IOException {
         var stringBuilder = new StringBuilder();
 
+        boolean found = false;
         List<String> lines = Files.readAllLines(file);
         for (String line : lines) {
             if (line.startsWith(key + "=")) {
+                found = true;
                 line = key + "=" + value;
             }
 
             stringBuilder.append(line).append("\n");
         }
 
+        if (!found) {
+            stringBuilder.append(key).append("=").append(value).append("\n");
+        }
         Files.writeString(file, stringBuilder.toString());
     }
 

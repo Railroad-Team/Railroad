@@ -5,13 +5,12 @@ import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRuleSettingsState;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
-import dev.railroadide.railroad.ui.RRHBox;
-import dev.railroadide.railroad.ui.RRVBox;
 import javafx.geometry.Insets;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
+import javafx.scene.control.TitledPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -22,7 +21,7 @@ import java.util.*;
 /**
  * Settings pane for Java inspection rule overrides.
  */
-public final class JavaInspectionRuleSettingsPane extends RRVBox {
+public final class JavaInspectionRuleSettingsPane extends VBox {
     private final List<TagRow> tagRows = new ArrayList<>();
     private final List<RuleRow> ruleRows = new ArrayList<>();
 
@@ -35,15 +34,19 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
         setSpacing(16);
         setPadding(new Insets(0));
         getStyleClass().remove("background-2");
-
-        var title = new Label("Java Inspection Rules");
-        title.getStyleClass().add("section-label");
+        getStyleClass().add("inspection-settings-pane");
 
         var subtitle = new Label("Override individual rule enablement and severity, or set defaults by tag.");
         subtitle.getStyleClass().add("section-description-label");
         subtitle.setWrapText(true);
 
-        getChildren().addAll(title, subtitle, buildTagsSection(), buildRulesSection());
+        var tags = new TitledPane("Tag Overrides", buildTagsSection());
+        tags.setExpanded(false);
+        tags.setAnimated(false);
+        var rules = new TitledPane("Rule Overrides", buildRulesSection());
+        rules.setExpanded(false);
+        rules.setAnimated(false);
+        getChildren().addAll(subtitle, tags, rules);
         setState(initialState);
     }
 
@@ -105,12 +108,8 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
     }
 
     private VBox buildTagsSection() {
-        var section = new RRVBox(8);
+        var section = new VBox(8);
         section.getStyleClass().remove("background-2");
-
-        var header = new Label("Tag Overrides");
-        header.getStyleClass().add("section-label");
-        section.getChildren().add(header);
 
         for (String tag : collectTags()) {
             var row = new TagRow(tag);
@@ -128,13 +127,10 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
     }
 
     private VBox buildRulesSection() {
-        var section = new RRVBox(8);
+        var section = new VBox(8);
         section.getStyleClass().remove("background-2");
 
-        var header = new Label("Rule Overrides");
-        header.getStyleClass().add("section-label");
-
-        var rows = new RRVBox(10);
+        var rows = new VBox(10);
         rows.getStyleClass().remove("background-2");
         for (RuleDescriptor rule : collectRules()) {
             var row = new RuleRow(rule);
@@ -145,9 +141,10 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
         var scrollPane = new ScrollPane(rows);
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scrollPane.setPrefViewportHeight(520);
+        scrollPane.setPrefViewportHeight(360);
+        scrollPane.getStyleClass().add("inspection-rules-scroll");
 
-        section.getChildren().addAll(header, scrollPane);
+        section.getChildren().add(scrollPane);
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
         return section;
     }
@@ -194,7 +191,7 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
 
         private TagRow(String tag) {
             this.tag = tag;
-            this.container = new RRHBox(12);
+            this.container = new HBox(12);
             container.getStyleClass().remove("background-2");
 
             var name = new Label(tag);
@@ -217,10 +214,11 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
 
         private RuleRow(RuleDescriptor rule) {
             this.rule = rule;
-            this.container = new RRVBox(6);
+            this.container = new VBox(6);
             container.setPadding(new Insets(12));
 
             var idLabel = new Label(rule.rule().id());
+            idLabel.setWrapText(true);
             idLabel.getStyleClass().add("section-label");
 
             String providerText = "Provider: " + rule.providerId();
@@ -241,7 +239,7 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
             severityOverride.setValue(SeverityOverride.DEFAULT);
             severityOverride.setPrefWidth(160);
 
-            var controls = new RRHBox(12);
+            var controls = new HBox(12);
             controls.getStyleClass().remove("background-2");
             controls.getChildren().addAll(
                 labeledBox("Enabled", enabledOverride),
@@ -255,7 +253,7 @@ public final class JavaInspectionRuleSettingsPane extends RRVBox {
         var label = new Label(labelText);
         label.getStyleClass().add("section-description-label");
 
-        var box = new RRVBox(4, label, node);
+        var box = new VBox(4, label, node);
         box.getStyleClass().remove("background-2");
         return box;
     }

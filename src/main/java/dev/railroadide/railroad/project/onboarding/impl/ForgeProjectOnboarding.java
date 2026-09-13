@@ -46,6 +46,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javafx.scene.Parent;
 
 // TODO: Make it so the display test and client side only options are only shown for versions that support it
 // TODO: Make it so the display test and client side only options are in their own steps
@@ -65,6 +66,15 @@ public class ForgeProjectOnboarding {
      * @param scene scene whose root will be replaced with the onboarding view
      */
     public void start(Scene scene) {
+        startIn(scene::setRoot);
+    }
+
+    /**
+     * Runs setup and creation in the supplied view host.
+     *
+     * @param showView callback that displays the setup UI and subsequent project creation view
+     */
+    public void startIn(Consumer<Parent> showView) {
         var flow = OnboardingFlow.builder()
             .addStep("project_details", this::createProjectDetailsStep)
             .addStep("maven_coordinates", this::createMavenCoordinatesStep)
@@ -91,12 +101,12 @@ public class ForgeProjectOnboarding {
         var process = OnboardingProcess.createBasic(
             flow,
             new OnboardingContext(executor),
-            ctx -> onFinish(ctx, scene));
+            ctx -> onFinish(ctx, showView));
 
-        process.run(scene);
+        process.runIn(showView);
     }
 
-    private void onFinish(OnboardingContext ctx, Scene scene) {
+    private void onFinish(OnboardingContext ctx, Consumer<Parent> showView) {
         executor.shutdown();
 
         var data = new ProjectData();
@@ -181,7 +191,7 @@ public class ForgeProjectOnboarding {
             ProjectTypeRegistry.FORGE,
             serviceRegistry), creationPane.getContext()));
 
-        scene.setRoot(creationPane);
+        showView.accept(creationPane);
     }
 
     private OnboardingStep createProjectDetailsStep() {

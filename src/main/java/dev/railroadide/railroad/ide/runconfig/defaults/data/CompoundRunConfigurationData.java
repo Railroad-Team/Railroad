@@ -109,6 +109,7 @@ public class CompoundRunConfigurationData extends RunConfigurationData {
     @Override
     public void applyConfigurationFormData(FormData formData) {
         applyBaseFormData(formData);
+        this.runMode = formData.get("runMode", RunMode.class);
         this.configurationIds.clear();
         RunConfiguration<?>[] submitted = formData.get("configurations", RunConfiguration[].class);
         if (submitted != null) {

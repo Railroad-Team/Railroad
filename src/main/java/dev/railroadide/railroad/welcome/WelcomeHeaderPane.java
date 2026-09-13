@@ -3,12 +3,9 @@ package dev.railroadide.railroad.welcome;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
-import dev.railroadide.railroad.ui.RRCard;
 import dev.railroadide.railroad.ui.RRTextField;
 import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
-import dev.railroadide.railroad.ui.localized.LocalizedText;
-import dev.railroadide.railroad.ui.styling.TextFieldSize;
 import dev.railroadide.railroad.welcome.project.ui.widget.ProjectSortComboBox;
 import javafx.collections.ListChangeListener;
 import javafx.css.PseudoClass;
@@ -23,7 +20,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 /** Welcome-screen header with project search, sorting controls, and a live count of known projects. */
 @Getter
-public class WelcomeHeaderPane extends RRCard {
+public class WelcomeHeaderPane extends VBox {
     private static final PseudoClass FOCUSED_PSEUDO_CLASS = PseudoClass.getPseudoClass("focused");
     /**
      * Input used by the project list to filter aliases.
@@ -48,11 +45,11 @@ public class WelcomeHeaderPane extends RRCard {
      * Builds the header, listens for project-count changes, and registers its UI identifier while attached.
      */
     public WelcomeHeaderPane() {
-        super(18);
+        super(12);
         getStyleClass().add("welcome-card");
 
         searchField = new RRTextField("railroad.home.welcome.projectsearch");
-        searchField.setTextFieldSize(TextFieldSize.LARGE);
+        searchField.setMinWidth(0);
         searchField.getStyleClass().add("welcome-search-input");
         sortComboBox = new ProjectSortComboBox();
         var searchBar = createSearchBar();
@@ -73,26 +70,12 @@ public class WelcomeHeaderPane extends RRCard {
     }
 
     private VBox createHeroSection() {
-        var welcomeMessage = new LocalizedText("railroad.home.welcome.greeting");
-        welcomeMessage.getStyleClass().add("welcome-message");
-
-        var title = new LocalizedText("railroad.home.welcome.projects");
+        var title = new LocalizedLabel("railroad.home.welcome.projects");
         title.getStyleClass().add("welcome-title");
-
-        var subtitle = new LocalizedText("railroad.home.welcome.projects.subtitle");
+        var subtitle = new LocalizedLabel("railroad.home.welcome.projects.subtitle");
         subtitle.getStyleClass().add("welcome-subtitle");
-
-        var heroIcon = new FontIcon(FontAwesomeSolid.ROCKET);
-        heroIcon.getStyleClass().add("welcome-hero-icon");
-
-        var textGroup = new VBox(welcomeMessage, title, subtitle);
-        textGroup.getStyleClass().add("welcome-hero-text");
-
-        var heroRow = new HBox(heroIcon, textGroup);
-        heroRow.getStyleClass().add("welcome-hero");
-        heroRow.setAlignment(Pos.CENTER_LEFT);
-
-        return new VBox(heroRow);
+        subtitle.setWrapText(true);
+        return new VBox(6, title, subtitle);
     }
 
     private HBox createStatsBar() {
@@ -106,6 +89,7 @@ public class WelcomeHeaderPane extends RRCard {
 
         var tipLabel = new LocalizedLabel("railroad.home.welcome.header.tip");
         tipLabel.getStyleClass().add("welcome-tip-label");
+        tipLabel.setWrapText(true);
         var tipIcon = new FontIcon(FontAwesomeSolid.LIGHTBULB);
         tipIcon.getStyleClass().add("welcome-tip-icon");
         var tip = new HBox(tipIcon, tipLabel);
@@ -147,6 +131,7 @@ public class WelcomeHeaderPane extends RRCard {
         var searchContainer = new HBox(searchIcon, searchField, clearButton);
         searchContainer.getStyleClass().add("welcome-search-container");
         searchContainer.setAlignment(Pos.CENTER_LEFT);
+        searchContainer.setMinWidth(0);
         HBox.setHgrow(searchField, Priority.ALWAYS);
 
         searchField.focusedProperty()

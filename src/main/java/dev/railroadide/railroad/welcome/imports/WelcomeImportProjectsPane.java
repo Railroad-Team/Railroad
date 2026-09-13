@@ -44,7 +44,7 @@ import java.util.concurrent.CompletableFuture;
  * Account connections are cached per profile, with controls for filtering, refreshing, and choosing a destination.
  */
 @Getter
-public class WelcomeImportProjectsPane extends RRHBox {
+public class WelcomeImportProjectsPane extends HBox {
     /**
      * Source selector containing the URL-import entry and configured VCS profiles.
      *
@@ -57,7 +57,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
      *
      * @return the source-specific content pane
      */
-    private final RRVBox rightPane = new RRVBox(18);
+    private final VBox rightPane = new VBox(18);
     /**
      * Repository list after applying the current account filter.
      *
@@ -81,7 +81,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
      *
      * @return the account browser content container
      */
-    private final RRVBox contentBox = new RRVBox(12);
+    private final VBox contentBox = new VBox(12);
     /**
      * Auxiliary repository collection, currently not populated or read by the account-loading workflow.
      *
@@ -148,14 +148,15 @@ public class WelcomeImportProjectsPane extends RRHBox {
         sidebar.setCellFactory(_ -> new AccountListCell());
         sidebar.getItems().add(REPO_URL_OPTION);
         sidebar.getItems().addAll(Railroad.REPOSITORY_MANAGER.getProfiles());
-        sidebar.setFocusTraversable(false);
+        sidebar.setFocusTraversable(true);
         sidebar.getSelectionModel().selectFirst();
         sidebar.getSelectionModel().selectedItemProperty().addListener((_, _, newVal) -> updateRightPane(newVal));
 
         repositoryListView.setCellFactory(param -> new ImportProjectListCell());
 
         rightPane.getStyleClass().add("welcome-import-right-pane");
-        rightPane.prefHeightProperty().bind(heightProperty());
+        rightPane.setMinWidth(0);
+        rightPane.setMinHeight(0);
 
         getChildren().addAll(sidebar, rightPane);
         HBox.setHgrow(rightPane, Priority.ALWAYS);
@@ -172,7 +173,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
     }
 
     private static void showCloneLoading(CompletableFuture<Boolean> future, Path projectDir) {
-        var loadingBox = new RRVBox();
+        var loadingBox = new VBox();
         loadingBox.setAlignment(Pos.CENTER);
         loadingBox.getStyleClass().add("welcome-import-loading-box");
         VBox.setVgrow(loadingBox, Priority.ALWAYS);
@@ -289,7 +290,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
         rightPane.getChildren().clear();
 
         if (isLoading) {
-            var loadingBox = new RRVBox();
+            var loadingBox = new VBox();
             loadingBox.setAlignment(Pos.CENTER);
             loadingBox.getStyleClass().add("welcome-import-loading-box");
             VBox.setVgrow(loadingBox, Priority.ALWAYS);
@@ -319,7 +320,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
             }
         });
 
-        var titleBox = new RRHBox();
+        var titleBox = new HBox();
         titleBox.getStyleClass().add("welcome-import-title-box");
         titleBox.getChildren().addAll(title, refreshButton);
         titleBox.setAlignment(Pos.CENTER_LEFT);
@@ -340,7 +341,7 @@ public class WelcomeImportProjectsPane extends RRHBox {
                 }
             }
 
-            var accountBox = new RRVBox();
+            var accountBox = new VBox();
             accountBox.getStyleClass().add("welcome-import-account-box");
             accountBox.getChildren().add(contentBox);
             VBox.setVgrow(contentBox, Priority.ALWAYS);
@@ -352,8 +353,9 @@ public class WelcomeImportProjectsPane extends RRHBox {
             var folderIcon = new FontIcon(FontAwesomeSolid.FOLDER);
             folderIcon.setIconSize(16);
             chooseDirButton.setGraphic(folderIcon);
+            chooseDirButton.getStyleClass().add("welcome-icon-button");
 
-            var dirBox = new RRHBox();
+            var dirBox = new HBox();
             dirBox.getStyleClass().add("welcome-import-dir-box");
             dirBox.getChildren().addAll(directoryField, chooseDirButton);
             HBox.setHgrow(directoryField, Priority.ALWAYS);
@@ -411,9 +413,10 @@ public class WelcomeImportProjectsPane extends RRHBox {
             rightPane.getChildren().add(accountBox);
             VBox.setVgrow(accountBox, Priority.ALWAYS);
         } else if (REPO_URL_OPTION.equals(selected)) {
-            var urlBox = new RRVBox();
+            var urlBox = new VBox();
             urlBox.getStyleClass().add("welcome-import-url-box");
-            urlBox.setAlignment(Pos.CENTER);
+            urlBox.setAlignment(Pos.TOP_LEFT);
+            urlBox.setMaxWidth(640);
 
             var urlField = new RRTextField("railroad.importprojects.repositoryurl.placeholder");
             urlField.getStyleClass().add("welcome-import-url-field");
@@ -423,13 +426,16 @@ public class WelcomeImportProjectsPane extends RRHBox {
             var folderIcon = new FontIcon(FontAwesomeSolid.FOLDER);
             folderIcon.setIconSize(16);
             chooseDirButton.setGraphic(folderIcon);
-            var dirBox = new RRHBox();
+            chooseDirButton.getStyleClass().add("welcome-icon-button");
+            var dirBox = new HBox();
             dirBox.getStyleClass().add("welcome-import-dir-box");
             dirBox.getChildren().addAll(directoryField, chooseDirButton);
             HBox.setHgrow(directoryField, Priority.ALWAYS);
 
             var cloneButton = new RRButton("railroad.importprojects.clone");
             cloneButton.getStyleClass().add("welcome-import-clone-button");
+            cloneButton.disableProperty()
+                .bind(urlField.textProperty().isEmpty().or(directoryField.textProperty().isEmpty()));
 
             chooseDirButton.setOnAction(_ -> {
                 var chooser = new DirectoryChooser();
@@ -466,7 +472,11 @@ public class WelcomeImportProjectsPane extends RRHBox {
                 showCloneLoading(successFuture, projectDir);
             });
 
-            urlBox.getChildren().addAll(urlField, dirBox, cloneButton);
+            var urlLabel = new LocalizedLabel("railroad.importprojects.repositoryurl");
+            urlLabel.setLabelFor(urlField);
+            var directoryLabel = new LocalizedLabel("railroad.importprojects.directory");
+            directoryLabel.setLabelFor(directoryField);
+            urlBox.getChildren().addAll(title, urlLabel, urlField, directoryLabel, dirBox, cloneButton);
             rightPane.getChildren().add(urlBox);
         }
 

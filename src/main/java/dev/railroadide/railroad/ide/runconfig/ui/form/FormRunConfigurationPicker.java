@@ -171,10 +171,9 @@ public class FormRunConfigurationPicker extends InformativeLabeledHBox<RRVBox> i
 
         if (initialSelection != null && !initialSelection.isEmpty()) {
             selectedConfigurations.setAll(initialSelection);
-        } else {
-            refreshSelectablePredicate();
-            updateValue();
         }
+        refreshSelectablePredicate();
+        updateValue();
 
         return container;
     }

@@ -4,7 +4,6 @@ import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ui.RRListView;
 import dev.railroadide.railroad.ui.RRNavigationItem;
-import dev.railroadide.railroad.ui.RRSidebar;
 import dev.railroadide.railroad.ui.id.UIIds;
 import javafx.geometry.Pos;
 import javafx.scene.control.ListCell;
@@ -21,7 +20,7 @@ import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 /** Welcome navigation sidebar showing application branding and the available start-screen actions. */
-public class WelcomeLeftPane extends RRSidebar {
+public class WelcomeLeftPane extends VBox {
     /**
      * Navigation list whose selection is handled by the enclosing welcome pane.
      *
@@ -39,7 +38,7 @@ public class WelcomeLeftPane extends RRSidebar {
         topBox.setAlignment(Pos.CENTER);
         topBox.getStyleClass().add("welcome-left-top-box");
 
-        var logo = new ImageView(new Image(AppResources.iconStream(), 80, 80, true, true));
+        var logo = new ImageView(new Image(AppResources.iconStream(), 40, 40, true, true));
         var appName = new Text(Services.APPLICATION_INFO.getName());
         appName.getStyleClass().add("welcome-app-name");
         var appVersion = new Text(Services.APPLICATION_INFO.getVersion());
@@ -50,8 +49,10 @@ public class WelcomeLeftPane extends RRSidebar {
         listView.getItems().addAll(MenuType.values());
         listView.setCellFactory(_ -> new MenuTypeCell());
         listView.getStyleClass().add("welcome-left-pane-list");
-        listView.setFixedCellSize(44);
-        listView.setFocusTraversable(false);
+        listView.setFixedCellSize(34);
+        listView.setAnimationsEnabled(false);
+        listView.setFocusTraversable(true);
+        listView.getSelectionModel().selectFirst();
         VBox.setVgrow(listView, Priority.ALWAYS);
 
         this.setFocusTraversable(false);

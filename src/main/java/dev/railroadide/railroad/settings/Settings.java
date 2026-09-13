@@ -54,8 +54,10 @@ public final class Settings {
     /** Whether the editor automatically pairs delimiters inside string literals. */
     public static final Setting<Boolean> AUTO_PAIR_INSIDE_STRINGS = registerSetting(
         Setting.builder(Boolean.class, "railroad:auto_pair_inside_strings")
-            .treePath("ide")
-            .category(SettingCategory.simple("railroad:ide.code_style"))
+            .treePath("editor")
+            .category(SettingCategory.simple("railroad:editor.typing"))
+            .title("railroad.settings.ide.code_style.auto_pair_inside_strings.title")
+            .description("railroad.settings.ide.code_style.auto_pair_inside_strings.description")
             .codec(DefaultSettingCodecs.BOOLEAN)
             .defaultValue(true)
             .build());
@@ -63,7 +65,7 @@ public final class Settings {
     /** Maximum number of simultaneously open editor tabs. */
     public static final Setting<Integer> EDITOR_TAB_LIMIT = registerSetting(
         Setting.builder(Integer.class, "railroad:editor_tab_limit")
-            .treePath("ide")
+            .treePath("editor")
             .category(SettingCategory.simple("railroad:ide.editor_tabs"))
             .codec(DefaultSettingCodecs.NON_NEGATIVE_INTEGER)
             .defaultValue(20)
@@ -73,7 +75,7 @@ public final class Settings {
     /** Maximum number of recently closed editor tabs retained for reopening. */
     public static final Setting<Integer> RECENTLY_CLOSED_TAB_LIMIT = registerSetting(
         Setting.builder(Integer.class, "railroad:recently_closed_tab_limit")
-            .treePath("ide")
+            .treePath("editor")
             .category(SettingCategory.simple("railroad:ide.editor_tabs"))
             .codec(DefaultSettingCodecs.NON_NEGATIVE_INTEGER)
             .defaultValue(20)
@@ -83,7 +85,7 @@ public final class Settings {
     /** Whether files open in preview tabs. */
     public static final Setting<Boolean> ENABLE_PREVIEW_TABS = registerSetting(
         Setting.builder(Boolean.class, "railroad:enable_preview_tabs")
-            .treePath("ide")
+            .treePath("editor")
             .category(SettingCategory.simple("railroad:ide.editor_tabs"))
             .codec(DefaultSettingCodecs.BOOLEAN)
             .defaultValue(true)
@@ -93,7 +95,7 @@ public final class Settings {
     /** Whether the project explorer follows the active editor tab. */
     public static final Setting<Boolean> SYNCHRONIZE_PROJECT_EXPLORER_WITH_ACTIVE_TAB = registerSetting(
         Setting.builder(Boolean.class, "railroad:synchronize_project_explorer_with_active_tab")
-            .treePath("ide")
+            .treePath("project_explorer")
             .category(SettingCategory.simple("railroad:ide.project_explorer"))
             .codec(DefaultSettingCodecs.BOOLEAN)
             .defaultValue(false)
@@ -103,7 +105,7 @@ public final class Settings {
     /** Whether single-child Java package chains share one row in the project explorer. */
     public static final Setting<Boolean> COMPACT_MIDDLE_PACKAGES = registerSetting(
         Setting.builder(Boolean.class, "railroad:compact_middle_packages")
-            .treePath("ide")
+            .treePath("project_explorer")
             .category(SettingCategory.simple("railroad:ide.project_explorer"))
             .codec(DefaultSettingCodecs.BOOLEAN)
             .defaultValue(true)
@@ -123,7 +125,9 @@ public final class Settings {
     public static final Setting<String> DEFAULT_PROJECT_GROUP_ID = registerSetting(
         Setting.builder(String.class, "railroad:projects.default_group_id")
             .treePath("projects")
-            .category(SettingCategory.simple("railroad:projects.defaults.group_id"))
+            .category(SettingCategory.simple("railroad:projects.defaults"))
+            .title("railroad.settings.projects.defaults.group_id.projects.default_group_id.title")
+            .description("railroad.settings.projects.defaults.group_id.projects.default_group_id.description")
             .codec(DefaultSettingCodecs.STRING)
             .defaultValue("")
             .canBeNull(true)
@@ -133,7 +137,9 @@ public final class Settings {
     public static final Setting<String> DEFAULT_PROJECT_VERSION = registerSetting(
         Setting.builder(String.class, "railroad:projects.default_version")
             .treePath("projects")
-            .category(SettingCategory.simple("railroad:projects.defaults.version"))
+            .category(SettingCategory.simple("railroad:projects.defaults"))
+            .title("railroad.settings.projects.defaults.version.projects.default_version.title")
+            .description("railroad.settings.projects.defaults.version.projects.default_version.description")
             .codec(DefaultSettingCodecs.STRING)
             .defaultValue("")
             .canBeNull(true)
@@ -143,7 +149,9 @@ public final class Settings {
     public static final Setting<String> DEFAULT_PROJECT_AUTHOR = registerSetting(
         Setting.builder(String.class, "railroad:projects.default_author")
             .treePath("projects")
-            .category(SettingCategory.simple("railroad:projects.defaults.author"))
+            .category(SettingCategory.simple("railroad:projects.defaults"))
+            .title("railroad.settings.projects.defaults.author.projects.default_author.title")
+            .description("railroad.settings.projects.defaults.author.projects.default_author.description")
             .codec(DefaultSettingCodecs.STRING)
             .defaultValue("")
             .canBeNull(true)
@@ -200,8 +208,10 @@ public final class Settings {
     public static final Setting<List<Path>> ADDITIONAL_JDK_SCAN_PATHS = registerSetting(
         Setting.builder(new TypeToken<List<Path>>() {
         }, "railroad:additional_jdk_scan_paths")
-            .treePath("ide")
-            .category(SettingCategory.simple("railroad:ide.jdk_management"))
+            .treePath("java")
+            .category(SettingCategory.simple("railroad:java.discovery"))
+            .title("railroad.settings.ide.jdk_management.additional_jdk_scan_paths.title")
+            .description("railroad.settings.ide.jdk_management.additional_jdk_scan_paths.description")
             .codec(SettingCodecs.DIRECTORY_PATH_LIST)
             .defaultValue(List.of())
             .build());
@@ -210,8 +220,10 @@ public final class Settings {
     public static final Setting<List<Path>> EXCLUDED_JDK_SCAN_PATHS = registerSetting(
         Setting.builder(new TypeToken<List<Path>>() {
         }, "railroad:excluded_jdk_scan_paths")
-            .treePath("ide")
-            .category(SettingCategory.simple("railroad:ide.jdk_management"))
+            .treePath("java")
+            .category(SettingCategory.simple("railroad:java.discovery"))
+            .title("railroad.settings.ide.jdk_management.excluded_jdk_scan_paths.title")
+            .description("railroad.settings.ide.jdk_management.excluded_jdk_scan_paths.description")
             .codec(SettingCodecs.DIRECTORY_PATH_LIST)
             .defaultValue(List.of())
             .build());
@@ -220,8 +232,10 @@ public final class Settings {
     public static final Setting<List<Path>> ADDITIONAL_JDKS = registerSetting(
         Setting.builder(new TypeToken<List<Path>>() {
         }, "railroad:additional_jdks")
-            .treePath("ide")
-            .category(SettingCategory.simple("railroad:ide.jdk_management"))
+            .treePath("java")
+            .category(SettingCategory.simple("railroad:java.installations"))
+            .title("railroad.settings.ide.jdk_management.additional_jdks.title")
+            .description("railroad.settings.ide.jdk_management.additional_jdks.description")
             .codec(SettingCodecs.FILE_PATH_LIST)
             .defaultValue(List.of())
             .build());
@@ -229,9 +243,9 @@ public final class Settings {
     /** Current Java inspection rule configuration. */
     public static final Setting<JavaInspectionRuleSettingsState> JAVA_INSPECTION_RULE_SETTINGS = registerSetting(
         Setting.builder(JavaInspectionRuleSettingsState.class, "railroad:java_inspection_rule_settings")
-            .treePath("ide")
+            .treePath("inspections")
             .category(SettingCategory.builder("railroad:ide.inspections")
-                .title("Inspection Rules")
+                .title("settings.tree.inspections")
                 .noDescription()
                 .build())
             .codec(SettingCodecs.JAVA_INSPECTION_RULE_SETTINGS)
@@ -252,8 +266,10 @@ public final class Settings {
     /** Timeout in milliseconds for detecting a Java version. */
     public static final Setting<Long> JAVA_VERSION_DETECTION_TIMEOUT_MS = registerSetting(
         Setting.builder(Long.class, "railroad:java_version_detection_timeout_ms")
-            .treePath("ide")
-            .category(SettingCategory.simple("railroad:ide.jdk_management"))
+            .treePath("java")
+            .category(SettingCategory.simple("railroad:java.discovery"))
+            .title("railroad.settings.ide.jdk_management.java_version_detection_timeout_ms.title")
+            .description("railroad.settings.ide.jdk_management.java_version_detection_timeout_ms.description")
             .codec(DefaultSettingCodecs.LONG)
             .defaultValue(3000L)
             .build());
@@ -261,8 +277,10 @@ public final class Settings {
     /** Optional path to the Windows Terminal settings file. */
     public static final Setting<Path> WINDOWS_TERMINAL_SETTINGS_PATH = registerSetting(
         Setting.builder(Path.class, "railroad:windows_terminal_settings_path")
-            .treePath("appearance")
-            .category(SettingCategory.simple("railroad:appearance.terminal"))
+            .treePath("terminal")
+            .category(SettingCategory.simple("railroad:terminal.integration"))
+            .title("railroad.settings.appearance.terminal.windows_terminal_settings_path.title")
+            .description("railroad.settings.appearance.terminal.windows_terminal_settings_path.description")
             .codec(SettingCodecs.WINDOWS_TERMINAL_SETTINGS_PATH)
             .defaultValue(null)
             .canBeNull(true)
@@ -271,8 +289,10 @@ public final class Settings {
     /** Strategy used to select the terminal font. */
     public static final Setting<TerminalFontMode> TERMINAL_FONT_MODE = registerSetting(
         Setting.builder(TerminalFontMode.class, "railroad:terminal_font_mode")
-            .treePath("appearance")
-            .category(SettingCategory.simple("railroad:appearance.terminal"))
+            .treePath("terminal")
+            .category(SettingCategory.simple("railroad:terminal.font"))
+            .title("railroad.settings.appearance.terminal.terminal_font_mode.title")
+            .description("railroad.settings.appearance.terminal.terminal_font_mode.description")
             .codec(SettingCodecs.TERMINAL_FONT_MODE)
             .defaultValue(TerminalFontMode.AUTO)
             .canBeNull(false)
@@ -281,8 +301,10 @@ public final class Settings {
     /** Optional installed font selected for the terminal. */
     public static final Setting<String> TERMINAL_INSTALLED_FONT = registerSetting(
         Setting.builder(String.class, "railroad:terminal_installed_font")
-            .treePath("appearance")
-            .category(SettingCategory.simple("railroad:appearance.terminal"))
+            .treePath("terminal")
+            .category(SettingCategory.simple("railroad:terminal.font"))
+            .title("railroad.settings.appearance.terminal.terminal_installed_font.title")
+            .description("railroad.settings.appearance.terminal.terminal_installed_font.description")
             .codec(SettingCodecs.INSTALLED_FONT)
             .defaultValue(null)
             .canBeNull(true)
@@ -291,8 +313,10 @@ public final class Settings {
     /** Optional custom terminal font family name. */
     public static final Setting<String> TERMINAL_CUSTOM_FONT_FAMILY = registerSetting(
         Setting.builder(String.class, "railroad:terminal_custom_font_family")
-            .treePath("appearance")
-            .category(SettingCategory.simple("railroad:appearance.terminal"))
+            .treePath("terminal")
+            .category(SettingCategory.simple("railroad:terminal.font"))
+            .title("railroad.settings.appearance.terminal.terminal_custom_font_family.title")
+            .description("railroad.settings.appearance.terminal.terminal_custom_font_family.description")
             .codec(SettingCodecs.TERMINAL_CUSTOM_FONT_FAMILY)
             .defaultValue("")
             .canBeNull(true)
@@ -329,8 +353,10 @@ public final class Settings {
     /** Editor indentation character mode. */
     public static final Setting<IndentMode> INDENT_MODE = registerSetting(
         Setting.builder(IndentMode.class, "railroad:indent_mode")
-            .treePath("ide")
-            .category(SettingCategory.simple("railroad:ide.code_style"))
+            .treePath("editor")
+            .category(SettingCategory.simple("railroad:editor.indentation"))
+            .title("railroad.settings.ide.code_style.indent_mode.title")
+            .description("railroad.settings.ide.code_style.indent_mode.description")
             .codec(DefaultSettingCodecs.ofEnum("railroad:indent_mode", IndentMode.class))
             .defaultValue(IndentMode.TABS)
             .canBeNull(false)
@@ -339,8 +365,10 @@ public final class Settings {
     /** Number of columns represented by one indentation level. */
     public static final Setting<Integer> INDENT_WIDTH = registerSetting(
         Setting.builder(Integer.class, "railroad:indent_width")
-            .treePath("ide")
-            .category(SettingCategory.simple("railroad:ide.code_style"))
+            .treePath("editor")
+            .category(SettingCategory.simple("railroad:editor.indentation"))
+            .title("railroad.settings.ide.code_style.indent_width.title")
+            .description("railroad.settings.ide.code_style.indent_width.description")
             .codec(DefaultSettingCodecs.INTEGER)
             .defaultValue(4)
             .canBeNull(false)
@@ -349,8 +377,10 @@ public final class Settings {
     /** Number of columns represented by a tab character. */
     public static final Setting<Integer> TAB_WIDTH = registerSetting(
         Setting.builder(Integer.class, "railroad:tab_width")
-            .treePath("ide")
-            .category(SettingCategory.simple("railroad:ide.code_style"))
+            .treePath("editor")
+            .category(SettingCategory.simple("railroad:editor.indentation"))
+            .title("railroad.settings.ide.code_style.tab_width.title")
+            .description("railroad.settings.ide.code_style.tab_width.description")
             .codec(DefaultSettingCodecs.INTEGER)
             .defaultValue(4)
             .canBeNull(false)
@@ -359,8 +389,10 @@ public final class Settings {
     /** Font family used by editor controls. */
     public static final Setting<String> EDITOR_FONT_FAMILY = registerSetting(
         Setting.builder(String.class, "railroad:editor_font_family")
-            .treePath("ide")
-            .category(SettingCategory.simple("railroad:ide.code_style"))
+            .treePath("editor")
+            .category(SettingCategory.simple("railroad:editor.font"))
+            .title("railroad.settings.ide.code_style.editor_font_family.title")
+            .description("railroad.settings.ide.code_style.editor_font_family.description")
             .codec(SettingCodecs.EDITOR_FONT_FAMILY)
             .defaultValue("JetBrains Mono")
             .canBeNull(false)

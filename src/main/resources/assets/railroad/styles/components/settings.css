@@ -1,75 +1,254 @@
-#settings-search-bar {
-    -fx-padding: 10 16 10 16;
-    -fx-background-radius: 6;
-    -fx-font-size: 15px;
-}
-
+/* Settings use the same compact scale and surfaces as the IDE workspace. */
 .settings-root {
-    -fx-padding: 24px;
-    -fx-spacing: 10px;
-}
-
-.settings-row {
-    -fx-padding: 12 0 12 0;
-}
-
-.settings-group-divider {
-    -fx-background-color: -color-border-default;
-    -fx-min-height: 1px;
-    -fx-max-height: 1px;
-}
-
-/* Ensure button bar is always bottom-aligned if needed */
-.settings-button-bar {
-    -fx-alignment: center-right;
-    -fx-padding: 24 0 0 0;
-}
-
-.rr-settings-border-container {
-    -fx-background-color: -color-bg-elevated;
-    -fx-border-color: -color-border-subtle;
-    -fx-border-width: 1px;
-    -fx-border-radius: 20px;
-    -fx-background-radius: 20px;
-    -fx-padding: 24;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.06), 12, 0.18, 0, 6);
-}
-
-/* Settings styles */
-.settings-path-label {
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    -fx-text-fill: -color-fg-default;
-}
-
-.settings-left-vbox {
-    -fx-background-color: transparent;
-}
-
-.settings-right-vbox {
-    -fx-background-color: transparent;
-}
-
-.settings-left-pane {
-    -fx-background-color: -color-bg-default;
-    -fx-border-color: -color-border-subtle;
-    -fx-border-width: 1px;
-    -fx-border-radius: 16px;
-    -fx-background-radius: 16px;
-    -fx-min-width: 260px;
-    -fx-pref-width: 280px;
-    -fx-max-width: 280px;
-    -fx-padding: 16 24 16 16;
-    -fx-spacing: 14px;
-}
-
-.settings-right-pane {
-    -fx-background-color: transparent;
+    -fx-background-color: -color-surface-frame;
+    -fx-padding: 0;
     -fx-spacing: 0;
 }
 
-.settings-search-field {
-    -fx-pref-height: 40px;
+.settings-border-container,
+.settings-split-pane {
+    -fx-background-color: -color-surface-panel;
+    -fx-padding: 0;
+}
+
+.settings-split-pane > .split-pane-divider {
+    -fx-background-color: -color-border-subtle;
+    -fx-padding: 0 0.5px;
+}
+
+.settings-left-pane {
+    -fx-background-color: -color-surface-panel;
+    -fx-min-width: 14em;
+    -fx-pref-width: 17em;
+    -fx-max-width: 24em;
+    -fx-padding: 0.75em 0.5em;
+    -fx-spacing: 0.75em;
+}
+
+.settings-right-pane,
+.settings-content,
+.settings-content > .viewport {
+    -fx-background-color: -color-surface-editor;
+    -fx-padding: 0;
+    -fx-spacing: 0;
+}
+
+.settings-content {
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+}
+
+.settings-path-title {
+    -fx-font-size: 1.15em;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+    -fx-padding: 0.85em 1.3em;
+    -fx-max-width: infinity;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.settings-content-box {
+    -fx-background-color: transparent;
+    -fx-padding: 1.25em 1.5em;
+    -fx-spacing: 1em;
+}
+
+.settings-page {
+    -fx-spacing: 0.75em;
+}
+
+.settings-category-header {
+    -fx-alignment: center-left;
+    -fx-spacing: 0.75em;
+    -fx-padding: 0.5em 0 0 0;
+}
+
+.settings-root .section-label {
+    -fx-font-size: 1em;
+    -fx-text-fill: -color-fg-default;
+}
+
+.settings-category-header .section-label {
+    -fx-font-weight: bold;
+}
+
+.settings-root .section-description-label {
+    -fx-font-size: 0.93em;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.settings-folder-box {
+    -fx-spacing: 1em;
+    -fx-padding: 0 0 0.75em 0;
+}
+
+.settings-setting-box {
+    -fx-spacing: 0.35em;
+    -fx-padding: 0;
+}
+
+.settings-root .text-field,
+.settings-root .combo-box {
+    -fx-font-size: 1em;
+    -fx-min-height: 2em;
+    -fx-pref-height: 2em;
+    -fx-background-radius: 0.25em;
+    -fx-border-radius: 0.25em;
+    -fx-padding: 0.25em 0.5em;
+    -fx-border-width: 1px;
+}
+
+.settings-root .text-field:focused,
+.settings-root .combo-box:focused {
+    -fx-border-color: -color-accent-fg;
+    -fx-effect: none;
+}
+
+.settings-root .combo-box > .list-cell {
+    -fx-font-size: 1em;
+    -fx-padding: 0;
+}
+
+.settings-setting-box > .text-field,
+.settings-setting-box > .combo-box {
+    -fx-max-width: 32em;
+}
+
+.settings-root .check-box {
+    -fx-font-size: 1em;
+    -fx-text-fill: -color-fg-default;
+    -fx-label-padding: 0 0 0 0.5em;
+}
+
+.settings-category-tree {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-fixed-cell-size: 2em;
+}
+
+.settings-category-tree .tree-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 1em;
+    -fx-padding: 0 0.5em;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0.25em;
+}
+
+.settings-category-tree .tree-cell:filled:hover {
+    -fx-background-color: -color-neutral-subtle;
+}
+
+.settings-category-tree .tree-cell:filled:selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-text-fill: -color-fg-default;
+    -fx-font-weight: bold;
+}
+
+.settings-button-bar {
+    -fx-background-color: -color-surface-frame;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px 0 0 0;
+    -fx-spacing: 0.5em;
+    -fx-padding: 0.75em 1em;
+    -fx-alignment: center-right;
+}
+
+.settings-root .rr-button {
+    -fx-font-size: 1em;
+    -fx-min-height: 2em;
+    -fx-padding: 0.35em 0.75em;
+    -fx-background-radius: 0.25em;
+    -fx-border-radius: 0.25em;
+}
+
+.settings-button-bar .rr-button {
+    -fx-min-width: 6em;
+}
+
+.settings-detected-pane {
+    -fx-padding: 0.75em 0 0 0;
+}
+
+.settings-root .rr-form-section {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-padding: 0;
+    -fx-spacing: 0.5em;
+    -fx-effect: none;
+}
+
+.settings-root .rr-form-section .section-header {
+    -fx-font-size: 1em;
+    -fx-padding: 0;
+}
+
+.settings-root .rr-form-section .section-content {
+    -fx-background-color: transparent;
+    -fx-spacing: 0.5em;
+}
+
+.settings-root .theme-selector-selection-row {
+    -fx-spacing: 0.5em;
+}
+
+.settings-root .theme-selector-combo {
+    -fx-effect: none;
+}
+
+.settings-root .keybinds-pane,
+.settings-root .keybinds-scroll > .viewport {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-spacing: 0.75em;
+}
+
+.settings-root .keybinds-header-title,
+.settings-root .keybind-card-title {
+    -fx-font-size: 1em;
+}
+
+.settings-root .keybinds-card-container {
+    -fx-padding: 0;
+    -fx-spacing: 0;
+}
+
+.settings-root .keybind-card {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1px 0;
+    -fx-border-radius: 0;
+    -fx-background-radius: 0;
+    -fx-effect: none;
+}
+
+.settings-root .keybind-card .rr-card-content {
+    -fx-padding: 0.75em 0;
+    -fx-spacing: 0.5em;
+}
+
+.settings-root .keybind-card-header,
+.settings-root .keybind-card-shortcuts {
+    -fx-padding: 0;
+    -fx-spacing: 0.5em;
+}
+
+.settings-root .keybind-shortcut-remove {
+    -fx-min-width: 2em;
+    -fx-pref-width: 2em;
+    -fx-padding: 0.25em;
+}
+
+.settings-root .keybinds-category-chip,
+.settings-root .keybind-shortcut-chip {
+    -fx-padding: 0.25em 0.5em;
+    -fx-background-radius: 0.25em;
+    -fx-border-radius: 0.25em;
 }
 
 .detected-jdk-list-pane {
@@ -94,48 +273,117 @@
     -fx-spacing: 2px;
 }
 
-.settings-detected-pane {
-    -fx-padding: 10px 10px 0 10px;
-}
-
-.settings-folder-box {
-    -fx-padding: 5px 10px 0 10px;
-}
-
-.settings-setting-box {
-    -fx-padding: 5px;
-}
-
-.settings-category-header {
-    -fx-spacing: 10px;
-    -fx-padding: 5px 10px 0 10px;
-}
-
-.settings-category-description {
-    -fx-padding: 0 0 0 5px;
-}
-
-.settings-button-bar {
-    -fx-spacing: 14px;
-    -fx-padding: 24px 0 0 0;
-}
-
-.settings-content-box {
-    -fx-spacing: 24px;
-    -fx-padding: 0 0 0 32;
-}
-
-.settings-content-stack {
-    -fx-background-color: transparent;
-    -fx-spacing: 24px;
-}
-
 .path-list-pane {
     -fx-spacing: 12px;
 }
 
 .path-list-view {
     -fx-min-height: 200px;
+}
+
+.settings-root .path-list-pane,
+.settings-root .path-list-controls,
+.settings-root .detected-jdk-list-pane,
+.settings-root .detected-jdk-list-header {
+    -fx-background-color: transparent;
+    -fx-spacing: 0.5em;
+}
+
+.settings-root .path-list-view {
+    -fx-min-height: 7em;
+    -fx-pref-height: 7em;
+    -fx-max-height: 7em;
+    -fx-fixed-cell-size: 2em;
+}
+
+.settings-root .list-view {
+    -fx-padding: 0;
+    -fx-background-radius: 0.25em;
+    -fx-border-radius: 0.25em;
+    -fx-border-width: 1px;
+    -fx-border-color: -color-border-subtle;
+    -fx-background-color: -color-surface-panel;
+}
+
+.settings-root .list-view .list-cell {
+    -fx-padding: 0.35em 0.5em;
+    -fx-font-size: 1em;
+}
+
+.settings-root .path-list-controls .rr-button,
+.settings-root .detected-jdk-list-header .rr-button {
+    -fx-min-width: 2em;
+    -fx-pref-width: 2em;
+}
+
+.settings-root .plugins-pane {
+    -fx-padding: 0;
+    -fx-pref-height: 32em;
+}
+
+.settings-root .plugins-pane > .split-pane-divider {
+    -fx-background-color: -color-border-subtle;
+    -fx-padding: 0 0.5px;
+}
+
+.settings-root .plugins-pane-list-section {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0.75em 0 0;
+    -fx-spacing: 0.5em;
+    -fx-min-width: 12em;
+}
+
+.settings-root .plugin-detail-scroll,
+.settings-root .plugin-detail-scroll > .viewport,
+.settings-root .plugin-detail-container {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-background-radius: 0;
+    -fx-effect: none;
+}
+
+.settings-root .plugin-detail-container {
+    -fx-padding: 0.5em 0.75em;
+    -fx-spacing: 0.75em;
+}
+
+.settings-root .plugin-detail-icon {
+    -fx-padding: 0.25em;
+    -fx-background-color: transparent;
+}
+
+.settings-root .plugin-detail-header {
+    -fx-spacing: 0.75em;
+}
+
+.settings-root .plugin-detail-name {
+    -fx-font-size: 1.15em;
+}
+
+.settings-root .plugin-cell-container {
+    -fx-padding: 0.25em;
+    -fx-spacing: 0.5em;
+    -fx-background-radius: 0;
+    -fx-border-width: 0;
+    -fx-effect: none;
+}
+
+.settings-root .plugin-cell-container.plugin-cell-selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-effect: none;
+}
+
+.settings-root .inspection-settings-pane .titled-pane > .title {
+    -fx-background-color: -color-surface-panel;
+    -fx-padding: 0.5em;
+}
+
+.settings-root .inspection-settings-pane .titled-pane > .content,
+.settings-root .inspection-rules-scroll,
+.settings-root .inspection-rules-scroll > .viewport {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0;
 }
 
 .path-list-controls {
@@ -149,34 +397,6 @@
 
 .installed-font-pane {
     -fx-pref-width: 260px;
-}
-
-.settings-category-tree {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
-}
-
-.settings-sidebar-separator {
-    -fx-background-color: -color-border-default;
-}
-
-.settings-path-title {
-    -fx-font-size: 18px;
-    -fx-font-weight: bold;
-    -fx-text-fill: -color-fg-default;
-}
-
-.settings-split-pane {
-    -fx-divider-width: 8px;
-    -fx-padding: 0;
-}
-
-.settings-divider {
-    -fx-background-color: transparent;
-    -fx-padding: 0;
-    -fx-pref-width: 0;
-    -fx-max-width: 0;
-    -fx-min-width: 0;
 }
 
 /* Github styles */

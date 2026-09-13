@@ -47,6 +47,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javafx.scene.Parent;
 
 /**
  * Collects Fabric project settings and starts project creation when onboarding finishes.
@@ -60,6 +61,15 @@ public class FabricProjectOnboarding {
      * @param scene scene whose root will be replaced with the onboarding view
      */
     public void start(Scene scene) {
+        startIn(scene::setRoot);
+    }
+
+    /**
+     * Runs setup and creation in the supplied view host.
+     *
+     * @param showView callback that displays the setup UI and subsequent project creation view
+     */
+    public void startIn(Consumer<Parent> showView) {
         var flow = OnboardingFlow.builder()
             .addStep("project_details", this::createProjectDetailsStep)
             .addStep("maven_coordinates", this::createMavenCoordinatesStep)
@@ -92,12 +102,12 @@ public class FabricProjectOnboarding {
         var process = OnboardingProcess.createBasic(
             flow,
             new OnboardingContext(executor),
-            ctx -> onFinish(ctx, scene));
+            ctx -> onFinish(ctx, showView));
 
-        process.run(scene);
+        process.runIn(showView);
     }
 
-    private void onFinish(OnboardingContext ctx, Scene scene) {
+    private void onFinish(OnboardingContext ctx, Consumer<Parent> showView) {
         this.executor.shutdown();
 
         var data = new ProjectData();
@@ -155,7 +165,7 @@ public class FabricProjectOnboarding {
             ProjectTypeRegistry.FABRIC,
             serviceRegistry), creationPane.getContext()));
 
-        scene.setRoot(creationPane);
+        showView.accept(creationPane);
     }
 
     private OnboardingStep createProjectDetailsStep() {

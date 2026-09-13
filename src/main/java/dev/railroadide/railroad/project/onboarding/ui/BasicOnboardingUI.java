@@ -36,8 +36,9 @@ public class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
      */
     public BasicOnboardingUI(Node content) {
         getStyleClass().add("onboarding-root");
+        setMinSize(0, 0);
 
-        var mainContainer = new RRVBox();
+        var mainContainer = new VBox();
         mainContainer.getStyleClass().add("onboarding-main");
         mainContainer.setFillWidth(true);
         setCenter(mainContainer);
@@ -57,24 +58,27 @@ public class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
         this.progressLabel = new Label();
         this.progressLabel.getStyleClass().add("onboarding-progress-label");
 
-        var header = new RRVBox();
+        var header = new VBox();
         header.getChildren().addAll(titleLabel, descriptionLabel, createProgressContainer());
         header.getStyleClass().add("onboarding-header");
 
         // Content
-        this.contentContainer = new RRVBox();
+        this.contentContainer = new VBox();
         this.contentContainer.getStyleClass().add("onboarding-content-container");
         this.contentContainer.setFillWidth(true);
 
         this.scrollPane = new ScrollPane(contentContainer);
         this.scrollPane.setFitToWidth(true);
+        this.scrollPane.setMinSize(0, 0);
+        this.contentContainer.setMinWidth(0);
         this.scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         this.scrollPane.getStyleClass().add("onboarding-scroll-pane");
 
         this.busyOverlay = createBusyOverlay();
-        var contentFrame = new RRStackPane();
+        var contentFrame = new StackPane();
         contentFrame.getChildren().addAll(scrollPane, busyOverlay);
         contentFrame.getStyleClass().add("onboarding-content-frame");
+        contentFrame.setMinHeight(0);
 
         VBox.setVgrow(contentFrame, Priority.ALWAYS);
         mainContainer.getChildren().addAll(header, contentFrame);
@@ -84,7 +88,7 @@ public class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
         this.nextButton = createButton("railroad.generic.next", ButtonVariant.PRIMARY, "onboarding-next-button");
         this.finishButton = createButton("railroad.generic.finish", ButtonVariant.PRIMARY, "onboarding-finish-button");
 
-        this.buttonBar = new RRBorderPane();
+        this.buttonBar = new BorderPane();
         this.buttonBar.getStyleClass().add("onboarding-button-bar");
         this.buttonBar.setLeft(backButton);
         this.buttonBar.setRight(nextButton);
@@ -96,7 +100,7 @@ public class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
     }
 
     private Node createProgressContainer() {
-        var progressContainer = new RRHBox();
+        var progressContainer = new HBox();
         progressContainer.getChildren().addAll(progressBar, progressLabel);
         progressContainer.setAlignment(Pos.CENTER_LEFT);
         progressContainer.getStyleClass().add("onboarding-progress");
@@ -140,6 +144,7 @@ public class BasicOnboardingUI extends RRBorderPane implements OnboardingUI {
         }
 
         this.content = content;
+        scrollPane.setVvalue(0);
         Optional.ofNullable(content).ifPresentOrElse(node -> {
             node.getStyleClass().add("onboarding-step-content");
             contentContainer.getChildren().setAll(node);

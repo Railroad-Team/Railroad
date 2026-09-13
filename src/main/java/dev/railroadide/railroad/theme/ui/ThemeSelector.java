@@ -117,7 +117,7 @@ public class ThemeSelector extends RRVBox {
     private void previewSelectedTheme() {
         String selectedTheme = themeComboBox.getValue();
         if (selectedTheme != null) {
-            new ThemeExamplePane(selectedTheme);
+            new ThemeExamplePane(selectedTheme, getScene().getWindow());
         }
     }
 
