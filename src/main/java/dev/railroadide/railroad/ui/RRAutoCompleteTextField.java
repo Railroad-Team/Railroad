@@ -39,15 +39,13 @@ public class RRAutoCompleteTextField extends RRTextField {
      */
     public RRAutoCompleteTextField(String localizationKey, Object... args) {
         super(localizationKey, args);
+        initializeSuggestions();
     }
 
     /**
-     * Initializes the field, suggestion popup, and keyboard, mouse, text, and focus listeners.
+     * Initializes suggestions after the superclass constructor and instance field initializers have completed.
      */
-    @Override
-    protected void initialize() {
-        super.initialize();
-
+    private void initializeSuggestions() {
         suggestionsPopup.setAutoHide(true);
         suggestionsContainer.setHideOnClick(false);
         getStyleClass().add("rr-auto-complete-text-field");
