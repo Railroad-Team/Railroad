@@ -6,6 +6,7 @@ import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRTextField;
 import javafx.application.Platform;
 import javafx.scene.Scene;
+import javafx.scene.layout.Priority;
 import javafx.scene.paint.Color;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
@@ -97,10 +98,12 @@ public class FormFileChooser extends InformativeLabeledHBox<FormFileChooser.Text
          */
         public TextFieldWithButton(RRTextField textField, @Nullable BrowseButton browseButton) {
             super(5);
+            getStyleClass().add("form-file-input");
 
             this.textField = textField;
             this.browseButton = browseButton;
 
+            RRHBox.setHgrow(textField, Priority.ALWAYS);
             getChildren().add(textField);
             if (browseButton != null) {
                 getChildren().add(browseButton);

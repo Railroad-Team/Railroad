@@ -104,3 +104,7 @@
     -fx-fixed-cell-size: 28px;
     -fx-max-height: 200px;
 }
+
+.rr-auto-complete-suggestions .list-cell {
+    -fx-padding: 0 8px;
+}
