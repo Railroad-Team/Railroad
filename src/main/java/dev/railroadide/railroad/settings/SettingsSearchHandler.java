@@ -17,6 +17,7 @@ import java.util.*;
  */
 public class SettingsSearchHandler {
     private final FuzzySearch<Map<String, String>, String> fuzzySearch;
+    private final Map<String, String> settingsMap = new LinkedHashMap<>();
 
     private final StringProperty query = new SimpleStringProperty("");
 
@@ -26,19 +27,28 @@ public class SettingsSearchHandler {
      * @param settings The collection of settings to be indexed for search
      */
     public SettingsSearchHandler(Collection<Setting<?>> settings) {
-        Map<String, String> settingsMap = new HashMap<>();
-
         for (Setting<?> setting : settings) {
             String baseKey = setting.getTreePath();
-            String titleKey = baseKey + ".title";
-            String descKey = baseKey + ".description";
+            String titleKey = setting.getTitle();
+            String descKey = setting.getDescription();
+            String categoryKey = "settings.tree." + baseKey;
+            if (L18n.isKeyValid(categoryKey)) {
+                settingsMap.put(L18n.localize(categoryKey), baseKey);
+            }
 
-            if (L18n.isKeyValid(titleKey)) {
+            if (titleKey != null && L18n.isKeyValid(titleKey)) {
                 settingsMap.put(L18n.localize(titleKey), baseKey);
             }
 
-            if (L18n.isKeyValid(descKey)) {
+            if (descKey != null && L18n.isKeyValid(descKey)) {
                 settingsMap.put(L18n.localize(descKey), baseKey);
+            }
+            SettingCategory category = setting.getCategory();
+            if (category.hasTitle() && L18n.isKeyValid(category.title())) {
+                settingsMap.put(L18n.localize(category.title()), baseKey);
+            }
+            if (category.hasDescription() && L18n.isKeyValid(category.description())) {
+                settingsMap.put(L18n.localize(category.description()), baseKey);
             }
         }
 
@@ -70,13 +80,15 @@ public class SettingsSearchHandler {
      * @return The most relevant folder for the given query
      */
     public String mostRelevantFolder(String query) {
-        String res = fuzzySearch.search(query);
-
-        if (res == null)
+        String normalized = query.strip().toLowerCase(Locale.ROOT);
+        if (normalized.isEmpty())
             return null;
-
-        String[] resParts = res.split("[.]");
-        return String.join(".", Arrays.copyOfRange(resParts, 0, resParts.length - 1));
+        // Prefer a literal match over fuzzy matches to unrelated short words.
+        return settingsMap.entrySet().stream()
+            .filter(entry -> entry.getKey().toLowerCase(Locale.ROOT).contains(normalized))
+            .min(Comparator.comparingInt(entry -> entry.getKey().length()))
+            .map(Map.Entry::getValue)
+            .orElseGet(() -> fuzzySearch.search(normalized));
     }
 
     /**

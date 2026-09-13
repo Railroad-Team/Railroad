@@ -99,6 +99,7 @@ public class PluginsPane extends SplitPane {
         setupListPane();
         Node detailPane = setupDetailPane();
         getItems().setAll(createListSection(), detailPane);
+        setDividerPositions(DEFAULT_DIVIDER_POSITION);
         SplitPane.setResizableWithParent(getItems().getFirst(), false);
 
         PluginManager.getLoadedPluginsList().addListener((ListChangeListener<PluginLoadResult>) change -> {
@@ -165,6 +166,7 @@ public class PluginsPane extends SplitPane {
         pluginListView.getStyleClass().add("plugins-pane-list-view");
         pluginListView.setBordered(true);
         pluginListView.setDense(true);
+        pluginListView.setAnimationsEnabled(false);
         pluginListView.getSelectionModel().selectedItemProperty()
             .addListener((_, _, descriptor) -> updateDetails(descriptor));
         pluginListView.setCellFactory(_ -> new PluginListCell());
@@ -205,6 +207,7 @@ public class PluginsPane extends SplitPane {
         nameLabel.getStyleClass().add("plugin-detail-name");
         nameLabel.setWrapText(true);
         metaLabel.getStyleClass().add("plugin-detail-meta");
+        metaLabel.setWrapText(true);
 
         detailToggle.selectedProperty().addListener((_, _, enabled) -> {
             if (updatingDetailToggle)
@@ -213,10 +216,11 @@ public class PluginsPane extends SplitPane {
         });
 
         var headerTexts = new VBox(nameLabel, metaLabel);
+        headerTexts.setMinWidth(0);
         headerTexts.getStyleClass().add("plugin-detail-header-texts");
         HBox.setHgrow(headerTexts, Priority.ALWAYS);
 
-        var header = new HBox(iconWrapper, headerTexts, detailToggle);
+        var header = new HBox(iconWrapper, headerTexts);
         header.setAlignment(Pos.CENTER_LEFT);
         header.getStyleClass().add("plugin-detail-header");
 
@@ -238,7 +242,7 @@ public class PluginsPane extends SplitPane {
 
         GridPane metadataGrid = buildMetadataGrid();
 
-        detailContainer.getChildren().addAll(header, descriptionValue, websiteLink, metadataGrid);
+        detailContainer.getChildren().addAll(header, detailToggle, descriptionValue, websiteLink, metadataGrid);
 
         var detailScroll = new ScrollPane(detailContainer);
         detailScroll.setFitToWidth(true);
@@ -247,6 +251,7 @@ public class PluginsPane extends SplitPane {
         detailScroll.getStyleClass().add("plugin-detail-scroll");
 
         var stack = new StackPane(placeholderBox, detailScroll);
+        stack.setMinWidth(0);
         StackPane.setAlignment(placeholderBox, Pos.CENTER);
 
         detailContainer.setVisible(false);
@@ -425,9 +430,13 @@ public class PluginsPane extends SplitPane {
         private boolean updating;
 
         private PluginListCell() {
+            setMinWidth(0);
+            setPrefWidth(0);
+            container.setMaxWidth(Double.MAX_VALUE);
             container.getStyleClass().add("plugin-cell-container");
 
             title.getStyleClass().add("plugin-cell-title");
+            title.setWrapText(true);
             subtitle.getStyleClass().add("plugin-cell-subtitle");
             subtitle.setWrapText(true);
 
@@ -451,6 +460,7 @@ public class PluginsPane extends SplitPane {
             });
 
             var textContainer = new VBox(title, subtitle);
+            textContainer.setMinWidth(0);
             textContainer.getStyleClass().add("plugin-cell-texts");
             HBox.setHgrow(textContainer, Priority.ALWAYS);
 
@@ -471,7 +481,8 @@ public class PluginsPane extends SplitPane {
             }
 
             title.setText(textOrFallback(descriptor.getName(), descriptor.getId()));
-            subtitle.setText(buildMetaText(descriptor));
+            subtitle.setText(L18n.localize("railroad.plugins.list.version",
+                textOrFallback(descriptor.getVersion(), L18n.localize("railroad.generic.unknown"))));
 
             updating = true;
             toggle.setSelected(enabledPlugins.getOrDefault(descriptor, false));

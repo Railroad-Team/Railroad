@@ -22,10 +22,13 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
+import javafx.stage.Modality;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -54,7 +57,19 @@ public class SettingsPane extends RRVBox {
         searchBar.getStyleClass().add("settings-search-field");
         TreeView<LocalizedLabel> tree = SettingsUIHandler
             .createCategoryTree(SettingsHandler.SETTINGS_REGISTRY.values());
-        tree.getStyleClass().addAll("settings-tree", "rr-sidebar-tree");
+        tree.getStyleClass().add("settings-tree");
+        tree.setCellFactory(_ -> new TreeCell<>() {
+            @Override
+            protected void updateItem(LocalizedLabel item, boolean empty) {
+                super.updateItem(item, empty);
+                textProperty().unbind();
+                setText(null);
+                setGraphic(null);
+                if (!empty && item != null) {
+                    textProperty().bind(item.textProperty());
+                }
+            }
+        });
         tree.getStyleClass().add("settings-category-tree");
         VBox.setVgrow(tree, Priority.ALWAYS);
         leftVbox.getChildren().addAll(searchBar, tree);
@@ -63,6 +78,7 @@ public class SettingsPane extends RRVBox {
         rightVbox.getStyleClass().add("settings-right-vbox");
         rightVbox.getStyleClass().remove("background-2");
         rightVbox.getStyleClass().add("settings-right-pane");
+        rightVbox.setMinWidth(0);
 
         var pathLabel = new Label("");
         pathLabel.getStyleClass().add("settings-path-title");
@@ -73,13 +89,14 @@ public class SettingsPane extends RRVBox {
         settingsContentBox.getStyleClass().add("settings-content-stack");
         var settingsContent = new ScrollPane(settingsContentBox);
         settingsContent.setFitToWidth(true);
-        settingsContent.setFitToHeight(true);
+        settingsContent.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         settingsContent.getStyleClass().add("settings-content");
         VBox.setVgrow(settingsContent, Priority.ALWAYS);
         rightVbox.getChildren().addAll(pathLabel, settingsContent);
         VBox.setVgrow(rightVbox, Priority.ALWAYS);
 
         List<Runnable> applyListeners = new ArrayList<>();
+        Map<String, VBox> pages = new LinkedHashMap<>();
 
         tree.getSelectionModel().selectedItemProperty().addListener((_, _, newItem) -> {
             if (newItem == null)
@@ -98,7 +115,7 @@ public class SettingsPane extends RRVBox {
                 return;
 
             var pathBuilder = new StringBuilder();
-            for (int i = 0; i < parts.length - 1; i++) {
+            for (int i = 0; i < parts.length; i++) {
                 String translationKey = "settings.tree." + String.join(".", Arrays.copyOfRange(parts, 0, i + 1));
                 String translation = L18n.localize(translationKey);
                 if (i > 0) {
@@ -113,19 +130,20 @@ public class SettingsPane extends RRVBox {
             }
 
             pathLabel.setText(pathBuilder.toString());
-            var vbox = SettingsUIHandler.createSettingsSection(
-                SettingsHandler.SETTINGS_REGISTRY.values(),
-                parts[parts.length - 1],
-                applyListeners);
-
-            // TODO: Temporary until we add a decorations system.
-            if ("ide".equals(parts[parts.length - 1])) {
-                var detectedPane = new DetectedJdkListPane();
-                detectedPane.getStyleClass().add("settings-detected-pane");
-                vbox.getChildren().add(detectedPane);
-            }
+            // Keep one set of editors per page so navigation preserves pending values.
+            VBox vbox = pages.computeIfAbsent(key, page -> {
+                VBox content = SettingsUIHandler.createSettingsSection(
+                    SettingsHandler.SETTINGS_REGISTRY.values(), page, applyListeners);
+                if ("java".equals(page)) {
+                    var detectedPane = new DetectedJdkListPane();
+                    detectedPane.getStyleClass().add("settings-detected-pane");
+                    content.getChildren().addFirst(detectedPane);
+                }
+                return content;
+            });
 
             settingsContentBox.getChildren().setAll(vbox);
+            settingsContent.setVvalue(0);
         });
 
         var searchHandler = new SettingsSearchHandler(SettingsHandler.SETTINGS_REGISTRY.values());
@@ -138,24 +156,21 @@ public class SettingsPane extends RRVBox {
             if (matched == null)
                 return;
 
-            TreeItem<LocalizedLabel> toSelect = null;
-            for (TreeItem<LocalizedLabel> item : tree.getRoot().getChildren()) {
-                LocalizedLabel label = item.getValue();
-                if (Objects.equals(label.getUserData(), matched)) {
-                    toSelect = item;
-                    break;
-                }
-            }
+            TreeItem<LocalizedLabel> toSelect = findCategory(tree.getRoot(), matched);
 
             if (toSelect != null) {
-                tree.getSelectionModel().clearSelection();
+                for (TreeItem<LocalizedLabel> ancestor = toSelect.getParent(); ancestor != null; ancestor = ancestor
+                    .getParent()) {
+                    ancestor.setExpanded(true);
+                }
                 tree.getSelectionModel().select(toSelect);
+                tree.scrollTo(tree.getRow(toSelect));
             }
         });
 
         splitPane.getStyleClass().add("settings-split-pane");
-        splitPane.setDividerPositions(0.28);
         splitPane.getItems().setAll(leftVbox, rightVbox);
+        splitPane.setDividerPositions(0.24);
         VBox.setVgrow(splitPane, Priority.ALWAYS);
         SplitPane.setResizableWithParent(leftVbox, false);
 
@@ -170,7 +185,9 @@ public class SettingsPane extends RRVBox {
         buttonBar.getStyleClass().add("settings-button-bar");
         var apply = new RRButton("railroad.generic.apply");
         var cancel = new RRButton("railroad.generic.cancel");
-        buttonBar.getChildren().addAll(apply, cancel);
+        cancel.getStyleClass().add("secondary");
+        cancel.setCancelButton(true);
+        buttonBar.getChildren().addAll(cancel, apply);
 
         apply.setOnAction(_ -> {
             for (Runnable listener : applyListeners) {
@@ -202,24 +219,36 @@ public class SettingsPane extends RRVBox {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Settings.SETTINGS, this);
     }
 
+    private static TreeItem<LocalizedLabel> findCategory(TreeItem<LocalizedLabel> item, String path) {
+        if (item.getValue() != null && Objects.equals(item.getValue().getUserData(), path))
+            return item;
+        for (TreeItem<LocalizedLabel> child : item.getChildren()) {
+            TreeItem<LocalizedLabel> match = findCategory(child, path);
+            if (match != null)
+                return match;
+        }
+        return null;
+    }
+
     /**
      * Opens the main settings window on the JavaFX application thread.
      */
     public static void openSettingsWindow() {
         Platform.runLater(() -> {
             Screen screen = Screen.getPrimary();
-            double screenW = screen.getBounds().getWidth();
-            double screenH = screen.getBounds().getHeight();
+            double screenW = screen.getVisualBounds().getWidth();
+            double screenH = screen.getVisualBounds().getHeight();
 
-            double windowW = screenW * 0.75;
-            double windowH = screenH * 0.75;
+            double windowW = Math.min(1100, screenW * 0.9);
+            double windowH = Math.min(760, screenH * 0.9);
 
             var scene = new Scene(new SettingsPane(), windowW, windowH);
             WindowBuilder.create()
                 .owner(Railroad.WINDOW_MANAGER.getPrimaryStage())
+                .modality(Modality.WINDOW_MODAL)
                 .scene(scene)
                 .title("railroad.window.settings.title", true)
-                .minSize(windowW * 0.7, windowH * 0.7)
+                .minSize(Math.min(720, windowW), Math.min(480, windowH))
                 .build();
         });
     }

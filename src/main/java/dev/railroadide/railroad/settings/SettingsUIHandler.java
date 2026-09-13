@@ -1,11 +1,12 @@
 package dev.railroadide.railroad.settings;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.ui.RRHBox;
-import dev.railroadide.railroad.ui.RRVBox;
+import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import javafx.scene.Node;
 import javafx.scene.control.Separator;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.layout.HBox;
@@ -22,6 +23,18 @@ import java.util.*;
  * It provides methods to create a categorized TreeView of settings and a VBox containing settings sections.
  */
 public class SettingsUIHandler {
+    private static final List<String> PAGE_ORDER = List.of(
+        "general", "appearance", "editor", "inspections", "project_explorer", "java",
+        "terminal", "projects", "vcs", "keybinds", "plugins");
+    private static final List<String> SETTING_ORDER = List.of(
+        "railroad:editor_font_family", "railroad:indent_mode", "railroad:indent_width", "railroad:tab_width",
+        "railroad:auto_pair_inside_strings", "railroad:additional_jdks", "railroad:open_last_project_on_start",
+        "railroad:git_executable_path");
+
+    private static int position(List<String> order, String key) {
+        int index = order.indexOf(key);
+        return index < 0 ? Integer.MAX_VALUE : index;
+    }
     private static TreeItem<LocalizedLabel> createItem(@Nullable String key) {
         if (StringUtils.isBlank(key))
             return new TreeItem<>(null);
@@ -62,6 +75,8 @@ public class SettingsUIHandler {
             }
         }
 
+        view.getRoot().getChildren().sort(Comparator.comparingInt(
+            item -> position(PAGE_ORDER, String.valueOf(item.getValue().getUserData()))));
         return view;
     }
 
@@ -79,28 +94,29 @@ public class SettingsUIHandler {
         List<Runnable> applyListeners
     ) {
         var searchHandler = new SettingsSearchHandler(settings);
-        final Map<String, VBox> folderBoxes = new HashMap<>();
+        final Map<String, VBox> folderBoxes = new LinkedHashMap<>();
         final Map<String, SettingCategory> categoryMap = new HashMap<>();
-        final VBox vbox = new RRVBox();
+        final var vbox = new VBox();
+        vbox.getStyleClass().add("settings-page");
 
-        for (Setting<?> setting : settings) {
+        for (Setting<?> setting : settings.stream()
+            .sorted(Comparator.comparingInt(setting -> position(SETTING_ORDER, setting.getId()))).toList()) {
             SettingCategory category = setting.getCategory();
             String categoryId = category.id().toLowerCase(Locale.ROOT);
-            String[] split = setting.getTreePath().split("\\.");
-            if (split.length == 0 || !split[split.length - 1].equals(parent))
+            if (!setting.getTreePath().equals(parent))
                 continue;
 
             categoryMap.putIfAbsent(categoryId, category);
 
             if (!folderBoxes.containsKey(categoryId)) {
-                var folderBox = new RRVBox();
+                var folderBox = new VBox();
                 folderBox.getStyleClass().add("settings-folder-box");
                 folderBoxes.put(categoryId, folderBox);
             }
 
             VBox folderBox = folderBoxes.get(categoryId);
 
-            var settingBox = new RRVBox();
+            var settingBox = new VBox();
             settingBox.getStyleClass().add("settings-setting-box");
 
             Node settingNode = setting.createNode();
@@ -115,6 +131,13 @@ public class SettingsUIHandler {
             if (setting.isHasTitle()) {
                 titleNode = new LocalizedLabel(setting.getTitle());
                 titleNode.getStyleClass().add("section-label");
+                ((Label) titleNode).setWrapText(true);
+                ((Label) titleNode).setLabelFor(settingNode);
+                if (settingNode instanceof CheckBox checkBox) {
+                    checkBox.textProperty().bind(((Label) titleNode).textProperty());
+                    checkBox.setWrapText(true);
+                    titleNode = null;
+                }
             }
 
             Node descriptionNode = null;
@@ -145,13 +168,13 @@ public class SettingsUIHandler {
             String categoryId = entry.getKey();
             SettingCategory category = categoryMap.get(categoryId);
 
-            var headerBox = new RRHBox();
+            var headerBox = new HBox();
             headerBox.getStyleClass().add("settings-category-header");
 
             Node titleNode = null;
             if (category.hasTitle()) {
                 titleNode = new LocalizedLabel(category.title());
-                titleNode.getStyleClass().add("section-label");;
+                titleNode.getStyleClass().add("section-label");
             }
 
             var separator = new Separator();
@@ -162,7 +185,11 @@ public class SettingsUIHandler {
                 headerBox.getChildren().add(titleNode);
             }
             headerBox.getChildren().add(separator);
-            vbox.getChildren().add(headerBox);
+            boolean repeatsPageTitle = folderBoxes.size() == 1 && titleNode instanceof Label label &&
+                Objects.equals(label.getText(), L18n.localize("settings.tree." + parent));
+            if (!repeatsPageTitle) {
+                vbox.getChildren().add(headerBox);
+            }
 
             Node descriptionNode = null;
             if (category.hasDescription()) {

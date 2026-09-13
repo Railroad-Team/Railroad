@@ -98,15 +98,13 @@ public class KeybindsList extends RRVBox {
     }
 
     private void createHeader() {
-        var title = new LocalizedLabel("railroad.settings.keybinds.title");
-        title.getStyleClass().add("keybinds-header-title");
         var subtitle = new LocalizedLabel("railroad.settings.keybinds.subtitle");
         subtitle.getStyleClass().add("keybinds-header-subtitle");
 
         searchField.setLocalizedPlaceholder("railroad.settings.keybinds.search");
         searchField.textProperty().addListener((obs, oldText, newText) -> renderKeybindCards());
 
-        var headerBox = new VBox(title, subtitle);
+        var headerBox = new VBox(subtitle);
         headerBox.getStyleClass().add("keybinds-header");
 
         getChildren().addAll(headerBox, searchField);
