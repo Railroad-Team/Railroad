@@ -97,6 +97,19 @@ Run the `shadowJar` task.
 
 The compiled JAR will be available in `build/libs/`.
 
+## Validating JavaFX CSS
+
+Run `./gradlew validateJavafxCss` to parse every `.css` file under
+`src/main/resources/assets/railroad/styles` with the application's JavaFX version.
+The check runs in GitHub Actions and as part of `check`, independently of the formatting ratchet.
+It runs without a display or application startup and fails on parser diagnostics, including invalid
+JavaFX values and broken stylesheet imports. Diagnostics include the stylesheet URL and parser location.
+The browser CSS used by the Javadoc report is intentionally outside this scope.
+
+This is parser validation, not a complete runtime style check: unknown property names, unresolved
+looked-up colors, selector matches, image availability, and control-specific conversions may require
+applying styles to a live scene. Validator regression tests run with `./gradlew cssValidationTest`.
+
 ## Formatting code
 
 Run the formatter before committing Java, CSS, Groovy, or Gradle script changes:
@@ -109,6 +122,7 @@ Formatting is ratcheted from `HEAD` by default, so only changed and untracked fi
 CSS files under `src` use Prettier (requires Node.js and npm); Groovy files under `src` and Gradle scripts in the project root, `gradle`, and
 `src` use Groovy-Eclipse. Both use four-space indentation, trim trailing whitespace, and end files with a newline.
 CSS settings live in `build.gradle` and preserve spaces around selector combinators such as `>`.
+The wide CSS print width keeps long selectors inline because JavaFX rejects line breaks before `>`.
 Groovy settings live in `config/format/railroad-groovy.properties`.
 Gradle templates under `templates` are excluded because they contain template directives.
 

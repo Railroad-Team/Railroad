@@ -834,13 +834,7 @@ Text {
 }
 
 .combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:hover .font-icon,
-.combo-box-popup
-    > .list-view
-    > .virtual-flow
-    > .clipped-container
-    > .sheet
-    > .list-cell:filled:hover
-    .ikonli-font-icon {
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:hover .ikonli-font-icon {
     -fx-icon-color: -color-fg-default;
     -fx-fill: -color-fg-default;
 }
@@ -852,27 +846,9 @@ Text {
 }
 
 .combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected .font-icon,
-.combo-box-popup
-    > .list-view
-    > .virtual-flow
-    > .clipped-container
-    > .sheet
-    > .list-cell:filled:selected
-    .ikonli-font-icon,
-.combo-box-popup
-    > .list-view
-    > .virtual-flow
-    > .clipped-container
-    > .sheet
-    > .list-cell:filled:selected:hover
-    .font-icon,
-.combo-box-popup
-    > .list-view
-    > .virtual-flow
-    > .clipped-container
-    > .sheet
-    > .list-cell:filled:selected:hover
-    .ikonli-font-icon {
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected .ikonli-font-icon,
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected:hover .font-icon,
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected:hover .ikonli-font-icon {
     -fx-icon-color: -color-fg-default;
     -fx-fill: -color-fg-default;
 }
@@ -1016,12 +992,7 @@ Text {
 }
 
 .table-view:focused > .virtual-flow > .clipped-container > .sheet > .table-row-cell .table-cell:selected,
-.tree-table-view:focused
-    > .virtual-flow
-    > .clipped-container
-    > .sheet
-    > .tree-table-row-cell
-    .tree-table-cell:selected {
+.tree-table-view:focused > .virtual-flow > .clipped-container > .sheet > .tree-table-row-cell .tree-table-cell:selected {
     -fx-background-color: -color-cell-bg-selected-focused;
 }
 
@@ -1324,18 +1295,8 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-alignment: BASELINE_RIGHT;
 }
 
-.table-view:constrained-resize
-    > .virtual-flow
-    > .clipped-container
-    > .sheet
-    > .table-row-cell
-    > .table-cell:last-visible,
-.tree-table-view:constrained-resize
-    > .virtual-flow
-    > .clipped-container
-    > .sheet
-    > .tree-table-row-cell
-    > .tree-table-cell:last-visible {
+.table-view:constrained-resize > .virtual-flow > .clipped-container > .sheet > .table-row-cell > .table-cell:last-visible,
+.tree-table-view:constrained-resize > .virtual-flow > .clipped-container > .sheet > .tree-table-row-cell > .tree-table-cell:last-visible {
     -fx-border-color: transparent;
 }
 
@@ -3221,12 +3182,7 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 
 .chart-bubble {
     -fx-bubble-fill: -color-chart-1-alpha70;
-    -fx-background-color: radial-gradient(
-        center 50% 50%,
-        radius 80%,
-        derive(-fx-bubble-fill, 20%),
-        derive(-fx-bubble-fill, -30%)
-    );
+    -fx-background-color: radial-gradient(center 50% 50%, radius 80%, derive(-fx-bubble-fill, 20%), derive(-fx-bubble-fill, -30%));
 }
 
 .default-color0.chart-bubble {
@@ -3263,14 +3219,7 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 
 .chart-bar {
     -fx-bar-fill: -color-chart-1;
-    -fx-background-color: linear-gradient(
-        to right,
-        derive(-fx-bar-fill, -4%),
-        derive(-fx-bar-fill, -1%),
-        derive(-fx-bar-fill, 0%),
-        derive(-fx-bar-fill, -1%),
-        derive(-fx-bar-fill, -6%)
-    );
+    -fx-background-color: linear-gradient(to right, derive(-fx-bar-fill, -4%), derive(-fx-bar-fill, -1%), derive(-fx-bar-fill, 0%), derive(-fx-bar-fill, -1%), derive(-fx-bar-fill, -6%));
     -fx-background-insets: 0;
 }
 
@@ -3284,14 +3233,7 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 
 .bar-chart:horizontal .chart-bar,
 .stacked-bar-chart:horizontal .chart-bar {
-    -fx-background-color: linear-gradient(
-        to bottom,
-        derive(-fx-bar-fill, -4%),
-        derive(-fx-bar-fill, -1%),
-        derive(-fx-bar-fill, 0%),
-        derive(-fx-bar-fill, -1%),
-        derive(-fx-bar-fill, -6%)
-    );
+    -fx-background-color: linear-gradient(to bottom, derive(-fx-bar-fill, -4%), derive(-fx-bar-fill, -1%), derive(-fx-bar-fill, 0%), derive(-fx-bar-fill, -1%), derive(-fx-bar-fill, -6%));
 }
 
 .default-color0.chart-bar {

@@ -43,6 +43,9 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
 
+      - name: Validate JavaFX CSS
+        run: ./gradlew cssValidationTest validateJavafxCss
+
       - name: Check formatting and build
         env:
           FORMAT_RATCHET_FROM: ${{ github.event.pull_request.base.sha || github.event.before }}

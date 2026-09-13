@@ -13,9 +13,12 @@ sourceSets {
     formatter {
         java.srcDir 'src/formatter/java'
     }
+    cssValidation
+    cssValidationTest
 }
 
 apply from: 'gradle/javadoc-coverage.gradle'
+apply from: 'gradle/css-validation.gradle'
 
 group 'dev.railroadide'
 version '0.1.0'
@@ -82,6 +85,10 @@ tasks.named("run") {
 
 javafx {
     version = '25'
+    configurations = [
+        'implementation',
+        'cssValidationImplementation'
+    ]
     modules = [
         'javafx.controls',
         'javafx.swing',
@@ -164,7 +171,8 @@ spotless {
 
     java {
         target 'src/main/java/**/*.java', 'src/test/java/**/*.java', 'src/formatter/java/**/*.java',
-        'src/javadocCoverageTool/java/**/*.java', 'src/javadocCoverageTest/java/**/*.java'
+        'src/javadocCoverageTool/java/**/*.java', 'src/javadocCoverageTest/java/**/*.java',
+        'src/cssValidation/java/**/*.java', 'src/cssValidationTest/java/**/*.java'
         eclipse().configFile('config/format/railroad-eclipse-formatter.xml')
         trimTrailingWhitespace()
         endWithNewline()
@@ -172,7 +180,8 @@ spotless {
 
     format 'css', {
         target 'src/**/*.css'
-        prettier('3.6.2').config(['parser': 'css', 'tabWidth': 4, 'printWidth': 120])
+        // JavaFX rejects selectors wrapped before a child combinator.
+        prettier('3.6.2').config(['parser': 'css', 'tabWidth': 4, 'printWidth': 1000])
         trimTrailingWhitespace()
         endWithNewline()
     }
@@ -194,7 +203,8 @@ spotless {
 }
 
 def semanticStyleSources = files('src/main/java', 'src/test/java', 'src/formatter/java',
-        'src/javadocCoverageTool/java', 'src/javadocCoverageTest/java')
+        'src/javadocCoverageTool/java', 'src/javadocCoverageTest/java',
+        'src/cssValidation/java', 'src/cssValidationTest/java')
 def semanticStyleArguments = { String mode ->
     def arguments = [mode]
     if (providers.gradleProperty('formatAll').isPresent()) {
@@ -241,6 +251,7 @@ tasks.register('semanticFormatCheck', JavaExec) {
             // Passing the dependency classpath as an argument exceeds Windows' command-line limit.
             def compilerClasspath = new File(temporaryDir, 'compiler-classpath.txt')
             compilerClasspath.setText(files(configurations.testCompileClasspath,
+                    configurations.cssValidationTestCompileClasspath,
                     configurations.javadocCoverageTestCompileClasspath).asPath, 'UTF-8')
             environment 'RAILROAD_FORMAT_CLASSPATH_FILE', compilerClasspath.absolutePath
         }

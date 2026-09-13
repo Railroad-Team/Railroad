@@ -67,13 +67,7 @@
     -fx-background-color: -color-fg-default;
 }
 
-.rr-tree-view
-    > .virtual-flow
-    > .clipped-container
-    > .sheet
-    > .tree-cell:expanded
-    > .tree-disclosure-node:hover
-    > .arrow {
+.rr-tree-view > .virtual-flow > .clipped-container > .sheet > .tree-cell:expanded > .tree-disclosure-node:hover > .arrow {
     -fx-background-color: -color-fg-default;
 }
 
