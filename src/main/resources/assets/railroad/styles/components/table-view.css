@@ -101,7 +101,6 @@
 }
 
 /* Table view variant */
-
 .rr-list-view.striped .table-cell:filled:odd {
     -fx-background-color: -color-bg-subtle;
 }

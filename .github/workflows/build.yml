@@ -23,6 +23,11 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
 
+      - name: Set up Node.js for CSS formatting
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       # Cache Gradle dependencies (speeds up builds)
       - name: Cache Gradle packages
         uses: actions/cache@v4

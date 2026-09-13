@@ -1,6 +1,7 @@
 .theme-download-pane {
     -fx-background-color: -color-surface-editor;
 }
+
 .theme-download-pane .theme-download-header {
     -fx-background-color: -color-surface-panel;
     -fx-padding: 16px 20px;
@@ -8,25 +9,30 @@
     -fx-border-color: -color-border-subtle;
     -fx-border-width: 0 0 1px 0;
 }
+
 .theme-download-pane .theme-dialog-title {
     -fx-font-size: 16px;
     -fx-font-weight: bold;
 }
+
 .theme-download-pane .theme-download-description,
 .theme-download-pane .theme-download-status,
 .theme-download-pane .theme-download-size {
     -fx-font-size: 12px;
     -fx-text-fill: -color-fg-muted;
 }
+
 .theme-download-pane .theme-download-themes-section {
     -fx-padding: 16px 20px;
     -fx-spacing: 12px;
 }
+
 .theme-download-pane .theme-download-themes-label,
 .theme-download-pane .theme-download-name {
     -fx-font-size: 13px;
     -fx-font-weight: bold;
 }
+
 .theme-download-pane .list-view {
     -fx-background-color: -color-surface-editor;
     -fx-border-color: -color-border-subtle;
@@ -36,32 +42,38 @@
     -fx-padding: 0;
     -fx-effect: null;
 }
+
 .theme-download-pane .list-cell {
     -fx-background-color: transparent;
     -fx-padding: 12px;
     -fx-border-color: -color-border-subtle;
     -fx-border-width: 0 0 1px 0;
 }
+
 .theme-download-pane .list-cell:filled:hover,
 .theme-download-pane .list-cell:filled:selected {
     -fx-background-color: -color-surface-panel;
 }
+
 .theme-download-pane .list-cell:empty {
     -fx-background-color: transparent;
     -fx-border-width: 0;
 }
+
 .theme-download-pane .theme-download-content,
 .theme-download-pane .theme-download-info,
 .theme-download-pane .theme-download-actions {
     -fx-background-color: transparent;
     -fx-padding: 0;
 }
+
 .theme-download-pane .theme-download-footer {
     -fx-background-color: -color-surface-frame;
     -fx-padding: 12px 16px;
     -fx-border-color: -color-border-subtle;
     -fx-border-width: 1px 0 0 0;
 }
+
 .theme-download-pane .button {
     -fx-min-height: 30px;
     -fx-pref-height: 30px;

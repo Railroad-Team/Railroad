@@ -48,7 +48,14 @@
     -fx-max-height: 1.75em;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-file-icon .ikonli-font-icon {
+.tab-pane
+    > .tab-header-area
+    > .headers-region
+    > .tab.editor-tab
+    > .tab-container
+    > .tab-label
+    .editor-tab-file-icon
+    .ikonli-font-icon {
     -fx-icon-size: 16px;
     -fx-fill: -color-fg-muted;
     -fx-icon-color: -color-fg-muted;
@@ -82,11 +89,22 @@
 
 /* The top accent identifies selection; the canvas meets the tab without a seam. */
 .tab-pane.editor-tab-pane > .tab-header-area > .headers-region > .tab.editor-tab:selected {
-    -fx-background-color: -color-accent-emphasis, -color-surface-editor;
-    -fx-background-insets: 0, 2px 0 0 0;
+    -fx-background-color:
+        -color-accent-emphasis,
+        -color-surface-editor;
+    -fx-background-insets:
+        0,
+        2px 0 0 0;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-action-slot .ikonli-font-icon {
+.tab-pane
+    > .tab-header-area
+    > .headers-region
+    > .tab.editor-tab
+    > .tab-container
+    > .tab-label
+    .editor-tab-action-slot
+    .ikonli-font-icon {
     -fx-icon-size: 12px;
 }
 
@@ -94,7 +112,14 @@
     -fx-icon-size: 12px;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-action-slot.combined-status .editor-tab-status-icon {
+.tab-pane
+    > .tab-header-area
+    > .headers-region
+    > .tab.editor-tab
+    > .tab-container
+    > .tab-label
+    .editor-tab-action-slot.combined-status
+    .editor-tab-status-icon {
     -fx-icon-size: 6px;
     -fx-translate-x: 4px;
     -fx-translate-y: -4px;
@@ -110,8 +135,22 @@
     -fx-icon-color: -color-fg-muted;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label .editor-tab-action-slot:hover .editor-tab-pin-icon,
-.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label .editor-tab-action-slot:hover .editor-tab-close-icon {
+.tab-pane
+    > .tab-header-area
+    > .headers-region
+    > .tab
+    > .tab-container
+    > .tab-label
+    .editor-tab-action-slot:hover
+    .editor-tab-pin-icon,
+.tab-pane
+    > .tab-header-area
+    > .headers-region
+    > .tab
+    > .tab-container
+    > .tab-label
+    .editor-tab-action-slot:hover
+    .editor-tab-close-icon {
     -fx-fill: -color-fg-default;
     -fx-icon-color: -color-fg-default;
 }

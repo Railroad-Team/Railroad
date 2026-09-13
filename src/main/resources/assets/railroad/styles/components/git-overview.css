@@ -36,7 +36,6 @@
     -fx-font-weight: 600;
 }
 
-
 .git-overview-table-value-text,
 .git-overview-identity-value-text {
     -fx-fill: -color-fg-default;

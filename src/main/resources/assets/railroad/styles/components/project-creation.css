@@ -115,23 +115,33 @@
     -fx-padding: 0;
     -fx-border-width: 0;
 }
+
 .project-creation-root .project-creation-card {
     -fx-background-color: transparent;
     -fx-padding: 28px;
     -fx-spacing: 20px;
     -fx-max-width: 800px;
 }
-.project-creation-root .project-creation-title { -fx-font-size: 20px; }
-.project-creation-root .project-creation-subtitle { -fx-font-size: 13px; }
+
+.project-creation-root .project-creation-title {
+    -fx-font-size: 20px;
+}
+
+.project-creation-root .project-creation-subtitle {
+    -fx-font-size: 13px;
+}
+
 .project-creation-root .rr-chip {
     -fx-background-color: transparent;
     -fx-border-width: 0;
     -fx-padding: 4px;
 }
+
 .project-creation-root .rr-logs-pane > .title {
     -fx-background-radius: 3px;
     -fx-padding: 10px;
 }
+
 .project-creation-root .button {
     -fx-background-radius: 3px;
     -fx-border-radius: 3px;
