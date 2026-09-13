@@ -215,3 +215,29 @@
     -fx-padding: 32px;
     -fx-max-width: Infinity;
 }
+
+/* Empty editor welcome surface. */
+.ide-welcome-root,
+.ide-welcome-root > .viewport {
+    -fx-background-color: -color-surface-editor;
+    -fx-border-width: 0;
+}
+.ide-welcome-root .label { -fx-text-fill: -color-fg-default; -fx-font-size: 13px; }
+.ide-welcome-root .ide-welcome-text { -fx-font-size: 20px; -fx-font-weight: bold; }
+.ide-welcome-root .section-title { -fx-font-size: 14px; -fx-font-weight: bold; }
+.ide-welcome-root .ide-description-text,
+.ide-welcome-root .section-description { -fx-text-fill: -color-fg-muted; -fx-font-size: 13px; }
+.ide-welcome-root .feature-item { -fx-padding: 5px 0; }
+.ide-welcome-root .button {
+    -fx-min-height: 30px;
+    -fx-pref-height: 30px;
+    -fx-font-size: 13px;
+    -fx-padding: 5px 12px;
+    -fx-background-radius: 3px;
+    -fx-border-radius: 3px;
+    -fx-effect: null;
+}
+
+.ide-welcome-root .features-grid { -fx-spacing: 8px; }
+.ide-welcome-root .feature-item { -fx-background-radius: 0; -fx-border-width: 0; }
+.ide-welcome-root .ikonli-font-icon { -fx-icon-size: 16px; }

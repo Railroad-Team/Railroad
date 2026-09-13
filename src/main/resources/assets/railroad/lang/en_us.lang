@@ -1253,3 +1253,9 @@ railroad.settings.terminal.integration.title=Windows Terminal Integration
 railroad.settings.terminal.integration.description=Configure access to Windows Terminal settings.
 railroad.settings.terminal.font.title=Font
 railroad.settings.terminal.font.description=Choose how the embedded terminal selects its font.
+
+railroad.project.creation.status.creating.title=Creating project
+railroad.project.creation.status.creating.subtitle=Setting up %s
+railroad.project.creation.status.logs=Build output
+railroad.project.creation.status.task=Preparing project?
+railroad.project.creation.cancel.tooltip=Cancel project creation

@@ -12,10 +12,7 @@ import dev.railroadide.railroad.welcome.WelcomePane;
 import dev.railroadide.railroad.window.WindowBuilder;
 import javafx.application.Platform;
 import javafx.concurrent.Service;
-import javafx.stage.Stage;
 import lombok.Getter;
-
-import java.io.IOException;
 
 /**
  * Hosts project creation progress and connects service completion to opening the new project in the IDE.
@@ -45,7 +42,7 @@ public class ProjectCreationPane extends RRBorderPane {
 
     /**
      * Displays the progress view, installs cancellation and completion handlers, and starts the service.
-     * Successful completion opens the project; failure presents an error dialog.
+     * Successful completion opens the project; failure remains visible in the output pane.
      *
      * @param service creation service ready to be started on the JavaFX application thread
      */
@@ -54,20 +51,7 @@ public class ProjectCreationPane extends RRBorderPane {
             service,
             service::cancel,
             () -> openInIDE(context),
-            exception -> WindowBuilder.createExceptionAlert(
-                "railroad.project.creation.error.title",
-                "railroad.project.creation.error.header",
-                exception,
-                () -> {
-                    try {
-                        taos.close();
-                    } catch (IOException exception1) {
-                        Railroad.LOGGER.error("Failed to close TextAreaOutputStream", exception1);
-                    }
-
-                    ((Stage) view.sceneProperty().get().getWindow()).close();
-                    returnToWelcome();
-                }));
+            exception -> Railroad.LOGGER.error("Project creation failed", exception));
 
         setCenter(view);
         service.start();

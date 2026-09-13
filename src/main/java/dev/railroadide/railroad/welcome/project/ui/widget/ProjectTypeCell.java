@@ -3,17 +3,17 @@ package dev.railroadide.railroad.welcome.project.ui.widget;
 import dev.railroadide.railroad.project.ProjectType;
 import javafx.scene.control.ListCell;
 import javafx.scene.image.ImageView;
-import javafx.scene.text.Font;
 
-/** Displays a project type's icon and name, applying selection styling when the item is refreshed. */
+/** Displays a project type's icon and name; native cell states drive selection styling. */
 public class ProjectTypeCell extends ListCell<ProjectType> {
     private final ImageView imageView = new ImageView();
 
-    /** Creates an empty cell with a 16-pixel icon area and font. */
+    /** Creates an empty cell with a 16-pixel icon area. */
     public ProjectTypeCell() {
         this.imageView.setFitWidth(16);
         this.imageView.setFitHeight(16);
-        setFont(Font.font(16));
+        getStyleClass().add("project-type-cell");
+        setGraphicTextGap(10);
     }
 
     /**
@@ -29,18 +29,12 @@ public class ProjectTypeCell extends ListCell<ProjectType> {
         if (empty || item == null) {
             setGraphic(null);
             setText(null);
-            getStyleClass().remove("project-type-cell");
-            getStyleClass().remove("selected");
+
         } else {
             this.imageView.setImage(item.getIcon());
             setGraphic(this.imageView);
             setText(item.getName());
-            getStyleClass().add("project-type-cell");
-            if (isSelected() || isFocused()) {
-                getStyleClass().add("selected");
-            } else {
-                getStyleClass().remove("selected");
-            }
+
         }
     }
 }

@@ -43,7 +43,8 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
      * @param params Parameters used to construct the primary component.
      */
     public InformativeLabeledHBox(String labelKey, boolean required, Map<String, Object> params) {
-        super(5);
+        super(8);
+        getStyleClass().add("form-field-group");
 
         this.labeledHBox = new LabeledHBox<>(labelKey, required, params) {
             @Override
@@ -155,6 +156,7 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
     ) {
         var informationLabel = new InformationLabel(informativeText, informationType, args);
         informationLabel.visibleProperty().bind(informativeTextVisibleBinding.apply(labeledHBox.getPrimaryComponent()));
+        informationLabel.managedProperty().bind(informationLabel.visibleProperty());
         informationLabels.add(informationLabel);
         getChildren().add(informationLabel);
 
@@ -220,6 +222,7 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
         public InformationLabel(String key, InformationType informationType, Object... args) {
             super(key, args);
             this.informationType = informationType;
+            setWrapText(true);
 
             switch (informationType) {
                 case ERROR -> {

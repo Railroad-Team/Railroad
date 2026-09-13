@@ -23,29 +23,32 @@ import javafx.scene.control.Separator;
 import javafx.scene.control.TextArea;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
-import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 import lombok.Getter;
 
 import java.time.Instant;
 import java.util.Objects;
 import java.util.function.Consumer;
+import dev.railroadide.railroad.utility.StringUtils;
+import javafx.scene.layout.VBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 
 /**
  * JavaFX view displaying project creation progress, the current task, elapsed time, and expandable logs.
  * Construct and bind this view on the JavaFX application thread.
  */
 public class ProjectCreationView extends RRBorderPane {
-    private final StackPane progressStack = new RRStackPane();
+    private final LocalizedLabel titleLabel = new LocalizedLabel("railroad.project.creation.status.creating.title");
+    private final StackPane progressStack = new StackPane();
     private final MFXProgressSpinner spinner = new MFXProgressSpinner();
 
-    private final HBox chipRow = new RRHBox();
+    private final HBox chipRow = new HBox();
     private final Label taskChip = chip("…");
     private final Label timeChip = chip("00:00");
 
-    private final LocalizedTitledPane logsPane = new LocalizedTitledPane();
+    private final LocalizedTitledPane logsPane = new LocalizedTitledPane(null, "railroad.project.creation.status.logs");
     @Getter
     private final TextArea logArea = new TextArea();
 
@@ -60,20 +63,29 @@ public class ProjectCreationView extends RRBorderPane {
      * @param data project data supplying the name displayed in the subtitle
      */
     public ProjectCreationView(ProjectData data) {
-        StackPane bg = fancyBackground();
-        setCenter(bg);
+        getStyleClass().add("project-creation-root");
+        var bg = new StackPane();
+        var scroll = new ScrollPane(bg);
+        scroll.setFitToWidth(true);
+        scroll.setFitToHeight(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        setCenter(scroll);
 
-        var card = new RRVBox();
+        var card = new VBox();
         card.setAlignment(Pos.CENTER);
+        card.setMinHeight(Region.USE_PREF_SIZE);
         card.getStyleClass().add("project-creation-card");
 
-        var title = new LocalizedLabel("railroad.project.creation.status.creating.title");
+        var title = titleLabel;
+        title.getStyleClass().add("project-creation-title");
 
         var subtitle = new LocalizedLabel(
             "railroad.project.creation.status.creating.subtitle",
             data.getAsString(ProjectData.DefaultKeys.NAME));
 
-        var header = new RRVBox();
+        subtitle.getStyleClass().add("project-creation-subtitle");
+        subtitle.setWrapText(true);
+        var header = new VBox();
         header.setAlignment(Pos.CENTER);
         header.getStyleClass().add("project-creation-header");
         header.getChildren().addAll(title, subtitle);
@@ -83,6 +95,10 @@ public class ProjectCreationView extends RRBorderPane {
         spinner.setPrefSize(160, 160);
         progressStack.getChildren().addAll(spinner);
 
+        taskChip.setMinWidth(0);
+        taskChip.setWrapText(true);
+        timeChip.setMinWidth(55);
+        HBox.setHgrow(taskChip, Priority.ALWAYS);
         chipRow.setAlignment(Pos.CENTER);
         chipRow.getStyleClass().add("project-creation-chip-row");
         chipRow.getChildren().addAll(taskChip, timeChip);
@@ -91,23 +107,20 @@ public class ProjectCreationView extends RRBorderPane {
         logArea.setWrapText(true);
         logArea.getStyleClass().add("rr-log-area");
         logArea.setPrefRowCount(12);
-
-        var logScroll = new ScrollPane(logArea);
-        logScroll.setFitToWidth(true);
-        logScroll.setFitToHeight(true);
-        logScroll.getStyleClass().add("rr-log-scroll");
+        logArea.setMinHeight(220);
 
         logsPane.setKey("railroad.project.creation.status.logs");
-        logsPane.setContent(logScroll);
+        logsPane.setContent(logArea);
         logsPane.setExpanded(false);
         logsPane.getStyleClass().add("rr-logs-pane");
 
         cancelBtn.setVariant(ButtonVariant.SECONDARY);
         cancelBtn.setTooltip(new LocalizedTooltip("railroad.project.creation.cancel.tooltip"));
-        var footer = new RRHBox();
+        var footer = new HBox();
         footer.setAlignment(Pos.CENTER);
         footer.getStyleClass().add("project-creation-footer");
         footer.getChildren().add(cancelBtn);
+        setBottom(footer);
 
         card.getChildren().addAll(
             header,
@@ -115,8 +128,7 @@ public class ProjectCreationView extends RRBorderPane {
             progressStack,
             chipRow,
             new Separator(),
-            logsPane,
-            footer);
+            logsPane);
 
         bg.getChildren().add(card);
         StackPane.setAlignment(card, Pos.CENTER);
@@ -166,7 +178,7 @@ public class ProjectCreationView extends RRBorderPane {
             var key = service.getMessage();
             if (key == null || key.isBlank())
                 return L18n.localize("railroad.project.creation.status.task");
-            return L18n.localize(key);
+            return key.startsWith("railroad.") ? L18n.localize(key) : key;
         }, service.messageProperty()));
 
         // Elapsed time ticker
@@ -177,8 +189,23 @@ public class ProjectCreationView extends RRBorderPane {
                 onSuccess.run();
             }
         });
+        service.setOnCancelled(_ -> {
+            stopTicker();
+            ProjectCreationPane.returnToWelcome();
+        });
         service.setOnFailed(_ -> {
             stopTicker();
+            titleLabel.setKey("railroad.project.creation.error.title");
+            progressStack.setVisible(false);
+            progressStack.setManaged(false);
+            taskChip.textProperty().unbind();
+            taskChip.setText(L18n.localize("railroad.project.creation.error.header"));
+            logArea.appendText("\n" + StringUtils.exceptionToString(service.getException()));
+            logsPane.setExpanded(true);
+            cancelBtn.disableProperty().unbind();
+            cancelBtn.setDisable(false);
+            cancelBtn.setLocalizedText("railroad.generic.back");
+            cancelBtn.setOnAction(event -> ProjectCreationPane.returnToWelcome());
             if (onError != null) {
                 onError.accept(service.getException());
             }
@@ -230,21 +257,4 @@ public class ProjectCreationView extends RRBorderPane {
         return l;
     }
 
-    private static StackPane fancyBackground() {
-        var root = new StackPane();
-        root.getStyleClass().add("rr-bg");
-
-        var gradient = new Region();
-        gradient.getStyleClass().add("rr-gradient");
-
-        var noiseGlass = new StackPane();
-        noiseGlass.getStyleClass().add("rr-glass");
-        var clip = new Rectangle();
-        clip.widthProperty().bind(root.widthProperty());
-        clip.heightProperty().bind(root.heightProperty());
-        noiseGlass.setClip(clip);
-
-        root.getChildren().addAll(gradient, noiseGlass);
-        return root;
-    }
 }
