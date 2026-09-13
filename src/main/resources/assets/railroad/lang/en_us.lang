@@ -460,6 +460,10 @@ railroad.settings.ide.project_explorer.compact_middle_packages.title=Compact Mid
 railroad.settings.ide.project_explorer.compact_middle_packages.description=Display single-child Java package chains in one row, such as dev.railroadide.railroad. Disable to show each package directory separately.
 railroad.settings.ide.project_explorer.synchronize_project_explorer_with_active_tab.title=Synchronize Project Explorer with Active Tab
 railroad.settings.ide.project_explorer.synchronize_project_explorer_with_active_tab.description=Automatically select and reveal the active editor file in the Project Explorer.
+railroad.settings.ide.status_bar.title=Status Bar
+railroad.settings.ide.status_bar.description=Configure the information displayed in the IDE status bar.
+railroad.settings.ide.status_bar.caret_position_format.title=Caret Position Format
+railroad.settings.ide.status_bar.caret_position_format.description=Choose how the caret position is displayed in the status bar.
 
 # VCS Settings
 settings.tree.vcs=Version Control

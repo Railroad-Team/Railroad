@@ -21,6 +21,8 @@ import dev.railroadide.railroad.window.WindowBuilder;
 import io.github.raghultech.markdown.javafx.preview.MarkdownWebView;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
@@ -71,7 +73,6 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     @Getter
     private final Path markdownFile;
 
-    private TextEditorPane textEditorPane;
     private WebView webViewPane;
 
     private final HBox topRow;
@@ -83,11 +84,18 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
 
     private int scrollAmount;
 
+    private final ObjectProperty<TextEditorPane> editor =
+        new SimpleObjectProperty<>();
+
+    public ObjectProperty<TextEditorPane> editorProperty() {
+        return editor;
+    }
+
     @Override
     public void close() {
-        if (textEditorPane != null) {
-            textEditorPane.close();
-            textEditorPane = null;
+        if (editorProperty().get() != null) {
+            editorProperty().get().close();
+            editorProperty().setValue(null);
         }
         Settings.THEME.removeListener(themeListener);
     }
@@ -136,57 +144,61 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         showContent(pane, topRow);
     }
 
+    public TextEditorPane getMarkdownEditorPane(){
+        return editorProperty().get();
+    }
+
     private TextEditorPane codeView() {
-        if (textEditorPane != null) {
+        if (editorProperty().get() != null) {
             restoreEditorScroll();
-            return textEditorPane;
+            return editorProperty().get();
         }
 
-        textEditorPane = new TextEditorPane(markdownFile, "markdown");
-        textEditorPane.textProperty().addListener(
+        editorProperty().setValue(new TextEditorPane(markdownFile, "markdown"));
+        editorProperty().get().textProperty().addListener(
             (_, _, newValue) -> preview.setContent(newValue));
 
-        textEditorPane.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+        editorProperty().get().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode().equals(KeyCode.ENTER)) {
-                int caret = textEditorPane.getCaretPosition();
-                String upToCaret = textEditorPane.getText(0, caret);
+                int caret = editorProperty().get().getCaretPosition();
+                String upToCaret = editorProperty().get().getText(0, caret);
                 String lastLine = upToCaret.substring(upToCaret.lastIndexOf("\n") + 1);
 
                 if (NUMBERED_LIST_PATTERN.matcher(lastLine).matches()) {
                     event.consume();
 
                     int previousLineNumber = Integer.parseInt(lastLine.split("\\.")[0]);
-                    textEditorPane.insertText(caret, "\n" + (previousLineNumber + 1) + ". ");
+                    editorProperty().get().insertText(caret, "\n" + (previousLineNumber + 1) + ". ");
                 }
 
                 if (BULLET_LIST_PATTERN.matcher(lastLine).matches()) {
                     event.consume();
 
-                    textEditorPane.insertText(caret, "\n* ");
+                    editorProperty().get().insertText(caret, "\n* ");
                 }
 
                 if (DASH_LIST_PATTERN.matcher(lastLine).matches()) {
                     event.consume();
 
-                    textEditorPane.insertText(caret, "\n- ");
+                    editorProperty().get().insertText(caret, "\n- ");
                 }
 
                 if (HTML_LIST_ITEM_PATTERN.matcher(lastLine).matches()) {
                     event.consume();
 
                     String item = "\n<li></li>";
-                    textEditorPane.insertText(caret, item);
-                    textEditorPane.moveTo(caret + "\n<li>".length());
+                    editorProperty().get().insertText(caret, item);
+                    editorProperty().get().moveTo(caret + "\n<li>".length());
                 }
             }
         });
 
-        textEditorPane.addEventFilter(ScrollEvent.SCROLL,
-            _ -> scrollAmount = (int) textEditorPane.getEstimatedScrollY());
+        editorProperty().get().addEventFilter(ScrollEvent.SCROLL,
+            _ -> scrollAmount = (int) editorProperty().get().getEstimatedScrollY());
 
         restoreEditorScroll();
 
-        return textEditorPane;
+        return editorProperty().get();
     }
 
     private SplitPane splitView() {
@@ -228,8 +240,8 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     }
 
     private void restoreEditorScroll() {
-        if (textEditorPane != null) {
-            Platform.runLater(() -> textEditorPane.scrollToPixel(0, scrollAmount));
+        if (editorProperty().get() != null) {
+            Platform.runLater(() -> editorProperty().get().scrollToPixel(0, scrollAmount));
         }
     }
 
@@ -376,7 +388,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     }
 
     private TextEditorPane editorForInsertion() {
-        return textEditorPane == null ? codeView() : textEditorPane;
+        return editorProperty() == null ? codeView() : editorProperty().get();
     }
 
     /**
@@ -391,8 +403,8 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         altTextField.getStyleClass().add("markdown-image-dialog-field");
         uriTextField.getStyleClass().add("markdown-image-dialog-field");
 
-        if (textEditorPane != null && !textEditorPane.getSelectedText().isBlank()) {
-            altTextField.setText(textEditorPane.getSelectedText());
+        if (editorProperty() != null && !editorProperty().get().getSelectedText().isBlank()) {
+            altTextField.setText(editorProperty().get().getSelectedText());
         }
 
         var form = new RRVBox(22, altTextField, uriTextField);
