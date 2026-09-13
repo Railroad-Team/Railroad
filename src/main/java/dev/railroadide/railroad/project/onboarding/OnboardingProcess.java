@@ -113,7 +113,11 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
         runIn(scene::setRoot);
     }
 
-    /** Starts onboarding inside a caller-owned container. */
+    /**
+     * Starts onboarding inside a caller-owned container.
+     *
+     * @param showView callback that displays the onboarding UI in the caller's container
+     */
     public void runIn(Consumer<? super N> showView) {
         String firstStepId = flow.getFirstStepId();
         if (firstStepId == null || firstStepId.isEmpty())

@@ -9,6 +9,12 @@ import dev.railroadide.railroad.project.onboarding.creation.ui.ProjectCreationPa
 public final class EmbeddedProjectOnboarding extends BorderPane {
     private boolean started;
 
+    /**
+     * Creates a wizard host that starts onboarding once it is first attached to a scene.
+     * Setup views appear in the center of this pane; project creation views replace the scene root.
+     *
+     * @param start action that starts onboarding using the supplied callback to display its views
+     */
     public EmbeddedProjectOnboarding(Consumer<Consumer<Parent>> start) {
         setMinSize(0, 0);
         sceneProperty().addListener((observable, previous, scene) -> {

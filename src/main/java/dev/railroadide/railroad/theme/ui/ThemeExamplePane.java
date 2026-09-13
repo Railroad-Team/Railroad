@@ -46,7 +46,12 @@ public class ThemeExamplePane {
         this(themeName, null);
     }
 
-    /** Opens a theme preview owned by the requesting window. */
+    /**
+     * Opens a theme preview owned by the requesting window.
+     *
+     * @param themeName the name of the theme to preview
+     * @param owner the window that owns the preview, or {@code null} for an application-modal preview
+     */
     public ThemeExamplePane(final String themeName, Window owner) {
         this.themeName = themeName;
         var previewContent = createPreviewContent();

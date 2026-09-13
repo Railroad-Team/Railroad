@@ -69,7 +69,11 @@ public class NeoforgeProjectOnboarding {
         startIn(scene::setRoot);
     }
 
-    /** Runs setup and creation in the supplied view host. */
+    /**
+     * Runs setup and creation in the supplied view host.
+     *
+     * @param showView callback that displays the setup UI and subsequent project creation view
+     */
     public void startIn(Consumer<Parent> showView) {
         var flow = OnboardingFlow.builder()
             .addStep("project_details", this::createProjectDetailsStep)

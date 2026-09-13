@@ -19,7 +19,13 @@ public final class JdkBrandIcons {
     private JdkBrandIcons() {
     }
 
-    /** Returns cached artwork for a brand with a bundled SVG image. */
+    /**
+     * Returns cached artwork for a brand, rendering its bundled SVG image on first use.
+     *
+     * @param brand JDK vendor whose bundled SVG artwork should be loaded
+     * @return the rendered vendor image, cached for subsequent calls
+     * @throws Exception if the bundled artwork cannot be read or rendered
+     */
     public static Image get(JDK.Brand brand) throws Exception {
         Image cached = CACHE.get(brand);
         if (cached != null)
