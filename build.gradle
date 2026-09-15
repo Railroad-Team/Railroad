@@ -180,6 +180,7 @@ spotless {
 
     format 'css', {
         target 'src/**/*.css'
+        lineEndings 'UNIX'
         // JavaFX rejects selectors wrapped before a child combinator.
         prettier('3.6.2').config(['parser': 'css', 'tabWidth': 4, 'printWidth': 1000])
         trimTrailingWhitespace()
