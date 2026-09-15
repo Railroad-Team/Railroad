@@ -13,9 +13,12 @@ sourceSets {
     formatter {
         java.srcDir 'src/formatter/java'
     }
+    cssValidation
+    cssValidationTest
 }
 
 apply from: 'gradle/javadoc-coverage.gradle'
+apply from: 'gradle/css-validation.gradle'
 
 group 'dev.railroadide'
 version '0.1.0'
@@ -33,8 +36,12 @@ repositories {
     mavenLocal()
     mavenCentral()
     maven { url 'https://repo.gradle.org/gradle/libs-releases' }
-    maven { url 'https://github.com/javaterminal/terminalfx/raw/master/releases' }
-    maven { url 'https://packages.jetbrains.team/maven/p/ij/intellij-dependencies' }
+    maven {
+        url 'https://github.com/javaterminal/terminalfx/raw/master/releases'
+    }
+    maven {
+        url 'https://packages.jetbrains.team/maven/p/ij/intellij-dependencies'
+    }
     maven { url 'https://maven.railroadide.dev/releases' }
     maven { url 'https://jitpack.io' }
 }
@@ -60,25 +67,36 @@ processResources {
 application {
     mainClass = 'dev.railroadide.railroad.RailroadLauncher'
     applicationDefaultJvmArgs = [
-            '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
-            '-Dslf4j.internal.report.stream=stdout',
-            '--add-exports=javafx.graphics/com.sun.javafx.iio=ALL-UNNAMED',
-            '--add-exports=javafx.graphics/com.sun.javafx.iio.common=ALL-UNNAMED',
-            '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
+        '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
+        '-Dslf4j.internal.report.stream=stdout',
+        '--add-exports=javafx.graphics/com.sun.javafx.iio=ALL-UNNAMED',
+        '--add-exports=javafx.graphics/com.sun.javafx.iio.common=ALL-UNNAMED',
+        '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
     ]
 }
 
 tasks.named("run") {
     jvmArgs '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
-            '-Dslf4j.internal.report.stream=stdout',
-            '--add-exports=javafx.graphics/com.sun.javafx.iio=ALL-UNNAMED',
-            '--add-exports=javafx.graphics/com.sun.javafx.iio.common=ALL-UNNAMED',
-            '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
+    '-Dslf4j.internal.report.stream=stdout',
+    '--add-exports=javafx.graphics/com.sun.javafx.iio=ALL-UNNAMED',
+    '--add-exports=javafx.graphics/com.sun.javafx.iio.common=ALL-UNNAMED',
+    '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
 }
 
 javafx {
     version = '25'
-    modules = ['javafx.controls', 'javafx.swing', 'javafx.web', 'javafx.fxml', 'javafx.graphics', 'javafx.media']
+    configurations = [
+        'implementation',
+        'cssValidationImplementation'
+    ]
+    modules = [
+        'javafx.controls',
+        'javafx.swing',
+        'javafx.web',
+        'javafx.fxml',
+        'javafx.graphics',
+        'javafx.media'
+    ]
 }
 
 dependencies {
@@ -153,15 +171,41 @@ spotless {
 
     java {
         target 'src/main/java/**/*.java', 'src/test/java/**/*.java', 'src/formatter/java/**/*.java',
-            'src/javadocCoverageTool/java/**/*.java', 'src/javadocCoverageTest/java/**/*.java'
+        'src/javadocCoverageTool/java/**/*.java', 'src/javadocCoverageTest/java/**/*.java',
+        'src/cssValidation/java/**/*.java', 'src/cssValidationTest/java/**/*.java'
         eclipse().configFile('config/format/railroad-eclipse-formatter.xml')
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+
+    format 'css', {
+        target 'src/**/*.css'
+        lineEndings 'UNIX'
+        // JavaFX rejects selectors wrapped before a child combinator.
+        prettier('3.6.2').config(['parser': 'css', 'tabWidth': 4, 'printWidth': 1000])
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+
+    groovy {
+        target 'src/**/*.groovy'
+        greclipse().configFile('config/format/railroad-groovy.properties')
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+
+    groovyGradle {
+        // templates/**/*.gradle contain template directives, not standalone Groovy.
+        target '*.gradle', 'gradle/**/*.gradle', 'src/**/*.gradle'
+        greclipse().configFile('config/format/railroad-groovy.properties')
         trimTrailingWhitespace()
         endWithNewline()
     }
 }
 
 def semanticStyleSources = files('src/main/java', 'src/test/java', 'src/formatter/java',
-    'src/javadocCoverageTool/java', 'src/javadocCoverageTest/java')
+        'src/javadocCoverageTool/java', 'src/javadocCoverageTest/java',
+        'src/cssValidation/java', 'src/cssValidationTest/java')
 def semanticStyleArguments = { String mode ->
     def arguments = [mode]
     if (providers.gradleProperty('formatAll').isPresent()) {
@@ -173,7 +217,10 @@ def semanticStyleArguments = { String mode ->
             projectDir.absolutePath
         ])
     }
-    arguments.addAll(['--source-path', semanticStyleSources.asPath])
+    arguments.addAll([
+        '--source-path',
+        semanticStyleSources.asPath
+    ])
     arguments.addAll(semanticStyleSources.files.collect { it.absolutePath })
     arguments
 }
@@ -196,13 +243,17 @@ tasks.register('semanticFormatCheck', JavaExec) {
     args semanticStyleArguments('--check')
 }
 
-['semanticFormat', 'semanticFormatCheck'].each { taskName ->
+[
+    'semanticFormat',
+    'semanticFormatCheck'
+].each { taskName ->
     tasks.named(taskName, JavaExec) {
         doFirst {
             // Passing the dependency classpath as an argument exceeds Windows' command-line limit.
             def compilerClasspath = new File(temporaryDir, 'compiler-classpath.txt')
             compilerClasspath.setText(files(configurations.testCompileClasspath,
-                configurations.javadocCoverageTestCompileClasspath).asPath, 'UTF-8')
+                    configurations.cssValidationTestCompileClasspath,
+                    configurations.javadocCoverageTestCompileClasspath).asPath, 'UTF-8')
             environment 'RAILROAD_FORMAT_CLASSPATH_FILE', compilerClasspath.absolutePath
         }
     }
@@ -218,22 +269,22 @@ tasks.named('spotlessCheck') {
 
 tasks.register('format') {
     group = 'formatting'
-    description = 'Applies all Railroad Java formatting and style rules.'
+    description = 'Applies Railroad Java, CSS, Groovy, and Gradle formatting and style rules.'
     dependsOn tasks.named('semanticFormat'), tasks.named('spotlessApply')
 }
 
 tasks.register('formatCheck') {
     group = 'verification'
-    description = 'Checks all Railroad Java formatting and style rules.'
+    description = 'Checks Railroad Java, CSS, Groovy, and Gradle formatting and style rules.'
     dependsOn tasks.named('semanticFormatCheck'), tasks.named('spotlessCheck')
 }
 
 jar {
     manifest {
         attributes(
-                'Implementation-Title': 'Railroad',
-                'Implementation-Version': version,
-                'Main-Class': 'dev.railroadide.railroad.RailroadLauncher'
+        'Implementation-Title': 'Railroad',
+        'Implementation-Version': version,
+        'Main-Class': 'dev.railroadide.railroad.RailroadLauncher'
         )
     }
 }
@@ -243,9 +294,9 @@ shadowJar {
     mergeServiceFiles()
     manifest {
         attributes(
-                'Implementation-Title': 'Railroad',
-                'Implementation-Version': version,
-                'Main-Class': 'dev.railroadide.railroad.RailroadLauncher'
+        'Implementation-Title': 'Railroad',
+        'Implementation-Version': version,
+        'Main-Class': 'dev.railroadide.railroad.RailroadLauncher'
         )
     }
 }
@@ -257,11 +308,11 @@ runtime {
 
     launcher {
         jvmArgs = [
-                '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
-                '-Dslf4j.internal.report.stream=stdout',
-                '--add-exports=javafx.graphics/com.sun.javafx.iio=ALL-UNNAMED',
-                '--add-exports=javafx.graphics/com.sun.javafx.iio.common=ALL-UNNAMED',
-                '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
+            '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
+            '-Dslf4j.internal.report.stream=stdout',
+            '--add-exports=javafx.graphics/com.sun.javafx.iio=ALL-UNNAMED',
+            '--add-exports=javafx.graphics/com.sun.javafx.iio.common=ALL-UNNAMED',
+            '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
         ]
     }
 
@@ -277,20 +328,43 @@ runtime {
         def iconPath = file("src/main/resources/assets/railroad/images/logo.$imgType").absolutePath
         imageOptions += ['--icon', iconPath]
         installerOptions += ['--vendor', 'Railroad Team']
-        installerOptions += ['--copyright', 'GNU General Public License v3.0']
-        installerOptions += ['--about-url', 'https://railroadide.dev']
+        installerOptions += [
+            '--copyright',
+            'GNU General Public License v3.0'
+        ]
+        installerOptions += [
+            '--about-url',
+            'https://railroadide.dev'
+        ]
 
         if (currentOs.windows) {
-            installerOptions += ['--win-per-user-install', '--win-dir-chooser', '--win-menu', '--win-shortcut-prompt']
-            installerOptions += ['--win-upgrade-uuid', '46af0894-7027-40b2-8772-40d5e3052c7e']
-            installerOptions += ['--win-help-url', 'https://discord.turtywurty.dev/']
+            installerOptions += [
+                '--win-per-user-install',
+                '--win-dir-chooser',
+                '--win-menu',
+                '--win-shortcut-prompt'
+            ]
+            installerOptions += [
+                '--win-upgrade-uuid',
+                '46af0894-7027-40b2-8772-40d5e3052c7e'
+            ]
+            installerOptions += [
+                '--win-help-url',
+                'https://discord.turtywurty.dev/'
+            ]
             installerOptions += ['--type', 'msi']
         } else if (currentOs.linux) {
-            installerOptions += ['--linux-package-name', 'railroad']
+            installerOptions += [
+                '--linux-package-name',
+                'railroad'
+            ]
             installerOptions += ['--linux-shortcut']
             installerOptions += ['--type', 'deb']
         } else if (currentOs.macOsX) {
-            installerOptions += ['--mac-package-name', 'railroad']
+            installerOptions += [
+                '--mac-package-name',
+                'railroad'
+            ]
             installerOptions += ['--type', 'dmg']
             // Apple bundle versions require a major version greater than zero.
             appVersion = macOsBundleVersion.get()
@@ -299,7 +373,13 @@ runtime {
 }
 
 // Ensure the packaging tasks use the shaded jar
-['jre', 'runtime', 'createRuntimeImage', 'runtimeZip', 'jpackage'].each { taskName ->
+[
+    'jre',
+    'runtime',
+    'createRuntimeImage',
+    'runtimeZip',
+    'jpackage'
+].each { taskName ->
     tasks.matching { it.name == taskName }.configureEach {
         dependsOn tasks.named('shadowJar')
     }

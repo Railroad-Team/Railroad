@@ -27,6 +27,8 @@ gradle.projectsLoaded { gradle ->
     }
 
     root.allprojects { project ->
-        aggregate.configure { dependsOn(project.tasks.named("downloadDependencySources")) }
+        aggregate.configure {
+            dependsOn(project.tasks.named("downloadDependencySources"))
+        }
     }
 }

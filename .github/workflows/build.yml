@@ -23,6 +23,11 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
 
+      - name: Set up Node.js for CSS formatting
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       # Cache Gradle dependencies (speeds up builds)
       - name: Cache Gradle packages
         uses: actions/cache@v4
@@ -37,6 +42,9 @@ jobs:
       # GitHub uses gradle 9.0, which doesn't work, so I have to force it to use ./gradlew
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
+
+      - name: Validate JavaFX CSS
+        run: ./gradlew cssValidationTest validateJavafxCss
 
       - name: Check formatting and build
         env:

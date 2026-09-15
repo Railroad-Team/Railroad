@@ -60,8 +60,12 @@
 
 .tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab:selected,
 .tab-pane.gradle-tools-tabpane > .tab-header-area > .headers-region > .tab:selected {
-    -fx-background-color: -color-accent-emphasis, -color-surface-panel;
-    -fx-background-insets: 0, 0 0 2px 0;
+    -fx-background-color:
+        -color-accent-emphasis,
+        -color-surface-panel;
+    -fx-background-insets:
+        0,
+        0 0 2px 0;
 }
 
 .tab-pane.ide-tool-dock > .tab-header-area > .headers-region > .tab:selected > .tab-container > .tab-label,
@@ -222,12 +226,32 @@
     -fx-background-color: -color-surface-editor;
     -fx-border-width: 0;
 }
-.ide-welcome-root .label { -fx-text-fill: -color-fg-default; -fx-font-size: 13px; }
-.ide-welcome-root .ide-welcome-text { -fx-font-size: 20px; -fx-font-weight: bold; }
-.ide-welcome-root .section-title { -fx-font-size: 14px; -fx-font-weight: bold; }
+
+.ide-welcome-root .label {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 13px;
+}
+
+.ide-welcome-root .ide-welcome-text {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.ide-welcome-root .section-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
 .ide-welcome-root .ide-description-text,
-.ide-welcome-root .section-description { -fx-text-fill: -color-fg-muted; -fx-font-size: 13px; }
-.ide-welcome-root .feature-item { -fx-padding: 5px 0; }
+.ide-welcome-root .section-description {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 13px;
+}
+
+.ide-welcome-root .feature-item {
+    -fx-padding: 5px 0;
+}
+
 .ide-welcome-root .button {
     -fx-min-height: 30px;
     -fx-pref-height: 30px;
@@ -238,6 +262,15 @@
     -fx-effect: null;
 }
 
-.ide-welcome-root .features-grid { -fx-spacing: 8px; }
-.ide-welcome-root .feature-item { -fx-background-radius: 0; -fx-border-width: 0; }
-.ide-welcome-root .ikonli-font-icon { -fx-icon-size: 16px; }
+.ide-welcome-root .features-grid {
+    -fx-spacing: 8px;
+}
+
+.ide-welcome-root .feature-item {
+    -fx-background-radius: 0;
+    -fx-border-width: 0;
+}
+
+.ide-welcome-root .ikonli-font-icon {
+    -fx-icon-size: 16px;
+}

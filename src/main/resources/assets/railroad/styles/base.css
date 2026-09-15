@@ -9,7 +9,9 @@
     -color-surface-terminal: ladder(-color-bg-default, derive(-color-bg-default, -22%) 49%, derive(-color-fg-default, -22%) 50%);
 }
 
-.Railroad, .split-pane, .scroll-pane {
+.Railroad,
+.split-pane,
+.scroll-pane {
     -fx-background-color: -color-bg-default;
     -fx-text-fill: -color-fg-default;
 }

@@ -28,8 +28,14 @@ tasks.register('javadocCoverage', JavaExec) {
     outputs.dir(coverageReport)
     doFirst {
         def manifest = new File(temporaryDir, 'sources.txt')
-        manifest.setText(coverageSources.files.collect { it.absolutePath }.sort().join('\n'), 'UTF-8')
-        setArgs([coverageRoot.asFile.absolutePath, manifest.absolutePath, coverageReport.get().asFile.absolutePath])
+        manifest.setText(coverageSources.files.collect {
+            it.absolutePath
+        }.sort().join('\n'), 'UTF-8')
+        setArgs([
+            coverageRoot.asFile.absolutePath,
+            manifest.absolutePath,
+            coverageReport.get().asFile.absolutePath
+        ])
     }
 }
 
@@ -40,7 +46,7 @@ tasks.register('javadocCoverageCheck') {
     doLast {
         def report = coverageReport.get().asFile
         def violations = new File(report, 'violations.txt').getText('UTF-8').trim().toInteger()
-        if (violations > 0) {
+        if (violations> 0) {
             throw new GradleException("${violations} public API declarations have incomplete Javadocs. Report: ${new File(report, 'index.html').toURI()}")
         }
     }

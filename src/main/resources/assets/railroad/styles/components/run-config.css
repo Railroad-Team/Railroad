@@ -10,7 +10,7 @@
     -fx-icon-color: #cd4b55 !important;
 }
 
-.stop-button:hover .ikonli-font-icon{
+.stop-button:hover .ikonli-font-icon {
     -fx-icon-color: #e5737a !important;
 }
 

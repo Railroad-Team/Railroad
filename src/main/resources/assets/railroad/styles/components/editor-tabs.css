@@ -82,8 +82,12 @@
 
 /* The top accent identifies selection; the canvas meets the tab without a seam. */
 .tab-pane.editor-tab-pane > .tab-header-area > .headers-region > .tab.editor-tab:selected {
-    -fx-background-color: -color-accent-emphasis, -color-surface-editor;
-    -fx-background-insets: 0, 2px 0 0 0;
+    -fx-background-color:
+        -color-accent-emphasis,
+        -color-surface-editor;
+    -fx-background-insets:
+        0,
+        2px 0 0 0;
 }
 
 .tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-action-slot .ikonli-font-icon {

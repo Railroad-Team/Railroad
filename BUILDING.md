@@ -97,16 +97,37 @@ Run the `shadowJar` task.
 
 The compiled JAR will be available in `build/libs/`.
 
-## Formatting Java code
+## Validating JavaFX CSS
 
-Run the formatter before committing Java changes:
+Run `./gradlew validateJavafxCss` to parse every `.css` file under
+`src/main/resources/assets/railroad/styles` with the application's JavaFX version.
+The check runs in GitHub Actions and as part of `check`, independently of the formatting ratchet.
+It runs without a display or application startup and fails on parser diagnostics, including invalid
+JavaFX values and broken stylesheet imports. Diagnostics include the stylesheet URL and parser location.
+The browser CSS used by the Javadoc report is intentionally outside this scope.
+
+This is parser validation, not a complete runtime style check: unknown property names, unresolved
+looked-up colors, selector matches, image availability, and control-specific conversions may require
+applying styles to a live scene. Validator regression tests run with `./gradlew cssValidationTest`.
+
+## Formatting code
+
+Run the formatter before committing Java, CSS, Groovy, or Gradle script changes:
 
 ```sh
 ./gradlew format
 ```
 
-This applies Railroad's syntax-aware style rules first, followed by the Eclipse JDT formatter. By default, formatting is
-ratcheted from `HEAD`, so only changed and untracked Java files are touched. In particular, a control-flow block whose
+Formatting is ratcheted from `HEAD` by default, so only changed and untracked files are touched.
+CSS files under `src` use Prettier (requires Node.js and npm); Groovy files under `src` and Gradle scripts in the project root, `gradle`, and
+`src` use Groovy-Eclipse. Both use four-space indentation, trim trailing whitespace, and end files with a newline.
+CSS settings live in `build.gradle` and preserve spaces around selector combinators such as `>`.
+The wide CSS print width keeps long selectors inline because JavaFX rejects line breaks before `>`.
+Groovy settings live in `config/format/railroad-groovy.properties`.
+Gradle templates under `templates` are excluded because they contain template directives.
+
+For Java, this applies Railroad's syntax-aware style rules first, followed by the Eclipse JDT formatter.
+In particular, a control-flow block whose
 only statement is `return`, `throw`, `break`, `continue`, or `yield` is written without braces; every non-terminal
 control-flow body uses braces. `else if` chains remain compact. An exact local construction such as
 `Widget widget = new Widget()` uses `var`; declarations involving target-type inference, a different declared type,
@@ -135,7 +156,7 @@ To check formatting without modifying files, run:
 ./gradlew formatCheck
 ```
 
-To intentionally reformat every Java source file instead of only current changes, pass the `formatAll` property:
+To intentionally reformat every supported source file instead of only current changes, pass the `formatAll` property:
 
 ```sh
 ./gradlew format -PformatAll
