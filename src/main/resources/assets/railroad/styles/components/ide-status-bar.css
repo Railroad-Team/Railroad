@@ -1,0 +1,5 @@
+.column-number,
+.line-number {
+    -fx-fill: -color-fg-default;
+    -fx-font-size: 20px;
+}

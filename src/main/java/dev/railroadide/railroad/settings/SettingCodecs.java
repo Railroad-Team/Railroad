@@ -5,6 +5,7 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonPrimitive;
 import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRuleSettingsState;
 import dev.railroadide.railroad.ide.diagnostics.ui.JavaInspectionRuleSettingsPane;
+import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.localization.Language;
 import dev.railroadide.railroad.localization.Languages;
 import dev.railroadide.railroad.plugin.PluginManager;
@@ -181,4 +182,16 @@ public class SettingCodecs {
         .jsonEncoder(path -> path == null ? JsonNull.INSTANCE : new JsonPrimitive(path.toString()))
         .jsonDecoder(json -> (json == null || json.isJsonNull()) ? null : Path.of(json.getAsString()))
         .build();
+
+    /** Serializes the caret position format and provides its localized dropdown. */
+    public static final SettingCodec<CaretPositionFormat, ComboBox<CaretPositionFormat>> CARET_POSITION_FORMAT = DefaultSettingCodecs
+        .ofEnum("railroad:caret_position_format",
+            CaretPositionFormat.class,
+            CaretPositionFormat::name,
+            CaretPositionFormat::valueOf,
+            new ComboBoxConverter<>(
+                format -> L18n.localize(format.getSettingTranslationKey()),
+                name -> name.equals(L18n.localize(CaretPositionFormat.TEXT.getSettingTranslationKey()))
+                    ? CaretPositionFormat.TEXT
+                    : CaretPositionFormat.COLON));
 }

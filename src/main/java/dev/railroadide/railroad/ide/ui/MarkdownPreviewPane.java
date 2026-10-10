@@ -21,6 +21,8 @@ import dev.railroadide.railroad.window.WindowBuilder;
 import io.github.raghultech.markdown.javafx.preview.MarkdownWebView;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
@@ -71,7 +73,6 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     @Getter
     private final Path markdownFile;
 
-    private TextEditorPane textEditorPane;
     private WebView webViewPane;
 
     private final HBox topRow;
@@ -83,11 +84,25 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
 
     private int scrollAmount;
 
+    private final ObjectProperty<TextEditorPane> editor = new SimpleObjectProperty<>();
+
+    /**
+     * Returns the property holding the Markdown source editor.
+     * The value is {@code null} until the editor is created and is cleared
+     * when this pane is closed.
+     *
+     * @return the non-null property holding the Markdown source editor
+     */
+    public ObjectProperty<TextEditorPane> editorProperty() {
+        return editor;
+    }
+
     @Override
     public void close() {
+        TextEditorPane textEditorPane = getMarkdownEditorPane();
         if (textEditorPane != null) {
             textEditorPane.close();
-            textEditorPane = null;
+            editorProperty().setValue(null);
         }
         Settings.THEME.removeListener(themeListener);
     }
@@ -136,57 +151,70 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         showContent(pane, topRow);
     }
 
+    /**
+     * Returns the markdown editor pane property
+     *
+     * @return markdown editor pane (TextEditorPane)
+     */
+    public TextEditorPane getMarkdownEditorPane() {
+        return editorProperty().get();
+    }
+
     private TextEditorPane codeView() {
+        TextEditorPane textEditorPane = getMarkdownEditorPane();
         if (textEditorPane != null) {
             restoreEditorScroll();
             return textEditorPane;
         }
 
-        textEditorPane = new TextEditorPane(markdownFile, "markdown");
-        textEditorPane.textProperty().addListener(
+        editorProperty().setValue(new TextEditorPane(markdownFile, "markdown"));
+
+        TextEditorPane newTextEditorPane = getMarkdownEditorPane();
+
+        newTextEditorPane.textProperty().addListener(
             (_, _, newValue) -> preview.setContent(newValue));
 
-        textEditorPane.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+        newTextEditorPane.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode().equals(KeyCode.ENTER)) {
-                int caret = textEditorPane.getCaretPosition();
-                String upToCaret = textEditorPane.getText(0, caret);
+                int caret = newTextEditorPane.getCaretPosition();
+                String upToCaret = newTextEditorPane.getText(0, caret);
                 String lastLine = upToCaret.substring(upToCaret.lastIndexOf("\n") + 1);
 
                 if (NUMBERED_LIST_PATTERN.matcher(lastLine).matches()) {
                     event.consume();
 
                     int previousLineNumber = Integer.parseInt(lastLine.split("\\.")[0]);
-                    textEditorPane.insertText(caret, "\n" + (previousLineNumber + 1) + ". ");
+                    newTextEditorPane.insertText(caret, "\n" + (previousLineNumber + 1) + ". ");
                 }
 
                 if (BULLET_LIST_PATTERN.matcher(lastLine).matches()) {
                     event.consume();
 
-                    textEditorPane.insertText(caret, "\n* ");
+                    newTextEditorPane.insertText(caret, "\n* ");
                 }
 
                 if (DASH_LIST_PATTERN.matcher(lastLine).matches()) {
                     event.consume();
 
-                    textEditorPane.insertText(caret, "\n- ");
+                    newTextEditorPane.insertText(caret, "\n- ");
                 }
 
                 if (HTML_LIST_ITEM_PATTERN.matcher(lastLine).matches()) {
                     event.consume();
 
                     String item = "\n<li></li>";
-                    textEditorPane.insertText(caret, item);
-                    textEditorPane.moveTo(caret + "\n<li>".length());
+                    newTextEditorPane.insertText(caret, item);
+                    newTextEditorPane.moveTo(caret + "\n<li>".length());
                 }
             }
         });
 
-        textEditorPane.addEventFilter(ScrollEvent.SCROLL,
-            _ -> scrollAmount = (int) textEditorPane.getEstimatedScrollY());
+        newTextEditorPane.addEventFilter(ScrollEvent.SCROLL,
+            _ -> scrollAmount = (int) newTextEditorPane.getEstimatedScrollY());
 
         restoreEditorScroll();
 
-        return textEditorPane;
+        return newTextEditorPane;
     }
 
     private SplitPane splitView() {
@@ -228,6 +256,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     }
 
     private void restoreEditorScroll() {
+        TextEditorPane textEditorPane = getMarkdownEditorPane();
         if (textEditorPane != null) {
             Platform.runLater(() -> textEditorPane.scrollToPixel(0, scrollAmount));
         }
@@ -376,7 +405,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     }
 
     private TextEditorPane editorForInsertion() {
-        return textEditorPane == null ? codeView() : textEditorPane;
+        return getMarkdownEditorPane() == null ? codeView() : getMarkdownEditorPane();
     }
 
     /**
@@ -391,8 +420,9 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         altTextField.getStyleClass().add("markdown-image-dialog-field");
         uriTextField.getStyleClass().add("markdown-image-dialog-field");
 
-        if (textEditorPane != null && !textEditorPane.getSelectedText().isBlank()) {
-            altTextField.setText(textEditorPane.getSelectedText());
+        TextEditorPane currentEditor = getMarkdownEditorPane();
+        if (currentEditor != null && !currentEditor.getSelectedText().isBlank()) {
+            altTextField.setText(currentEditor.getSelectedText());
         }
 
         var form = new RRVBox(22, altTextField, uriTextField);

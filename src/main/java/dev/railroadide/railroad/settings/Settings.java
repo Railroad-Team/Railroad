@@ -407,6 +407,15 @@ public final class Settings {
             .defaultValue(false)
             .build());
 
+    /** Whether the IDE uses {line}:{column} or ln {line}, col {column} **/
+    public static final Setting<CaretPositionFormat> CARET_POSITION_FORMAT = registerSetting(
+        Setting.builder(CaretPositionFormat.class, "railroad:caret_position_format")
+            .treePath("ide")
+            .category(SettingCategory.simple("railroad:ide.status_bar"))
+            .codec(SettingCodecs.CARET_POSITION_FORMAT)
+            .defaultValue(CaretPositionFormat.COLON)
+            .build());
+
     /** Triggers class initialization so all built-in settings are registered. */
     public static void initialize() {
         // intentionally empty - triggers class loading and static init
