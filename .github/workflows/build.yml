@@ -55,8 +55,8 @@ jobs:
           fi
           ./gradlew -PformatRatchetFrom="$FORMAT_RATCHET_FROM" formatCheck :compileJava
 
-      - name: Generate Javadoc coverage report
-        run: ./gradlew javadocCoverage
+      - name: Check Javadoc coverage
+        run: ./gradlew javadocCoverageCheck
 
       - name: Upload Javadoc coverage report
         if: always()
