@@ -7,10 +7,7 @@ import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.language.ProjectDiagnosticsFeatureFactory;
 import dev.railroadide.railroad.ide.language.index.LanguageIndexContext;
 import dev.railroadide.railroad.ide.language.index.ProjectIndexContext;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
-import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 
 import javax.tools.Diagnostic;
@@ -140,6 +137,7 @@ public final class ProjectDiagnosticsScanner {
                 DocumentUri.fromPath(target.path()),
                 DocumentVersion.initial(),
                 target.support.languageId(),
+                new DocumentOrigin(BackingKind.FILE, ProvenanceKind.ORIGINAL),
                 source,
                 StandardCharsets.UTF_8);
 

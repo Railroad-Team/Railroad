@@ -1,9 +1,6 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
-import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
-import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.lexer.Lexer;
 import dev.railroadide.railroad.ide.sst.syntax.api.*;
 import dev.railroadide.railroad.ide.sst.syntax.internal.GreenElement;
@@ -183,6 +180,7 @@ public final class JavaSyntaxParser {
             previousSnapshot.uri(),
             previousSnapshot.version().next(),
             previousSnapshot.languageId(),
+            previousSnapshot.origin(),
             newSource,
             previousSnapshot.encoding()), edit);
     }
@@ -201,6 +199,7 @@ public final class JavaSyntaxParser {
             previousSnapshot.uri(),
             Objects.requireNonNull(newVersion, "newVersion"),
             previousSnapshot.languageId(),
+            previousSnapshot.origin(),
             newSource,
             previousSnapshot.encoding()), edit);
     }

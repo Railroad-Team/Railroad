@@ -11,8 +11,58 @@ import java.util.Objects;
  * buffer on every call, so neither content nor shared buffer position can be mutated by
  * consumers.
  */
-public final class BinaryDocumentSnapshot extends DocumentSnapshot {
+public final class BinaryDocumentSnapshot implements DocumentSnapshot {
+    private final DocumentId id;
+    private final DocumentUri uri;
+    private final DocumentVersion version;
+    private final String languageId;
+    private final DocumentOrigin origin;
     private final byte[] content;
+
+    /**
+     * Creates an original binary revision, deriving its backing from the URI.
+     * Use the origin-taking constructor when provenance is known by the owner.
+     *
+     * @param id stable logical document identity
+     * @param uri physical or virtual document location
+     * @param version content revision
+     * @param languageId provider-defined non-blank language identity
+     * @param content complete binary content; copied during construction
+     * @throws NullPointerException if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code languageId} is blank
+     * @see DocumentOrigin#original(DocumentUri)
+     */
+    public BinaryDocumentSnapshot(
+        DocumentId id,
+        DocumentUri uri,
+        DocumentVersion version,
+        String languageId,
+        byte[] content) {
+        this(id, uri, version, languageId, DocumentOrigin.original(uri), content);
+    }
+
+    /**
+     * Creates an original binary revision from the remaining buffer bytes.
+     * The source buffer's position is not modified. Backing is derived from the URI;
+     * use the origin-taking constructor when provenance is known by the owner.
+     *
+     * @param id stable logical document identity
+     * @param uri physical or virtual document location
+     * @param version content revision
+     * @param languageId provider-defined non-blank language identity
+     * @param content buffer whose remaining bytes are copied
+     * @throws NullPointerException if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code languageId} is blank
+     * @see DocumentOrigin#original(DocumentUri)
+     */
+    public BinaryDocumentSnapshot(
+        DocumentId id,
+        DocumentUri uri,
+        DocumentVersion version,
+        String languageId,
+        ByteBuffer content) {
+        this(id, uri, version, languageId, DocumentOrigin.original(uri), content);
+    }
 
     /**
      * Creates an immutable binary document revision from a byte array.
@@ -21,15 +71,23 @@ public final class BinaryDocumentSnapshot extends DocumentSnapshot {
      * @param uri physical or virtual document location
      * @param version content revision
      * @param languageId provider-defined non-blank language identity
+     * @param origin document backing and provenance
      * @param content complete binary content; copied during construction
+     * @throws NullPointerException if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code languageId} is blank
      */
     public BinaryDocumentSnapshot(
         DocumentId id,
         DocumentUri uri,
         DocumentVersion version,
         String languageId,
+        DocumentOrigin origin,
         byte[] content) {
-        super(id, uri, version, languageId);
+        this.id = Objects.requireNonNull(id, "id");
+        this.uri = Objects.requireNonNull(uri, "uri");
+        this.version = Objects.requireNonNull(version, "version");
+        this.languageId = DocumentSnapshot.requireLanguageId(languageId);
+        this.origin = Objects.requireNonNull(origin, "origin");
         content = Objects.requireNonNull(content, "content");
         this.content = Arrays.copyOf(content, content.length);
     }
@@ -42,15 +100,19 @@ public final class BinaryDocumentSnapshot extends DocumentSnapshot {
      * @param uri physical or virtual document location
      * @param version content revision
      * @param languageId provider-defined non-blank language identity
+     * @param origin document backing and provenance
      * @param content buffer whose remaining bytes are copied
+     * @throws NullPointerException if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code languageId} is blank
      */
     public BinaryDocumentSnapshot(
         DocumentId id,
         DocumentUri uri,
         DocumentVersion version,
         String languageId,
+        DocumentOrigin origin,
         ByteBuffer content) {
-        this(id, uri, version, languageId, copyRemaining(content));
+        this(id, uri, version, languageId, origin, copyRemaining(content));
     }
 
     /**
@@ -78,6 +140,36 @@ public final class BinaryDocumentSnapshot extends DocumentSnapshot {
      */
     public int size() {
         return content.length;
+    }
+
+    @Override
+    public DocumentId id() {
+        return id;
+    }
+
+    @Override
+    public DocumentUri uri() {
+        return uri;
+    }
+
+    @Override
+    public DocumentVersion version() {
+        return version;
+    }
+
+    @Override
+    public String languageId() {
+        return languageId;
+    }
+
+    @Override
+    public ContentKind contentKind() {
+        return ContentKind.BINARY;
+    }
+
+    @Override
+    public DocumentOrigin origin() {
+        return origin;
     }
 
     private static byte[] copyRemaining(ByteBuffer content) {

@@ -10,6 +10,9 @@ import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagn
 import dev.railroadide.railroad.ide.signature.SignatureHelp;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.document.api.BackingKind;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentOrigin;
+import dev.railroadide.railroad.ide.sst.document.api.ProvenanceKind;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
@@ -274,6 +277,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             DocumentUri.fromPath(filePath),
             DocumentVersion.parse(Integer.toString(generation)),
             languageId,
+            new DocumentOrigin(BackingKind.FILE, ProvenanceKind.ORIGINAL),
             text,
             StandardCharsets.UTF_8);
 

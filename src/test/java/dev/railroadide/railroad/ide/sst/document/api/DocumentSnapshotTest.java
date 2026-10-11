@@ -26,12 +26,14 @@ class DocumentSnapshotTest {
         DocumentUri uri = DocumentUri.virtual("generated", "sources/Example.java");
         var version = new DocumentVersion(8);
         var source = new StringBuilder("class Example {}");
+        var origin = new DocumentOrigin(BackingKind.VIRTUAL, ProvenanceKind.GENERATED);
 
         var snapshot = new TextDocumentSnapshot(
             id,
             uri,
             version,
             "java",
+            origin,
             source,
             StandardCharsets.UTF_16);
         source.replace(0, source.length(), "changed");
@@ -42,6 +44,8 @@ class DocumentSnapshotTest {
         assertEquals("java", snapshot.languageId());
         assertEquals("class Example {}", snapshot.text());
         assertEquals(StandardCharsets.UTF_16, snapshot.encoding());
+        assertEquals(ContentKind.TEXT, snapshot.contentKind());
+        assertSame(origin, snapshot.origin());
     }
 
     @Test
@@ -57,6 +61,7 @@ class DocumentSnapshotTest {
             StandardCharsets.UTF_8);
 
         assertTrue(snapshot.uri().isFile());
+        assertEquals(new DocumentOrigin(BackingKind.FILE, ProvenanceKind.ORIGINAL), snapshot.origin());
     }
 
     @Test
@@ -75,6 +80,8 @@ class DocumentSnapshotTest {
         assertTrue(first.isReadOnly());
         assertArrayEquals(new byte[]{1, 2, 3, 4}, snapshot.copyBytes());
         assertEquals(4, snapshot.size());
+        assertEquals(ContentKind.BINARY, snapshot.contentKind());
+        assertEquals(new DocumentOrigin(BackingKind.MEMORY, ProvenanceKind.ORIGINAL), snapshot.origin());
         assertEquals(1, first.get());
         assertEquals(0, second.position());
         assertThrows(ReadOnlyBufferException.class, () -> second.put((byte) 9));
@@ -99,6 +106,7 @@ class DocumentSnapshotTest {
 
         assertEquals(1, source.position());
         assertArrayEquals(new byte[]{20, 30}, snapshot.copyBytes());
+        assertEquals(new DocumentOrigin(BackingKind.ARCHIVE_ENTRY, ProvenanceKind.ORIGINAL), snapshot.origin());
     }
 
     @Test
@@ -115,5 +123,27 @@ class DocumentSnapshotTest {
             id, uri, version, "\t", new byte[0]));
         assertThrows(NullPointerException.class, () -> new BinaryDocumentSnapshot(
             id, uri, version, "binary", (byte[]) null));
+        assertThrows(NullPointerException.class, () -> new TextDocumentSnapshot(
+            id, uri, version, "java", null, "", StandardCharsets.UTF_8));
+        assertThrows(NullPointerException.class, () -> new BinaryDocumentSnapshot(
+            id, uri, version, "binary", null, new byte[0]));
+    }
+
+    @Test
+    void binaryConstructorsRetainExplicitOriginForUnregisteredLanguage() {
+        DocumentId id = DocumentId.create();
+        DocumentUri uri = DocumentUri.inMemory(id);
+        var origin = new DocumentOrigin(BackingKind.MEMORY, ProvenanceKind.GENERATED);
+        byte[] content = {1, 2};
+
+        var arraySnapshot = new BinaryDocumentSnapshot(id, uri, DocumentVersion.initial(),
+            "test:custom-binary", origin, content);
+        var bufferSnapshot = new BinaryDocumentSnapshot(id, uri, DocumentVersion.initial(),
+            "test:custom-binary", origin, ByteBuffer.wrap(content));
+
+        assertSame(origin, arraySnapshot.origin());
+        assertSame(origin, bufferSnapshot.origin());
+        assertEquals("test:custom-binary", arraySnapshot.languageId());
+        assertArrayEquals(arraySnapshot.copyBytes(), bufferSnapshot.copyBytes());
     }
 }

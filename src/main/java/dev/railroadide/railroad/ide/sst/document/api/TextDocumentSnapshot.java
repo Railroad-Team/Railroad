@@ -1,10 +1,10 @@
 package dev.railroadide.railroad.ide.sst.document.api;
 
+import dev.railroadide.railroad.ide.language.LanguageSupport;
+
 import java.nio.charset.Charset;
 import java.util.Objects;
 import java.util.Optional;
-
-import dev.railroadide.railroad.ide.language.LanguageSupport;
 
 /**
  * Immutable snapshot of text document content.
@@ -13,9 +13,38 @@ import dev.railroadide.railroad.ide.language.LanguageSupport;
  * construction. The snapshot therefore never observes later caller mutations and is
  * safe to share across analysis threads.
  */
-public final class TextDocumentSnapshot extends DocumentSnapshot {
+public final class TextDocumentSnapshot implements DocumentSnapshot {
+    private final DocumentId id;
+    private final DocumentUri uri;
+    private final DocumentVersion version;
+    private final String languageId;
+    private final DocumentOrigin origin;
     private final String text;
     private final Charset encoding;
+
+    /**
+     * Creates an original text revision, deriving its backing from the URI.
+     * Use the origin-taking constructor when provenance is known by the owner.
+     *
+     * @param id stable logical document identity
+     * @param uri physical or virtual document location
+     * @param version content revision
+     * @param languageId provider-defined non-blank language identity
+     * @param text complete document text; mutable inputs are copied
+     * @param encoding character encoding associated with the text origin
+     * @throws NullPointerException if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code languageId} is blank
+     * @see DocumentOrigin#original(DocumentUri)
+     */
+    public TextDocumentSnapshot(
+        DocumentId id,
+        DocumentUri uri,
+        DocumentVersion version,
+        String languageId,
+        CharSequence text,
+        Charset encoding) {
+        this(id, uri, version, languageId, DocumentOrigin.original(uri), text, encoding);
+    }
 
     /**
      * Creates an immutable text document revision.
@@ -24,6 +53,7 @@ public final class TextDocumentSnapshot extends DocumentSnapshot {
      * @param uri physical or virtual document location
      * @param version content revision
      * @param languageId provider-defined non-blank language identity
+     * @param origin document backing and provenance
      * @param text complete document text; mutable inputs are copied
      * @param encoding character encoding associated with the text origin
      * @throws NullPointerException if any argument is {@code null}
@@ -34,9 +64,14 @@ public final class TextDocumentSnapshot extends DocumentSnapshot {
         DocumentUri uri,
         DocumentVersion version,
         String languageId,
+        DocumentOrigin origin,
         CharSequence text,
         Charset encoding) {
-        super(id, uri, version, languageId);
+        this.id = Objects.requireNonNull(id, "id");
+        this.uri = Objects.requireNonNull(uri, "uri");
+        this.version = Objects.requireNonNull(version, "version");
+        this.languageId = DocumentSnapshot.requireLanguageId(languageId);
+        this.origin = Objects.requireNonNull(origin, "origin");
         this.text = Objects.requireNonNull(text, "text").toString();
         this.encoding = Objects.requireNonNull(encoding, "encoding");
     }
@@ -59,6 +94,36 @@ public final class TextDocumentSnapshot extends DocumentSnapshot {
         return encoding;
     }
 
+    @Override
+    public DocumentId id() {
+        return id;
+    }
+
+    @Override
+    public DocumentUri uri() {
+        return uri;
+    }
+
+    @Override
+    public DocumentVersion version() {
+        return version;
+    }
+
+    @Override
+    public String languageId() {
+        return languageId;
+    }
+
+    @Override
+    public ContentKind contentKind() {
+        return ContentKind.TEXT;
+    }
+
+    @Override
+    public DocumentOrigin origin() {
+        return origin;
+    }
+
     /**
      * Safely returns the content of a {@link DocumentSnapshot}, only if it is an
      * instance of {@link TextDocumentSnapshot} and is supported by the provided {@link LanguageSupport}.
@@ -68,7 +133,7 @@ public final class TextDocumentSnapshot extends DocumentSnapshot {
      * @return content of the snapshot
      */
     public static Optional<String> unwrap(DocumentSnapshot snapshot, LanguageSupport language) {
-        if (snapshot.languageId() != language.languageId())
+        if (!Objects.equals(snapshot.languageId(), language.languageId()))
             return Optional.empty();
 
         if (snapshot instanceof TextDocumentSnapshot textDocumentSnapshot)
