@@ -61,7 +61,7 @@ class DocumentSnapshotTest {
             StandardCharsets.UTF_8);
 
         assertTrue(snapshot.uri().isFile());
-        assertEquals(new DocumentOrigin(BackingKind.FILE, ProvenanceKind.ORIGINAL), snapshot.origin());
+        assertEquals(new DocumentOrigin(BackingKind.FILE, ProvenanceKind.UNSPECIFIED), snapshot.origin());
     }
 
     @Test
@@ -81,7 +81,7 @@ class DocumentSnapshotTest {
         assertArrayEquals(new byte[]{1, 2, 3, 4}, snapshot.copyBytes());
         assertEquals(4, snapshot.size());
         assertEquals(ContentKind.BINARY, snapshot.contentKind());
-        assertEquals(new DocumentOrigin(BackingKind.MEMORY, ProvenanceKind.ORIGINAL), snapshot.origin());
+        assertEquals(new DocumentOrigin(BackingKind.MEMORY, ProvenanceKind.UNSPECIFIED), snapshot.origin());
         assertEquals(1, first.get());
         assertEquals(0, second.position());
         assertThrows(ReadOnlyBufferException.class, () -> second.put((byte) 9));
@@ -106,7 +106,7 @@ class DocumentSnapshotTest {
 
         assertEquals(1, source.position());
         assertArrayEquals(new byte[]{20, 30}, snapshot.copyBytes());
-        assertEquals(new DocumentOrigin(BackingKind.ARCHIVE_ENTRY, ProvenanceKind.ORIGINAL), snapshot.origin());
+        assertEquals(new DocumentOrigin(BackingKind.ARCHIVE_ENTRY, ProvenanceKind.UNSPECIFIED), snapshot.origin());
     }
 
     @Test
@@ -145,5 +145,40 @@ class DocumentSnapshotTest {
         assertSame(origin, bufferSnapshot.origin());
         assertEquals("test:custom-binary", arraySnapshot.languageId());
         assertArrayEquals(arraySnapshot.copyBytes(), bufferSnapshot.copyBytes());
+    }
+
+    @Test
+    void explicitOriginsKeepBackingIndependentOfProvenance() {
+        var generated = new DocumentOrigin(BackingKind.FILE, ProvenanceKind.GENERATED);
+        var attached = new DocumentOrigin(BackingKind.ARCHIVE_ENTRY, ProvenanceKind.ATTACHED_SOURCE);
+        var generatedSnapshot = new TextDocumentSnapshot(DocumentId.create(),
+            DocumentUri.fromPath(Path.of("build/generated/Example.java")), DocumentVersion.initial(),
+            "java", generated, "class Example {}", StandardCharsets.UTF_8);
+        var attachedSnapshot = new TextDocumentSnapshot(DocumentId.create(),
+            DocumentUri.parse("jar:file:///library-sources.jar!/Example.java"), DocumentVersion.initial(),
+            "java", attached, "class Example {}", StandardCharsets.UTF_8);
+
+        assertSame(generated, generatedSnapshot.origin());
+        assertTrue(generatedSnapshot.uri().isFile());
+        assertSame(attached, attachedSnapshot.origin());
+        assertEquals(ContentKind.TEXT, attachedSnapshot.contentKind());
+    }
+
+    @Test
+    void legacyConstructorsDoNotInferProvenanceFromVirtualSchemes() {
+        for (String scheme : Set.of("generated", "decompiled")) {
+            DocumentUri uri = DocumentUri.virtual(scheme, "Example.java");
+            var text = new TextDocumentSnapshot(DocumentId.create(), uri, DocumentVersion.initial(),
+                "java", "class Example {}", StandardCharsets.UTF_8);
+            var bytes = new BinaryDocumentSnapshot(DocumentId.create(), uri, DocumentVersion.initial(),
+                "binary", new byte[]{1});
+            var buffer = new BinaryDocumentSnapshot(DocumentId.create(), uri, DocumentVersion.initial(),
+                "binary", ByteBuffer.wrap(new byte[]{1}));
+            var expected = new DocumentOrigin(BackingKind.VIRTUAL, ProvenanceKind.UNSPECIFIED);
+
+            assertEquals(expected, text.origin());
+            assertEquals(expected, bytes.origin());
+            assertEquals(expected, buffer.origin());
+        }
     }
 }

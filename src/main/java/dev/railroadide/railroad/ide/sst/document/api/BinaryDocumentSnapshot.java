@@ -20,7 +20,7 @@ public final class BinaryDocumentSnapshot implements DocumentSnapshot {
     private final byte[] content;
 
     /**
-     * Creates an original binary revision, deriving its backing from the URI.
+     * Creates a binary revision with unspecified provenance, deriving backing from the URI.
      * Use the origin-taking constructor when provenance is known by the owner.
      *
      * @param id stable logical document identity
@@ -30,7 +30,7 @@ public final class BinaryDocumentSnapshot implements DocumentSnapshot {
      * @param content complete binary content; copied during construction
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalArgumentException if {@code languageId} is blank
-     * @see DocumentOrigin#original(DocumentUri)
+     * @see DocumentOrigin#unspecified(DocumentUri)
      */
     public BinaryDocumentSnapshot(
         DocumentId id,
@@ -38,11 +38,11 @@ public final class BinaryDocumentSnapshot implements DocumentSnapshot {
         DocumentVersion version,
         String languageId,
         byte[] content) {
-        this(id, uri, version, languageId, DocumentOrigin.original(uri), content);
+        this(id, uri, version, languageId, DocumentOrigin.unspecified(uri), content);
     }
 
     /**
-     * Creates an original binary revision from the remaining buffer bytes.
+     * Creates a binary revision with unspecified provenance from the remaining buffer bytes.
      * The source buffer's position is not modified. Backing is derived from the URI;
      * use the origin-taking constructor when provenance is known by the owner.
      *
@@ -53,7 +53,7 @@ public final class BinaryDocumentSnapshot implements DocumentSnapshot {
      * @param content buffer whose remaining bytes are copied
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalArgumentException if {@code languageId} is blank
-     * @see DocumentOrigin#original(DocumentUri)
+     * @see DocumentOrigin#unspecified(DocumentUri)
      */
     public BinaryDocumentSnapshot(
         DocumentId id,
@@ -61,7 +61,7 @@ public final class BinaryDocumentSnapshot implements DocumentSnapshot {
         DocumentVersion version,
         String languageId,
         ByteBuffer content) {
-        this(id, uri, version, languageId, DocumentOrigin.original(uri), content);
+        this(id, uri, version, languageId, DocumentOrigin.unspecified(uri), content);
     }
 
     /**

@@ -35,12 +35,16 @@ class DocumentOriginTest {
 
     @Test
     void compatibilityOriginUsesLocationWithoutGuessingProvenance() {
-        assertEquals(BackingKind.FILE, DocumentOrigin.original(DocumentUri.parse("FILE:///A.java")).backing());
-        assertEquals(BackingKind.MEMORY, DocumentOrigin.original(DocumentUri.virtual("memory", "A.java")).backing());
+        assertEquals(BackingKind.FILE, DocumentOrigin.unspecified(DocumentUri.parse("FILE:///A.java")).backing());
+        assertEquals(BackingKind.MEMORY, DocumentOrigin.unspecified(DocumentUri.virtual("memory", "A.java")).backing());
         assertEquals(BackingKind.ARCHIVE_ENTRY,
-            DocumentOrigin.original(DocumentUri.parse("jar:file:///library.jar!/A.class")).backing());
-        var origin = DocumentOrigin.original(DocumentUri.virtual("generated", "A.java"));
+            DocumentOrigin.unspecified(DocumentUri.parse("jar:file:///library.jar!/A.class")).backing());
+        var origin = DocumentOrigin.unspecified(DocumentUri.virtual("generated", "A.java"));
         assertEquals(BackingKind.VIRTUAL, origin.backing());
-        assertEquals(ProvenanceKind.ORIGINAL, origin.provenance());
+        assertEquals(ProvenanceKind.UNSPECIFIED, origin.provenance());
+        assertTrue(origin.sources().isEmpty());
+        assertEquals(ProvenanceKind.ORIGINAL,
+            DocumentOrigin.original(DocumentUri.virtual("memory", "A.java")).provenance());
+        assertThrows(NullPointerException.class, () -> DocumentOrigin.unspecified(null));
     }
 }

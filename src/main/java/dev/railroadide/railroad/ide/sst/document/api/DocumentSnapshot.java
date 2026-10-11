@@ -11,6 +11,13 @@ import java.util.Objects;
  * worker threads.
  * <p>
  * Snapshot equality semantics are intentionally not defined by this root contract.
+ * <p>
+ * Compatibility note: this root was previously an abstract sealed class. Its change
+ * to an interface is a binary compatibility break; compiled consumers of the old
+ * class must be rebuilt. Retained text/binary constructors provide source compatibility
+ * for ordinary callers, but the old superclass constructor is no longer available.
+ * Construction also no longer validates registration in the language support registry:
+ * consumers requiring language-specific operations resolve support at their boundary.
  */
 public sealed interface DocumentSnapshot permits TextDocumentSnapshot, BinaryDocumentSnapshot {
     /**

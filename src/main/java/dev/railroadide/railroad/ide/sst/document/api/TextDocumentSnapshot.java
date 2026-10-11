@@ -23,7 +23,7 @@ public final class TextDocumentSnapshot implements DocumentSnapshot {
     private final Charset encoding;
 
     /**
-     * Creates an original text revision, deriving its backing from the URI.
+     * Creates a text revision with unspecified provenance, deriving backing from the URI.
      * Use the origin-taking constructor when provenance is known by the owner.
      *
      * @param id stable logical document identity
@@ -34,7 +34,7 @@ public final class TextDocumentSnapshot implements DocumentSnapshot {
      * @param encoding character encoding associated with the text origin
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalArgumentException if {@code languageId} is blank
-     * @see DocumentOrigin#original(DocumentUri)
+     * @see DocumentOrigin#unspecified(DocumentUri)
      */
     public TextDocumentSnapshot(
         DocumentId id,
@@ -43,7 +43,7 @@ public final class TextDocumentSnapshot implements DocumentSnapshot {
         String languageId,
         CharSequence text,
         Charset encoding) {
-        this(id, uri, version, languageId, DocumentOrigin.original(uri), text, encoding);
+        this(id, uri, version, languageId, DocumentOrigin.unspecified(uri), text, encoding);
     }
 
     /**

@@ -5,6 +5,8 @@ import java.util.Objects;
 /**
  * Immutable location of a source associated with a document's provenance.
  * A reference does not retain the source content or its revision.
+ * It identifies a location rather than a stable {@link DocumentId}, so it does not
+ * automatically follow source renames or provide source-range mappings.
  *
  * @param uri physical or virtual source location
  */
