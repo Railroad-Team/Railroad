@@ -95,6 +95,26 @@ public class Keybinds {
      */
     public static final Keybind STOP = registerIDECommand(RunCommands.STOP);
     /**
+     * Configurable shortcut for resuming a suspended debugger.
+     */
+    public static final Keybind DEBUG_RESUME = registerIDECommand(RunCommands.RESUME);
+    /**
+     * Configurable shortcut for pausing a running debugger.
+     */
+    public static final Keybind DEBUG_PAUSE = registerIDECommand(RunCommands.PAUSE);
+    /**
+     * Configurable shortcut for stepping over a source line.
+     */
+    public static final Keybind DEBUG_STEP_OVER = registerIDECommand(RunCommands.STEP_OVER);
+    /**
+     * Configurable shortcut for stepping into a method.
+     */
+    public static final Keybind DEBUG_STEP_INTO = registerIDECommand(RunCommands.STEP_INTO);
+    /**
+     * Configurable shortcut for stepping out of a method.
+     */
+    public static final Keybind DEBUG_STEP_OUT = registerIDECommand(RunCommands.STEP_OUT);
+    /**
      * Configurable shortcut for the undo command.
      */
     public static final Keybind UNDO = registerIDECommand(EditCommands.UNDO);

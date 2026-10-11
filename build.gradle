@@ -69,8 +69,6 @@ application {
     applicationDefaultJvmArgs = [
         '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
         '-Dslf4j.internal.report.stream=stdout',
-        '--add-exports=javafx.graphics/com.sun.javafx.iio=ALL-UNNAMED',
-        '--add-exports=javafx.graphics/com.sun.javafx.iio.common=ALL-UNNAMED',
         '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
     ]
 }
@@ -78,8 +76,6 @@ application {
 tasks.named("run") {
     jvmArgs '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
     '-Dslf4j.internal.report.stream=stdout',
-    '--add-exports=javafx.graphics/com.sun.javafx.iio=ALL-UNNAMED',
-    '--add-exports=javafx.graphics/com.sun.javafx.iio.common=ALL-UNNAMED',
     '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
 }
 
@@ -128,7 +124,8 @@ dependencies {
     implementation 'org.apache.commons:commons-text:1.14.0'
     implementation 'net.java.dev.jna:jna:5.18.1'
     implementation 'org.xerial:sqlite-jdbc:3.50.3.0'
-    implementation 'com.github.numind-tech:javafxsvg:ce188ef95d'
+    // JavaFX discovers SVG support through the standard Image I/O service provider.
+    runtimeOnly 'com.twelvemonkeys.imageio:imageio-batik:3.15.0'
     implementation 'org.apache.xmlgraphics:batik-transcoder:1.19'
     implementation 'io.github.raghul-tech:javafx-markdown-preview-all:1.0.3'
     implementation 'org.joml:joml:1.10.8'
@@ -161,6 +158,7 @@ dependencies {
 }
 
 test {
+    systemProperty 'railroad.test.gradleHome', gradle.gradleHomeDir.absolutePath
     useJUnitPlatform()
     dependsOn tasks.named('formatterClasses')
 }
@@ -310,8 +308,6 @@ runtime {
         jvmArgs = [
             '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
             '-Dslf4j.internal.report.stream=stdout',
-            '--add-exports=javafx.graphics/com.sun.javafx.iio=ALL-UNNAMED',
-            '--add-exports=javafx.graphics/com.sun.javafx.iio.common=ALL-UNNAMED',
             '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
         ]
     }

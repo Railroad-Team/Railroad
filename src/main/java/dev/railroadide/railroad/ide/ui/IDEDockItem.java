@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.gradle.ui.GradleToolsPane;
+import dev.railroadide.railroad.ide.ui.debugger.DebuggerPane;
 import dev.railroadide.railroad.ide.WorkspaceMode;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
@@ -153,7 +154,18 @@ public enum IDEDockItem {
         DockPosition.BOTTOM,
         null,
         InitializationPolicy.ON_FIRST_SELECTION,
-        project -> TerminalFactory.create(project.getPath()));
+        project -> TerminalFactory.create(project.getPath())),
+    /**
+     * Debugger pane for seeing threads, variables, call stack and watches.
+     */
+    DEBUGGER(
+        "dock-item:debugger",
+        "railroad.ide.dock_item.debugger",
+        FontAwesomeSolid.BUG,
+        DockPosition.BOTTOM,
+        WorkspaceModes.CODE,
+        InitializationPolicy.EAGER,
+        DebuggerPane::new);
 
     private final String id;
     private final String localizationKey;

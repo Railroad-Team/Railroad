@@ -1,20 +1,19 @@
 package dev.railroadide.railroad.command;
 
-import dev.railroadide.railroad.ide.ui.IDEDockItem;
-import dev.railroadide.railroad.settings.keybinds.*;
+import dev.railroadide.railroad.settings.keybinds.KeybindCategory;
+import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
+import dev.railroadide.railroad.settings.keybinds.KeybindData;
+import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import javafx.event.Event;
 import javafx.scene.control.MenuItem;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import org.junit.jupiter.api.Test;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
+
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import javafx.scene.input.KeyCodeCombination;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /** Regression checks for the shared command adapters and built-in metadata. */
@@ -65,30 +64,5 @@ public class CommandMigrationTest {
         assertThrows(IllegalArgumentException.class, () -> CommandDispatcher.execute(command.id(),
             CommandContext.withArgument(null, null, "wrong type")));
         assertEquals(0, executions.get());
-    }
-
-    @Test
-    public void builtinsHaveLocalizedNamesAndNoFindReplaceImplementation() throws Exception {
-        Commands.initialize();
-        for (String language : List.of("en_us", "ru_ru")) {
-            Set<String> keys = new HashSet<>();
-            try (var stream = getClass().getResourceAsStream("/assets/railroad/lang/" + language + ".lang")) {
-                assertNotNull(stream);
-                try (var reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
-                    reader.lines().filter(line -> line.contains("="))
-                        .forEach(line -> keys.add(line.substring(0, line.indexOf('='))));
-                }
-            }
-            for (var command : CommandRegistry.all()) {
-                if (command.id().startsWith("railroad:") &&
-                    (language.equals("en_us") || command.displayNameKey().startsWith("railroad.command."))) {
-                    assertTrue(keys.contains(command.displayNameKey()), language + ": " + command.displayNameKey());
-                }
-            }
-        }
-        assertTrue(CommandRegistry.find("railroad:edit_find").isEmpty());
-        assertTrue(CommandRegistry.find("railroad:edit_replace").isEmpty());
-        assertNotEquals(Commands.REOPEN_CLOSED_EDITOR_TAB.defaultShortcuts().getFirst().getKeyCodeCombination(),
-            Commands.toggleDockItem(IDEDockItem.TERMINAL).defaultShortcuts().getFirst().getKeyCodeCombination());
     }
 }

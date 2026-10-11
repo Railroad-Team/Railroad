@@ -262,11 +262,20 @@ public class ProjectValidators {
      */
     public static ValidationResult validateQualifiedMainClass(TextField field) {
         String text = field.getText();
+        if (text == null) {
+            text = "";
+        } else {
+            text = text.strip();
+        }
+
         if (text == null || text.isBlank())
             return ValidationResult.error("railroad.project.creation.qualified_main_class.error.required");
 
+        if (text.startsWith("src.main.java.") || text.endsWith(".java"))
+            return ValidationResult.error("railroad.project.creation.qualified_main_class.error.invalid_characters");
+
         if (!text.matches("([a-zA-Z_][a-zA-Z0-9_]*\\.)*[a-zA-Z_][a-zA-Z0-9_]*"))
-            return ValidationResult.error("railroad.project.creation.qualified_main_class.error.invalid_format");
+            return ValidationResult.error("railroad.project.creation.qualified_main_class.error.invalid_characters");
 
         return ValidationResult.ok();
     }

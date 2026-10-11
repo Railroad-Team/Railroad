@@ -3,6 +3,7 @@ package dev.railroadide.railroad.ide.ui.setup;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.command.*;
+import dev.railroadide.railroad.ide.debug.DebuggingManager;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.ui.RunConfigurationContextMenuManager;
 import dev.railroadide.railroad.ide.runconfig.ui.RunConfigurationListCell;
@@ -25,7 +26,10 @@ import javafx.scene.Node;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.SeparatorMenuItem;
+import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
@@ -38,6 +42,7 @@ import java.util.concurrent.CompletableFuture;
  * manages tracking of currently running configurations to support multiple instances.
  */
 public final class RunControlsPane extends RRHBox {
+    @Getter
     private final Project project;
     private final LocalizedComboBox<RunConfiguration<?>> runConfigurationsComboBox;
     private final RRButton runButton = new RRButton("", FontAwesomeSolid.PLAY);
@@ -92,6 +97,42 @@ public final class RunControlsPane extends RRHBox {
             debugButton,
             stopButton,
             moreActionsButton);
+        DebuggingManager debugging = project.getDebuggingManager();
+        getChildren().addAll(
+            debugControl(RunCommands.RESUME, FontAwesomeSolid.PLAY),
+            debugControl(RunCommands.PAUSE, FontAwesomeSolid.PAUSE),
+            debugControl(RunCommands.STEP_OVER, FontAwesomeSolid.ARROW_RIGHT),
+            debugControl(RunCommands.STEP_INTO, FontAwesomeSolid.ARROW_DOWN),
+            debugControl(RunCommands.STEP_OUT, FontAwesomeSolid.ARROW_UP));
+        var debugLocation = new Label();
+        debugLocation.getStyleClass().add("debugger-location");
+        debugLocation.setMinWidth(0);
+        debugLocation.setMaxWidth(240);
+        var locationTooltip = new Tooltip();
+        locationTooltip.textProperty().bind(debugging.getLocation());
+        debugLocation.setTooltip(locationTooltip);
+        debugLocation.textProperty().bind(debugging.getLocation());
+        debugLocation.visibleProperty().bind(debugging.pausedProperty());
+        debugLocation.managedProperty().bind(debugLocation.visibleProperty());
+        getChildren().add(debugLocation);
+    }
+
+    private RRButton debugControl(Command<RunConfiguration<?>> command, FontAwesomeSolid icon) {
+        var button = new RRButton("", icon);
+        button.setSquare(true);
+        button.setButtonSize(ButtonSize.SMALL);
+        button.setVariant(ButtonVariant.GHOST);
+        button.setFocusTraversable(false);
+        button.getStyleClass().addAll("toolbar-button", "debugger-control");
+        button.setTooltip(new LocalizedTooltip(command.displayNameKey()));
+        button.setAccessibleText(L18n.localize(command.displayNameKey()));
+        var debugging = project.getDebuggingManager();
+        button.visibleProperty().bind(debugging.activeProperty());
+        button.managedProperty().bind(button.visibleProperty());
+        CommandButtons.bind(button, command, () -> CommandContext.forProject(project, this),
+            debugging.activeProperty(), debugging.pausedProperty(), debugging.getCommandPending(),
+            debugging.getState(), debugging.selectedThreadProperty());
+        return button;
     }
 
     private LocalizedComboBox<RunConfiguration<?>> createRunConfigurationsComboBox() {
@@ -207,15 +248,6 @@ public final class RunControlsPane extends RRHBox {
         runConfigurationsComboBox.valueProperty().addListener((_, _, _) -> updateRunControls());
         runConfigurationsComboBox.getSelectionModel().selectFirst();
         updateRunControls();
-    }
-
-    /**
-     * Returns the project whose executions these controls track.
-     *
-     * @return owning project
-     */
-    public Project getProject() {
-        return project;
     }
 
     /**
@@ -394,7 +426,8 @@ public final class RunControlsPane extends RRHBox {
     }
 
     private void restartConfiguration(RunConfiguration<?> configuration, boolean debug) {
-        stopConfiguration(configuration).thenAccept(_ -> startConfigurationExecution(configuration, debug));
+        stopConfiguration(configuration)
+            .thenRun(() -> Platform.runLater(() -> startConfigurationExecution(configuration, debug)));
     }
 
     private void updateRunControls() {

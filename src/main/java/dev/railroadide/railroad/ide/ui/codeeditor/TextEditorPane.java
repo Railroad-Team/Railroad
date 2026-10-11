@@ -23,13 +23,13 @@ import javafx.util.Pair;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.fxmisc.richtext.CodeArea;
-import org.fxmisc.richtext.LineNumberFactory;
 import org.fxmisc.richtext.model.PlainTextChange;
 import org.reactfx.Subscription;
 
 import java.io.IOException;
 import java.nio.file.*;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.*;
@@ -70,6 +70,9 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     @Getter
     protected final String languageId;
 
+    @Getter
+    private final EditorGutter gutter;
+
     private final AtomicReference<String> lastSavedText = new AtomicReference<>("");
     private final AtomicReference<String> pendingSnapshot = new AtomicReference<>("");
     private final AtomicLong pendingSnapshotVersion = new AtomicLong();
@@ -96,12 +99,49 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     private volatile boolean discardChangesOnClose;
     private boolean closed;
     private final Object saveLock = new Object();
-    // Guarded by saveLock. Saving is suspended until the FX thread resolves this snapshot.
     private String pendingExternalText;
     private String displayedExternalText;
     private ExternalChangeDialog externalChangeDialog;
 
     private int fontSizeIndex = 5;
+
+    /**
+     * Reveals and highlights a suspended debugger location on the JavaFX thread.
+     *
+     * @param line one-based source line; out-of-range lines are ignored
+     */
+    public void showExecutionLine(int line) {
+        clearExecutionLine();
+        if (closed || line < 1 || line > getParagraphs().size())
+            return;
+
+        int paragraph = line - 1;
+        // Unfold enclosing regions so the execution location is actually visible.
+        for (int index = 0; index <= paragraph; index++) {
+            if (isFolded(index)) {
+                unfoldParagraphs(Math.max(0, index - 1));
+            }
+        }
+
+        List<String> styles = new ArrayList<>(getParagraph(paragraph).getParagraphStyle());
+        styles.add("debug-execution-line");
+        setParagraphStyle(paragraph, styles);
+        moveTo(paragraph, 0);
+        requestFollowCaret();
+        requestFocus();
+    }
+
+    /**
+     * Clears debugger highlighting without changing the caret or other paragraph styles.
+     */
+    public void clearExecutionLine() {
+        for (int index = 0; index < getParagraphs().size(); index++) {
+            var styles = new ArrayList<>(getParagraph(index).getParagraphStyle());
+            if (styles.remove("debug-execution-line")) {
+                setParagraphStyle(index, styles);
+            }
+        }
+    }
 
     /**
      * Creates a file editor, loads its initial contents, and configures saving and file watching.
@@ -117,7 +157,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         saved.bind(saveState.isEqualTo(EditorSaveState.CLEAN));
         saveFailed.bind(saveState.isEqualTo(EditorSaveState.ERROR));
 
-        setParagraphGraphicFactory(LineNumberFactory.get(this));
+        gutter = new EditorGutter(this);
         setMouseOverTextDelay(Duration.ofMillis(500));
 
         loadInitialContent();
@@ -513,6 +553,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                     StandardOpenOption.TRUNCATE_EXISTING);
 
                 filePath = normalizedPath;
+                JavaFXUtils.runOnApplicationThread(gutter::refresh);
                 pendingExternalText = null;
                 closeExternalChangeDialog();
                 backingFileMissing = false;
@@ -533,7 +574,9 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         }
     }
 
-    /** Prevents disposal from retrying a save after the user explicitly chose Discard. */
+    /**
+     * Prevents disposal from retrying a save after the user explicitly chose Discard.
+     */
     public void discardChangesOnClose() {
         synchronized (saveLock) {
             discardChangesOnClose = true;
@@ -686,6 +729,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             }
 
             filePath = normalizedPath;
+            JavaFXUtils.runOnApplicationThread(gutter::refresh);
             pendingExternalText = null;
             closeExternalChangeDialog();
             backingFileMissing = false;
@@ -714,7 +758,9 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         }
     }
 
-    /** Marks a deleted backing file without discarding the editor's in-memory text. */
+    /**
+     * Marks a deleted backing file without discarding the editor's in-memory text.
+     */
     public void markBackingFileDeleted() {
         synchronized (saveLock) {
             if (closed)

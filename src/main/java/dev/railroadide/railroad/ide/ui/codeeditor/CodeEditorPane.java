@@ -17,7 +17,6 @@ import io.github.palexdev.mfxresources.fonts.fontawesome.FontAwesomeSolid;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.geometry.Bounds;
-import javafx.geometry.HPos;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -26,9 +25,6 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
@@ -137,7 +133,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         signaturePopupContainer.getChildren().add(signatureTextFlow);
         signaturePopup.getContent().add(signaturePopupContainer);
 
-        configureParagraphGraphics();
+        configureGutter();
 
         installSyntaxHighlighting();
         if (supportsDiagnostics()) {
@@ -172,50 +168,35 @@ public abstract class CodeEditorPane extends TextEditorPane {
         super.close();
     }
 
-    // region Paragraph Graphics
-    private void configureParagraphGraphics() {
-        setParagraphGraphicFactory(this::createParagraphGraphic);
+    // region Gutter
+    private void configureGutter() {
+        getGutter().setLineNumberFactory(line -> {
+            var label = new Label(String.format("%4d", line));
+            label.setTextAlignment(TextAlignment.RIGHT);
+            label.getStyleClass().add("editor-line-number");
+            return label;
+        });
+        getGutter().addColumn(new GutterColumn("diagnostics", 12, this::createDiagnosticMarker));
     }
 
-    private Node createParagraphGraphic(int line) {
-        var grid = new GridPane();
-        grid.getStyleClass().add("ide-code-editor-grid");
+    private @Nullable Node createDiagnosticMarker(int line) {
+        Diagnostic.Kind severity = lineSeverity.get(line);
+        if (severity == null)
+            return null;
 
-        var numberColumn = new ColumnConstraints();
-        numberColumn.setHgrow(Priority.ALWAYS);
+        FontAwesomeSolid iconType = severity == Diagnostic.Kind.ERROR
+            ? FontAwesomeSolid.CIRCLE_EXCLAMATION
+            : FontAwesomeSolid.TRIANGLE_EXCLAMATION;
 
-        var iconColumn = new ColumnConstraints();
-        iconColumn.setMinWidth(18);
-        iconColumn.setPrefWidth(18);
-        iconColumn.setMaxWidth(18);
-        iconColumn.setHalignment(HPos.CENTER);
-        iconColumn.setHgrow(Priority.NEVER);
-
-        grid.getColumnConstraints().addAll(numberColumn, iconColumn);
-
-        var label = new Label(String.format("%4d", line + 1));
-        label.setTextAlignment(TextAlignment.RIGHT);
-        label.getStyleClass().add("editor-line-number");
-        grid.add(label, 0, 0);
-
-        Diagnostic.Kind severity = lineSeverity.get(line + 1);
-        if (severity != null) {
-            FontAwesomeSolid iconType = severity == Diagnostic.Kind.ERROR
-                ? FontAwesomeSolid.CIRCLE_EXCLAMATION
-                : FontAwesomeSolid.TRIANGLE_EXCLAMATION;
-            var icon = new MFXFontIcon(iconType, 12);
-            icon.getStyleClass().add(severity == Diagnostic.Kind.ERROR
-                ? "editor-diagnostic-error"
-                : "editor-diagnostic-warning");
-            grid.add(icon, 1, 0);
-
-            String tooltipText = lineDiagnosticMessages.getOrDefault(
-                line + 1,
-                severity == Diagnostic.Kind.ERROR ? "Error" : "Warning");
-            Tooltip.install(icon, new Tooltip(tooltipText));
-        }
-
-        return grid;
+        var icon = new MFXFontIcon(iconType, 12);
+        icon.getStyleClass().add(severity == Diagnostic.Kind.ERROR
+            ? "editor-diagnostic-error"
+            : "editor-diagnostic-warning");
+        String tooltipText = lineDiagnosticMessages.getOrDefault(
+            line,
+            severity == Diagnostic.Kind.ERROR ? "Error" : "Warning");
+        Tooltip.install(icon, new Tooltip(tooltipText));
+        return icon;
     }
     // endregion
 
@@ -285,7 +266,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         applyEditorStyles();
         restoreBracketHighlight();
         if (lineDecorationsChanged) {
-            requestLayout();
+            getGutter().refresh();
         }
     }
 

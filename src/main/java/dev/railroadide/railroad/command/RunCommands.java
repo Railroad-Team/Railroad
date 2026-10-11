@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.command;
 
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.debug.model.DebugStepKind;
 import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.ui.setup.RunControlsPane;
@@ -52,6 +53,41 @@ public final class RunCommands {
     public static final Command<RunConfiguration<?>> STOP_ALL = register("stop_all", "railroad.ide.toolbar.stop.all",
         c -> controls(c) != null && controls(c).hasRunningConfigurations(),
         c -> controls(c).stopAllConfigurations(), null);
+    /**
+     * Resumes the current project's suspended debugger.
+     */
+    public static final Command<RunConfiguration<?>> RESUME = register("debug_resume", "railroad.menu.run.resume",
+        c -> c.project() != null && c.project().getDebuggingManager().canResume(),
+        c -> c.project().getDebuggingManager().resume(), KeyCode.F9);
+    /**
+     * Pauses the current project's running debugger.
+     */
+    public static final Command<RunConfiguration<?>> PAUSE = register("debug_pause", "railroad.menu.run.pause",
+        c -> c.project() != null && c.project().getDebuggingManager().canPause(),
+        c -> c.project().getDebuggingManager().pause(), null);
+    /**
+     * Steps over the current source line.
+     */
+    public static final Command<RunConfiguration<?>> STEP_OVER = register("debug_step_over",
+        "railroad.menu.run.step_over",
+        c -> c.project() != null && c.project().getDebuggingManager().canStep(),
+        c -> c.project().getDebuggingManager().step(DebugStepKind.OVER), KeyCode.F8);
+    /**
+     * Steps into the next method call.
+     */
+    public static final Command<RunConfiguration<?>> STEP_INTO = register("debug_step_into",
+        "railroad.menu.run.step_into",
+        c -> c.project() != null && c.project().getDebuggingManager().canStep(),
+        c -> c.project().getDebuggingManager().step(DebugStepKind.INTO), KeyCode.F10);
+    /**
+     * Runs until the current method returns.
+     */
+    public static final Command<RunConfiguration<?>> STEP_OUT = CommandRegistry.register(new Command<>(
+        "railroad:debug_step_out", "railroad.menu.run.step_out",
+        c -> c.project() != null && c.project().getDebuggingManager().canStep(),
+        c -> c.project().getDebuggingManager().step(DebugStepKind.OUT),
+        List.of(new KeybindData(KeyCode.F8, new KeyCombination.Modifier[]{KeyCombination.SHIFT_DOWN})),
+        RunConfiguration.class));
     /**
      * Opens the existing run-configuration editor.
      */

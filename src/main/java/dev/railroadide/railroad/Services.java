@@ -2,6 +2,8 @@ package dev.railroadide.railroad;
 
 import com.google.gson.Gson;
 import dev.railroadide.logger.Logger;
+import dev.railroadide.railroad.debug.DebugService;
+import dev.railroadide.railroad.debug.breakpoint.BreakpointService;
 import dev.railroadide.railroad.ide.DefaultDocumentEditorStateService;
 import dev.railroadide.railroad.ide.DefaultIDEStateService;
 import dev.railroadide.railroad.ide.DefaultWorkspaceService;
@@ -154,6 +156,16 @@ public class Services {
     public static final UIManager UI_MANAGER = new UIManager();
 
     /**
+     * Application-wide owner of the active debugger session.
+     */
+    public static final DebugService DEBUG_SERVICE = new DebugService();
+
+    /**
+     * Shared breakpoint store used by editors and debugger sessions.
+     */
+    public static final BreakpointService BREAKPOINT_SERVICE = new BreakpointService();
+
+    /**
      * Retrieves a service instance by its class type.
      *
      * @param <T> The type of the service to retrieve.
@@ -193,6 +205,10 @@ public class Services {
             return (T) PROJECT_LANGUAGE_INDEX_SERVICE;
         else if (serviceClass == UIManager.class)
             return (T) UI_MANAGER;
+        else if (serviceClass == DebugService.class)
+            return (T) DEBUG_SERVICE;
+        else if (serviceClass == BreakpointService.class)
+            return (T) BREAKPOINT_SERVICE;
 
         throw new IllegalArgumentException("Service " + serviceClass.getName() + " is not available.");
     }

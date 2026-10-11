@@ -2,8 +2,6 @@ package dev.railroadide.railroad;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import de.codecentric.centerdevice.javafxsvg.SvgImageLoaderFactory;
-import de.codecentric.centerdevice.javafxsvg.dimension.PrimitiveDimensionProvider;
 import dev.railroadide.logger.Logger;
 import dev.railroadide.logger.LoggerManager;
 import dev.railroadide.logger.LoggerService;
@@ -204,8 +202,6 @@ public class Railroad extends Application {
         }
 
         try {
-            SvgImageLoaderFactory.install(new PrimitiveDimensionProvider());
-
             List<Project> projects = Railroad.PROJECT_MANAGER.getProjects();
             Optional<Project> optProject = getParameters()
                 .getNamed()

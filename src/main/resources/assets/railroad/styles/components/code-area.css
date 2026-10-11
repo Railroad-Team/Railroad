@@ -47,6 +47,12 @@
     -fx-background-color: -color-neutral-subtle;
 }
 
+.code-area .paragraph-text.debug-execution-line {
+    -fx-background-color: -color-warning-subtle;
+    -fx-border-color: -color-warning-emphasis;
+    -fx-border-width: 0 0 0 3;
+}
+
 .code-area .ide-code-editor-grid {
     -fx-background-color: -color-surface-editor;
     -fx-padding: 0 12px 0 5px;
@@ -203,4 +209,14 @@
 .signature-param-active {
     -fx-text-fill: #ffffff;
     -fx-font-weight: bold;
+}
+
+.code-area .editor-breakpoint-marker {
+    -fx-fill: -color-danger-emphasis;
+    -fx-stroke: -color-danger-emphasis;
+    -fx-stroke-width: 1.5px;
+}
+
+.code-area .editor-breakpoint-marker:disabled {
+    -fx-fill: transparent;
 }

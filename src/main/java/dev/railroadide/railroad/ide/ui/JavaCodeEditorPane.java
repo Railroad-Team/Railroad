@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.ui.codeeditor.BreakpointGutterBinding;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorConfig;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -15,6 +17,7 @@ import java.util.stream.Stream;
  * Adds Java call-context detection for signature help to the configured code editor.
  */
 public class JavaCodeEditorPane extends CodeEditorPane {
+    private final BreakpointGutterBinding breakpointBinding;
     private static final int SIGNATURE_SCAN_WINDOW = 2048;
     private static final Set<String> NON_CALLABLE_PREFIX_KEYWORDS = Set.of(
         "if",
@@ -35,6 +38,14 @@ public class JavaCodeEditorPane extends CodeEditorPane {
      */
     public JavaCodeEditorPane(Project project, Path item, CodeEditorConfig config) {
         super(project, item, config);
+        breakpointBinding = new BreakpointGutterBinding(getGutter(), this, this::getFilePath,
+            Services.BREAKPOINT_SERVICE);
+    }
+
+    @Override
+    public void close() {
+        breakpointBinding.close();
+        super.close();
     }
 
     /**

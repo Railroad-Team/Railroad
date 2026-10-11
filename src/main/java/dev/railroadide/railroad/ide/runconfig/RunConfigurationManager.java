@@ -169,7 +169,20 @@ public class RunConfigurationManager {
      */
     private void readConfigurations() {
         ProjectDataStore dataStore = this.project.getDataStore();
-        dataStore.readJson(RUN_CONFIGURATIONS_FILE, JsonArray.class).ifPresent(jsonArray -> {
+        dataStore.readJson(RUN_CONFIGURATIONS_FILE, JsonElement.class).ifPresent(configRoot -> {
+            JsonArray jsonArray;
+            if (configRoot.isJsonArray()) {
+                jsonArray = configRoot.getAsJsonArray();
+            } else if (configRoot.isJsonObject()) {
+                jsonArray = new JsonArray(1);
+                jsonArray.add(configRoot.getAsJsonObject());
+            } else {
+                Railroad.LOGGER.warn("Skipping invalid run configuration data for project {}: {}",
+                    this.project.getPath(),
+                    configRoot);
+                return;
+            }
+
             List<RunConfiguration<?>> runConfigurations = new ArrayList<>(jsonArray.size());
             for (JsonElement element : jsonArray) {
                 try {
