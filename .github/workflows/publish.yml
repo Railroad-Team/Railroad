@@ -24,12 +24,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y fakeroot dpkg
-      # Isolate Gradle state from other jobs on self-hosted runners.
+      # Reuse the same warm Gradle state as trusted CI builds on this runner.
       - name: Prepare Gradle home
         shell: bash
-        run: echo "GRADLE_USER_HOME=$RUNNER_TEMP/gradle-home" >> "$GITHUB_ENV"
+        env:
+          GRADLE_CACHE_SCOPE: ${{ github.repository }}/trusted
+        run: echo "GRADLE_USER_HOME=$RUNNER_TOOL_CACHE/railroad-gradle/$GRADLE_CACHE_SCOPE" >> "$GITHUB_ENV"
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-disabled: true
       - run: chmod +x gradlew
       - run: ./gradlew --build-cache jpackage
       - name: Upload Linux artifacts

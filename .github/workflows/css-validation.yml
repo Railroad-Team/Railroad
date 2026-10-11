@@ -26,13 +26,18 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
 
-      # Isolate Gradle state from other jobs on self-hosted runners.
+      # Keep dependencies and daemons warm; isolate each PR from trusted builds.
       - name: Prepare Gradle home
         shell: bash
-        run: echo "GRADLE_USER_HOME=$RUNNER_TEMP/gradle-home" >> "$GITHUB_ENV"
+        env:
+          GRADLE_CACHE_SCOPE: ${{ github.repository }}/${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || 'trusted' }}
+        run: echo "GRADLE_USER_HOME=$RUNNER_TOOL_CACHE/railroad-gradle/$GRADLE_CACHE_SCOPE" >> "$GITHUB_ENV"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          # The self-hosted runner retains its local cache between jobs.
+          cache-disabled: true
 
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
