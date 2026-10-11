@@ -1277,3 +1277,18 @@ railroad.debugger.no_threads=Pause execution to inspect threads
 railroad.debugger.no_frames=No stack frames available
 railroad.debugger.add_watch=Add watch
 railroad.debugger.remove_watch=Remove watch
+
+railroad.debugger.watch_expression=Watch expression (Enter)
+railroad.debugger.no_variables=Pause and select a frame to inspect variables
+railroad.debugger.no_watches=Add a watch expression
+railroad.debugger.state.new=No active debug session
+railroad.debugger.state.attaching=Connecting to debugger
+railroad.debugger.state.configuring=Preparing debug session
+railroad.debugger.state.running=Running
+railroad.debugger.state.suspended=Paused
+railroad.debugger.state.terminating=Stopping debug session
+railroad.debugger.state.terminated=Debug session ended
+railroad.debugger.state.failed=Debug session failed
+
+railroad.debugger.select_thread=Select a thread
+railroad.debugger.inspection=Threads & Variables

@@ -9,7 +9,7 @@ import dev.railroadide.railroad.utility.javafx.JavaFXUtils;
 import javafx.scene.Node;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.MouseButton;
-import javafx.scene.paint.Color;
+import javafx.css.PseudoClass;
 import javafx.scene.shape.Circle;
 import org.jspecify.annotations.Nullable;
 import org.fxmisc.richtext.CodeArea;
@@ -84,9 +84,8 @@ public final class BreakpointGutterBinding implements AutoCloseable {
             return null;
 
         var marker = new Circle(5);
-        marker.setFill(breakpoint.enabled() ? Color.RED : Color.TRANSPARENT);
-        marker.setStroke(Color.RED);
         marker.getStyleClass().add("editor-breakpoint-marker");
+        marker.pseudoClassStateChanged(PseudoClass.getPseudoClass("disabled"), !breakpoint.enabled());
         Tooltip.install(marker, new Tooltip("Breakpoint at line " + line + " (click to remove)"));
         return marker;
     }

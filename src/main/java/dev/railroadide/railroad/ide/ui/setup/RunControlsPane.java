@@ -27,6 +27,7 @@ import javafx.scene.control.ContextMenu;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.SeparatorMenuItem;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
@@ -104,6 +105,12 @@ public final class RunControlsPane extends RRHBox {
             debugControl(RunCommands.STEP_INTO, FontAwesomeSolid.ARROW_DOWN),
             debugControl(RunCommands.STEP_OUT, FontAwesomeSolid.ARROW_UP));
         var debugLocation = new Label();
+        debugLocation.getStyleClass().add("debugger-location");
+        debugLocation.setMinWidth(0);
+        debugLocation.setMaxWidth(240);
+        var locationTooltip = new Tooltip();
+        locationTooltip.textProperty().bind(debugging.getLocation());
+        debugLocation.setTooltip(locationTooltip);
         debugLocation.textProperty().bind(debugging.getLocation());
         debugLocation.visibleProperty().bind(debugging.pausedProperty());
         debugLocation.managedProperty().bind(debugLocation.visibleProperty());
@@ -116,6 +123,7 @@ public final class RunControlsPane extends RRHBox {
         button.setButtonSize(ButtonSize.SMALL);
         button.setVariant(ButtonVariant.GHOST);
         button.setFocusTraversable(false);
+        button.getStyleClass().addAll("toolbar-button", "debugger-control");
         button.setTooltip(new LocalizedTooltip(command.displayNameKey()));
         button.setAccessibleText(L18n.localize(command.displayNameKey()));
         var debugging = project.getDebuggingManager();
