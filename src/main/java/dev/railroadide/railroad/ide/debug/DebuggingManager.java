@@ -76,6 +76,20 @@ public final class DebuggingManager {
         return startSession(endpoint, resolver, breakpoints, filter, listener, Duration.ofSeconds(5), () -> false);
     }
 
+    /**
+     * Attaches a project session with a bounded, cancellable connection attempt.
+     * Session state is published on the JavaFX application thread, while the supplied listener
+     * receives the original events on their publishing thread.
+     *
+     * @param endpoint socket address of the debug target
+     * @param resolver mapping from runtime locations to source content
+     * @param breakpoints shared breakpoint store to observe for the project session
+     * @param filter predicate selecting breakpoints belonging to the project
+     * @param listener recipient of debugger events on their publishing thread
+     * @param timeout maximum attachment retry duration
+     * @param cancelled supplier returning true when attachment should be cancelled
+     * @return future containing the attached session, or failing on an existing session or attachment failure
+     */
     public synchronized CompletableFuture<JdiDebugSession> startSession(
         DebugEndpoint endpoint,
         SourceResolver resolver,
@@ -103,26 +117,57 @@ public final class DebuggingManager {
         return pending;
     }
 
+    /**
+     * Exposes the current target-thread snapshot for debugger UI bindings.
+     *
+     * @return an unmodifiable observable thread list
+     */
     public ObservableList<DebugThread> getThreads() {
         return FXCollections.unmodifiableObservableList(threads);
     }
 
+    /**
+     * Exposes the selected thread's current stack-frame snapshot.
+     *
+     * @return an unmodifiable observable frame list
+     */
     public ObservableList<DebugFrame> getFrames() {
         return FXCollections.unmodifiableObservableList(frames);
     }
 
+    /**
+     * Exposes the selected frame's currently inspected values.
+     *
+     * @return an unmodifiable observable variable list
+     */
     public ObservableList<DebugVariable> getVariables() {
         return FXCollections.unmodifiableObservableList(variables);
     }
 
+    /**
+     * Exposes retained watches and their current results or evaluation errors.
+     *
+     * @return an unmodifiable observable watch-result list
+     */
     public ObservableList<WatchResult> getWatchResults() {
         return FXCollections.unmodifiableObservableList(watchResults);
     }
 
+    /**
+     * Exposes the latest thread or frame inspection failure for UI presentation.
+     *
+     * @return a read-only property containing the failure message, or an empty string when clear
+     */
     public ReadOnlyStringProperty inspectionErrorProperty() {
         return inspectionError;
     }
 
+    /**
+     * Adds a trimmed watch expression retained across sessions and refreshes evaluation results.
+     * Null and blank expressions are ignored. Call on the JavaFX application thread.
+     *
+     * @param expression watch expression to resolve in the selected frame
+     */
     public void addWatch(String expression) {
         if (expression == null || expression.isBlank())
             return;
@@ -130,6 +175,11 @@ public final class DebuggingManager {
         refreshWatches();
     }
 
+    /**
+     * Removes a retained watch and refreshes the remaining results on the JavaFX application thread.
+     *
+     * @param watch watch definition to remove
+     */
     public void removeWatch(DebugWatch watch) {
         watches.remove(watch);
         refreshWatches();
@@ -157,6 +207,15 @@ public final class DebuggingManager {
         }
     }
 
+    /**
+     * Loads children for the selected suspended frame and cancels stale results if the session or selection changes.
+     *
+     * @param reference expansion handle from the current suspension
+     * @param start zero-based array offset; ignored for object fields
+     * @param count maximum number of array elements; ignored for object fields
+     * @return future completed on the JavaFX thread with child values, or exceptionally on failure or a changed
+     *         selection
+     */
     public CompletableFuture<List<DebugVariable>> expandVariable(long reference, int start, int count) {
         if (!isPaused() || selectedFrame.get() == null)
             return CompletableFuture.failedFuture(new IllegalStateException("No suspended frame selected"));
@@ -198,10 +257,20 @@ public final class DebuggingManager {
         refreshWatches();
     }
 
+    /**
+     * Exposes the thread selected for inspection.
+     *
+     * @return a read-only selection property whose value is null when no thread is selected
+     */
     public ReadOnlyObjectProperty<DebugThread> selectedThreadProperty() {
         return selectedThread;
     }
 
+    /**
+     * Exposes the frame selected for local-variable and watch evaluation.
+     *
+     * @return a read-only selection property whose value is null when no frame is selected
+     */
     public ReadOnlyObjectProperty<DebugFrame> selectedFrameProperty() {
         return selectedFrame;
     }
@@ -247,6 +316,13 @@ public final class DebuggingManager {
         }));
     }
 
+    /**
+     * Selects a current thread and refreshes its frames, variables and watch results.
+     * Ignores requests while running and threads outside the current snapshot.
+     * Call on the JavaFX application thread.
+     *
+     * @param thread thread in the current snapshot, or null to clear the selection
+     */
     public void selectThread(DebugThread thread) {
         if (!isPaused() || selectedThread.get() == thread || (thread != null && !threads.contains(thread)))
             return;
@@ -278,6 +354,13 @@ public final class DebuggingManager {
             }));
     }
 
+    /**
+     * Selects a current frame, reveals its source location and refreshes locals and watches.
+     * Ignores requests while running and frames outside the current snapshot.
+     * Call on the JavaFX application thread.
+     *
+     * @param frame frame in the current snapshot, or null to clear the selection
+     */
     public void selectFrame(DebugFrame frame) {
         if (!isPaused() || selectedFrame.get() == frame || (frame != null && !frames.contains(frame)))
             return;

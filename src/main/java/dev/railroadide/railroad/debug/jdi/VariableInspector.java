@@ -5,22 +5,39 @@ import dev.railroadide.railroad.debug.model.DebugVariable;
 
 import java.util.*;
 
+/**
+ * Formats JDI values and retains expandable references for the current suspension.
+ */
 public final class VariableInspector {
     private long generation;
     private long nextReference = -1;
 
     private final Map<Long, Value> references = new HashMap<>();
 
+    /**
+     * Starts a new inspection lifetime, discarding previously retained references and resetting handle allocation.
+     *
+     * @param generation identifier of the newly active suspension
+     */
     public void beginSuspension(long generation) {
         this.generation = generation;
         this.nextReference = 1;
         references.clear();
     }
 
+    /**
+     * Releases all retained values so previously issued expansion handles become invalid.
+     */
     public void endSuspension() {
         references.clear();
     }
 
+    /**
+     * Reads the receiver and visible locals; when local-variable metadata is missing, exposes numbered arguments.
+     *
+     * @param frame suspended stack frame to inspect
+     * @return formatted values in the frame
+     */
     public List<DebugVariable> inspectFrame(StackFrame frame) {
         List<DebugVariable> variables = new ArrayList<>();
 
@@ -63,6 +80,14 @@ public final class VariableInspector {
         return variables;
     }
 
+    /**
+     * Formats a JDI value and retains an expansion handle for arrays and non-string objects.
+     *
+     * @param name display name for the variable or watch
+     * @param declaredType declared type name to display
+     * @param value JDI value to format, or null for a null value
+     * @return a display value with its type and any child-expansion metadata
+     */
     public DebugVariable createVariable(String name, String declaredType, Value value) {
         if (value == null)
             return new DebugVariable(
@@ -96,6 +121,15 @@ public final class VariableInspector {
         return id;
     }
 
+    /**
+     * Expands a retained value into paged array elements or visible non-static object fields.
+     *
+     * @param reference expansion handle from the current suspension
+     * @param start zero-based array offset; ignored for object fields
+     * @param count maximum number of array elements; ignored for object fields
+     * @return formatted child values, or an empty list for an empty range or leaf value
+     * @throws IllegalArgumentException if the expansion handle is unknown or expired
+     */
     public List<DebugVariable> expand(long reference, int start, int count) {
         Value value = references.get(reference);
 

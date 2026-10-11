@@ -57,6 +57,11 @@ public final class DebuggerPane extends BorderPane implements AutoCloseable {
     private boolean closed;
     private long treeRevision;
 
+    /**
+     * Creates the project debugger toolbar, thread/frame selection and variable/watch inspection view.
+     *
+     * @param project project whose debugger state this pane displays
+     */
     public DebuggerPane(Project project) {
         debugging = project.getDebuggingManager();
         getStyleClass().add("debugger-pane");

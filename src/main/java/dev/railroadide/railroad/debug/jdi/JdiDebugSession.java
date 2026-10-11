@@ -20,6 +20,11 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 
+/**
+ * Serializes debugger commands and publishes events for one attached virtual machine.
+ * Inspection handles are valid only during the suspension that created them; command failures
+ * complete their returned futures exceptionally.
+ */
 public final class JdiDebugSession {
     private final DebugEndpoint endpoint;
     private final SourceResolver sourceResolver;
@@ -45,6 +50,13 @@ public final class JdiDebugSession {
     private VariableInspector variableInspector;
     private ExpressionEvaluator expressionEvaluator;
 
+    /**
+     * Creates a disconnected session; call {@link #attach()} to connect to the target.
+     *
+     * @param endpoint socket address of the debug target
+     * @param sourceResolver mapping from runtime locations to source content
+     * @param initialBreakpoints source breakpoint definitions to install after attachment
+     */
     public JdiDebugSession(
         DebugEndpoint endpoint,
         SourceResolver sourceResolver,
@@ -55,10 +67,24 @@ public final class JdiDebugSession {
         this.initialBreakpoints = initialBreakpoints;
     }
 
+    /**
+     * Connects to the target, installs initial breakpoints and starts the event reader.
+     * The no-argument overload retries attachment for up to five seconds.
+     *
+     * @return future completing after connection setup, or exceptionally on attachment failure
+     */
     public CompletableFuture<Void> attach() {
         return attach(Duration.ofSeconds(5), () -> false);
     }
 
+    /**
+     * Connects to the target, installs initial breakpoints and starts the event reader.
+     * The no-argument overload retries attachment for up to five seconds.
+     *
+     * @param timeout maximum attachment retry duration
+     * @param cancelled supplier returning true when attachment should be cancelled
+     * @return future completing after connection setup, or exceptionally on attachment failure
+     */
     public CompletableFuture<Void> attach(Duration timeout, BooleanSupplier cancelled) {
         return submit(() -> {
             changeState(DebugSessionState.ATTACHING);
@@ -82,6 +108,11 @@ public final class JdiDebugSession {
         });
     }
 
+    /**
+     * Resumes the current suspension and invalidates its frame and variable inspection handles.
+     *
+     * @return future completing when the resume command has been applied
+     */
     public CompletableFuture<Void> resume() {
         return submit(() -> {
             requireState(DebugSessionState.SUSPENDED);
@@ -103,6 +134,11 @@ public final class JdiDebugSession {
         });
     }
 
+    /**
+     * Suspends the running virtual machine and publishes a pause event with a selected target thread.
+     *
+     * @return future completing after the suspension has been established
+     */
     public CompletableFuture<Void> pause() {
         return submit(() -> {
             requireState(DebugSessionState.RUNNING);
@@ -135,6 +171,14 @@ public final class JdiDebugSession {
         });
     }
 
+    /**
+     * Installs a single line-step request for the suspended thread and resumes execution.
+     * The next stop is reported through session events rather than the command future.
+     *
+     * @param threadId JDI unique identifier of a suspended target thread
+     * @param kind method-boundary behavior of the line step
+     * @return future completing after the step request is installed and execution resumes
+     */
     public CompletableFuture<Void> step(long threadId, DebugStepKind kind) {
         return submit(() -> {
             requireState(DebugSessionState.SUSPENDED);
@@ -169,6 +213,11 @@ public final class JdiDebugSession {
         });
     }
 
+    /**
+     * Snapshots the threads captured for the current suspension.
+     *
+     * @return future containing target thread identities, names, status codes and suspension flags
+     */
     public CompletableFuture<List<DebugThread>> threads() {
         return submit(() -> {
             requireState(DebugSessionState.SUSPENDED);
@@ -183,6 +232,12 @@ public final class JdiDebugSession {
         });
     }
 
+    /**
+     * Reads the suspended thread stack and assigns identifiers scoped to the current suspension.
+     *
+     * @param threadId JDI unique identifier of a suspended target thread
+     * @return future containing frames from the top of the stack downward
+     */
     public CompletableFuture<List<DebugFrame>> stackFrames(long threadId) {
         return submit(() -> {
             requireState(DebugSessionState.SUSPENDED);
@@ -216,6 +271,12 @@ public final class JdiDebugSession {
         });
     }
 
+    /**
+     * Reads the receiver and visible locals of a frame in the current suspension.
+     *
+     * @param frameId frame identifier from the current suspension
+     * @return future containing formatted frame variables
+     */
     public CompletableFuture<List<DebugVariable>> variables(DebugFrameId frameId) {
         return submit(() -> {
             StackFrame frame = requireFrame(frameId);
@@ -223,6 +284,14 @@ public final class JdiDebugSession {
         });
     }
 
+    /**
+     * Reads children of a current suspension-scoped value handle, paging arrays by index.
+     *
+     * @param reference expansion handle from the current suspension
+     * @param start zero-based array offset; ignored for object fields
+     * @param count maximum number of array elements; ignored for object fields
+     * @return future containing array elements or all visible instance fields
+     */
     public CompletableFuture<List<DebugVariable>> expandVariable(long reference, int start, int count) {
         return submit(() -> {
             requireState(DebugSessionState.SUSPENDED);
@@ -234,6 +303,13 @@ public final class JdiDebugSession {
         });
     }
 
+    /**
+     * Evaluates a watch in a suspended frame without invoking target methods.
+     *
+     * @param frameId frame identifier from the current suspension
+     * @param expression watch expression to resolve in the selected frame
+     * @return future containing the formatted result, or failing when the expression cannot be resolved
+     */
     public CompletableFuture<DebugVariable> evaluate(DebugFrameId frameId, String expression) {
         return submit(() -> {
             StackFrame frame = requireFrame(frameId);
@@ -251,6 +327,11 @@ public final class JdiDebugSession {
         });
     }
 
+    /**
+     * Disconnects the debugger, releases its JDI connection and ends the session without exiting the target.
+     *
+     * @return future completing after detachment and session cleanup
+     */
     public CompletableFuture<Void> detach() {
         stopRequested = true;
         return submit(() -> {
@@ -273,6 +354,12 @@ public final class JdiDebugSession {
         });
     }
 
+    /**
+     * Exits the target virtual machine with status zero and ends the session.
+     * An already terminated session is left unchanged.
+     *
+     * @return future completing after termination and session cleanup
+     */
     public CompletableFuture<Void> terminate() {
         stopRequested = true;
         return submit(() -> {
@@ -294,14 +381,30 @@ public final class JdiDebugSession {
         });
     }
 
+    /**
+     * Registers a recipient for events published by the command or event-reader thread.
+     *
+     * @param listener recipient of debugger events on their publishing thread
+     */
     public void addListener(DebugSessionListener listener) {
         listeners.add(listener);
     }
 
+    /**
+     * Unregisters a recipient from subsequent session events.
+     *
+     * @param listener recipient of debugger events on their publishing thread
+     */
     public void removeListener(DebugSessionListener listener) {
         listeners.remove(listener);
     }
 
+    /**
+     * Queues installation of a source breakpoint in the attached target.
+     *
+     * @param breakpoint source breakpoint definition to install
+     * @return future completing after the definition and runtime requests are installed
+     */
     public CompletableFuture<Void> addBreakpoint(SourceBreakpoint breakpoint) {
         return submit(() -> {
             breakpointManager.add(breakpoint);
@@ -309,6 +412,12 @@ public final class JdiDebugSession {
         });
     }
 
+    /**
+     * Queues removal of a breakpoint definition and its runtime requests.
+     *
+     * @param breakpointId stable identifier of the breakpoint to remove
+     * @return future completing after removal; unknown identifiers are ignored
+     */
     public CompletableFuture<Void> removeBreakpoint(UUID breakpointId) {
         return submit(() -> {
             breakpointManager.remove(breakpointId);
@@ -316,6 +425,12 @@ public final class JdiDebugSession {
         });
     }
 
+    /**
+     * Queues removal and reinstallation of the breakpoint with its updated definition.
+     *
+     * @param breakpoint replacement definition retaining the breakpoint identifier
+     * @return future completing after the replacement definition is installed
+     */
     public CompletableFuture<Void> updateBreakpoint(SourceBreakpoint breakpoint) {
         return submit(() -> {
             breakpointManager.remove(breakpoint.id());

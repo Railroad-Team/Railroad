@@ -13,6 +13,9 @@ import dev.railroadide.railroad.debug.source.SourceResolver;
 
 import java.util.*;
 
+/**
+ * Binds source breakpoints to JDI locations and tracks requests for classes prepared later.
+ */
 public final class BreakpointManager {
     private static final String PROPERTY_BREAKPOINT_ID = "railroad.breakpoint.id";
 
@@ -21,11 +24,22 @@ public final class BreakpointManager {
 
     private final Map<UUID, RuntimeBreakpoint> breakpoints = new HashMap<>();
 
+    /**
+     * Creates a runtime request manager for one target virtual machine.
+     *
+     * @param vm target virtual machine whose requests are managed
+     * @param sourceResolver mapping from runtime locations to source content
+     */
     public BreakpointManager(VirtualMachine vm, SourceResolver sourceResolver) {
         this.vm = vm;
         this.sourceResolver = sourceResolver;
     }
 
+    /**
+     * Tracks a breakpoint and binds enabled requests to prepared classes and future class-prepare events.
+     *
+     * @param breakpoint source breakpoint definition to install
+     */
     public void add(SourceBreakpoint breakpoint) {
         var runtime = new RuntimeBreakpoint(breakpoint);
         breakpoints.put(breakpoint.id(), runtime);
@@ -66,6 +80,11 @@ public final class BreakpointManager {
         breakpoint.prepareRequests.add(request);
     }
 
+    /**
+     * Binds the breakpoint associated with a class-prepare request to the newly prepared type.
+     *
+     * @param event class-prepare event carrying the breakpoint request identifier
+     */
     public void onClassPrepared(ClassPrepareEvent event) {
         Object id = event.request().getProperty(PROPERTY_BREAKPOINT_ID);
         if (!(id instanceof UUID breakpointId))
@@ -80,6 +99,12 @@ public final class BreakpointManager {
             event.referenceType());
     }
 
+    /**
+     * Removes a breakpoint and deletes its installed breakpoint and class-prepare requests.
+     * Unknown identifiers are ignored.
+     *
+     * @param breakpointId stable identifier of the breakpoint to remove
+     */
     public void remove(UUID breakpointId) {
         RuntimeBreakpoint breakpoint = breakpoints.remove(breakpointId);
         if (breakpoint == null)

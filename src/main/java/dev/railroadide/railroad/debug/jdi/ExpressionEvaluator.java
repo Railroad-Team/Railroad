@@ -2,7 +2,20 @@ package dev.railroadide.railroad.debug.jdi;
 
 import com.sun.jdi.*;
 
+/**
+ * Reads locals, instance fields, array elements and array lengths without invoking target methods.
+ */
 public final class ExpressionEvaluator {
+    /**
+     * Evaluates an identifier followed by field access or non-negative array indices.
+     * Supports locals, {@code this}, instance fields and array {@code length}; method calls
+     * and general Java operators are unsupported and no target methods are invoked.
+     *
+     * @param frame suspended stack frame to inspect
+     * @param expression watch expression to resolve in the selected frame
+     * @return the resolved JDI value, or null for a null target value
+     * @throws EvaluationException if syntax is unsupported, a name is unresolved or an access is invalid
+     */
     public Value evaluate(StackFrame frame, String expression) throws EvaluationException {
         var cursor = new Cursor(expression);
 

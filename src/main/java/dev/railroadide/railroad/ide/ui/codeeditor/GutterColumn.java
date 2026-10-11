@@ -25,6 +25,16 @@ public record GutterColumn(
     IntFunction<@Nullable Node> markerFactory,
     @Nullable BiConsumer<Integer, MouseEvent> onClick
 ) {
+    /**
+     * Validates a gutter column identifier, width and marker factory.
+     *
+     * @param id unique column identifier within the editor gutter
+     * @param width finite positive column width in pixels
+     * @param markerFactory factory receiving one-based lines and returning a fresh marker node or null
+     * @param onClick optional handler for clicks on filled or empty column cells
+     * @throws IllegalArgumentException if the identifier is blank or the width is not finite and positive
+     * @throws NullPointerException if the identifier or marker factory is null
+     */
     public GutterColumn {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(markerFactory, "markerFactory");

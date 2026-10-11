@@ -20,13 +20,31 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
+/**
+ * Owns the application-wide active JDI session and synchronizes its breakpoint changes.
+ */
 public final class DebugService {
     private final AtomicReference<JdiDebugSession> activeSession = new AtomicReference<>();
 
+    /**
+     * Returns the session currently owned by the service, including one still attaching.
+     *
+     * @return the active session, or empty when none is owned
+     */
     public Optional<JdiDebugSession> getActiveSession() {
         return Optional.ofNullable(activeSession.get());
     }
 
+    /**
+     * Starts the sole active debugger session and forwards its events to the supplied listener.
+     * The returned future fails if another session is already active or attachment fails.
+     *
+     * @param endpoint socket address of the debug target
+     * @param sourceResolver mapping from runtime locations to source content
+     * @param breakpoints initial source breakpoint definitions
+     * @param listener recipient of debugger events on their publishing thread
+     * @return future containing the attached session
+     */
     public CompletableFuture<JdiDebugSession> startSession(
         DebugEndpoint endpoint,
         SourceResolver sourceResolver,
@@ -60,6 +78,19 @@ public final class DebugService {
             Duration.ofSeconds(5), () -> false);
     }
 
+    /**
+     * Starts the sole active debugger session and forwards its events to the supplied listener.
+     * The returned future fails if another session is already active or attachment fails.
+     *
+     * @param endpoint socket address of the debug target
+     * @param sourceResolver mapping from runtime locations to source content
+     * @param breakpointService shared breakpoint store to observe for the session lifetime
+     * @param breakpointFilter predicate selecting breakpoints belonging to the debug target
+     * @param listener recipient of debugger events on their publishing thread
+     * @param timeout maximum attachment retry duration
+     * @param cancelled supplier returning true when attachment should be cancelled
+     * @return future containing the attached session
+     */
     public CompletableFuture<JdiDebugSession> startSession(
         DebugEndpoint endpoint,
         SourceResolver sourceResolver,
@@ -150,6 +181,11 @@ public final class DebugService {
         });
     }
 
+    /**
+     * Terminates the active target, if any, and ends its debugger session.
+     *
+     * @return future completing after termination, already completed when no session is active
+     */
     public CompletableFuture<Void> terminateActiveSession() {
         JdiDebugSession session = activeSession.get();
         if (session == null)

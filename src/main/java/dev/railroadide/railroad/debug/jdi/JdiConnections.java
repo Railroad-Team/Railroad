@@ -13,6 +13,9 @@ import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 
+/**
+ * Connects to a socket-based JDI target with bounded retries and optional cancellation.
+ */
 public final class JdiConnections {
     private static final long ATTACH_RETRY_TIMEOUT_MILLIS = 5_000;
     private static final long ATTACH_RETRY_DELAY_MILLIS = 50;
@@ -20,6 +23,15 @@ public final class JdiConnections {
     private JdiConnections() {
     }
 
+    /**
+     * Attaches through the JDI socket connector, retrying refused connections for up to five seconds.
+     *
+     * @param host debug target hostname or address
+     * @param port debug target socket port
+     * @return the attached virtual machine
+     * @throws IllegalConnectorArgumentsException if socket connector arguments are invalid
+     * @throws IOException if connecting fails or the retry wait is interrupted
+     */
     public static VirtualMachine attach(String host, int port) throws IllegalConnectorArgumentsException, IOException {
         return attach(host, port, Duration.ofMillis(ATTACH_RETRY_TIMEOUT_MILLIS), () -> false);
     }

@@ -155,8 +155,14 @@ public class Services {
      */
     public static final UIManager UI_MANAGER = new UIManager();
 
+    /**
+     * Application-wide owner of the active debugger session.
+     */
     public static final DebugService DEBUG_SERVICE = new DebugService();
 
+    /**
+     * Shared breakpoint store used by editors and debugger sessions.
+     */
     public static final BreakpointService BREAKPOINT_SERVICE = new BreakpointService();
 
     /**
