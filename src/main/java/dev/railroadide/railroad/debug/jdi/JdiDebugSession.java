@@ -86,7 +86,7 @@ public final class JdiDebugSession {
      * @return future completing after connection setup, or exceptionally on attachment failure
      */
     public CompletableFuture<Void> attach(Duration timeout, BooleanSupplier cancelled) {
-        return submit(() -> {
+        return this.<Void>submit(() -> {
             changeState(DebugSessionState.ATTACHING);
             vm = JdiConnections.attach(endpoint.host(), endpoint.port(), timeout,
                 () -> stopRequested || cancelled.getAsBoolean());
@@ -105,6 +105,10 @@ public final class JdiDebugSession {
             startEventReader();
 
             return null;
+        }).whenComplete((_, failure) -> {
+            if (failure != null) {
+                detach();
+            }
         });
     }
 
@@ -117,18 +121,7 @@ public final class JdiDebugSession {
         return submit(() -> {
             requireState(DebugSessionState.SUSPENDED);
 
-            SuspendedContext context = this.suspendedContext;
-            suspendedContext = null;
-            variableInspector.endSuspension();
-            changeState(DebugSessionState.RUNNING);
-
-            if (context.eventSet() != null) {
-                context.eventSet().resume();
-            } else if (context.explicitVmSuspend()) {
-                vm.resume();
-            }
-
-            fireEvent(new DebugSessionEvent.Resumed());
+            resumeInternal();
 
             return null;
         });
@@ -334,7 +327,9 @@ public final class JdiDebugSession {
      */
     public CompletableFuture<Void> detach() {
         stopRequested = true;
-        return submit(() -> {
+        return submitTerminal(() -> {
+            if (state == DebugSessionState.TERMINATED)
+                return null;
             eventReaderRunning = false;
 
             if (eventReaderThread != null) {
@@ -362,7 +357,7 @@ public final class JdiDebugSession {
      */
     public CompletableFuture<Void> terminate() {
         stopRequested = true;
-        return submit(() -> {
+        return submitTerminal(() -> {
             if (state == DebugSessionState.TERMINATED)
                 return null;
 
@@ -459,9 +454,12 @@ public final class JdiDebugSession {
             eventReaderThread.interrupt();
         }
 
-        changeState(DebugSessionState.TERMINATED);
-
-        fireEvent(new DebugSessionEvent.Terminated());
+        try {
+            changeState(DebugSessionState.TERMINATED);
+            fireEvent(new DebugSessionEvent.Terminated());
+        } finally {
+            commandExecutor.shutdown();
+        }
     }
 
     private StackFrame requireFrame(DebugFrameId frameId) throws IncompatibleThreadStateException {
@@ -482,7 +480,8 @@ public final class JdiDebugSession {
 
         if (context.eventSet() != null) {
             context.eventSet().resume();
-        } else {
+        }
+        if (context.explicitVmSuspend()) {
             vm.resume();
         }
 
@@ -535,13 +534,20 @@ public final class JdiDebugSession {
                 commandExecutor.execute(() -> handleEventSet(eventSet));
             } catch (InterruptedException _) {
             } catch (VMDisconnectedException _) {
-                commandExecutor.execute(this::handleDisconnect);
+                submit(() -> {
+                    handleDisconnect();
+                    return null;
+                });
+                return;
+            } catch (RejectedExecutionException _) {
                 return;
             }
         }
     }
 
     private void handleEventSet(EventSet eventSet) {
+        if (state == DebugSessionState.TERMINATED)
+            return;
         boolean terminate = false;
         ThreadReference stopThread = null;
         DebugStopReason stopReason = null;
@@ -604,11 +610,16 @@ public final class JdiDebugSession {
     private void suspendFromEvent(EventSet eventSet, ThreadReference eventThread, DebugStopReason reason) {
         long generation = suspensionGeneration.incrementAndGet();
         Map<Long, ThreadReference> threads = captureThreads(eventThread);
+        SuspendedContext previous = suspendedContext;
+        boolean explicitVmSuspend = previous != null && previous.explicitVmSuspend();
+        if (previous != null && previous.eventSet() != null) {
+            previous.eventSet().resume();
+        }
 
         suspendedContext = new SuspendedContext(
             generation,
             eventSet,
-            false,
+            explicitVmSuspend,
             eventThread,
             threads);
 
@@ -656,13 +667,27 @@ public final class JdiDebugSession {
 
     private <T> CompletableFuture<T> submit(Callable<T> task) {
         CompletableFuture<T> future = new CompletableFuture<>();
-        commandExecutor.submit(() -> {
-            try {
-                future.complete(task.call());
-            } catch (Throwable throwable) {
-                future.completeExceptionally(throwable);
-            }
-        });
+        try {
+            commandExecutor.submit(() -> {
+                try {
+                    future.complete(task.call());
+                } catch (Throwable throwable) {
+                    future.completeExceptionally(throwable);
+                }
+            });
+        } catch (RejectedExecutionException failure) {
+            future.completeExceptionally(failure);
+        }
         return future;
+    }
+
+    private CompletableFuture<Void> submitTerminal(Callable<Void> task) {
+        if (state == DebugSessionState.TERMINATED)
+            return CompletableFuture.completedFuture(null);
+        return submit(task).exceptionallyCompose(failure -> {
+            if (failure instanceof RejectedExecutionException && state == DebugSessionState.TERMINATED)
+                return CompletableFuture.completedFuture(null);
+            return CompletableFuture.failedFuture(failure);
+        });
     }
 }

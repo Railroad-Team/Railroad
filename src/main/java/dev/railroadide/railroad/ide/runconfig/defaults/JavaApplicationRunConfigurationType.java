@@ -193,9 +193,9 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
                     String[] command = buildCommand(jdk, mainClass, classpathEntries, programArguments, vmOptions,
                         debug,
                         debugPort);
-                    Railroad.LOGGER.debug("Running Java application '{}' with command: {}",
+                    Railroad.LOGGER.debug("Running Java application '{}' (debug: {})",
                         configuration.data().getName(),
-                        String.join(" ", command));
+                        debug);
                     ProcessBuilder builder = new ProcessBuilder(command)
                         .directory(workingDirectory.toFile())
                         .redirectOutput(ProcessBuilder.Redirect.PIPE)

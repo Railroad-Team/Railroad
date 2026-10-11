@@ -85,6 +85,8 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
                 executeGradleBuild(project, configuration, execution, debug);
             } catch (Throwable failure) {
                 finish(configuration, execution, failure);
+            } finally {
+                execution.setupComplete.complete(null);
             }
         });
         return execution.completion;
@@ -127,17 +129,19 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
     private static final class GradleExecutionHandle {
         private final CompletableFuture<Void> completion = new CompletableFuture<>();
         private final CompletableFuture<Void> cleaned = new CompletableFuture<>();
+        private final CompletableFuture<Void> setupComplete = new CompletableFuture<>();
         private volatile boolean ended;
         private boolean finishing;
         private ProjectConnection connection;
-        private CancellationTokenSource cancellation;
+        private volatile CancellationTokenSource cancellation;
         private Path script;
         private CompletableFuture<JdiDebugSession> attachment = CompletableFuture.completedFuture(null);
 
-        private synchronized void cancel() {
+        private void cancel() {
             ended = true;
-            if (cancellation != null) {
-                cancellation.cancel();
+            CancellationTokenSource token = cancellation;
+            if (token != null) {
+                token.cancel();
             }
         }
     }
@@ -183,6 +187,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         handleCloser.execute(() -> {
             Throwable outcome = failure;
             try {
+                execution.setupComplete.join();
                 if (failure != null && execution.cancellation != null) {
                     execution.cancellation.cancel();
                 }
@@ -249,59 +254,68 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         String[] vmOptions = data.getVmOptions() == null ? new String[0] : data.getVmOptions();
         JDK javaHome = requireJavaHome(data);
 
-        synchronized (execution) {
+        if (execution.ended)
+            return;
+        execution.cancellation = GradleConnector.newCancellationTokenSource();
+        if (execution.ended)
+            return;
+        int port = -1;
+        if (debug) {
+            try (var socket = new ServerSocket(0)) {
+                port = socket.getLocalPort();
+            }
+            execution.script = Files.createTempFile("railroad-debug-", ".init.gradle");
+            Files.writeString(execution.script, debugInitScript(task, port));
+        }
+        if (execution.ended)
+            return;
+        execution.connection = connectors.get()
+            .forProjectDirectory(gradleProjectPath.toFile()).connect();
+        if (execution.ended)
+            return;
+        BuildLauncher launcher = execution.connection.newBuild()
+            .forTasks(task)
+            .setJvmArguments(vmOptions)
+            .setEnvironmentVariables(environmentVariables)
+            .setJavaHome(javaHome.path().toFile())
+            .setColorOutput(true)
+            .withCancellationToken(execution.cancellation.token())
+            .setStandardOutput(System.out) // TODO: Redirect to IDE console
+            .setStandardError(System.err)
+            .setStandardInput(System.in);
+        if (debug) {
+            launcher.withArguments("--init-script", execution.script.toString(), "--no-configuration-cache");
+        }
+        if (execution.ended)
+            return;
+        launcher.run(new ResultHandler<>() {
+            @Override
+            public void onComplete(Void result) {
+                finish(configuration, execution, null);
+            }
+
+            @Override
+            public void onFailure(GradleConnectionException failure) {
+                finish(configuration, execution, failure);
+            }
+        });
+        if (debug && !execution.ended) {
+            Path root = project.getPath().toAbsolutePath().normalize();
+            var resolver = ProjectSourceResolver.create(root);
             if (execution.ended)
                 return;
-            int port = -1;
-            if (debug) {
-                try (var socket = new ServerSocket(0)) {
-                    port = socket.getLocalPort();
-                }
-                execution.script = Files.createTempFile("railroad-debug-", ".init.gradle");
-                Files.writeString(execution.script, debugInitScript(task, port));
-            }
-            execution.connection = connectors.get()
-                .forProjectDirectory(gradleProjectPath.toFile()).connect();
-            execution.cancellation = GradleConnector.newCancellationTokenSource();
-            BuildLauncher launcher = execution.connection.newBuild()
-                .forTasks(task)
-                .setJvmArguments(vmOptions)
-                .setEnvironmentVariables(environmentVariables)
-                .setJavaHome(javaHome.path().toFile())
-                .setColorOutput(true)
-                .withCancellationToken(execution.cancellation.token())
-                .setStandardOutput(System.out) // TODO: Redirect to IDE console
-                .setStandardError(System.err)
-                .setStandardInput(System.in);
-            if (debug) {
-                launcher.withArguments("--init-script", execution.script.toString(), "--no-configuration-cache");
-            }
-            launcher.run(new ResultHandler<>() {
-                @Override
-                public void onComplete(Void result) {
-                    finish(configuration, execution, null);
-                }
-
-                @Override
-                public void onFailure(GradleConnectionException failure) {
+            execution.attachment = project.getDebuggingManager().startSession(
+                new DebugEndpoint("127.0.0.1", port), resolver,
+                Services.BREAKPOINT_SERVICE,
+                breakpoint -> breakpoint.source() instanceof DebugSource.FileSource(Path file)
+                    && file.toAbsolutePath().normalize().startsWith(root),
+                event -> Railroad.LOGGER.debug("Gradle debugger event: {}", event),
+                Duration.ofMinutes(1), () -> execution.ended);
+            execution.attachment.whenComplete((session, failure) -> {
+                if (failure != null && !execution.ended) {
                     finish(configuration, execution, failure);
                 }
             });
-            if (debug && !execution.ended) {
-                Path root = project.getPath().toAbsolutePath().normalize();
-                execution.attachment = project.getDebuggingManager().startSession(
-                    new DebugEndpoint("127.0.0.1", port), ProjectSourceResolver.create(root),
-                    Services.BREAKPOINT_SERVICE,
-                    breakpoint -> breakpoint.source() instanceof DebugSource.FileSource(Path file)
-                        && file.toAbsolutePath().normalize().startsWith(root),
-                    event -> Railroad.LOGGER.debug("Gradle debugger event: {}", event),
-                    Duration.ofMinutes(1), () -> execution.ended);
-                execution.attachment.whenComplete((session, failure) -> {
-                    if (failure != null && !execution.ended) {
-                        finish(configuration, execution, failure);
-                    }
-                });
-            }
         }
     }
 

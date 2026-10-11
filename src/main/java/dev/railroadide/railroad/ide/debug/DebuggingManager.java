@@ -289,6 +289,8 @@ public final class DebuggingManager {
             }
         } else if (event instanceof DebugSessionEvent.Suspended suspended) {
             handleSuspended(pending, suspended);
+        } else if (event instanceof DebugSessionEvent.Error error) {
+            inspectionError.set(error.message() + (error.cause() == null ? "" : ": " + failureMessage(error.cause())));
         } else if (event instanceof DebugSessionEvent.Terminated) {
             connection = null;
             state.set(DebugSessionState.TERMINATED);

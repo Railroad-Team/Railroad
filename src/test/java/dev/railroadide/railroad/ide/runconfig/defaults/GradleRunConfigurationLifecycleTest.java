@@ -58,6 +58,42 @@ public class GradleRunConfigurationLifecycleTest {
     }
 
     @Test
+    public void stopDoesNotBlockJavaFxDuringConnectorStartup() throws Exception {
+        var connecting = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        var type = new GradleRunConfigurationType(() -> {
+            connecting.countDown();
+            try {
+                if (!release.await(10, TimeUnit.SECONDS))
+                    throw new IllegalStateException("Connector was not released");
+            } catch (InterruptedException failure) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(failure);
+            }
+            return GradleConnector.newConnector()
+                .useInstallation(new File(System.getProperty("railroad.test.gradleHome")));
+        });
+        var configuration = configuration(type, "help");
+        Project project = project();
+        var completion = type.debug(project, configuration);
+        try {
+            assertTrue(connecting.await(5, TimeUnit.SECONDS));
+            var stop = new FutureTask<CompletableFuture<Void>>(() -> type.stop(project, configuration));
+            Platform.runLater(stop);
+            CompletableFuture<Void> cleaned = stop.get(2, TimeUnit.SECONDS);
+            assertFalse(cleaned.isDone());
+            release.countDown();
+            cleaned.get(10, TimeUnit.SECONDS);
+            assertTrue(completion.isCompletedExceptionally());
+            assertFalse(type.isRunning(project, configuration));
+            assertTrue(Services.DEBUG_SERVICE.getActiveSession().isEmpty());
+        } finally {
+            release.countDown();
+            type.stop(project, configuration).get(15, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
     public void stopWhileWaitingForChildJvmCleansUpAndAllowsRun() throws Exception {
         Files.writeString(directory.resolve("settings.gradle"), "rootProject.name = 'stop-fixture'");
         Files.writeString(directory.resolve("build.gradle"), """

@@ -88,6 +88,23 @@ public class DebuggingManagerTest {
     }
 
     @Test
+    public void debuggerErrorsExposeMessageAndCauseOnlyForCurrentSession() throws Exception {
+        onFxThread(() -> {
+            var manager = new DebuggingManager(null);
+            var pending = new CompletableFuture<JdiDebugSession>();
+            set(manager, "connection", pending);
+            var error = new DebugSessionEvent.Error("Debugger event processing failed",
+                new IllegalStateException("Connection lost"));
+            accept(manager, new CompletableFuture<>(), error);
+            assertEquals("", manager.inspectionErrorProperty().get());
+            accept(manager, pending, error);
+            assertEquals("Debugger event processing failed: Connection lost", manager.inspectionErrorProperty().get());
+            accept(manager, pending, new DebugSessionEvent.Error("Unavailable", null));
+            assertEquals("Unavailable", manager.inspectionErrorProperty().get());
+        });
+    }
+
+    @Test
     public void objectReferencesAreExpandableWithoutIndexedChildren() {
         assertTrue(new DebugVariable("player", "Player", "Player@53", 7, 0).hasChildren());
         assertFalse(new DebugVariable("count", "int", "12", 0, 0).hasChildren());

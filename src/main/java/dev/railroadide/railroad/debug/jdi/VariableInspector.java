@@ -10,18 +10,17 @@ import java.util.*;
  */
 public final class VariableInspector {
     private long generation;
-    private long nextReference = -1;
+    private long nextReference = 1;
 
     private final Map<Long, Value> references = new HashMap<>();
 
     /**
-     * Starts a new inspection lifetime, discarding previously retained references and resetting handle allocation.
+     * Starts a new inspection lifetime, discarding previously retained references without reusing handles.
      *
      * @param generation identifier of the newly active suspension
      */
     public void beginSuspension(long generation) {
         this.generation = generation;
-        this.nextReference = 1;
         references.clear();
     }
 

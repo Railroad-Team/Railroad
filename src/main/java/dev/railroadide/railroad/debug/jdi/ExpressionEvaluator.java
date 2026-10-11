@@ -3,12 +3,12 @@ package dev.railroadide.railroad.debug.jdi;
 import com.sun.jdi.*;
 
 /**
- * Reads locals, instance fields, array elements and array lengths without invoking target methods.
+ * Reads locals, fields, array elements and array lengths without invoking target methods.
  */
 public final class ExpressionEvaluator {
     /**
      * Evaluates an identifier followed by field access or non-negative array indices.
-     * Supports locals, {@code this}, instance fields and array {@code length}; method calls
+     * Supports locals, {@code this}, instance and static fields and array {@code length}; method calls
      * and general Java operators are unsupported and no target methods are invoked.
      *
      * @param frame suspended stack frame to inspect
@@ -76,9 +76,12 @@ public final class ExpressionEvaluator {
         }
 
         ObjectReference thisObject = frame.thisObject();
-        if (thisObject != null) {
-            Field field = thisObject.referenceType().fieldByName(name);
-            if (field != null)
+        ReferenceType declaringType = frame.location().declaringType();
+        Field field = declaringType.fieldByName(name);
+        if (field != null) {
+            if (field.isStatic())
+                return field.declaringType().getValue(field);
+            if (thisObject != null)
                 return thisObject.getValue(field);
         }
 
@@ -99,7 +102,7 @@ public final class ExpressionEvaluator {
         if (field == null)
             throw new EvaluationException("No field named '" + member + "'");
 
-        return object.getValue(field);
+        return field.isStatic() ? field.declaringType().getValue(field) : object.getValue(field);
     }
 
     private Value resolveIndex(Value target, int index) throws EvaluationException {
