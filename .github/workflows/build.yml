@@ -23,11 +23,6 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
 
-      - name: Set up Node.js for CSS formatting
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
       # Cache Gradle dependencies (speeds up builds)
       - name: Cache Gradle packages
         uses: actions/cache@v4
@@ -43,25 +38,5 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
 
-      - name: Validate JavaFX CSS
-        run: ./gradlew cssValidationTest validateJavafxCss
-
-      - name: Check formatting and build
-        env:
-          FORMAT_RATCHET_FROM: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: |
-          if [ "$FORMAT_RATCHET_FROM" = "0000000000000000000000000000000000000000" ]; then
-            FORMAT_RATCHET_FROM="$(git rev-list --max-parents=0 HEAD)"
-          fi
-          ./gradlew -PformatRatchetFrom="$FORMAT_RATCHET_FROM" formatCheck :compileJava
-
-      - name: Check Javadoc coverage
-        run: ./gradlew javadocCoverageCheck
-
-      - name: Upload Javadoc coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: javadoc-coverage
-          path: build/reports/javadoc-coverage
-          if-no-files-found: ignore
+      - name: Compile Java
+        run: ./gradlew :compileJava

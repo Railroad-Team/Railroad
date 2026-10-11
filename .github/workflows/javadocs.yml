@@ -1,0 +1,46 @@
+name: Javadocs
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  javadocs:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Check Javadoc coverage
+        run: ./gradlew javadocCoverageCheck
+
+      - name: Upload Javadoc coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: javadoc-coverage
+          path: build/reports/javadoc-coverage
+          if-no-files-found: ignore

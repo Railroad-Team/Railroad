@@ -1,0 +1,51 @@
+name: Formatting
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  formatting:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      - name: Set up Node.js for CSS formatting
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Check formatting
+        env:
+          FORMAT_RATCHET_FROM: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ "$FORMAT_RATCHET_FROM" = "0000000000000000000000000000000000000000" ]; then
+            FORMAT_RATCHET_FROM="$(git rev-list --max-parents=0 HEAD)"
+          fi
+          ./gradlew -PformatRatchetFrom="$FORMAT_RATCHET_FROM" formatCheck
