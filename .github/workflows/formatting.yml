@@ -2,7 +2,12 @@ name: Formatting
 
 on:
   push:
+    branches: [main]
   pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -28,15 +33,13 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+      # Isolate Gradle state from other jobs on self-hosted runners.
+      - name: Prepare Gradle home
+        shell: bash
+        run: echo "GRADLE_USER_HOME=$RUNNER_TEMP/gradle-home" >> "$GITHUB_ENV"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
@@ -48,4 +51,4 @@ jobs:
           if [ "$FORMAT_RATCHET_FROM" = "0000000000000000000000000000000000000000" ]; then
             FORMAT_RATCHET_FROM="$(git rev-list --max-parents=0 HEAD)"
           fi
-          ./gradlew -PformatRatchetFrom="$FORMAT_RATCHET_FROM" formatCheck
+          ./gradlew --build-cache -PformatRatchetFrom="$FORMAT_RATCHET_FROM" formatCheck

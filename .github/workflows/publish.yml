@@ -24,8 +24,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y fakeroot dpkg
+      # Isolate Gradle state from other jobs on self-hosted runners.
+      - name: Prepare Gradle home
+        shell: bash
+        run: echo "GRADLE_USER_HOME=$RUNNER_TEMP/gradle-home" >> "$GITHUB_ENV"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
       - run: chmod +x gradlew
-      - run: ./gradlew jpackage
+      - run: ./gradlew --build-cache jpackage
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -47,7 +53,12 @@ jobs:
         with:
           cf_zone_id: ${{ secrets.CF_ZONE_ID }}
           cf_api_token: ${{ secrets.CF_API_TOKEN }}
-      - run: .\gradlew.bat jpackage
+      - name: Prepare Gradle home
+        shell: bash
+        run: echo "GRADLE_USER_HOME=$RUNNER_TEMP/gradle-home" >> "$GITHUB_ENV"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - run: .\gradlew.bat --build-cache jpackage
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -73,8 +84,13 @@ jobs:
         with:
           cf_zone_id: ${{ secrets.CF_ZONE_ID }}
           cf_api_token: ${{ secrets.CF_API_TOKEN }}
+      - name: Prepare Gradle home
+        shell: bash
+        run: echo "GRADLE_USER_HOME=$RUNNER_TEMP/gradle-home" >> "$GITHUB_ENV"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
       - run: chmod +x gradlew
-      - run: ./gradlew jpackage
+      - run: ./gradlew --build-cache jpackage
       - name: Upload Mac artifacts
         uses: actions/upload-artifact@v4
         with:
