@@ -11,6 +11,11 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.*;
 
+/**
+ * Immutable source index with defensively copied file and descriptor collections.
+ * Published instances support concurrent reads and remain valid when a builder is reused.
+ * This index does not yet carry document revision or workspace generation tokens.
+ */
 public final class JavaProjectSemanticIndex
     implements
         ProjectLanguageIndex<JavaProjectSemanticIndex.SourceFileIndex>,
@@ -241,6 +246,7 @@ public final class JavaProjectSemanticIndex
         return filesByPath.get(FileUtils.normalizePath(path));
     }
 
+    /** Thread-confined construction state; each build returns an independent index. */
     public static final class Builder {
         private final Map<Path, SourceFileIndex> filesByPath = new LinkedHashMap<>();
 

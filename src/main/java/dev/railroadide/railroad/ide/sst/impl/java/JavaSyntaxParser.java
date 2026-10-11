@@ -566,6 +566,10 @@ public final class JavaSyntaxParser {
         int newEndOffset) {
     }
 
+    /**
+     * Immutable description of reuse across one incremental parse. Candidate inputs
+     * are defensively copied so callers cannot change a published plan.
+     */
     public record ReusePlan(
         int oldReparseStart,
         int oldReparseEnd,
@@ -573,6 +577,9 @@ public final class JavaSyntaxParser {
         int newReparseEnd,
         int lengthDelta,
         List<ReuseCandidate> candidates) {
+        public ReusePlan {
+            candidates = List.copyOf(Objects.requireNonNull(candidates, "candidates"));
+        }
     }
 
     public record IncrementalParseResult(

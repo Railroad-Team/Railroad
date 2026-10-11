@@ -4,12 +4,60 @@ import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class JavaProjectSemanticIndexTest {
+
+    @Test
+    void publishedIndexCopiesInputsAndSupportsConcurrentReadsAfterBuilderReuse() throws Exception {
+        Path path = Path.of("Example.java");
+        var descriptor = new JavaProjectSemanticIndex.SymbolDescriptor(
+            SymbolKind.CLASS, "Example", "demo.Example", null, null, path, false, true);
+        var declarations = new ArrayList<>(List.of(descriptor));
+        var imports = new ArrayList<>(
+            List.of(new JavaProjectSemanticIndex.ImportDescriptor("java.util.List", false, false)));
+        var file = new JavaProjectSemanticIndex.SourceFileIndex(path, "demo", imports, declarations);
+        var builder = JavaProjectSemanticIndex.builder().putFile(file);
+        var index = builder.build();
+        declarations.clear();
+        imports.clear();
+        builder.removeFile(path);
+        assertTrue(builder.build().files().isEmpty());
+        assertEquals(1, file.imports().size());
+        assertThrows(UnsupportedOperationException.class, () -> index.files().clear());
+        assertThrows(UnsupportedOperationException.class, () -> file.declaredSymbols().clear());
+        assertThrows(UnsupportedOperationException.class, () -> index.lookupSimpleName("Example").clear());
+        var ready = new CountDownLatch(4);
+        var start = new CountDownLatch(1);
+        try (var executor = Executors.newFixedThreadPool(4)) {
+            var tasks = new ArrayList<Future<?>>();
+            for (int worker = 0; worker < 4; worker++) {
+                tasks.add(executor.submit(() -> {
+                    ready.countDown();
+                    assertTrue(start.await(10, TimeUnit.SECONDS));
+                    for (int read = 0; read < 20; read++) {
+                        assertSame(file, index.getFile(path).orElseThrow());
+                        assertEquals(List.of(descriptor), index.lookupQualifiedName("demo.Example"));
+                        assertEquals(Set.of("demo.Example"), index.declaredQualifiedNames());
+                    }
+                    return null;
+                }));
+            }
+            try {
+                assertTrue(ready.await(10, TimeUnit.SECONDS));
+            } finally {
+                start.countDown();
+            }
+            for (var task : tasks) {
+                task.get(20, TimeUnit.SECONDS);
+            }
+        }
+    }
 
     @Test
     void emptyIndexReturnsNoFilesOrSymbols() {

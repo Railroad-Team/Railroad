@@ -10,7 +10,14 @@ import java.util.Objects;
  * when content changes; consumers may safely retain and share older snapshots across
  * worker threads.
  * <p>
- * Snapshot equality semantics are intentionally not defined by this root contract.
+ * Snapshots use reference equality and identity hashing, without comparing content.
+ * Logical document equality compares {@link #id()}; content revision equality compares
+ * both ID and {@link #version()}. Neither implies equal complete state: URI, origin,
+ * language, or encoding metadata may differ at the same content revision.
+ * <p>
+ * Snapshots have no disposal operation. A retained snapshot remains readable after an
+ * edit, close, or workspace removal. Owners release unused references for garbage
+ * collection; validity does not imply that an analysis result is still current.
  * <p>
  * Compatibility note: this root was previously an abstract sealed class. Its change
  * to an interface is a binary compatibility break; compiled consumers of the old
@@ -62,6 +69,20 @@ public sealed interface DocumentSnapshot permits TextDocumentSnapshot, BinaryDoc
      * @return immutable document origin
      */
     DocumentOrigin origin();
+
+    /**
+     * Compares logical document identity and content version only. This is useful for
+     * correlating analysis revisions, but is not a complete-state or publication check:
+     * owners must also account for metadata and the current request/workspace generation.
+     *
+     * @param other snapshot to compare
+     * @return whether both snapshots represent the same logical content revision
+     * @throws NullPointerException if {@code other} is {@code null}
+     */
+    default boolean hasSameRevision(DocumentSnapshot other) {
+        Objects.requireNonNull(other, "other");
+        return id().equals(other.id()) && version().equals(other.version());
+    }
 
     /**
      * Validates a language identity without consulting the language registry.

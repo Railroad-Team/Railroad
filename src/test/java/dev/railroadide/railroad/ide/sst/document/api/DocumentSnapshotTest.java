@@ -6,11 +6,83 @@ import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Set;
+import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class DocumentSnapshotTest {
+
+    @Test
+    void referenceEqualityAndRevisionIdentityDoNotConflateMetadata() {
+        DocumentId id = DocumentId.create();
+        DocumentUri uri = DocumentUri.inMemory(id);
+        var version = DocumentVersion.initial();
+        var first = new TextDocumentSnapshot(id, uri, version, "java", "old", StandardCharsets.UTF_8);
+        var sameState = new TextDocumentSnapshot(id, uri, version, "java", "old", StandardCharsets.UTF_8);
+        var renamed = new TextDocumentSnapshot(id, DocumentUri.virtual("memory", "renamed.java"), version,
+            "java", new DocumentOrigin(BackingKind.MEMORY, ProvenanceKind.GENERATED), "old", StandardCharsets.UTF_8);
+        var newer = new TextDocumentSnapshot(id, uri, version.next(), "java", "new", StandardCharsets.UTF_8);
+        var unrelated = new TextDocumentSnapshot(DocumentId.create(), uri, version, "java", "old",
+            StandardCharsets.UTF_8);
+
+        assertEquals(first, first);
+        assertNotEquals(first, sameState);
+        assertNotEquals(first, renamed);
+        assertEquals(3, Set.of(first, sameState, renamed).size());
+        assertTrue(first.hasSameRevision(sameState));
+        assertTrue(first.hasSameRevision(renamed));
+        assertFalse(first.hasSameRevision(newer));
+        assertFalse(first.hasSameRevision(unrelated));
+        assertThrows(NullPointerException.class, () -> first.hasSameRevision(null));
+        assertEquals("old", first.text());
+        assertEquals(uri, first.uri());
+        assertEquals(version, first.version());
+    }
+
+    @Test
+    void retainedTextAndBinarySnapshotsSupportConcurrentReadsAfterOwnerReplacement() throws Exception {
+        DocumentId id = DocumentId.create();
+        var uri = DocumentUri.inMemory(id);
+        var version = DocumentVersion.initial();
+        var input = new StringBuilder("original");
+        var old = new TextDocumentSnapshot(id, uri, version, "text", input, StandardCharsets.UTF_8);
+        var binary = new BinaryDocumentSnapshot(id, uri, version, "binary", new byte[]{1, 2, 3});
+        var owned = new ArrayList<DocumentSnapshot>();
+        owned.add(old);
+        input.replace(0, input.length(), "edited");
+        owned.set(0, new TextDocumentSnapshot(id, uri, version.next(), "text", input, StandardCharsets.UTF_8));
+        owned.clear(); // Closing/removing an owner releases its reference, without invalidation.
+        var ready = new CountDownLatch(4);
+        var start = new CountDownLatch(1);
+        try (var executor = Executors.newFixedThreadPool(4)) {
+            var tasks = new ArrayList<Future<?>>();
+            for (int worker = 0; worker < 4; worker++) {
+                tasks.add(executor.submit(() -> {
+                    ready.countDown();
+                    assertTrue(start.await(10, TimeUnit.SECONDS));
+                    for (int read = 0; read < 20; read++) {
+                        assertEquals("original", old.text());
+                        assertEquals(version, old.version());
+                        var view = binary.bytes();
+                        assertEquals(0, view.position());
+                        assertEquals(1, view.get());
+                        assertArrayEquals(new byte[]{1, 2, 3}, binary.copyBytes());
+                    }
+                    return null;
+                }));
+            }
+            try {
+                assertTrue(ready.await(10, TimeUnit.SECONDS));
+            } finally {
+                start.countDown();
+            }
+            for (var task : tasks) {
+                task.get(20, TimeUnit.SECONDS);
+            }
+        }
+    }
 
     @Test
     void rootIsSealedToTextAndBinarySnapshots() {

@@ -16,8 +16,11 @@
  * <p>
  * Identity does not imply location or snapshot equality. A rename retains the same ID
  * while changing its URI, an edit advances the version while retaining the ID, and a
- * copy receives a different ID. Snapshot equality and source-origin contracts remain
- * intentionally separate platform concepts.
+ * copy receives a different ID. Snapshots use reference equality; hasSameRevision compares
+ * ID and version without implying equal metadata or complete state. Retained snapshots
+ * remain readable after close/removal and need no disposal. See the
+ * {@link dev.railroadide.railroad.ide.sst SST publication policy} for lifetime, cache
+ * ownership, safe sharing, and currentness rules.
  * <p>
  * Legacy syntax construction and parser entry points without owner-supplied metadata
  * remain source compatible by allocating a fresh anonymous identity, in-memory URI, and
