@@ -22,6 +22,8 @@ public final class TextDocumentSnapshot implements DocumentSnapshot {
     private final String text;
     private final Charset encoding;
 
+    private volatile LineMap lineMap;
+
     /**
      * Creates a text revision with unspecified provenance, deriving backing from the URI.
      * Use the origin-taking constructor when provenance is known by the owner.
@@ -122,6 +124,31 @@ public final class TextDocumentSnapshot implements DocumentSnapshot {
     @Override
     public DocumentOrigin origin() {
         return origin;
+    }
+
+    /**
+     * Returns this snapshot's immutable, thread-safe text coordinate map.
+     * The map is created lazily and safely published; repeated calls, including
+     * concurrent calls, return the same instance. Each snapshot owns its cache,
+     * so separate snapshots have independent maps even when their text is equal.
+     * Retaining the map keeps it usable after the snapshot's owner closes or
+     * replaces the document.
+     *
+     * @return cached map of this snapshot's text using zero-based UTF-16 offsets and columns
+     */
+    public LineMap lineMap() {
+        LineMap cached = lineMap;
+        if (cached == null) {
+            synchronized (this) {
+                cached = lineMap;
+                if (cached == null) {
+                    cached = new LineMap(text);
+                    lineMap = cached;
+                }
+            }
+        }
+
+        return cached;
     }
 
     /**

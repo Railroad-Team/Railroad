@@ -22,6 +22,15 @@
  * {@link dev.railroadide.railroad.ide.sst SST publication policy} for lifetime, cache
  * ownership, safe sharing, and currentness rules.
  * <p>
+ * {@link dev.railroadide.railroad.ide.sst.document.api.LineMap} is the canonical API
+ * for text offset/line/column conversion. Offsets and columns count zero-based UTF-16
+ * code units; line indices are also zero-based. Line content ends exclude LF, CR,
+ * and CRLF terminators, while positions inside terminators belong to the preceding
+ * line and round-trip exactly. Obtain a text snapshot's immutable, thread-safe,
+ * lazily cached map through
+ * {@link dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot#lineMap()}.
+ * The cache belongs to that snapshot and is independent of other revisions.
+ * <p>
  * Legacy syntax construction and parser entry points without owner-supplied metadata
  * remain source compatible by allocating a fresh anonymous identity, in-memory URI, and
  * initial version. Callers that correlate work across parses must use the explicit

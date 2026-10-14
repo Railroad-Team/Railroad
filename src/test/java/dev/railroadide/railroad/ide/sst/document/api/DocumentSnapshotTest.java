@@ -7,12 +7,110 @@ import java.nio.ReadOnlyBufferException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class DocumentSnapshotTest {
+
+    @Test
+    void lineMapIsCachedPerSnapshot() {
+        DocumentId id = DocumentId.create();
+        var snapshot = new TextDocumentSnapshot(
+            id,
+            DocumentUri.inMemory(id),
+            DocumentVersion.initial(),
+            "java",
+            "Hello\nWorld",
+            StandardCharsets.UTF_8);
+
+        LineMap first = snapshot.lineMap();
+        LineMap second = snapshot.lineMap();
+
+        assertSame(first, second);
+    }
+
+    @Test
+    void differentSnapshotsHaveIndependentLineMaps() {
+        DocumentId id = DocumentId.create();
+        DocumentUri uri = DocumentUri.inMemory(id);
+
+        var first = new TextDocumentSnapshot(
+            id,
+            uri,
+            DocumentVersion.initial(),
+            "java",
+            "Hello\nWorld",
+            StandardCharsets.UTF_8);
+
+        var second = new TextDocumentSnapshot(
+            id,
+            uri,
+            DocumentVersion.initial().next(),
+            "java",
+            "Hello\nWorld\n!",
+            StandardCharsets.UTF_8);
+
+        assertNotSame(first.lineMap(), second.lineMap());
+        assertEquals(2, first.lineMap().lineCount());
+        assertEquals(3, second.lineMap().lineCount());
+    }
+
+    @Test
+    void concurrentLineMapAccessReturnsSameCachedInstance() throws Exception {
+        DocumentId id = DocumentId.create();
+        var snapshot = new TextDocumentSnapshot(
+            id,
+            DocumentUri.inMemory(id),
+            DocumentVersion.initial(),
+            "java",
+            "a\r\nb\nc",
+            StandardCharsets.UTF_8);
+
+        try (var executor = Executors.newFixedThreadPool(4)) {
+            var ready = new CountDownLatch(4);
+            var start = new CountDownLatch(1);
+
+            List<Future<LineMap>> futures = new ArrayList<>();
+            for (int i = 0; i < 4; i++) {
+                futures.add(executor.submit(() -> {
+                    ready.countDown();
+                    assertTrue(start.await(10, TimeUnit.SECONDS));
+                    return snapshot.lineMap();
+                }));
+            }
+
+            try {
+                assertTrue(ready.await(10, TimeUnit.SECONDS));
+            } finally {
+                start.countDown();
+            }
+
+            LineMap first = futures.getFirst().get(10, TimeUnit.SECONDS);
+            for (Future<LineMap> future : futures) {
+                assertSame(first, future.get(10, TimeUnit.SECONDS));
+            }
+        }
+    }
+
+    @Test
+    void cachesLineMap() {
+        var snapshot = new TextDocumentSnapshot(
+            DocumentId.create(),
+            DocumentUri.virtual("memory", "Test.java"),
+            DocumentVersion.initial(),
+            "java",
+            "Hello\nWorld",
+            StandardCharsets.UTF_8);
+
+        LineMap first = snapshot.lineMap();
+        LineMap second = snapshot.lineMap();
+
+        assertSame(first, second);
+        assertEquals(2, first.lineCount());
+    }
 
     @Test
     void referenceEqualityAndRevisionIdentityDoNotConflateMetadata() {
