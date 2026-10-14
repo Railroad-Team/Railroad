@@ -286,8 +286,8 @@ public final class ProjectDiagnosticsScanner {
                 report.append("  [").append(diagnostic.kind()).append("] ");
 
                 if (diagnostic instanceof TextEditorDiagnostic textDiagnostic) {
-                    report.append("line ").append(textDiagnostic.location().line())
-                        .append(", column ").append(textDiagnostic.location().column());
+                    report.append("line ").append(textDiagnostic.location().line() + 1)
+                        .append(", column ").append(textDiagnostic.location().column() + 1);
                 }
                 report.append(", offsets ").append(diagnostic.location().range().start)
                     .append("-").append(diagnostic.location().range().end)

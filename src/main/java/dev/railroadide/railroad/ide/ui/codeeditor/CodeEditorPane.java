@@ -923,7 +923,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         Map<Integer, String> updatedMessages = new LinkedHashMap<>();
 
         for (TextEditorDiagnostic diagnostic : visibleDiagnostics) {
-            int line = (int) diagnostic.location().line();
+            int line = diagnostic.location().line() + 1;
             if (line <= 0)
                 continue;
 

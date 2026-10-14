@@ -29,8 +29,8 @@ public class DiagnosticPane extends BorderPane {
         var column = diagnostic.location().range().start;
 
         if (diagnostic instanceof TextEditorDiagnostic textDiagnostic) {
-            line = (int) textDiagnostic.location().line();
-            column = (int) textDiagnostic.location().column();
+            line = textDiagnostic.location().line() + 1;
+            column = textDiagnostic.location().column() + 1;
         }
 
         var messageText = new Text(message);
