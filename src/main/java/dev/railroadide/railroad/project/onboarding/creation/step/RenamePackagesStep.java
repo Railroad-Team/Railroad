@@ -10,6 +10,13 @@ import dev.railroadide.railroad.project.onboarding.keys.MinecraftProjectKeys;
 
 import java.nio.file.Path;
 
+/**
+ * Copies template sources into package directories derived from the group ID and mod ID.
+ * Removes the client source tree when split sources are disabled and cleans up empty template directories.
+ * Java package declarations are updated separately by {@link RenameClassesStep}.
+ *
+ * @param files service used to create, copy, and clean up source directories
+ */
 public record RenamePackagesStep(FilesService files) implements CreationStep {
     @Override
     public String id() {

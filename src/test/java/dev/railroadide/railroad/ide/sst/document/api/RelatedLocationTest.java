@@ -4,10 +4,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class RelatedLocationTest {
+public class RelatedLocationTest {
 
     @Test
-    void retainsTextAndBinaryLocationsAndMessages() {
+    public void retainsTextAndBinaryLocationsAndMessages() {
         var id = DocumentId.create();
         var version = DocumentVersion.initial();
         Location<?>[] locations = {
@@ -24,13 +24,13 @@ class RelatedLocationTest {
     }
 
     @Test
-    void rejectsNullLocation() {
+    public void rejectsNullLocation() {
         assertThrows(IllegalArgumentException.class,
             () -> new RelatedLocation(null, "Previously declared here"));
     }
 
     @Test
-    void rejectsNullOrEmptyMessage() {
+    public void rejectsNullOrEmptyMessage() {
         var location = new Location.TextLocation(DocumentId.create(), DocumentVersion.initial(),
             new TextRange(0, 0), 0, 0);
 

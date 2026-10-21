@@ -9,11 +9,20 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A module dependency with optional static and transitive modifiers.
+ *
+ * @param span source range occupied by this node
+ * @param isStatic whether the static modifier is present
+ * @param isTransitive whether dependent modules also read the required module
+ * @param moduleName required module name
+ */
 public record RequiresDirective(
     Span span,
     boolean isStatic,
     boolean isTransitive,
-    NameExpression moduleName) implements ModuleDirective {
+    NameExpression moduleName
+) implements ModuleDirective {
     @Override
     public AstKind kind() {
         return AstKind.REQUIRES_DIRECTIVE;

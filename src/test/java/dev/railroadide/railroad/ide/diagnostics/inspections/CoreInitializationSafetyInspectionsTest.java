@@ -9,9 +9,9 @@ import static dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectio
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class CoreInitializationSafetyInspectionsTest {
+public class CoreInitializationSafetyInspectionsTest {
     @Test
-    void coreInitializationRuleEmitsDiagnosticForImplicitThisCall() {
+    public void coreInitializationRuleEmitsDiagnosticForImplicitThisCall() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInitializationInspection(), """
             class Example {
                 void configure() {}
@@ -26,7 +26,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreInitializationRuleEmitsDiagnosticForExplicitThisCall() {
+    public void coreInitializationRuleEmitsDiagnosticForExplicitThisCall() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInitializationInspection(), """
             class Example {
                 void configure() {}
@@ -41,7 +41,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreInitializationRuleDoesNotEmitDiagnosticForOtherReceiver() {
+    public void coreInitializationRuleDoesNotEmitDiagnosticForOtherReceiver() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInitializationInspection(), """
             class Example {
                 void configure() {}
@@ -56,7 +56,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreInitializationRuleDoesNotEmitDiagnosticForSuperCall() {
+    public void coreInitializationRuleDoesNotEmitDiagnosticForSuperCall() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInitializationInspection(), """
             class Base {
                 void configure() {}
@@ -73,7 +73,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreInitializationRuleDoesNotEmitDiagnosticForFinalOrStaticTarget() {
+    public void coreInitializationRuleDoesNotEmitDiagnosticForFinalOrStaticTarget() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInitializationInspection(), """
             class Example {
                 final void configureFinal() {}
@@ -90,7 +90,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreInitializationRuleEmitsOverriddenDiagnosticWhenSubclassOverrides() {
+    public void coreInitializationRuleEmitsOverriddenDiagnosticWhenSubclassOverrides() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInitializationInspection(), """
             class Base {
                 void configure() {}
@@ -111,7 +111,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreInitializationRuleDoesNotEmitOverriddenDiagnosticWhenNoSubclass() {
+    public void coreInitializationRuleDoesNotEmitOverriddenDiagnosticWhenNoSubclass() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInitializationInspection(), """
             class Example {
                 void configure() {}
@@ -126,7 +126,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreThisReferenceEscapedRuleEmitsDiagnosticForPassingThisToCollectionPublisher() {
+    public void coreThisReferenceEscapedRuleEmitsDiagnosticForPassingThisToCollectionPublisher() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(),
             """
                 import java.util.ArrayList;
@@ -146,7 +146,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreThisReferenceEscapedRuleEmitsDiagnosticForPassingThisToPublishingMethod() {
+    public void coreThisReferenceEscapedRuleEmitsDiagnosticForPassingThisToPublishingMethod() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(),
             """
                 class Example {
@@ -164,7 +164,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreThisReferenceEscapedRuleEmitsDiagnosticForLambdaPassedToPublishingMethod() {
+    public void coreThisReferenceEscapedRuleEmitsDiagnosticForLambdaPassedToPublishingMethod() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(),
             """
                 class Example {
@@ -182,7 +182,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreThisReferenceEscapedRuleEmitsDiagnosticForLambdaPassedToThreadConstructor() {
+    public void coreThisReferenceEscapedRuleEmitsDiagnosticForLambdaPassedToThreadConstructor() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(),
             """
                 class Example {
@@ -197,7 +197,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreThisReferenceEscapedRuleEmitsDiagnosticForThisAssignedToField() {
+    public void coreThisReferenceEscapedRuleEmitsDiagnosticForThisAssignedToField() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(),
             """
                 class Example {
@@ -214,7 +214,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreThisReferenceEscapedRuleDoesNotEmitDiagnosticForPlainThisUse() {
+    public void coreThisReferenceEscapedRuleDoesNotEmitDiagnosticForPlainThisUse() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(),
             """
                 class Example {
@@ -229,7 +229,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreThisReferenceEscapedRuleDoesNotEmitDiagnosticForLocalVariableInitialization() {
+    public void coreThisReferenceEscapedRuleDoesNotEmitDiagnosticForLocalVariableInitialization() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(),
             """
                 class Example {
@@ -244,7 +244,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreThisReferenceEscapedRuleDoesNotEmitDiagnosticForLocalMethodCall() {
+    public void coreThisReferenceEscapedRuleDoesNotEmitDiagnosticForLocalMethodCall() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(),
             """
                 class Example {
@@ -262,7 +262,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreThisReferenceEscapedRuleDoesNotEmitDiagnosticForNestedLambdaThatDoesNotEscape() {
+    public void coreThisReferenceEscapedRuleDoesNotEmitDiagnosticForNestedLambdaThatDoesNotEscape() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreThisReferenceEscapedObjectConstructionInspection(),
             """
                 class Example {
@@ -279,7 +279,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreFieldCanBeLocalVariableRuleEmitsDiagnosticForPrivateFieldUsedOnlyInOneMethod() {
+    public void coreFieldCanBeLocalVariableRuleEmitsDiagnosticForPrivateFieldUsedOnlyInOneMethod() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFieldCanBeLocalVariableInspection(), """
             class Example {
                 private int field = 1;
@@ -294,7 +294,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreFieldCanBeLocalVariableRuleDoesNotEmitDiagnosticForFieldUsedInConstructor() {
+    public void coreFieldCanBeLocalVariableRuleDoesNotEmitDiagnosticForFieldUsedInConstructor() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFieldCanBeLocalVariableInspection(), """
             class Example {
                 private int field = 1;
@@ -313,7 +313,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreFieldCanBeLocalVariableRuleDoesNotEmitDiagnosticForFieldUsedInMultipleMethods() {
+    public void coreFieldCanBeLocalVariableRuleDoesNotEmitDiagnosticForFieldUsedInMultipleMethods() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFieldCanBeLocalVariableInspection(), """
             class Example {
                 private int field = 1;
@@ -332,7 +332,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreFieldCanBeLocalVariableRuleEmitsDiagnosticForFieldOnlyReadInsideLambda() {
+    public void coreFieldCanBeLocalVariableRuleEmitsDiagnosticForFieldOnlyReadInsideLambda() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFieldCanBeLocalVariableInspection(), """
             class Example {
                 private int field = 1;
@@ -348,7 +348,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreFieldCanBeLocalVariableRuleEmitsDiagnosticForFieldReadInMethodAndLambdaWithinSameMethod() {
+    public void coreFieldCanBeLocalVariableRuleEmitsDiagnosticForFieldReadInMethodAndLambdaWithinSameMethod() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFieldCanBeLocalVariableInspection(), """
             class Example {
                 private int field = 1;
@@ -365,7 +365,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreFieldCanBeLocalVariableRuleDoesNotEmitDiagnosticForFieldAssignedInsideLambda() {
+    public void coreFieldCanBeLocalVariableRuleDoesNotEmitDiagnosticForFieldAssignedInsideLambda() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFieldCanBeLocalVariableInspection(), """
             class Example {
                 private int field = 1;
@@ -381,7 +381,7 @@ class CoreInitializationSafetyInspectionsTest {
     }
 
     @Test
-    void coreFieldCanBeLocalVariableRuleDoesNotEmitDiagnosticForFieldIncrementedInsideLambda() {
+    public void coreFieldCanBeLocalVariableRuleDoesNotEmitDiagnosticForFieldIncrementedInsideLambda() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFieldCanBeLocalVariableInspection(), """
             class Example {
                 private int field = 1;

@@ -1,5 +1,8 @@
 package dev.railroadide.railroad.ide.ui.git.commit.details;
 
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.GitCommands;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRTextField;
@@ -18,23 +21,28 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Provides an action to check out a commit with handling for uncommitted changes.
+ */
 public class GitCommitCheckoutButton extends RRButton {
+    /**
+     * Creates the action for checking out the supplied commit.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param commit commit to display or act on
+     */
     public GitCommitCheckoutButton(Project project, GitCommit commit) {
         super("railroad.git.commit.details.button.checkout_commit", FontAwesomeSolid.CHECK);
         setVariant(ButtonVariant.PRIMARY);
-        setOnAction(event -> {
-            GitManager gitManager = project.getGitManager();
-            if (!gitManager.getRepoStatus().changes().isEmpty()) {
-                onCheckoutWithUncommittedChanges(gitManager, gitManager.getCurrentCommit(), commit);
-                return;
-            }
-
-            gitManager.checkoutCommit(commit.hash());
-        });
+        CommandButtons.bind(this, GitCommands.CHECKOUT,
+            () -> CommandContext.withArgument(project, this, commit));
     }
 
-    private static void onCheckoutWithUncommittedChanges(GitManager gitManager, Optional<GitCommit> fromCommit,
-        GitCommit toCommit) {
+    private static void onCheckoutWithUncommittedChanges(
+        GitManager gitManager,
+        Optional<GitCommit> fromCommit,
+        GitCommit toCommit
+    ) {
         GitRepoStatus repoStatus = gitManager.getRepoStatus();
 
         var content = new RRVBox(2);
@@ -140,5 +148,21 @@ public class GitCommitCheckoutButton extends RRButton {
             }
 
         });
+    }
+
+    /**
+     * Runs the existing checkout workflow.
+     *
+     * @param project project owning the repository
+     * @param commit target commit
+     */
+    public static void execute(Project project, GitCommit commit) {
+        GitManager gitManager = project.getGitManager();
+        if (!gitManager.getRepoStatus().changes().isEmpty()) {
+            onCheckoutWithUncommittedChanges(gitManager, gitManager.getCurrentCommit(), commit);
+            return;
+        }
+
+        gitManager.checkoutCommit(commit.hash());
     }
 }

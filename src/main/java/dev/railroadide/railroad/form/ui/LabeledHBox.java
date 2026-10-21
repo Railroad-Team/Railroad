@@ -47,7 +47,7 @@ public abstract class LabeledHBox<T extends Node> extends RRHBox {
         this.primaryComponent = createPrimaryComponent(params);
         this.label.setLabelFor(primaryComponent);
 
-        this.verticalLayout = new RRVBox();
+        this.verticalLayout = new VBox(6);
         this.verticalLayout.getStyleClass().add("field-vertical-layout");
         this.verticalLayout.setAlignment(Pos.CENTER_LEFT);
 
@@ -81,14 +81,6 @@ public abstract class LabeledHBox<T extends Node> extends RRHBox {
     }
 
     private void setupResponsiveLayout() {
-        sceneProperty().addListener((obs, oldScene, newScene) -> {
-            if (newScene != null) {
-                newScene.getWindow().widthProperty().addListener((obs2, oldWidth, newWidth) -> {
-                    checkAndSwitchLayout();
-                });
-            }
-        });
-
         layoutBoundsProperty().addListener((obs, oldBounds, newBounds) -> {
             if (newBounds.getWidth() > 0) {
                 checkAndSwitchLayout();
@@ -103,7 +95,9 @@ public abstract class LabeledHBox<T extends Node> extends RRHBox {
         // Get the actual width needed for the label text
         double textWidth = label.getFont().getSize() * label.getText().length() * 0.6; // Rough estimate
         double availableWidth = getWidth() - 30; // Account for padding and spacing
-        double componentMinWidth = primaryComponent instanceof Region ? ((Region) primaryComponent).getMinWidth() : 100;
+        double componentMinWidth = primaryComponent instanceof Region
+            ? Math.max(220, ((Region) primaryComponent).minWidth(-1))
+            : 100;
 
         // Check if we need vertical layout (not enough space for horizontal)
         boolean needsVertical = availableWidth < (textWidth + componentMinWidth + 20); // 20px buffer
@@ -131,7 +125,7 @@ public abstract class LabeledHBox<T extends Node> extends RRHBox {
         var labelNode = new LocalizedLabel(label);
         labelNode.getStyleClass().add("field-label");
         labelNode.setWrapText(true);
-        HBox.setHgrow(labelNode, Priority.ALWAYS);
+        HBox.setHgrow(labelNode, Priority.NEVER);
         hBox.getChildren().add(labelNode);
         if (required) {
             hBox.getChildren().add(createAsterisk());

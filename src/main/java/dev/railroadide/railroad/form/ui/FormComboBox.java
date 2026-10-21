@@ -27,8 +27,13 @@ public class FormComboBox<T> extends InformativeLabeledHBox<ComboBox<T>> impleme
      * @param translate whether to use localization for the items
      * @param keyFunction the function to convert items to strings for display
      */
-    public FormComboBox(String labelKey, boolean required, boolean editable, boolean translate,
-        @Nullable Function<T, String> keyFunction) {
+    public FormComboBox(
+        String labelKey,
+        boolean required,
+        boolean editable,
+        boolean translate,
+        @Nullable Function<T, String> keyFunction
+    ) {
         super(labelKey, required, Map.of("editable", editable, "translate", translate, "keyFunction", keyFunction));
     }
 

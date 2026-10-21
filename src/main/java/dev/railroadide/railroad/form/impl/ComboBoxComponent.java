@@ -38,6 +38,8 @@ import java.util.function.Supplier;
  * @see FormComponent
  * @see FormComponent#comboBox(String, String, Class)
  * @see Builder
+ *
+ * @param <T> the type of item displayed by the combo box
  */
 public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBoxComponent.Data<T>, ComboBox<T>, T> {
     private final Supplier<T> defaultValue;
@@ -58,11 +60,19 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
      * @param buttonCell the button cell for the combobox
      * @param defaultValue the default value for the combobox
      */
-    public ComboBoxComponent(String dataKey, Data<T> data, FormComponentValidator<ComboBox<T>> validator,
-        FormComponentChangeListener<ComboBox<T>, T> listener, Property<ComboBox<T>> bindComboBoxTo,
-        List<FormTransformer<ComboBox<T>, T, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler,
-        @Nullable BooleanBinding visible, Callback<ListView<T>, ListCell<T>> cellFactory, ListCell<T> buttonCell,
-        Supplier<T> defaultValue) {
+    public ComboBoxComponent(
+        String dataKey,
+        Data<T> data,
+        FormComponentValidator<ComboBox<T>> validator,
+        FormComponentChangeListener<ComboBox<T>, T> listener,
+        Property<ComboBox<T>> bindComboBoxTo,
+        List<FormTransformer<ComboBox<T>, T, ?>> transformers,
+        EventHandler<? super KeyEvent> keyTypedHandler,
+        @Nullable BooleanBinding visible,
+        Callback<ListView<T>, ListCell<T>> cellFactory,
+        ListCell<T> buttonCell,
+        Supplier<T> defaultValue
+    ) {
         super(dataKey, data, currentData -> {
             var formComboBox = new FormComboBox<>(currentData.label, currentData.required, currentData.editable,
                 currentData.translate, (T v) -> currentData.keyFunction.toString(v));
@@ -174,7 +184,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
     /**
      * A builder for constructing a {@link ComboBoxComponent}.
      *
-     * @param <T> the type of the combobox
+     * @param <T> the type of item displayed by the combo box
      */
     public static class Builder<T> implements FormComponentBuilder<ComboBoxComponent<T>, ComboBox<T>, T, Builder<T>> {
         private final String dataKey;
@@ -235,6 +245,12 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
             return this;
         }
 
+        /**
+         * Sets a collection of items for the combo box.
+         *
+         * @param items the items to display
+         * @return this builder
+         */
         public Builder<T> items(Collection<T> items) {
             return items(() -> items);
         }
@@ -360,15 +376,31 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
          * @return this builder
          */
         @Override
-        public <X> Builder<T> addTransformer(ObservableValue<ComboBox<T>> fromComponent,
-            Consumer<X> toComponentFunction, Function<T, X> valueMapper) {
+        public <X> Builder<T> addTransformer(
+            ObservableValue<ComboBox<T>> fromComponent,
+            Consumer<X> toComponentFunction,
+            Function<T, X> valueMapper
+        ) {
             this.transformers
                 .add(new FormTransformer<>(fromComponent, ComboBox::getValue, toComponentFunction, valueMapper));
             return this;
         }
 
-        public <W> Builder<T> addAsyncTransformer(ObservableValue<ComboBox<T>> fromComponent,
-            Consumer<W> toComponentFunction, Function<T, CompletableFuture<W>> valueMapper) {
+        /**
+         * Adds an asynchronous transformer for values selected in the combo
+         * box.
+         *
+         * @param fromComponent the observable containing the source combo box
+         * @param toComponentFunction the consumer that receives the mapped value
+         * @param valueMapper the function that asynchronously maps the selected value
+         * @param <W> the target value type
+         * @return this builder
+         */
+        public <W> Builder<T> addAsyncTransformer(
+            ObservableValue<ComboBox<T>> fromComponent,
+            Consumer<W> toComponentFunction,
+            Function<T, CompletableFuture<W>> valueMapper
+        ) {
             this.transformers
                 .add(FormTransformer.async(fromComponent, ComboBox::getValue, toComponentFunction, valueMapper));
             return this;
@@ -388,8 +420,11 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
          */
         @Override
         @SuppressWarnings({"unchecked", "rawtypes"})
-        public <U extends Node, X> Builder<T> addTransformer(ObservableValue<ComboBox<T>> fromComponent,
-            ObservableValue<U> toComponent, Function<T, X> valueMapper) {
+        public <U extends Node, X> Builder<T> addTransformer(
+            ObservableValue<ComboBox<T>> fromComponent,
+            ObservableValue<U> toComponent,
+            Function<T, X> valueMapper
+        ) {
             return addTransformer(fromComponent, value -> {
                 if (toComponent.getValue() instanceof TextField textField) {
                     textField.setText(value.toString());

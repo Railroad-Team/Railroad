@@ -8,7 +8,7 @@ import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 import dev.railroadide.railroad.utility.ShutdownHooks;
-import dev.railroadide.railroad.utility.TimeFormatter;
+import dev.railroadide.railroad.utility.TimeFormatingUtils;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import dev.railroadide.railroad.vcs.git.commit.GitCommitPage;
@@ -36,6 +36,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Displays recent repository commits with periodically refreshed elapsed times.
+ */
 public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> implements AutoCloseable {
     private static final int FALLBACK_COMMIT_COUNT = 5;
     private final AtomicInteger requestedCount = new AtomicInteger(0);
@@ -49,6 +52,11 @@ public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> implemen
     private final ShutdownHooks.Registration shutdownRegistration;
     private boolean closed;
 
+    /**
+     * Creates the recent-commit list and requests its initial contents.
+     *
+     * @param project project whose files and workspace are being displayed
+     */
     public GitOverviewRecentCommitsPane(Project project) {
         this.gitManager = project.getGitManager();
         this.fetchTimestampListener = (_, _, _) -> requestCommits(gitManager, Math.max(1, requestedCount.get()));
@@ -217,7 +225,7 @@ public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> implemen
             shortHashLabel.setText(commit.shortHash());
             shortHashTooltip.setText(commit.hash());
             timestampEpochMillis = commit.authorTimestampEpochSeconds() * 1000L;
-            timestampTooltip.setText(TimeFormatter.formatDateTime(timestampEpochMillis));
+            timestampTooltip.setText(TimeFormatingUtils.formatDateTime(timestampEpochMillis));
             refreshTimestamp();
         }
 
@@ -238,7 +246,7 @@ public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> implemen
                 return;
             }
 
-            timestampLabel.setText(TimeFormatter.formatElapsed(timestampEpochMillis));
+            timestampLabel.setText(TimeFormatingUtils.formatElapsed(timestampEpochMillis));
         }
     }
 }

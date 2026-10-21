@@ -20,7 +20,17 @@ import java.util.Objects;
 public record AddressRange(
     String addressSpaceId,
     long start,
-    long end) {
+    long end
+) {
+    /**
+     * Creates a half-open address range with non-negative, ordered bounds.
+     *
+     * @param addressSpaceId the non-null, non-blank address space identifier within a binary
+     * @param start the inclusive start address
+     * @param end the exclusive end address
+     * @throws NullPointerException if {@code addressSpaceId} is null
+     * @throws IllegalArgumentException if the identifier is blank or the bounds are invalid
+     */
     public AddressRange {
         Objects.requireNonNull(addressSpaceId, "addressSpaceId must not be null");
         if (addressSpaceId.isBlank())

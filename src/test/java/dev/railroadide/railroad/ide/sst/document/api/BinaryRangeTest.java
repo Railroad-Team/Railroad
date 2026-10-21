@@ -9,9 +9,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class BinaryRangeTest {
+public class BinaryRangeTest {
     @Test
-    void binaryRangesUseByteOffsets() {
+    public void binaryRangesUseByteOffsets() {
         byte[] bytes = {10, 20, 30, 40};
         var snapshot = snapshot(bytes);
         var range = new BinaryRange(1, 3);
@@ -30,7 +30,7 @@ class BinaryRangeTest {
     }
 
     @Test
-    void emptyBinaryRangesReturnEmptyContent() {
+    public void emptyBinaryRangesReturnEmptyContent() {
         var snapshot = snapshot(new byte[]{10, 20});
         var range = new BinaryRange(1, 1);
 
@@ -39,7 +39,7 @@ class BinaryRangeTest {
     }
 
     @Test
-    void binaryRangeContentRejectsOutOfBoundsRanges() {
+    public void binaryRangeContentRejectsOutOfBoundsRanges() {
         var snapshot = snapshot(new byte[]{10, 20});
 
         assertThrows(IndexOutOfBoundsException.class, () -> new BinaryRange(1, 3).content(snapshot));

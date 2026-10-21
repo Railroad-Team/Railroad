@@ -5,57 +5,47 @@
 
 /* Modern Project Explorer Styles */
 .rr-project-explorer {
-    -fx-background-color: -color-bg-default;
-    -fx-border-color: -color-border-subtle;
-    -fx-border-width: 0 1 0 0;
+    -fx-background-color: -color-surface-panel;
+    -fx-border-width: 0;
+}
+
+.rr-project-explorer .rr-tree-view .tree-cell {
+    -fx-indent: 0.75em;
+    -fx-graphic-text-gap: 5px;
 }
 
 .project-explorer-header {
-    -fx-background-color: -color-bg-subtle;
+    -fx-background-color: -color-surface-panel;
     -fx-border-color: -color-border-subtle;
     -fx-border-width: 0 0 1 0;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 2, 0, 0, 1);
-    -fx-padding: 12px 16px 8px 16px;
-    -fx-spacing: 8px;
+    -fx-effect: none;
+    -fx-padding: 0 0.5em 0.25em 0.5em;
+    -fx-spacing: 0.25em;
 }
 
 .project-explorer-project-info {
-    -fx-spacing: 8px;
+    -fx-background-color: transparent;
+    -fx-spacing: 0.5em;
 }
 
-.project-explorer-search-field {
-    -fx-pref-width: 200px;
-    -fx-max-width: 260px;
+.project-explorer-title-row {
+    -fx-min-height: 2em;
+    -fx-spacing: 0.25em;
 }
 
 .project-explorer-action-buttons {
-    -fx-spacing: 4px;
+    -fx-background-color: transparent;
+    -fx-spacing: 0.25em;
 }
 
 .project-icon {
-    -fx-fill: -color-accent-emphasis;
-    -fx-opacity: 0.9;
+    -fx-icon-color: -color-fg-muted;
 }
 
 .project-name {
     -fx-font-weight: 600;
-    -fx-font-size: 14px;
+    -fx-font-size: 1em;
     -fx-text-fill: -color-fg-default;
-}
-
-/* Project Explorer Header Buttons - Extra Small */
-.project-explorer-button {
-    -fx-min-width: 24px !important;
-    -fx-min-height: 24px !important;
-    -fx-pref-width: 24px !important;
-    -fx-pref-height: 24px !important;
-    -fx-max-width: 24px !important;
-    -fx-max-height: 24px !important;
-    -fx-padding: 4px !important;
-}
-
-.project-explorer-button .ikonli-font-icon {
-    -fx-icon-size: 12px !important;
 }
 
 /* Project explorer drag target styling */

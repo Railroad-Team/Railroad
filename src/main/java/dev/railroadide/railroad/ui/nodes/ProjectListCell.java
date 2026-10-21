@@ -7,7 +7,7 @@ import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRCard;
 import dev.railroadide.railroad.ui.styling.ButtonSize;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
-import dev.railroadide.railroad.utility.TimeFormatter;
+import dev.railroadide.railroad.utility.TimeFormatingUtils;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
@@ -63,6 +63,12 @@ public class ProjectListCell extends ListCell<Project> {
     public ProjectListCell() {
         super();
         getStyleClass().add("project-list-cell");
+        setMinWidth(0);
+        setPrefWidth(0);
+        card.setMaxWidth(Double.MAX_VALUE);
+        infoBox.setMinWidth(0);
+        nameLabel.setWrapText(true);
+        pathLabel.setWrapText(true);
 
         card.getStyleClass().add("project-list-card");
         root.setAlignment(Pos.CENTER_LEFT);
@@ -133,6 +139,13 @@ public class ProjectListCell extends ListCell<Project> {
         });
     }
 
+    /**
+     * Refreshes the project card when JavaFX reuses this cell, including its icon, paths, facet tags,
+     * and elapsed time. Empty cells have their graphics and elapsed-time text cleared.
+     *
+     * @param project the project assigned to this cell, or {@code null}
+     * @param empty whether the cell represents an empty row
+     */
     @Override
     protected void updateItem(Project project, boolean empty) {
         super.updateItem(project, empty);
@@ -175,6 +188,6 @@ public class ProjectListCell extends ListCell<Project> {
             return;
         }
 
-        lastOpenedLabel.setText(TimeFormatter.formatElapsed(project.getLastOpened()));
+        lastOpenedLabel.setText(TimeFormatingUtils.formatElapsed(project.getLastOpened()));
     }
 }

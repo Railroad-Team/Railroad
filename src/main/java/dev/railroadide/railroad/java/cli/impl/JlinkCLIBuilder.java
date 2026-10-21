@@ -33,6 +33,13 @@ public class JlinkCLIBuilder implements CLIBuilder<Process, JlinkCLIBuilder> {
         this.jdk = Objects.requireNonNull(jdk, "JDK cannot be null");
     }
 
+    /**
+     * Creates a builder that uses {@code jlink} from the supplied JDK.
+     *
+     * @param jdk the JDK providing the executable; must not be null
+     * @return a new builder ready for configuration
+     * @throws NullPointerException if jdk is null
+     */
     public static JlinkCLIBuilder create(JDK jdk) {
         return new JlinkCLIBuilder(jdk);
     }

@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.ui.git.commit.changes;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.ui.IDEContentRouter;
 import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
 import dev.railroadide.railroad.ide.ui.git.diff.GitDiffPane;
@@ -16,6 +17,12 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 
+/**
+ * Represents one changed file and its Git actions in the commit tree.
+ *
+ * @param project project whose files and workspace are being displayed
+ * @param change file change represented by the tree entry
+ */
 public record FileItem(Project project, GitFileChange change) implements ChangeItem {
     @Override
     public Node getIcon() {
@@ -52,6 +59,7 @@ public record FileItem(Project project, GitFileChange change) implements ChangeI
     public Consumer<MouseEvent> getDoubleClickHandler() {
         return event -> {
             if (event.getTarget() instanceof Node) {
+                Services.EDITOR_TAB_MANAGER.open(change.path());
                 openDiffForFile(this);
             }
         };

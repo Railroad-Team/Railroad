@@ -19,28 +19,47 @@ import java.util.concurrent.CompletableFuture;
 public class Repository {
     /**
      * The URL of the repository.
+     *
+     * @param repositoryURL repository URL to store
+     * @return the repository URL, or null when unset
      */
     private String repositoryURL;
 
     /**
      * The clone URL of the repository, used for cloning operations.
+     *
+     * @param repositoryCloneURL clone URL to store
+     * @return the clone URL, or null when unset
      */
     private String repositoryCloneURL;
 
     /**
      * An optional icon representing the repository.
+     *
+     * @param icon replacement repository icon
+     * @return the configured icon container, initially empty
      */
     private Optional<Image> icon = Optional.empty();
 
     /**
      * The name of the repository.
+     *
+     * @param repositoryName display name to store
+     * @return the repository name, or null when unset
      */
     private String repositoryName;
 
     /**
      * The connection associated with this repository.
+     *
+     * @param connection connection responsible for repository operations
+     * @return the connection, or null when unset
      */
     private AbstractConnection connection;
+
+    /** Creates a repository with no configured URLs, name, or connection and an empty icon. */
+    public Repository() {
+    }
 
     /**
      * Clones the repository to the specified local path.

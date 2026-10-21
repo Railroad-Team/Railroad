@@ -7,13 +7,23 @@ import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Tooltip;
 import lombok.Getter;
 import org.kordamp.ikonli.Ikon;
-import org.kordamp.ikonli.devicons.Devicons;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
+/**
+ * Represents a Gradle task with its description as a tooltip and run and debug context menu actions.
+ */
 @Getter
 public class GradleTaskElement extends GradleTreeElement {
     private final Project project;
     private final RailroadGradleTask task;
 
+    /**
+     * Creates a tree element displaying the supplied task's name.
+     *
+     * @param project the Railroad project used to run or debug the task
+     * @param task the Gradle task represented by this element
+     * @throws IllegalArgumentException if {@code project} or {@code task} is null
+     */
     public GradleTaskElement(Project project, RailroadGradleTask task) {
         super(task != null ? task.getName() : "Unknown Task");
         if (project == null)
@@ -27,7 +37,7 @@ public class GradleTaskElement extends GradleTreeElement {
 
     @Override
     public Ikon getIcon() {
-        return Devicons.TERMINAL;
+        return FontAwesomeSolid.TERMINAL;
     }
 
     @Override

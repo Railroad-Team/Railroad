@@ -15,6 +15,12 @@ import dev.railroadide.railroad.project.onboarding.keys.MinecraftProjectKeys;
 
 import java.nio.file.Path;
 
+/**
+ * Renames the example mod's entrypoint classes and updates their package declarations from project data.
+ * Also updates existing example mixin and config classes, and client sources when split sources are enabled.
+ *
+ * @param files service used to move Java source files and rewrite their contents
+ */
 public record RenameClassesStep(FilesService files) implements CreationStep {
     private static final PrinterConfiguration DEFAULT_PRINTER_CONFIGURATION = new DefaultPrinterConfiguration()
         .addOption(new DefaultConfigurationOption(DefaultPrinterConfiguration.ConfigOption.ORDER_IMPORTS, true))

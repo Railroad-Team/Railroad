@@ -5,7 +5,7 @@ initscript {
         gradlePluginPortal()
     }
     dependencies {
-        classpath "dev.railroadide:RailroadGradlePlugin:1.0.1"
+        classpath "dev.railroadide:RailroadGradlePlugin:1.0.2"
     }
 }
 
@@ -27,6 +27,8 @@ gradle.projectsLoaded { gradle ->
     }
 
     root.allprojects { project ->
-        aggregate.configure { dependsOn(project.tasks.named("downloadDependencySources")) }
+        aggregate.configure {
+            dependsOn(project.tasks.named("downloadDependencySources"))
+        }
     }
 }

@@ -8,7 +8,13 @@ import dev.railroadide.railroad.plugin.spi.dto.Project;
 import java.nio.file.Path;
 import java.util.Set;
 
+/**
+ * Provides the fallback text editor for files without specialized language support.
+ */
 public class PlainTextLanguageSupport extends BaseLanguageSupport {
+    /**
+     * Shared instance of this language support implementation.
+     */
     public static final PlainTextLanguageSupport INSTANCE = new PlainTextLanguageSupport();
 
     private PlainTextLanguageSupport() {

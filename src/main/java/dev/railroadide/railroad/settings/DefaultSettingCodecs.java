@@ -9,6 +9,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ComboBoxBase;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 
 /**
  * Default setting codecs for common data types used in the Railroad IDE.
@@ -66,6 +67,24 @@ public class DefaultSettingCodecs {
         .createNode(value -> {
             var textField = new TextField();
             textField.setText(String.valueOf(value));
+            return textField;
+        })
+        .build();
+
+    /**
+     * Integer codec for limits and counts that cannot be negative.
+     */
+    public static final SettingCodec<Integer, TextField> NON_NEGATIVE_INTEGER = SettingCodec
+        .<Integer, TextField>builder("generic.non_negative_integer")
+        .nodeToValue(textField -> parseNonNegativeInteger(textField.getText()))
+        .valueToNode((value, textField) -> textField.setText(String.valueOf(normalizeNonNegativeInteger(value))))
+        .jsonDecoder(json -> parseNonNegativeInteger(json.getAsString()))
+        .jsonEncoder(value -> new JsonPrimitive(normalizeNonNegativeInteger(value)))
+        .createNode(value -> {
+            var textField = new TextField(String.valueOf(normalizeNonNegativeInteger(value)));
+            textField.setTextFormatter(new TextFormatter<String>(change -> change.getControlNewText().matches("\\d*")
+                ? change
+                : null));
             return textField;
         })
         .build();
@@ -134,6 +153,15 @@ public class DefaultSettingCodecs {
         })
         .build();
 
+    /**
+     * Creates an enum codec using enum names for JSON and combo-box labels.
+     * Invalid decoded names fall back to the enum's first constant.
+     *
+     * @param <E> enum type
+     * @param id codec identifier
+     * @param enumClass enum class whose constants populate the combo box
+     * @return a codec for the enum
+     */
     public static <E extends Enum<E>> SettingCodec<E, ComboBox<E>> ofEnum(String id, Class<E> enumClass) {
         return ofEnum(id, enumClass, Enum::name, name -> {
             try {
@@ -144,15 +172,62 @@ public class DefaultSettingCodecs {
         });
     }
 
-    public static <E extends Enum<E>> SettingCodec<E, ComboBox<E>> ofEnum(String id, Class<E> enumClass,
-        ToStringFunction<E> toStringFunction, FromStringFunction<E> fromStringFunction) {
+    private static int parseNonNegativeInteger(String text) {
+        if (text == null || text.isBlank())
+            return 0;
+        if (!text.matches("\\d+"))
+            return 0;
+
+        try {
+            long value = Long.parseLong(text);
+            return (int) Math.min(value, Integer.MAX_VALUE);
+        } catch (NumberFormatException _) {
+            return Integer.MAX_VALUE;
+        }
+    }
+
+    private static int normalizeNonNegativeInteger(Integer value) {
+        return value == null ? 0 : Math.max(0, value);
+    }
+
+    /**
+     * Creates an enum codec with custom string conversion and a converter derived from those functions.
+     *
+     * @param <E> enum type
+     * @param id codec identifier
+     * @param enumClass enum class whose constants populate the combo box
+     * @param toStringFunction converts enum values to labels and JSON strings
+     * @param fromStringFunction converts labels and JSON strings to enum values
+     * @return a codec for the enum
+     */
+    public static <E extends Enum<E>> SettingCodec<E, ComboBox<E>> ofEnum(
+        String id,
+        Class<E> enumClass,
+        ToStringFunction<E> toStringFunction,
+        FromStringFunction<E> fromStringFunction
+    ) {
         return ofEnum(id, enumClass, toStringFunction, fromStringFunction,
             new ComboBoxConverter<>(toStringFunction, fromStringFunction));
     }
 
-    public static <E extends Enum<E>> SettingCodec<E, ComboBox<E>> ofEnum(String id, Class<E> enumClass,
-        ToStringFunction<E> toStringFunction, FromStringFunction<E> fromStringFunction,
-        ComboBoxConverter<E> comboBoxConverter) {
+    /**
+     * Creates an enum codec with custom value conversion and combo-box conversion.
+     *
+     * @param <E> enum type
+     * @param id codec identifier
+     * @param enumClass enum class whose constants populate the combo box
+     * @param toStringFunction converts enum values to JSON strings
+     * @param fromStringFunction converts JSON strings to enum values
+     * @param comboBoxConverter converts enum values to and from combo-box labels
+     * @return a codec for the enum
+     */
+    public static <E extends Enum<E>> SettingCodec<E, ComboBox<E>> ofEnum(
+        String id,
+        Class<E> enumClass,
+        ToStringFunction<E> toStringFunction,
+        FromStringFunction<E> fromStringFunction,
+        ComboBoxConverter<E> comboBoxConverter
+    ) {
         return SettingCodec.<E, ComboBox<E>>builder(id)
             .nodeToValue(ComboBoxBase::getValue)
             .valueToNode((value, comboBox) -> comboBox.setValue(value))

@@ -117,6 +117,17 @@ public final class DocumentIdentityRegistry {
     }
 
     /**
+     * Resolves a stable identity together with the supplied current URI.
+     *
+     * @param uri physical or virtual document URI
+     * @return logical identity and current address
+     */
+    public synchronized DocumentIdentity identify(DocumentUri uri) {
+        uri = Objects.requireNonNull(uri, "uri");
+        return new DocumentIdentity(getOrCreate(uri), canonicalUri(uri));
+    }
+
+    /**
      * Returns the identity associated with {@code path}, allocating one when necessary.
      * Equivalent spellings of the same existing physical file return the same identity.
      *
@@ -180,10 +191,10 @@ public final class DocumentIdentityRegistry {
     }
 
     /**
-     * Finds an existing physical or virtual URI association without allocating an ID.
+     * Finds the current URI associated with a document identity.
      *
-     * @param documentUri document URI
-     * @return associated identity, or empty when the URI is unknown
+     * @param id the document identity to look up
+     * @return associated URI, or empty when the identity is unknown
      */
     public synchronized Optional<DocumentUri> find(DocumentId id) {
         Objects.requireNonNull(id, "id");
@@ -192,6 +203,18 @@ public final class DocumentIdentityRegistry {
             .filter(entry -> entry.getValue().equals(id))
             .findFirst()
             .map(entry -> entry.getKey());
+    }
+
+    /**
+     * Finds a registered identity together with its current address without allocating.
+     *
+     * @param uri physical or virtual document URI
+     * @return registered logical identity and current address, if known
+     */
+    public synchronized Optional<DocumentIdentity> findIdentity(DocumentUri uri) {
+        uri = Objects.requireNonNull(uri, "uri");
+        DocumentUri canonicalUri = canonicalUri(uri);
+        return find(canonicalUri).map(documentId -> new DocumentIdentity(documentId, canonicalUri));
     }
 
     /**
@@ -361,5 +384,13 @@ public final class DocumentIdentityRegistry {
         } catch (IOException exception) {
             throw new UncheckedIOException("Failed to resolve document path " + path, exception);
         }
+    }
+
+    private static DocumentUri canonicalUri(DocumentUri uri) {
+        return uri.filePath()
+            .map(DocumentIdentityRegistry::normalize)
+            .map(DocumentIdentityRegistry::resolve)
+            .map(DocumentUri::fromPath)
+            .orElse(uri);
     }
 }

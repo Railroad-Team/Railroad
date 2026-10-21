@@ -4,7 +4,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.HashMap;
 
+/**
+ * Command-line benchmark comparing Java parser modes over source-file datasets.
+ */
 public final class JavaParserBenchmarkRunner {
     private static final int DEFAULT_WARMUP_ITERATIONS = 5;
     private static final int DEFAULT_MEASURE_ITERATIONS = 20;
@@ -17,6 +21,11 @@ public final class JavaParserBenchmarkRunner {
     private JavaParserBenchmarkRunner() {
     }
 
+    /**
+     * Runs parser benchmarks over the requested source inputs and prints timing results.
+     *
+     * @param args the command-line source paths and benchmark options
+     */
     public static void main(String[] args) throws IOException {
         BenchmarkOptions options = parseOptions(args);
         List<SourceUnit> corpus = loadCorpus(options.inputs());
@@ -60,7 +69,7 @@ public final class JavaParserBenchmarkRunner {
 
     private static BenchmarkResult runBenchmark(ParseMode mode, BenchmarkDataset dataset, BenchmarkOptions options) {
         ParseStrategy strategy = strategyFor(mode);
-        Map<Path, MutableFileTiming> perFile = new java.util.HashMap<>();
+        Map<Path, MutableFileTiming> perFile = new HashMap<>();
 
         for (int i = 0; i < options.warmupIterations(); i++) {
             runIteration(dataset.units(), options.repeatPerIteration(), strategy, null, mode);
@@ -73,7 +82,7 @@ public final class JavaParserBenchmarkRunner {
             iterationNanos.add(System.nanoTime() - start);
         }
 
-        Map<Path, FileTiming> fileTiming = new java.util.HashMap<>(perFile.size());
+        Map<Path, FileTiming> fileTiming = new HashMap<>(perFile.size());
         for (Map.Entry<Path, MutableFileTiming> entry : perFile.entrySet()) {
             fileTiming.put(entry.getKey(), entry.getValue().freeze());
         }
@@ -89,7 +98,8 @@ public final class JavaParserBenchmarkRunner {
         int repeats,
         ParseStrategy strategy,
         Map<Path, MutableFileTiming> perFile,
-        ParseMode mode) {
+        ParseMode mode
+    ) {
         for (int repeat = 0; repeat < repeats; repeat++) {
             for (SourceUnit unit : units) {
                 long parseStart = perFile == null ? 0L : System.nanoTime();
@@ -168,8 +178,11 @@ public final class JavaParserBenchmarkRunner {
         }
     }
 
-    private static void printRunHeader(BenchmarkOptions options, List<SourceUnit> corpus,
-        List<BenchmarkDataset> datasets) {
+    private static void printRunHeader(
+        BenchmarkOptions options,
+        List<SourceUnit> corpus,
+        List<BenchmarkDataset> datasets
+    ) {
         long bytes = 0L;
         long lines = 0L;
         for (SourceUnit unit : corpus) {
@@ -415,7 +428,9 @@ public final class JavaParserBenchmarkRunner {
     }
 
     private enum SizeBucket {
-        SMALL("small"), MEDIUM("medium"), LARGE("large");
+        SMALL("small"),
+        MEDIUM("medium"),
+        LARGE("large");
 
         private final String id;
 
@@ -451,7 +466,8 @@ public final class JavaParserBenchmarkRunner {
         int repeatPerIteration,
         int slowestFiles,
         Set<ParseMode> modes,
-        List<Path> inputs) {
+        List<Path> inputs
+    ) {
     }
 
     private record BenchmarkResult(
@@ -460,7 +476,8 @@ public final class JavaParserBenchmarkRunner {
         long bytesPerIteration,
         int parsesPerIteration,
         List<Long> iterationNanos,
-        Map<Path, FileTiming> perFileTiming) {
+        Map<Path, FileTiming> perFileTiming
+    ) {
         private double operationsPerSecond() {
             double meanNanos = meanNanos(iterationNanos);
             if (meanNanos <= 0.0)
@@ -482,13 +499,13 @@ public final class JavaParserBenchmarkRunner {
         private long maxNanos;
         private long samples;
 
-        void record(long nanos) {
+        private void record(long nanos) {
             totalNanos += nanos;
             maxNanos = Math.max(maxNanos, nanos);
             samples++;
         }
 
-        FileTiming freeze() {
+        private FileTiming freeze() {
             long average = samples == 0 ? 0L : totalNanos / samples;
             return new FileTiming(average, maxNanos, samples);
         }

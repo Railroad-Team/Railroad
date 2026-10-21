@@ -13,10 +13,10 @@ import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class DocumentSnapshotTest {
+public class DocumentSnapshotTest {
 
     @Test
-    void lineMapIsCachedPerSnapshot() {
+    public void lineMapIsCachedPerSnapshot() {
         DocumentId id = DocumentId.create();
         var snapshot = new TextDocumentSnapshot(
             id,
@@ -33,7 +33,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void differentSnapshotsHaveIndependentLineMaps() {
+    public void differentSnapshotsHaveIndependentLineMaps() {
         DocumentId id = DocumentId.create();
         DocumentUri uri = DocumentUri.inMemory(id);
 
@@ -59,7 +59,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void concurrentLineMapAccessReturnsSameCachedInstance() throws Exception {
+    public void concurrentLineMapAccessReturnsSameCachedInstance() throws Exception {
         DocumentId id = DocumentId.create();
         var snapshot = new TextDocumentSnapshot(
             id,
@@ -96,7 +96,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void cachesLineMap() {
+    public void cachesLineMap() {
         var snapshot = new TextDocumentSnapshot(
             DocumentId.create(),
             DocumentUri.virtual("memory", "Test.java"),
@@ -113,7 +113,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void referenceEqualityAndRevisionIdentityDoNotConflateMetadata() {
+    public void referenceEqualityAndRevisionIdentityDoNotConflateMetadata() {
         DocumentId id = DocumentId.create();
         DocumentUri uri = DocumentUri.inMemory(id);
         var version = DocumentVersion.initial();
@@ -140,7 +140,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void retainedTextAndBinarySnapshotsSupportConcurrentReadsAfterOwnerReplacement() throws Exception {
+    public void retainedTextAndBinarySnapshotsSupportConcurrentReadsAfterOwnerReplacement() throws Exception {
         DocumentId id = DocumentId.create();
         var uri = DocumentUri.inMemory(id);
         var version = DocumentVersion.initial();
@@ -183,7 +183,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void rootIsSealedToTextAndBinarySnapshots() {
+    public void rootIsSealedToTextAndBinarySnapshots() {
         assertTrue(DocumentSnapshot.class.isSealed());
         assertEquals(
             Set.of(TextDocumentSnapshot.class, BinaryDocumentSnapshot.class),
@@ -191,7 +191,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void textSnapshotCopiesMutableInputAndCarriesMetadata() {
+    public void textSnapshotCopiesMutableInputAndCarriesMetadata() {
         DocumentId id = DocumentId.create();
         DocumentUri uri = DocumentUri.virtual("generated", "sources/Example.java");
         var version = new DocumentVersion(8);
@@ -219,7 +219,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void textSnapshotAlsoAcceptsPhysicalDocumentLocations() {
+    public void textSnapshotAlsoAcceptsPhysicalDocumentLocations() {
         DocumentUri physicalUri = DocumentUri.fromPath(Path.of("Example.java").toAbsolutePath());
 
         var snapshot = new TextDocumentSnapshot(
@@ -235,7 +235,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void binarySnapshotCopiesInputsAndExposesIndependentReadOnlyViews() {
+    public void binarySnapshotCopiesInputsAndExposesIndependentReadOnlyViews() {
         byte[] content = {1, 2, 3, 4};
         var snapshot = new BinaryDocumentSnapshot(
             DocumentId.create(),
@@ -262,7 +262,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void binarySnapshotCopiesOnlyRemainingBytesWithoutMovingSourcePosition() {
+    public void binarySnapshotCopiesOnlyRemainingBytesWithoutMovingSourcePosition() {
         ByteBuffer source = ByteBuffer.wrap(new byte[]{10, 20, 30, 40});
         source.position(1);
         source.limit(3);
@@ -280,7 +280,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void snapshotsRejectMissingMetadataAndBlankLanguages() {
+    public void snapshotsRejectMissingMetadataAndBlankLanguages() {
         DocumentId id = DocumentId.create();
         DocumentUri uri = DocumentUri.inMemory(id);
         DocumentVersion version = DocumentVersion.initial();
@@ -300,7 +300,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void binaryConstructorsRetainExplicitOriginForUnregisteredLanguage() {
+    public void binaryConstructorsRetainExplicitOriginForUnregisteredLanguage() {
         DocumentId id = DocumentId.create();
         DocumentUri uri = DocumentUri.inMemory(id);
         var origin = new DocumentOrigin(BackingKind.MEMORY, ProvenanceKind.GENERATED);
@@ -318,7 +318,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void explicitOriginsKeepBackingIndependentOfProvenance() {
+    public void explicitOriginsKeepBackingIndependentOfProvenance() {
         var generated = new DocumentOrigin(BackingKind.FILE, ProvenanceKind.GENERATED);
         var attached = new DocumentOrigin(BackingKind.ARCHIVE_ENTRY, ProvenanceKind.ATTACHED_SOURCE);
         var generatedSnapshot = new TextDocumentSnapshot(DocumentId.create(),
@@ -335,7 +335,7 @@ class DocumentSnapshotTest {
     }
 
     @Test
-    void legacyConstructorsDoNotInferProvenanceFromVirtualSchemes() {
+    public void legacyConstructorsDoNotInferProvenanceFromVirtualSchemes() {
         for (String scheme : Set.of("generated", "decompiled")) {
             DocumentUri uri = DocumentUri.virtual(scheme, "Example.java");
             var text = new TextDocumentSnapshot(DocumentId.create(), uri, DocumentVersion.initial(),

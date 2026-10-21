@@ -3,13 +3,14 @@ package dev.railroadide.railroad.ide.diagnostics;
 import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
 import org.junit.jupiter.api.Test;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JavaInspectionRuleSettingsTest {
+public class JavaInspectionRuleSettingsTest {
 
     @Test
-    void persistsRuleSettingsIntoConfigState() {
+    public void persistsRuleSettingsIntoConfigState() {
         JavaInspectionRuleSettings.resetAll();
 
         JavaInspectionRuleSettings.setRuleEnabled("test:rule", false);
@@ -22,10 +23,10 @@ class JavaInspectionRuleSettingsTest {
     }
 
     @Test
-    void reloadsRuleSettingsFromConfigState() {
-        ConfigHandler.getConfig().setInspectionRuleEnabledOverrides(java.util.Map.of("test:rule", false));
-        ConfigHandler.getConfig().setInspectionRuleTagEnabledOverrides(java.util.Map.of("names", false));
-        ConfigHandler.getConfig().setInspectionRuleSeverityOverrides(java.util.Map.of("test:rule", "WARNING"));
+    public void reloadsRuleSettingsFromConfigState() {
+        ConfigHandler.getConfig().setInspectionRuleEnabledOverrides(Map.of("test:rule", false));
+        ConfigHandler.getConfig().setInspectionRuleTagEnabledOverrides(Map.of("names", false));
+        ConfigHandler.getConfig().setInspectionRuleSeverityOverrides(Map.of("test:rule", "WARNING"));
 
         JavaInspectionRuleSettings.reloadFromConfig();
 

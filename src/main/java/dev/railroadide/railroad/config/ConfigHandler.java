@@ -10,10 +10,26 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
+/**
+ * Provides access to Railroad's process-wide configuration and persists it to
+ * the platform-specific configuration directory.
+ */
 public final class ConfigHandler {
     private static final ConfigHandler INSTANCE = new ConfigHandler();
     private final Config config = new Config();
 
+    /**
+     * Resolves the directory used to store Railroad's configuration.
+     *
+     * <p>
+     * On Windows, {@code APPDATA} is preferred; on Linux,
+     * {@code XDG_CONFIG_HOME} is preferred. If the relevant environment
+     * variable is missing or blank, the platform's conventional directory is
+     * used instead.
+     * </p>
+     *
+     * @return the platform-specific Railroad configuration directory
+     */
     public static Path getConfigDirectory() {
         String userHome = System.getProperty("user.home");
         return switch (OperatingSystem.CURRENT) {
@@ -39,6 +55,17 @@ public final class ConfigHandler {
         };
     }
 
+    /**
+     * Saves the current configuration to {@code config.json}.
+     *
+     * <p>
+     * The configuration is written to a temporary file and then moved into
+     * place, using an atomic move when the file system supports it. The
+     * configuration directory is created if necessary.
+     * </p>
+     *
+     * @throws IllegalStateException if the configuration cannot be written
+     */
     public static synchronized void saveConfig() {
         Railroad.LOGGER.info("Updating config file");
 
@@ -66,6 +93,19 @@ public final class ConfigHandler {
         }
     }
 
+    /**
+     * Initializes the configuration from {@code config.json}.
+     *
+     * <p>
+     * The configuration directory is created if necessary. If no
+     * configuration file exists, a new file containing the current default
+     * configuration is created; otherwise, the existing file is read and
+     * deserialized.
+     * </p>
+     *
+     * @throws IllegalStateException if the configuration directory or file
+     *             cannot be accessed
+     */
     public static void initConfig() {
         Railroad.LOGGER.info("Initializing config file");
 
@@ -84,6 +124,11 @@ public final class ConfigHandler {
         }
     }
 
+    /**
+     * Returns the shared in-memory configuration.
+     *
+     * @return the configuration managed by this handler
+     */
     public static Config getConfig() {
         return INSTANCE.config;
     }

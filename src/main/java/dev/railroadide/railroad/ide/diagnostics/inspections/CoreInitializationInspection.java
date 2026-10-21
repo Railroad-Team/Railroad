@@ -13,8 +13,15 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#OVERRIDABLE_METHOD_DURING_CONSTRUCTION},
+ * {@link JavaSemanticRules#OVERRIDDEN_METHOD_DURING_CONSTRUCTION}.
+ */
 @RegisteredInspection
 public final class CoreInitializationInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-initialization-inspection";
 
     private static final Set<String> CONSTRUCTOR_KINDS = Set.of(
@@ -52,8 +59,10 @@ public final class CoreInitializationInspection implements JavaInspectionRulePro
         return RULES;
     }
 
-    private static void reportOverridableMethodDuringConstruction(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportOverridableMethodDuringConstruction(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode methodInvocationNode : context.nodesOfKind(JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id())) {
             findThisConstructorCall(context, methodInvocationNode)
                 .ifPresent(
@@ -61,8 +70,10 @@ public final class CoreInitializationInspection implements JavaInspectionRulePro
         }
     }
 
-    private static void reportOverriddenMethodDuringConstruction(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportOverriddenMethodDuringConstruction(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         Map<String, List<String>> subtypeIndex = buildSubtypeIndex(context);
         for (SyntaxNode methodInvocationNode : context.nodesOfKind(JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id())) {
             Optional<CallSite> maybeCall = findThisConstructorCall(context, methodInvocationNode);
@@ -138,8 +149,11 @@ public final class CoreInitializationInspection implements JavaInspectionRulePro
             .of(new CallSite(currentType, invocationNode, methodSymbol, ownerQualifiedName, descriptor.signatureKey()));
     }
 
-    private static JavaRuleContext.MethodDescriptor findMethodDescriptor(JavaRuleContext context,
-        String ownerQualifiedName, Symbol methodSymbol) {
+    private static JavaRuleContext.MethodDescriptor findMethodDescriptor(
+        JavaRuleContext context,
+        String ownerQualifiedName,
+        Symbol methodSymbol
+    ) {
         for (JavaRuleContext.MethodDescriptor descriptor : context.declaredMethodDescriptors(ownerQualifiedName)) {
             if (methodSymbol.equals(descriptor.symbol()))
                 return descriptor;
@@ -217,6 +231,7 @@ public final class CoreInitializationInspection implements JavaInspectionRulePro
         SyntaxNode invocationNode,
         Symbol methodSymbol,
         String ownerQualifiedName,
-        String signatureKey) {
+        String signatureKey
+    ) {
     }
 }

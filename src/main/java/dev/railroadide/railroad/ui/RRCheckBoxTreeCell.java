@@ -9,7 +9,10 @@ import javafx.scene.control.TreeItem;
 import javafx.scene.layout.HBox;
 
 /**
- * Tree cell that renders a checkbox alongside the tree item value.
+ * Tree cell that renders a checkbox bound to an {@link RRCheckBoxTreeItem} alongside its value.
+ * Ordinary tree items display a disabled checkbox.
+ *
+ * @param <T> the type of value stored in each tree item
  */
 public class RRCheckBoxTreeCell<T> extends TreeCell<T> {
     private final CheckBox checkBox = new CheckBox();
@@ -17,6 +20,9 @@ public class RRCheckBoxTreeCell<T> extends TreeCell<T> {
     private final HBox container = new HBox(8);
     private RRCheckBoxTreeItem<T> boundItem;
 
+    /**
+     * Creates a left-aligned cell with a checkbox and label separated by eight pixels.
+     */
     public RRCheckBoxTreeCell() {
         container.setAlignment(Pos.CENTER_LEFT);
         checkBox.getStyleClass().add("rr-tree-view-check-box");
@@ -26,6 +32,12 @@ public class RRCheckBoxTreeCell<T> extends TreeCell<T> {
         setText(null);
     }
 
+    /**
+     * Rebinds checkbox state and displays the current value, or clears an empty cell.
+     *
+     * @param item the current value, displayed directly if it is a node or as text otherwise
+     * @param empty true when the cell has no item
+     */
     @Override
     protected void updateItem(T item, boolean empty) {
         super.updateItem(item, empty);
@@ -77,6 +89,13 @@ public class RRCheckBoxTreeCell<T> extends TreeCell<T> {
         }
     }
 
+    /**
+     * Rebuilds the row after its checkbox, adding the optional graphic and nonempty text content.
+     *
+     * @param graphic the graphic to place after the checkbox, or null
+     * @param text the text assigned to the internal label, or null to omit text content
+     * @param textNode the node to display for nonempty text, or null
+     */
     protected void setContent(Node graphic, String text, Node textNode) {
         container.getChildren().clear();
         container.getChildren().add(checkBox);
@@ -93,6 +112,11 @@ public class RRCheckBoxTreeCell<T> extends TreeCell<T> {
         }
     }
 
+    /**
+     * Displays a custom node next to the checkbox and clears the cell's ordinary text.
+     *
+     * @param graphic the custom content node, or null to show only the checkbox
+     */
     protected void setCustomContent(Node graphic) {
         setContent(graphic, null, null);
         setText(null);

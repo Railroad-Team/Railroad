@@ -15,6 +15,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * A named class declaration with generic parameters, supertypes, and members.
+ *
+ * @param span source range occupied by this node
+ * @param modifiers modifiers attached to the declaration
+ * @param annotations annotations attached to this node
+ * @param name declared class name
+ * @param typeParameters declared type parameters
+ * @param extendsType optional superclass type
+ * @param implementsTypes implemented interface types
+ * @param members declarations in the class body
+ */
 public record ClassDeclaration(
     Span span,
     List<Modifier> modifiers,
@@ -23,7 +35,8 @@ public record ClassDeclaration(
     List<TypeParameter> typeParameters,
     Optional<TypeRef> extendsType,
     List<TypeRef> implementsTypes,
-    List<ClassBodyDeclaration> members) implements TypeDeclaration {
+    List<ClassBodyDeclaration> members
+) implements TypeDeclaration {
     @Override
     public AstKind kind() {
         return AstKind.CLASS_DECLARATION;

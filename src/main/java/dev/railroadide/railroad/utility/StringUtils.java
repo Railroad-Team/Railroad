@@ -6,6 +6,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * A utility class for string manipulation and validation.
+ * This class provides various static methods for working with strings,
+ * including abbreviation generation, exception formatting, environment variable handling,
+ * and string array conversions.
+ */
 public final class StringUtils {
     /**
      * A regular expression pattern for validating and matching URLs.
@@ -15,7 +21,7 @@ public final class StringUtils {
     public static final String URL_REGEX = "(?:http(s)?:\\/\\/)?[\\w.-]+(?:\\.[\\w\\.-]+)+[\\w\\-\\._~:/?#\\[\\]@!\\$&'\\(\\)\\*\\+,;=.]+$";
 
     private StringUtils() {
-        // Utility class, no instantiation
+        throw new UnsupportedOperationException("Instantiated utility class");
     }
 
     /**
@@ -36,6 +42,12 @@ public final class StringUtils {
         return abbreviation.toString();
     }
 
+    /**
+     * Converts an exception and its causes into a string representation.
+     *
+     * @param exception The exception to convert.
+     * @return A string representation of the exception and its causes.
+     */
     public static String exceptionToString(Throwable exception) {
         var sb = new StringBuilder();
         sb.append(ExceptionUtils.formatException(exception));
@@ -149,6 +161,12 @@ public final class StringUtils {
         return str.split(delimiter);
     }
 
+    /**
+     * Capitalizes the first letter of each word in the input string.
+     *
+     * @param input The input string to capitalize.
+     * @return A new string with the first letter of each word capitalized.
+     */
     public static String capitalizeFirstLetterOfEachWord(String input) {
         String[] words = input.split(" ");
         var capitalized = new StringBuilder();

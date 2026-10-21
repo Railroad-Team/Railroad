@@ -6,6 +6,9 @@ import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.SeparatorMenuItem;
 
+/**
+ * A menu bar that can append Railroad's localized Help menu and support links.
+ */
 public class RRMenuBar extends MenuBar {
     /**
      * Creates a new RRMenuBar with the specified child menus.

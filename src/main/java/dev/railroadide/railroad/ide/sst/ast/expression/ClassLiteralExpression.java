@@ -9,6 +9,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A class literal naming a type followed by {@code .class}.
+ *
+ * @param span source range occupied by this node
+ * @param type type preceding the class literal suffix
+ */
 public record ClassLiteralExpression(Span span, TypeRef type) implements LiteralExpression {
     @Override
     public AstKind kind() {

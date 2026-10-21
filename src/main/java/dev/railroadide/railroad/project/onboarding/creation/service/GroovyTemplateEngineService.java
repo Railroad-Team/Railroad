@@ -8,6 +8,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Map;
 
+/** Renders project templates with Groovy's streaming template engine and the supplied variable bindings. */
 public class GroovyTemplateEngineService implements TemplateEngineService {
     private final StreamingTemplateEngine delegate = new StreamingTemplateEngine();
 

@@ -23,6 +23,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Displays Gradle model elements in a tree and shows a loading indicator while the model reloads.
+ * Rebuilds the tree when the project's model service supplies a new model.
+ *
+ * @param <T> the model element type displayed by this pane
+ */
 public abstract class GradleTreeViewPane<T> extends RRVBox {
     private final Project project;
     private final TreeView<GradleTreeElement> treeView = new TreeView<>();
@@ -31,6 +37,12 @@ public abstract class GradleTreeViewPane<T> extends RRVBox {
     private final AtomicBoolean isLoading = new AtomicBoolean(true);
     private final AtomicLong reloadGeneration = new AtomicLong();
 
+    /**
+     * Creates a pane that listens for model updates and displays any cached model.
+     *
+     * @param project the Gradle project whose model is displayed
+     * @throws IllegalStateException if the project is not a Gradle project
+     */
     public GradleTreeViewPane(Project project) {
         super();
         this.project = project;
@@ -41,7 +53,7 @@ public abstract class GradleTreeViewPane<T> extends RRVBox {
         loadingContainer.prefHeightProperty().bind(heightProperty());
         loadingContainer.prefWidthProperty().bind(widthProperty());
 
-        treeView.getStyleClass().add("gradle-tasks-tree-view");
+        treeView.getStyleClass().addAll("rr-tree-view", "gradle-tasks-tree-view");
         treeView.setShowRoot(false);
         treeView.setCellFactory(param -> new GradleTreeCell());
         treeView.prefHeightProperty().bind(heightProperty());

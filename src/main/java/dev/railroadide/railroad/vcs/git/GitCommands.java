@@ -878,8 +878,13 @@ public final class GitCommands {
      * @param overwrite whether existing tags may be overwritten
      * @return configured git command
      */
-    public static GitCommand createTag(GitRepository repo, String tagName, String hash, @Nullable String message,
-        boolean overwrite) {
+    public static GitCommand createTag(
+        GitRepository repo,
+        String tagName,
+        String hash,
+        @Nullable String message,
+        boolean overwrite
+    ) {
         GitCommand.Builder builder = GitCommand.builder()
             .workingDirectory(repo)
             .timeout(10, TimeUnit.SECONDS)

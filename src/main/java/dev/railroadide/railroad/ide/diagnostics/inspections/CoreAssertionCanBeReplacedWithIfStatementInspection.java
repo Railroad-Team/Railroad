@@ -14,8 +14,14 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#ASSERTION_CAN_BE_REPLACED_WITH_IF_STATEMENT}.
+ */
 @RegisteredInspection
 public class CoreAssertionCanBeReplacedWithIfStatementInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-assertion-can-be-replaced-with-if-statement";
 
     private static final List<JavaInspectionRule> RULES = List.of(
@@ -36,8 +42,10 @@ public class CoreAssertionCanBeReplacedWithIfStatementInspection implements Java
         return RULES;
     }
 
-    private static void reportAssertionCanBeReplacedWithIfStatement(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportAssertionCanBeReplacedWithIfStatement(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode assertNode : context.nodesOfKind(JavaSyntaxKinds.ASSERT_STATEMENT.id())) {
             SyntaxNode enclosingMethod = enclosingMethod(assertNode);
             if (enclosingMethod == null)

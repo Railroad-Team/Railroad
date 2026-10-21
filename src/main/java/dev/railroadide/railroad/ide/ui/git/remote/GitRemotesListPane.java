@@ -6,7 +6,7 @@ import dev.railroadide.railroad.ui.RRListView;
 import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
-import dev.railroadide.railroad.utility.TimeFormatter;
+import dev.railroadide.railroad.utility.TimeFormatingUtils;
 import dev.railroadide.railroad.vcs.git.GitManager;
 import dev.railroadide.railroad.vcs.git.remote.GitRemote;
 import dev.railroadide.railroad.vcs.git.remote.GitUpstream;
@@ -30,11 +30,19 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 
+/**
+ * Lists configured remotes with selection notifications and elapsed fetch times.
+ */
 public class GitRemotesListPane extends RRListView<GitRemote> {
     private final LongProperty elapsedTick = new SimpleLongProperty();
     private final Timeline elapsedTimeline = new Timeline(
         new KeyFrame(Duration.seconds(1), _ -> elapsedTick.set(elapsedTick.get() + 1)));
 
+    /**
+     * Creates the repository remote list and its elapsed-time refresh.
+     *
+     * @param gitManager repository service supplying state and Git operations
+     */
     public GitRemotesListPane(GitManager gitManager) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_REMOTES_LIST, this);
         getStyleClass().add("git-remotes-list");
@@ -57,6 +65,11 @@ public class GitRemotesListPane extends RRListView<GitRemote> {
         });
     }
 
+    /**
+     * Adds a listener invoked when a non-null remote becomes selected.
+     *
+     * @param handler callback invoked whenever a non-null remote becomes selected
+     */
     public void setOnRemoteSelected(Consumer<GitRemote> handler) {
         getSelectionModel().selectedItemProperty().addListener((_, _, newVal) -> {
             if (newVal != null) {
@@ -65,9 +78,18 @@ public class GitRemotesListPane extends RRListView<GitRemote> {
         });
     }
 
+    /**
+     * Reuses a remote details row while rendering items in the remotes list.
+     */
     public static class GitRemoteListCell extends ListCell<GitRemote> {
         private final GitRemoteListItemPane pane;
 
+        /**
+         * Creates a reusable list cell backed by a remote information pane.
+         *
+         * @param gitManager repository service supplying state and Git operations
+         * @param elapsedTick observable tick used to refresh relative timestamps
+         */
         public GitRemoteListCell(GitManager gitManager, ReadOnlyLongProperty elapsedTick) {
             this.pane = new GitRemoteListItemPane(gitManager, elapsedTick);
         }
@@ -87,6 +109,9 @@ public class GitRemotesListPane extends RRListView<GitRemote> {
         }
     }
 
+    /**
+     * Displays a remote name, protocol, URL count, upstream status, and elapsed fetch time.
+     */
     public static class GitRemoteListItemPane extends RRHBox {
         private final GitManager gitManager;
         private final Text remoteNameText = new Text();
@@ -98,6 +123,12 @@ public class GitRemotesListPane extends RRListView<GitRemote> {
         private GitRemote remote;
         private final InvalidationListener elapsedTickListener = obs -> refreshLastFetchText();
 
+        /**
+         * Creates a remote summary row connected to elapsed-time updates.
+         *
+         * @param gitManager repository service supplying state and Git operations
+         * @param elapsedTick observable tick used to refresh relative timestamps
+         */
         public GitRemoteListItemPane(GitManager gitManager, ReadOnlyLongProperty elapsedTick) {
             this.gitManager = gitManager;
             getStyleClass().add("git-remote-list-item");
@@ -130,6 +161,11 @@ public class GitRemotesListPane extends RRListView<GitRemote> {
             elapsedTick.addListener(new WeakInvalidationListener(elapsedTickListener));
         }
 
+        /**
+         * Populates the row with remote identity, URL count, upstream status, and fetch time.
+         *
+         * @param remote remote configuration to display or select
+         */
         public void setRemote(GitRemote remote) {
             this.remote = remote;
             remoteNameText.setText(remote.name());
@@ -149,6 +185,9 @@ public class GitRemotesListPane extends RRListView<GitRemote> {
             refreshLastFetchText();
         }
 
+        /**
+         * Clears the reusable row's remote and displayed metadata.
+         */
         public void clear() {
             this.remote = null;
             remoteNameText.setText(null);
@@ -164,7 +203,7 @@ public class GitRemotesListPane extends RRListView<GitRemote> {
 
             lastFetchTimeText.setKeyAndArgs(
                 "railroad.git.remotes.list.fetched_time",
-                TimeFormatter.formatElapsed(gitManager.getLastFetchTimestamp(remote)));
+                TimeFormatingUtils.formatElapsed(gitManager.getLastFetchTimestamp(remote)));
         }
     }
 }

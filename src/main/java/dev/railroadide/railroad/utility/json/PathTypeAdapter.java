@@ -8,6 +8,9 @@ import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 
+/**
+ * A custom Gson TypeAdapter for serializing and deserializing Path objects.
+ */
 public final class PathTypeAdapter extends TypeAdapter<Path> {
     @Override
     public void write(JsonWriter out, Path value) throws IOException {

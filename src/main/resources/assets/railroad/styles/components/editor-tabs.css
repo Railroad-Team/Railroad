@@ -1,0 +1,242 @@
+.tab-pane.editor-tab-pane {
+    -fx-close-tab-animation: NONE;
+}
+
+.tab-pane.editor-tab-pane > .tab-header-area,
+.tab-pane.editor-tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: -color-surface-panel;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab {
+    -fx-padding: 0 0.25em 0 0.25em;
+    -fx-background-color: -color-surface-panel;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label {
+    -fx-content-display: graphic-only;
+    -fx-graphic-text-gap: 0.3em;
+    -fx-padding: 0 0.15em 0 0.15em;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.editor-tab-graphic,
+.editor-tab-action-slot {
+    -fx-background-color: transparent;
+}
+
+.editor-tab-graphic {
+    -fx-spacing: 0.25em;
+}
+
+.editor-tab-file-icon {
+    -fx-min-width: 1.5em;
+    -fx-pref-width: 1.5em;
+    -fx-max-width: 1.5em;
+    -fx-min-height: 1.5em;
+    -fx-pref-height: 1.5em;
+    -fx-max-height: 1.5em;
+}
+
+.editor-tab-action-slot {
+    -fx-min-width: 1.75em;
+    -fx-pref-width: 1.75em;
+    -fx-max-width: 1.75em;
+    -fx-min-height: 1.75em;
+    -fx-pref-height: 1.75em;
+    -fx-max-height: 1.75em;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-file-icon .ikonli-font-icon {
+    -fx-icon-size: 16px;
+    -fx-fill: -color-fg-muted;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.editor-tab-title {
+    -fx-font-size: 1em;
+    -fx-text-fill: -color-fg-default;
+    -fx-opacity: 0.8;
+}
+
+.editor-tab:selected .editor-tab-title {
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+    -fx-opacity: 1;
+}
+
+/* Editor tab states deliberately use semantic palette colours so they remain
+ * distinguishable in both bundled themes and in compatible custom themes. */
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab:hover {
+    -fx-background-color: -color-neutral-subtle;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.preview .editor-tab-title {
+    -fx-font-style: italic;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab.attention {
+    -fx-background-color: -color-danger-subtle;
+}
+
+/* The top accent identifies selection; the canvas meets the tab without a seam. */
+.tab-pane.editor-tab-pane > .tab-header-area > .headers-region > .tab.editor-tab:selected {
+    -fx-background-color:
+        -color-accent-emphasis,
+        -color-surface-editor;
+    -fx-background-insets:
+        0,
+        2px 0 0 0;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-action-slot .ikonli-font-icon {
+    -fx-icon-size: 12px;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-pin-icon {
+    -fx-icon-size: 12px;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab.editor-tab > .tab-container > .tab-label .editor-tab-action-slot.combined-status .editor-tab-status-icon {
+    -fx-icon-size: 6px;
+    -fx-translate-x: 4px;
+    -fx-translate-y: -4px;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label .editor-tab-action-slot:hover {
+    -fx-background-color: -color-neutral-muted;
+    -fx-background-radius: 50%;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label .editor-tab-pin-icon {
+    -fx-fill: -color-fg-muted;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label .editor-tab-action-slot:hover .editor-tab-pin-icon,
+.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label .editor-tab-action-slot:hover .editor-tab-close-icon {
+    -fx-fill: -color-fg-default;
+    -fx-icon-color: -color-fg-default;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label .editor-tab-dirty-icon {
+    -fx-fill: -color-warning-fg;
+    -fx-icon-color: -color-warning-fg;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label .editor-tab-saving-icon {
+    -fx-fill: -color-accent-fg;
+    -fx-icon-color: -color-accent-fg;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab > .tab-container > .tab-label .editor-tab-save-failed-icon {
+    -fx-fill: -color-danger-fg;
+    -fx-icon-color: -color-danger-fg;
+}
+
+.editor-all-tabs-menu > .scroll-arrow {
+    -fx-padding: 0;
+}
+
+.editor-all-tabs-menu-item,
+.editor-all-tabs-menu-item:focused {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+
+.editor-all-tabs-content {
+    -fx-padding: 8px;
+    -fx-background-color: -color-bg-overlay;
+}
+
+.editor-all-tabs-search {
+    -fx-pref-height: 32px;
+}
+
+.editor-all-tabs-list {
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.editor-all-tabs-cell {
+    -fx-padding: 6px 10px;
+    -fx-cursor: hand;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-row {
+    -fx-background-color: transparent;
+    -fx-background-radius: 5px;
+    -fx-padding: 5px 8px;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-row .background-2 {
+    -fx-background-color: transparent;
+}
+
+.editor-all-tabs-cell:filled:hover .editor-all-tabs-row {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.editor-all-tabs-cell:filled:selected .editor-all-tabs-row {
+    -fx-background-color: -color-accent-subtle;
+}
+
+.editor-all-tabs-cell:filled:selected:hover .editor-all-tabs-row {
+    -fx-background-color: -color-accent-muted;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-name {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-weight: 600;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-name.preview {
+    -fx-font-style: italic;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-path {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 0.85em;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-file-icon .ikonli-font-icon {
+    -fx-icon-size: 16px;
+    -fx-fill: -color-fg-muted;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-state-icon {
+    -fx-icon-size: 11px;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-state-icon.dirty {
+    -fx-fill: -color-warning-fg;
+    -fx-icon-color: -color-warning-fg;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-state-icon.dirty.saving {
+    -fx-fill: -color-accent-fg;
+    -fx-icon-color: -color-accent-fg;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-state-icon.dirty.error {
+    -fx-fill: -color-danger-fg;
+    -fx-icon-color: -color-danger-fg;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-state-icon.pinned {
+    -fx-fill: -color-fg-muted;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.editor-all-tabs-cell .editor-all-tabs-state-icon.preview {
+    -fx-fill: -color-accent-fg;
+    -fx-icon-color: -color-accent-fg;
+}
+
+.tab-pane.editor-tab-pane > .tab-header-area > .control-buttons-tab > .container > .tab-down-button:hover {
+    -fx-background-color: -color-neutral-muted;
+    -fx-background-radius: 4px;
+}

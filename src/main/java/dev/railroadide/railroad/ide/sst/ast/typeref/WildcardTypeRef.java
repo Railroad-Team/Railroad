@@ -10,10 +10,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * A wildcard type argument with an optional extends or super bound.
+ *
+ * @param span source range occupied by this node
+ * @param variance wildcard bound direction
+ * @param bound optional wildcard bound
+ */
 public record WildcardTypeRef(
     Span span,
     Variance variance,
-    Optional<TypeRef> bound) implements TypeRef {
+    Optional<TypeRef> bound
+) implements TypeRef {
     @Override
     public AstKind kind() {
         return AstKind.WILDCARD_TYPE;
@@ -31,7 +39,21 @@ public record WildcardTypeRef(
         return visitor.visitWildcardType(this);
     }
 
+    /**
+     * Identifies whether a wildcard has an upper bound, lower bound, or no bound.
+     */
     public enum Variance {
-        SUPER, EXTENDS, UNBOUNDED
+        /**
+         * A lower-bounded wildcard.
+         */
+        SUPER,
+        /**
+         * An upper-bounded wildcard.
+         */
+        EXTENDS,
+        /**
+         * A wildcard without an explicit bound.
+         */
+        UNBOUNDED
     }
 }

@@ -14,7 +14,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Displays commit parents, committer information, and associated references.
+ */
 public class GitCommitDetailsInfoCard extends RRVBox {
+    /**
+     * Creates parent, committer, and reference rows for a commit.
+     *
+     * @param commit commit to display or act on
+     * @param headCommitHash hash of the current HEAD commit
+     * @param tagsByCommit tag names indexed by commit hash
+     */
     public GitCommitDetailsInfoCard(GitCommit commit, String headCommitHash, Map<String, List<String>> tagsByCommit) {
         super(5);
         getStyleClass().addAll("git-commit-details-info-vbox", "git-commit-details-info-card");

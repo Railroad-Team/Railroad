@@ -1,6 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.commit;
 
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.GitCommands;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRHBox;
@@ -10,7 +13,16 @@ import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
+/**
+ * Provides repository refresh and tree-expansion controls alongside pending rollback and shelf actions.
+ */
 public class GitCommitHeaderPane extends RRHBox {
+    /**
+     * Creates repository and tree controls for the selected commit changes.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param gitCommitChangesPane change-selection pane controlled by the header
+     */
     public GitCommitHeaderPane(Project project, GitCommitChangesPane gitCommitChangesPane) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_COMMIT_HEADER, this);
         RRButton refreshButton = createButton(FontAwesomeSolid.SYNC,
@@ -32,10 +44,13 @@ public class GitCommitHeaderPane extends RRHBox {
             collapseAllButton);
         getStyleClass().add("git-commit-header-pane");
 
-        refreshButton.setOnAction(event -> project.getGitManager().refreshStatus());
+        CommandButtons.bind(refreshButton, GitCommands.REFRESH,
+            () -> CommandContext.withArgument(null, this, project.getGitManager()));
 
-        expandAllButton.setOnAction(event -> gitCommitChangesPane.expandAll());
-        collapseAllButton.setOnAction(event -> gitCommitChangesPane.collapseAll());
+        CommandButtons.bind(expandAllButton, GitCommands.EXPAND_CHANGES,
+            () -> CommandContext.withArgument(project, this, gitCommitChangesPane));
+        CommandButtons.bind(collapseAllButton, GitCommands.COLLAPSE_CHANGES,
+            () -> CommandContext.withArgument(project, this, gitCommitChangesPane));
 
         // TODO: Implement rollback and shelve functionality
         // rollbackButton.setOnAction(event ->

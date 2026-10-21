@@ -8,6 +8,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A declaration modifier keyword and its source location.
+ *
+ * @param span source range occupied by this node
+ * @param name modifier keyword spelling
+ */
 public record Modifier(Span span, String name) implements AstNode {
     @Override
     public AstKind kind() {

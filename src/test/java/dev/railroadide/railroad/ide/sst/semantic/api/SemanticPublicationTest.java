@@ -12,9 +12,9 @@ import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class SemanticPublicationTest {
+public class SemanticPublicationTest {
     @Test
-    void publishingFreezesRetainedScopesAndPreservesLookupOrdering() {
+    public void publishingFreezesRetainedScopesAndPreservesLookupOrdering() {
         Scope root = Scope.root();
         Scope child = root.child();
         var nested = new Scope(child);
@@ -51,7 +51,7 @@ class SemanticPublicationTest {
     }
 
     @Test
-    void publishingAChildAlsoFreezesItsAncestorsAndSiblings() {
+    public void publishingAChildAlsoFreezesItsAncestorsAndSiblings() {
         Scope root = Scope.root();
         Scope child = root.child();
         Scope sibling = root.child();
@@ -62,7 +62,7 @@ class SemanticPublicationTest {
     }
 
     @Test
-    void builderReuseAndAdditionalDiagnosticInputsCannotChangePublishedModels() {
+    public void builderReuseAndAdditionalDiagnosticInputsCannotChangePublishedModels() {
         SyntaxTree tree = JavaSyntaxParser.parse("class Example {}");
         var builder = SemanticModel.builder(tree, Scope.root());
         var first = builder.build();
@@ -90,7 +90,7 @@ class SemanticPublicationTest {
     }
 
     @Test
-    void modelAssociationsKeepIdentityEvenForValueEqualProviderNodes() {
+    public void modelAssociationsKeepIdentityEvenForValueEqualProviderNodes() {
         SyntaxNode first = new EqualNode(SyntaxKind.ROOT);
         SyntaxNode second = new EqualNode(SyntaxKind.ROOT);
         assertEquals(first, second);
@@ -113,7 +113,7 @@ class SemanticPublicationTest {
     }
 
     @Test
-    void javaAnalysisPublishesFrozenScopesAndConsistentConcurrentResults() throws Exception {
+    public void javaAnalysisPublishesFrozenScopesAndConsistentConcurrentResults() throws Exception {
         var model = JavaSemanticAnalyzer.analyzeFacts("class Example { int x; int run(int p) { return p + x; } }");
         var scopes = new ArrayList<Scope>();
         var pending = new ArrayDeque<Scope>();

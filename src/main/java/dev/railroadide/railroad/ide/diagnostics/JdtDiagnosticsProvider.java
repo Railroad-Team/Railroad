@@ -51,8 +51,11 @@ public record JdtDiagnosticsProvider() implements DiagnosticsProvider<TextEditor
         return toDiagnostics(unit.getProblems(), source, snapshot);
     }
 
-    private static List<TextEditorDiagnostic> toDiagnostics(IProblem[] problems, char[] source,
-        DocumentSnapshot snapshot) {
+    private static List<TextEditorDiagnostic> toDiagnostics(
+        IProblem[] problems,
+        char[] source,
+        DocumentSnapshot snapshot
+    ) {
         if (problems == null || problems.length == 0)
             return List.of();
 

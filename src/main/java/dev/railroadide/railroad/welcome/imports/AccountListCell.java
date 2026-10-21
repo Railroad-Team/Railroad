@@ -1,7 +1,6 @@
 package dev.railroadide.railroad.welcome.imports;
 
-import dev.railroadide.railroad.ui.RRHBox;
-import dev.railroadide.railroad.ui.RRVBox;
+import javafx.scene.layout.VBox;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.vcs.connections.VCSProfile;
 import io.github.palexdev.mfxresources.fonts.MFXFontIcon;
@@ -11,30 +10,37 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.layout.HBox;
 
+/** Sidebar cell displaying a VCS profile or the {@code REPO_URL_OPTION} entry for importing by URL. */
 public class AccountListCell extends ListCell<Object> {
-    private final HBox container = new RRHBox();
+    private final HBox container = new HBox(8);
     private final MFXFontIcon forkIcon = new MFXFontIcon();
     private final MFXFontIcon accountIcon = new MFXFontIcon();
     private final LocalizedLabel title = new LocalizedLabel("");
     private final Label subtitle = new Label();
-    private final RRVBox titleContainer;
+    private final VBox titleContainer;
 
+    /** Builds the reusable icon and label layout and installs selection styling. */
     public AccountListCell() {
         getStyleClass().add("account-list-cell");
+        setMinWidth(0);
+        setPrefWidth(0);
+        title.setWrapText(true);
+        container.setMaxWidth(Double.MAX_VALUE);
 
-        forkIcon.setSize(32);
+        forkIcon.setSize(16);
         forkIcon.setDescription(FontAwesomeSolid.CODE_FORK.getDescription());
         forkIcon.getStyleClass().add("account-list-cell-icon");
 
-        accountIcon.setSize(32);
+        accountIcon.setSize(16);
         accountIcon.getStyleClass().add("account-list-cell-icon");
 
         title.getStyleClass().add("account-list-cell-title");
         subtitle.getStyleClass().add("account-list-cell-subtitle");
 
-        this.titleContainer = new RRVBox();
+        this.titleContainer = new VBox(3);
         titleContainer.getChildren().add(title);
         titleContainer.setFillWidth(true);
+        titleContainer.setMinWidth(0);
         titleContainer.setAlignment(Pos.CENTER_LEFT);
         titleContainer.getStyleClass().add("account-list-cell-title-container");
         titleContainer.getStyleClass().add("account-list-cell-title-box");
@@ -55,6 +61,12 @@ public class AccountListCell extends ListCell<Object> {
         setText(null);
     }
 
+    /**
+     * Displays a profile's provider and alias or the localized URL-import option; clears empty cells.
+     *
+     * @param item a VCS profile, the {@code REPO_URL_OPTION} string, or null
+     * @param empty whether the cell has no item
+     */
     @Override
     protected void updateItem(Object item, boolean empty) {
         super.updateItem(item, empty);

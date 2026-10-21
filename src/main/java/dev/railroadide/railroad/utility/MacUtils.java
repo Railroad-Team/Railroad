@@ -10,7 +10,14 @@ import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.stage.Stage;
 
+/**
+ * Utility class for handling Mac-specific functionality, such as the menu bar.
+ */
 public class MacUtils {
+    private MacUtils() {
+        throw new UnsupportedOperationException("Instantiated utility class");
+    }
+
     private static MenuBar bar;
 
     /**

@@ -14,16 +14,44 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Stores Railroad's application configuration, including project entries,
+ * plugin enablement, and inspection rule overrides.
+ *
+ * <p>
+ * Configuration maps are kept in insertion order and are serialized to
+ * JSON using the property names expected by Railroad's configuration format.
+ * The map getters return copies so callers cannot modify the configuration
+ * without using a setter.
+ * </p>
+ */
 public class Config implements JsonSerializable<JsonObject> {
     private final Map<String, Boolean> enabledPlugins = new LinkedHashMap<>();
     private final Map<String, Boolean> inspectionRuleEnabledOverrides = new LinkedHashMap<>();
     private final Map<String, Boolean> inspectionRuleTagEnabledOverrides = new LinkedHashMap<>();
     private final Map<String, String> inspectionRuleSeverityOverrides = new LinkedHashMap<>();
 
+    /**
+     * Returns the configured plugin enablement states.
+     *
+     * @return a copy mapping plugin IDs to their enabled states
+     */
     public Map<String, Boolean> getEnabledPlugins() {
         return new LinkedHashMap<>(enabledPlugins);
     }
 
+    /**
+     * Replaces the configured plugin enablement states.
+     *
+     * <p>
+     * A {@code null} or empty map clears the current configuration. The
+     * supplied map is copied, so later changes to it do not affect this
+     * configuration.
+     * </p>
+     *
+     * @param enabledPlugins a map from plugin IDs to enabled states, or
+     *            {@code null} to clear the configuration
+     */
     public void setEnabledPlugins(Map<String, Boolean> enabledPlugins) {
         this.enabledPlugins.clear();
         if (enabledPlugins == null || enabledPlugins.isEmpty())
@@ -32,10 +60,27 @@ public class Config implements JsonSerializable<JsonObject> {
         this.enabledPlugins.putAll(enabledPlugins);
     }
 
+    /**
+     * Returns inspection rule enablement overrides.
+     *
+     * @return a copy mapping inspection rule IDs to their enabled states
+     */
     public Map<String, Boolean> getInspectionRuleEnabledOverrides() {
         return new LinkedHashMap<>(inspectionRuleEnabledOverrides);
     }
 
+    /**
+     * Replaces inspection rule enablement overrides.
+     *
+     * <p>
+     * A {@code null} or empty map clears the current overrides. The
+     * supplied map is copied, so later changes to it do not affect this
+     * configuration.
+     * </p>
+     *
+     * @param overrides a map from inspection rule IDs to enabled states, or
+     *            {@code null} to clear the overrides
+     */
     public void setInspectionRuleEnabledOverrides(Map<String, Boolean> overrides) {
         inspectionRuleEnabledOverrides.clear();
         if (overrides == null || overrides.isEmpty())
@@ -44,10 +89,27 @@ public class Config implements JsonSerializable<JsonObject> {
         inspectionRuleEnabledOverrides.putAll(overrides);
     }
 
+    /**
+     * Returns inspection rule tag enablement overrides.
+     *
+     * @return a copy mapping inspection rule tags to their enabled states
+     */
     public Map<String, Boolean> getInspectionRuleTagEnabledOverrides() {
         return new LinkedHashMap<>(inspectionRuleTagEnabledOverrides);
     }
 
+    /**
+     * Replaces inspection rule tag enablement overrides.
+     *
+     * <p>
+     * A {@code null} or empty map clears the current overrides. The
+     * supplied map is copied, so later changes to it do not affect this
+     * configuration.
+     * </p>
+     *
+     * @param overrides a map from inspection rule tags to enabled states, or
+     *            {@code null} to clear the overrides
+     */
     public void setInspectionRuleTagEnabledOverrides(Map<String, Boolean> overrides) {
         inspectionRuleTagEnabledOverrides.clear();
         if (overrides == null || overrides.isEmpty())
@@ -56,10 +118,27 @@ public class Config implements JsonSerializable<JsonObject> {
         inspectionRuleTagEnabledOverrides.putAll(overrides);
     }
 
+    /**
+     * Returns inspection rule severity overrides.
+     *
+     * @return a copy mapping inspection rule IDs to severity names
+     */
     public Map<String, String> getInspectionRuleSeverityOverrides() {
         return new LinkedHashMap<>(inspectionRuleSeverityOverrides);
     }
 
+    /**
+     * Replaces inspection rule severity overrides.
+     *
+     * <p>
+     * A {@code null} or empty map clears the current overrides. The
+     * supplied map is copied, so later changes to it do not affect this
+     * configuration.
+     * </p>
+     *
+     * @param overrides a map from inspection rule IDs to severity names, or
+     *            {@code null} to clear the overrides
+     */
     public void setInspectionRuleSeverityOverrides(Map<String, String> overrides) {
         inspectionRuleSeverityOverrides.clear();
         if (overrides == null || overrides.isEmpty())
@@ -68,6 +147,17 @@ public class Config implements JsonSerializable<JsonObject> {
         inspectionRuleSeverityOverrides.putAll(overrides);
     }
 
+    /**
+     * Serializes this configuration to JSON.
+     *
+     * <p>
+     * The current projects are read from Railroad's project manager. Map
+     * entries with blank keys or unsupported {@code null} values are omitted
+     * from the resulting JSON.
+     * </p>
+     *
+     * @return the JSON representation of this configuration
+     */
     @Override
     public JsonObject toJson() {
         var json = new JsonObject();
@@ -119,6 +209,17 @@ public class Config implements JsonSerializable<JsonObject> {
         return json;
     }
 
+    /**
+     * Loads this configuration from JSON.
+     *
+     * <p>
+     * Existing projects and overrides are cleared before loading. Valid
+     * project entries replace the projects in Railroad's project manager;
+     * malformed entries and entries with invalid value types are ignored.
+     * </p>
+     *
+     * @param json the JSON object containing the configuration to load
+     */
     @Override
     public void fromJson(JsonObject json) {
         enabledPlugins.clear();

@@ -10,12 +10,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.jar.JarFile;
+import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ClassStubParserTest {
+public class ClassStubParserTest {
     @Test
-    void parsesStandaloneGenericMethodParameterTypes() throws Exception {
+    public void parsesStandaloneGenericMethodParameterTypes() throws Exception {
         var listStub = parseRuntimeClass("java/util/List.class");
 
         var addElement = listStub.methods().stream()
@@ -30,7 +31,7 @@ class ClassStubParserTest {
     }
 
     @Test
-    void parsesGenericInterfaceTypeArguments() throws Exception {
+    public void parsesGenericInterfaceTypeArguments() throws Exception {
         var listStub = parseRuntimeClass("java/util/List.class");
 
         assertTrue(listStub.interfaces().stream()
@@ -42,7 +43,7 @@ class ClassStubParserTest {
     }
 
     @Test
-    void preservesUnboundedWildcardTypeArguments() throws Exception {
+    public void preservesUnboundedWildcardTypeArguments() throws Exception {
         var collectorsStub = parseRuntimeClass("java/util/stream/Collectors.class");
         var toList = collectorsStub.methods().stream()
             .filter(method -> method.name().equals("toList"))
@@ -59,7 +60,7 @@ class ClassStubParserTest {
     }
 
     @Test
-    void preservesGenericThrownTypeVariables() throws Exception {
+    public void preservesGenericThrownTypeVariables() throws Exception {
         var optionalStub = parseRuntimeClass("java/util/Optional.class");
         var orElseThrow = optionalStub.methods().stream()
             .filter(method -> method.name().equals("orElseThrow"))
@@ -73,7 +74,7 @@ class ClassStubParserTest {
         assertEquals("X", thrown.name());
     }
 
-    private static dev.railroadide.railroad.ide.classparser.stub.ClassStub parseRuntimeClass(String classFile)
+    private static ClassStub parseRuntimeClass(String classFile)
         throws Exception {
         Path javaHome = Path.of(System.getProperty("java.home")).toAbsolutePath().normalize();
         Path jmod = javaHome.resolve("jmods").resolve("java.base.jmod");

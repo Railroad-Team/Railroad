@@ -48,10 +48,16 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
      * @param keyTypedHandler the key typed handler for the text field
      * @param visible the visibility of the text field
      */
-    public TextFieldComponent(String dataKey, Data data, FormComponentValidator<TextField> validator,
-        FormComponentChangeListener<TextField, String> listener, Property<TextField> bindTextFieldTo,
-        List<FormTransformer<TextField, String, ?>> transformers, EventHandler<? super KeyEvent> keyTypedHandler,
-        @Nullable BooleanBinding visible) {
+    public TextFieldComponent(
+        String dataKey,
+        Data data,
+        FormComponentValidator<TextField> validator,
+        FormComponentChangeListener<TextField, String> listener,
+        Property<TextField> bindTextFieldTo,
+        List<FormTransformer<TextField, String, ?>> transformers,
+        EventHandler<? super KeyEvent> keyTypedHandler,
+        @Nullable BooleanBinding visible
+    ) {
         super(dataKey, data, currentData -> {
             var formTextField = new FormTextField(currentData.label, currentData.required, currentData.promptText,
                 currentData.editable, currentData.translate, currentData.getAutoCompleteOptions());
@@ -167,6 +173,12 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
             return text(() -> text);
         }
 
+        /**
+         * Sets a supplier for the initial text of the text field.
+         *
+         * @param textSupplier the initial-text supplier
+         * @return this builder
+         */
         public Builder text(Supplier<String> textSupplier) {
             this.data.text = textSupplier;
             return this;
@@ -272,8 +284,11 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @return this builder
          */
         @Override
-        public <X> Builder addTransformer(ObservableValue<TextField> fromComponent, Consumer<X> toComponentFunction,
-            Function<String, X> valueMapper) {
+        public <X> Builder addTransformer(
+            ObservableValue<TextField> fromComponent,
+            Consumer<X> toComponentFunction,
+            Function<String, X> valueMapper
+        ) {
             this.transformers
                 .add(new FormTransformer<>(fromComponent, TextField::getText, toComponentFunction, valueMapper));
             return this;
@@ -290,8 +305,11 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
          * @return this builder
          */
         @Override
-        public <U extends Node, X> Builder addTransformer(ObservableValue<TextField> fromComponent,
-            ObservableValue<U> toComponent, Function<String, X> valueMapper) {
+        public <U extends Node, X> Builder addTransformer(
+            ObservableValue<TextField> fromComponent,
+            ObservableValue<U> toComponent,
+            Function<String, X> valueMapper
+        ) {
             this.transformers.add(new FormTransformer<>(fromComponent, TextField::getText, value -> {
                 if (toComponent.getValue() instanceof TextField textField) {
                     textField.setText(value.toString());
@@ -349,6 +367,9 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
 
         /**
          * Sets the maximum number of suggestions to display.
+         *
+         * @param maxSuggestions the maximum number of suggestions
+         * @return this builder
          */
         public Builder autoCompleteMaxSuggestions(int maxSuggestions) {
             ensureAutoCompleteOptions().setMaxSuggestions(maxSuggestions);
@@ -357,6 +378,9 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
 
         /**
          * Sets the minimum number of characters before querying suggestions.
+         *
+         * @param minQueryLength the minimum query length
+         * @return this builder
          */
         public Builder autoCompleteMinQueryLength(int minQueryLength) {
             ensureAutoCompleteOptions().setMinQueryLength(minQueryLength);
@@ -365,6 +389,9 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
 
         /**
          * Sets whether the auto-complete lookup should be case sensitive.
+         *
+         * @param caseSensitive whether matching should be case sensitive
+         * @return this builder
          */
         public Builder autoCompleteCaseSensitive(boolean caseSensitive) {
             ensureAutoCompleteOptions().setCaseSensitive(caseSensitive);
@@ -373,6 +400,9 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
 
         /**
          * Sets whether suggestions should be shown even when the query is empty.
+         *
+         * @param showOnEmpty whether to show suggestions for an empty query
+         * @return this builder
          */
         public Builder autoCompleteShowSuggestionsOnEmpty(boolean showOnEmpty) {
             ensureAutoCompleteOptions().setShowSuggestionsOnEmpty(showOnEmpty);
@@ -381,9 +411,13 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
 
         /**
          * Sets the cell factory used to render suggestions in the popup.
+         *
+         * @param cellFactory the suggestion cell factory, or {@code null} for the default
+         * @return this builder
          */
         public Builder autoCompleteSuggestionCellFactory(
-            @Nullable Callback<ListView<String>, ListCell<String>> cellFactory) {
+            @Nullable Callback<ListView<String>, ListCell<String>> cellFactory
+        ) {
             ensureAutoCompleteOptions().setSuggestionCellFactory(cellFactory);
             return this;
         }
@@ -448,6 +482,12 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
             return this;
         }
 
+        /**
+         * Sets a supplier for the initial text of the text field.
+         *
+         * @param textSupplier the initial-text supplier
+         * @return this data object
+         */
         public Data text(Supplier<String> textSupplier) {
             this.text = textSupplier;
             return this;
@@ -497,13 +537,19 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
             return this;
         }
 
-        AutoCompleteOptions ensureAutoCompleteOptions() {
+        private AutoCompleteOptions ensureAutoCompleteOptions() {
             if (autoCompleteOptions == null) {
                 autoCompleteOptions = new AutoCompleteOptions();
             }
             return autoCompleteOptions;
         }
 
+        /**
+         * Returns the configured auto-complete options.
+         *
+         * @return the auto-complete options, or {@code null} when auto-complete
+         *         has not been configured
+         */
         public AutoCompleteOptions getAutoCompleteOptions() {
             if (autoCompleteOptions == null || !autoCompleteOptions.isConfigured())
                 return null;

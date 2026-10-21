@@ -13,9 +13,21 @@ import java.util.concurrent.ConcurrentMap;
 public final class SyntaxKind {
     private static final ConcurrentMap<String, SyntaxKind> KINDS = new ConcurrentHashMap<>();
 
+    /**
+     * The language-neutral syntax-tree root kind.
+     */
     public static final SyntaxKind ROOT = canonical("ROOT");
+    /**
+     * A generic non-token syntax node kind.
+     */
     public static final SyntaxKind NODE = canonical("NODE");
+    /**
+     * A generic syntax token kind.
+     */
     public static final SyntaxKind TOKEN = canonical("TOKEN");
+    /**
+     * A generic token inserted to represent missing source during recovery.
+     */
     public static final SyntaxKind MISSING_TOKEN = canonical("MISSING_TOKEN");
 
     private final String id;
@@ -41,6 +53,11 @@ public final class SyntaxKind {
         return KINDS.computeIfAbsent(id, SyntaxKind::new);
     }
 
+    /**
+     * Returns the stable identifier of this syntax kind.
+     *
+     * @return the syntax kind identifier
+     */
     public String id() {
         return id;
     }

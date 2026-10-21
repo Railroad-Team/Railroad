@@ -105,3 +105,165 @@
 .onboarding-back-button {
     -fx-background-color: transparent;
 }
+
+/* Project setup uses the IDE's flat panel layout. */
+.onboarding-root {
+    -fx-background-color: -color-surface-editor;
+    -fx-padding: 0;
+}
+
+.onboarding-root .onboarding-main,
+.onboarding-root .onboarding-content-container {
+    -fx-background-color: -color-surface-editor;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-border-width: 0;
+    -fx-effect: null;
+    -fx-padding: 0;
+    -fx-spacing: 0;
+}
+
+.onboarding-root .onboarding-header {
+    -fx-background-color: -color-surface-panel;
+    -fx-padding: 20px 24px;
+    -fx-spacing: 8px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.onboarding-root .onboarding-title {
+    -fx-font-size: 18px;
+}
+
+.onboarding-root .onboarding-description {
+    -fx-font-size: 13px;
+}
+
+.onboarding-root .onboarding-content-container {
+    -fx-padding: 20px 24px;
+    -fx-spacing: 16px;
+}
+
+.onboarding-root .onboarding-button-bar {
+    -fx-background-color: -color-surface-frame;
+    -fx-padding: 12px 16px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px 0 0 0;
+}
+
+.onboarding-root .button,
+.onboarding-root .text-field,
+.onboarding-root .combo-box {
+    -fx-background-radius: 3px;
+    -fx-border-radius: 3px;
+    -fx-effect: null;
+    -fx-min-height: 30px;
+    -fx-pref-height: 30px;
+    -fx-padding: 5px 10px;
+    -fx-font-size: 13px;
+}
+
+.onboarding-root .form-root,
+.onboarding-root .rr-form-section,
+.onboarding-root .rr-card {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-effect: null;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+
+.onboarding-root .form-section-root {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-spacing: 16px;
+}
+
+.onboarding-root .form-section-title {
+    -fx-font-size: 14px;
+}
+
+/* Field groups have breathing room without painting nested pane backgrounds. */
+.onboarding-root .form-field-group,
+.onboarding-root .field-container,
+.onboarding-root .field-vertical-layout,
+.onboarding-root .form-directory-input {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-border-width: 0;
+}
+
+.onboarding-root .form-field-group {
+    -fx-padding: 8px 0;
+    -fx-spacing: 8px;
+}
+
+.onboarding-root .field-container {
+    -fx-spacing: 12px;
+    -fx-padding: 0;
+}
+
+.onboarding-root .field-label {
+    -fx-min-width: 140px;
+    -fx-pref-width: 140px;
+    -fx-max-width: 140px;
+}
+
+.onboarding-root .vertical-layout .field-label {
+    -fx-min-width: 0;
+    -fx-pref-width: -1;
+    -fx-max-width: Infinity;
+}
+
+.onboarding-root .field-info {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 12px;
+}
+
+.onboarding-root .text-field,
+.onboarding-root .combo-box {
+    -fx-min-height: 34px;
+    -fx-pref-height: 34px;
+    -fx-padding: 7px 10px;
+}
+
+.onboarding-root .form-root {
+    -fx-spacing: 24px;
+}
+
+.onboarding-root .form-section-root {
+    -fx-spacing: 12px;
+}
+
+/* The button cell owns combo-box padding; double padding clips its value. */
+.onboarding-root .combo-box {
+    -fx-padding: 0;
+    -fx-max-width: Infinity;
+}
+
+.onboarding-root .combo-box > .list-cell {
+    -fx-padding: 6px 10px;
+    -fx-cell-size: 32px;
+}
+
+.onboarding-root .combo-box .list-view .list-cell:hover,
+.onboarding-root .combo-box .list-view .list-cell:selected {
+    -fx-background-color: -color-accent-subtle !important;
+}
+
+.onboarding-root .text-area {
+    -fx-padding: 0;
+    -fx-background-radius: 3px;
+    -fx-border-radius: 3px;
+    -fx-effect: null;
+    -fx-font-size: 13px;
+}
+
+.onboarding-root .text-area .content {
+    -fx-padding: 8px 10px;
+    -fx-background-color: -color-surface-panel;
+    -fx-background-radius: 3px;
+}

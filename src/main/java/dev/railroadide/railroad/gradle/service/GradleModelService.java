@@ -10,7 +10,6 @@ import java.util.concurrent.CompletableFuture;
  * Manages the background import of Gradle models and exposes task metadata.
  */
 public interface GradleModelService {
-
     /**
      * Refreshes the Gradle model, optionally forcing a rebuild even if cached data exists.
      *
@@ -20,6 +19,8 @@ public interface GradleModelService {
     CompletableFuture<GradleBuildModel> refreshModel(boolean force);
 
     /**
+     * Returns the last successful Gradle build model that was loaded, if any.
+     *
      * @return the last successful Gradle build model that was loaded
      */
     Optional<GradleBuildModel> getCachedModel();

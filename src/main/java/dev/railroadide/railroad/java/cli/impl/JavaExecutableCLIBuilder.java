@@ -3306,7 +3306,22 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum LaunchType {
-        CLASS_FILE, JAR_FILE("-jar"), MODULE("-m"), SOURCE_FILE;
+        /**
+         * Launches a compiled main class by name.
+         */
+        CLASS_FILE,
+        /**
+         * Launches the main class of a JAR using {@code -jar}.
+         */
+        JAR_FILE("-jar"),
+        /**
+         * Launches a module using {@code -m}.
+         */
+        MODULE("-m"),
+        /**
+         * Launches a Java source file directly.
+         */
+        SOURCE_FILE;
 
         private final String preArgument;
 
@@ -3324,7 +3339,22 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum AccessMode {
-        ALLOW("allow"), WARN("warn"), DENY("deny"), DEBUG("debug");
+        /**
+         * Allows the access controlled by the option.
+         */
+        ALLOW("allow"),
+        /**
+         * Allows the access and requests a warning.
+         */
+        WARN("warn"),
+        /**
+         * Rejects the access controlled by the option.
+         */
+        DENY("deny"),
+        /**
+         * Allows the access and requests diagnostic details; unsupported by the illegal-native-access helper.
+         */
+        DEBUG("debug");
 
         private final String mode;
 
@@ -3338,7 +3368,14 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum EnabledDisabled {
-        ENABLED, DISABLED;
+        /**
+         * Selects the {@code enabled} state.
+         */
+        ENABLED,
+        /**
+         * Selects the {@code disabled} state.
+         */
+        DISABLED;
 
         private final String state;
 
@@ -3352,7 +3389,18 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum RootModule {
-        ALL_DEFAULT, ALL_SYSTEM, ALL_MODULE_PATH;
+        /**
+         * Selects the default root modules.
+         */
+        ALL_DEFAULT,
+        /**
+         * Selects all system modules.
+         */
+        ALL_SYSTEM,
+        /**
+         * Selects all modules on the module path.
+         */
+        ALL_MODULE_PATH;
 
         private final String module;
 
@@ -3366,7 +3414,22 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum VerboseComponent {
-        CLASS, GC, JNI, MODULE;
+        /**
+         * Requests class loading and unloading messages.
+         */
+        CLASS,
+        /**
+         * Requests garbage collection messages.
+         */
+        GC,
+        /**
+         * Requests native method and JNI messages.
+         */
+        JNI,
+        /**
+         * Requests module loading messages.
+         */
+        MODULE;
 
         private final String component;
 
@@ -3383,12 +3446,26 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
         private LogOutput output;
         private final EnumSet<LogDecorator> decorators = EnumSet.noneOf(LogDecorator.class);
 
+        /**
+         * Appends a log selection to this configuration.
+         *
+         * @param selection the selection to append; must not be null
+         * @return this configuration
+         * @throws NullPointerException if selection is null
+         */
         public LoggingConfiguration select(LogSelection selection) {
             Objects.requireNonNull(selection, "Log selection cannot be null");
             this.selections.add(selection);
             return this;
         }
 
+        /**
+         * Appends log selections in the supplied order.
+         *
+         * @param selectionArray the selections to append; neither the array nor its elements may be null
+         * @return this configuration
+         * @throws NullPointerException if the array or any selection is null
+         */
         public LoggingConfiguration select(LogSelection... selectionArray) {
             Objects.requireNonNull(selectionArray, "Log selections cannot be null");
             for (LogSelection selection : selectionArray) {
@@ -3398,11 +3475,25 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             return this;
         }
 
+        /**
+         * Replaces the destination for this logging configuration.
+         *
+         * @param output the destination and output options; must not be null
+         * @return this configuration
+         * @throws NullPointerException if output is null
+         */
         public LoggingConfiguration output(LogOutput output) {
             this.output = Objects.requireNonNull(output, "Log output cannot be null");
             return this;
         }
 
+        /**
+         * Adds log decorators, retaining existing decorators and ignoring duplicates.
+         *
+         * @param decoratorArray the decorators to add; neither the array nor its elements may be null
+         * @return this configuration
+         * @throws NullPointerException if the array or any decorator is null
+         */
         public LoggingConfiguration decorators(LogDecorator... decoratorArray) {
             Objects.requireNonNull(decoratorArray, "Log decorators cannot be null");
             for (LogDecorator decorator : decoratorArray) {
@@ -3456,20 +3547,50 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
         private LogLevel level = LogLevel.INFO;
         private String literalToken;
 
+        /**
+         * Creates a selection with no explicit tags and the {@link LogLevel#INFO} level.
+         *
+         * @return a new selection that initially serializes as {@code *=info}
+         */
         public static LogSelection create() {
             return new LogSelection();
         }
 
+        /**
+         * Creates a selection that emits a literal token unchanged.
+         * The literal takes precedence over any subsequently configured tags or level.
+         *
+         * @param token the complete selector token; must not be null
+         * @return a new literal selection
+         * @throws NullPointerException if token is null
+         */
         public static LogSelection literal(String token) {
             var selection = new LogSelection();
             selection.literalToken = Objects.requireNonNull(token, "Log selector literal cannot be null");
             return selection;
         }
 
+        /**
+         * Creates a selection with no explicit tags and the specified level.
+         * The selector is serialized as {@code *=<level>}.
+         *
+         * @param level the logging level; must not be null
+         * @return a new selection
+         * @throws NullPointerException if level is null
+         */
         public static LogSelection all(LogLevel level) {
             return create().level(level);
         }
 
+        /**
+         * Appends tags, which are joined with {@code +} when the selection is serialized.
+         * Tags do not affect a selection created with {@link #literal(String)}.
+         *
+         * @param tags the nonblank tags to append; the array must not be null
+         * @return this selection
+         * @throws NullPointerException if the array is null
+         * @throws IllegalArgumentException if a tag is null or blank
+         */
         public LogSelection tags(String... tags) {
             Objects.requireNonNull(tags, "Log tags cannot be null");
             for (String tag : tags) {
@@ -3481,6 +3602,14 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             return this;
         }
 
+        /**
+         * Sets the logging level for this selection.
+         * The level does not affect a selection created with {@link #literal(String)}.
+         *
+         * @param level the logging level; must not be null
+         * @return this selection
+         * @throws NullPointerException if level is null
+         */
         public LogSelection level(LogLevel level) {
             this.level = Objects.requireNonNull(level, "Log level cannot be null");
             return this;
@@ -3499,7 +3628,30 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      * Represents different logging levels.
      */
     public enum LogLevel {
-        TRACE("trace"), DEBUG("debug"), INFO("info"), WARNING("warning"), ERROR("error"), OFF("off");
+        /**
+         * Selects the most detailed trace level.
+         */
+        TRACE("trace"),
+        /**
+         * Selects the debug level.
+         */
+        DEBUG("debug"),
+        /**
+         * Selects the informational level.
+         */
+        INFO("info"),
+        /**
+         * Selects the warning level.
+         */
+        WARNING("warning"),
+        /**
+         * Selects the error level.
+         */
+        ERROR("error"),
+        /**
+         * Disables the selected logging.
+         */
+        OFF("off");
 
         private final String token;
 
@@ -3507,6 +3659,11 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             this.token = token;
         }
 
+        /**
+         * Returns the token used for this log level in a JVM logging argument.
+         *
+         * @return the log level token
+         */
         public String token() {
             return token;
         }
@@ -3516,8 +3673,51 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      * Represents different decorators for log output.
      */
     public enum LogDecorator {
-        TIME("time"), UPTIME("uptime"), TIMEMILLIS("timemillis"), UPTIMEMILLIS("uptimemillis"), TIMEDELTA(
-            "timedelta"), USTAMP("ustamp"), PID("pid"), TID("tid"), LEVEL("level"), TAGS("tags"), HOSTNAME("hostname");
+        /**
+         * Includes the current date and time.
+         */
+        TIME("time"),
+        /**
+         * Includes elapsed time since JVM startup.
+         */
+        UPTIME("uptime"),
+        /**
+         * Includes the current time in milliseconds since the epoch.
+         */
+        TIMEMILLIS("timemillis"),
+        /**
+         * Includes JVM uptime in milliseconds.
+         */
+        UPTIMEMILLIS("uptimemillis"),
+        /**
+         * Emits the {@code timedelta} decorator token; support depends on the target JVM.
+         */
+        TIMEDELTA(
+            "timedelta"),
+        /**
+         * Emits the {@code ustamp} decorator token; support depends on the target JVM.
+         */
+        USTAMP("ustamp"),
+        /**
+         * Includes the process identifier.
+         */
+        PID("pid"),
+        /**
+         * Includes the thread identifier.
+         */
+        TID("tid"),
+        /**
+         * Includes the message severity.
+         */
+        LEVEL("level"),
+        /**
+         * Includes the message tag set.
+         */
+        TAGS("tags"),
+        /**
+         * Includes the host name.
+         */
+        HOSTNAME("hostname");
 
         private final String token;
 
@@ -3525,6 +3725,11 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             this.token = token;
         }
 
+        /**
+         * Returns the token used for this log decorator in a JVM logging argument.
+         *
+         * @return the log decorator token
+         */
         public String token() {
             return token;
         }
@@ -3541,23 +3746,55 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             this.destination = Objects.requireNonNull(destination, "Log output destination cannot be null");
         }
 
+        /**
+         * Creates a destination for standard output.
+         *
+         * @return a new standard-output destination
+         */
         public static LogOutput stdout() {
             return new LogOutput("stdout");
         }
 
+        /**
+         * Creates a destination for standard error.
+         *
+         * @return a new standard-error destination
+         */
         public static LogOutput stderr() {
             return new LogOutput("stderr");
         }
 
+        /**
+         * Creates a file destination using {@code file=} followed by the supplied path.
+         *
+         * @param path the log file path; must not be null
+         * @return a new file destination
+         * @throws NullPointerException if path is null
+         */
         public static LogOutput file(Path path) {
             Objects.requireNonNull(path, "Log file path cannot be null");
             return new LogOutput("file=" + path);
         }
 
+        /**
+         * Creates a destination from a literal JVM logging destination string.
+         *
+         * @param destination the destination token; must not be null
+         * @return a new output destination
+         * @throws NullPointerException if destination is null
+         */
         public static LogOutput custom(String destination) {
             return new LogOutput(destination);
         }
 
+        /**
+         * Appends an output option as {@code key=value}, retaining any earlier options.
+         *
+         * @param key the option name; must not be null
+         * @param value the option value; must not be null
+         * @return this output destination
+         * @throws NullPointerException if key or value is null
+         */
         public LogOutput option(String key, String value) {
             Objects.requireNonNull(key, "Output option key cannot be null");
             Objects.requireNonNull(value, "Output option value cannot be null");
@@ -3565,6 +3802,16 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             return this;
         }
 
+        /**
+         * Appends {@code filecount} and {@code filesize} options for log rotation.
+         *
+         * @param fileCount the positive number of rotated files
+         * @param fileSize the positive size of each file in the supplied unit
+         * @param unit the size suffix to use; must not be null
+         * @return this output destination
+         * @throws IllegalArgumentException if fileCount or fileSize is zero or negative
+         * @throws NullPointerException if unit is null
+         */
         public LogOutput rotateFiles(int fileCount, long fileSize, ByteUnit unit) {
             if (fileCount <= 0)
                 throw new IllegalArgumentException("File count must be positive");
@@ -3594,7 +3841,22 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum ByteUnit {
-        BYTES(""), KILOBYTES("K"), MEGABYTES("M"), GIGABYTES("G");
+        /**
+         * Represents bytes without a size suffix.
+         */
+        BYTES(""),
+        /**
+         * Represents units of 1,024 bytes with the {@code K} suffix.
+         */
+        KILOBYTES("K"),
+        /**
+         * Represents units of 1,048,576 bytes with the {@code M} suffix.
+         */
+        MEGABYTES("M"),
+        /**
+         * Represents units of 1,073,741,824 bytes with the {@code G} suffix.
+         */
+        GIGABYTES("G");
 
         private static final long MULTIPLIER = 1024L;
 
@@ -3604,6 +3866,13 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             this.unit = unit;
         }
 
+        /**
+         * Converts a size in this unit to bytes using powers of 1,024.
+         * Negative values are accepted; multiplication uses ordinary {@code long} arithmetic without overflow checks.
+         *
+         * @param size the size expressed in this unit
+         * @return the size in bytes, subject to long overflow
+         */
         public long toBytes(long size) {
             return switch (this) {
                 case BYTES -> size;
@@ -3619,7 +3888,18 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum AutoOnOff {
-        AUTO, ON, OFF;
+        /**
+         * Lets the JVM choose whether to enable the option.
+         */
+        AUTO,
+        /**
+         * Explicitly enables the option.
+         */
+        ON,
+        /**
+         * Explicitly disables the option.
+         */
+        OFF;
 
         private final String mode;
 
@@ -3633,7 +3913,42 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum SettingCategory {
-        ALL, LOCALE, PROPERTIES, SECURITY_ALL, SECURITY_PROPERTIES, SECURITY_PROVIDERS, SECURITY_TLS, VM, SYSTEM;
+        /**
+         * Requests all settings categories.
+         */
+        ALL,
+        /**
+         * Requests locale settings.
+         */
+        LOCALE,
+        /**
+         * Requests system properties.
+         */
+        PROPERTIES,
+        /**
+         * Requests all security settings.
+         */
+        SECURITY_ALL,
+        /**
+         * Requests security properties.
+         */
+        SECURITY_PROPERTIES,
+        /**
+         * Requests installed security provider settings.
+         */
+        SECURITY_PROVIDERS,
+        /**
+         * Requests TLS configuration settings.
+         */
+        SECURITY_TLS,
+        /**
+         * Requests virtual machine settings.
+         */
+        VM,
+        /**
+         * Requests host system or container settings.
+         */
+        SYSTEM;
 
         private final String categoryName;
 
@@ -3644,8 +3959,20 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
 
     /**
      * Represents an option for Java Flight Recorder (JFR).
+     *
+     * @param name the JFR option name
+     * @param value the serialized option value
      */
     public record FlightRecorderOption(String name, String value) {
+        /**
+         * Creates a {@code globalbuffersize} option for the size of each global JFR buffer.
+         *
+         * @param size the nonnegative buffer or storage size in the supplied unit
+         * @param unit the size suffix to use; must not be null
+         * @return a new JFR option with the supplied size and unit suffix
+         * @throws NullPointerException if unit is null
+         * @throws IllegalArgumentException if size is negative
+         */
         public static FlightRecorderOption globalBufferSize(long size, ByteUnit unit) {
             Objects.requireNonNull(unit, "Byte unit cannot be null");
 
@@ -3655,6 +3982,15 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             return new FlightRecorderOption("globalbuffersize", size + unit.getUnit());
         }
 
+        /**
+         * Creates a {@code maxchunksize} option for the maximum JFR chunk size.
+         *
+         * @param size the nonnegative buffer or storage size in the supplied unit
+         * @param unit the size suffix to use; must not be null
+         * @return a new JFR option with the supplied size and unit suffix
+         * @throws NullPointerException if unit is null
+         * @throws IllegalArgumentException if size is negative
+         */
         public static FlightRecorderOption maxChunkSize(long size, ByteUnit unit) {
             Objects.requireNonNull(unit, "Byte unit cannot be null");
 
@@ -3664,6 +4000,15 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             return new FlightRecorderOption("maxchunksize", size + unit.getUnit());
         }
 
+        /**
+         * Creates a {@code memorysize} option for the memory size reserved for JFR.
+         *
+         * @param size the nonnegative buffer or storage size in the supplied unit
+         * @param unit the size suffix to use; must not be null
+         * @return a new JFR option with the supplied size and unit suffix
+         * @throws NullPointerException if unit is null
+         * @throws IllegalArgumentException if size is negative
+         */
         public static FlightRecorderOption memorySize(long size, ByteUnit unit) {
             Objects.requireNonNull(unit, "Byte unit cannot be null");
 
@@ -3673,6 +4018,13 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             return new FlightRecorderOption("memorysize", size + unit.getUnit());
         }
 
+        /**
+         * Creates a {@code numglobalbuffers} option for the number of global JFR buffers.
+         *
+         * @param count the nonnegative number of global JFR buffers
+         * @return a new JFR option
+         * @throws IllegalArgumentException if count is negative
+         */
         public static FlightRecorderOption numGlobalBuffers(int count) {
             if (count < 0)
                 throw new IllegalArgumentException("Number of global buffers cannot be negative.");
@@ -3680,6 +4032,13 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             return new FlightRecorderOption("numglobalbuffers", Integer.toString(count));
         }
 
+        /**
+         * Creates a {@code oldobjectqueuesize} option for the number of old objects retained for sampling.
+         *
+         * @param size the nonnegative number of old objects retained for sampling
+         * @return a new JFR option
+         * @throws IllegalArgumentException if size is negative
+         */
         public static FlightRecorderOption oldObjectQueueSize(int size) {
             if (size < 0)
                 throw new IllegalArgumentException("Old object queue size cannot be negative.");
@@ -3687,19 +4046,45 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             return new FlightRecorderOption("oldobjectqueuesize", Integer.toString(size));
         }
 
+        /**
+         * Creates the {@code preserverecording} option controlling preservation of recording data.
+         *
+         * @param preserve whether recording data should be preserved
+         * @return a new JFR option
+         */
         public static FlightRecorderOption preserveRepository(boolean preserve) {
             return new FlightRecorderOption("preserverecording", Boolean.toString(preserve));
         }
 
+        /**
+         * Creates the {@code repositorypath} option for the JFR repository directory.
+         *
+         * @param path the repository directory; must not be null
+         * @return a new JFR option containing the path string
+         * @throws NullPointerException if path is null
+         */
         public static FlightRecorderOption repositoryPath(Path path) {
             Objects.requireNonNull(path, "Path cannot be null");
             return new FlightRecorderOption("repositorypath", path.toString());
         }
 
+        /**
+         * Creates the {@code retransform} option controlling retransformation of event classes.
+         *
+         * @param retransform whether event classes should be retransformed
+         * @return a new JFR option
+         */
         public static FlightRecorderOption retransformEventClasses(boolean retransform) {
             return new FlightRecorderOption("retransform", Boolean.toString(retransform));
         }
 
+        /**
+         * Creates a {@code stackdepth} option for the maximum recorded stack depth.
+         *
+         * @param depth the nonnegative maximum recorded stack depth
+         * @return a new JFR option
+         * @throws IllegalArgumentException if depth is negative
+         */
         public static FlightRecorderOption stackDepth(int depth) {
             if (depth < 0)
                 throw new IllegalArgumentException("Stack depth cannot be negative.");
@@ -3707,6 +4092,14 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             return new FlightRecorderOption("stackdepth", Integer.toString(depth));
         }
 
+        /**
+         * Creates a {@code threadbuffersize} option for the size of each thread-local JFR buffer.
+         *
+         * @param size the buffer or storage size in the supplied unit
+         * @param unit the size suffix to use; must not be null
+         * @return a new JFR option with the supplied size and unit suffix
+         * @throws NullPointerException if unit is null
+         */
         public static FlightRecorderOption threadBufferSize(long size, ByteUnit unit) {
             Objects.requireNonNull(unit, "Byte unit cannot be null");
             return new FlightRecorderOption("threadbuffersize", size + unit.getUnit());
@@ -3715,8 +4108,21 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
 
     /**
      * Represents parameters for starting a Java Flight Recorder (JFR) recording.
+     *
+     * @param name the JFR recording parameter name
+     * @param value the serialized recording parameter value
      */
     public record FlightRecorderParameters(String name, String value) {
+        /**
+         * Creates the {@code delay} parameter for the delay before recording starts.
+         * The value is serialized as the decimal result of {@link TimeUnit#toMillis(long)}, without a unit suffix.
+         *
+         * @param duration the nonnegative delay before recording starts
+         * @param unit the time unit of duration; must not be null
+         * @return a new recording parameter containing the converted value
+         * @throws NullPointerException if unit is null
+         * @throws IllegalArgumentException if duration is negative
+         */
         public static FlightRecorderParameters delay(long duration, TimeUnit unit) {
             Objects.requireNonNull(unit, "TimeUnit cannot be null");
 
@@ -3726,14 +4132,36 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             return new FlightRecorderParameters("delay", Long.toString(unit.toMillis(duration)));
         }
 
+        /**
+         * Creates the {@code disk} recording parameter.
+         *
+         * @param toDisk whether recording data should be written to disk
+         * @return a new recording parameter
+         */
         public static FlightRecorderParameters writeToDisk(boolean toDisk) {
             return new FlightRecorderParameters("disk", Boolean.toString(toDisk));
         }
 
+        /**
+         * Creates the {@code dumponexit} recording parameter.
+         *
+         * @param dump whether the recording should be dumped when the JVM exits
+         * @return a new recording parameter
+         */
         public static FlightRecorderParameters dumpOnExit(boolean dump) {
             return new FlightRecorderParameters("dumponexit", Boolean.toString(dump));
         }
 
+        /**
+         * Creates the {@code duration} parameter for the recording duration.
+         * The value is serialized as the decimal result of {@link TimeUnit#toMillis(long)}, without a unit suffix.
+         *
+         * @param duration the nonnegative recording duration
+         * @param unit the time unit of duration; must not be null
+         * @return a new recording parameter containing the converted value
+         * @throws NullPointerException if unit is null
+         * @throws IllegalArgumentException if duration is negative
+         */
         public static FlightRecorderParameters duration(long duration, TimeUnit unit) {
             Objects.requireNonNull(unit, "TimeUnit cannot be null");
 
@@ -3743,16 +4171,39 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             return new FlightRecorderParameters("duration", Long.toString(unit.toMillis(duration)));
         }
 
+        /**
+         * Creates the {@code filename} parameter for the recording output file.
+         *
+         * @param path the recording output file; must not be null
+         * @return a new recording parameter containing the path string
+         * @throws NullPointerException if path is null
+         */
         public static FlightRecorderParameters filename(Path path) {
             Objects.requireNonNull(path, "Path cannot be null");
             return new FlightRecorderParameters("filename", path.toString());
         }
 
+        /**
+         * Creates the {@code name} recording parameter with the supplied value unchanged.
+         *
+         * @param identifier the recording identifier; must not be null
+         * @return a new recording parameter
+         * @throws NullPointerException if identifier is null
+         */
         public static FlightRecorderParameters name(String identifier) {
             Objects.requireNonNull(identifier, "Identifier cannot be null");
             return new FlightRecorderParameters("name", identifier);
         }
 
+        /**
+         * Creates the {@code maxage} parameter limiting the age of retained recording data.
+         *
+         * @param age the nonnegative maximum age
+         * @param unit the age unit: seconds, minutes, hours, or days; must not be null
+         * @return a new parameter with an s, m, h, or d suffix
+         * @throws NullPointerException if unit is null
+         * @throws IllegalArgumentException if age is negative or unit is not one of the supported units
+         */
         public static FlightRecorderParameters maxAge(long age, TimeUnit unit) {
             Objects.requireNonNull(unit, "TimeUnit cannot be null");
 
@@ -3766,6 +4217,15 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
                 age + unit.toString().substring(0, 1).toLowerCase(Locale.ROOT));
         }
 
+        /**
+         * Creates the {@code maxsize} parameter limiting retained recording data.
+         *
+         * @param size the nonnegative maximum size
+         * @param unit megabytes or gigabytes; must not be null
+         * @return a new parameter with the size and unit suffix
+         * @throws NullPointerException if unit is null
+         * @throws IllegalArgumentException if size is negative or unit is bytes or kilobytes
+         */
         public static FlightRecorderParameters maxSize(long size, ByteUnit unit) {
             Objects.requireNonNull(unit, "Byte unit cannot be null.");
 
@@ -3778,25 +4238,59 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             return new FlightRecorderParameters("maxsize", size + unit.getUnit());
         }
 
+        /**
+         * Creates the {@code path-to-gc-roots} recording parameter.
+         *
+         * @param collect whether paths to garbage collection roots should be collected
+         * @return a new recording parameter
+         */
         public static FlightRecorderParameters collectPathToGCRoots(boolean collect) {
             return new FlightRecorderParameters("path-to-gc-roots", Boolean.toString(collect));
         }
 
+        /**
+         * Creates the {@code report-on-exit} recording parameter with the supplied value unchanged.
+         *
+         * @param name the name of the report to produce on exit; must not be null
+         * @return a new recording parameter
+         * @throws NullPointerException if name is null
+         */
         public static FlightRecorderParameters nameToReportOnExit(String name) {
             Objects.requireNonNull(name, "Name cannot be null");
             return new FlightRecorderParameters("report-on-exit", name);
         }
 
+        /**
+         * Creates the {@code settings} parameter for the recording settings file.
+         *
+         * @param path the recording settings file; must not be null
+         * @return a new recording parameter containing the path string
+         * @throws NullPointerException if path is null
+         */
         public static FlightRecorderParameters settingsFile(Path path) {
             Objects.requireNonNull(path, "Path cannot be null");
             return new FlightRecorderParameters("settings", path.toString());
         }
 
+        /**
+         * Creates the {@code option} recording parameter with the supplied value unchanged.
+         *
+         * @param value the recording option value; must not be null
+         * @return a new recording parameter
+         * @throws NullPointerException if value is null
+         */
         public static FlightRecorderParameters option(String value) {
             Objects.requireNonNull(value, "Option value cannot be null");
             return new FlightRecorderParameters("option", value);
         }
 
+        /**
+         * Creates the {@code event-setting} recording parameter with the supplied value unchanged.
+         *
+         * @param value the event setting expression; must not be null
+         * @return a new recording parameter
+         * @throws NullPointerException if value is null
+         */
         public static FlightRecorderParameters eventSetting(String value) {
             Objects.requireNonNull(value, "Event setting value cannot be null");
             return new FlightRecorderParameters("event-setting", value);
@@ -3813,7 +4307,18 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum NativeMemoryTracking {
-        OFF, SUMMARY, DETAIL;
+        /**
+         * Disables native memory tracking.
+         */
+        OFF,
+        /**
+         * Tracks native memory totals by subsystem.
+         */
+        SUMMARY,
+        /**
+         * Tracks native memory with allocation site details.
+         */
+        DETAIL;
 
         private final String state;
 
@@ -3827,7 +4332,18 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum BranchProtectionMode {
-        NONE("none"), STANDARD("standard"), PAC_RET("pac-ret");
+        /**
+         * Disables branch protection.
+         */
+        NONE("none"),
+        /**
+         * Selects the standard branch protection mode.
+         */
+        STANDARD("standard"),
+        /**
+         * Selects return address signing with pointer authentication.
+         */
+        PAC_RET("pac-ret");
 
         private final String mode;
 
@@ -3840,7 +4356,22 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      * Represents different prefetch styles for allocation.
      */
     public enum PrefetchStyle {
-        DO_NOT(0), AFTER_ALLOCATE(1), TLAB_WATERMARK_POINTER(2), PER_CACHE_LINE(3);
+        /**
+         * Disables allocation prefetching with style {@code 0}.
+         */
+        DO_NOT(0),
+        /**
+         * Selects allocation prefetch style {@code 1}.
+         */
+        AFTER_ALLOCATE(1),
+        /**
+         * Selects prefetching based on the TLAB watermark with style {@code 2}.
+         */
+        TLAB_WATERMARK_POINTER(2),
+        /**
+         * Selects prefetching per cache line with style {@code 3}.
+         */
+        PER_CACHE_LINE(3);
 
         private final int styleInt;
 
@@ -3848,6 +4379,11 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             this.styleInt = styleInt;
         }
 
+        /**
+         * Returns the numeric value used by {@code -XX:AllocatePrefetchStyle}.
+         *
+         * @return the prefetch style code, from 0 through 3
+         */
         public int asInt() {
             return styleInt;
         }
@@ -3858,8 +4394,47 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum CompileCommand {
-        BREAK("break"), COMPILE_ONLY("compileonly"), DO_NOT_INLINE("dontinline"), EXCLUDE("exclude"), HELP(
-            "help"), INLINE("inline"), LOG("log"), OPTION("option"), PRINT("print"), QUIET("quiet");
+        /**
+         * Requests a debugger breakpoint for matching method compilation.
+         */
+        BREAK("break"),
+        /**
+         * Restricts compilation to matching methods.
+         */
+        COMPILE_ONLY("compileonly"),
+        /**
+         * Prevents matching methods from being inlined.
+         */
+        DO_NOT_INLINE("dontinline"),
+        /**
+         * Excludes matching methods from compilation.
+         */
+        EXCLUDE("exclude"),
+        /**
+         * Requests compiler command help.
+         */
+        HELP(
+            "help"),
+        /**
+         * Requests inlining of matching methods.
+         */
+        INLINE("inline"),
+        /**
+         * Requests compilation logging for matching methods.
+         */
+        LOG("log"),
+        /**
+         * Applies a compiler option to matching methods.
+         */
+        OPTION("option"),
+        /**
+         * Requests generated assembly for matching methods.
+         */
+        PRINT("print"),
+        /**
+         * Suppresses compiler command announcements.
+         */
+        QUIET("quiet");
 
         private final String command;
 
@@ -3873,7 +4448,14 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
      */
     @Getter
     public enum DataModel {
-        DATA_32("d32"), DATA_64("d64");
+        /**
+         * Emits the {@code d32} option for a JVM supporting the 32-bit data model.
+         */
+        DATA_32("d32"),
+        /**
+         * Emits the {@code d64} option for a JVM supporting the 64-bit data model.
+         */
+        DATA_64("d64");
 
         private final String model;
 

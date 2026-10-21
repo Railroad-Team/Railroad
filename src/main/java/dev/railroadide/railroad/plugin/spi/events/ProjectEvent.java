@@ -6,6 +6,9 @@ import dev.railroadide.railroad.plugin.spi.event.Event;
 /**
  * Represents an event related to a project, such as when a project is opened or closed.
  * This event is used to notify listeners about changes in the project's state.
+ *
+ * @param project The project associated with this event. Must not be null.
+ * @param eventType The type of event (OPENED or CLOSED). Must not be null.
  */
 public record ProjectEvent(Project project, EventType eventType) implements Event {
     /**
@@ -45,6 +48,9 @@ public record ProjectEvent(Project project, EventType eventType) implements Even
      * Enum representing the type of project event.
      */
     public enum EventType {
-        OPENED, CLOSED
+        /** The project was opened. */
+        OPENED,
+        /** The project was closed. */
+        CLOSED
     }
 }

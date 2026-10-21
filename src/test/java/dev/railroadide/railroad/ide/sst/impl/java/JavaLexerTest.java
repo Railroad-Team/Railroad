@@ -10,10 +10,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JavaLexerTest {
+public class JavaLexerTest {
 
     @Test
-    void lexesSignificantTokensInOrder() {
+    public void lexesSignificantTokensInOrder() {
         String source = "package demo;\nclass Sample { int x = 42; }\n";
         List<Token<JavaTokenType>> tokens = JavaParserTestSupport.lexAll(source);
 
@@ -41,7 +41,7 @@ class JavaLexerTest {
     }
 
     @Test
-    void classifiesLineAndBlockCommentsAsTrivia() {
+    public void classifiesLineAndBlockCommentsAsTrivia() {
         String source = "class A { // line comment\n/* block comment */ int x; }";
         List<Token<JavaTokenType>> tokens = JavaParserTestSupport.lexAll(source);
 
@@ -52,7 +52,7 @@ class JavaLexerTest {
     }
 
     @Test
-    void lexesRightShiftOperatorsIncludingAtEndOfInput() {
+    public void lexesRightShiftOperatorsIncludingAtEndOfInput() {
         List<Token<JavaTokenType>> tokens = JavaParserTestSupport.lexAll(">> >>> >>= >>>=");
 
         List<JavaTokenType> significantTypes = tokens.stream()
@@ -69,7 +69,7 @@ class JavaLexerTest {
     }
 
     @Test
-    void reportsDiagnosticAndErrorFlagForUnterminatedString() {
+    public void reportsDiagnosticAndErrorFlagForUnterminatedString() {
         String source = "class A { String s = " + '"' + "unterminated; }";
         List<Token<JavaTokenType>> tokens;
         List<LexError> diagnostics;

@@ -4,11 +4,11 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-final class JavaSyntaxAssertions {
+public final class JavaSyntaxAssertions {
     private JavaSyntaxAssertions() {
     }
 
-    static JavaSyntaxParser.ParseResult assertParsesWithoutRecovery(String source) {
+    public static JavaSyntaxParser.ParseResult assertParsesWithoutRecovery(String source) {
         JavaSyntaxParser.ParseResult result = JavaSyntaxParser.parseWithDiagnostics(source);
         assertTrue(
             result.diagnostics().isEmpty(),
@@ -17,7 +17,7 @@ final class JavaSyntaxAssertions {
         return result;
     }
 
-    static JavaSyntaxParser.ParseResult assertParsesWithRecovery(String source) {
+    public static JavaSyntaxParser.ParseResult assertParsesWithRecovery(String source) {
         JavaSyntaxParser.ParseResult result = JavaSyntaxParser.parseWithDiagnostics(source);
         assertFalse(
             result.diagnostics().isEmpty(),
@@ -26,7 +26,7 @@ final class JavaSyntaxAssertions {
         return result;
     }
 
-    static SyntaxTree assertRoundTrip(String source) {
+    public static SyntaxTree assertRoundTrip(String source) {
         SyntaxTree tree = JavaSyntaxParser.parse(source);
         assertEquals(source, JavaParserTestSupport.syntaxText(tree));
         return tree;

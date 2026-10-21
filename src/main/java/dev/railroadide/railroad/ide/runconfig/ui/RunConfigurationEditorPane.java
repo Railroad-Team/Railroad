@@ -6,12 +6,14 @@ import dev.railroadide.railroad.form.FormData;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.settings.ui.DetectedJdkListPane;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedLabel;
 import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
+import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
 import dev.railroadide.railroad.ui.styling.ButtonSize;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import javafx.beans.property.ObjectProperty;
@@ -23,6 +25,9 @@ import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.Node;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -37,6 +42,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Edits a project's run configurations with a grouped tree, type-specific forms, and apply controls.
+ */
 public class RunConfigurationEditorPane extends RRVBox {
     private final ObservableList<RunConfiguration<?>> configurations = FXCollections.observableArrayList();
     private final ObjectProperty<RunConfiguration<?>> selectedConfiguration = new SimpleObjectProperty<>();
@@ -49,11 +57,16 @@ public class RunConfigurationEditorPane extends RRVBox {
     private final Node detailsEmptyStatePane;
     private final Map<UUID, ConfigurationFormContext> configurationFormContexts = new HashMap<>();
 
+    /**
+     * Creates an editor from the project's configurations and binds its selection to the project manager.
+     *
+     * @param project the project owning the configuration
+     */
     public RunConfigurationEditorPane(Project project) {
         this.project = project;
         this.configurations.addAll(project.getRunConfigManager().getConfigurations());
-        this.noConfigurationsPane = createEmptyStatePane();
-        this.detailsEmptyStatePane = createEmptyStatePane();
+        this.noConfigurationsPane = createEmptyStatePane(true);
+        this.detailsEmptyStatePane = createEmptyStatePane(false);
         this.configurationTreeView = new RunConfigurationTreeView(configurations);
         this.detailContentContainer = new StackPane();
         this.detailContentContainer.getStyleClass().add("run-configuration-details-pane");
@@ -72,10 +85,16 @@ public class RunConfigurationEditorPane extends RRVBox {
     }
 
     private void initializeUI() {
-        var topButtonBar = createTopButtonBar(project);
-        getChildren().add(topButtonBar);
+        var title = new LocalizedLabel("railroad.window.ide.toolbar.edit_run_configurations");
+        title.getStyleClass().add("run-configuration-editor-title");
+        var projectLabel = new Label(project.getAlias());
+        projectLabel.getStyleClass().add("run-configuration-editor-project");
+        var header = new VBox(title, projectLabel);
+        header.getStyleClass().add("run-configuration-editor-header");
+        getChildren().add(header);
 
-        centerContentContainer.getChildren().setAll(configurations.isEmpty() ? noConfigurationsPane : editorSplitPane);
+        centerContentContainer.getChildren().setAll(editorSplitPane);
+        centerContentContainer.setMinHeight(0);
         VBox.setVgrow(centerContentContainer, Priority.ALWAYS);
         getChildren().add(centerContentContainer);
 
@@ -98,7 +117,8 @@ public class RunConfigurationEditorPane extends RRVBox {
 
     private void updateDetailContent(RunConfiguration<?> configuration) {
         if (configuration == null) {
-            detailContentContainer.getChildren().setAll(detailsEmptyStatePane);
+            detailContentContainer.getChildren()
+                .setAll(configurations.isEmpty() ? noConfigurationsPane : detailsEmptyStatePane);
             return;
         }
 
@@ -106,50 +126,63 @@ public class RunConfigurationEditorPane extends RRVBox {
     }
 
     private void updateEditorContent() {
-        if (configurations.isEmpty()) {
-            centerContentContainer.getChildren().setAll(noConfigurationsPane);
-        } else {
-            centerContentContainer.getChildren().setAll(editorSplitPane);
-        }
+        updateDetailContent(selectedConfiguration.get());
     }
 
-    private VBox createEmptyStatePane() {
+    private VBox createEmptyStatePane(boolean noConfigurations) {
         var container = new RRVBox();
         container.setAlignment(Pos.CENTER);
         container.getStyleClass().add("run-configuration-editor-empty-state");
 
-        var title = new LocalizedLabel("railroad.runconfig.details.empty.title");
+        var icon = new FontIcon(FontAwesomeSolid.PLAY);
+        icon.getStyleClass().add("run-configuration-editor-empty-state-icon");
+        var title = new LocalizedLabel(noConfigurations
+            ? "railroad.runconfig.details.empty.title"
+            : "railroad.runconfig.details.select.title");
         title.getStyleClass().add("run-configuration-editor-empty-state-title");
 
-        var description = new LocalizedLabel("railroad.runconfig.details.empty.description");
+        var description = new LocalizedLabel(noConfigurations
+            ? "railroad.runconfig.details.empty.description"
+            : "railroad.runconfig.details.select.description");
         description.getStyleClass().add("run-configuration-editor-empty-state-description");
         description.setWrapText(true);
 
-        container.getChildren().addAll(title, description);
+        container.getChildren().addAll(icon, title, description);
+        if (noConfigurations) {
+            container.getChildren().add(createAddButton());
+        }
         return container;
     }
 
     private SplitPane createEditorSplitPane() {
         detailContentContainer.getChildren().setAll(detailsEmptyStatePane);
-        var splitPane = new SplitPane(configurationTreeView, detailContentContainer);
+        var sidebar = new VBox(createTopButtonBar(), configurationTreeView);
+        sidebar.getStyleClass().add("run-configuration-editor-sidebar");
+        VBox.setVgrow(configurationTreeView, Priority.ALWAYS);
+        configurationTreeView.setMinHeight(0);
+        detailContentContainer.setMinWidth(0);
+        var splitPane = new SplitPane(sidebar, detailContentContainer);
+        SplitPane.setResizableWithParent(sidebar, false);
         splitPane.getStyleClass().add("run-configuration-editor-split-pane");
-        splitPane.setDividerPositions(0.3);
+        splitPane.setDividerPositions(0.27);
         VBox.setVgrow(splitPane, Priority.ALWAYS);
         return splitPane;
     }
 
-    private HBox createTopButtonBar(Project project) {
+    private HBox createTopButtonBar() {
         var topButtonBar = new RRHBox();
         topButtonBar.setAlignment(Pos.CENTER_LEFT);
         topButtonBar.getStyleClass().add("run-configuration-editor-top-bar");
 
-        var addButton = createTopBarButton(FontAwesomeSolid.PLUS);
-        addButton.setOnAction(_ -> {
-            ContextMenu contextMenu = createAddContextMenu(project);
-            contextMenu.show(addButton, Side.BOTTOM, 0, 0);
-        });
+        var addButton = createAddButton();
+        addButton.setVariant(ButtonVariant.SECONDARY);
+        HBox.setHgrow(addButton, Priority.ALWAYS);
+        addButton.setMaxWidth(Double.MAX_VALUE);
 
-        var removeButton = createTopBarButton(FontAwesomeSolid.MINUS);
+        var removeButton = createTopBarButton(FontAwesomeSolid.TRASH_ALT);
+        var removeTooltip = new LocalizedTooltip("railroad.run_configuration.delete");
+        removeButton.setTooltip(removeTooltip);
+        removeButton.accessibleTextProperty().bind(removeTooltip.textProperty());
         removeButton.setOnAction(_ -> {
             RunConfiguration<?> selectedConfig = selectedConfiguration.get();
             if (selectedConfig != null) {
@@ -159,16 +192,15 @@ public class RunConfigurationEditorPane extends RRVBox {
         });
         removeButton.disableProperty().bind(selectedConfiguration.isNull());
 
-        var copyButton = createTopBarButton(FontAwesomeSolid.COPY);
-        copyButton.disableProperty().bind(selectedConfiguration.isNull());
-
-        var addFolderButton = createTopBarButton(FontAwesomeSolid.FOLDER_PLUS);
-
-        var renameButton = createTopBarButton(FontAwesomeSolid.PENCIL_ALT);
-        renameButton.disableProperty().bind(selectedConfiguration.isNull());
-
-        topButtonBar.getChildren().addAll(addButton, removeButton, copyButton, addFolderButton, renameButton);
+        topButtonBar.getChildren().addAll(addButton, removeButton);
         return topButtonBar;
+    }
+
+    private RRButton createAddButton() {
+        var button = new RRButton("railroad.ide.toolbar.add_configuration", FontAwesomeSolid.PLUS);
+        button.setButtonSize(ButtonSize.SMALL);
+        button.setOnAction(_ -> createAddContextMenu(project).show(button, Side.BOTTOM, 0, 0));
+        return button;
     }
 
     private static RRButton createTopBarButton(Ikon icon) {
@@ -223,11 +255,12 @@ public class RunConfigurationEditorPane extends RRVBox {
         });
 
         var cancelButton = new RRButton("railroad.generic.cancel", FontAwesomeSolid.TIMES);
-        cancelButton.setVariant(ButtonVariant.DANGER);
+        cancelButton.setVariant(ButtonVariant.SECONDARY);
+        cancelButton.setCancelButton(true);
         cancelButton.setOnAction(event -> getScene().getWindow().hide());
 
         var applyButton = new RRButton("railroad.generic.apply", FontAwesomeSolid.CHECK_DOUBLE);
-        applyButton.setVariant(ButtonVariant.SUCCESS);
+        applyButton.setVariant(ButtonVariant.SECONDARY);
         applyButton.setOnAction(event -> {
             if (!applySelectedConfigurationChanges())
                 return;
@@ -235,10 +268,15 @@ public class RunConfigurationEditorPane extends RRVBox {
             project.getRunConfigManager().sendUpdatedConfigurations(configurations);
         });
 
-        bottomButtonBar.getChildren().addAll(okButton, cancelButton, applyButton);
+        bottomButtonBar.getChildren().addAll(cancelButton, applyButton, okButton);
         return bottomButtonBar;
     }
 
+    /**
+     * Selects a configuration in the editor and its bound project selection.
+     *
+     * @param runConfiguration the configuration to select, or {@code null} to clear the selection
+     */
     public void selectConfiguration(RunConfiguration<?> runConfiguration) {
         selectedConfiguration.set(runConfiguration);
     }
@@ -248,8 +286,16 @@ public class RunConfigurationEditorPane extends RRVBox {
         if (context == null) {
             Form form = configuration.data().createConfigurationForm(project, configuration);
             Node formNode = form.createUI();
-            VBox.setVgrow(formNode, Priority.ALWAYS);
-            context = new ConfigurationFormContext(form, formNode);
+            for (Node node : formNode.lookupAll(".combo-box")) {
+                if (node instanceof ComboBox<?> comboBox
+                    && comboBox.getButtonCell() instanceof DetectedJdkListPane.JdkCell) {
+                    comboBox.getStyleClass().add("run-configuration-runtime-picker");
+                }
+            }
+            var scrollPane = new ScrollPane(formNode);
+            scrollPane.setFitToWidth(true);
+            scrollPane.getStyleClass().add("run-configuration-form-scroll");
+            context = new ConfigurationFormContext(form, scrollPane);
             configurationFormContexts.put(configuration.uuid(), context);
         }
 

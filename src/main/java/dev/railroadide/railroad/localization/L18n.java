@@ -32,6 +32,8 @@ public class L18n {
     }
 
     /**
+     * Returns the current Language object.
+     *
      * @return the current Language object
      */
     public static Language getCurrentLanguage() {
@@ -40,6 +42,8 @@ public class L18n {
 
     /**
      * Returns the current language as an ObjectProperty.
+     *
+     * @return the current language property
      */
     public static ObjectProperty<Language> currentLanguageProperty() {
         return CURRENT_LANG;
@@ -171,6 +175,18 @@ public class L18n {
         }
 
         return value.toString();
+    }
+
+    /**
+     * Checks whether the active localization bundle contains a translation for a key.
+     * This is useful for extensible labels where plugins may optionally contribute a
+     * translated name while retaining their declared display name as a fallback.
+     *
+     * @param key localization key to check
+     * @return whether a translation is currently available
+     */
+    public static boolean hasTranslation(String key) {
+        return key != null && !key.isBlank() && LANG_CACHE.containsKey(key);
     }
 
     /**

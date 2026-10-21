@@ -17,12 +17,23 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.file.Path;
 import java.util.List;
 
+/**
+ * Supplies a plugin with application services, registries, logging, and event access.
+ * Extensions registered through this context are stored separately for this plugin.
+ */
 public class DefaultPluginContext implements PluginContext {
     private final PluginDescriptor descriptor;
     private final EventBus eventBus;
     private final Multimap<Class<?>, Object> extensions = ArrayListMultimap.create();
     private Logger logger;
 
+    /**
+     * Creates a context and a logger named after the plugin's main class.
+     *
+     * @param descriptor metadata for the plugin using this context
+     * @param bus event bus shared with the application
+     * @throws IllegalArgumentException if either argument is null
+     */
     public DefaultPluginContext(@NotNull PluginDescriptor descriptor, @NotNull EventBus bus) {
         if (descriptor == null)
             throw new IllegalArgumentException("PluginDescriptor cannot be null");

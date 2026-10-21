@@ -20,10 +20,10 @@ import java.util.stream.Collectors;
 import static dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectionTestSupport.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-class CoreInspectionRulesTest {
+public class CoreInspectionRulesTest {
 
     @Test
-    void coreProvidersExposeExpectedRuleIds() {
+    public void coreProvidersExposeExpectedRuleIds() {
         assertRuleIds(new CoreDuplicateDeclarationInspection(), Set.of("SEM_DUPLICATE_DECLARATION"));
         assertRuleIds(new CoreImportInspection(),
             Set.of("SEM_DUPLICATE_IMPORT", "SEM_AMBIGUOUS_IMPORT", "SEM_UNRESOLVED_IMPORT"));
@@ -93,7 +93,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreNameRuleEmitsUnresolvedNameDiagnostic() {
+    public void coreNameRuleEmitsUnresolvedNameDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreNameResolutionInspection(), """
             class Example {
                 void run() {
@@ -106,7 +106,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreNameRuleResolvesInheritedUnqualifiedFields() {
+    public void coreNameRuleResolvesInheritedUnqualifiedFields() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreNameResolutionInspection(), """
             class Base {
                 protected String dataKey;
@@ -129,7 +129,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreImportRuleEmitsUnresolvedImportDiagnostic() {
+    public void coreImportRuleEmitsUnresolvedImportDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreImportInspection(), """
             import missing.pkg.Type;
             class Example {}
@@ -139,7 +139,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreWildcardImportRuleEmitsDiagnostic() {
+    public void coreWildcardImportRuleEmitsDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreWildcardImportInspection(), """
             import java.util.*;
             class Example {}
@@ -149,7 +149,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreEmptyCatchRuleEmitsDiagnostic() {
+    public void coreEmptyCatchRuleEmitsDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreEmptyCatchInspection(), """
             class Example {
                 void run() {
@@ -165,7 +165,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void corePublicClassNotNamedAfterFileRuleEmitsDiagnostic() {
+    public void corePublicClassNotNamedAfterFileRuleEmitsDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CorePublicClassNotNamedAfterFileInspection(),
             Path.of("Example.java"), """
                 public class Wrong {
@@ -178,7 +178,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreLowerCaseClassNameRuleEmitsDiagnostic() {
+    public void coreLowerCaseClassNameRuleEmitsDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreLowerCaseClassNameInspection(), """
             class example {
             }
@@ -188,7 +188,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreMethodNamedTODORuleEmitsDiagnostic() {
+    public void coreMethodNamedTODORuleEmitsDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreMethodNamedTODOInspection(), """
             class Example {
                 void TODO() {
@@ -200,7 +200,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreMethodNamedUnderscoreRuleEmitsDiagnostic() {
+    public void coreMethodNamedUnderscoreRuleEmitsDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreMethodNamedUnderscoreInspection(), """
             class Example {
                 void _() {
@@ -212,7 +212,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreEmptySynchronizedRuleEmitsDiagnostic() {
+    public void coreEmptySynchronizedRuleEmitsDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreEmptySynchronizedInspection(), """
             class Example {
                 void run() {
@@ -226,7 +226,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreEmptySwitchRuleEmitsDiagnostic() {
+    public void coreEmptySwitchRuleEmitsDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreEmptySwitchInspection(), """
             class Example {
                 void run(int value) {
@@ -240,7 +240,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreUselessDefaultInSwitchRuleEmitsDiagnostic() {
+    public void coreUselessDefaultInSwitchRuleEmitsDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreUselessDefaultInSwitchInspection(), """
             class Example {
                 void run(int value) {
@@ -256,7 +256,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFallthroughCaseInSwitchRuleEmitsDiagnosticForPlainFallthrough() {
+    public void coreFallthroughCaseInSwitchRuleEmitsDiagnosticForPlainFallthrough() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFallthroughCaseInSwitchInspection(), """
             class Example {
                 void run(int value) {
@@ -275,7 +275,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFallthroughCaseInSwitchRuleDoesNotEmitDiagnosticForStackedLabels() {
+    public void coreFallthroughCaseInSwitchRuleDoesNotEmitDiagnosticForStackedLabels() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFallthroughCaseInSwitchInspection(), """
             class Example {
                 void run(int value) {
@@ -295,7 +295,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFallthroughCaseInSwitchRuleDoesNotEmitDiagnosticWhenCaseBreaks() {
+    public void coreFallthroughCaseInSwitchRuleDoesNotEmitDiagnosticWhenCaseBreaks() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFallthroughCaseInSwitchInspection(), """
             class Example {
                 void run(int value) {
@@ -315,7 +315,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFallthroughCaseInSwitchRuleDoesNotEmitDiagnosticWhenCaseReturns() {
+    public void coreFallthroughCaseInSwitchRuleDoesNotEmitDiagnosticWhenCaseReturns() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFallthroughCaseInSwitchInspection(), """
             class Example {
                 int run(int value) {
@@ -335,7 +335,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFallthroughCaseInSwitchRuleDoesNotEmitDiagnosticWhenCaseThrows() {
+    public void coreFallthroughCaseInSwitchRuleDoesNotEmitDiagnosticWhenCaseThrows() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFallthroughCaseInSwitchInspection(), """
             class Example {
                 void run(int value) {
@@ -354,7 +354,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFallthroughCaseInSwitchRuleDoesNotEmitDiagnosticForArrowSwitchRules() {
+    public void coreFallthroughCaseInSwitchRuleDoesNotEmitDiagnosticForArrowSwitchRules() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFallthroughCaseInSwitchInspection(), """
             class Example {
                 void run(int value) {
@@ -371,7 +371,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFallthroughCaseInSwitchRuleEmitsDiagnosticWhenOnlySomePathsBreak() {
+    public void coreFallthroughCaseInSwitchRuleEmitsDiagnosticWhenOnlySomePathsBreak() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFallthroughCaseInSwitchInspection(), """
             class Example {
                 void run(int value, boolean stop) {
@@ -393,7 +393,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFallthroughCaseInSwitchRuleEmitsDiagnosticForFallthroughIntoDefault() {
+    public void coreFallthroughCaseInSwitchRuleEmitsDiagnosticForFallthroughIntoDefault() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFallthroughCaseInSwitchInspection(), """
             class Example {
                 void run(int value) {
@@ -411,7 +411,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFallthroughCaseInSwitchRuleDoesNotEmitDiagnosticForLastCaseWithoutFollowingRule() {
+    public void coreFallthroughCaseInSwitchRuleDoesNotEmitDiagnosticForLastCaseWithoutFollowingRule() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFallthroughCaseInSwitchInspection(), """
             class Example {
                 void run(int value) {
@@ -427,7 +427,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreSingleLetterFieldNameRuleEmitsDiagnostic() {
+    public void coreSingleLetterFieldNameRuleEmitsDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreSingleLetterFieldNameInspection(), """
             class Example {
                 int x;
@@ -438,7 +438,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFieldNameSameAsClassRuleEmitsDiagnostic() {
+    public void coreFieldNameSameAsClassRuleEmitsDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFieldNameSameAsClassInspection(), """
             class Example {
                 int Example;
@@ -449,7 +449,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreParameterNamedUnderscoreRuleEmitsDiagnostic() {
+    public void coreParameterNamedUnderscoreRuleEmitsDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreParameterNamedUnderscoreInspection(), """
             class Example {
                 void run(int _) {
@@ -461,7 +461,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreUnreachableCodeRuleEmitsDiagnosticAfterReturn() {
+    public void coreUnreachableCodeRuleEmitsDiagnosticAfterReturn() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreUnreachableCodeInspection(), """
             class Example {
                 void run() {
@@ -475,7 +475,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreUnreachableCodeRuleEmitsDiagnosticAfterThrow() {
+    public void coreUnreachableCodeRuleEmitsDiagnosticAfterThrow() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreUnreachableCodeInspection(), """
             class Example {
                 void run() {
@@ -489,7 +489,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreUnreachableCodeRuleEmitsDiagnosticWhenBothIfBranchesExit() {
+    public void coreUnreachableCodeRuleEmitsDiagnosticWhenBothIfBranchesExit() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreUnreachableCodeInspection(), """
             class Example {
                 void run(boolean flag) {
@@ -507,7 +507,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreUnreachableCodeRuleDoesNotEmitDiagnosticWhenOnlyOneIfBranchExits() {
+    public void coreUnreachableCodeRuleDoesNotEmitDiagnosticWhenOnlyOneIfBranchExits() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreUnreachableCodeInspection(), """
             class Example {
                 void run(boolean flag) {
@@ -523,7 +523,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreUnreachableCodeRuleDoesNotEmitDiagnosticAfterWhileLoopThatMayNotRun() {
+    public void coreUnreachableCodeRuleDoesNotEmitDiagnosticAfterWhileLoopThatMayNotRun() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreUnreachableCodeInspection(), """
             class Example {
                 void run(boolean flag) {
@@ -539,7 +539,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreUnreachableCodeRuleDoesNotEmitDiagnosticAfterForLoopThatMayNotRun() {
+    public void coreUnreachableCodeRuleDoesNotEmitDiagnosticAfterForLoopThatMayNotRun() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreUnreachableCodeInspection(), """
             class Example {
                 void run(boolean flag) {
@@ -555,7 +555,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreUnreachableCodeRuleEmitsDiagnosticAfterBreakInsideSwitchRule() {
+    public void coreUnreachableCodeRuleEmitsDiagnosticAfterBreakInsideSwitchRule() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreUnreachableCodeInspection(), """
             class Example {
                 void run(int value) {
@@ -574,7 +574,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreUnreachableCodeRuleDoesNotEmitDiagnosticAfterSwitchStatement() {
+    public void coreUnreachableCodeRuleDoesNotEmitDiagnosticAfterSwitchStatement() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreUnreachableCodeInspection(), """
             class Example {
                 void run(int value) {
@@ -593,7 +593,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreAssertionRuleEmitsDiagnosticForPublicMethod() {
+    public void coreAssertionRuleEmitsDiagnosticForPublicMethod() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
             """
                 class Example {
@@ -608,7 +608,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreAssertionRuleEmitsDiagnosticWhenMessagePresent() {
+    public void coreAssertionRuleEmitsDiagnosticWhenMessagePresent() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
             """
                 class Example {
@@ -623,7 +623,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreAssertionRuleEmitsDiagnosticForProtectedMethod() {
+    public void coreAssertionRuleEmitsDiagnosticForProtectedMethod() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
             """
                 class Example {
@@ -638,7 +638,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreAssertionRuleEmitsDiagnosticForInterfaceMethod() {
+    public void coreAssertionRuleEmitsDiagnosticForInterfaceMethod() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
             """
                 interface Example {
@@ -653,7 +653,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreAssertionRuleEmitsDiagnosticForPublicConstructor() {
+    public void coreAssertionRuleEmitsDiagnosticForPublicConstructor() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
             """
                 class Example {
@@ -668,7 +668,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreAssertionRuleDoesNotEmitDiagnosticForPrivateHelperWithoutMessage() {
+    public void coreAssertionRuleDoesNotEmitDiagnosticForPrivateHelperWithoutMessage() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
             """
                 class Example {
@@ -683,7 +683,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreAssertionRuleDoesNotEmitDiagnosticForPackagePrivateMethodWithoutMessage() {
+    public void coreAssertionRuleDoesNotEmitDiagnosticForPackagePrivateMethodWithoutMessage() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionCanBeReplacedWithIfStatementInspection(),
             """
                 class Example {
@@ -698,7 +698,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreAssertionSideEffectRuleEmitsDiagnosticForAssignmentInCondition() {
+    public void coreAssertionSideEffectRuleEmitsDiagnosticForAssignmentInCondition() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionWithSideEffectsInspection(), """
             class Example {
                 void run() {
@@ -712,7 +712,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreAssertionSideEffectRuleEmitsDiagnosticForMutatingMethodCall() {
+    public void coreAssertionSideEffectRuleEmitsDiagnosticForMutatingMethodCall() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssertionWithSideEffectsInspection(), """
             class Example {
                 private int counter;
@@ -732,7 +732,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreCallRuleEmitsUnresolvedCallDiagnostic() {
+    public void coreCallRuleEmitsUnresolvedCallDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCallResolutionInspection(), """
             class Example {
                 void run() {
@@ -745,7 +745,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreMemberRuleEmitsUnresolvedMemberDiagnostic() {
+    public void coreMemberRuleEmitsUnresolvedMemberDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreMemberResolutionInspection(), """
             class Example {
                 void run(String text) {
@@ -758,7 +758,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreMemberRuleResolvesQualifiedEnclosingInstanceFields() {
+    public void coreMemberRuleResolvesQualifiedEnclosingInstanceFields() {
         String source = """
             class Outer {
                 private int value;
@@ -787,7 +787,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreAccessibilityRuleEmitsInaccessibleTypeDiagnostic() {
+    public void coreAccessibilityRuleEmitsInaccessibleTypeDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAccessibilityInspection(), """
             class Owner {
                 private static class Hidden {
@@ -803,7 +803,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreAccessibilityRuleEmitsInaccessibleMemberAndCallDiagnostics() {
+    public void coreAccessibilityRuleEmitsInaccessibleMemberAndCallDiagnostics() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAccessibilityInspection(), """
             class Secret {
                 private int value;
@@ -829,7 +829,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreAccessibilityRuleAllowsPrivateAccessWithinTheSameTopLevelNest() {
+    public void coreAccessibilityRuleAllowsPrivateAccessWithinTheSameTopLevelNest() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAccessibilityInspection(), """
             class Outer {
                 static class Data {
@@ -850,7 +850,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreAccessibilityRuleAllowsProtectedAnonymousConstructorsAndAccessibleOverloads() {
+    public void coreAccessibilityRuleAllowsProtectedAnonymousConstructorsAndAccessibleOverloads() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAccessibilityInspection(), """
             class Example {
                 Object visitor() {
@@ -868,7 +868,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreAccessibilityRuleEmitsProtectedCallDiagnosticOutsideSubclass() {
+    public void coreAccessibilityRuleEmitsProtectedCallDiagnosticOutsideSubclass() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAccessibilityInspection(), """
             class Example {
                 Object run(Thread thread) throws CloneNotSupportedException {
@@ -881,7 +881,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleEmitsInvalidInheritanceDiagnostic() {
+    public void coreInheritanceRuleEmitsInvalidInheritanceDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInheritanceInspection(), """
             interface Worker {
             }
@@ -897,7 +897,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleEmitsMissingImplementationDiagnostic() {
+    public void coreInheritanceRuleEmitsMissingImplementationDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInheritanceInspection(), """
             interface Worker {
                 void run();
@@ -911,7 +911,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleEmitsInvalidOverrideDiagnostic() {
+    public void coreInheritanceRuleEmitsInvalidOverrideDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInheritanceInspection(), """
             class Parent {
                 public final Object run() {
@@ -930,7 +930,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleEmitsInvalidOverrideDiagnosticForBroaderCheckedException() {
+    public void coreInheritanceRuleEmitsInvalidOverrideDiagnosticForBroaderCheckedException() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInheritanceInspection(), """
             class Parent {
                 void run() throws java.io.IOException {
@@ -947,7 +947,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleEmitsInvalidOverrideDiagnosticForConflictingInheritedMethods() {
+    public void coreInheritanceRuleEmitsInvalidOverrideDiagnosticForConflictingInheritedMethods() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInheritanceInspection(), """
             interface Left {
                 Number value();
@@ -966,7 +966,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleEmitsInterfaceObjectMethodClashDiagnosticForPrimitiveCloneReturnType() {
+    public void coreInheritanceRuleEmitsInterfaceObjectMethodClashDiagnosticForPrimitiveCloneReturnType() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInheritanceInspection(), """
             interface BadClone {
                 double clone();
@@ -978,7 +978,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleDoesNotEmitInterfaceObjectMethodClashDiagnosticForCovariantCloneReturnType() {
+    public void coreInheritanceRuleDoesNotEmitInterfaceObjectMethodClashDiagnosticForCovariantCloneReturnType() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInheritanceInspection(), """
             interface GoodClone {
                 String clone();
@@ -990,7 +990,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleEmitsInterfaceObjectMethodClashDiagnosticForNonVoidFinalize() {
+    public void coreInheritanceRuleEmitsInterfaceObjectMethodClashDiagnosticForNonVoidFinalize() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInheritanceInspection(), """
             interface BadFinalize {
                 int finalize();
@@ -1002,7 +1002,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleDoesNotEmitInterfaceObjectMethodClashDiagnosticForVoidFinalize() {
+    public void coreInheritanceRuleDoesNotEmitInterfaceObjectMethodClashDiagnosticForVoidFinalize() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInheritanceInspection(), """
             interface GoodFinalize {
                 void finalize();
@@ -1014,7 +1014,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreOverlyStrongTypeCastRuleEmitsDiagnosticWhenSupertypeMethodIsSufficient() {
+    public void coreOverlyStrongTypeCastRuleEmitsDiagnosticWhenSupertypeMethodIsSufficient() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreOverlyStrongTypeCastInspection(), """
             import java.util.ArrayList;
 
@@ -1031,7 +1031,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreOverlyStrongTypeCastRuleDoesNotEmitDiagnosticWhenSubtypeMethodIsRequired() {
+    public void coreOverlyStrongTypeCastRuleDoesNotEmitDiagnosticWhenSubtypeMethodIsRequired() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreOverlyStrongTypeCastInspection(), """
             import java.util.ArrayList;
 
@@ -1046,7 +1046,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleEmitsPublicMethodNotExposedByInterfaceDiagnostic() {
+    public void coreInheritanceRuleEmitsPublicMethodNotExposedByInterfaceDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInheritanceInspection(), """
             interface Worker {
                 void run();
@@ -1066,7 +1066,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleDoesNotEmitPublicMethodNotExposedByInterfaceDiagnosticForInterfaceMethod() {
+    public void coreInheritanceRuleDoesNotEmitPublicMethodNotExposedByInterfaceDiagnosticForInterfaceMethod() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInheritanceInspection(), """
             interface Worker {
                 void run();
@@ -1086,7 +1086,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleDoesNotEmitPublicMethodNotExposedByInterfaceDiagnosticForClassWithNonObjectSuperclass() {
+    public void coreInheritanceRuleDoesNotEmitPublicMethodNotExposedByInterfaceDiagnosticForClassWithNonObjectSuperclass() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInheritanceInspection(), """
             class BaseWorker {
                 public void reset() {
@@ -1110,7 +1110,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreModifierRuleEmitsIllegalTypeAndFieldModifierDiagnostics() {
+    public void coreModifierRuleEmitsIllegalTypeAndFieldModifierDiagnostics() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreModifierInspection(), """
             private static class Example {
                 final volatile int value = 1;
@@ -1124,7 +1124,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreModifierRuleEmitsIllegalMethodModifierDiagnostics() {
+    public void coreModifierRuleEmitsIllegalMethodModifierDiagnostics() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreModifierInspection(), """
             class Example {
                 abstract final void broken();
@@ -1142,7 +1142,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreModifierRuleEmitsIllegalConstructorModifierDiagnostics() {
+    public void coreModifierRuleEmitsIllegalConstructorModifierDiagnostics() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreModifierInspection(), """
             class Example {
                 static Example() {
@@ -1155,7 +1155,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreModifierRuleEmitsDuplicateModifierDiagnostics() {
+    public void coreModifierRuleEmitsDuplicateModifierDiagnostics() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreModifierInspection(), """
             public public class Example {
                 void run(final final int value) {
@@ -1169,7 +1169,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreModifierRuleEmitsInterfaceAnnotationAndEnumEdgeCaseDiagnostics() {
+    public void coreModifierRuleEmitsInterfaceAnnotationAndEnumEdgeCaseDiagnostics() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreModifierInspection(), """
             interface Example {
                 private int VALUE = 1;
@@ -1205,7 +1205,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreModifierRuleEmitsLocalParameterAndRecordComponentModifierDiagnostics() {
+    public void coreModifierRuleEmitsLocalParameterAndRecordComponentModifierDiagnostics() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreModifierInspection(), """
             record Example(public final int value) {
                 void run(public final final int input) {
@@ -1225,7 +1225,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreModifierRuleHandlesNestedTypesConcreteAbstractMethodsAndAnnotationDefaults() {
+    public void coreModifierRuleHandlesNestedTypesConcreteAbstractMethodsAndAnnotationDefaults() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreModifierInspection(), """
             interface Host {
                 private class Hidden {
@@ -1250,7 +1250,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreControlFlowRuleEmitsInvalidBreakContinueAndReturnDiagnostics() {
+    public void coreControlFlowRuleEmitsInvalidBreakContinueAndReturnDiagnostics() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreControlFlowInspection(), """
             class Example {
                 {
@@ -1283,7 +1283,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreControlFlowRuleEmitsMissingReturnDiagnostic() {
+    public void coreControlFlowRuleEmitsMissingReturnDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreControlFlowInspection(), """
             class Example {
                 int run(boolean flag) {
@@ -1300,7 +1300,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleSubstitutesGenericInterfaceTypesWithoutInheritingTypeArguments() {
+    public void coreInheritanceRuleSubstitutesGenericInterfaceTypesWithoutInheritingTypeArguments() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInheritanceInspection(), """
             interface Builder<R, SELF extends Builder<R, SELF>> {
                 SELF configure(String value);
@@ -1330,7 +1330,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void realCliBuilderDoesNotInheritItsGenericProcessArgument() throws Exception {
+    public void realCliBuilderDoesNotInheritItsGenericProcessArgument() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path sourceFile = sourceRoot.resolve(
             "dev/railroadide/railroad/java/cli/impl/JarCLIBuilder.java");
@@ -1353,7 +1353,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleRecognizesLombokGeneratedGetters() {
+    public void coreInheritanceRuleRecognizesLombokGeneratedGetters() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInheritanceInspection(), """
             interface Named {
                 String getName();
@@ -1376,7 +1376,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreControlFlowRuleTreatsNonCompletingConstantTrueLoopAsTerminal() {
+    public void coreControlFlowRuleTreatsNonCompletingConstantTrueLoopAsTerminal() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreControlFlowInspection(), """
             class Example {
                 int neverCompletes() {
@@ -1401,7 +1401,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreControlFlowRuleEmitsInvalidYieldDiagnosticOutsideSwitchExpression() {
+    public void coreControlFlowRuleEmitsInvalidYieldDiagnosticOutsideSwitchExpression() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreControlFlowInspection(), """
             class Example {
                 void run(int value) {
@@ -1431,7 +1431,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreExceptionRuleEmitsUnhandledCheckedExceptionDiagnostics() {
+    public void coreExceptionRuleEmitsUnhandledCheckedExceptionDiagnostics() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
             class Example {
                 void fail() throws java.io.IOException {
@@ -1467,7 +1467,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreExceptionRuleEmitsUnreachableCatchDiagnostic() {
+    public void coreExceptionRuleEmitsUnreachableCatchDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
             class Example {
                 void run() {
@@ -1485,7 +1485,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreExceptionRuleEmitsInvalidExceptionTypeDiagnosticsAndTryResourceCloseDiagnostics() {
+    public void coreExceptionRuleEmitsInvalidExceptionTypeDiagnosticsAndTryResourceCloseDiagnostics() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
             class Example {
                 void invalid() throws String {
@@ -1512,7 +1512,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreExceptionRuleAppliesCatchClausesToResourcesAndRespectsCloseOverrides() {
+    public void coreExceptionRuleAppliesCatchClausesToResourcesAndRespectsCloseOverrides() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
             class Example {
                 static final class Resource implements AutoCloseable {
@@ -1539,7 +1539,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreExceptionRuleUsesPreciseTypesForCatchParameterRethrows() {
+    public void coreExceptionRuleUsesPreciseTypesForCatchParameterRethrows() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
             class Example {
                 void fail() throws java.io.IOException {}
@@ -1570,7 +1570,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreExceptionRuleEmitsDisallowedExceptionDeclarationDiagnostic() {
+    public void coreExceptionRuleEmitsDisallowedExceptionDeclarationDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
             class Example {
                 void banned() throws Exception {
@@ -1584,7 +1584,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreExceptionRuleEmitsDisallowedExceptionDeclarationDiagnosticForConstructor() {
+    public void coreExceptionRuleEmitsDisallowedExceptionDeclarationDiagnosticForConstructor() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
             class Example {
                 Example() throws RuntimeException {
@@ -1598,7 +1598,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreExceptionRuleDoesNotEmitDisallowedExceptionDiagnosticForAllowedCheckedException() {
+    public void coreExceptionRuleDoesNotEmitDisallowedExceptionDiagnosticForAllowedCheckedException() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
             class Example {
                 void allowed() throws java.io.IOException {
@@ -1611,7 +1611,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreExceptionRuleDoesNotTreatRecordPatternTypesAsCaughtExceptions() {
+    public void coreExceptionRuleDoesNotTreatRecordPatternTypesAsCaughtExceptions() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
             import javafx.application.Preloader.PreloaderNotification;
 
@@ -1631,7 +1631,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreExceptionRuleDoesNotEmitDisallowedExceptionDiagnosticForPrivateNestedHelperInterface() {
+    public void coreExceptionRuleDoesNotEmitDisallowedExceptionDiagnosticForPrivateNestedHelperInterface() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
             class Example {
                 private interface CheckedRunnable {
@@ -1645,7 +1645,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreExceptionRuleDoesNotTreatPreloaderRecordPatternAsCaughtTypeInRealisticShape() {
+    public void coreExceptionRuleDoesNotTreatPreloaderRecordPatternAsCaughtTypeInRealisticShape() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
             import javafx.application.Preloader.PreloaderNotification;
 
@@ -1670,7 +1670,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFeatureEnvyRuleEmitsManipulateDiagnostic() {
+    public void coreFeatureEnvyRuleEmitsManipulateDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFeatureEnvyInspection(), """
             class Host {
                 void envy(External ext) {
@@ -1689,7 +1689,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFeatureEnvyRuleEmitsTightlyCoupledDiagnostic() {
+    public void coreFeatureEnvyRuleEmitsTightlyCoupledDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFeatureEnvyInspection(), """
             class Host {
                 void envy(External ext) {
@@ -1710,7 +1710,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFeatureEnvyRuleDoesNotEmitDiagnosticForStaticMembers() {
+    public void coreFeatureEnvyRuleDoesNotEmitDiagnosticForStaticMembers() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFeatureEnvyInspection(), """
             class Host {
                 void ok(External ext) {
@@ -1730,7 +1730,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFeatureEnvyRuleDoesNotEmitDiagnosticForLibraryTypes() {
+    public void coreFeatureEnvyRuleDoesNotEmitDiagnosticForLibraryTypes() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFeatureEnvyInspection(), """
             class Host {
                 void ok(java.util.List<String> list) {
@@ -1745,7 +1745,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFeatureEnvyRuleDoesNotEmitDiagnosticForOwnMembers() {
+    public void coreFeatureEnvyRuleDoesNotEmitDiagnosticForOwnMembers() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFeatureEnvyInspection(), """
             class Host {
                 int a, b, c;
@@ -1761,7 +1761,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFunctionalInterfaceRuleEmitsDiagnosticForSingleAbstractMethod() {
+    public void coreFunctionalInterfaceRuleEmitsDiagnosticForSingleAbstractMethod() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
             interface Worker {
                 void run();
@@ -1772,7 +1772,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticWhenAnnotationPresent() {
+    public void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticWhenAnnotationPresent() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
             @FunctionalInterface
             interface Worker {
@@ -1784,7 +1784,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticWhenFullyQualifiedAnnotationPresent() {
+    public void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticWhenFullyQualifiedAnnotationPresent() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
             @java.lang.FunctionalInterface
             interface Worker {
@@ -1796,7 +1796,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticForZeroAbstractMethods() {
+    public void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticForZeroAbstractMethods() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
             interface Marker {
             }
@@ -1806,7 +1806,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticForTwoAbstractMethods() {
+    public void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticForTwoAbstractMethods() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
             interface Worker {
                 void run();
@@ -1818,7 +1818,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFunctionalInterfaceRuleDoesNotCountDefaultMethodsAsAbstract() {
+    public void coreFunctionalInterfaceRuleDoesNotCountDefaultMethodsAsAbstract() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
             interface Worker {
                 void run();
@@ -1831,7 +1831,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFunctionalInterfaceRuleDoesNotCountObjectMethodsAsAbstract() {
+    public void coreFunctionalInterfaceRuleDoesNotCountObjectMethodsAsAbstract() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
             interface Worker {
                 void run();
@@ -1845,7 +1845,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFunctionalInterfaceRuleEmitsDiagnosticForInterfaceInheritingOnlyAbstractMethod() {
+    public void coreFunctionalInterfaceRuleEmitsDiagnosticForInterfaceInheritingOnlyAbstractMethod() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
             interface Base {
                 void run();
@@ -1860,7 +1860,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticWhenInheritedPlusOwnExceedsOne() {
+    public void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticWhenInheritedPlusOwnExceedsOne() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
             interface Base {
                 void run();
@@ -1876,7 +1876,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFunctionalInterfaceRuleEmitsDiagnosticForInterfaceInheritingSameAbstractMethodFromMultipleParents() {
+    public void coreFunctionalInterfaceRuleEmitsDiagnosticForInterfaceInheritingSameAbstractMethodFromMultipleParents() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
             interface A {
                 void run();
@@ -1895,7 +1895,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticWhenDefaultMethodOverridesInheritedAbstractMethod() {
+    public void coreFunctionalInterfaceRuleDoesNotEmitDiagnosticWhenDefaultMethodOverridesInheritedAbstractMethod() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreFunctionalInterfaceInspection(), """
             interface Base {
                 void run();
@@ -1912,7 +1912,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleEmitsDiagnosticForInterfaceRedundantThroughSuperclass() {
+    public void coreInheritanceRuleEmitsDiagnosticForInterfaceRedundantThroughSuperclass() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreRedundantInterfaceDeclarationInspection(), """
             interface Worker {}
             class Base implements Worker {}
@@ -1923,7 +1923,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleEmitsDiagnosticForInterfaceRedundantThroughSiblingInterface() {
+    public void coreInheritanceRuleEmitsDiagnosticForInterfaceRedundantThroughSiblingInterface() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreRedundantInterfaceDeclarationInspection(), """
             interface Base {}
             interface Derived extends Base {}
@@ -1934,7 +1934,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleEmitsDiagnosticForSuperinterfaceRedundantThroughAnotherSuperinterface() {
+    public void coreInheritanceRuleEmitsDiagnosticForSuperinterfaceRedundantThroughAnotherSuperinterface() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreRedundantInterfaceDeclarationInspection(), """
             interface Base {}
             interface Derived extends Base {}
@@ -1945,7 +1945,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleEmitsDiagnosticForDuplicateImplementedInterface() {
+    public void coreInheritanceRuleEmitsDiagnosticForDuplicateImplementedInterface() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreRedundantInterfaceDeclarationInspection(), """
             interface Worker {}
             class Example implements Worker, Worker {}
@@ -1955,7 +1955,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleEmitsDiagnosticForDuplicateExtendedInterface() {
+    public void coreInheritanceRuleEmitsDiagnosticForDuplicateExtendedInterface() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreRedundantInterfaceDeclarationInspection(), """
             interface Worker {}
             interface Example extends Worker, Worker {}
@@ -1965,7 +1965,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void realFeatureEnvyMapEntryStreamChainRetainsItsKeyType() throws Exception {
+    public void realFeatureEnvyMapEntryStreamChainRetainsItsKeyType() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path sourceFile = sourceRoot.resolve(
             "dev/railroadide/railroad/ide/diagnostics/inspections/CoreFeatureEnvyInspection.java");
@@ -2023,7 +2023,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void realDialogBuilderCastsConditionalsAndStreamChainResolve() throws Exception {
+    public void realDialogBuilderCastsConditionalsAndStreamChainResolve() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path sourcePath = sourceRoot.resolve("dev/railroadide/railroad/window/DialogBuilder.java").normalize();
         Path compiledClasses = Path.of("build/classes/java/main").toAbsolutePath().normalize();
@@ -2046,7 +2046,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void switchExpressionsAndEnumLabelsResolve() {
+    public void switchExpressionsAndEnumLabelsResolve() {
         String source = """
             import java.util.function.Consumer;
 
@@ -2092,7 +2092,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void realAlertBuilderVarAndJavaFxLambdaReceiversResolve() throws Exception {
+    public void realAlertBuilderVarAndJavaFxLambdaReceiversResolve() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path sourcePath = sourceRoot.resolve("dev/railroadide/railroad/window/AlertBuilder.java").normalize();
         List<Path> runtimeClasspath = Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))
@@ -2122,7 +2122,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void realFluentBuildersAndSemanticNodeAccessorsResolve() throws Exception {
+    public void realFluentBuildersAndSemanticNodeAccessorsResolve() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         List<Path> runtimeClasspath = Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))
             .map(Path::of)
@@ -2189,7 +2189,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void realExportedResolutionAndAccessibilityErrorsAreAbsent() throws Exception {
+    public void realExportedResolutionAndAccessibilityErrorsAreAbsent() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         List<Path> runtimeClasspath = Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))
             .map(Path::of)
@@ -2269,7 +2269,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void realTryWithResourcesCatchesCoverInitializationAndCloseExceptions() throws Exception {
+    public void realTryWithResourcesCatchesCoverInitializationAndCloseExceptions() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         List<Path> runtimeClasspath = Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))
             .map(Path::of)
@@ -2347,7 +2347,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void realGenericPipelinesDoNotReportIncompatibleAssignments() throws Exception {
+    public void realGenericPipelinesDoNotReportIncompatibleAssignments() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         List<Path> runtimeClasspath = Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))
             .map(Path::of)
@@ -2404,7 +2404,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void realJavaExecutableNestedEnumInheritanceRemainsResolvable() throws Exception {
+    public void realJavaExecutableNestedEnumInheritanceRemainsResolvable() throws Exception {
         Path sourcePath = Path.of(
             "src/main/java/dev/railroadide/railroad/java/cli/impl/JavaExecutableCLIBuilder.java");
         String source = Files.readString(sourcePath);
@@ -2425,7 +2425,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void realLayoutTreeGenericLombokAccessorsResolve() throws Exception {
+    public void realLayoutTreeGenericLombokAccessorsResolve() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path sourcePath = sourceRoot.resolve(
             "dev/railroadide/railroad/ui/layout/LayoutParser.java");
@@ -2446,7 +2446,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void realJavaLexerInheritedRecordAndComparatorLambdaResolve() throws Exception {
+    public void realJavaLexerInheritedRecordAndComparatorLambdaResolve() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path sourcePath = sourceRoot.resolve(
             "dev/railroadide/railroad/ide/sst/impl/java/JavaLexer.java");
@@ -2470,7 +2470,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void realJavaInspectionRuleSettingsPaneNestedFieldsResolve() throws Exception {
+    public void realJavaInspectionRuleSettingsPaneNestedFieldsResolve() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path sourcePath = sourceRoot.resolve(
             "dev/railroadide/railroad/ide/diagnostics/ui/JavaInspectionRuleSettingsPane.java");
@@ -2498,7 +2498,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void realJavaParserBenchmarkExplicitLambdaParameterResolves() throws Exception {
+    public void realJavaParserBenchmarkExplicitLambdaParameterResolves() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path sourcePath = sourceRoot.resolve(
             "dev/railroadide/railroad/ide/sst/impl/java/JavaParserBenchmarkRunner.java");
@@ -2521,7 +2521,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void realLocalizationProjectLoggerFieldResolves() throws Exception {
+    public void realLocalizationProjectLoggerFieldResolves() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path sourcePath = sourceRoot.resolve("dev/railroadide/railroad/localization/L18n.java");
         String source = Files.readString(sourcePath);
@@ -2548,7 +2548,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void realConditionalCommonTypeAndSourceFunctionalTargetResolve() throws Exception {
+    public void realConditionalCommonTypeAndSourceFunctionalTargetResolve() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         List<Path> runtimeClasspath = Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))
             .map(Path::of)
@@ -2580,7 +2580,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void duplicateDeclarationRuleAllowsCallableOverloads() {
+    public void duplicateDeclarationRuleAllowsCallableOverloads() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDuplicateDeclarationInspection(), """
             class Overloads {
                 Overloads() {
@@ -2607,7 +2607,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void duplicateDeclarationRuleAllowsSameCatchParameterNameInSiblingCatches() {
+    public void duplicateDeclarationRuleAllowsSameCatchParameterNameInSiblingCatches() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDuplicateDeclarationInspection(), """
             class Example {
                 void run() {
@@ -2629,7 +2629,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void duplicateDeclarationRuleAllowsSameLoopVariableNameInSiblingLoops() {
+    public void duplicateDeclarationRuleAllowsSameLoopVariableNameInSiblingLoops() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDuplicateDeclarationInspection(), """
             class Example {
                 void run() {
@@ -2643,7 +2643,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void duplicateDeclarationRuleAllowsUnnamedVariables() {
+    public void duplicateDeclarationRuleAllowsUnnamedVariables() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDuplicateDeclarationInspection(), """
             class Example {
                 void run() {
@@ -2665,7 +2665,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void typeResolutionHandlesAnnotatedTypesAndMultiCatchAlternativesIndividually() {
+    public void typeResolutionHandlesAnnotatedTypesAndMultiCatchAlternativesIndividually() {
         String source = """
             import java.io.IOException;
             import java.net.URISyntaxException;
@@ -2702,7 +2702,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void realConfigHandlerYieldStatementsRemainInsideSwitchExpressions() throws Exception {
+    public void realConfigHandlerYieldStatementsRemainInsideSwitchExpressions() throws Exception {
         Path sourceFile = Path.of(
             "src/main/java/dev/railroadide/railroad/config/ConfigHandler.java").toAbsolutePath().normalize();
         String source = Files.readString(sourceFile);
@@ -2730,7 +2730,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreInheritanceRuleDoesNotEmitDiagnosticForIndependentInterfaces() {
+    public void coreInheritanceRuleDoesNotEmitDiagnosticForIndependentInterfaces() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreRedundantInterfaceDeclarationInspection(), """
             interface Left {}
             interface Right {}
@@ -2741,7 +2741,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreDoubleNegationDoesEmitDiagnosticWhenDoubleNegative() {
+    public void coreDoubleNegationDoesEmitDiagnosticWhenDoubleNegative() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDoubleNegationInspection(), """
             class Example {
                 boolean run() {
@@ -2754,7 +2754,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreDoubleNegationDoesEmitDiagnosticWhenDoubleNegativeWithParenthesis() {
+    public void coreDoubleNegationDoesEmitDiagnosticWhenDoubleNegativeWithParenthesis() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDoubleNegationInspection(), """
             class Example {
                 boolean run() {
@@ -2767,7 +2767,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreDoubleNegationDoesNotEmitDiagnosticWhenSingleNegative() {
+    public void coreDoubleNegationDoesNotEmitDiagnosticWhenSingleNegative() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDoubleNegationInspection(), """
             class Example {
                 boolean run() {
@@ -2780,7 +2780,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreDoubleNegationDoesNotEmitDiagnosticWhenSingleNegativeWithParenthesis() {
+    public void coreDoubleNegationDoesNotEmitDiagnosticWhenSingleNegativeWithParenthesis() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDoubleNegationInspection(), """
             class Example {
                 boolean run() {
@@ -2793,7 +2793,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreConditionalExpressionWithIdenticalBranchesEmitsDiagnosticWhenTernaryHasSameBranch() {
+    public void coreConditionalExpressionWithIdenticalBranchesEmitsDiagnosticWhenTernaryHasSameBranch() {
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreConditionalExpressionWithIdenticalBranchesInspection(), """
                 class Example {
@@ -2808,7 +2808,7 @@ class CoreInspectionRulesTest {
     }
 
     @Test
-    void coreConditionalExpressionWithIdenticalBranchesDoesNotEmitDiagnosticWhenTernaryHasDifferentBranch() {
+    public void coreConditionalExpressionWithIdenticalBranchesDoesNotEmitDiagnosticWhenTernaryHasDifferentBranch() {
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreConditionalExpressionWithIdenticalBranchesInspection(), """
                 class Example {

@@ -123,7 +123,8 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
         Path projectRoot,
         JavaProjectSemanticIndex.SourceFileIndex file,
         Map<String, ManifestEntry> previousEntries,
-        @Nullable Path changedFile) {
+        @Nullable Path changedFile
+    ) {
         try {
             String relativePath = projectRoot.relativize(file.path()).toString();
             long lastModified = Files.getLastModifiedTime(file.path()).toMillis();
@@ -162,7 +163,8 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
     private static boolean matchesIndexedFiles(
         Path projectRoot,
         List<ManifestEntry> entries,
-        @Nullable Collection<Path> indexedFiles) {
+        @Nullable Collection<Path> indexedFiles
+    ) {
         if (indexedFiles == null)
             return true;
         Set<Path> expected = indexedFiles.stream()
@@ -177,7 +179,8 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
 
     private static JavaProjectSemanticIndex.SourceFileIndex readFileIndex(
         DataInputStream input,
-        Path projectRoot) throws IOException {
+        Path projectRoot
+    ) throws IOException {
         Path sourcePath = projectRoot.resolve(input.readUTF()).normalize();
         String packageName = readNullableString(input);
         int importCount = input.readInt();
@@ -205,7 +208,8 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
     private static void writeFileIndex(
         DataOutputStream output,
         Path projectRoot,
-        JavaProjectSemanticIndex.SourceFileIndex file) throws IOException {
+        JavaProjectSemanticIndex.SourceFileIndex file
+    ) throws IOException {
         output.writeUTF(projectRoot.relativize(file.path()).toString());
         writeNullableString(output, file.packageName());
         output.writeInt(file.imports().size());
@@ -289,6 +293,7 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
 
     private record PersistedFile(
         ManifestEntry manifestEntry,
-        JavaProjectSemanticIndex.SourceFileIndex fileIndex) {
+        JavaProjectSemanticIndex.SourceFileIndex fileIndex
+    ) {
     }
 }

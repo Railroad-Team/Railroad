@@ -12,8 +12,21 @@ import dev.railroadide.railroad.project.onboarding.keys.ForgeProjectKeys;
 import java.net.URI;
 import java.nio.file.Path;
 
-public record DownloadForgeMdkStep(HttpService http, FilesService files, ZipService zip,
-    ChecksumService checksum) implements CreationStep {
+/**
+ * Downloads the selected Forge MDK and verifies its SHA-256 checksum against the accompanying checksum file.
+ * A mismatch deletes both downloads and fails creation; successful verification deletes only the checksum file.
+ *
+ * @param http service used to download the archive and checksum
+ * @param files service used to read the checksum and clean up temporary or invalid downloads
+ * @param zip archive service retained by the step but not currently used
+ * @param checksum service used to verify the downloaded archive
+ */
+public record DownloadForgeMdkStep(
+    HttpService http,
+    FilesService files,
+    ZipService zip,
+    ChecksumService checksum
+) implements CreationStep {
     @Override
     public String id() {
         return "railroad:download_forge_mdk";

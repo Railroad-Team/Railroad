@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+/**
+ * Builds Java editor style spans from tokens in the SST syntax tree.
+ */
 public final class SyntaxTreeJavaSyntaxHighlighting {
     private static final Set<String> OPERATOR_TOKENS = Set.of(
         "=", ">", "<", "!", "?", ":", "->", "::",
@@ -24,6 +27,12 @@ public final class SyntaxTreeJavaSyntaxHighlighting {
     private SyntaxTreeJavaSyntaxHighlighting() {
     }
 
+    /**
+     * Computes editor style spans for the supplied source text.
+     *
+     * @param text source text to highlight
+     * @return style spans containing syntax CSS classes
+     */
     public static StyleSpans<Collection<String>> computeHighlighting(String text) {
         var tree = JavaSyntaxParser.parse(text);
         var spansBuilder = new StyleSpansBuilder<Collection<String>>();

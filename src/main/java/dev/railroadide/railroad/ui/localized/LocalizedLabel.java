@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 @Getter
 public class LocalizedLabel extends Label {
 
+    /** The localization property bidirectionally bound to the label text. */
     private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
     /**
      * Creates a new LocalizedLabel and sets the key and args
@@ -24,13 +25,18 @@ public class LocalizedLabel extends Label {
         setKey(key, args);
     }
 
+    /**
+     * Returns the key currently used to translate the label text.
+     *
+     * @return the localization key, or {@code null} when no key is set
+     */
     public String getKey() {
         return localizedText.getTranslationKey();
     }
 
     /**
      * Updates the key and args, and then updates the text of the label.
-     * Adds a listener to the current language property to update the text when the language changes.
+     * The backing property keeps the translated text current when the language changes.
      *
      * @param key The localization key
      * @param args The args to be applied to the localized key

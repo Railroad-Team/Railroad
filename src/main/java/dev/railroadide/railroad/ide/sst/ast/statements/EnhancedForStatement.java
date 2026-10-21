@@ -11,11 +11,20 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A loop binding each element of an iterable or array to a local variable.
+ *
+ * @param span source range occupied by this node
+ * @param localVariableDeclaration loop variable declaration
+ * @param iterationExpression expression producing the iterable or array
+ * @param body statement executed for each element
+ */
 public record EnhancedForStatement(
     Span span,
     Parameter localVariableDeclaration, // Cannot have an initializer
     Expression iterationExpression,
-    Statement body) implements ForStatement {
+    Statement body
+) implements ForStatement {
     @Override
     public AstKind kind() {
         return AstKind.ENHANCED_FOR_STATEMENT;

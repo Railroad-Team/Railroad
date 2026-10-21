@@ -12,9 +12,9 @@ import java.util.stream.Collectors;
 import static dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectionTestSupport.runProvider;
 import static org.junit.jupiter.api.Assertions.*;
 
-class CoreDefiniteAssignmentInspectionTest {
+public class CoreDefiniteAssignmentInspectionTest {
     @Test
-    void coreDefiniteAssignmentRuleEmitsUnassignedAndIllegalFinalAssignmentDiagnostics() {
+    public void coreDefiniteAssignmentRuleEmitsUnassignedAndIllegalFinalAssignmentDiagnostics() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 void run(boolean flag, final int parameter) {
@@ -52,7 +52,7 @@ class CoreDefiniteAssignmentInspectionTest {
     }
 
     @Test
-    void coreDefiniteAssignmentRuleAllowsReassigningNonFinalParameters() {
+    public void coreDefiniteAssignmentRuleAllowsReassigningNonFinalParameters() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 String normalize(String value) {
@@ -67,7 +67,7 @@ class CoreDefiniteAssignmentInspectionTest {
     }
 
     @Test
-    void coreDefiniteAssignmentRuleRecognizesQualifiedFieldWritesAndConstructorDelegation() {
+    public void coreDefiniteAssignmentRuleRecognizesQualifiedFieldWritesAndConstructorDelegation() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 private final String name;
@@ -90,7 +90,7 @@ class CoreDefiniteAssignmentInspectionTest {
     }
 
     @Test
-    void coreDefiniteAssignmentRuleRecognizesLombokGeneratedConstructors() {
+    public void coreDefiniteAssignmentRuleRecognizesLombokGeneratedConstructors() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             @AllArgsConstructor
             final class Example {
@@ -105,7 +105,7 @@ class CoreDefiniteAssignmentInspectionTest {
     }
 
     @Test
-    void realDelegatingAndLombokConstructorsInitializeFinalFields() throws Exception {
+    public void realDelegatingAndLombokConstructorsInitializeFinalFields() throws Exception {
         List<Path> sourceFiles = List.of(
             Path.of("src/main/java/dev/railroadide/railroad/project/RailroadProject.java"),
             Path.of("src/main/java/dev/railroadide/railroad/ide/sst/impl/java/JavaLexer.java"),
@@ -123,7 +123,7 @@ class CoreDefiniteAssignmentInspectionTest {
     }
 
     @Test
-    void realLoopTryAndSwitchAssignmentsDoNotReportUnassignedVariables() throws Exception {
+    public void realLoopTryAndSwitchAssignmentsDoNotReportUnassignedVariables() throws Exception {
         List<Path> sourceFiles = List.of(
             Path.of("src/main/java/dev/railroadide/railroad/ide/sst/impl/java/JavaLexer.java"),
             Path.of("src/main/java/dev/railroadide/railroad/ide/projectexplorer/task/WatchTask.java"),
@@ -141,7 +141,7 @@ class CoreDefiniteAssignmentInspectionTest {
     }
 
     @Test
-    void coreDefiniteAssignmentRuleHandlesLoopBreakAndContinueExits() {
+    public void coreDefiniteAssignmentRuleHandlesLoopBreakAndContinueExits() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 void run() {
@@ -171,7 +171,7 @@ class CoreDefiniteAssignmentInspectionTest {
     }
 
     @Test
-    void coreDefiniteAssignmentRuleHandlesLabeledBreakAndContinueExits() {
+    public void coreDefiniteAssignmentRuleHandlesLabeledBreakAndContinueExits() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 void run() {
@@ -202,7 +202,7 @@ class CoreDefiniteAssignmentInspectionTest {
     }
 
     @Test
-    void coreDefiniteAssignmentRuleHandlesSwitchFallthroughAndMissingDefaultExits() {
+    public void coreDefiniteAssignmentRuleHandlesSwitchFallthroughAndMissingDefaultExits() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 void assigned(int mode) {
@@ -253,7 +253,7 @@ class CoreDefiniteAssignmentInspectionTest {
     }
 
     @Test
-    void coreDefiniteAssignmentRuleDoesNotTreatForUpdateAsPreLoopAssignment() {
+    public void coreDefiniteAssignmentRuleDoesNotTreatForUpdateAsPreLoopAssignment() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 void run() {
@@ -282,7 +282,7 @@ class CoreDefiniteAssignmentInspectionTest {
     }
 
     @Test
-    void coreDefiniteAssignmentRuleEmitsUninitializedFinalFieldDiagnostic() {
+    public void coreDefiniteAssignmentRuleEmitsUninitializedFinalFieldDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 final int value;
@@ -306,7 +306,7 @@ class CoreDefiniteAssignmentInspectionTest {
     }
 
     @Test
-    void coreDefiniteAssignmentRuleEmitsIllegalFinalFieldAssignmentDiagnostic() {
+    public void coreDefiniteAssignmentRuleEmitsIllegalFinalFieldAssignmentDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 final int value = 1;
@@ -322,7 +322,7 @@ class CoreDefiniteAssignmentInspectionTest {
     }
 
     @Test
-    void coreDefiniteAssignmentRuleHandlesFinalFieldInitializationThroughSwitchFallthrough() {
+    public void coreDefiniteAssignmentRuleHandlesFinalFieldInitializationThroughSwitchFallthrough() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 final int value;

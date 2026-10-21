@@ -11,6 +11,10 @@ import java.util.List;
  * Parses `git remote -v` output into structured {@link GitRemote} records.
  */
 public class GitRemoteParser {
+    /** Creates a stateless parser; remote parsing is exposed through static methods. */
+    public GitRemoteParser() {
+    }
+
     /**
      * Parses `git remote -v` lines into remote records.
      *

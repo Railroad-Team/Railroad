@@ -9,9 +9,9 @@ import static dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectio
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class CoreInfiniteRecursionInspectionTest {
+public class CoreInfiniteRecursionInspectionTest {
     @Test
-    void coreInfiniteRecursionRuleEmitsDiagnosticForDirectRecursiveReturn() {
+    public void coreInfiniteRecursionRuleEmitsDiagnosticForDirectRecursiveReturn() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInfiniteRecursionInspection(), """
             class Example {
                 int run() {
@@ -24,7 +24,7 @@ class CoreInfiniteRecursionInspectionTest {
     }
 
     @Test
-    void coreInfiniteRecursionRuleEmitsDiagnosticForDirectRecursiveExpressionStatement() {
+    public void coreInfiniteRecursionRuleEmitsDiagnosticForDirectRecursiveExpressionStatement() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInfiniteRecursionInspection(), """
             class Example {
                 void run() {
@@ -37,7 +37,7 @@ class CoreInfiniteRecursionInspectionTest {
     }
 
     @Test
-    void coreInfiniteRecursionRuleEmitsDiagnosticWhenBothIfBranchesRecurse() {
+    public void coreInfiniteRecursionRuleEmitsDiagnosticWhenBothIfBranchesRecurse() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInfiniteRecursionInspection(), """
             class Example {
                 int run(boolean flag) {
@@ -54,7 +54,7 @@ class CoreInfiniteRecursionInspectionTest {
     }
 
     @Test
-    void coreInfiniteRecursionRuleDoesNotEmitDiagnosticWhenBaseCaseReturns() {
+    public void coreInfiniteRecursionRuleDoesNotEmitDiagnosticWhenBaseCaseReturns() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInfiniteRecursionInspection(), """
             class Example {
                 int run(int n) {
@@ -70,7 +70,7 @@ class CoreInfiniteRecursionInspectionTest {
     }
 
     @Test
-    void coreInfiniteRecursionRuleDoesNotEmitDiagnosticForLambdaContainedSelfCall() {
+    public void coreInfiniteRecursionRuleDoesNotEmitDiagnosticForLambdaContainedSelfCall() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInfiniteRecursionInspection(), """
             class Example {
                 void run() {
@@ -83,7 +83,7 @@ class CoreInfiniteRecursionInspectionTest {
     }
 
     @Test
-    void coreInfiniteRecursionRuleDoesNotEmitDiagnosticForConditionalSingleBranchRecursion() {
+    public void coreInfiniteRecursionRuleDoesNotEmitDiagnosticForConditionalSingleBranchRecursion() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInfiniteRecursionInspection(), """
             class Example {
                 void run(boolean flag) {
@@ -99,7 +99,7 @@ class CoreInfiniteRecursionInspectionTest {
     }
 
     @Test
-    void coreInfiniteRecursionRuleDoesNotEmitDiagnosticForDifferentOverloadCall() {
+    public void coreInfiniteRecursionRuleDoesNotEmitDiagnosticForDifferentOverloadCall() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInfiniteRecursionInspection(), """
             class Example {
                 int run() {

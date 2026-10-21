@@ -17,8 +17,14 @@ import java.util.Map;
  * @param debug whether to enable Gradle debug logging
  * @param consoleMode how Gradle should render console output
  */
-public record GradleTaskExecutionRequest(String taskPath, List<String> additionalArgs,
-    Map<String, String> systemProperties, Map<String, String> environment,
-    boolean offline, boolean refreshDependencies, boolean debug,
-    GradleConsoleMode consoleMode) {
+public record GradleTaskExecutionRequest(
+    String taskPath,
+    List<String> additionalArgs,
+    Map<String, String> systemProperties,
+    Map<String, String> environment,
+    boolean offline,
+    boolean refreshDependencies,
+    boolean debug,
+    GradleConsoleMode consoleMode
+) {
 }

@@ -14,7 +14,16 @@ import javafx.scene.text.Text;
 
 import java.util.List;
 
+/**
+ * Displays a commit message and related message actions.
+ */
 public class GitCommitDetailsMessageCard extends RRVBox {
+    /**
+     * Creates the message card for the supplied commit.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param commit commit to display or act on
+     */
     public GitCommitDetailsMessageCard(Project project, GitCommit commit) {
         super();
         getStyleClass().addAll("git-commit-details-message-vbox", "git-commit-details-message-card");

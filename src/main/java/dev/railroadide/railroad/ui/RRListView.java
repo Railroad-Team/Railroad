@@ -14,6 +14,8 @@ import javafx.util.Duration;
 /**
  * A modern list view component with enhanced styling and smooth animations.
  * Provides better visual feedback and modern design patterns.
+ *
+ * @param <T> the type of each list item
  */
 public class RRListView<T> extends ListView<T> {
     private ListViewSize size = ListViewSize.MEDIUM;
@@ -76,7 +78,9 @@ public class RRListView<T> extends ListView<T> {
     }
 
     /**
-     * Set the list view size
+     * Sets the CSS size variant.
+     *
+     * @param size the list size to apply; must not be null
      */
     public void setListViewSize(ListViewSize size) {
         this.size = size;
@@ -84,14 +88,18 @@ public class RRListView<T> extends ListView<T> {
     }
 
     /**
-     * Enable or disable animations
+     * Controls animations used by selection changes and animated item operations.
+     *
+     * @param enabled true to animate subsequent operations
      */
     public void setAnimationsEnabled(boolean enabled) {
         this.enableAnimations = enabled;
     }
 
     /**
-     * Set the list view as bordered
+     * Adds or removes border styling.
+     *
+     * @param bordered true to enable a border
      */
     public void setBordered(boolean bordered) {
         if (bordered) {
@@ -102,7 +110,9 @@ public class RRListView<T> extends ListView<T> {
     }
 
     /**
-     * Set the list view as striped
+     * Adds or removes alternating-row styling.
+     *
+     * @param striped true to enable striped rows
      */
     public void setStriped(boolean striped) {
         if (striped) {
@@ -113,7 +123,9 @@ public class RRListView<T> extends ListView<T> {
     }
 
     /**
-     * Set the list view as dense
+     * Adds or removes compact row styling.
+     *
+     * @param dense true to enable dense spacing
      */
     public void setDense(boolean dense) {
         if (dense) {
@@ -124,7 +136,9 @@ public class RRListView<T> extends ListView<T> {
     }
 
     /**
-     * Set the list view as edge-to-edge
+     * Adds or removes edge-to-edge list styling.
+     *
+     * @param edgeToEdge true to enable edge-to-edge styling
      */
     public void setEdgeToEdge(boolean edgeToEdge) {
         if (edgeToEdge) {
@@ -135,7 +149,9 @@ public class RRListView<T> extends ListView<T> {
     }
 
     /**
-     * Add item with animation
+     * Appends an item immediately and fades in the whole list when animations are enabled.
+     *
+     * @param item the value to append
      */
     public void addItemWithAnimation(T item) {
         if (enableAnimations) {
@@ -149,7 +165,9 @@ public class RRListView<T> extends ListView<T> {
     }
 
     /**
-     * Remove item with animation
+     * Removes the first matching item after fading out the whole list, or immediately if animations are disabled.
+     *
+     * @param item the value to remove
      */
     public void removeItemWithAnimation(T item) {
         if (enableAnimations) {
@@ -164,7 +182,7 @@ public class RRListView<T> extends ListView<T> {
     }
 
     /**
-     * Clear all items with animation
+     * Clears items after fading out the list, then fades it back in; clears immediately if animations are disabled.
      */
     public void clearWithAnimation() {
         if (enableAnimations) {
@@ -186,7 +204,9 @@ public class RRListView<T> extends ListView<T> {
     }
 
     /**
-     * Set multiple selection mode
+     * Switches the selection model between single and multiple selection.
+     *
+     * @param multiple true to allow multiple selected items
      */
     public void setMultipleSelection(boolean multiple) {
         if (multiple) {
@@ -224,10 +244,22 @@ public class RRListView<T> extends ListView<T> {
         }
     }
 
+    /**
+     * CSS size variants for list row presentation.
+     */
     public enum ListViewSize {
-        SMALL, MEDIUM, LARGE
+        /** Compact list sizing. */
+        SMALL,
+        /** Default list sizing. */
+        MEDIUM,
+        /** Large list sizing. */
+        LARGE
     }
 
+    /**
+     * Enables pixel-based vertical scrolling when a subsequently installed skin exposes a virtual flow.
+     * Disables fixed cell sizing; repeated calls have no effect.
+     */
     public void enableSmoothScrolling() {
         if (smoothScrollingEnabled)
             return;

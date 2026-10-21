@@ -10,9 +10,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class TextRangeTest {
+public class TextRangeTest {
     @Test
-    void textRangesUseUtf16Offsets() {
+    public void textRangesUseUtf16Offsets() {
         String text = "A\uD83D\uDE00B";
         var snapshot = snapshot(text);
         var range = new TextRange(1, 3);
@@ -31,7 +31,7 @@ class TextRangeTest {
     }
 
     @Test
-    void emptyTextRangesReturnEmptyContent() {
+    public void emptyTextRangesReturnEmptyContent() {
         var snapshot = snapshot("AB");
         var range = new TextRange(1, 1);
 
@@ -40,7 +40,7 @@ class TextRangeTest {
     }
 
     @Test
-    void textRangeContentRejectsOutOfBoundsRanges() {
+    public void textRangeContentRejectsOutOfBoundsRanges() {
         var snapshot = snapshot("AB");
 
         assertThrows(IndexOutOfBoundsException.class, () -> new TextRange(1, 3).content(snapshot));

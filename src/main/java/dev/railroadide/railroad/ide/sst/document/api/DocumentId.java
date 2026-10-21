@@ -20,6 +20,11 @@ import java.util.UUID;
  * @param value opaque UUID value
  */
 public record DocumentId(UUID value) {
+    /**
+     * Creates a stable document identity from an existing UUID.
+     *
+     * @param value the nonnull opaque UUID
+     */
     public DocumentId {
         Objects.requireNonNull(value, "value");
     }

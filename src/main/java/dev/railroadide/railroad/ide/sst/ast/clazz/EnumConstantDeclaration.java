@@ -13,9 +13,22 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
-public record EnumConstantDeclaration(Span span, List<Annotation> annotations, NameExpression name,
+/**
+ * An enum constant with constructor arguments and an optional constant-specific class body.
+ *
+ * @param span source range occupied by this node
+ * @param annotations annotations attached to this node
+ * @param name declared enum constant name
+ * @param arguments argument expressions in source order
+ * @param body constant-specific body declarations, empty when no body is present
+ */
+public record EnumConstantDeclaration(
+    Span span,
+    List<Annotation> annotations,
+    NameExpression name,
     List<Expression> arguments,
-    List<ClassBodyDeclaration> body) implements ClassMember {
+    List<ClassBodyDeclaration> body
+) implements ClassMember {
     @Override
     public AstKind kind() {
         return AstKind.ENUM_CONSTANT_DECLARATION;

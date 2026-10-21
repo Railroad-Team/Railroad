@@ -11,6 +11,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * An annotation use containing named element-value assignments.
+ *
+ * @param span source range occupied by this node
+ * @param name annotation type name
+ * @param elements named annotation arguments
+ */
 public record NormalAnnotation(Span span, NameExpression name, List<AnnotationElement> elements) implements Annotation {
     @Override
     public AstKind kind() {

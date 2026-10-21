@@ -33,6 +33,13 @@ public class JmapCLIBuilder implements CLIBuilder<Process, JmapCLIBuilder> {
         this.jdk = Objects.requireNonNull(jdk, "JDK cannot be null");
     }
 
+    /**
+     * Creates a builder that uses {@code jmap} from the supplied JDK.
+     *
+     * @param jdk the JDK providing the executable; must not be null
+     * @return a new builder ready for configuration
+     * @throws NullPointerException if jdk is null
+     */
     public static JmapCLIBuilder create(JDK jdk) {
         return new JmapCLIBuilder(jdk);
     }
@@ -75,6 +82,13 @@ public class JmapCLIBuilder implements CLIBuilder<Process, JmapCLIBuilder> {
         return this;
     }
 
+    /**
+     * Sets the identifier of the process to inspect.
+     *
+     * @param pid the positive process identifier
+     * @return this builder
+     * @throws IllegalArgumentException if pid is zero or negative
+     */
     public JmapCLIBuilder processId(long pid) {
         if (pid <= 0)
             throw new IllegalArgumentException("PID must be positive");

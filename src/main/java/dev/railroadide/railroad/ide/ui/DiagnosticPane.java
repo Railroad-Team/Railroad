@@ -2,9 +2,12 @@ package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic;
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagnostic;
+import dev.railroadide.railroad.Services;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.input.MouseButton;
 import javafx.scene.text.Text;
 
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 
@@ -23,6 +26,16 @@ public class DiagnosticPane extends BorderPane {
      * @param diagnostic the diagnostic to display
      */
     public DiagnosticPane(EditorDiagnostic diagnostic) {
+        this(diagnostic, null);
+    }
+
+    /**
+     * Constructs a pane for a diagnostic with navigation to its source file.
+     *
+     * @param diagnostic the diagnostic to display
+     * @param sourcePath the source file, or {@code null} when navigation is unavailable
+     */
+    public DiagnosticPane(EditorDiagnostic diagnostic, Path sourcePath) {
         var message = diagnostic.message(null);
 
         var line = 0;
@@ -43,6 +56,9 @@ public class DiagnosticPane extends BorderPane {
             getStyleClass().add("error");
         } else {
             getStyleClass().add("warning");
+        }
+        if (sourcePath != null) {
+            installSourceNavigation(sourcePath);
         }
     }
 
@@ -78,5 +94,19 @@ public class DiagnosticPane extends BorderPane {
     @SafeVarargs
     public DiagnosticPane(Diagnostic<? extends JavaFileObject>... diagnostics) {
         this(List.of(diagnostics));
+    }
+
+    private void installSourceNavigation(Path sourcePath) {
+        setOnMouseClicked(event -> {
+            if (event.getButton() != MouseButton.PRIMARY || event.isConsumed())
+                return;
+
+            if (event.getClickCount() == 1) {
+                Services.EDITOR_TAB_MANAGER.openPreview(sourcePath);
+            } else if (event.getClickCount() == 2) {
+                Services.EDITOR_TAB_MANAGER.open(sourcePath);
+                event.consume();
+            }
+        });
     }
 }

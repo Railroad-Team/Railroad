@@ -1,12 +1,15 @@
 package dev.railroadide.railroad.project.facet.detector;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetDetector;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.data.JavaFacetData;
 import dev.railroadide.railroad.utility.JavaVersion;
+import dev.railroadide.railroadplugin.dto.RailroadJavaLanguageSettings;
+import dev.railroadide.railroadplugin.dto.RailroadProject;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
@@ -31,7 +34,7 @@ import java.util.stream.Stream;
 public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
     /**
      * Attempts to determine the most reliable Java version for the given project path.
-     * Checks Gradle, Maven, compiled class files, and system properties in order.
+     * Checks the cached Gradle model, Maven configuration, and system properties in order.
      *
      * @param project the project
      * @return the detected JavaVersion, or an invalid version if not found
@@ -61,7 +64,7 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
     }
 
     /**
-     * Attempts to extract the Java version from a Gradle project by connecting to the build and reading configuration.
+     * Attempts to extract the Java version from the cached Gradle build model.
      *
      * @param project the project
      * @return the JavaVersion specified in the Gradle build, or an invalid version if not found
@@ -71,10 +74,13 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
             return JavaVersion.fromMajor(-1);
 
         return project.getGradleManager().getGradleModelService().getCachedModel()
-            .map(gradleBuildModel -> {
+            .map(GradleBuildModel::project)
+            .map(RailroadProject::javaLanguageSettings)
+            .map(RailroadJavaLanguageSettings::getJdk)
+            .map(InstalledJdk::getJavaVersion)
+            .map(javaVersion -> {
                 try {
-                    InstalledJdk jdk = gradleBuildModel.project().javaLanguageSettings().getJdk();
-                    return JavaVersion.fromMajor(Integer.parseInt(jdk.getJavaVersion().getMajorVersion()));
+                    return JavaVersion.fromMajor(Integer.parseInt(javaVersion.getMajorVersion()));
                 } catch (NumberFormatException exception) {
                     Railroad.LOGGER.error("Error parsing Java version from Gradle model for project: {}",
                         project.getAlias(), exception);

@@ -12,8 +12,9 @@ import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationManager;
 import dev.railroadide.railroad.ide.ui.IDEPane;
+import dev.railroadide.railroad.ide.ui.editor.EditorTabSessionState;
+import dev.railroadide.railroad.ide.ui.editor.EditorWorkspaceSessionState;
 import dev.railroadide.railroad.java.JDK;
-import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.events.ProjectAliasChangedEvent;
@@ -23,7 +24,7 @@ import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.ui.id.UIIds;
-import dev.railroadide.railroad.utility.ShutdownHooks;
+import dev.railroadide.railroad.utility.ProjectPathIdentityUtils;
 import dev.railroadide.railroad.utility.StringUtils;
 import dev.railroadide.railroad.vcs.Repository;
 import dev.railroadide.railroad.vcs.git.GitClient;
@@ -50,6 +51,10 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Represents a project managed by Railroad, including its path, metadata,
+ * facets, build tools, version-control integration, and persisted session state.
+ */
 public class RailroadProject implements Project {
     private static final String PROJECT_CONFIG_LOCATION = "project.json";
 
@@ -60,6 +65,7 @@ public class RailroadProject implements Project {
     private final ObjectProperty<Repository> repository = new SimpleObjectProperty<>();
     private final StringProperty id = new SimpleStringProperty();
     private final ObservableSet<Facet<?>> facets = FXCollections.observableSet();
+    private volatile CompletableFuture<Void> facetDiscovery = CompletableFuture.completedFuture(null);
     private final StringProperty description = new SimpleStringProperty();
     private final ObjectProperty<License> license = new SimpleObjectProperty<>();
     @Getter
@@ -73,16 +79,34 @@ public class RailroadProject implements Project {
     @Getter
     private final DebuggingManager debuggingManager;
 
+    /**
+     * Creates a project using the final path component as its alias.
+     *
+     * @param path the project directory
+     */
     public RailroadProject(Path path) {
         this(path, path.getFileName().toString());
     }
 
+    /**
+     * Creates a project with a path and display alias.
+     *
+     * @param path the project directory
+     * @param alias the display alias for the project
+     */
     public RailroadProject(Path path, String alias) {
         this(path, alias, null);
     }
 
+    /**
+     * Creates a project with a path, display alias, and optional icon.
+     *
+     * @param path the project directory
+     * @param alias the display alias for the project
+     * @param icon the project icon, or {@code null} to generate a default icon
+     */
     public RailroadProject(Path path, String alias, Image icon) {
-        this.path.set(ProjectPathIdentity.normalize(path));
+        this.path.set(ProjectPathIdentityUtils.normalize(path));
         this.alias.set(alias);
         this.icon.set(icon == null ? createIcon() : icon);
         this.dataStore = new ProjectDataStore(this);
@@ -132,6 +156,12 @@ public class RailroadProject implements Project {
         return new Image(iconPath.toUri().toString());
     }
 
+    /**
+     * Creates a project from its JSON representation.
+     *
+     * @param json the JSON object to deserialize
+     * @return the deserialized project, or an empty optional when no valid path is present
+     */
     public static Optional<RailroadProject> createFromJson(JsonObject json) {
         if (!json.has("Path"))
             return Optional.empty();
@@ -150,29 +180,63 @@ public class RailroadProject implements Project {
         return Optional.of(project);
     }
 
+    /**
+     * Returns the project path encoded as Base64 using UTF-8.
+     *
+     * @return the Base64-encoded project path
+     */
     public String getPathBase64() {
         return Base64.getEncoder().encodeToString(getPathString().getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * Decodes a UTF-8 project path from its Base64 representation.
+     *
+     * @param base64Path the Base64-encoded path
+     * @return the decoded project path
+     */
     public Path getPathFromBase64(String base64Path) {
         return Path.of(new String(Base64.getDecoder().decode(base64Path), StandardCharsets.UTF_8));
     }
 
     private void discoverFacets() {
-        this.facets.clear();
+        var ready = new CompletableFuture<Void>();
+        facetDiscovery = ready;
         FacetManager.scan(this).thenAccept(discoveredFacets -> Platform.runLater(() -> {
-            for (Facet<?> facet : discoveredFacets) {
-                if (facet != null) {
-                    this.facets.add(facet);
-                    Railroad.EVENT_BUS.publish(new FacetDetectedEvent(this, facet));
-                } else {
-                    Railroad.LOGGER.warn("Discovered null facet for project: {}", getPathString());
+            try {
+                this.facets.clear();
+                for (Facet<?> facet : discoveredFacets) {
+                    if (facet != null) {
+                        this.facets.add(facet);
+                    } else {
+                        Railroad.LOGGER.warn("Discovered null facet for project: {}", getPathString());
+                    }
                 }
+                for (Facet<?> facet : this.facets) {
+                    Railroad.EVENT_BUS.publish(new FacetDetectedEvent(this, facet));
+                }
+                ready.complete(null);
+            } catch (Throwable exception) {
+                ready.completeExceptionally(exception);
+                Railroad.LOGGER.error("Failed to apply facets for project: {}", getPathString(), exception);
             }
         })).exceptionally(ex -> {
+            ready.completeExceptionally(ex);
             Railroad.LOGGER.error("Failed to discover facets for project: {}", getPathString(), ex);
             return null;
         });
+    }
+
+    /**
+     * Waits for the current facet scan to be applied before resolving background project indexes.
+     *
+     * @throws IllegalStateException if called on the application thread while discovery is pending
+     */
+    public void awaitFacetDiscovery() {
+        CompletableFuture<Void> ready = facetDiscovery;
+        if (!ready.isDone() && Platform.isFxApplicationThread())
+            throw new IllegalStateException("Cannot wait for facet discovery on the application thread");
+        ready.join();
     }
 
     @Override
@@ -204,7 +268,7 @@ public class RailroadProject implements Project {
     @Override
     public void open(@Nullable Stage stage) {
         Project currentProject = Railroad.PROJECT_MANAGER.getOpenProject();
-        if (currentProject != null && !ProjectPathIdentity.matches(currentProject.getPath(), getPath())) {
+        if (currentProject != null && !ProjectPathIdentityUtils.matches(currentProject.getPath(), getPath())) {
             currentProject.close();
         }
 
@@ -212,34 +276,37 @@ public class RailroadProject implements Project {
         setLastOpened(System.currentTimeMillis());
         Project project = Railroad.PROJECT_MANAGER.updateProjectInfo(this);
         project.getGitManager().detectRepository();
-        IDESetup.switchToIDE(project, stage);
         if (project instanceof RailroadProject railroadProject) {
+            // Start discovery before creating workers that resolve project index contexts.
             railroadProject.discoverFacets();
         }
-
+        IDESetup.switchToIDE(project, stage);
         ProjectDataStore dataStore = project.getDataStore();
         ProjectConfig projectConfig = dataStore.readJson(PROJECT_CONFIG_LOCATION, ProjectConfig.class)
             .orElseGet(ProjectConfig::new);
         List<Path> openDocumentPaths = projectConfig.getOpenDocuments();
         Path activeDocumentPath = projectConfig.getActiveDocument();
-        if (openDocumentPaths != null) {
-            Services.IDE_STATE.setOpenDocuments(openDocumentPaths.stream()
-                .map(FileSystemDocument::new)
-                .map(Document.class::cast)
-                .toList());
-        }
-        if (activeDocumentPath != null) {
-            Services.IDE_STATE.setActiveDocument(new FileSystemDocument(activeDocumentPath));
-        }
-        if (projectConfig.getIdeLayoutState() != null) {
-            Platform.runLater(() -> Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
-                .ifPresent(idePane -> idePane.restoreLayoutState(projectConfig.getIdeLayoutState())));
-        }
-
-        ShutdownHooks.addHook(() -> {
-            if (Railroad.PROJECT_MANAGER.getOpenProject() == project) {
-                project.close();
+        List<EditorTabSessionState> editorTabs = projectConfig.getEditorTabs();
+        EditorWorkspaceSessionState editorWorkspace = projectConfig.getEditorWorkspace();
+        Platform.runLater(() -> {
+            if (editorWorkspace != null && editorWorkspace.isSupported()) {
+                Railroad.LOGGER.debug("Restoring complete editor workspace with {} tabs for project {}",
+                    editorWorkspace.tabs().size(), project.getPathString());
+                Services.EDITOR_TAB_MANAGER.restoreWorkspaceSession(editorWorkspace);
+            } else if (editorTabs == null) {
+                Railroad.LOGGER.debug("Restoring {} legacy editor tabs for project {}",
+                    openDocumentPaths == null ? 0 : openDocumentPaths.size(),
+                    project.getPathString());
+                Services.EDITOR_TAB_MANAGER.restore(
+                    openDocumentPaths == null ? List.of() : openDocumentPaths,
+                    activeDocumentPath);
+            } else {
+                Railroad.LOGGER.debug("Restoring {} editor tabs for project {}", editorTabs.size(),
+                    project.getPathString());
+                Services.EDITOR_TAB_MANAGER.restoreSession(editorTabs);
             }
+            Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
+                .ifPresent(idePane -> idePane.restoreLayoutState(projectConfig.getIdeLayoutState()));
         });
     }
 
@@ -247,15 +314,24 @@ public class RailroadProject implements Project {
     public void close() {
         Railroad.LOGGER.debug("Closing project: {}", getPathString());
         Project currentProject = Railroad.PROJECT_MANAGER.getOpenProject();
-        if (currentProject != null && ProjectPathIdentity.matches(currentProject.getPath(), getPath())) {
-            List<Document> openDocuments = Services.IDE_STATE.getOpenDocuments();
+        if (currentProject != null && ProjectPathIdentityUtils.matches(currentProject.getPath(), getPath())) {
             Document activeDocument = Services.IDE_STATE.getActiveDocument();
 
             ProjectDataStore dataStore = getDataStore();
             ProjectConfig projectConfig = dataStore.readJson(PROJECT_CONFIG_LOCATION, ProjectConfig.class)
                 .orElseGet(ProjectConfig::new);
-            projectConfig.setOpenDocuments(openDocuments.stream().map(Document::getPath).toList());
-            projectConfig.setActiveDocument(activeDocument != null ? activeDocument.getPath() : null);
+            EditorWorkspaceSessionState editorWorkspace = Services.EDITOR_TAB_MANAGER.captureWorkspaceSession();
+            List<EditorTabSessionState> editorTabs = editorWorkspace.tabs();
+            Railroad.LOGGER.debug("Persisting {} editor tabs for project {}", editorTabs.size(), getPathString());
+            projectConfig.setEditorWorkspace(editorWorkspace);
+            projectConfig.setEditorTabs(editorTabs);
+            projectConfig.setOpenDocuments(editorTabs.stream()
+                .map(EditorTabSessionState::path)
+                .filter(Objects::nonNull)
+                .toList());
+            projectConfig.setActiveDocument(activeDocument == null
+                ? null
+                : activeDocument.getUri().filePath().orElse(null));
             Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
                 .map(IDEPane::captureLayoutState)
                 .ifPresent(projectConfig::setIdeLayoutState);
@@ -279,12 +355,12 @@ public class RailroadProject implements Project {
             return false;
 
         RailroadProject project = (RailroadProject) obj;
-        return ProjectPathIdentity.matches(getPath(), project.getPath());
+        return ProjectPathIdentityUtils.matches(getPath(), project.getPath());
     }
 
     @Override
     public int hashCode() {
-        return ProjectPathIdentity.key(getPath()).hashCode();
+        return ProjectPathIdentityUtils.key(getPath()).hashCode();
     }
 
     @Override
@@ -331,11 +407,12 @@ public class RailroadProject implements Project {
             if (pathElement.isJsonPrimitive()) {
                 JsonPrimitive pathPrimitive = pathElement.getAsJsonPrimitive();
                 if (pathPrimitive.isString()) {
-                    this.path.set(ProjectPathIdentity.normalize(Path.of(pathElement.getAsString())));
+                    this.path.set(ProjectPathIdentityUtils.normalize(Path.of(pathElement.getAsString())));
                 } else if (pathPrimitive.isNumber()) {
                     try {
                         this.path
-                            .set(ProjectPathIdentity.normalize(Path.of(String.valueOf(pathPrimitive.getAsNumber()))));
+                            .set(ProjectPathIdentityUtils
+                                .normalize(Path.of(String.valueOf(pathPrimitive.getAsNumber()))));
                     } catch (Exception exception) {
                         Railroad.LOGGER.warn("Project JSON 'Path' is not a valid path: {}", pathElement, exception);
                     }
@@ -499,8 +576,9 @@ public class RailroadProject implements Project {
 
     @Override
     public void setAlias(@NotNull String alias) {
-        if (alias == null || alias.isBlank())
-            throw new IllegalArgumentException("Alias cannot be null or blank");
+        Objects.requireNonNull(alias, "Alias cannot be null");
+        if (alias.isBlank())
+            throw new IllegalArgumentException("Alias cannot be blank");
 
         String originalAlias = this.alias.get();
         this.alias.set(alias);
@@ -547,30 +625,71 @@ public class RailroadProject implements Project {
         this.icon.set(icon == null ? createIcon() : icon);
     }
 
+    /**
+     * Returns the observable property containing the project icon.
+     *
+     * @return the project icon property
+     */
     public ObjectProperty<Image> iconProperty() {
         return icon;
     }
 
+    /**
+     * Returns an observable read-only view of the project's facets.
+     *
+     * @return the project facets property
+     */
     public SetProperty<Facet<?>> facetsProperty() {
         return new ReadOnlySetWrapper<>(facets);
     }
 
+    /**
+     * Returns a snapshot of the facets currently associated with the project.
+     *
+     * @return the project's facets
+     */
     public List<Facet<?>> getFacets() {
         return List.copyOf(facets);
     }
 
+    /**
+     * Returns the observable property containing the project alias.
+     *
+     * @return the project alias property
+     */
     public StringProperty aliasProperty() {
         return alias;
     }
 
+    /**
+     * Returns the observable property containing the project's repository.
+     *
+     * @return the project repository property
+     */
     public ObjectProperty<Repository> repositoryProperty() {
         return repository;
     }
 
+    /**
+     * Returns the observable property containing the last-opened timestamp.
+     *
+     * @return the last-opened property
+     */
     public LongProperty lastOpenedProperty() {
         return lastOpened;
     }
 
+    /**
+     * Starts an asynchronous project build using the supplied JDK.
+     *
+     * <p>
+     * The returned future completes with a task that can be used to observe
+     * or control the build when the project's build facet supports it.
+     * </p>
+     *
+     * @param jdk the JDK to use for the build
+     * @return a future completed with the build task, or exceptionally when the project cannot be built
+     */
     public CompletableFuture<Runnable> build(JDK jdk) {
         CompletableFuture<Runnable> future = new CompletableFuture<>();
         CompletableFuture.runAsync(() -> {

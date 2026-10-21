@@ -2,21 +2,21 @@
     -color-dark: #232730;
     -color-light: #fafafc;
     -color-base-0: #eef1f5;
-    -color-base-1: #E5E9F0;
-    -color-base-2: #D8DEE9;
+    -color-base-1: #e5e9f0;
+    -color-base-2: #d8dee9;
     -color-base-3: #c7ceda;
     -color-base-4: #b7becb;
     -color-base-5: #979fae;
     -color-base-6: #788192;
-    -color-base-7: #4C566A;
-    -color-base-8: #3B4252;
-    -color-base-9: #2E3440;
+    -color-base-7: #4c566a;
+    -color-base-8: #3b4252;
+    -color-base-9: #2e3440;
     -color-accent-0: #d2dce8;
     -color-accent-1: #bccadc;
     -color-accent-2: #98aeca;
     -color-accent-3: #859fc0;
     -color-accent-4: #7190b6;
-    -color-accent-5: #5E81AC;
+    -color-accent-5: #5e81ac;
     -color-accent-6: #537297;
     -color-accent-7: #476283;
     -color-accent-8: #3c536e;
@@ -51,21 +51,21 @@
     -color-danger-7: #86444a;
     -color-danger-8: #733a40;
     -color-danger-9: #603135;
-    -color-fg-default: #2E3440;
+    -color-fg-default: #2e3440;
     -color-fg-muted: rgba(76, 86, 106, 0.88);
     -color-fg-subtle: #788192;
     -color-fg-emphasis: #fafafc;
     -color-bg-default: #fafafc;
     -color-bg-overlay: #fafafc;
     -color-bg-subtle: #eef1f5;
-    -color-bg-inset: #E5E9F0;
+    -color-bg-inset: #e5e9f0;
     -color-bg-elevated: #ffffff;
     -color-border-default: #c7ceda;
     -color-border-muted: #c7ceda;
     -color-border-subtle: rgb(218, 218, 221);
     -color-shadow-default: #c7ceda;
-    -color-neutral-emphasis-plus: #3B4252;
-    -color-neutral-emphasis: #4C566A;
+    -color-neutral-emphasis-plus: #3b4252;
+    -color-neutral-emphasis: #4c566a;
     -color-neutral-muted: rgb(210, 214, 221);
     -color-neutral-subtle: rgb(240, 241, 244);
     -color-accent-fg: #537297;
@@ -478,7 +478,8 @@
     -fx-opacity: 0.6;
 }
 
-.message.tile-base > .container .font-icon, .message.tile-base > .container .ikonli-font-icon {
+.message.tile-base > .container .font-icon,
+.message.tile-base > .container .ikonli-font-icon {
     -fx-icon-color: -color-message-fg-primary;
     -fx-fill: -color-message-fg-primary;
     -fx-icon-size: 24px;
@@ -511,7 +512,9 @@
 }
 
 .message > .close-button:hover {
-    -fx-background-color: -color-message-border, -color-message-button-hover;
+    -fx-background-color:
+        -color-message-border,
+        -color-message-button-hover;
     -fx-background-insets: 0, 1;
 }
 
@@ -552,7 +555,9 @@
 }
 
 .modal-box > .close-button:hover {
-    -fx-background-color: -color-border-muted, -color-modal-box-close-bg-hover;
+    -fx-background-color:
+        -color-border-muted,
+        -color-modal-box-close-bg-hover;
     -fx-background-insets: 0, 1;
 }
 
@@ -576,7 +581,9 @@
 }
 
 .notification > .container {
-    -fx-background-color: -color-notify-border, -color-notify-bg;
+    -fx-background-color:
+        -color-notify-border,
+        -color-notify-bg;
     -fx-background-insets: 0, 1px;
     -fx-background-radius: 1;
     -fx-spacing: 1em;
@@ -588,7 +595,8 @@
     -fx-spacing: 0.75em;
 }
 
-.notification > .container > .header > .graphic .font-icon, .notification > .container > .header > .graphic .ikonli-font-icon {
+.notification > .container > .header > .graphic .font-icon,
+.notification > .container > .header > .graphic .ikonli-font-icon {
     -fx-icon-size: 24px;
 }
 
@@ -615,7 +623,9 @@
 }
 
 .notification > .container > .header > .actions > .secondary-menu-button:hover {
-    -fx-background-color: -color-border-default, -color-notify-bg-hover;
+    -fx-background-color:
+        -color-border-default,
+        -color-notify-bg-hover;
     -fx-background-insets: 0, 1;
 }
 
@@ -636,7 +646,9 @@
 }
 
 .notification > .container > .header > .actions > .close-button:hover {
-    -fx-background-color: -color-border-default, -color-notify-bg-hover;
+    -fx-background-color:
+        -color-border-default,
+        -color-notify-bg-hover;
     -fx-background-insets: 0, 1;
 }
 
@@ -677,12 +689,21 @@
 }
 
 .notification.accent > .container {
-    -fx-background-color: -color-notify-border, -color-notify-bg, -color-notify-border-intent -color-notify-bg -color-notify-bg -color-notify-bg, -color-notify-bg;
-    -fx-background-insets: 0, 1, 1, 1 1 1 6px;
+    -fx-background-color:
+        -color-notify-border,
+        -color-notify-bg,
+        -color-notify-border-intent -color-notify-bg -color-notify-bg -color-notify-bg,
+        -color-notify-bg;
+    -fx-background-insets:
+        0,
+        1,
+        1,
+        1 1 1 6px;
     -fx-background-radius: 1;
 }
 
-.notification.accent > .container > .header > .graphic .font-icon, .notification.accent > .container > .header > .graphic .ikonli-font-icon {
+.notification.accent > .container > .header > .graphic .font-icon,
+.notification.accent > .container > .header > .graphic .ikonli-font-icon {
     -fx-fill: -color-accent-emphasis;
     -fx-icon-color: -color-accent-emphasis;
 }
@@ -692,12 +713,21 @@
 }
 
 .notification.success > .container {
-    -fx-background-color: -color-notify-border, -color-notify-bg, -color-notify-border-intent -color-notify-bg -color-notify-bg -color-notify-bg, -color-notify-bg;
-    -fx-background-insets: 0, 1, 1, 1 1 1 6px;
+    -fx-background-color:
+        -color-notify-border,
+        -color-notify-bg,
+        -color-notify-border-intent -color-notify-bg -color-notify-bg -color-notify-bg,
+        -color-notify-bg;
+    -fx-background-insets:
+        0,
+        1,
+        1,
+        1 1 1 6px;
     -fx-background-radius: 1;
 }
 
-.notification.success > .container > .header > .graphic .font-icon, .notification.success > .container > .header > .graphic .ikonli-font-icon {
+.notification.success > .container > .header > .graphic .font-icon,
+.notification.success > .container > .header > .graphic .ikonli-font-icon {
     -fx-fill: -color-success-emphasis;
     -fx-icon-color: -color-success-emphasis;
 }
@@ -707,12 +737,21 @@
 }
 
 .notification.warning > .container {
-    -fx-background-color: -color-notify-border, -color-notify-bg, -color-notify-border-intent -color-notify-bg -color-notify-bg -color-notify-bg, -color-notify-bg;
-    -fx-background-insets: 0, 1, 1, 1 1 1 6px;
+    -fx-background-color:
+        -color-notify-border,
+        -color-notify-bg,
+        -color-notify-border-intent -color-notify-bg -color-notify-bg -color-notify-bg,
+        -color-notify-bg;
+    -fx-background-insets:
+        0,
+        1,
+        1,
+        1 1 1 6px;
     -fx-background-radius: 1;
 }
 
-.notification.warning > .container > .header > .graphic .font-icon, .notification.warning > .container > .header > .graphic .ikonli-font-icon {
+.notification.warning > .container > .header > .graphic .font-icon,
+.notification.warning > .container > .header > .graphic .ikonli-font-icon {
     -fx-fill: -color-warning-emphasis;
     -fx-icon-color: -color-warning-emphasis;
 }
@@ -722,12 +761,21 @@
 }
 
 .notification.danger > .container {
-    -fx-background-color: -color-notify-border, -color-notify-bg, -color-notify-border-intent -color-notify-bg -color-notify-bg -color-notify-bg, -color-notify-bg;
-    -fx-background-insets: 0, 1, 1, 1 1 1 6px;
+    -fx-background-color:
+        -color-notify-border,
+        -color-notify-bg,
+        -color-notify-border-intent -color-notify-bg -color-notify-bg -color-notify-bg,
+        -color-notify-bg;
+    -fx-background-insets:
+        0,
+        1,
+        1,
+        1 1 1 6px;
     -fx-background-radius: 1;
 }
 
-.notification.danger > .container > .header > .graphic .font-icon, .notification.danger > .container > .header > .graphic .ikonli-font-icon {
+.notification.danger > .container > .header > .graphic .font-icon,
+.notification.danger > .container > .header > .graphic .ikonli-font-icon {
     -fx-fill: -color-danger-emphasis;
     -fx-icon-color: -color-danger-emphasis;
 }
@@ -792,12 +840,17 @@
 
 .pagination.bullet > .pagination-control > .control-box > .bullet-button {
     -fx-background-radius: 0, 1, 1;
-    -fx-background-color: transparent, -color-border-default, -color-bg-subtle;
+    -fx-background-color:
+        transparent,
+        -color-border-default,
+        -color-bg-subtle;
     -fx-background-insets: 0, 5, 6;
 }
 
 .pagination.bullet > .pagination-control > .control-box > .bullet-button:selected {
-    -fx-background-color: transparent, -color-accent-emphasis;
+    -fx-background-color:
+        transparent,
+        -color-accent-emphasis;
 }
 
 .slider {
@@ -814,14 +867,18 @@
 }
 
 .slider > .thumb {
-    -fx-background-color: -color-slider-thumb-border, -color-slider-thumb;
+    -fx-background-color:
+        -color-slider-thumb-border,
+        -color-slider-thumb;
     -fx-background-insets: 0, 2px;
     -fx-background-radius: 0;
     -fx-effect: none;
 }
 
 .slider > .track {
-    -fx-background-color: transparent, -color-slider-track;
+    -fx-background-color:
+        transparent,
+        -color-slider-track;
     -fx-background-radius: 0;
 }
 
@@ -846,7 +903,9 @@
 
 .slider:horizontal > .track {
     -fx-padding: 10px 0 10px 0;
-    -fx-background-insets: 0, 6px 0 6px 0;
+    -fx-background-insets:
+        0,
+        6px 0 6px 0;
 }
 
 .slider.small:horizontal > .thumb {
@@ -855,7 +914,9 @@
 
 .slider.small:horizontal > .track {
     -fx-padding: 8px 0 8px 0;
-    -fx-background-insets: 0, 6px 0 6px 0;
+    -fx-background-insets:
+        0,
+        6px 0 6px 0;
 }
 
 .slider.large:horizontal > .thumb {
@@ -865,7 +926,9 @@
 
 .slider.large:horizontal > .track {
     -fx-padding: 14px 0 14px 0;
-    -fx-background-insets: 0, 2px 0 2px 0;
+    -fx-background-insets:
+        0,
+        2px 0 2px 0;
 }
 
 .slider:vertical > .thumb {
@@ -874,7 +937,9 @@
 
 .slider:vertical > .track {
     -fx-padding: 0 10px 0 10px;
-    -fx-background-insets: 0, 0 6px 0 6px;
+    -fx-background-insets:
+        0,
+        0 6px 0 6px;
 }
 
 .slider.small:vertical > .thumb {
@@ -883,7 +948,9 @@
 
 .slider.small:vertical > .track {
     -fx-padding: 0 8px 0 8px;
-    -fx-background-insets: 0, 0 6px 0 6px;
+    -fx-background-insets:
+        0,
+        0 6px 0 6px;
 }
 
 .slider.large:vertical > .thumb {
@@ -892,41 +959,57 @@
 
 .slider.large:vertical > .track {
     -fx-padding: 0 14px 0 14px;
-    -fx-background-insets: 0, 0 2px 0 2px;
+    -fx-background-insets:
+        0,
+        0 2px 0 2px;
 }
 
 .slider.progress-slider > .progress {
-    -fx-background-color: transparent, -color-slider-track-progress;
+    -fx-background-color:
+        transparent,
+        -color-slider-track-progress;
 }
 
 .slider.progress-slider:horizontal > .progress {
-    -fx-background-insets: 0, 6px 0 6px 0;
+    -fx-background-insets:
+        0,
+        6px 0 6px 0;
     -fx-background-radius: 0 0 0 0;
 }
 
 .slider.progress-slider.small:horizontal > .progress {
     -fx-padding: 8px 0 8px 0;
-    -fx-background-insets: 0, 6px 0 6px 0;
+    -fx-background-insets:
+        0,
+        6px 0 6px 0;
 }
 
 .slider.progress-slider.large:horizontal > .progress {
     -fx-padding: 14px 0 14px 0;
-    -fx-background-insets: 0, 2px 0 2px 0;
+    -fx-background-insets:
+        0,
+        2px 0 2px 0;
 }
 
 .slider.progress-slider:vertical > .progress {
     -fx-background-radius: 0 0 0 0;
-    -fx-background-insets: 0, 0 6px 0 6px;
+    -fx-background-insets:
+        0,
+        0 6px 0 6px;
 }
 
 .slider.progress-slider.small:vertical > .progress {
     -fx-padding: 8px 0 8px 0;
-    -fx-background-insets: 0, 0 6px 0 6px;
+    -fx-background-insets:
+        0,
+        0 6px 0 6px;
 }
 
 .slider.progress-slider.large:vertical > .progress {
     -fx-padding: 0 14px 0 14px;
-    -fx-background-insets: 0, 0 2px 0 2px;
+    -fx-background-insets:
+        0,
+        0 2px 0 2px;
 }
 
 .toggle-switch {
@@ -940,7 +1023,9 @@
 }
 
 .toggle-switch > .thumb {
-    -fx-background-color: -color-border-default, -color-fg-emphasis;
+    -fx-background-color:
+        -color-border-default,
+        -color-fg-emphasis;
     -fx-background-insets: 0, 3px;
     -fx-background-radius: 1px;
     -fx-padding: 0.8em;
@@ -951,34 +1036,48 @@
 
 .toggle-switch > .thumb-area {
     -fx-background-radius: 1px;
-    -fx-background-color: -color-border-default, -color-bg-subtle;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-subtle;
     -fx-background-insets: 0, 1px;
     -fx-padding: 0.8em 1.6em 0.8em 1.6em;
 }
 
 .toggle-switch:selected > .thumb {
-    -fx-background-color: -color-accent-emphasis, -color-fg-emphasis;
+    -fx-background-color:
+        -color-accent-emphasis,
+        -color-fg-emphasis;
     -fx-opacity: 1;
 }
 
 .toggle-switch:selected > .thumb-area {
-    -fx-background-color: -color-accent-emphasis, -color-accent-emphasis;
+    -fx-background-color:
+        -color-accent-emphasis,
+        -color-accent-emphasis;
 }
 
 .toggle-switch:selected:success > .thumb {
-    -fx-background-color: -color-success-emphasis, -color-fg-emphasis;
+    -fx-background-color:
+        -color-success-emphasis,
+        -color-fg-emphasis;
 }
 
 .toggle-switch:selected:success > .thumb-area {
-    -fx-background-color: -color-success-emphasis, -color-success-emphasis;
+    -fx-background-color:
+        -color-success-emphasis,
+        -color-success-emphasis;
 }
 
 .toggle-switch:selected:danger > .thumb {
-    -fx-background-color: -color-danger-emphasis, -color-fg-emphasis;
+    -fx-background-color:
+        -color-danger-emphasis,
+        -color-fg-emphasis;
 }
 
 .toggle-switch:selected:danger > .thumb-area {
-    -fx-background-color: -color-danger-emphasis, -color-danger-emphasis;
+    -fx-background-color:
+        -color-danger-emphasis,
+        -color-danger-emphasis;
 }
 
 .toggle-switch:right > .label-container > .label {
@@ -995,7 +1094,9 @@
 }
 
 .accordion > .titled-pane > .title {
-    -fx-background-insets: 0, 0 1px 1px 1px;
+    -fx-background-insets:
+        0,
+        0 1px 1px 1px;
     -fx-background-radius: 0;
 }
 
@@ -1032,7 +1133,9 @@
     -color-button-fg-pressed: -color-button-fg;
     -color-button-border-pressed: transparent;
     -color-button-shadow: -color-shadow-default;
-    -fx-background-color: -color-button-border, -color-button-bg;
+    -fx-background-color:
+        -color-button-border,
+        -color-button-bg;
     -fx-background-insets: 0, 1px;
     -fx-background-radius: 1, 0px;
     -fx-graphic-text-gap: 6px;
@@ -1041,7 +1144,8 @@
     -fx-padding: 8px 12px 8px 12px;
 }
 
-.button .font-icon, .button .ikonli-font-icon {
+.button .font-icon,
+.button .ikonli-font-icon {
     -fx-icon-color: -color-button-fg;
     -fx-fill: -color-button-fg;
 }
@@ -1068,66 +1172,93 @@
 }
 
 .button.left-pill {
-    -fx-background-radius: 1 0 0 1, 0px 0 0 0px;
-    -fx-background-insets: 0, 1px 0 1px 1px;
+    -fx-background-radius:
+        1 0 0 1,
+        0px 0 0 0px;
+    -fx-background-insets:
+        0,
+        1px 0 1px 1px;
     -fx-effect: none;
 }
 
-.button.left-pill:hover, .button.left-pill:focused {
+.button.left-pill:hover,
+.button.left-pill:focused {
     -fx-background-insets: 0, 1px;
 }
 
 .button.center-pill {
     -fx-background-radius: 0;
-    -fx-background-insets: 0, 1px 0 1px 0;
+    -fx-background-insets:
+        0,
+        1px 0 1px 0;
     -fx-effect: none;
 }
 
-.button.center-pill:hover, .button.center-pill:focused {
+.button.center-pill:hover,
+.button.center-pill:focused {
     -fx-background-insets: 0, 1px;
 }
 
 .button.right-pill {
-    -fx-background-radius: 0 1 1 0, 0 0px 0px 0;
-    -fx-background-insets: 0, 1px 1px 1px 0;
+    -fx-background-radius:
+        0 1 1 0,
+        0 0px 0px 0;
+    -fx-background-insets:
+        0,
+        1px 1px 1px 0;
     -fx-effect: none;
 }
 
-.button.right-pill:hover, .button.right-pill:focused {
+.button.right-pill:hover,
+.button.right-pill:focused {
     -fx-background-insets: 0, 1px;
 }
 
 .button:hover {
-    -fx-background-color: -color-button-border-hover, -color-button-bg-hover;
+    -fx-background-color:
+        -color-button-border-hover,
+        -color-button-bg-hover;
     -fx-text-fill: -color-button-fg-hover;
     -fx-opacity: 0.9;
 }
 
 .button:hover:focused {
-    -fx-background-color: -color-button-border-focused, -color-button-bg-hover;
+    -fx-background-color:
+        -color-button-border-focused,
+        -color-button-bg-hover;
 }
 
-.button:hover .font-icon, .button:hover .ikonli-font-icon {
+.button:hover .font-icon,
+.button:hover .ikonli-font-icon {
     -fx-icon-color: -color-button-fg-hover;
     -fx-fill: -color-button-fg-hover;
 }
 
 .button:focused {
-    -fx-background-color: -color-button-border-focused, -color-button-bg-focused;
+    -fx-background-color:
+        -color-button-border-focused,
+        -color-button-bg-focused;
     -fx-text-fill: -color-button-fg-focused;
 }
 
-.button:focused .font-icon, .button:focused .ikonli-font-icon {
+.button:focused .font-icon,
+.button:focused .ikonli-font-icon {
     -fx-icon-color: -color-button-fg-focused;
     -fx-fill: -color-button-fg-focused;
 }
 
-.button:armed, .button:focused:armed {
-    -fx-background-color: -color-button-border-pressed, -color-button-bg-pressed;
+.button:armed,
+.button:focused:armed {
+    -fx-background-color:
+        -color-button-border-pressed,
+        -color-button-bg-pressed;
     -fx-text-fill: -color-button-fg-pressed;
 }
 
-.button:armed .font-icon, .button:armed .ikonli-font-icon, .button:focused:armed .font-icon, .button:focused:armed .ikonli-font-icon {
+.button:armed .font-icon,
+.button:armed .ikonli-font-icon,
+.button:focused:armed .font-icon,
+.button:focused:armed .ikonli-font-icon {
     -fx-icon-color: -color-button-fg-pressed;
     -fx-fill: -color-button-fg-pressed;
 }
@@ -1139,7 +1270,8 @@
     -color-button-fg-hover: -color-button-fg;
 }
 
-.button:default, .button.accent {
+.button:default,
+.button.accent {
     -color-button-bg: -color-accent-emphasis;
     -color-button-fg: -color-fg-emphasis;
     -color-button-border: -color-accent-emphasis;
@@ -1154,14 +1286,16 @@
     -color-button-border-pressed: transparent;
 }
 
-.button:default.button-outlined, .button.accent.button-outlined {
+.button:default.button-outlined,
+.button.accent.button-outlined {
     -color-button-bg: -color-bg-default;
     -color-button-fg: -color-accent-fg;
     -color-button-bg-hover: -color-accent-emphasis;
     -color-button-fg-hover: -color-fg-emphasis;
 }
 
-.button:default.flat, .button.accent.flat {
+.button:default.flat,
+.button.accent.flat {
     -color-button-fg: -color-accent-fg;
     -color-button-bg-hover: -color-accent-subtle;
 }
@@ -1381,11 +1515,13 @@
     -fx-border-color: transparent -fx-axis-color transparent transparent;
 }
 
-.chart .axis:top > .axis-label, .chart .axis:left > .axis-label {
+.chart .axis:top > .axis-label,
+.chart .axis:left > .axis-label {
     -fx-padding: 0 0 4px 0;
 }
 
-.chart .axis:bottom > .axis-label, .chart .axis:right > .axis-label {
+.chart .axis:bottom > .axis-label,
+.chart .axis:right > .axis-label {
     -fx-padding: 4px 0 0 0;
 }
 
@@ -1822,7 +1958,9 @@
 }
 
 .check-box > .box {
-    -fx-background-color: -color-border-default, -color-bg-default;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-default;
     -fx-background-insets: 0, 1.5px;
     -fx-background-radius: 1, 0px;
     -fx-padding: 3px 4px 3px 4px;
@@ -1840,11 +1978,15 @@
 }
 
 .check-box > .box:hover {
-    -fx-background-color: -color-fg-subtle, -color-bg-subtle;
+    -fx-background-color:
+        -color-fg-subtle,
+        -color-bg-subtle;
 }
 
 .check-box:indeterminate > .box {
-    -fx-background-color: -color-border-default, -color-bg-default;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-default;
 }
 
 .check-box:indeterminate > .box > .mark {
@@ -1862,7 +2004,9 @@
 }
 
 .check-box:selected > .box {
-    -fx-background-color: -color-accent-emphasis, -color-accent-emphasis;
+    -fx-background-color:
+        -color-accent-emphasis,
+        -color-accent-emphasis;
 }
 
 .check-box:selected > .box > .mark {
@@ -1890,7 +2034,9 @@
 }
 
 .color-palette {
-    -fx-background-color: -color-border-default, -color-bg-default;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-default;
     -fx-background-insets: 0, 1px;
     -fx-background-radius: 1, 0px;
     -fx-spacing: 10px;
@@ -1913,13 +2059,19 @@
 }
 
 .color-palette-region > .color-square.hover-square {
-    -fx-background-color: -color-accent-fg, -color-bg-default;
-    -fx-background-insets: -2, -1;
+    -fx-background-color:
+        -color-accent-fg,
+        -color-bg-default;
+    -fx-background-insets:
+        -2,
+        -1;
     -fx-background-radius: 5, 0;
     -fx-scale-x: 1.5;
     -fx-scale-y: 1.5;
     -fx-border-color: -color-accent-fg;
-    -fx-border-insets: -1, -1;
+    -fx-border-insets:
+        -1,
+        -1;
 }
 
 .custom-color-dialog {
@@ -2006,8 +2158,12 @@
 }
 
 .custom-color-dialog > .controls-pane #settings-pane > .customcolor-controls-background {
-    -fx-background-color: -color-border-default, -color-bg-default;
-    -fx-background-insets: 13px 0 5px 0, 14px 1px 6px 1px;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-default;
+    -fx-background-insets:
+        13px 0 5px 0,
+        14px 1px 6px 1px;
     -fx-background-radius: 1, 0px;
 }
 
@@ -2064,7 +2220,9 @@
 }
 
 .combo-box-base {
-    -fx-background-color: -color-border-default, -color-bg-default;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-default;
     -fx-background-insets: 0, 1px;
     -fx-background-radius: 1, 0px;
     -fx-text-fill: -color-fg-default;
@@ -2076,21 +2234,33 @@
     -fx-opacity: 0.6;
 }
 
-.combo-box-base:success, .combo-box-base:success:focused {
-    -fx-background-color: -color-success-emphasis, -color-bg-default;
+.combo-box-base:success,
+.combo-box-base:success:focused {
+    -fx-background-color:
+        -color-success-emphasis,
+        -color-bg-default;
 }
 
-.combo-box-base:danger, .combo-box-base:danger:focused {
-    -fx-background-color: -color-danger-emphasis, -color-bg-default;
+.combo-box-base:danger,
+.combo-box-base:danger:focused {
+    -fx-background-color:
+        -color-danger-emphasis,
+        -color-bg-default;
 }
 
 .combo-box-base:focused {
-    -fx-background-color: -color-accent-emphasis, -color-bg-default;
+    -fx-background-color:
+        -color-accent-emphasis,
+        -color-bg-default;
 }
 
 .combo-box-base.left-pill {
-    -fx-background-radius: 1 0 0 1, 0px 0 0 0px;
-    -fx-background-insets: 0, 1px 0 1px 1px;
+    -fx-background-radius:
+        1 0 0 1,
+        0px 0 0 0px;
+    -fx-background-insets:
+        0,
+        1px 0 1px 1px;
 }
 
 .combo-box-base.left-pill:focused {
@@ -2099,7 +2269,9 @@
 
 .combo-box-base.center-pill {
     -fx-background-radius: 0;
-    -fx-background-insets: 0, 1px 0 1px 0;
+    -fx-background-insets:
+        0,
+        1px 0 1px 0;
 }
 
 .combo-box-base.center-pill:focused {
@@ -2107,8 +2279,12 @@
 }
 
 .combo-box-base.right-pill {
-    -fx-background-radius: 0 1 1 0, 0 0px 0px 0;
-    -fx-background-insets: 0, 1px 1px 1px 0;
+    -fx-background-radius:
+        0 1 1 0,
+        0 0px 0px 0;
+    -fx-background-insets:
+        0,
+        1px 1px 1px 0;
 }
 
 .combo-box-base.right-pill:focused {
@@ -2126,8 +2302,12 @@
 }
 
 .combo-box-base > .text-field {
-    -fx-background-insets: 0, 1px 0 1px 1px;
-    -fx-background-radius: 1 0 0 1, 0px 0 0 0px;
+    -fx-background-insets:
+        0,
+        1px 0 1px 1px;
+    -fx-background-radius:
+        1 0 0 1,
+        0px 0 0 0px;
 }
 
 .combo-box-base:success > .arrow-button > .arrow {
@@ -2159,7 +2339,9 @@
 }
 
 .combo-box-popup > .list-view {
-    -fx-background-color: -color-border-default, -color-bg-default;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-default;
     -fx-background-insets: 0, 1;
     -fx-border-radius: 1, 0px;
     -fx-background-radius: 1, 0px;
@@ -2176,7 +2358,8 @@
     -fx-text-fill: -color-fg-default;
 }
 
-.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell .font-icon, .combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell .ikonli-font-icon {
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell .font-icon,
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell .ikonli-font-icon {
     -fx-icon-color: -color-fg-default;
     -fx-fill: -color-fg-default;
 }
@@ -2186,17 +2369,22 @@
     -fx-text-fill: -color-fg-default;
 }
 
-.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:hover .font-icon, .combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:hover .ikonli-font-icon {
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:hover .font-icon,
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:hover .ikonli-font-icon {
     -fx-icon-color: -color-fg-default;
     -fx-fill: -color-fg-default;
 }
 
-.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected, .combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected:hover {
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected,
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected:hover {
     -fx-background-color: -color-base-2;
     -fx-text-fill: -color-fg-default;
 }
 
-.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected .font-icon, .combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected .ikonli-font-icon, .combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected:hover .font-icon, .combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected:hover .ikonli-font-icon {
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected .font-icon,
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected .ikonli-font-icon,
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected:hover .font-icon,
+.combo-box-popup > .list-view > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected:hover .ikonli-font-icon {
     -fx-icon-color: -color-fg-default;
     -fx-fill: -color-fg-default;
 }
@@ -2206,7 +2394,9 @@
 }
 
 .choice-box {
-    -fx-background-color: -color-border-default, -color-bg-default;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-default;
     -fx-background-insets: 0, 1px;
     -fx-background-radius: 1, 0px;
     -fx-text-fill: -color-fg-default;
@@ -2219,21 +2409,33 @@
     -fx-opacity: 0.6;
 }
 
-.choice-box:success, .choice-box:success:focused {
-    -fx-background-color: -color-success-emphasis, -color-bg-default;
+.choice-box:success,
+.choice-box:success:focused {
+    -fx-background-color:
+        -color-success-emphasis,
+        -color-bg-default;
 }
 
-.choice-box:danger, .choice-box:danger:focused {
-    -fx-background-color: -color-danger-emphasis, -color-bg-default;
+.choice-box:danger,
+.choice-box:danger:focused {
+    -fx-background-color:
+        -color-danger-emphasis,
+        -color-bg-default;
 }
 
 .choice-box:focused {
-    -fx-background-color: -color-accent-emphasis, -color-bg-default;
+    -fx-background-color:
+        -color-accent-emphasis,
+        -color-bg-default;
 }
 
 .choice-box.left-pill {
-    -fx-background-radius: 1 0 0 1, 0px 0 0 0px;
-    -fx-background-insets: 0, 1px 0 1px 1px;
+    -fx-background-radius:
+        1 0 0 1,
+        0px 0 0 0px;
+    -fx-background-insets:
+        0,
+        1px 0 1px 1px;
 }
 
 .choice-box.left-pill:focused {
@@ -2242,7 +2444,9 @@
 
 .choice-box.center-pill {
     -fx-background-radius: 0;
-    -fx-background-insets: 0, 1px 0 1px 0;
+    -fx-background-insets:
+        0,
+        1px 0 1px 0;
 }
 
 .choice-box.center-pill:focused {
@@ -2250,8 +2454,12 @@
 }
 
 .choice-box.right-pill {
-    -fx-background-radius: 0 1 1 0, 0 0px 0px 0;
-    -fx-background-insets: 0, 1px 1px 1px 0;
+    -fx-background-radius:
+        0 1 1 0,
+        0 0px 0px 0;
+    -fx-background-insets:
+        0,
+        1px 1px 1px 0;
 }
 
 .choice-box.right-pill:focused {
@@ -2313,12 +2521,14 @@
     -fx-padding: 8px 0 8px 0;
 }
 
-.custom-text-field:success .font-icon, .custom-text-field:success .ikonli-font-icon {
+.custom-text-field:success .font-icon,
+.custom-text-field:success .ikonli-font-icon {
     -fx-icon-color: -color-success-fg;
     -fx-fill: -color-success-fg;
 }
 
-.custom-text-field:danger .font-icon, .custom-text-field:danger .ikonli-font-icon {
+.custom-text-field:danger .font-icon,
+.custom-text-field:danger .ikonli-font-icon {
     -fx-icon-color: -color-danger-fg;
     -fx-fill: -color-danger-fg;
 }
@@ -2328,7 +2538,9 @@
 .table-view > .virtual-flow > .clipped-container > .sheet > .table-row-cell:filled:selected,
 .tree-table-view > .virtual-flow > .clipped-container > .sheet > .tree-table-row-cell:filled:selected {
     -color-cell-fg: -color-cell-fg-selected;
-    -fx-background-color: -color-cell-border, -color-cell-bg-selected;
+    -fx-background-color:
+        -color-cell-border,
+        -color-cell-bg-selected;
 }
 
 .list-view:focused > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected,
@@ -2336,7 +2548,9 @@
 .table-view:focused > .virtual-flow > .clipped-container > .sheet > .table-row-cell:filled:selected,
 .tree-table-view:focused > .virtual-flow > .clipped-container > .sheet > .tree-table-row-cell:filled:selected {
     -color-cell-fg: -color-cell-fg-selected-focused;
-    -fx-background-color: -color-cell-border, -color-cell-bg-selected-focused;
+    -fx-background-color:
+        -color-cell-border,
+        -color-cell-bg-selected-focused;
 }
 
 .table-view > .virtual-flow > .clipped-container > .sheet > .table-row-cell .table-cell:selected,
@@ -2386,7 +2600,10 @@
 
 .table-view > .virtual-flow > .clipped-container > .sheet > .table-row-cell .text-field-table-cell:focus-within {
     -fx-background-insets: 0, 1, 2;
-    -fx-background-color: -color-bg-default, -color-accent-emphasis, -color-bg-default;
+    -fx-background-color:
+        -color-bg-default,
+        -color-accent-emphasis,
+        -color-bg-default;
 }
 
 .list-view {
@@ -2477,13 +2694,21 @@
 }
 
 .table-view.bordered > .column-header-background .column-header {
-    -fx-background-color: -color-cell-border, -color-header-bg;
-    -fx-background-insets: 0, 0 1 0 0;
+    -fx-background-color:
+        -color-cell-border,
+        -color-header-bg;
+    -fx-background-insets:
+        0,
+        0 1 0 0;
 }
 
 .table-view > .column-header-background {
-    -fx-background-color: -color-cell-border, -color-header-bg;
-    -fx-background-insets: 0, 0 0 1 0;
+    -fx-background-color:
+        -color-cell-border,
+        -color-header-bg;
+    -fx-background-insets:
+        0,
+        0 0 1 0;
 }
 
 .table-view > .column-header-background .column-header {
@@ -2583,11 +2808,15 @@
 }
 
 .table-view.striped.bordered .table-row-cell {
-    -fx-background-insets: 0, 0 0 1 0;
+    -fx-background-insets:
+        0,
+        0 0 1 0;
 }
 
 .table-view.striped .table-row-cell:filled:odd {
-    -fx-background-color: -color-cell-border, -color-cell-bg-odd;
+    -fx-background-color:
+        -color-cell-border,
+        -color-cell-bg-odd;
 }
 
 Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header-background {
@@ -2597,8 +2826,12 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .table-view .table-row-cell {
-    -fx-background-color: -color-cell-border, -color-cell-bg;
-    -fx-background-insets: 0, 0 0 1 0;
+    -fx-background-color:
+        -color-cell-border,
+        -color-cell-bg;
+    -fx-background-insets:
+        0,
+        0 0 1 0;
     -fx-padding: 0;
     -fx-cell-size: 2.8em;
 }
@@ -2746,13 +2979,21 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .tree-table-view.bordered > .column-header-background .column-header {
-    -fx-background-color: -color-cell-border, -color-header-bg;
-    -fx-background-insets: 0, 0 1 0 0;
+    -fx-background-color:
+        -color-cell-border,
+        -color-header-bg;
+    -fx-background-insets:
+        0,
+        0 1 0 0;
 }
 
 .tree-table-view > .column-header-background {
-    -fx-background-color: -color-cell-border, -color-header-bg;
-    -fx-background-insets: 0, 0 0 1 0;
+    -fx-background-color:
+        -color-cell-border,
+        -color-header-bg;
+    -fx-background-insets:
+        0,
+        0 0 1 0;
 }
 
 .tree-table-view > .column-header-background .column-header {
@@ -2856,11 +3097,15 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .tree-table-view.striped.bordered .tree-table-row-cell {
-    -fx-background-insets: 0, 0 0 1 0;
+    -fx-background-insets:
+        0,
+        0 0 1 0;
 }
 
 .tree-table-view.striped .tree-table-row-cell:filled:odd {
-    -fx-background-color: -color-cell-border, -color-cell-bg-odd;
+    -fx-background-color:
+        -color-cell-border,
+        -color-cell-bg-odd;
 }
 
 .tree-table-view.no-header > .column-header-background {
@@ -2870,8 +3115,12 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .tree-table-view .tree-table-row-cell {
-    -fx-background-color: -color-cell-border, -color-cell-bg;
-    -fx-background-insets: 0, 0 0 1 0;
+    -fx-background-color:
+        -color-cell-border,
+        -color-cell-bg;
+    -fx-background-insets:
+        0,
+        0 0 1 0;
     -fx-padding: 0;
     -fx-cell-size: 2.8em;
     -fx-indent: 1em;
@@ -2929,11 +3178,15 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .combo-box-base.date-picker > .text-field:readonly {
-    -fx-background-color: -color-input-border, -color-input-bg;
+    -fx-background-color:
+        -color-input-border,
+        -color-input-bg;
 }
 
 .combo-box-base.date-picker > .text-field:readonly:focused {
-    -fx-background-color: -color-input-border-focused, -color-input-bg-focused;
+    -fx-background-color:
+        -color-input-border-focused,
+        -color-input-bg-focused;
 }
 
 .combo-box-popup > .date-picker-popup {
@@ -2958,7 +3211,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -color-date-today-fg: -color-accent-fg;
     -color-date-other-month-fg: -color-fg-subtle;
     -color-date-chrono-fg: -color-success-fg;
-    -fx-background-color: -color-date-border, -color-date-bg;
+    -fx-background-color:
+        -color-date-border,
+        -color-date-bg;
     -fx-background-insets: 0, 1;
     -fx-background-radius: 1, 0px;
     -fx-alignment: CENTER;
@@ -3197,8 +3452,12 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 
 .dialog-pane:header > .header-panel {
     -fx-padding: 1em 1em 1em 1em;
-    -fx-background-color: -color-border-default, -color-bg-inset;
-    -fx-background-insets: 0, 0 0 1px 0;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-inset;
+    -fx-background-insets:
+        0,
+        0 0 1px 0;
 }
 
 .dialog-pane:header > .header-panel > .label {
@@ -3218,7 +3477,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .dialog-pane.information > .header-panel {
-    -fx-background-color: -color-accent-fg, -color-bg-subtle;
+    -fx-background-color:
+        -color-accent-fg,
+        -color-bg-subtle;
 }
 
 .dialog-pane.information > .header-panel > .label {
@@ -3226,7 +3487,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .dialog-pane.warning > .header-panel {
-    -fx-background-color: -color-warning-fg, -color-bg-subtle;
+    -fx-background-color:
+        -color-warning-fg,
+        -color-bg-subtle;
 }
 
 .dialog-pane.warning > .header-panel > .label {
@@ -3234,7 +3497,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .dialog-pane.error > .header-panel {
-    -fx-background-color: -color-danger-fg, -color-bg-subtle;
+    -fx-background-color:
+        -color-danger-fg,
+        -color-bg-subtle;
 }
 
 .dialog-pane.error > .header-panel > .label {
@@ -3260,13 +3525,17 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .html-editor {
-    -fx-background-color: -color-border-default, -color-bg-default;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-default;
     -fx-background-insets: 0, 1px;
     -fx-padding: 2px;
 }
 
 .html-editor:contains-focus {
-    -fx-background-color: -color-accent-emphasis, -color-bg-default;
+    -fx-background-color:
+        -color-accent-emphasis,
+        -color-bg-default;
 }
 
 .html-editor .tool-bar {
@@ -3299,7 +3568,8 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-color-label-visible: false;
 }
 
-.color-picker.html-editor-foreground > .color-picker-label > .picker-color > .picker-color-rect, .color-picker.html-editor-background > .color-picker-label > .picker-color > .picker-color-rect {
+.color-picker.html-editor-foreground > .color-picker-label > .picker-color > .picker-color-rect,
+.color-picker.html-editor-background > .color-picker-label > .picker-color > .picker-color-rect {
     -fx-stroke: none;
 }
 
@@ -3429,14 +3699,20 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-stroke: -color-fg-default;
 }
 
-.label.left-pill, .label.center-pill, .label.right-pill {
+.label.left-pill,
+.label.center-pill,
+.label.right-pill {
     -fx-padding: 8px 12px 8px 12px;
-    -fx-background-color: -color-border-default, -color-bg-subtle;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-subtle;
     -fx-background-insets: 0, 1px;
 }
 
 .label.left-pill {
-    -fx-background-radius: 1 0 0 1, 0px 0 0 0px;
+    -fx-background-radius:
+        1 0 0 1,
+        0px 0 0 0px;
 }
 
 .label.center-pill {
@@ -3444,14 +3720,17 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .label.right-pill {
-    -fx-background-radius: 0 1 1 0, 0 0px 0px 0;
+    -fx-background-radius:
+        0 1 1 0,
+        0 0px 0px 0;
 }
 
 .label.accent {
     -fx-text-fill: -color-accent-fg;
 }
 
-.label.accent .font-icon, .label.accent .ikonli-font-icon {
+.label.accent .font-icon,
+.label.accent .ikonli-font-icon {
     -fx-icon-color: -color-accent-fg;
     -fx-fill: -color-accent-fg;
 }
@@ -3460,7 +3739,8 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-text-fill: -color-success-fg;
 }
 
-.label.success .font-icon, .label.success .ikonli-font-icon {
+.label.success .font-icon,
+.label.success .ikonli-font-icon {
     -fx-icon-color: -color-success-fg;
     -fx-fill: -color-success-fg;
 }
@@ -3469,7 +3749,8 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-text-fill: -color-warning-fg;
 }
 
-.label.warning .font-icon, .label.warning .ikonli-font-icon {
+.label.warning .font-icon,
+.label.warning .ikonli-font-icon {
     -fx-icon-color: -color-warning-fg;
     -fx-fill: -color-warning-fg;
 }
@@ -3478,7 +3759,8 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-text-fill: -color-danger-fg;
 }
 
-.label.danger .font-icon, .label.danger .ikonli-font-icon {
+.label.danger .font-icon,
+.label.danger .ikonli-font-icon {
     -fx-icon-color: -color-danger-fg;
     -fx-fill: -color-danger-fg;
 }
@@ -3487,7 +3769,8 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-text-fill: -color-fg-muted;
 }
 
-.label.text-muted .font-icon, .label.text-muted .ikonli-font-icon {
+.label.text-muted .font-icon,
+.label.text-muted .ikonli-font-icon {
     -fx-icon-color: -color-fg-muted;
     -fx-fill: -color-fg-muted;
 }
@@ -3496,7 +3779,8 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-text-fill: -color-fg-subtle;
 }
 
-.label.text-subtle .font-icon, .label.text-subtle .ikonli-font-icon {
+.label.text-subtle .font-icon,
+.label.text-subtle .ikonli-font-icon {
     -fx-icon-color: -color-fg-subtle;
     -fx-fill: -color-fg-subtle;
 }
@@ -3505,7 +3789,8 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-text-fill: -color-fg-emphasis;
 }
 
-.label.text-on-emphasis .font-icon, .label.text-on-emphasis .ikonli-font-icon {
+.label.text-on-emphasis .font-icon,
+.label.text-on-emphasis .ikonli-font-icon {
     -fx-icon-color: -color-fg-emphasis;
     -fx-fill: -color-fg-emphasis;
 }
@@ -3514,7 +3799,8 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-text-fill: -color-accent-emphasis;
 }
 
-.label:accent .font-icon, .label:accent .ikonli-font-icon {
+.label:accent .font-icon,
+.label:accent .ikonli-font-icon {
     -fx-icon-color: -color-accent-fg;
     -fx-fill: -color-accent-fg;
 }
@@ -3523,7 +3809,8 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-text-fill: -color-success-emphasis;
 }
 
-.label:success .font-icon, .label:success .ikonli-font-icon {
+.label:success .font-icon,
+.label:success .ikonli-font-icon {
     -fx-icon-color: -color-success-fg;
     -fx-fill: -color-success-fg;
 }
@@ -3532,7 +3819,8 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-text-fill: -color-warning-emphasis;
 }
 
-.label:warning .font-icon, .label:warning .ikonli-font-icon {
+.label:warning .font-icon,
+.label:warning .ikonli-font-icon {
     -fx-icon-color: -color-warning-fg;
     -fx-fill: -color-warning-fg;
 }
@@ -3541,14 +3829,19 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-text-fill: -color-danger-emphasis;
 }
 
-.label:danger .font-icon, .label:danger .ikonli-font-icon {
+.label:danger .font-icon,
+.label:danger .ikonli-font-icon {
     -fx-icon-color: -color-danger-fg;
     -fx-fill: -color-danger-fg;
 }
 
 .menu-bar {
-    -fx-background-color: -color-border-muted, -color-bg-subtle;
-    -fx-background-insets: 0 0 0 0, 0 0 1 0;
+    -fx-background-color:
+        -color-border-muted,
+        -color-bg-subtle;
+    -fx-background-insets:
+        0 0 0 0,
+        0 0 1 0;
     -fx-background-radius: 0;
     -fx-padding: 0;
 }
@@ -3579,8 +3872,12 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-background-color: transparent;
 }
 
-.menu-bar > .container > .menu-button:hover, .menu-bar > .container > .menu-button:focused, .menu-bar > .container > .menu-button:showing {
-    -fx-background-color: -color-base-1, -color-base-1;
+.menu-bar > .container > .menu-button:hover,
+.menu-bar > .container > .menu-button:focused,
+.menu-bar > .container > .menu-button:showing {
+    -fx-background-color:
+        -color-base-1,
+        -color-base-1;
 }
 
 .menu {
@@ -3631,7 +3928,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .menu-item:focused {
-    -fx-background-color: -color-base-1, -color-base-1;
+    -fx-background-color:
+        -color-base-1,
+        -color-base-1;
 }
 
 .menu-item:focused > .label {
@@ -3642,7 +3941,8 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-background-color: -color-fg-default;
 }
 
-.menu-item:focused .font-icon, .menu-item:focused .ikonli-font-icon {
+.menu-item:focused .font-icon,
+.menu-item:focused .ikonli-font-icon {
     -fx-icon-color: -color-fg-default;
     -fx-fill: -color-fg-default;
 }
@@ -3673,11 +3973,15 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-padding: 8px 12px 8px 12px;
 }
 
-.caption-menu-item:hover, .caption-menu-item:focused, .caption-menu-item:pressed {
+.caption-menu-item:hover,
+.caption-menu-item:focused,
+.caption-menu-item:pressed {
     -fx-background-color: transparent;
 }
 
-.caption-menu-item:hover > .label, .caption-menu-item:focused > .label, .caption-menu-item:pressed > .label {
+.caption-menu-item:hover > .label,
+.caption-menu-item:focused > .label,
+.caption-menu-item:pressed > .label {
     -fx-text-fill: -color-fg-muted;
 }
 
@@ -3690,7 +3994,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .context-menu {
-    -fx-background-color: -color-border-muted, -color-bg-default;
+    -fx-background-color:
+        -color-border-muted,
+        -color-bg-default;
     -fx-background-insets: 0, 1;
     -fx-padding: 5px 5px 5px 5px;
     -fx-background-radius: 1, 0px;
@@ -3738,7 +4044,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -color-button-fg-pressed: -color-button-fg;
     -color-button-border-pressed: transparent;
     -color-button-shadow: -color-shadow-default;
-    -fx-background-color: -color-button-border, -color-button-bg;
+    -fx-background-color:
+        -color-button-border,
+        -color-button-bg;
     -fx-background-insets: 0, 1px;
     -fx-background-radius: 1, 0px;
     -fx-graphic-text-gap: 6px;
@@ -3748,7 +4056,8 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-alignment: CENTER_LEFT;
 }
 
-.menu-button .font-icon, .menu-button .ikonli-font-icon,
+.menu-button .font-icon,
+.menu-button .ikonli-font-icon,
 .split-menu-button .font-icon,
 .split-menu-button .ikonli-font-icon {
     -fx-icon-color: -color-button-fg;
@@ -3782,12 +4091,17 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 
 .menu-button.left-pill,
 .split-menu-button.left-pill {
-    -fx-background-radius: 1 0 0 1, 0px 0 0 0px;
-    -fx-background-insets: 0, 1px 0 1px 1px;
+    -fx-background-radius:
+        1 0 0 1,
+        0px 0 0 0px;
+    -fx-background-insets:
+        0,
+        1px 0 1px 1px;
     -fx-effect: none;
 }
 
-.menu-button.left-pill:hover, .menu-button.left-pill:focused,
+.menu-button.left-pill:hover,
+.menu-button.left-pill:focused,
 .split-menu-button.left-pill:hover,
 .split-menu-button.left-pill:focused {
     -fx-background-insets: 0, 1px;
@@ -3796,11 +4110,14 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 .menu-button.center-pill,
 .split-menu-button.center-pill {
     -fx-background-radius: 0;
-    -fx-background-insets: 0, 1px 0 1px 0;
+    -fx-background-insets:
+        0,
+        1px 0 1px 0;
     -fx-effect: none;
 }
 
-.menu-button.center-pill:hover, .menu-button.center-pill:focused,
+.menu-button.center-pill:hover,
+.menu-button.center-pill:focused,
 .split-menu-button.center-pill:hover,
 .split-menu-button.center-pill:focused {
     -fx-background-insets: 0, 1px;
@@ -3808,12 +4125,17 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 
 .menu-button.right-pill,
 .split-menu-button.right-pill {
-    -fx-background-radius: 0 1 1 0, 0 0px 0px 0;
-    -fx-background-insets: 0, 1px 1px 1px 0;
+    -fx-background-radius:
+        0 1 1 0,
+        0 0px 0px 0;
+    -fx-background-insets:
+        0,
+        1px 1px 1px 0;
     -fx-effect: none;
 }
 
-.menu-button.right-pill:hover, .menu-button.right-pill:focused,
+.menu-button.right-pill:hover,
+.menu-button.right-pill:focused,
 .split-menu-button.right-pill:hover,
 .split-menu-button.right-pill:focused {
     -fx-background-insets: 0, 1px;
@@ -3856,7 +4178,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 
 .menu-button:hover,
 .split-menu-button:hover {
-    -fx-background-color: -color-button-border-hover, -color-button-bg-hover;
+    -fx-background-color:
+        -color-button-border-hover,
+        -color-button-bg-hover;
     -fx-opacity: 0.9;
 }
 
@@ -3870,7 +4194,8 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-background-color: -color-button-fg-hover;
 }
 
-.menu-button:hover .font-icon, .menu-button:hover .ikonli-font-icon,
+.menu-button:hover .font-icon,
+.menu-button:hover .ikonli-font-icon,
 .split-menu-button:hover .font-icon,
 .split-menu-button:hover .ikonli-font-icon {
     -fx-icon-color: -color-button-fg-hover;
@@ -3879,7 +4204,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 
 .menu-button:focused,
 .split-menu-button:focused {
-    -fx-background-color: -color-button-border-focused, -color-button-bg-focused;
+    -fx-background-color:
+        -color-button-border-focused,
+        -color-button-bg-focused;
 }
 
 .menu-button:focused > .label,
@@ -3892,33 +4219,42 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-background-color: -color-button-fg-focused;
 }
 
-.menu-button:focused .font-icon, .menu-button:focused .ikonli-font-icon,
+.menu-button:focused .font-icon,
+.menu-button:focused .ikonli-font-icon,
 .split-menu-button:focused .font-icon,
 .split-menu-button:focused .ikonli-font-icon {
     -fx-icon-color: -color-button-fg-focused;
     -fx-fill: -color-button-fg-focused;
 }
 
-.menu-button:armed, .menu-button:focused:armed,
+.menu-button:armed,
+.menu-button:focused:armed,
 .split-menu-button:armed,
 .split-menu-button:focused:armed {
-    -fx-background-color: -color-button-border-pressed, -color-button-bg-pressed;
+    -fx-background-color:
+        -color-button-border-pressed,
+        -color-button-bg-pressed;
     -fx-text-fill: -color-button-fg-pressed;
 }
 
-.menu-button:armed > .label, .menu-button:focused:armed > .label,
+.menu-button:armed > .label,
+.menu-button:focused:armed > .label,
 .split-menu-button:armed > .label,
 .split-menu-button:focused:armed > .label {
     -fx-text-fill: -color-button-fg-pressed;
 }
 
-.menu-button:armed > .arrow-button > .arrow, .menu-button:focused:armed > .arrow-button > .arrow,
+.menu-button:armed > .arrow-button > .arrow,
+.menu-button:focused:armed > .arrow-button > .arrow,
 .split-menu-button:armed > .arrow-button > .arrow,
 .split-menu-button:focused:armed > .arrow-button > .arrow {
     -fx-background-color: -color-button-fg-pressed;
 }
 
-.menu-button:armed .font-icon, .menu-button:armed .ikonli-font-icon, .menu-button:focused:armed .font-icon, .menu-button:focused:armed .ikonli-font-icon,
+.menu-button:armed .font-icon,
+.menu-button:armed .ikonli-font-icon,
+.menu-button:focused:armed .font-icon,
+.menu-button:focused:armed .ikonli-font-icon,
 .split-menu-button:armed .font-icon,
 .split-menu-button:armed .ikonli-font-icon,
 .split-menu-button:focused:armed .font-icon,
@@ -4061,7 +4397,8 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-padding: 8px 6px 8px 12px;
 }
 
-.split-menu-button:hover > .arrow-button, .split-menu-button:focused:hover > .arrow-button {
+.split-menu-button:hover > .arrow-button,
+.split-menu-button:focused:hover > .arrow-button {
     -fx-background-color: -color-neutral-emphasis-plus;
     -fx-background-insets: 1px;
     -fx-background-radius: 0px;
@@ -4069,24 +4406,39 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-opacity: 0.75;
 }
 
-.split-menu-button:hover > .arrow-button > .arrow, .split-menu-button:focused:hover > .arrow-button > .arrow {
+.split-menu-button:hover > .arrow-button > .arrow,
+.split-menu-button:focused:hover > .arrow-button > .arrow {
     -fx-background-color: -color-fg-emphasis;
     -fx-opacity: 1;
 }
 
-.split-menu-button:default:hover > .arrow-button, .split-menu-button.accent:hover > .arrow-button, .split-menu-button.success:hover > .arrow-button, .split-menu-button.danger:hover > .arrow-button {
+.split-menu-button:default:hover > .arrow-button,
+.split-menu-button.accent:hover > .arrow-button,
+.split-menu-button.success:hover > .arrow-button,
+.split-menu-button.danger:hover > .arrow-button {
     -fx-background-color: -color-fg-emphasis;
 }
 
-.split-menu-button:default:hover > .arrow-button > .arrow, .split-menu-button.accent:hover > .arrow-button > .arrow, .split-menu-button.success:hover > .arrow-button > .arrow, .split-menu-button.danger:hover > .arrow-button > .arrow {
+.split-menu-button:default:hover > .arrow-button > .arrow,
+.split-menu-button.accent:hover > .arrow-button > .arrow,
+.split-menu-button.success:hover > .arrow-button > .arrow,
+.split-menu-button.danger:hover > .arrow-button > .arrow {
     -fx-background-color: -color-button-bg-hover;
 }
 
-.split-menu-button.button-outlined:hover > .arrow-button, .split-menu-button.button-outlined:focused > .arrow-button {
+.split-menu-button.button-outlined:hover > .arrow-button,
+.split-menu-button.button-outlined:focused > .arrow-button {
     -color-button-fg: -color-fg-default;
 }
 
-.split-menu-button.button-outlined:hover:default > .arrow-button, .split-menu-button.button-outlined:hover.accent > .arrow-button, .split-menu-button.button-outlined:hover.success > .arrow-button, .split-menu-button.button-outlined:hover.danger > .arrow-button, .split-menu-button.button-outlined:focused:default > .arrow-button, .split-menu-button.button-outlined:focused.accent > .arrow-button, .split-menu-button.button-outlined:focused.success > .arrow-button, .split-menu-button.button-outlined:focused.danger > .arrow-button {
+.split-menu-button.button-outlined:hover:default > .arrow-button,
+.split-menu-button.button-outlined:hover.accent > .arrow-button,
+.split-menu-button.button-outlined:hover.success > .arrow-button,
+.split-menu-button.button-outlined:hover.danger > .arrow-button,
+.split-menu-button.button-outlined:focused:default > .arrow-button,
+.split-menu-button.button-outlined:focused.accent > .arrow-button,
+.split-menu-button.button-outlined:focused.success > .arrow-button,
+.split-menu-button.button-outlined:focused.danger > .arrow-button {
     -color-button-fg: -color-fg-emphasis;
 }
 
@@ -4176,7 +4528,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .progress-indicator > .determinate-indicator > .indicator {
-    -fx-background-color: -color-border-default, -color-bg-default;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-default;
     -fx-background-insets: 0, 1;
 }
 
@@ -4303,7 +4657,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .radio-button > .radio {
-    -fx-background-color: -color-border-default, -color-bg-default;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-default;
     -fx-background-insets: 0, 1.5px;
     -fx-background-radius: 1em;
     -fx-padding: 3px;
@@ -4321,7 +4677,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .radio-button > .radio:hover {
-    -fx-background-color: -color-fg-muted, -color-bg-subtle;
+    -fx-background-color:
+        -color-fg-muted,
+        -color-bg-subtle;
 }
 
 .radio-button:disabled {
@@ -4333,11 +4691,15 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .radio-button:selected > .radio {
-    -fx-background-color: -color-accent-emphasis, -color-accent-emphasis;
+    -fx-background-color:
+        -color-accent-emphasis,
+        -color-accent-emphasis;
 }
 
 .radio-button:selected > .radio > .dot {
-    -fx-background-color: -color-accent-emphasis, -color-fg-emphasis;
+    -fx-background-color:
+        -color-accent-emphasis,
+        -color-fg-emphasis;
     -fx-background-insets: 0, 1px;
 }
 
@@ -4388,7 +4750,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-pref-width: 8px;
 }
 
-.scroll-bar:hover, .scroll-bar:pressed, .scroll-bar:focused {
+.scroll-bar:hover,
+.scroll-bar:pressed,
+.scroll-bar:focused {
     -fx-opacity: 1;
 }
 
@@ -4472,11 +4836,15 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .spinner > .text-field:readonly {
-    -fx-background-color: -color-input-border, -color-input-bg;
+    -fx-background-color:
+        -color-input-border,
+        -color-input-bg;
 }
 
 .spinner > .text-field:readonly:focused {
-    -fx-background-color: -color-input-border-focused, -color-input-bg-focused;
+    -fx-background-color:
+        -color-input-border-focused,
+        -color-input-bg-focused;
 }
 
 .spinner > .increment-arrow-button {
@@ -4521,7 +4889,8 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-opacity: 0.6;
 }
 
-.spinner:focused:focused, .spinner:contains-focus:focused {
+.spinner:focused:focused,
+.spinner:contains-focus:focused {
     -fx-border-color: -color-accent-emphasis;
 }
 
@@ -4691,12 +5060,18 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .tab-pane > .tab-header-area > .tab-header-background {
-    -fx-background-insets: 0 0 0 0, 0 0 2px 0;
-    -fx-background-color: -color-border-default, -color-bg-default;
+    -fx-background-insets:
+        0 0 0 0,
+        0 0 2px 0;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-default;
 }
 
 .tab-pane > .tab-header-area > .headers-region > .tab {
-    -fx-background-insets: 0 0 0 0, 0 0 2px 0;
+    -fx-background-insets:
+        0 0 0 0,
+        0 0 2px 0;
     -fx-background-color: transparent, transparent;
     -fx-padding: 0.3em 0.6em 0.3em 0.6em;
 }
@@ -4725,70 +5100,93 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .tab-pane > .tab-header-area > .headers-region > .tab:hover {
-    -fx-background-color: -color-border-default, -color-bg-subtle;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-subtle;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab:top:selected, .tab-pane > .tab-header-area > .headers-region > .tab:bottom:selected {
-    -fx-background-color: -color-tab-border-selected, -color-tab-bg-selected;
+.tab-pane > .tab-header-area > .headers-region > .tab:top:selected,
+.tab-pane > .tab-header-area > .headers-region > .tab:bottom:selected {
+    -fx-background-color:
+        -color-tab-border-selected,
+        -color-tab-bg-selected;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab:top:selected > .tab-container > .tab-label, .tab-pane > .tab-header-area > .headers-region > .tab:bottom:selected > .tab-container > .tab-label {
+.tab-pane > .tab-header-area > .headers-region > .tab:top:selected > .tab-container > .tab-label,
+.tab-pane > .tab-header-area > .headers-region > .tab:bottom:selected > .tab-container > .tab-label {
     -fx-fill: -color-tab-fg-selected;
     -fx-text-fill: -color-tab-fg-selected;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab:top:selected > .tab-container > .tab-label > *, .tab-pane > .tab-header-area > .headers-region > .tab:bottom:selected > .tab-container > .tab-label > * {
+.tab-pane > .tab-header-area > .headers-region > .tab:top:selected > .tab-container > .tab-label > *,
+.tab-pane > .tab-header-area > .headers-region > .tab:bottom:selected > .tab-container > .tab-label > * {
     -fx-fill: -color-tab-fg-selected;
     -fx-icon-color: -color-tab-fg-selected;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab:top:selected > .tab-container > .tab-close-button, .tab-pane > .tab-header-area > .headers-region > .tab:bottom:selected > .tab-container > .tab-close-button {
+.tab-pane > .tab-header-area > .headers-region > .tab:top:selected > .tab-container > .tab-close-button,
+.tab-pane > .tab-header-area > .headers-region > .tab:bottom:selected > .tab-container > .tab-close-button {
     -fx-background-color: -color-tab-fg-selected;
 }
 
 .tab-pane > .tab-header-area > .headers-region > .tab:disabled {
-    -fx-background-color: -color-border-default, -color-bg-default;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-default;
 }
 
 .tab-pane > .tab-header-area > .headers-region > .tab:disabled > .tab-container {
     -fx-opacity: 0.6;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab:left > .tab-container > .tab-label, .tab-pane > .tab-header-area > .headers-region > .tab:right > .tab-container > .tab-label {
+.tab-pane > .tab-header-area > .headers-region > .tab:left > .tab-container > .tab-label,
+.tab-pane > .tab-header-area > .headers-region > .tab:right > .tab-container > .tab-label {
     -fx-padding: 0.2em 0.4em 0.2em 0.4em;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab:left:hover, .tab-pane > .tab-header-area > .headers-region > .tab:right:hover {
-    -fx-background-color: -color-border-default, -color-bg-subtle;
+.tab-pane > .tab-header-area > .headers-region > .tab:left:hover,
+.tab-pane > .tab-header-area > .headers-region > .tab:right:hover {
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-subtle;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab:left:hover > .tab-container > .tab-label, .tab-pane > .tab-header-area > .headers-region > .tab:right:hover > .tab-container > .tab-label {
+.tab-pane > .tab-header-area > .headers-region > .tab:left:hover > .tab-container > .tab-label,
+.tab-pane > .tab-header-area > .headers-region > .tab:right:hover > .tab-container > .tab-label {
     -fx-text-fill: -color-fg-default;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab:left:hover > .tab-container > .tab-close-button, .tab-pane > .tab-header-area > .headers-region > .tab:right:hover > .tab-container > .tab-close-button {
+.tab-pane > .tab-header-area > .headers-region > .tab:left:hover > .tab-container > .tab-close-button,
+.tab-pane > .tab-header-area > .headers-region > .tab:right:hover > .tab-container > .tab-close-button {
     -fx-background-color: -color-fg-default;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab:left:selected, .tab-pane > .tab-header-area > .headers-region > .tab:right:selected {
-    -fx-background-color: -color-tab-border-selected, -color-tab-bg-selected;
+.tab-pane > .tab-header-area > .headers-region > .tab:left:selected,
+.tab-pane > .tab-header-area > .headers-region > .tab:right:selected {
+    -fx-background-color:
+        -color-tab-border-selected,
+        -color-tab-bg-selected;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab:left:selected > .tab-container > .tab-label, .tab-pane > .tab-header-area > .headers-region > .tab:right:selected > .tab-container > .tab-label {
+.tab-pane > .tab-header-area > .headers-region > .tab:left:selected > .tab-container > .tab-label,
+.tab-pane > .tab-header-area > .headers-region > .tab:right:selected > .tab-container > .tab-label {
     -fx-fill: -color-tab-fg-selected;
     -fx-text-fill: -color-tab-fg-selected;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab:left:selected > .tab-container > .tab-label > *, .tab-pane > .tab-header-area > .headers-region > .tab:right:selected > .tab-container > .tab-label > * {
+.tab-pane > .tab-header-area > .headers-region > .tab:left:selected > .tab-container > .tab-label > *,
+.tab-pane > .tab-header-area > .headers-region > .tab:right:selected > .tab-container > .tab-label > * {
     -fx-fill: -color-tab-fg-selected;
     -fx-icon-color: -color-tab-fg-selected;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab:left:selected > .tab-container > .tab-close-button, .tab-pane > .tab-header-area > .headers-region > .tab:right:selected > .tab-container > .tab-close-button {
+.tab-pane > .tab-header-area > .headers-region > .tab:left:selected > .tab-container > .tab-close-button,
+.tab-pane > .tab-header-area > .headers-region > .tab:right:selected > .tab-container > .tab-close-button {
     -fx-background-color: -color-tab-fg-selected;
 }
 
-.tab-pane > .tab-header-area > .headers-region > .tab:left:disabled, .tab-pane > .tab-header-area > .headers-region > .tab:right:disabled {
+.tab-pane > .tab-header-area > .headers-region > .tab:left:disabled,
+.tab-pane > .tab-header-area > .headers-region > .tab:right:disabled {
     -fx-background-color: transparent;
 }
 
@@ -4814,7 +5212,8 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-padding: 0.2em 0.2em 0.2em 0.2em;
 }
 
-.tab-pane.dense > .tab-header-area > .headers-region > .tab:left > .tab-container > .tab-label, .tab-pane.dense > .tab-header-area > .headers-region > .tab:right > .tab-container > .tab-label {
+.tab-pane.dense > .tab-header-area > .headers-region > .tab:left > .tab-container > .tab-label,
+.tab-pane.dense > .tab-header-area > .headers-region > .tab:right > .tab-container > .tab-label {
     -fx-padding: 0.15em 0.3em 0.15em 0.3em;
 }
 
@@ -4825,8 +5224,12 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .tab-pane.floating > .tab-header-area {
-    -fx-background-color: -color-border-default, -color-bg-inset;
-    -fx-background-insets: 0, 0 0 1px 0;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-inset;
+    -fx-background-insets:
+        0,
+        0 0 1px 0;
 }
 
 .tab-pane.floating > .tab-header-area > .headers-region > .tab {
@@ -4836,11 +5239,17 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .tab-pane.floating > .tab-header-area > .headers-region > .tab > .tab-container {
-    -fx-background-color: -color-border-subtle, -color-bg-inset;
-    -fx-background-insets: 0, 0 1 0 0;
+    -fx-background-color:
+        -color-border-subtle,
+        -color-bg-inset;
+    -fx-background-insets:
+        0,
+        0 1 0 0;
     -fx-background-radius: 0;
     -fx-border-radius: 1;
-    -fx-border-width: 1px, 0 3px 0 0;
+    -fx-border-width:
+        1px,
+        0 3px 0 0;
     -fx-border-color: transparent, transparent;
 }
 
@@ -4851,22 +5260,26 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-alignment: CENTER_LEFT;
 }
 
-.tab-pane.floating > .tab-header-area > .headers-region > .tab:hover > .tab-container, .tab-pane.floating > .tab-header-area > .headers-region > .tab:selected > .tab-container {
+.tab-pane.floating > .tab-header-area > .headers-region > .tab:hover > .tab-container,
+.tab-pane.floating > .tab-header-area > .headers-region > .tab:selected > .tab-container {
     -fx-background-color: -color-tab-bg-selected;
     -fx-border-color: -color-tab-border-selected, transparent;
 }
 
-.tab-pane.floating > .tab-header-area > .headers-region > .tab:hover > .tab-container > .tab-label, .tab-pane.floating > .tab-header-area > .headers-region > .tab:selected > .tab-container > .tab-label {
+.tab-pane.floating > .tab-header-area > .headers-region > .tab:hover > .tab-container > .tab-label,
+.tab-pane.floating > .tab-header-area > .headers-region > .tab:selected > .tab-container > .tab-label {
     -fx-fill: -color-tab-fg-selected;
     -fx-text-fill: -color-tab-fg-selected;
 }
 
-.tab-pane.floating > .tab-header-area > .headers-region > .tab:hover > .tab-container > .tab-label > *, .tab-pane.floating > .tab-header-area > .headers-region > .tab:selected > .tab-container > .tab-label > * {
+.tab-pane.floating > .tab-header-area > .headers-region > .tab:hover > .tab-container > .tab-label > *,
+.tab-pane.floating > .tab-header-area > .headers-region > .tab:selected > .tab-container > .tab-label > * {
     -fx-fill: -color-tab-fg-selected;
     -fx-icon-color: -color-tab-fg-selected;
 }
 
-.tab-pane.floating > .tab-header-area > .headers-region > .tab:hover > .tab-container > .tab-close-button, .tab-pane.floating > .tab-header-area > .headers-region > .tab:selected > .tab-container > .tab-close-button {
+.tab-pane.floating > .tab-header-area > .headers-region > .tab:hover > .tab-container > .tab-close-button,
+.tab-pane.floating > .tab-header-area > .headers-region > .tab:selected > .tab-container > .tab-close-button {
     -fx-background-color: -color-tab-fg-selected;
 }
 
@@ -4889,8 +5302,12 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .tab-pane.classic > .tab-header-area > .tab-header-background {
-    -fx-background-insets: 0 0 0 0, 0 0 2px 0;
-    -fx-background-color: -color-border-muted, -color-bg-subtle;
+    -fx-background-insets:
+        0 0 0 0,
+        0 0 2px 0;
+    -fx-background-color:
+        -color-border-muted,
+        -color-bg-subtle;
 }
 
 .tab-pane.classic > .tab-header-area > .headers-region > .tab {
@@ -4902,17 +5319,28 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-padding: 0;
 }
 
-.tab-pane.classic > .tab-header-area > .headers-region > .tab:top:selected, .tab-pane.classic > .tab-header-area > .headers-region > .tab:bottom:selected {
-    -fx-background-insets: 0 0 0 0, 2px 2px 0 2px;
-    -fx-background-color: -color-tab-border-selected, -color-tab-bg-selected;
+.tab-pane.classic > .tab-header-area > .headers-region > .tab:top:selected,
+.tab-pane.classic > .tab-header-area > .headers-region > .tab:bottom:selected {
+    -fx-background-insets:
+        0 0 0 0,
+        2px 2px 0 2px;
+    -fx-background-color:
+        -color-tab-border-selected,
+        -color-tab-bg-selected;
 }
 
-.tab-pane.classic > .tab-header-area > .headers-region > .tab:left:selected, .tab-pane.classic > .tab-header-area > .headers-region > .tab:right:selected {
-    -fx-background-insets: 0 0 0 0, 2px 2px 0 2px;
-    -fx-background-color: -color-tab-border-selected, -color-tab-bg-selected;
+.tab-pane.classic > .tab-header-area > .headers-region > .tab:left:selected,
+.tab-pane.classic > .tab-header-area > .headers-region > .tab:right:selected {
+    -fx-background-insets:
+        0 0 0 0,
+        2px 2px 0 2px;
+    -fx-background-color:
+        -color-tab-border-selected,
+        -color-tab-bg-selected;
 }
 
-.tab-pane.classic > .tab-header-area > .headers-region > .tab:hover > .tab-container, .tab-pane.classic > .tab-header-area > .headers-region > .tab:selected > .tab-container {
+.tab-pane.classic > .tab-header-area > .headers-region > .tab:hover > .tab-container,
+.tab-pane.classic > .tab-header-area > .headers-region > .tab:selected > .tab-container {
     -fx-border-color: none;
 }
 
@@ -4933,7 +5361,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -color-input-bg-readonly: -color-bg-subtle;
     -color-input-bg-highlight: -color-accent-subtle;
     -color-input-fg-highlight: -color-fg-default;
-    -fx-background-color: -color-input-border, -color-input-bg;
+    -fx-background-color:
+        -color-input-border,
+        -color-input-bg;
     -fx-background-insets: 0, 1px;
     -fx-background-radius: 1, 0px;
     -fx-text-fill: -color-input-fg;
@@ -4945,7 +5375,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .text-input:focused {
-    -fx-background-color: -color-input-border-focused, -color-input-bg-focused;
+    -fx-background-color:
+        -color-input-border-focused,
+        -color-input-bg-focused;
     -fx-prompt-text-fill: transparent;
 }
 
@@ -4972,11 +5404,15 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .text-input:readonly {
-    -fx-background-color: -color-input-border, -color-input-bg-readonly;
+    -fx-background-color:
+        -color-input-border,
+        -color-input-bg-readonly;
 }
 
 .text-input:readonly:focused {
-    -fx-background-color: -color-input-border-focused, -color-input-bg-readonly;
+    -fx-background-color:
+        -color-input-border-focused,
+        -color-input-bg-readonly;
 }
 
 .text-input.edge-to-edge {
@@ -4986,8 +5422,12 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .text-input.left-pill {
-    -fx-background-radius: 1 0 0 1, 0px 0 0 0px;
-    -fx-background-insets: 0, 1px 0 1px 1px;
+    -fx-background-radius:
+        1 0 0 1,
+        0px 0 0 0px;
+    -fx-background-insets:
+        0,
+        1px 0 1px 1px;
 }
 
 .text-input.left-pill:focused {
@@ -4996,7 +5436,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 
 .text-input.center-pill {
     -fx-background-radius: 0;
-    -fx-background-insets: 0, 1px 0 1px 0;
+    -fx-background-insets:
+        0,
+        1px 0 1px 0;
 }
 
 .text-input.center-pill:focused {
@@ -5004,8 +5446,12 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .text-input.right-pill {
-    -fx-background-radius: 0 1 1 0, 0 0px 0px 0;
-    -fx-background-insets: 0, 1px 1px 1px 0;
+    -fx-background-radius:
+        0 1 1 0,
+        0 0px 0px 0;
+    -fx-background-insets:
+        0,
+        1px 1px 1px 0;
 }
 
 .text-input.right-pill:focused {
@@ -5110,7 +5556,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .titled-pane > .title {
-    -fx-background-color: -color-border-default, -color-bg-default;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-default;
     -fx-padding: 10px 20px 10px 20px;
 }
 
@@ -5148,8 +5596,12 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .titled-pane:expanded > .title {
-    -fx-background-radius: 1 1 0 0, 0px 0px 0 0;
-    -fx-background-insets: 0, 1px 1px 0 1px;
+    -fx-background-radius:
+        1 1 0 0,
+        0px 0px 0 0;
+    -fx-background-insets:
+        0,
+        1px 1px 0 1px;
 }
 
 .titled-pane:collapsed > .title {
@@ -5200,7 +5652,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -color-button-fg-pressed: -color-button-fg;
     -color-button-border-pressed: transparent;
     -color-button-shadow: -color-shadow-default;
-    -fx-background-color: -color-button-border, -color-button-bg;
+    -fx-background-color:
+        -color-button-border,
+        -color-button-bg;
     -fx-background-insets: 0, 1px;
     -fx-background-radius: 1, 0px;
     -fx-graphic-text-gap: 6px;
@@ -5211,7 +5665,8 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
     -fx-padding: 8px 12px 8px 12px;
 }
 
-.toggle-button .font-icon, .toggle-button .ikonli-font-icon {
+.toggle-button .font-icon,
+.toggle-button .ikonli-font-icon {
     -fx-icon-color: -color-button-fg;
     -fx-fill: -color-button-fg;
 }
@@ -5238,42 +5693,61 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .toggle-button.left-pill {
-    -fx-background-radius: 1 0 0 1, 0px 0 0 0px;
-    -fx-background-insets: 0, 1px 0 1px 1px;
+    -fx-background-radius:
+        1 0 0 1,
+        0px 0 0 0px;
+    -fx-background-insets:
+        0,
+        1px 0 1px 1px;
     -fx-effect: none;
 }
 
-.toggle-button.left-pill:hover, .toggle-button.left-pill:focused {
+.toggle-button.left-pill:hover,
+.toggle-button.left-pill:focused {
     -fx-background-insets: 0, 1px;
 }
 
 .toggle-button.center-pill {
     -fx-background-radius: 0;
-    -fx-background-insets: 0, 1px 0 1px 0;
+    -fx-background-insets:
+        0,
+        1px 0 1px 0;
     -fx-effect: none;
 }
 
-.toggle-button.center-pill:hover, .toggle-button.center-pill:focused {
+.toggle-button.center-pill:hover,
+.toggle-button.center-pill:focused {
     -fx-background-insets: 0, 1px;
 }
 
 .toggle-button.right-pill {
-    -fx-background-radius: 0 1 1 0, 0 0px 0px 0;
-    -fx-background-insets: 0, 1px 1px 1px 0;
+    -fx-background-radius:
+        0 1 1 0,
+        0 0px 0px 0;
+    -fx-background-insets:
+        0,
+        1px 1px 1px 0;
     -fx-effect: none;
 }
 
-.toggle-button.right-pill:hover, .toggle-button.right-pill:focused {
+.toggle-button.right-pill:hover,
+.toggle-button.right-pill:focused {
     -fx-background-insets: 0, 1px;
 }
 
-.toggle-button:selected, .toggle-button:selected:focused {
-    -fx-background-color: -color-accent-emphasis, -color-button-bg-selected;
+.toggle-button:selected,
+.toggle-button:selected:focused {
+    -fx-background-color:
+        -color-accent-emphasis,
+        -color-button-bg-selected;
     -fx-text-fill: -color-button-fg-selected;
     -fx-background-insets: 0;
 }
 
-.toggle-button:selected .font-icon, .toggle-button:selected .ikonli-font-icon, .toggle-button:selected:focused .font-icon, .toggle-button:selected:focused .ikonli-font-icon {
+.toggle-button:selected .font-icon,
+.toggle-button:selected .ikonli-font-icon,
+.toggle-button:selected:focused .font-icon,
+.toggle-button:selected:focused .ikonli-font-icon {
     -fx-fill: -color-button-fg-selected;
     -fx-icon-color: -color-button-fg-selected;
 }
@@ -5295,8 +5769,12 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .tool-bar {
-    -fx-background-color: -color-border-muted, -color-bg-subtle;
-    -fx-background-insets: 0, 0 0 1px 0;
+    -fx-background-color:
+        -color-border-muted,
+        -color-bg-subtle;
+    -fx-background-insets:
+        0,
+        0 0 1px 0;
     -fx-padding: 4px 0.3em 4px 0.3em;
     -fx-spacing: 4px;
     -fx-alignment: CENTER_LEFT;
@@ -5336,15 +5814,21 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 
 .tool-bar > .container .toggle-button:hover {
     -fx-background-insets: 0, 1px;
-    -fx-background-color: -color-button-border-hover, -color-bg-subtle;
+    -fx-background-color:
+        -color-button-border-hover,
+        -color-bg-subtle;
 }
 
 .tool-bar > .container .toggle-button:hover:selected {
-    -fx-background-color: -color-button-border-hover, -color-base-2;
+    -fx-background-color:
+        -color-button-border-hover,
+        -color-base-2;
 }
 
 .tool-bar > .container .breadcrumbs {
-    -fx-background-color: -color-border-default, -color-bg-default;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-default;
     -fx-background-insets: 0, 1px;
     -fx-background-radius: 1, 0px;
     -fx-padding: 6px 1em 6px 1em;
@@ -5379,7 +5863,9 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .tool-bar:vertical {
-    -fx-background-insets: 0, 0 1px 0 0;
+    -fx-background-insets:
+        0,
+        0 1px 0 0;
     -fx-padding: 0.3em 4px 0.3em 4px;
     -fx-alignment: TOP_LEFT;
 }
@@ -5393,15 +5879,21 @@ Add support for NO_HEADER tweak in tables .table-view.no-header > .column-header
 }
 
 .tool-bar:vertical.right {
-    -fx-background-insets: 0, 0 0 0 1px;
+    -fx-background-insets:
+        0,
+        0 0 0 1px;
 }
 
 .tool-bar.bottom {
-    -fx-background-insets: 0, 1px 0 0 0;
+    -fx-background-insets:
+        0,
+        1px 0 0 0;
 }
 
 .tooltip {
-    -fx-background-color: -color-border-default, -color-bg-overlay;
+    -fx-background-color:
+        -color-border-default,
+        -color-bg-overlay;
     -fx-background-insets: 0, 1px;
     -fx-background-radius: 1, 0px;
     -fx-text-fill: -color-fg-default;

@@ -3,8 +3,26 @@ package dev.railroadide.railroad.project.minecraft.pistonmeta;
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
 
-public record Downloads(Download client, @SerializedName("client_mappings") Download clientMappings, Download server,
-    @SerializedName("server_mappings") Download serverMappings) {
+/**
+ * Downloads available for a Minecraft version.
+ *
+ * @param client the client executable download
+ * @param clientMappings the client mappings download, or null when absent
+ * @param server the server executable download
+ * @param serverMappings the server mappings download, or null when absent
+ */
+public record Downloads(
+    Download client,
+    @SerializedName("client_mappings") Download clientMappings,
+    Download server,
+    @SerializedName("server_mappings") Download serverMappings
+) {
+    /**
+     * Parses the client, server, and mapping downloads from JSON.
+     *
+     * @param json the metadata object
+     * @return the parsed downloads
+     */
     public static Downloads fromJson(JsonObject json) {
         JsonObject clientJson = json.getAsJsonObject("client");
         Download client = Download.fromJson(clientJson);

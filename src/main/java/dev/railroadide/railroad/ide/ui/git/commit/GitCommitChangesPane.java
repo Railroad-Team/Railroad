@@ -16,6 +16,9 @@ import javafx.scene.control.TreeItem;
 import java.nio.file.Path;
 import java.util.*;
 
+/**
+ * Displays a checkable tree of working-tree changes to include in a commit.
+ */
 public class GitCommitChangesPane extends RRBorderPane {
     private final RRCheckBoxTreeView<ChangeItem> treeView = new RRCheckBoxTreeView<>();
     private final LocalizedText noChangesText = new LocalizedText("git.commit.changes.empty");
@@ -23,6 +26,11 @@ public class GitCommitChangesPane extends RRBorderPane {
     private List<GitFileChange> lastChanges = Collections.emptyList();
     private Path lastRepoRoot;
 
+    /**
+     * Creates the checkable change tree and subscribes to repository status changes.
+     *
+     * @param project project whose files and workspace are being displayed
+     */
     public GitCommitChangesPane(Project project) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_COMMIT_CHANGES, this);
         getStyleClass().add("git-commit-changes-pane-root");
@@ -128,6 +136,11 @@ public class GitCommitChangesPane extends RRBorderPane {
         return Objects.equals(lastRepoRoot, repoRoot) && Objects.equals(lastChanges, changes);
     }
 
+    /**
+     * Collects checked file entries from the working-tree changes group.
+     *
+     * @return selected file changes to include in the commit
+     */
     public List<GitFileChange> getSelectedChanges() {
         // TODO: Don't just get the first child, have a better way to access the changes root
         TreeItem<ChangeItem> root = treeView.getRoot().getChildren().getFirst();
@@ -142,6 +155,9 @@ public class GitCommitChangesPane extends RRBorderPane {
             .toList();
     }
 
+    /**
+     * Expands all change groups beneath the hidden tree root.
+     */
     public void expandAll() {
         TreeItem<ChangeItem> root = treeView.getRoot();
         if (root instanceof RRCheckBoxTreeItem<ChangeItem> checkRoot) {
@@ -153,6 +169,9 @@ public class GitCommitChangesPane extends RRBorderPane {
         }
     }
 
+    /**
+     * Collapses all change groups beneath the hidden tree root.
+     */
     public void collapseAll() {
         TreeItem<ChangeItem> root = treeView.getRoot();
         if (root instanceof RRCheckBoxTreeItem<ChangeItem> checkRoot) {

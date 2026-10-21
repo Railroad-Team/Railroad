@@ -17,6 +17,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * A constructor declaration with parameters, thrown types, and an optional body.
+ *
+ * @param span source range occupied by this node
+ * @param modifiers modifiers attached to the declaration
+ * @param annotations annotations attached to this node
+ * @param typeParameters declared type parameters
+ * @param name constructor name matching the containing type
+ * @param parameters formal parameters in declaration order
+ * @param thrownTypes declared exception types
+ * @param body optional constructor implementation block
+ */
 public record ConstructorDeclaration(
     Span span,
     List<Modifier> modifiers,
@@ -25,7 +37,8 @@ public record ConstructorDeclaration(
     NameExpression name,
     List<Parameter> parameters,
     List<TypeRef> thrownTypes,
-    Optional<BlockStatement> body) implements ClassBodyDeclaration {
+    Optional<BlockStatement> body
+) implements ClassBodyDeclaration {
     @Override
     public AstKind kind() {
         return AstKind.CONSTRUCTOR_DECLARATION;

@@ -13,6 +13,10 @@ import java.nio.file.Path;
  * @param fabricData the Fabric modding platform data model, if applicable
  * @param project the root project of the Gradle build
  */
-public record GradleBuildModel(String gradleVersion, Path rootDir, FabricDataModel fabricData,
-    RailroadProject project) {
+public record GradleBuildModel(
+    String gradleVersion,
+    Path rootDir,
+    FabricDataModel fabricData,
+    RailroadProject project
+) {
 }

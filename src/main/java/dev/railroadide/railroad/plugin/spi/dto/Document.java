@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.plugin.spi.dto;
 
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
+
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
@@ -20,7 +22,21 @@ public interface Document {
      *
      * @return the path of the document
      */
-    Path getPath();
+    default Path getPath() {
+        return getUri().filePath()
+            .orElseThrow(() -> new IllegalStateException("Document is not backed by a filesystem path: " + getUri()));
+    }
+
+    /**
+     * Gets the physical or virtual address of this document. Filesystem-backed documents
+     * inherit a file URI; generated, archive, decompiled, and in-memory documents should
+     * override this method with a provider-owned URI.
+     *
+     * @return the current document URI
+     */
+    default DocumentUri getUri() {
+        return DocumentUri.fromPath(getPath());
+    }
 
     /**
      * Gets the content of the document as a byte array.

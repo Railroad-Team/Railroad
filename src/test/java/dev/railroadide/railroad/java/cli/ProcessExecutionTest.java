@@ -13,10 +13,10 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests for the {@link ProcessExecution} utility class, specifically focusing on its timeout
  * and interruption handling during process execution.
  */
-class ProcessExecutionTest {
+public class ProcessExecutionTest {
 
     @Test
-    void enforceTimeoutReturnsWhenProcessCompletesWithinLimit() {
+    public void enforceTimeoutReturnsWhenProcessCompletesWithinLimit() {
         var process = new StubProcess(true, false, true);
         assertDoesNotThrow(() -> ProcessExecution.enforceTimeout(process, 1, TimeUnit.SECONDS, "java"));
         assertTrue(process.isWaitForCalled(), "waitFor should be invoked when enforcing timeouts");
@@ -24,7 +24,7 @@ class ProcessExecutionTest {
     }
 
     @Test
-    void enforceTimeoutDestroysHungProcess() {
+    public void enforceTimeoutDestroysHungProcess() {
         var process = new StubProcess(false, false, false);
         RuntimeException exception = assertThrows(RuntimeException.class,
             () -> ProcessExecution.enforceTimeout(process, 1, TimeUnit.SECONDS, "jarsigner"));
@@ -35,7 +35,7 @@ class ProcessExecutionTest {
     }
 
     @Test
-    void enforceTimeoutHandlesInterruptions() {
+    public void enforceTimeoutHandlesInterruptions() {
         var process = new StubProcess(true, true, true);
         RuntimeException exception = assertThrows(RuntimeException.class,
             () -> ProcessExecution.enforceTimeout(process, 1, TimeUnit.SECONDS, "keytool"));
@@ -47,7 +47,7 @@ class ProcessExecutionTest {
     }
 
     @Test
-    void enforceTimeoutSkipsWaitWhenDurationIsNonPositive() {
+    public void enforceTimeoutSkipsWaitWhenDurationIsNonPositive() {
         var process = new StubProcess(true, false, true);
         assertDoesNotThrow(() -> ProcessExecution.enforceTimeout(process, 0, TimeUnit.SECONDS, "jar"));
         assertFalse(process.isWaitForCalled(), "no wait should occur when timeout is disabled");
@@ -68,15 +68,15 @@ class ProcessExecutionTest {
             this.destroyStopsProcess = destroyStopsProcess;
         }
 
-        boolean isWaitForCalled() {
+        public boolean isWaitForCalled() {
             return waitForCalled;
         }
 
-        boolean isDestroyCalled() {
+        public boolean isDestroyCalled() {
             return destroyCalled;
         }
 
-        boolean isDestroyForciblyCalled() {
+        public boolean isDestroyForciblyCalled() {
             return destroyForciblyCalled;
         }
 

@@ -11,8 +11,18 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Converts Fabric version expressions between string or string-array JSON and {@link VersionRange}.
+ */
 public class VersionRangeTypeAdapter extends TypeAdapter<VersionRange> {
 
+    /**
+     * Reads one version expression or an array of expressions without interpreting them.
+     *
+     * @param in the reader positioned at a string, array, or null
+     * @return the version range, or {@code null} for JSON null
+     * @throws IOException if reading fails or the JSON token is unsupported
+     */
     @Override
     public VersionRange read(JsonReader in) throws IOException {
         JsonToken token = in.peek();
@@ -41,6 +51,14 @@ public class VersionRangeTypeAdapter extends TypeAdapter<VersionRange> {
         throw new IOException("Expected string or array for version range but got " + token);
     }
 
+    /**
+     * Writes a single expression as a string and zero or multiple expressions as an array.
+     * A null range or null expression list is written as JSON null.
+     *
+     * @param out the destination JSON writer
+     * @param value the version range to serialize, or {@code null}
+     * @throws IOException if writing fails
+     */
     @Override
     public void write(JsonWriter out, VersionRange value) throws IOException {
         if (value == null || value.getRanges() == null) {

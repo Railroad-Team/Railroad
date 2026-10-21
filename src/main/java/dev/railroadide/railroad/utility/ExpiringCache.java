@@ -9,6 +9,8 @@ import java.util.function.Supplier;
 
 /**
  * Simple expiring cache for asynchronously resolved values.
+ *
+ * @param <T> the type of the cached value
  */
 public final class ExpiringCache<T> {
     private final Duration ttl;
@@ -19,12 +21,27 @@ public final class ExpiringCache<T> {
     private boolean hasValue;
     private CompletableFuture<T> inFlight;
 
+    /**
+     * Creates a new expiring cache with the specified time-to-live (TTL).
+     *
+     * @param ttl the time-to-live for cached values; must not be negative
+     * @throws NullPointerException if ttl is null
+     * @throws IllegalArgumentException if ttl is negative
+     */
     public ExpiringCache(Duration ttl) {
         this.ttl = Objects.requireNonNull(ttl, "ttl");
         if (ttl.isNegative())
             throw new IllegalArgumentException("ttl must not be negative");
     }
 
+    /**
+     * Returns a CompletableFuture that will complete with the cached value if it is still valid,
+     * or will invoke the provided valueSupplier to fetch a new value if the cached value has expired.
+     *
+     * @param valueSupplier a supplier that returns a CompletableFuture for fetching a new value
+     * @return a CompletableFuture that will complete with the cached or newly fetched value
+     * @throws NullPointerException if valueSupplier is null or returns null
+     */
     public CompletableFuture<T> getAsync(Supplier<CompletableFuture<T>> valueSupplier) {
         Objects.requireNonNull(valueSupplier, "valueSupplier");
         Instant now = Instant.now();
@@ -62,6 +79,13 @@ public final class ExpiringCache<T> {
         }
     }
 
+    /**
+     * Returns an Optional containing the cached value if it is still valid, or an empty Optional if the cached value
+     * has expired.
+     *
+     * @return an Optional containing the cached value if it is still valid, or an empty Optional if the cached value
+     *         has expired
+     */
     public Optional<T> getIfPresent() {
         synchronized (lock) {
             if (isValueFresh(Instant.now()))
@@ -71,6 +95,9 @@ public final class ExpiringCache<T> {
         }
     }
 
+    /**
+     * Invalidates the cached value, causing the next call to getAsync to fetch a new value.
+     */
     public void invalidate() {
         synchronized (lock) {
             cachedValue = null;

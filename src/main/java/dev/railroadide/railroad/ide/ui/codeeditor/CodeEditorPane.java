@@ -27,11 +27,7 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
-import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.text.TextFlow;
@@ -56,6 +52,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+/**
+ * Provides a text editor with configurable highlighting, completion, diagnostics, and signature help.
+ */
 public abstract class CodeEditorPane extends TextEditorPane {
     protected final Project project;
     protected final @Nullable CompletionProvider completionProvider;
@@ -137,7 +136,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         signaturePopupContainer.getChildren().add(signatureTextFlow);
         signaturePopup.getContent().add(signaturePopupContainer);
 
-        configureParagraphGraphics();
+        configureGutter();
 
         installSyntaxHighlighting();
         if (supportsDiagnostics()) {
@@ -172,47 +171,35 @@ public abstract class CodeEditorPane extends TextEditorPane {
         super.close();
     }
 
-    // region Paragraph Graphics
-    private void configureParagraphGraphics() {
-        setParagraphGraphicFactory(this::createParagraphGraphic);
+    // region Gutter
+    private void configureGutter() {
+        getGutter().setLineNumberFactory(line -> {
+            var label = new Label(String.format("%4d", line));
+            label.setTextAlignment(TextAlignment.RIGHT);
+            label.getStyleClass().add("editor-line-number");
+            return label;
+        });
+        getGutter().addColumn(new GutterColumn("diagnostics", 12, this::createDiagnosticMarker));
     }
 
-    private Node createParagraphGraphic(int line) {
-        var grid = new GridPane();
-        grid.setHgap(5);
-        grid.getStyleClass().add("ide-code-editor-grid");
+    private @Nullable Node createDiagnosticMarker(int line) {
+        Diagnostic.Kind severity = lineSeverity.get(line);
+        if (severity == null)
+            return null;
 
-        var numberColumn = new ColumnConstraints();
-        numberColumn.setHgrow(Priority.ALWAYS);
+        FontAwesomeSolid iconType = severity == Diagnostic.Kind.ERROR
+            ? FontAwesomeSolid.CIRCLE_EXCLAMATION
+            : FontAwesomeSolid.TRIANGLE_EXCLAMATION;
 
-        var iconColumn = new ColumnConstraints();
-        iconColumn.setPrefWidth(12);
-        iconColumn.setHgrow(Priority.NEVER);
-
-        grid.getColumnConstraints().addAll(numberColumn, iconColumn);
-
-        var label = new Label(String.format("%4d", line + 1));
-        label.setTextAlignment(TextAlignment.RIGHT);
-        label.setTextFill(Color.LIGHTGRAY);
-        grid.add(label, 0, 0);
-
-        Diagnostic.Kind severity = lineSeverity.get(line + 1);
-        if (severity != null) {
-            FontAwesomeSolid iconType = severity == Diagnostic.Kind.ERROR
-                ? FontAwesomeSolid.CIRCLE_EXCLAMATION
-                : FontAwesomeSolid.TRIANGLE_EXCLAMATION;
-            Color color = severity == Diagnostic.Kind.ERROR ? Color.RED : Color.YELLOW;
-
-            var icon = new MFXFontIcon(iconType, 12, color);
-            grid.add(icon, 1, 0);
-
-            String tooltipText = lineDiagnosticMessages.getOrDefault(
-                line + 1,
-                severity == Diagnostic.Kind.ERROR ? "Error" : "Warning");
-            Tooltip.install(icon, new Tooltip(tooltipText));
-        }
-
-        return grid;
+        var icon = new MFXFontIcon(iconType, 12);
+        icon.getStyleClass().add(severity == Diagnostic.Kind.ERROR
+            ? "editor-diagnostic-error"
+            : "editor-diagnostic-warning");
+        String tooltipText = lineDiagnosticMessages.getOrDefault(
+            line,
+            severity == Diagnostic.Kind.ERROR ? "Error" : "Warning");
+        Tooltip.install(icon, new Tooltip(tooltipText));
+        return icon;
     }
     // endregion
 
@@ -281,8 +268,11 @@ public abstract class CodeEditorPane extends TextEditorPane {
             });
     }
 
-    private void applyDiagnosticsIfLatest(int generation, List<TextEditorDiagnostic> diagnostics,
-        DocumentSnapshot snapshot) {
+    private void applyDiagnosticsIfLatest(
+        int generation,
+        List<TextEditorDiagnostic> diagnostics,
+        DocumentSnapshot snapshot
+    ) {
         if (diagnosticsGeneration.get() != generation)
             return;
 
@@ -293,12 +283,21 @@ public abstract class CodeEditorPane extends TextEditorPane {
         applyEditorStyles();
         restoreBracketHighlight();
         if (lineDecorationsChanged) {
-            requestLayout();
+            getGutter().refresh();
         }
     }
 
-    public static List<TextEditorDiagnostic> validatedDiagnostics(List<TextEditorDiagnostic> diagnostics,
-        DocumentSnapshot snapshot) {
+    /**
+     * Filters diagnostics to those whose locations are valid for the analyzed snapshot.
+     *
+     * @param diagnostics the diagnostics to validate
+     * @param snapshot the document revision used for analysis
+     * @return an immutable list containing only valid diagnostics
+     */
+    public static List<TextEditorDiagnostic> validatedDiagnostics(
+        List<TextEditorDiagnostic> diagnostics,
+        DocumentSnapshot snapshot
+    ) {
         List<TextEditorDiagnostic> valid = new ArrayList<>();
         for (TextEditorDiagnostic diagnostic : diagnostics) {
             try {
@@ -332,7 +331,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     private void showDiagnosticPopup(EditorDiagnostic diagnostic, double screenX, double screenY) {
         diagnosticPopup.getContent().clear();
-        diagnosticPopup.getContent().add(new DiagnosticPane(diagnostic));
+        diagnosticPopup.getContent().add(new DiagnosticPane(diagnostic, filePath));
         diagnosticPopup.show(this, screenX, screenY);
     }
 
@@ -783,7 +782,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (position < 0 || position >= getLength())
             return;
 
-        List<String> styles = new ArrayList<>(getStyleAtPosition(position));
+        List<String> styles = new ArrayList<>(getStyleOfChar(position));
         if (!styles.contains("bracket-highlight")) {
             styles.add("bracket-highlight");
         }
@@ -795,7 +794,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (position < 0 || position >= getLength())
             return;
 
-        List<String> styles = new ArrayList<>(getStyleAtPosition(position));
+        List<String> styles = new ArrayList<>(getStyleOfChar(position));
         if (styles.remove("bracket-highlight")) {
             setStyle(position, position + 1, styles);
         }
@@ -818,7 +817,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     private static StyleSpans<Collection<String>> mergeDiagnosticStyles(
         StyleSpans<Collection<String>> baseSpans,
-        List<TextEditorDiagnostic> diagnostics) {
+        List<TextEditorDiagnostic> diagnostics
+    ) {
         if (baseSpans == null || diagnostics == null || diagnostics.isEmpty())
             return baseSpans;
 
@@ -901,7 +901,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     private static boolean styleSpansEqual(
         StyleSpans<Collection<String>> left,
-        StyleSpans<Collection<String>> right) {
+        StyleSpans<Collection<String>> right
+    ) {
         if (left == right)
             return true;
 

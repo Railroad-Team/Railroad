@@ -4,13 +4,10 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
-import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.welcome.imports.WelcomeImportProjectsPane;
 import dev.railroadide.railroad.welcome.project.ui.NewProjectPane;
 import javafx.application.Platform;
-import javafx.geometry.Orientation;
-import javafx.scene.control.Separator;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -21,15 +18,35 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicReference;
 
+/** Root welcome view coordinating project browsing, creation, import, directory opening, and settings actions. */
 public class WelcomePane extends HBox {
+    /**
+     * Sidebar controlling the visible welcome content.
+     *
+     * @return the navigation sidebar
+     */
     @Getter
     private final WelcomeLeftPane leftPane;
+    /**
+     * Header containing search and sorting controls for the home view.
+     *
+     * @return the home header
+     */
     @Getter
     private final WelcomeHeaderPane headerPane;
+    /**
+     * Known-project browser displayed by the home view.
+     *
+     * @return the project browser
+     */
     @Getter
     private final WelcomeProjectsPane projectsPane;
     private final AtomicReference<NewProjectPane> newProjectPane = new AtomicReference<>();
 
+    /**
+     * Builds the home view, connects search and sort controls, and installs sidebar navigation handlers.
+     * Registers the welcome UI identifier while attached and schedules an initial focus request.
+     */
     public WelcomePane() {
         getStyleClass().add("welcome-root");
 
@@ -39,16 +56,15 @@ public class WelcomePane extends HBox {
         projectsPane.setSortProperty(headerPane.getSortComboBox().valueProperty());
         headerPane.getStyleClass().add("welcome-header-pane");
 
-        var rightPane = new RRVBox();
+        var rightPane = new VBox();
+        rightPane.setMinWidth(0);
+        rightPane.setMinHeight(0);
         rightPane.getStyleClass().addAll("welcome-right-pane", "welcome-right-pane-content");
         rightPane.getChildren().addAll(headerPane, projectsPane);
         VBox.setVgrow(projectsPane, Priority.ALWAYS);
         rightPane.setMaxWidth(Double.MAX_VALUE);
 
-        var verticalSeparator = new Separator(Orientation.VERTICAL);
-        verticalSeparator.getStyleClass().add("welcome-vertical-separator");
-
-        getChildren().addAll(leftPane, verticalSeparator, rightPane);
+        getChildren().addAll(leftPane, rightPane);
         HBox.setHgrow(rightPane, Priority.ALWAYS);
 
         leftPane.getListView().getSelectionModel().selectedItemProperty().addListener((_, _, newValue) -> {
@@ -65,7 +81,9 @@ public class WelcomePane extends HBox {
                     leftPane.getListView().getSelectionModel().select(WelcomeLeftPane.MenuType.HOME);
                 }
                 case NEW_PROJECT -> {
-                    newProjectPane.set(new NewProjectPane());
+                    if (newProjectPane.get() == null) {
+                        newProjectPane.set(new NewProjectPane());
+                    }
                     rightPane.getChildren().setAll(newProjectPane.get());
                     VBox.setVgrow(newProjectPane.get(), Priority.ALWAYS);
                 }

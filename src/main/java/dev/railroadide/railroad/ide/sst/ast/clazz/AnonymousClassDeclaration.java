@@ -8,6 +8,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * The body declarations of an anonymous class created within an expression.
+ *
+ * @param span source range occupied by this node
+ * @param bodyDeclarations declarations in the type body
+ */
 public record AnonymousClassDeclaration(Span span, List<ClassBodyDeclaration> bodyDeclarations) implements AstNode {
     @Override
     public AstKind kind() {

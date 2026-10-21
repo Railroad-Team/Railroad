@@ -25,11 +25,21 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
+/**
+ * Cache manager that persists entries as JSON files and keeps a memory mirror.
+ */
 public class JsonCacheManager implements IterableCacheManager {
     private final Path baseDir;
     private final Gson gson;
     private final Map<String, MetadataCacheEntry<?>> memoryCache = new ConcurrentHashMap<>();
 
+    /**
+     * Creates a JSON cache rooted at the supplied directory.
+     *
+     * @param baseDir the directory in which cache files are stored
+     * @param gson the Gson instance used to serialize and deserialize entries
+     * @throws UncheckedIOException if the cache directory cannot be created
+     */
     public JsonCacheManager(Path baseDir, Gson gson) throws UncheckedIOException {
         this.baseDir = baseDir;
         this.gson = gson;
@@ -111,6 +121,11 @@ public class JsonCacheManager implements IterableCacheManager {
     }
 
     @Override
+    /**
+     * Lists the JSON-backed entries in the cache directory.
+     *
+     * @return the readable cache entries; malformed entries are omitted
+     */
     public Iterable<CacheEntryWrapper> entries() {
         try (Stream<Path> stream = Files.list(baseDir)) {
             return stream.filter(path -> path.getFileName().toString().endsWith(".json"))

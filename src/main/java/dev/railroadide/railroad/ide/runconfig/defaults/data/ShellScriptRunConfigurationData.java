@@ -17,6 +17,9 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Stores script source, interpreter, argument, working-directory, and environment options.
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ShellScriptRunConfigurationData extends RunConfigurationData {
@@ -30,6 +33,9 @@ public class ShellScriptRunConfigurationData extends RunConfigurationData {
     private String[] interpreterArgs = new String[0];
     private boolean executeInTerminal = true;
 
+    /**
+     * Initializes the interpreter to PowerShell on Windows, Bash on macOS or Linux, or an empty path on other systems.
+     */
     public ShellScriptRunConfigurationData() {
         this.interpreterPath = switch (OperatingSystem.CURRENT) {
             case WINDOWS -> "powershell.exe";
@@ -73,7 +79,9 @@ public class ShellScriptRunConfigurationData extends RunConfigurationData {
                     .fileChooser("scriptPath", "railroad.runconfig.shell_script.configuration.scriptPath.label")
                     .required()
                     .defaultPath(this.scriptPath)
-                    .validator(field -> ProjectValidators.validateFilePath(field, null))
+                    .validator(field -> fileModeVisible.get()
+                        ? ProjectValidators.validateFilePath(field, null)
+                        : ValidationResult.ok())
                     .visible(fileModeVisible)
                     .build())
                 .appendComponent(FormComponent
@@ -81,6 +89,9 @@ public class ShellScriptRunConfigurationData extends RunConfigurationData {
                     .required()
                     .text(() -> this.scriptText)
                     .promptText("railroad.runconfig.shell_script.configuration.scriptText.prompt")
+                    .validator(field -> textModeVisible.get() && (field.getText() == null || field.getText().isBlank())
+                        ? ValidationResult.error("railroad.runconfig.shell_script.configuration.scriptText.required")
+                        : ValidationResult.ok())
                     .visible(textModeVisible)
                     .build())
                 .appendComponent(FormComponent
@@ -128,7 +139,8 @@ public class ShellScriptRunConfigurationData extends RunConfigurationData {
     public void applyConfigurationFormData(FormData formData) {
         applyBaseFormData(formData);
         this.executeMode = formData.get("executeMode", ExecuteMode.class);
-        this.scriptPath = Path.of(formData.get("scriptPath", String.class));
+        String scriptPathValue = formData.get("scriptPath", String.class);
+        this.scriptPath = scriptPathValue == null || scriptPathValue.isBlank() ? null : Path.of(scriptPathValue);
         this.scriptText = formData.get("scriptText", String.class);
         this.scriptArgs = StringUtils.stringToStringArray(formData.get("scriptArgs", String.class), " ");
         this.workingDirectory = Path.of(formData.get("workingDirectory", String.class));
@@ -139,7 +151,17 @@ public class ShellScriptRunConfigurationData extends RunConfigurationData {
         this.executeInTerminal = formData.get("executeInTerminal", Boolean.class);
     }
 
+    /**
+     * Selects whether a shell run configuration reads a script file or uses supplied script text.
+     */
     public enum ExecuteMode {
-        FILE, TEXT
+        /**
+         * Executes an existing script file.
+         */
+        FILE,
+        /**
+         * Executes script text supplied in the configuration.
+         */
+        TEXT
     }
 }

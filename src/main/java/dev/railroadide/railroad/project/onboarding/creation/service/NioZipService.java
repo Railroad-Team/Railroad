@@ -6,6 +6,7 @@ import dev.railroadide.railroad.utility.FileUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 
+/** Extracts project template archives with Railroad's ZIP utility. */
 public class NioZipService implements ZipService {
     @Override
     public void unzip(Path zipFile, Path targetDir) throws IOException {

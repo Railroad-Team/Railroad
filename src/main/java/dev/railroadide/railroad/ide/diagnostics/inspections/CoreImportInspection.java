@@ -13,8 +13,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for .
+ */
 @RegisteredInspection
 public final class CoreImportInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-imports";
 
     private static final List<JavaInspectionRule> RULES = List.of(

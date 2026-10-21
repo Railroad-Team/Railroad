@@ -46,17 +46,35 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javafx.scene.Parent;
 
 // TODO: Make it so the display test and client side only options are only shown for versions that support it
 // TODO: Make it so the display test and client side only options are in their own steps
 // TODO: Fix the comboboxes not being immediately populated and instead having the data fetched completely async
+/**
+ * Collects Forge project settings and starts project creation when onboarding finishes.
+ */
 public class ForgeProjectOnboarding {
     private static final ExpiringCache<List<MinecraftVersion>> FORGE_MINECRAFT_VERSIONS_CACHE = new ExpiringCache<>(
         Duration.ofHours(3));
 
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
+    /**
+     * Starts the project settings wizard in the supplied scene and launches project creation when it finishes.
+     *
+     * @param scene scene whose root will be replaced with the onboarding view
+     */
     public void start(Scene scene) {
+        startIn(scene::setRoot);
+    }
+
+    /**
+     * Runs setup and creation in the supplied view host.
+     *
+     * @param showView callback that displays the setup UI and subsequent project creation view
+     */
+    public void startIn(Consumer<Parent> showView) {
         var flow = OnboardingFlow.builder()
             .addStep("project_details", this::createProjectDetailsStep)
             .addStep("maven_coordinates", this::createMavenCoordinatesStep)
@@ -83,12 +101,12 @@ public class ForgeProjectOnboarding {
         var process = OnboardingProcess.createBasic(
             flow,
             new OnboardingContext(executor),
-            ctx -> onFinish(ctx, scene));
+            ctx -> onFinish(ctx, showView));
 
-        process.run(scene);
+        process.runIn(showView);
     }
 
-    private void onFinish(OnboardingContext ctx, Scene scene) {
+    private void onFinish(OnboardingContext ctx, Consumer<Parent> showView) {
         executor.shutdown();
 
         var data = new ProjectData();
@@ -173,7 +191,7 @@ public class ForgeProjectOnboarding {
             ProjectTypeRegistry.FORGE,
             serviceRegistry), creationPane.getContext()));
 
-        scene.setRoot(creationPane);
+        showView.accept(creationPane);
     }
 
     private OnboardingStep createProjectDetailsStep() {
@@ -651,13 +669,19 @@ public class ForgeProjectOnboarding {
             .build();
     }
 
-    private static OnboardingFormStep.ComponentSpec described(FormComponentBuilder<?, ?, ?, ?> builder,
-        String descriptionKey) {
+    private static OnboardingFormStep.ComponentSpec described(
+        FormComponentBuilder<?, ?, ?, ?> builder,
+        String descriptionKey
+    ) {
         return OnboardingFormStep.component(builder, createDescriptionCustomizer(descriptionKey));
     }
 
-    private static OnboardingFormStep.ComponentSpec described(FormComponentBuilder<?, ?, ?, ?> builder,
-        Function<Object, Object> transformer, Function<Object, Object> reverseTransformer, String descriptionKey) {
+    private static OnboardingFormStep.ComponentSpec described(
+        FormComponentBuilder<?, ?, ?, ?> builder,
+        Function<Object, Object> transformer,
+        Function<Object, Object> reverseTransformer,
+        String descriptionKey
+    ) {
         return OnboardingFormStep.component(builder, builder != null ? builder.dataKey() : null, transformer,
             reverseTransformer, createDescriptionCustomizer(descriptionKey));
     }

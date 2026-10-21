@@ -13,28 +13,28 @@ import static org.junit.jupiter.api.Assertions.*;
  * for the `java` command-line executable.
  */
 @SuppressWarnings("unchecked")
-class JavaExecutableCLIBuilderTest {
+public class JavaExecutableCLIBuilderTest {
 
     @Test
-    void classFileRequiresClassExtension() {
+    public void classFileRequiresClassExtension() {
         assertThrows(IllegalArgumentException.class,
             () -> JavaExecutableCLIBuilder.classFile(TestJdks.create(21), Path.of("Main.txt")));
     }
 
     @Test
-    void jarFileRequiresJarExtension() {
+    public void jarFileRequiresJarExtension() {
         assertThrows(IllegalArgumentException.class,
             () -> JavaExecutableCLIBuilder.jarFile(TestJdks.create(21), Path.of("launcher.zip")));
     }
 
     @Test
-    void sourceFileRequiresJavaExtension() {
+    public void sourceFileRequiresJavaExtension() {
         assertThrows(IllegalArgumentException.class,
             () -> JavaExecutableCLIBuilder.sourceFile(TestJdks.create(21), Path.of("Main.txt")));
     }
 
     @Test
-    void agentlibArgumentsInsertedAtBeginning() {
+    public void agentlibArgumentsInsertedAtBeginning() {
         var builder = JavaExecutableCLIBuilder.module(TestJdks.create(21), "module");
         builder.addArgument("--existing");
         builder.agentlib("jdwp", "transport=dt_socket", "suspend=y");
@@ -45,7 +45,7 @@ class JavaExecutableCLIBuilderTest {
     }
 
     @Test
-    void enablePreviewFeaturesRequiresJdk12() {
+    public void enablePreviewFeaturesRequiresJdk12() {
         var jdk11Builder = JavaExecutableCLIBuilder.module(TestJdks.create(11), "module");
         assertThrows(UnsupportedOperationException.class, jdk11Builder::enablePreviewFeatures);
 
@@ -56,7 +56,7 @@ class JavaExecutableCLIBuilderTest {
     }
 
     @Test
-    void enableNativeAccessRequiresJdk16() {
+    public void enableNativeAccessRequiresJdk16() {
         var jdk15Builder = JavaExecutableCLIBuilder.module(TestJdks.create(15), "module");
         assertThrows(UnsupportedOperationException.class, () -> jdk15Builder.enableNativeAccess("mod"));
 
@@ -67,7 +67,7 @@ class JavaExecutableCLIBuilderTest {
     }
 
     @Test
-    void illegalNativeAccessValidatesVersionAndMode() {
+    public void illegalNativeAccessValidatesVersionAndMode() {
         var jdk23Builder = JavaExecutableCLIBuilder.module(TestJdks.create(23), "module");
         assertThrows(UnsupportedOperationException.class,
             () -> jdk23Builder.illegalNativeAccess(JavaExecutableCLIBuilder.AccessMode.ALLOW));
@@ -82,7 +82,7 @@ class JavaExecutableCLIBuilderTest {
     }
 
     @Test
-    void finalizationRequiresJdk18() {
+    public void finalizationRequiresJdk18() {
         var jdk17Builder = JavaExecutableCLIBuilder.module(TestJdks.create(17), "module");
         assertThrows(UnsupportedOperationException.class,
             () -> jdk17Builder.finalization(JavaExecutableCLIBuilder.EnabledDisabled.ENABLED));

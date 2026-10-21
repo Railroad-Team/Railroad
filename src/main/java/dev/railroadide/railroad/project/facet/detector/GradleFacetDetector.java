@@ -17,11 +17,13 @@ import java.util.Optional;
  * This detector is used by the facet system to identify Gradle projects and extract relevant configuration data.
  */
 public class GradleFacetDetector implements FacetDetector<GradleFacetData> {
+    /**
+     * Recognized Gradle build file names, in detection order.
+     */
     public static final List<String> BUILD_FILES = List.of("build.gradle", "build.gradle.kts");
 
     /**
-     * Detects a Gradle facet in the given path by searching for build.gradle or build.gradle.kts files and reading
-     * Gradle version info.
+     * Detects a Gradle facet by checking for a build.gradle or build.gradle.kts entry in the project root.
      *
      * @param project the project to inspect
      * @return an Optional containing the Gradle facet if detected, or empty if not found

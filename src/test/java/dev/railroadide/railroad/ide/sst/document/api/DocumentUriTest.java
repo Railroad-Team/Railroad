@@ -11,12 +11,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class DocumentUriTest {
+public class DocumentUriTest {
     @TempDir
-    Path tempDirectory;
+    public Path tempDirectory;
 
     @Test
-    void physicalPathRoundTripsThroughFileUri() {
+    public void physicalPathRoundTripsThroughFileUri() {
         Path path = tempDirectory.resolve("folder").resolve("..").resolve("Document.java");
 
         DocumentUri uri = DocumentUri.fromPath(path);
@@ -27,7 +27,7 @@ class DocumentUriTest {
     }
 
     @Test
-    void supportsHierarchicalVirtualDocumentSchemes() {
+    public void supportsHierarchicalVirtualDocumentSchemes() {
         DocumentUri uri = DocumentUri.virtual("GENERATED", "sources/My File.java");
 
         assertEquals("generated", uri.value().getScheme());
@@ -38,7 +38,7 @@ class DocumentUriTest {
     }
 
     @Test
-    void supportsOpaqueArchiveEntryUris() {
+    public void supportsOpaqueArchiveEntryUris() {
         DocumentUri uri = DocumentUri.parse("jar:file:///libraries/example.jar!/demo/Example.class");
 
         assertEquals("jar", uri.value().getScheme());
@@ -47,7 +47,7 @@ class DocumentUriTest {
     }
 
     @Test
-    void inMemoryLocationIsStableForTheSuppliedDocumentId() {
+    public void inMemoryLocationIsStableForTheSuppliedDocumentId() {
         DocumentId documentId = DocumentId.create();
 
         assertEquals(DocumentUri.inMemory(documentId), DocumentUri.inMemory(documentId));
@@ -55,7 +55,7 @@ class DocumentUriTest {
     }
 
     @Test
-    void rejectsNullBlankMalformedAndRelativeUris() {
+    public void rejectsNullBlankMalformedAndRelativeUris() {
         assertThrows(NullPointerException.class, () -> DocumentUri.parse(null));
         assertThrows(IllegalArgumentException.class, () -> DocumentUri.parse("  "));
         assertThrows(IllegalArgumentException.class, () -> DocumentUri.parse("not a URI"));

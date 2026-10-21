@@ -15,6 +15,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import javafx.scene.layout.Priority;
 
 /**
  * A form directory chooser component that extends InformativeLabeledHBox to provide
@@ -33,8 +34,12 @@ public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryCh
      * @param defaultPath the default path to display in the text field, or null for empty
      * @param includeButton whether to include a browse button for directory selection
      */
-    public FormDirectoryChooser(String labelKey, boolean required, @Nullable String defaultPath,
-        boolean includeButton) {
+    public FormDirectoryChooser(
+        String labelKey,
+        boolean required,
+        @Nullable String defaultPath,
+        boolean includeButton
+    ) {
         super(labelKey, required, createParams(defaultPath, includeButton));
     }
 
@@ -114,7 +119,10 @@ public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryCh
          * @param browseButton the browse button for opening the directory chooser, or null if not needed
          */
         public TextFieldWithButton(RRTextField textField, @Nullable BrowseButton browseButton) {
-            super(5);
+            super(8);
+            getStyleClass().add("form-directory-input");
+            textField.setMinWidth(0);
+            setHgrow(textField, Priority.ALWAYS);
 
             this.textField = textField;
             this.browseButton = browseButton;

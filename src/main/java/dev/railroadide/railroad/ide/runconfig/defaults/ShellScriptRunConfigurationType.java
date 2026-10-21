@@ -23,17 +23,25 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Executes script files or supplied script text through a configured interpreter.
+ */
 public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellScriptRunConfigurationData> {
     private final Map<RunConfiguration<?>, Process> runningProcesses = new ConcurrentHashMap<>();
     private final Map<RunConfiguration<?>, Path> temporaryScripts = new ConcurrentHashMap<>();
 
+    /**
+     * Creates the shell script type with its localized label and terminal icon.
+     */
     public ShellScriptRunConfigurationType() {
         super("railroad.runconfig.shellscript", FontAwesomeSolid.TERMINAL, Color.web("#919191"));
     }
 
     @Override
-    public CompletableFuture<Void> run(Project project,
-        RunConfiguration<ShellScriptRunConfigurationData> configuration) {
+    public CompletableFuture<Void> run(
+        Project project,
+        RunConfiguration<ShellScriptRunConfigurationData> configuration
+    ) {
         return execute(project, configuration).whenComplete((unused, throwable) -> {
             if (throwable != null) {
                 Railroad.LOGGER.error("Failed to start shell script for configuration: {}",
@@ -43,15 +51,19 @@ public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellS
     }
 
     @Override
-    public CompletableFuture<Void> debug(Project project,
-        RunConfiguration<ShellScriptRunConfigurationData> configuration) {
+    public CompletableFuture<Void> debug(
+        Project project,
+        RunConfiguration<ShellScriptRunConfigurationData> configuration
+    ) {
         return CompletableFuture.failedFuture(
             new UnsupportedOperationException("Debugging shell script run configurations is not supported."));
     }
 
     @Override
-    public CompletableFuture<Void> stop(Project project,
-        RunConfiguration<ShellScriptRunConfigurationData> configuration) {
+    public CompletableFuture<Void> stop(
+        Project project,
+        RunConfiguration<ShellScriptRunConfigurationData> configuration
+    ) {
         Process process = runningProcesses.get(configuration);
         if (process != null && process.isAlive()) {
             process.destroy();
@@ -86,8 +98,10 @@ public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellS
         return ShellScriptRunConfigurationData.class;
     }
 
-    private CompletableFuture<Void> execute(Project project,
-        RunConfiguration<ShellScriptRunConfigurationData> configuration) {
+    private CompletableFuture<Void> execute(
+        Project project,
+        RunConfiguration<ShellScriptRunConfigurationData> configuration
+    ) {
         return CompletableFuture.runAsync(() -> {
             ShellScriptRunConfigurationData data = configuration.data();
             Path workingDirectory = resolveWorkingDirectory(project, data);
@@ -149,8 +163,10 @@ public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellS
         return workingDirectory;
     }
 
-    private static ScriptDescriptor resolveScriptDescriptor(ShellScriptRunConfigurationData data,
-        Path workingDirectory) {
+    private static ScriptDescriptor resolveScriptDescriptor(
+        ShellScriptRunConfigurationData data,
+        Path workingDirectory
+    ) {
         ExecuteMode mode = data.getExecuteMode() == null ? ExecuteMode.FILE : data.getExecuteMode();
         return switch (mode) {
             case FILE -> new ScriptDescriptor(resolveScriptPath(data.getScriptPath(), workingDirectory), false);

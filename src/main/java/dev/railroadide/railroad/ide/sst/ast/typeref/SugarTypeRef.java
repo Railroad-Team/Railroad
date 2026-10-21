@@ -11,11 +11,20 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A type reference with attached annotations and modifiers.
+ *
+ * @param span source range occupied by this node
+ * @param modifiers modifiers attached to the declaration
+ * @param annotations annotations attached to this node
+ * @param baseType underlying type
+ */
 public record SugarTypeRef(
     Span span,
     List<Modifier> modifiers,
     List<Annotation> annotations,
-    TypeRef baseType) implements TypeRef {
+    TypeRef baseType
+) implements TypeRef {
 
     @Override
     public AstKind kind() {

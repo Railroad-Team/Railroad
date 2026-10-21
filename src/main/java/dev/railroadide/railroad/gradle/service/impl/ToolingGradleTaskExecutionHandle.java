@@ -43,7 +43,7 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
      *
      * @param request the Gradle task execution request
      */
-    ToolingGradleTaskExecutionHandle(GradleTaskExecutionRequest request) {
+    public ToolingGradleTaskExecutionHandle(GradleTaskExecutionRequest request) {
         this.request = request;
     }
 
@@ -72,7 +72,7 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
      *
      * @param tokenSource the CancellationTokenSource to attach
      */
-    void attachCancellationToken(CancellationTokenSource tokenSource) {
+    public void attachCancellationToken(CancellationTokenSource tokenSource) {
         this.cancellationTokenSource = tokenSource;
     }
 
@@ -81,7 +81,7 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
      *
      * @param port the debug port number
      */
-    void setDebugPort(int port) {
+    public void setDebugPort(int port) {
         this.debugPort = port;
     }
 
@@ -125,7 +125,7 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
      * @param messageKey the message key for status updates
      * @param messageArgs optional arguments for the message
      */
-    void updateState(GradleTaskState newState, String messageKey, Object... messageArgs) {
+    public void updateState(GradleTaskState newState, String messageKey, Object... messageArgs) {
         this.state = newState;
 
         var progressEvent = new GradleTaskProgressEvent(
@@ -150,7 +150,7 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
      *
      * @param output the output line
      */
-    void emitOutput(String output) {
+    public void emitOutput(String output) {
         outputBuffer.add(output);
 
         var outputEvent = new GradleTaskOutputEvent(id, state, output);
@@ -164,7 +164,7 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
      *
      * @param error the error line
      */
-    void emitError(String error) {
+    public void emitError(String error) {
         errorBuffer.add(error);
 
         var errorEvent = new GradleTaskErrorEvent(id, state, error);
@@ -178,7 +178,7 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
      *
      * @param future the CompletableFuture representing the task result
      */
-    void setResultFuture(CompletableFuture<GradleTaskExecutionResult> future) {
+    public void setResultFuture(CompletableFuture<GradleTaskExecutionResult> future) {
         this.resultCompletion = future;
     }
 
@@ -187,7 +187,7 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
      *
      * @return the output buffer
      */
-    Queue<String> getOutputBuffer() {
+    public Queue<String> getOutputBuffer() {
         return outputBuffer;
     }
 
@@ -196,7 +196,7 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
      *
      * @return the error buffer
      */
-    Queue<String> getErrorBuffer() {
+    public Queue<String> getErrorBuffer() {
         return errorBuffer;
     }
 }

@@ -12,11 +12,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 /**
  * Tests for the {@link JDKCLI} class, ensuring that CLI builders correctly reference the associated JDK.
  */
-class JDKCLITest {
+public class JDKCLITest {
     private final JDK jdk = TestJdks.create(21);
 
     @Test
-    void launchBuildersReferenceProvidedJdk() {
+    public void launchBuildersReferenceProvidedJdk() {
         var cli = new JDKCLI(jdk);
         assertBuilderHasJdk(cli.launchMainClass(Path.of("Main.class")), "launchMainClass");
         assertBuilderHasJdk(cli.launchJar(Path.of("app.jar")), "launchJar");
@@ -25,7 +25,7 @@ class JDKCLITest {
     }
 
     @Test
-    void toolBuildersReferenceProvidedJdk() {
+    public void toolBuildersReferenceProvidedJdk() {
         var cli = new JDKCLI(jdk);
         Map<String, Object> builders = new LinkedHashMap<>();
         builders.put("jar", cli.jar());

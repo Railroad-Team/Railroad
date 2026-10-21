@@ -411,7 +411,22 @@ public class JavapCLIBuilder implements CLIBuilder<Process, JavapCLIBuilder> {
      */
     @Getter
     public enum Visibility {
-        PUBLIC("-public"), PROTECTED("-protected"), PACKAGE("-package"), PRIVATE("-private");
+        /**
+         * Includes only public declarations.
+         */
+        PUBLIC("-public"),
+        /**
+         * Includes public and protected declarations.
+         */
+        PROTECTED("-protected"),
+        /**
+         * Includes public, protected, and package-private declarations.
+         */
+        PACKAGE("-package"),
+        /**
+         * Includes declarations at every access level, including private declarations.
+         */
+        PRIVATE("-private");
 
         private final String flag;
 

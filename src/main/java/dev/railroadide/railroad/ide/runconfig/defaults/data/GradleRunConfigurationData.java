@@ -37,6 +37,9 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Stores Gradle task, project directory, Java runtime, and environment options and builds their editor form.
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class GradleRunConfigurationData extends RunConfigurationData {
@@ -143,8 +146,10 @@ public class GradleRunConfigurationData extends RunConfigurationData {
             .build();
     }
 
-    private List<String> buildGradleTaskSuggestions(Path gradleProjectPath,
-        ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache) {
+    private List<String> buildGradleTaskSuggestions(
+        Path gradleProjectPath,
+        ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache
+    ) {
         if (gradleProjectPath == null)
             return List.of();
 
@@ -178,8 +183,11 @@ public class GradleRunConfigurationData extends RunConfigurationData {
         return result;
     }
 
-    private Collection<String> filterGradleTaskSuggestions(String query, Path gradleProjectPath,
-        ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache) {
+    private Collection<String> filterGradleTaskSuggestions(
+        String query,
+        Path gradleProjectPath,
+        ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache
+    ) {
         List<String> suggestions = buildGradleTaskSuggestions(gradleProjectPath, gradleTasksCache);
         String token = currentToken(query);
         if (token.isBlank())
@@ -208,7 +216,8 @@ public class GradleRunConfigurationData extends RunConfigurationData {
 
     private Callback<ListView<String>, ListCell<String>> createGradleTaskSuggestionCellFactory(
         ObjectProperty<Path> gradleProjectPathProperty,
-        ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache) {
+        ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache
+    ) {
         return listView -> new ListCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -228,8 +237,11 @@ public class GradleRunConfigurationData extends RunConfigurationData {
         };
     }
 
-    private @Nullable String findGradleTaskDescription(String taskOrOptionName, Path gradleProjectPath,
-        ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache) {
+    private @Nullable String findGradleTaskDescription(
+        String taskOrOptionName,
+        Path gradleProjectPath,
+        ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache
+    ) {
         if (taskOrOptionName == null || gradleProjectPath == null)
             return null;
 
@@ -264,8 +276,11 @@ public class GradleRunConfigurationData extends RunConfigurationData {
         return null;
     }
 
-    private void loadGradleTasksAsync(Project project, Path gradleProjectPath,
-        ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache) {
+    private void loadGradleTasksAsync(
+        Project project,
+        Path gradleProjectPath,
+        ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache
+    ) {
         if (gradleProjectPath == null) {
             JavaFXUtils.runOnApplicationThread(gradleTasksCache::clear);
 

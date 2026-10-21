@@ -11,9 +11,9 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JavaSnapshotPublicationTest {
+public class JavaSnapshotPublicationTest {
     @Test
-    void incrementalParsingRetainsTheOldSourceTreeAndSemanticModel() {
+    public void incrementalParsingRetainsTheOldSourceTreeAndSemanticModel() {
         DocumentId id = DocumentId.create();
         var uri = DocumentUri.inMemory(id);
         String source = "class Example { int x = 1; }";
@@ -34,7 +34,7 @@ class JavaSnapshotPublicationTest {
     }
 
     @Test
-    void parseDiagnosticsAndReuseCandidatesAreDetachedFromCallerLists() {
+    public void parseDiagnosticsAndReuseCandidatesAreDetachedFromCallerLists() {
         var candidates = new ArrayList<>(List.of(new JavaSyntaxParser.ReuseCandidate("kind", 0, 1, 0, 1)));
         var plan = new JavaSyntaxParser.ReusePlan(0, 1, 0, 1, 0, candidates);
         candidates.clear();

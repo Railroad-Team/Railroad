@@ -8,11 +8,11 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
-class JavaParserFeatureParityTest {
+public class JavaParserFeatureParityTest {
     private static final Duration MAX_PARSE_TIME = Duration.ofSeconds(10);
 
     @TestFactory
-    List<DynamicTest> targetedFeatureSnippetsParseWithoutRecovery() {
+    public List<DynamicTest> targetedFeatureSnippetsParseWithoutRecovery() {
         return featureCases().stream()
             .map(testCase -> DynamicTest.dynamicTest(testCase.name(), () -> {
                 assertTimeoutPreemptively(

@@ -6,6 +6,9 @@ import java.io.Serializable;
 import java.nio.file.Files;
 import java.util.Comparator;
 
+/**
+ * Orders explorer entries with directories first, then names ignoring case.
+ */
 public class PathTreeItemComparator implements Comparator<TreeItem<PathItem>>, Serializable {
     @Override
     public int compare(TreeItem<PathItem> item1, TreeItem<PathItem> item2) {

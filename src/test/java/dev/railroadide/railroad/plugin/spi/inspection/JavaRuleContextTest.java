@@ -12,13 +12,14 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.lang.reflect.Modifier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JavaRuleContextTest {
+public class JavaRuleContextTest {
 
     @Test
-    void exposesImportAndStaticResolutionHelpers() {
+    public void exposesImportAndStaticResolutionHelpers() {
         String source = """
             import java.util.List;
             import static java.lang.Math.max;
@@ -48,7 +49,7 @@ class JavaRuleContextTest {
     }
 
     @Test
-    void exposesTypeAndTraversalHelpers() {
+    public void exposesTypeAndTraversalHelpers() {
         String source = """
             class Example {
                 void run() {
@@ -81,7 +82,7 @@ class JavaRuleContextTest {
     }
 
     @Test
-    void exposesAccessibilityHelpers() {
+    public void exposesAccessibilityHelpers() {
         String source = """
             class Secret {
                 private int value;
@@ -106,13 +107,13 @@ class JavaRuleContextTest {
 
         assertEquals("", context.currentPackageName());
         assertEquals("Secret", context.ownerQualifiedName(field).orElseThrow());
-        assertTrue(java.lang.reflect.Modifier.isPrivate(context.symbolModifiers(field)));
+        assertTrue(Modifier.isPrivate(context.symbolModifiers(field)));
         assertFalse(context.isSymbolAccessible(field, fieldAccess));
         assertFalse(context.isSymbolAccessible(method, invocation));
     }
 
     @Test
-    void exposesHierarchyAndMethodHelpers() {
+    public void exposesHierarchyAndMethodHelpers() {
         String source = """
             interface Worker {
                 void run();
@@ -139,7 +140,7 @@ class JavaRuleContextTest {
     }
 
     @Test
-    void exposesFieldHelpers() {
+    public void exposesFieldHelpers() {
         String source = """
             class Base {
                 protected Number baseValue;
@@ -161,7 +162,7 @@ class JavaRuleContextTest {
     }
 
     @Test
-    void exposesDirectModifierHelpers() {
+    public void exposesDirectModifierHelpers() {
         String source = """
             public public abstract class Example {
                 private static final int VALUE = 1;
@@ -180,7 +181,7 @@ class JavaRuleContextTest {
     }
 
     @Test
-    void exposesExceptionHelpers() {
+    public void exposesExceptionHelpers() {
         String source = """
             class Example {
                 void run() throws java.io.IOException {
@@ -212,7 +213,7 @@ class JavaRuleContextTest {
     }
 
     @Test
-    void exposesInvocationHelpers() {
+    public void exposesInvocationHelpers() {
         String source = """
             class Example {
                 void run(java.util.Optional<String> opt) {
@@ -256,7 +257,7 @@ class JavaRuleContextTest {
     }
 
     @Test
-    void exposesConditionAndOperatorHelpers() {
+    public void exposesConditionAndOperatorHelpers() {
         String source = """
             class Example {
                 void run(boolean flag) {
@@ -298,7 +299,7 @@ class JavaRuleContextTest {
     }
 
     @Test
-    void exposesOptionalGetInvocationTypingHelpers() {
+    public void exposesOptionalGetInvocationTypingHelpers() {
         String source = """
             class Example {
                 String run(java.util.Optional<String> opt) {

@@ -11,10 +11,18 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A switch statement selecting among an ordered set of labeled rules.
+ *
+ * @param span source range occupied by this node
+ * @param selectionExpression switch selector expression
+ * @param rule switch rules in source order
+ */
 public record SwitchStatement(
     Span span,
     Expression selectionExpression,
-    List<SwitchRule> rule) implements Statement {
+    List<SwitchRule> rule
+) implements Statement {
 
     @Override
     public AstKind kind() {

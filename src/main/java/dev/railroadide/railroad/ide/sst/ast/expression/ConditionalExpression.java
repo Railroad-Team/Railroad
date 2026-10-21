@@ -8,11 +8,20 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A ternary expression choosing between two values according to a condition.
+ *
+ * @param span source range occupied by this node
+ * @param condition condition expression
+ * @param trueExpression expression evaluated when the condition is true
+ * @param falseExpression expression evaluated when the condition is false
+ */
 public record ConditionalExpression(
     Span span,
     Expression condition,
     Expression trueExpression,
-    Expression falseExpression) implements Expression {
+    Expression falseExpression
+) implements Expression {
     @Override
     public AstKind kind() {
         return AstKind.CONDITIONAL_EXPRESSION;

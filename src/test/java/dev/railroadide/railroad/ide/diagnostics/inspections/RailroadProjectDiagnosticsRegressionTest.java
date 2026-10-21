@@ -19,9 +19,9 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Slow, project-wide regression kept separate from focused inspection unit tests. */
-class RailroadProjectDiagnosticsRegressionTest {
+public class RailroadProjectDiagnosticsRegressionTest {
     @Test
-    void currentRailroadSourcesHaveNoErrorDiagnostics() throws Exception {
+    public void currentRailroadSourcesHaveNoErrorDiagnostics() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path scanRoot = Path.of("src").toAbsolutePath().normalize();
         List<Path> runtimeClasspath = Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))

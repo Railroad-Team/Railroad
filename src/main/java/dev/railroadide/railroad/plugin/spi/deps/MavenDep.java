@@ -6,6 +6,10 @@ import org.jspecify.annotations.NonNull;
  * Represents a Maven dependency with its group ID, artifact ID, and version.
  * This class provides methods to create a Maven dependency from its full name
  * and to retrieve its full name in the standard Maven format.
+ *
+ * @param groupId the group ID of the dependency
+ * @param artifactId the artifact ID of the dependency
+ * @param version the version of the dependency
  */
 public record MavenDep(String groupId, String artifactId, String version) {
     /**

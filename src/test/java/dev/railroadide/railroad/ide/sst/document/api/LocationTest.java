@@ -6,10 +6,10 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class LocationTest {
+public class LocationTest {
 
     @Test
-    void textLocationRejectsOutOfBoundsRanges() {
+    public void textLocationRejectsOutOfBoundsRanges() {
         var snapshot = snapshot("Hello\nWorld");
 
         assertThrows(IndexOutOfBoundsException.class,
@@ -32,7 +32,7 @@ class LocationTest {
     }
 
     @Test
-    void textLocationAcceptsEmptyRangesAtEof() {
+    public void textLocationAcceptsEmptyRangesAtEof() {
         var location = Location.TextLocation.from(snapshot("Hello\nWorld"), 11, 11);
         assertEquals(1, location.line());
         assertEquals(5, location.column());
@@ -48,13 +48,13 @@ class LocationTest {
     }
 
     @Test
-    void textLocationRejectsNullSnapshot() {
+    public void textLocationRejectsNullSnapshot() {
         assertThrows(NullPointerException.class,
             () -> Location.TextLocation.from(null, 0, 0));
     }
 
     @Test
-    void textLocationValidatesMatchingRevisionIncludingEof() {
+    public void textLocationValidatesMatchingRevisionIncludingEof() {
         var snapshot = snapshot("Hello\nWorld");
         Location<?> location = Location.TextLocation.from(snapshot, 6, 11);
         var sameRevision = new TextDocumentSnapshot(snapshot.id(),
@@ -70,7 +70,7 @@ class LocationTest {
     }
 
     @Test
-    void textLocationRejectsDifferentDocumentAndVersion() {
+    public void textLocationRejectsDifferentDocumentAndVersion() {
         var snapshot = snapshot("Hello\nWorld");
         Location<?> location = Location.TextLocation.from(snapshot, 6, 11);
         var otherDocument = new TextDocumentSnapshot(DocumentId.create(), snapshot.uri(), snapshot.version(),
@@ -85,7 +85,7 @@ class LocationTest {
     }
 
     @Test
-    void textLocationRejectsNullAndBinarySnapshots() {
+    public void textLocationRejectsNullAndBinarySnapshots() {
         var snapshot = snapshot("Hello");
         Location<?> location = Location.TextLocation.from(snapshot, 0, 5);
         var binary = binarySnapshot(snapshot.id(), snapshot.version(), 5);
@@ -95,7 +95,7 @@ class LocationTest {
     }
 
     @Test
-    void textLocationRejectsInconsistentStoredCoordinates() {
+    public void textLocationRejectsInconsistentStoredCoordinates() {
         var snapshot = snapshot("Hello\nWorld");
         var range = new TextRange(6, 11);
         var wrongLine = new Location.TextLocation(snapshot.id(), snapshot.version(), range, 0, 0);
@@ -106,7 +106,7 @@ class LocationTest {
     }
 
     @Test
-    void textLocationValidationChecksBothRangeBounds() {
+    public void textLocationValidationChecksBothRangeBounds() {
         var snapshot = snapshot("Hello\nWorld");
         var invalidStart = new Location.TextLocation(snapshot.id(), snapshot.version(),
             new TextRange(12, 12), 1, 6);
@@ -118,7 +118,7 @@ class LocationTest {
     }
 
     @Test
-    void binaryLocationValidatesMatchingRevisionIncludingEof() {
+    public void binaryLocationValidatesMatchingRevisionIncludingEof() {
         var snapshot = binarySnapshot(DocumentId.create(), DocumentVersion.initial(), 4);
         Location<?> location = Location.BinaryLocation.from(snapshot, 1, 4);
         var sameRevision = new BinaryDocumentSnapshot(snapshot.id(),
@@ -134,7 +134,7 @@ class LocationTest {
     }
 
     @Test
-    void binaryLocationRejectsDifferentDocumentAndVersion() {
+    public void binaryLocationRejectsDifferentDocumentAndVersion() {
         var snapshot = binarySnapshot(DocumentId.create(), DocumentVersion.initial(), 4);
         Location<?> location = Location.BinaryLocation.from(snapshot, 1, 4);
         var otherDocument = new BinaryDocumentSnapshot(DocumentId.create(), snapshot.uri(), snapshot.version(),
@@ -148,7 +148,7 @@ class LocationTest {
     }
 
     @Test
-    void binaryLocationRejectsNullAndTextSnapshots() {
+    public void binaryLocationRejectsNullAndTextSnapshots() {
         var text = snapshot("Hello");
         var snapshot = binarySnapshot(text.id(), text.version(), 5);
         Location<?> location = Location.BinaryLocation.from(snapshot, 0, 5);
@@ -158,7 +158,7 @@ class LocationTest {
     }
 
     @Test
-    void binaryLocationValidationRejectsRangesBeyondSnapshotSize() {
+    public void binaryLocationValidationRejectsRangesBeyondSnapshotSize() {
         var snapshot = binarySnapshot(DocumentId.create(), DocumentVersion.initial(), 4);
         var invalidEnd = new Location.BinaryLocation(snapshot.id(), snapshot.version(), new BinaryRange(1, 5));
         var invalidStart = new Location.BinaryLocation(snapshot.id(), snapshot.version(), new BinaryRange(5, 5));
@@ -168,7 +168,7 @@ class LocationTest {
     }
 
     @Test
-    void binaryLocationFactoryValidatesRangeAndRetainsRevision() {
+    public void binaryLocationFactoryValidatesRangeAndRetainsRevision() {
         var snapshot = binarySnapshot(DocumentId.create(), DocumentVersion.initial(), 4);
 
         assertThrows(NullPointerException.class, () -> Location.BinaryLocation.from(null, 0, 0));

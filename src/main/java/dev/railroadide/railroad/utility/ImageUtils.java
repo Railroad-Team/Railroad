@@ -15,9 +15,12 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Utility class for image-related operations.
+ */
 public final class ImageUtils {
     private ImageUtils() {
-        // Utility class, prevent instantiation
+        throw new UnsupportedOperationException("Instantiated utility class");
     }
 
     /**

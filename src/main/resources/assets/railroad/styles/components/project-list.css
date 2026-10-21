@@ -1,5 +1,7 @@
 .project-list-cell {
-    -fx-background-color: transparent, -color-bg-inset;
+    -fx-background-color:
+        transparent,
+        -color-bg-inset;
     -fx-background-insets: 0px, 2px;
     -fx-pref-height: 80px;
 }
@@ -10,7 +12,8 @@
     -fx-background-insets: 0;
 }
 
-.project-list-node, .project-list-node .Pane {
+.project-list-node,
+.project-list-node .Pane {
     -fx-background-color: -color-bg-subtle;
 }
 
@@ -32,7 +35,7 @@
 }
 /* base tag style */
 .project-list-facet-tag {
-    -fx-font-size: 0.8em; 
+    -fx-font-size: 0.8em;
     -fx-font-weight: 500;
     -fx-padding: 2px 6px;
     -fx-border-radius: 4px;
@@ -41,18 +44,18 @@
     -fx-text-fill: -rr-text-color-level-2;
 }
 
-
 .facet-java {
-    -fx-background-color: #E89D42; /* Orange */
-    -fx-text-fill: #3D2D1A;
+    -fx-background-color: #e89d42; /* Orange */
+    -fx-text-fill: #3d2d1a;
 }
 
-.facet-gradle, .facet-maven {
-    -fx-background-color: #38809A; /* Blue */
-    -fx-text-fill: #FFFFFF;
+.facet-gradle,
+.facet-maven {
+    -fx-background-color: #38809a; /* Blue */
+    -fx-text-fill: #ffffff;
 }
 
 .facet-fabric {
-    -fx-background-color: #C3C3C3; /* Light Grey */
-    -fx-text-fill: #2B2B2B;
+    -fx-background-color: #c3c3c3; /* Light Grey */
+    -fx-text-fill: #2b2b2b;
 }

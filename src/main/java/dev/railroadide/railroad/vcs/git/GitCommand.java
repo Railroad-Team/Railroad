@@ -21,7 +21,8 @@ public final class GitCommand {
         Path workingDirectory,
         long timeoutMs,
         Map<String, String> environment,
-        boolean streamStdoutToListener) {
+        boolean streamStdoutToListener
+    ) {
         this.arguments = List.copyOf(arguments);
         this.workingDirectory = workingDirectory;
         this.timeoutMs = timeoutMs;
@@ -101,6 +102,13 @@ public final class GitCommand {
         private long timeoutMs = 0;
         private Map<String, String> environment = new HashMap<>();
         private boolean streamStdoutToListener = false;
+
+        /**
+         * Creates an empty command builder using the process's default directory, no timeout or environment
+         * overrides, and no stdout streaming.
+         */
+        public Builder() {
+        }
 
         /**
          * Appends string arguments to the command.

@@ -3,9 +3,6 @@ package dev.railroadide.railroad.theme.ui;
 import dev.railroadide.railroad.theme.Theme;
 import dev.railroadide.railroad.theme.ThemeDownloadManager;
 import dev.railroadide.railroad.ui.RRButton;
-import dev.railroadide.railroad.ui.RRCard;
-import dev.railroadide.railroad.ui.RRHBox;
-import dev.railroadide.railroad.ui.RRVBox;
 import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
 import dev.railroadide.railroad.ui.styling.ButtonSize;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
@@ -22,11 +19,9 @@ import org.apache.commons.text.WordUtils;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 /**
- * A modernized theme download cell with improved visual design and user experience.
- * Features a card-based layout with clear action buttons and better information hierarchy.
+ * A compact theme row with installation status and preview actions.
  */
 public class ThemeDownloadCell extends ListCell<Theme> {
-    private final RRCard card;
     private final HBox content;
     private final VBox infoSection;
     private final HBox actionSection;
@@ -37,27 +32,28 @@ public class ThemeDownloadCell extends ListCell<Theme> {
     private final ObjectProperty<Theme> themeProperty = new SimpleObjectProperty<>();
 
     /**
-     * Constructs a new ThemeDownloadCell with modern card-based layout and action buttons.
+     * Constructs a theme row with download and preview actions.
      * Sets up the visual components including theme information display and download/preview buttons.
      */
     public ThemeDownloadCell() {
         super();
         getStyleClass().add("theme-download-cell");
 
-        card = new RRCard();
-        card.setInteractive(false);
-        card.getStyleClass().addAll("card", "compact", "theme-download-card");
-
-        content = new RRHBox();
+        setMinWidth(0);
+        setPrefWidth(0);
+        content = new HBox(12);
+        content.setMaxWidth(Double.MAX_VALUE);
         content.setAlignment(Pos.CENTER_LEFT);
         content.getStyleClass().addAll("transparent-background", "theme-download-content");
 
-        infoSection = new RRVBox();
+        infoSection = new VBox(4);
+        infoSection.setMinWidth(0);
         infoSection.setAlignment(Pos.CENTER_LEFT);
         infoSection.getStyleClass().addAll("transparent-background", "theme-download-info");
         HBox.setHgrow(infoSection, Priority.ALWAYS);
 
         themeNameLabel = new Label();
+        themeNameLabel.setWrapText(true);
         themeNameLabel.getStyleClass().add("theme-download-name");
 
         themeSizeLabel = new Label();
@@ -65,7 +61,8 @@ public class ThemeDownloadCell extends ListCell<Theme> {
 
         infoSection.getChildren().addAll(themeNameLabel, themeSizeLabel);
 
-        actionSection = new RRHBox();
+        actionSection = new HBox(8);
+        actionSection.setMinWidth(USE_PREF_SIZE);
         actionSection.setAlignment(Pos.CENTER_RIGHT);
         actionSection.getStyleClass().addAll("transparent-background", "theme-download-actions");
 
@@ -73,6 +70,9 @@ public class ThemeDownloadCell extends ListCell<Theme> {
         previewButton.setIcon(FontAwesomeSolid.EYE);
         previewButton.setButtonSize(ButtonSize.SMALL);
         previewButton.setVariant(ButtonVariant.GHOST);
+        previewButton.getStyleClass().add("theme-dialog-icon");
+        previewButton.setMinWidth(30);
+        previewButton.setPrefWidth(30);
         previewButton.setTooltip(new LocalizedTooltip("railroad.home.settings.appearance.preview.tooltip"));
 
         downloadButton = new RRButton("railroad.home.settings.appearance.download");
@@ -82,7 +82,6 @@ public class ThemeDownloadCell extends ListCell<Theme> {
         actionSection.getChildren().addAll(previewButton, downloadButton);
 
         content.getChildren().addAll(infoSection, actionSection);
-        card.addContent(content);
 
         setupEventHandlers();
         setupPropertyBindings();
@@ -100,7 +99,7 @@ public class ThemeDownloadCell extends ListCell<Theme> {
         previewButton.setOnAction(_ -> {
             Theme theme = themeProperty.get();
             if (theme != null) {
-                new ThemeExamplePane(theme.getName().replace(".css", ""));
+                new ThemeExamplePane(theme.getName().replace(".css", ""), getScene().getWindow());
             }
         });
     }
@@ -159,7 +158,7 @@ public class ThemeDownloadCell extends ListCell<Theme> {
             themeProperty.set(null);
         } else {
             themeProperty.set(item);
-            setGraphic(card);
+            setGraphic(content);
         }
     }
 }

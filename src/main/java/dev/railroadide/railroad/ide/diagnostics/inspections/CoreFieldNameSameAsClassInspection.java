@@ -12,8 +12,14 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#FIELD_NAME_SAME_AS_CLASS_NAME}.
+ */
 @RegisteredInspection
 public class CoreFieldNameSameAsClassInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-field-name-same-as-class";
 
     private static final List<JavaInspectionRule> RULES = List.of(

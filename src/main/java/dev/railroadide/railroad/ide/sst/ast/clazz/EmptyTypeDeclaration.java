@@ -8,6 +8,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * An empty declaration represented by a semicolon.
+ *
+ * @param span source range occupied by this node
+ */
 public record EmptyTypeDeclaration(Span span) implements TypeDeclaration {
     @Override
     public AstKind kind() {

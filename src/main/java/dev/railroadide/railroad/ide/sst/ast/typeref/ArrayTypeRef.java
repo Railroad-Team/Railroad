@@ -8,6 +8,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * An array type reference storing its element type and number of dimensions.
+ *
+ * @param span source range occupied by this node
+ * @param elementType array element type
+ * @param dimensions number of array dimensions
+ */
 public record ArrayTypeRef(Span span, TypeRef elementType, int dimensions) implements TypeRef {
     @Override
     public AstKind kind() {

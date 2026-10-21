@@ -123,7 +123,7 @@
 .project-list-ellipsis-button:hover {
     -fx-background-color: -color-accent-subtle;
     -fx-border-color: -color-accent-emphasis;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.10), 4, 0.15, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 4, 0.15, 0, 2);
 }
 
 .project-list-ellipsis-button .ikonli-font-icon {
@@ -305,11 +305,19 @@
     -fx-text-fill: white;
 }
 
-.welcome-left-pane, .welcome-left-pane .Pane, .project-type-pane, .project-type-pane .Pane, .settings-categories-pane, .settings-categories-pane .Pane {
+.welcome-left-pane,
+.welcome-left-pane .Pane,
+.project-type-pane,
+.project-type-pane .Pane,
+.settings-categories-pane,
+.settings-categories-pane .Pane {
     -fx-background-color: -color-bg-inset;
 }
 
-.welcome-left-pane-list, .welcome-projects-list, .project-type-list, .settings-categories-list {
+.welcome-left-pane-list,
+.welcome-projects-list,
+.project-type-list,
+.settings-categories-list {
     -fx-background-color: -color-bg-inset;
     -fx-border-width: 0;
 }
@@ -385,7 +393,6 @@
 .welcome-options-row {
     -fx-spacing: 14px;
 }
-
 
 /* Project sort combo box */
 .project-sort-combo {
@@ -565,4 +572,397 @@
 
 .account-list-cell-title-box {
     -fx-spacing: 4px;
+}
+
+/* Welcome workspace: consistent with IDE panels and settings. */
+.welcome-root {
+    -fx-background-color: -color-surface-editor;
+}
+
+.welcome-root .welcome-left-pane {
+    -fx-background-color: -color-surface-panel;
+    -fx-padding: 20px 8px 8px;
+    -fx-spacing: 12px;
+    -fx-min-width: 204px;
+    -fx-pref-width: 204px;
+    -fx-max-width: 204px;
+}
+
+.welcome-root .welcome-left-top-box {
+    -fx-pref-height: 100px;
+    -fx-padding: 0 8px 12px;
+}
+
+.welcome-root .welcome-app-name {
+    -fx-fill: -color-fg-default;
+    -fx-font-size: 16px;
+}
+
+.welcome-root .welcome-app-version {
+    -fx-fill: -color-fg-muted;
+    -fx-font-size: 12px;
+}
+
+.welcome-root .welcome-left-separator {
+    -fx-padding: 0 4px;
+}
+
+.welcome-root .welcome-right-pane-content {
+    -fx-background-color: -color-surface-editor;
+    -fx-padding: 0;
+    -fx-spacing: 0;
+    -fx-min-width: 0;
+}
+
+.welcome-root .welcome-header-pane {
+    -fx-background-color: -color-surface-editor;
+    -fx-padding: 20px 24px 16px;
+    -fx-pref-height: -1;
+    -fx-min-height: -1;
+    -fx-max-height: -1;
+    -fx-border-width: 0 0 1px 0;
+    -fx-border-color: -color-border-subtle;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-effect: null;
+}
+
+.welcome-root .welcome-header-content {
+    -fx-padding: 0;
+    -fx-spacing: 12px;
+}
+
+.welcome-root .welcome-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.welcome-root .welcome-subtitle {
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.welcome-root .welcome-stats-bar {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-spacing: 18px;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+
+.welcome-root .welcome-search-container,
+.welcome-root .welcome-search-container:focused {
+    -fx-background-color: -color-surface-panel;
+    -fx-background-radius: 3px;
+    -fx-border-radius: 3px;
+    -fx-min-height: 32px;
+    -fx-pref-height: 32px;
+    -fx-padding: 4px 8px;
+    -fx-effect: null;
+}
+
+.welcome-root .welcome-search-input {
+    -fx-min-height: 24px;
+    -fx-pref-height: 24px;
+    -fx-padding: 0;
+    -fx-font-size: 13px;
+}
+
+.welcome-root .button,
+.welcome-root .combo-box,
+.welcome-root .text-field {
+    -fx-effect: null;
+    -fx-background-radius: 3px;
+    -fx-border-radius: 3px;
+    -fx-font-size: 13px;
+    -fx-min-height: 30px;
+    -fx-pref-height: 30px;
+}
+
+.welcome-root .welcome-search-input {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.welcome-root .project-sort-combo {
+    -fx-min-width: 170px;
+    -fx-pref-width: 205px;
+}
+
+.welcome-root .welcome-left-pane-list {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-effect: null;
+}
+
+.welcome-root .welcome-left-pane-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+}
+
+.welcome-root .welcome-nav-item {
+    -fx-pref-height: 34px;
+    -fx-min-height: 34px;
+    -fx-max-height: 34px;
+    -fx-padding: 6px 10px;
+    -fx-background-radius: 3px;
+    -fx-border-radius: 3px;
+    -fx-font-size: 13px;
+    -fx-effect: null;
+}
+
+.welcome-root .welcome-nav-item .label {
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-fg-default;
+}
+
+.welcome-root .welcome-nav-item.selected {
+    -fx-background-color: -color-accent-subtle;
+}
+
+.welcome-root .welcome-nav-item .ikonli-font-icon {
+    -fx-icon-size: 14px;
+}
+
+.welcome-root .scroll-pane,
+.welcome-root .scroll-pane > .viewport {
+    -fx-background-color: -color-surface-editor;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+
+.welcome-root .welcome-projects-list {
+    -fx-background-color: -color-surface-editor;
+    -fx-padding: 8px 16px;
+    -fx-border-width: 0;
+    -fx-effect: null;
+}
+
+.welcome-root .project-list-cell {
+    -fx-background-color: transparent;
+    -fx-pref-height: -1;
+    -fx-padding: 0;
+}
+
+.welcome-root .project-list-card {
+    -fx-background-color: transparent;
+    -fx-padding: 12px 8px;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-border-width: 0 0 1px 0;
+    -fx-border-color: -color-border-subtle;
+    -fx-effect: null;
+}
+
+.welcome-root .project-list-cell:filled:hover,
+.welcome-root .project-list-cell:filled:selected {
+    -fx-background-color: -color-surface-panel;
+}
+
+.welcome-root .project-list-name {
+    -fx-font-size: 14px;
+}
+
+.welcome-root .project-list-info-box {
+    -fx-spacing: 3px;
+}
+
+.welcome-root .project-list-ellipsis-button {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-effect: null;
+}
+
+.welcome-root .new-project-pane {
+    -fx-padding: 0;
+    -fx-spacing: 0;
+    -fx-background-color: -color-surface-editor;
+}
+
+.welcome-root .project-type-pane {
+    -fx-background-color: -color-surface-panel;
+    -fx-padding: 12px 8px;
+    -fx-min-width: 180px;
+    -fx-pref-width: 180px;
+    -fx-max-width: 180px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 1px 0 0;
+}
+
+.welcome-root .project-type-list {
+    -fx-background-color: -color-surface-panel;
+    -fx-border-width: 0;
+    -fx-effect: null;
+    -fx-padding: 0;
+}
+
+.welcome-root .project-type-cell {
+    -fx-font-size: 13px;
+    -fx-padding: 8px;
+    -fx-background-radius: 3px;
+}
+
+.welcome-root .project-type-cell:selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-text-fill: -color-fg-default;
+}
+
+.welcome-root .welcome-import-projects-pane {
+    -fx-background-color: -color-surface-editor;
+    -fx-padding: 0;
+    -fx-spacing: 0;
+}
+
+.welcome-root .welcome-import-sidebar {
+    -fx-background-color: -color-surface-panel;
+    -fx-min-width: 180px;
+    -fx-pref-width: 180px;
+    -fx-max-width: 180px;
+    -fx-border-width: 0 1px 0 0;
+    -fx-border-color: -color-border-subtle;
+    -fx-padding: 12px 8px;
+    -fx-effect: null;
+}
+
+.welcome-root .welcome-import-right-pane {
+    -fx-background-color: -color-surface-editor;
+    -fx-padding: 20px 24px;
+}
+
+.welcome-root .welcome-import-url-box {
+    -fx-spacing: 12px;
+}
+
+.welcome-root .welcome-import-clone-button {
+    -fx-max-width: -1;
+}
+
+.welcome-root .welcome-icon-button {
+    -fx-min-width: 30px;
+    -fx-pref-width: 30px;
+    -fx-max-width: 30px;
+    -fx-padding: 5px;
+}
+
+.welcome-root .import-project-card {
+    -fx-background-color: transparent;
+    -fx-padding: 10px;
+    -fx-effect: null;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+
+.welcome-root .account-list-cell,
+.welcome-root .account-list-cell-container,
+.welcome-root .account-list-cell-title-container {
+    -fx-background-color: transparent;
+    -fx-padding: 4px;
+    -fx-border-width: 0;
+    -fx-effect: null;
+}
+
+.welcome-root .account-list-cell:selected {
+    -fx-background-color: -color-accent-subtle;
+}
+
+.welcome-root .account-list-cell-title {
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-fg-default;
+}
+
+.welcome-root .onboarding-project-creation-pane {
+    -fx-background-color: -color-surface-editor;
+    -fx-padding: 24px;
+    -fx-spacing: 18px;
+}
+
+.welcome-root .button {
+    -fx-padding: 5px 12px;
+}
+
+.welcome-root .welcome-icon-button {
+    -fx-padding: 5px;
+}
+
+.welcome-root .project-type-list .list-cell:filled:selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-text-fill: -color-fg-default;
+}
+
+/* Flat sidebar edges; state styling belongs to the native list cells.
+   State backgrounds override the shared list-cell.css transparent !important reset. */
+.welcome-root .welcome-left-pane {
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 1px 0 0;
+}
+
+.welcome-root .project-type-pane,
+.welcome-root .project-type-list,
+.welcome-root .welcome-import-sidebar {
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-background-insets: 0;
+}
+
+.welcome-root .project-type-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 3px;
+    -fx-border-radius: 3px;
+    -fx-border-color: transparent;
+    -fx-border-width: 1px;
+    -fx-padding: 7px 10px;
+    -fx-text-fill: -color-fg-default;
+}
+
+.welcome-root .project-type-list .list-cell:hover {
+    -fx-background-color: -color-surface-frame !important;
+}
+
+.welcome-root .project-type-list .list-cell:selected {
+    -fx-background-color: -color-accent-emphasis !important;
+    -fx-text-fill: -color-fg-emphasis;
+}
+
+.welcome-root .project-type-list:focused .list-cell:focused {
+    -fx-border-color: -color-fg-default;
+}
+
+.welcome-root .project-type-list .list-cell:empty {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.welcome-root .new-project-pane {
+    -fx-border-width: 0;
+    -fx-border-radius: 0;
+    -fx-background-radius: 0;
+    -fx-effect: null;
+}
+
+.welcome-root .onboarding-root .text-area .scroll-pane,
+.welcome-root .onboarding-root .text-area .scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.welcome-root .welcome-import-sidebar .list-cell:hover {
+    -fx-background-color: -color-surface-frame !important;
+}
+
+.welcome-root .welcome-import-sidebar .list-cell:selected {
+    -fx-background-color: -color-accent-subtle !important;
+}
+
+.welcome-root .welcome-import-sidebar:focused .list-cell:focused {
+    -fx-border-color: -color-accent-emphasis;
+    -fx-border-width: 1px;
+}
+
+.welcome-root .welcome-import-sidebar .list-cell:empty {
+    -fx-background-color: transparent !important;
+    -fx-border-width: 0;
 }

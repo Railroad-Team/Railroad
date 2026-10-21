@@ -8,6 +8,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * The {@code null} literal.
+ *
+ * @param span source range occupied by this node
+ */
 public record NullLiteralExpression(Span span) implements LiteralExpression {
     @Override
     public AstKind kind() {

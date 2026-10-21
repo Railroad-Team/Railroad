@@ -16,7 +16,8 @@ public record DiffHunkLine(
     @Nullable Integer oldLineNumber,
     @Nullable Integer newLineNumber,
     String content,
-    boolean noNewlineAtEnd) {
+    boolean noNewlineAtEnd
+) {
     /**
      * Returns a copy with the no-newline marker enabled.
      *
@@ -36,6 +37,11 @@ public record DiffHunkLine(
      * Type of line represented in a diff hunk.
      */
     public enum LineType {
-        CONTEXT, ADDITION, DELETION
+        /** An unchanged line present in both the old and new file. */
+        CONTEXT,
+        /** A line present only in the new file. */
+        ADDITION,
+        /** A line present only in the old file. */
+        DELETION
     }
 }

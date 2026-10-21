@@ -56,6 +56,13 @@ public class ToolingGradleModelService implements GradleModelService {
         this.executor = Objects.requireNonNull(executor);
     }
 
+    /**
+     * Loads the Gradle build model for the given project and environment.
+     *
+     * @param project the project for which to load the Gradle model
+     * @param environment the Gradle environment configuration
+     * @return the loaded GradleBuildModel
+     */
     public static GradleBuildModel loadModel(Project project, GradleEnvironment environment) {
         GradleConnector connector = GradleConnector.newConnector()
             .forProjectDirectory(project.getPath().toFile());
@@ -108,8 +115,12 @@ public class ToolingGradleModelService implements GradleModelService {
         }
     }
 
-    private static <T> T requestOptionalModel(ProjectConnection connection, Class<T> modelClass,
-        String[] initScriptArgs, GradleEnvironment environment) {
+    private static <T> T requestOptionalModel(
+        ProjectConnection connection,
+        Class<T> modelClass,
+        String[] initScriptArgs,
+        GradleEnvironment environment
+    ) {
         try {
             return configureJvm(connection.model(modelClass), environment)
                 .withArguments(initScriptArgs)
@@ -190,9 +201,11 @@ public class ToolingGradleModelService implements GradleModelService {
         return refresh;
     }
 
-    private void completeRefresh(CompletableFuture<GradleBuildModel> refresh,
+    private void completeRefresh(
+        CompletableFuture<GradleBuildModel> refresh,
         GradleBuildModel model,
-        Throwable throwable) {
+        Throwable throwable
+    ) {
         synchronized (lock) {
             if (throwable == null && model != null) {
                 cachedModel.set(model);

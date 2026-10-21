@@ -18,14 +18,19 @@ import java.util.*;
 /**
  * Presents run configurations grouped by type and optional folder hierarchy.
  */
-final class RunConfigurationTreeView extends TreeView<RunConfigurationTreeView.TreeEntry> {
+public final class RunConfigurationTreeView extends TreeView<RunConfigurationTreeView.TreeEntry> {
     private final ObservableList<RunConfiguration<?>> configurations;
     private final Map<UUID, TreeItem<TreeEntry>> configurationTreeItems = new HashMap<>();
     private final ObjectProperty<RunConfiguration<?>> selectedConfiguration = new SimpleObjectProperty<>();
     private boolean updatingSelection;
     private UUID pendingSelectionId;
 
-    RunConfigurationTreeView(ObservableList<RunConfiguration<?>> configurations) {
+    /**
+     * Builds a grouped configuration tree and keeps it synchronized with the observable configuration list.
+     *
+     * @param configurations the observable configurations to display
+     */
+    public RunConfigurationTreeView(ObservableList<RunConfiguration<?>> configurations) {
         this.configurations = configurations;
         setShowRoot(false);
         getStyleClass().add("run-configuration-tree-view");
@@ -73,7 +78,12 @@ final class RunConfigurationTreeView extends TreeView<RunConfigurationTreeView.T
         rebuildTree();
     }
 
-    ObjectProperty<RunConfiguration<?>> selectedConfigurationProperty() {
+    /**
+     * Returns the property linking configuration selection to the selected tree entry.
+     *
+     * @return the writable selected-configuration property; null represents no configuration selection
+     */
+    public ObjectProperty<RunConfiguration<?>> selectedConfigurationProperty() {
         return selectedConfiguration;
     }
 
@@ -247,7 +257,10 @@ final class RunConfigurationTreeView extends TreeView<RunConfigurationTreeView.T
         return icon;
     }
 
-    interface TreeEntry {
+    /**
+     * Marker for configuration, folder, and type entries displayed by the run configuration tree.
+     */
+    public interface TreeEntry {
     }
 
     private record TypeTreeEntry(RunConfigurationType<?> type) implements TreeEntry {

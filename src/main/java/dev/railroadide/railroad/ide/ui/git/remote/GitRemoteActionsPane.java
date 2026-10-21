@@ -2,6 +2,9 @@ package dev.railroadide.railroad.ide.ui.git.remote;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.GitCommands;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.RRTextField;
@@ -22,6 +25,9 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Provides remote configuration, fetching, pruning, and browser actions.
+ */
 public class GitRemoteActionsPane extends RRVBox {
     private final GitManager gitManager;
 
@@ -33,6 +39,11 @@ public class GitRemoteActionsPane extends RRVBox {
 
     private GitRemote selectedRemote;
 
+    /**
+     * Creates remote management actions for a repository.
+     *
+     * @param gitManager repository service supplying state and Git operations
+     */
     public GitRemoteActionsPane(GitManager gitManager) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_REMOTE_ACTIONS, this);
         this.gitManager = gitManager;
@@ -64,50 +75,34 @@ public class GitRemoteActionsPane extends RRVBox {
         getChildren().addAll(primaryActionsBox, secondaryActionsBox);
         setAlignment(Pos.TOP_CENTER);
 
-        fetchAllButton.setOnAction(_ -> gitManager.fetchAllRemotes());
-        pruneAllButton.setOnAction(_ -> gitManager.pruneAllRemotes());
-        addRemoteButton.setOnAction(_ -> openAddRemoteDialog());
+        CommandButtons.bind(fetchAllButton, GitCommands.FETCH_ALL,
+            () -> CommandContext.withArgument(null, this, gitManager));
+        CommandButtons.bind(pruneAllButton, GitCommands.PRUNE_ALL,
+            () -> CommandContext.withArgument(null, this, gitManager));
+        CommandButtons.bind(addRemoteButton, GitCommands.REMOTE_ADD,
+            () -> CommandContext.withArgument(null, this, this));
 
-        editRemoteButton.setOnAction(_ -> {
-            GitRemote remote = resolveRemoteForAction();
-            if (remote != null) {
-                openEditRemoteDialog(remote);
-            }
-        });
+        CommandButtons.bind(editRemoteButton, GitCommands.REMOTE_EDIT,
+            () -> CommandContext.withArgument(null, this, this));
 
-        removeRemoteButton.setOnAction(_ -> {
-            GitRemote remote = resolveRemoteForAction();
-            if (remote != null) {
-                openRemoveRemoteDialog(remote);
-            }
-        });
+        CommandButtons.bind(removeRemoteButton, GitCommands.REMOTE_REMOVE,
+            () -> CommandContext.withArgument(null, this, this));
 
-        fetchButton.setOnAction(_ -> gitManager.fetch());
-        pruneButton.setOnAction(_ -> gitManager.gc());
-        openInBrowserButton.setOnAction(_ -> {
-            GitRemote remote = resolveRemoteForAction();
-            if (remote == null)
-                return;
-
-            String url = gitManager.getRemoteUrls(remote).stream()
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .filter(urlCandidate -> !urlCandidate.isBlank())
-                .filter(urlCandidate -> urlCandidate.startsWith("http://") || urlCandidate.startsWith("https://"))
-                .findFirst()
-                .orElse(null);
-            if (url != null) {
-                try {
-                    DesktopUtils.openUrl(url);
-                } catch (Exception exception) {
-                    Railroad.LOGGER.error("Failed to open remote URL in browser: {}", url, exception);
-                }
-            }
-        });
+        CommandButtons.bind(fetchButton, GitCommands.FETCH,
+            () -> CommandContext.withArgument(null, this, gitManager));
+        CommandButtons.bind(pruneButton, GitCommands.GC,
+            () -> CommandContext.withArgument(null, this, gitManager));
+        CommandButtons.bind(openInBrowserButton, GitCommands.REMOTE_OPEN_BROWSER,
+            () -> CommandContext.withArgument(null, this, this));
 
         updateActions(resolveDefaultRemote());
     }
 
+    /**
+     * Selects the action target and enables remote-specific buttons only when a remote is present.
+     *
+     * @param remote selected remote, or null to disable remote-specific actions
+     */
     public void updateActions(GitRemote remote) {
         selectedRemote = remote;
         boolean hasRemote = remote != null;
@@ -119,7 +114,10 @@ public class GitRemoteActionsPane extends RRVBox {
         openInBrowserButton.setDisable(!hasRemote);
     }
 
-    private void openAddRemoteDialog() {
+    /**
+     * Opens the existing remote creation dialog.
+     */
+    public void openAddRemoteDialog() {
         var content = new RRVBox();
         content.getStyleClass().add("git-remote-add-dialog-content");
 
@@ -279,7 +277,8 @@ public class GitRemoteActionsPane extends RRVBox {
         RRTextField fetchUrlField,
         RRTextField pushUrlField,
         LocalizedText errorText,
-        RRButton confirmButton) {
+        RRButton confirmButton
+    ) {
         String name = nameField.getText() == null ? "" : nameField.getText().trim();
         String fetchUrl = fetchUrlField.getText() == null ? "" : fetchUrlField.getText().trim();
         String pushUrl = pushUrlField.getText() == null ? "" : pushUrlField.getText().trim();
@@ -321,7 +320,8 @@ public class GitRemoteActionsPane extends RRVBox {
         RRTextField fetchUrlField,
         RRTextField pushUrlField,
         LocalizedText errorText,
-        RRButton confirmButton) {
+        RRButton confirmButton
+    ) {
         String name = nameField.getText() == null ? "" : nameField.getText().trim();
         String fetchUrl = fetchUrlField.getText() == null ? "" : fetchUrlField.getText().trim();
         String pushUrl = pushUrlField.getText() == null ? "" : pushUrlField.getText().trim();
@@ -391,5 +391,58 @@ public class GitRemoteActionsPane extends RRVBox {
         }
 
         return resolveDefaultRemote();
+    }
+
+    /**
+     * Runs the existing edit action for the selected remote.
+     */
+    public void editSelectedRemote() {
+        GitRemote remote = resolveRemoteForAction();
+        if (remote != null) {
+            openEditRemoteDialog(remote);
+        }
+    }
+
+    /**
+     * Runs the existing remove action for the selected remote.
+     */
+    public void removeSelectedRemote() {
+        GitRemote remote = resolveRemoteForAction();
+        if (remote != null) {
+            openRemoveRemoteDialog(remote);
+        }
+    }
+
+    /**
+     * Runs the existing open browser action for the selected remote.
+     */
+    public void openSelectedRemoteInBrowser() {
+        GitRemote remote = resolveRemoteForAction();
+        if (remote == null)
+            return;
+
+        String url = gitManager.getRemoteUrls(remote).stream()
+            .filter(Objects::nonNull)
+            .map(String::trim)
+            .filter(urlCandidate -> !urlCandidate.isBlank())
+            .filter(urlCandidate -> urlCandidate.startsWith("http://") || urlCandidate.startsWith("https://"))
+            .findFirst()
+            .orElse(null);
+        if (url != null) {
+            try {
+                DesktopUtils.openUrl(url);
+            } catch (Exception exception) {
+                Railroad.LOGGER.error("Failed to open remote URL in browser: {}", url, exception);
+            }
+        }
+    }
+
+    /**
+     * Checks whether a remote can be resolved for an action.
+     *
+     * @return whether a remote is available
+     */
+    public boolean hasSelectedRemote() {
+        return resolveRemoteForAction() != null;
     }
 }

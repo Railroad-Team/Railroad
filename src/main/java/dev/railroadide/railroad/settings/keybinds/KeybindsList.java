@@ -4,6 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.command.Command;
+import dev.railroadide.railroad.command.CommandRegistry;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRCard;
@@ -21,10 +23,13 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.*;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.util.*;
+
+/** Settings view that lists, filters, and edits the application's keybinds. */
 public class KeybindsList extends RRVBox {
     private final Map<String, List<KeybindData>> keybinds = new LinkedHashMap<>();
 
@@ -41,10 +46,16 @@ public class KeybindsList extends RRVBox {
     private String pendingEditKey;
     private int pendingEditIndex = -1;
 
+    /** Creates a keybind list initialized from the registered defaults. */
     public KeybindsList() {
         this(null);
     }
 
+    /**
+     * Creates a keybind list with the supplied saved bindings.
+     *
+     * @param initialKeybinds saved bindings to load, or {@code null} to use defaults
+     */
     public KeybindsList(Map<String, List<KeybindData>> initialKeybinds) {
         getStyleClass().add("keybinds-pane");
         setFillWidth(true);
@@ -56,12 +67,22 @@ public class KeybindsList extends RRVBox {
         loadKeybinds(initialKeybinds);
     }
 
+    /**
+     * Returns a defensive copy of the currently edited bindings.
+     *
+     * @return keybind IDs mapped to their configured combinations
+     */
     public Map<String, List<KeybindData>> getKeybinds() {
         Map<String, List<KeybindData>> copy = new LinkedHashMap<>();
         keybinds.forEach((id, bindings) -> copy.put(id, new ArrayList<>(bindings)));
         return copy;
     }
 
+    /**
+     * Replaces the edited bindings and refreshes the visible list.
+     *
+     * @param incoming saved bindings to apply after loading registered defaults, or {@code null}
+     */
     public void loadKeybinds(Map<String, List<KeybindData>> incoming) {
         keybinds.clear();
 
@@ -77,15 +98,13 @@ public class KeybindsList extends RRVBox {
     }
 
     private void createHeader() {
-        var title = new LocalizedLabel("railroad.settings.keybinds.title");
-        title.getStyleClass().add("keybinds-header-title");
         var subtitle = new LocalizedLabel("railroad.settings.keybinds.subtitle");
         subtitle.getStyleClass().add("keybinds-header-subtitle");
 
         searchField.setLocalizedPlaceholder("railroad.settings.keybinds.search");
         searchField.textProperty().addListener((obs, oldText, newText) -> renderKeybindCards());
 
-        var headerBox = new VBox(title, subtitle);
+        var headerBox = new VBox(subtitle);
         headerBox.getStyleClass().add("keybinds-header");
 
         getChildren().addAll(headerBox, searchField);
@@ -313,16 +332,20 @@ public class KeybindsList extends RRVBox {
     }
 
     private String localizationKeyFor(String keybindId) {
-        if (keybindId == null || !keybindId.contains(":"))
-            return "railroad.settings.keybinds." + keybindId;
-        return "railroad.settings.keybinds." + keybindId.split(":", 2)[1];
+        return CommandRegistry.find(keybindId)
+            .map(Command::displayNameKey)
+            .orElseGet(() -> {
+                if (keybindId == null || !keybindId.contains(":"))
+                    return "railroad.settings.keybinds." + keybindId;
+                return "railroad.settings.keybinds." + keybindId.split(":", 2)[1];
+            });
     }
 
     /**
      * Converts the keybinds map to a JSON representation.
      *
-     * @param keybinds
-     * @return a JsonElement representing the keybinds.
+     * @param keybinds keybind IDs mapped to their configured combinations
+     * @return a JSON object containing the serialized bindings
      */
     public static JsonElement toJson(Map<String, List<KeybindData>> keybinds) {
         var jsonObject = new JsonObject();
@@ -330,7 +353,10 @@ public class KeybindsList extends RRVBox {
             var keyList = new JsonArray();
 
             for (KeybindData combo : entry.getValue()) {
-                var comboString = new StringBuilder(combo.keyCode().toString() + ";");
+                String input = combo.mouseButton() == null
+                    ? Objects.requireNonNullElse(combo.keyCode(), KeyCode.UNDEFINED).toString()
+                    : "Mouse:" + combo.mouseButton().name();
+                var comboString = new StringBuilder(input).append(';');
                 if (combo.modifiers() == null || combo.modifiers().length == 0) {
                     keyList.add(comboString.toString());
                     continue;
@@ -365,62 +391,40 @@ public class KeybindsList extends RRVBox {
                 continue;
             }
 
-            KeybindHandler.getKeybind(id).getKeys().clear();
-
-            for (JsonElement keyCombo : keyList) {
-                String[] parts = keyCombo.getAsString().split(";");
-                KeyCode keyCode = KeyCode.valueOf(parts[0]);
-
-                if (parts.length < 2 || parts[1].isBlank()) {
-                    KeybindHandler.getKeybind(id).addKey(keyCode);
-                    continue;
-                }
-
-                String[] modParts = parts[1].split(",");
-                List<KeyCombination.Modifier> modifiers = new ArrayList<>();
-
-                for (String mod : modParts) {
-                    switch (mod.trim()) {
-                        case "Shortcut" -> modifiers.add(KeyCombination.SHORTCUT_DOWN);
-                        case "Ctrl" -> modifiers.add(KeyCombination.CONTROL_DOWN);
-                        case "Shift" -> modifiers.add(KeyCombination.SHIFT_DOWN);
-                        case "Alt" -> modifiers.add(KeyCombination.ALT_DOWN);
-                        default -> throw new IllegalArgumentException("Unknown modifier: " + mod);
-                    }
-                }
-
-                KeybindHandler.getKeybind(id).addKey(keyCode, modifiers.toArray(new KeyCombination.Modifier[0]));
-            }
-
             var keys = new ArrayList<KeybindData>();
             for (JsonElement keyCombo : keyList) {
-                var parts = keyCombo.getAsString().split(";");
-                var keyCode = KeyCode.valueOf(parts[0]);
-
-                if (parts.length == 1) {
-                    keys.add(new KeybindData(keyCode, new KeyCombination.Modifier[0]));
-                    continue;
-                }
-
-                var modParts = parts[1].split(",");
-                var modifiers = new KeyCombination.Modifier[modParts.length];
-
-                for (int i = 0; i < modParts.length; i++) {
-                    switch (modParts[i]) {
-                        case "Shortcut" -> modifiers[i] = KeyCombination.SHORTCUT_DOWN;
-                        case "Ctrl" -> modifiers[i] = KeyCombination.CONTROL_DOWN;
-                        case "Shift" -> modifiers[i] = KeyCombination.SHIFT_DOWN;
-                        case "Alt" -> modifiers[i] = KeyCombination.ALT_DOWN;
-                        default -> throw new IllegalArgumentException("Unknown modifier: " + modParts[i]);
-                    }
-                }
-
-                keys.add(new KeybindData(keyCode, modifiers));
+                keys.add(parseBinding(keyCombo.getAsString()));
             }
 
+            KeybindHandler.getKeybind(id).getKeys().setAll(keys);
             map.put(id, keys);
         }
 
         return map;
+    }
+
+    private static KeybindData parseBinding(String serialized) {
+        String[] parts = serialized.split(";", -1);
+        KeyCombination.Modifier[] modifiers = parts.length < 2 || parts[1].isBlank()
+            ? new KeyCombination.Modifier[0]
+            : Arrays.stream(parts[1].split(","))
+                .map(String::trim)
+                .map(KeybindsList::parseModifier)
+                .toArray(KeyCombination.Modifier[]::new);
+
+        if (parts[0].startsWith("Mouse:"))
+            return new KeybindData(MouseButton.valueOf(parts[0].substring("Mouse:".length())), modifiers);
+        return new KeybindData(KeyCode.valueOf(parts[0]), modifiers);
+    }
+
+    private static KeyCombination.Modifier parseModifier(String modifier) {
+        return switch (modifier) {
+            case "Shortcut" -> KeyCombination.SHORTCUT_DOWN;
+            case "Ctrl" -> KeyCombination.CONTROL_DOWN;
+            case "Shift" -> KeyCombination.SHIFT_DOWN;
+            case "Alt" -> KeyCombination.ALT_DOWN;
+            case "Meta" -> KeyCombination.META_DOWN;
+            default -> throw new IllegalArgumentException("Unknown modifier: " + modifier);
+        };
     }
 }

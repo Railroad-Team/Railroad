@@ -21,12 +21,20 @@ import org.kordamp.ikonli.javafx.FontIcon;
  */
 public class RRTextField extends TextField implements TextFieldControl {
 
+    /**
+     * CSS classes installed when the field is initialized.
+     */
     public static final String[] DEFAULT_STYLE_CLASSES = {"rr-text-field", "text-field"};
 
     private TextFieldSize size = TextFieldSize.MEDIUM;
     private ValidationState validationState = ValidationState.NONE;
     private FontIcon prefixIcon;
     private FontIcon suffixIcon;
+    /**
+     * Container populated with the field and its optional icons when an icon is configured.
+     *
+     * @return the container used to lay out the field and icons
+     */
     @Getter
     private HBox container;
 
@@ -64,6 +72,9 @@ public class RRTextField extends TextField implements TextFieldControl {
         setLocalizedPlaceholder(localizationKey, args);
     }
 
+    /**
+     * Installs styling, binds localized prompt text, prepares the icon container, and adds focus feedback.
+     */
     protected void initialize() {
         getStyleClass().setAll(RRTextField.DEFAULT_STYLE_CLASSES);
         setCursor(Cursor.TEXT);
@@ -85,7 +96,9 @@ public class RRTextField extends TextField implements TextFieldControl {
     }
 
     /**
-     * Set the text field size
+     * Sets the CSS size variant.
+     *
+     * @param size the field size to apply; must not be null
      */
     @Override
     public void setTextFieldSize(TextFieldSize size) {
@@ -94,7 +107,9 @@ public class RRTextField extends TextField implements TextFieldControl {
     }
 
     /**
-     * Set the validation state
+     * Sets the visual validation state without validating the text.
+     *
+     * @param state the validation feedback to display; must not be null
      */
     @Override
     public void setValidationState(ValidationState state) {
@@ -103,7 +118,9 @@ public class RRTextField extends TextField implements TextFieldControl {
     }
 
     /**
-     * Set a prefix icon
+     * Sets the icon before the field and rebuilds the icon container.
+     *
+     * @param iconCode the prefix icon, or null to remove it
      */
     @Override
     public void setPrefixIcon(Ikon iconCode) {
@@ -118,7 +135,9 @@ public class RRTextField extends TextField implements TextFieldControl {
     }
 
     /**
-     * Set a suffix icon
+     * Sets the icon after the field and rebuilds the icon container.
+     *
+     * @param iconCode the suffix icon, or null to remove it
      */
     @Override
     public void setSuffixIcon(Ikon iconCode) {
@@ -134,7 +153,9 @@ public class RRTextField extends TextField implements TextFieldControl {
     }
 
     /**
-     * Set the text field as rounded
+     * Adds or removes rounded-corner styling.
+     *
+     * @param rounded true to enable rounded corners
      */
     @Override
     public void setRounded(boolean rounded) {
@@ -146,7 +167,9 @@ public class RRTextField extends TextField implements TextFieldControl {
     }
 
     /**
-     * Set the text field as outlined
+     * Adds or removes outlined field styling.
+     *
+     * @param outlined true to enable an outline
      */
     @Override
     public void setOutlined(boolean outlined) {
@@ -158,7 +181,9 @@ public class RRTextField extends TextField implements TextFieldControl {
     }
 
     /**
-     * Set the text field as disabled state
+     * Updates both JavaFX disable state and the disabled CSS class.
+     *
+     * @param disabled true to disable the field
      */
     @Override
     public void setDisabledState(boolean disabled) {
@@ -204,13 +229,18 @@ public class RRTextField extends TextField implements TextFieldControl {
         }
     }
 
+    /**
+     * Sets the literal prompt displayed when the field is empty.
+     *
+     * @param placeholder the prompt text
+     */
     @Override
     public void setPlaceholder(String placeholder) {
         setPromptText(placeholder);
     }
 
     /**
-     * Clear the text field with animation
+     * Fades the field out, clears its text when that fade finishes, then restores full opacity.
      */
     @Override
     public void clearWithAnimation() {
@@ -228,6 +258,12 @@ public class RRTextField extends TextField implements TextFieldControl {
         fade.play();
     }
 
+    /**
+     * Sets prompt text that follows the application's selected language.
+     *
+     * @param localizationKey the translation key for the prompt
+     * @param args formatting arguments for the translation
+     */
     @Override
     public void setLocalizedPlaceholder(String localizationKey, Object... args) {
         localizedPromptText.setTranslation(localizationKey, args);

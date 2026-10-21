@@ -12,8 +12,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public record VariableDeclarator(Span span, NameExpression name,
-    Optional<Expression> initExpression) implements AstNode {
+/**
+ * A variable name with an optional initializer within a declaration.
+ *
+ * @param span source range occupied by this node
+ * @param name declared variable name
+ * @param initExpression optional initializer expression
+ */
+public record VariableDeclarator(
+    Span span,
+    NameExpression name,
+    Optional<Expression> initExpression
+) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.VARIABLE_DECLARATOR;

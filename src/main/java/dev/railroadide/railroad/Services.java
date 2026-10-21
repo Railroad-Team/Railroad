@@ -2,11 +2,14 @@ package dev.railroadide.railroad;
 
 import com.google.gson.Gson;
 import dev.railroadide.logger.Logger;
+import dev.railroadide.railroad.debug.DebugService;
+import dev.railroadide.railroad.debug.breakpoint.BreakpointService;
 import dev.railroadide.railroad.ide.DefaultDocumentEditorStateService;
 import dev.railroadide.railroad.ide.DefaultIDEStateService;
 import dev.railroadide.railroad.ide.DefaultWorkspaceService;
 import dev.railroadide.railroad.ide.diagnostics.LanguageInspectionRegistries;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService;
+import dev.railroadide.railroad.ide.ui.editor.EditorTabManager;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.localization.Language;
 import dev.railroadide.railroad.localization.LocalizationService;
@@ -38,6 +41,9 @@ import java.util.Properties;
 public class Services {
     private static final String APPLICATION_VERSION = loadApplicationVersion();
 
+    /**
+     * Provides application information such as version, name, and build timestamp.
+     */
     public static final ApplicationInfoService APPLICATION_INFO = new ApplicationInfoService() {
         @Override
         public String getVersion() {
@@ -72,12 +78,29 @@ public class Services {
         return manifestVersion == null || manifestVersion.isBlank() ? "development" : manifestVersion;
     }
 
+    /**
+     * Provides access to the IDE state service, which manages the state of the IDE.
+     */
     public static final DefaultIDEStateService IDE_STATE = DefaultIDEStateService.getInstance();
 
+    /**
+     * Provides access to the workspace service, which manages the workspace and its related operations.
+     */
     public static final DefaultWorkspaceService WORKSPACE = new DefaultWorkspaceService();
 
+    /**
+     * Provides access to the document editor state service, which manages the state of document editors.
+     */
     public static final DefaultDocumentEditorStateService DOCUMENT_EDITOR_STATE = new DefaultDocumentEditorStateService();
 
+    /**
+     * Provides access to the editor tab manager, which manages the tabs in the editor.
+     */
+    public static final EditorTabManager EDITOR_TAB_MANAGER = new EditorTabManager();
+
+    /**
+     * Provides access to the localization service, which handles localization and internationalization.
+     */
     public static final LocalizationService LOCALIZATION_SERVICE = new LocalizationService() {
         @Override
         public String get(String key, Object... args) {
@@ -95,6 +118,10 @@ public class Services {
         }
     };
 
+    /**
+     * Provides access to the project service registry, which manages various services related to project creation and
+     * management.
+     */
     public static final ProjectServiceRegistry PROJECT_SERVICE_REGISTRY = new ProjectServiceRegistry() {
         {
             bind(ChecksumService.class, new MessageDigestChecksumService());
@@ -107,11 +134,36 @@ public class Services {
         }
     };
 
+    /**
+     * Provides access to the project creation pipeline service, which manages the pipeline for creating new projects.
+     */
     public static final DefaultProjectCreationPipelineService PROJECT_CREATION_PIPELINE = new DefaultProjectCreationPipelineService();
+
+    /**
+     * Provides access to the project language index service, which manages the indexing of languages used in projects.
+     */
     public static final ProjectLanguageIndexService PROJECT_LANGUAGE_INDEX_SERVICE = new ProjectLanguageIndexService();
+
+    /**
+     * Provides access to the language inspection provider registry, which manages the registration of language
+     * inspection providers.
+     */
     public static final Registry<LanguageInspectionProvider> LANGUAGE_INSPECTION_PROVIDER_REGISTRY = LanguageInspectionRegistries.LANGUAGE_INSPECTION_PROVIDER_REGISTRY;
 
+    /**
+     * Provides access to the UI manager, which manages the user interface components and their interactions.
+     */
     public static final UIManager UI_MANAGER = new UIManager();
+
+    /**
+     * Application-wide owner of the active debugger session.
+     */
+    public static final DebugService DEBUG_SERVICE = new DebugService();
+
+    /**
+     * Shared breakpoint store used by editors and debugger sessions.
+     */
+    public static final BreakpointService BREAKPOINT_SERVICE = new BreakpointService();
 
     /**
      * Retrieves a service instance by its class type.
@@ -137,6 +189,8 @@ public class Services {
             return (T) Railroad.getHostServicess();
         else if (serviceClass == DocumentEditorStateService.class)
             return (T) DOCUMENT_EDITOR_STATE;
+        else if (serviceClass == EditorTabManager.class)
+            return (T) EDITOR_TAB_MANAGER;
         else if (serviceClass == LocalizationService.class)
             return (T) LOCALIZATION_SERVICE;
         else if (serviceClass == Logger.class)
@@ -151,6 +205,10 @@ public class Services {
             return (T) PROJECT_LANGUAGE_INDEX_SERVICE;
         else if (serviceClass == UIManager.class)
             return (T) UI_MANAGER;
+        else if (serviceClass == DebugService.class)
+            return (T) DEBUG_SERVICE;
+        else if (serviceClass == BreakpointService.class)
+            return (T) BREAKPOINT_SERVICE;
 
         throw new IllegalArgumentException("Service " + serviceClass.getName() + " is not available.");
     }

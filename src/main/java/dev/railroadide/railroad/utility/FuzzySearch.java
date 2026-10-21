@@ -75,7 +75,7 @@ public class FuzzySearch<D, R> {
         for (String key : extractor.apply(data)) {
             String keyMeta = metaphone(key);
 
-            int score = dev.railroadide.railroad.utility.StringUtils.levenshtein(query.toLowerCase(),
+            int score = StringUtils.levenshtein(query.toLowerCase(),
                 key.toLowerCase());
 
             if (queryMeta.equals(keyMeta)) {
@@ -83,7 +83,7 @@ public class FuzzySearch<D, R> {
             }
 
             for (String substring : key.split(" ")) {
-                int substringScore = dev.railroadide.railroad.utility.StringUtils.levenshtein(query.toLowerCase(),
+                int substringScore = StringUtils.levenshtein(query.toLowerCase(),
                     substring.toLowerCase());
 
                 if (query.contains(substring)) {
@@ -121,7 +121,7 @@ public class FuzzySearch<D, R> {
         String queryMeta = metaphone(query);
         String keyMeta = metaphone(key);
 
-        int score = dev.railroadide.railroad.utility.StringUtils.levenshtein(query.toLowerCase(), key.toLowerCase());
+        int score = StringUtils.levenshtein(query.toLowerCase(), key.toLowerCase());
 
         if (queryMeta.equals(keyMeta)) {
             score -= 1;

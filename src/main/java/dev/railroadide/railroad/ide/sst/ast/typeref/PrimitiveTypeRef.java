@@ -10,6 +10,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A type reference represented by a primitive keyword token.
+ *
+ * @param span source range occupied by this node
+ * @param keyword primitive type keyword
+ */
 public record PrimitiveTypeRef(Span span, LexerToken<JavaTokenType> keyword) implements TypeRef {
     @Override
     public AstKind kind() {

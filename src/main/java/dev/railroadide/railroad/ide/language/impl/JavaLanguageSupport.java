@@ -27,10 +27,19 @@ import org.jspecify.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.Set;
 
+/**
+ * Integrates Java editing, diagnostics, completion, signature help, and semantic project indexes.
+ */
 public final class JavaLanguageSupport extends BaseLanguageSupport {
+    /**
+     * Stable identifier for Java language features and indexes.
+     */
     public static final String LANGUAGE_ID = "java";
     private static final JavaAnalysisContextProvider ANALYSIS_CONTEXT_PROVIDER = new JavaAnalysisContextProvider();
 
+    /**
+     * Creates support for Java source files with the standard Java language identifier.
+     */
     public JavaLanguageSupport() {
         super(LANGUAGE_ID, "Java", Set.of("java"));
     }
@@ -85,6 +94,11 @@ public final class JavaLanguageSupport extends BaseLanguageSupport {
         ANALYSIS_CONTEXT_PROVIDER.index(context);
     }
 
+    /**
+     * Returns the shared provider combining Java project, library, and JDK indexes.
+     *
+     * @return the shared analysis context provider
+     */
     public static JavaAnalysisContextProvider analysisContextProvider() {
         return ANALYSIS_CONTEXT_PROVIDER;
     }

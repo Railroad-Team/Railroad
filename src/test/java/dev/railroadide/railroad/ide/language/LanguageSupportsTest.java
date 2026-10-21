@@ -7,10 +7,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class LanguageSupportsTest {
+public class LanguageSupportsTest {
 
     @Test
-    void initializeRegistersBuiltInSupportsOnce() {
+    public void initializeRegistersBuiltInSupportsOnce() {
         try {
             LanguageSupports.reset();
 
@@ -29,7 +29,7 @@ class LanguageSupportsTest {
     }
 
     @Test
-    void resetClearsRegisteredSupports() {
+    public void resetClearsRegisteredSupports() {
         try {
             LanguageSupports.reset();
             LanguageSupports.initialize();

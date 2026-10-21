@@ -20,13 +20,33 @@ public class RRNavigationItem extends VBox {
     private NavigationItemSize size = NavigationItemSize.MEDIUM;
     private NavigationItemState state = NavigationItemState.NORMAL;
 
+    /**
+     * The current icon node, absent when no icon is configured.
+     *
+     * @return the icon node, or {@code null}
+     */
     @Getter
     private FontIcon icon;
+    /**
+     * The label displaying the navigation item's text.
+     *
+     * @return the mutable text label
+     */
     @Getter
     private LocalizedLabel label;
+    /**
+     * The badge label, which remains available while hidden.
+     *
+     * @return the mutable badge label
+     */
     @Getter
     private LocalizedLabel badge;
     private HBox content;
+    /**
+     * Whether the item has been marked selected.
+     *
+     * @return {@code true} when the selected flag is set
+     */
     @Getter
     private boolean isSelected = false;
 
@@ -38,9 +58,9 @@ public class RRNavigationItem extends VBox {
     }
 
     /**
-     * Constructs a new navigation item with the specified text.
+     * Constructs a new navigation item using the supplied text as a localization key.
      *
-     * @param text the text to display on the navigation item
+     * @param text localization key for the navigation label
      */
     public RRNavigationItem(String text) {
         this(text, new Object[0]);
@@ -50,7 +70,7 @@ public class RRNavigationItem extends VBox {
      * Constructs a new navigation item with localized text and an icon.
      *
      * @param localizationKey the localization key for the text
-     * @param iconCode the icon to display
+     * @param iconCode the icon to display, or {@code null} for no icon
      * @param args optional formatting arguments for the localized text
      */
     public RRNavigationItem(String localizationKey, Ikon iconCode, Object... args) {
@@ -70,10 +90,10 @@ public class RRNavigationItem extends VBox {
     }
 
     /**
-     * Create a navigation item with text and icon
+     * Creates a navigation item with a localized label and an optional icon.
      *
-     * @param text the text to display
-     * @param icon the icon to display
+     * @param text localization key for the label
+     * @param icon the icon to display, or {@code null} for no icon
      * @return a new RRNavigationItem instance
      */
     public static RRNavigationItem create(String text, Ikon icon) {
@@ -81,9 +101,9 @@ public class RRNavigationItem extends VBox {
     }
 
     /**
-     * Create a navigation item with text only
+     * Creates a navigation item with a localized label and no icon.
      *
-     * @param text the text to display
+     * @param text localization key for the label
      * @return a new RRNavigationItem instance
      */
     public static RRNavigationItem create(String text) {
@@ -140,21 +160,30 @@ public class RRNavigationItem extends VBox {
     }
 
     /**
-     * Set the navigation item text
+     * Updates the navigation label using a localization key.
+     *
+     * @param localizationKey key used to translate the label
+     * @param args formatting arguments for the translated label
+     * @throws NullPointerException if the argument array is {@code null}
      */
     public void setLocalizedText(String localizationKey, Object... args) {
         label.setKey(localizationKey, args);
     }
 
     /**
-     * Set the navigation item text
+     * Sets the navigation label's text directly.
+     *
+     * @param text text to display
      */
     public void setText(String text) {
         label.setText(text);
     }
 
     /**
-     * Set the navigation item size
+     * Updates the navigation item's size style.
+     *
+     * @param size size variant to apply
+     * @throws NullPointerException if {@code size} is {@code null}
      */
     public void setNavigationItemSize(NavigationItemSize size) {
         this.size = size;
@@ -162,7 +191,11 @@ public class RRNavigationItem extends VBox {
     }
 
     /**
-     * Set the navigation item state
+     * Updates the navigation item's state style and the state used to gate hover animations.
+     * The disabled variant does not change the JavaFX {@code disable} property.
+     *
+     * @param state state variant to apply
+     * @throws NullPointerException if {@code state} is {@code null}
      */
     public void setNavigationItemState(NavigationItemState state) {
         this.state = state;
@@ -170,7 +203,11 @@ public class RRNavigationItem extends VBox {
     }
 
     /**
-     * Set a badge on the navigation item
+     * Updates the badge using a localization key and makes the badge visible.
+     *
+     * @param localizationKey key used to translate the badge
+     * @param args formatting arguments for the translated badge
+     * @throws NullPointerException if the argument array is {@code null}
      */
     public void setLocalizedBadge(String localizationKey, Object... args) {
         badge.setKey(localizationKey, args);
@@ -178,7 +215,9 @@ public class RRNavigationItem extends VBox {
     }
 
     /**
-     * Set the navigation item as rounded
+     * Toggles the rounded CSS style.
+     *
+     * @param rounded whether to apply rounded styling
      */
     public void setRounded(boolean rounded) {
         if (rounded) {
@@ -189,7 +228,9 @@ public class RRNavigationItem extends VBox {
     }
 
     /**
-     * Set the navigation item as outlined
+     * Toggles the outlined CSS style.
+     *
+     * @param outlined whether to apply outlined styling
      */
     public void setOutlined(boolean outlined) {
         if (outlined) {
@@ -200,7 +241,9 @@ public class RRNavigationItem extends VBox {
     }
 
     /**
-     * Set the navigation item as compact
+     * Toggles the compact CSS style.
+     *
+     * @param compact whether to apply compact styling
      */
     public void setCompact(boolean compact) {
         if (compact) {
@@ -229,7 +272,10 @@ public class RRNavigationItem extends VBox {
     }
 
     /**
-     * Set the navigation item icon
+     * Replaces the icon preceding the label, or removes it when no icon code is supplied.
+     * New icons use an initial size of 18 pixels.
+     *
+     * @param iconCode icon to display, or {@code null} to remove the current icon
      */
     public void setIcon(Ikon iconCode) {
         if (icon != null) {
@@ -263,7 +309,9 @@ public class RRNavigationItem extends VBox {
     }
 
     /**
-     * Set the navigation item as selected
+     * Updates the selection flag and selected CSS style independently of the state variant.
+     *
+     * @param selected whether the item is selected
      */
     public void setSelected(boolean selected) {
         this.isSelected = selected;
@@ -274,11 +322,29 @@ public class RRNavigationItem extends VBox {
         }
     }
 
+    /**
+     * CSS size variants for a navigation item.
+     */
     public enum NavigationItemSize {
-        SMALL, MEDIUM, LARGE
+        /** The small size variant. */
+        SMALL,
+        /** The default medium size variant. */
+        MEDIUM,
+        /** The large size variant. */
+        LARGE
     }
 
+    /**
+     * Visual state variants; the disabled variant also suppresses hover animations.
+     */
     public enum NavigationItemState {
-        NORMAL, ACTIVE, DISABLED, HIGHLIGHTED
+        /** The default, unaccented state. */
+        NORMAL,
+        /** The active-item style. */
+        ACTIVE,
+        /** The disabled style, with hover animations suppressed. */
+        DISABLED,
+        /** The highlighted-item style. */
+        HIGHLIGHTED
     }
 }

@@ -32,6 +32,12 @@ public class WelcomeProjectsPane extends ScrollPane {
     private final RRListView<Project> projectsList = new RRListView<>();
     private ObservableValue<ProjectSort> sortProperty;
 
+    /**
+     * Builds a browser of known projects with opening and removal actions and an empty-state display.
+     * Initially displays all projects, then filters when the supplied search field changes.
+     *
+     * @param searchField field whose text changes supply the alias filter
+     */
     public WelcomeProjectsPane(RRTextField searchField) {
         setFitToWidth(true);
         setFitToHeight(true);
@@ -151,7 +157,7 @@ public class WelcomeProjectsPane extends ScrollPane {
      * Filters the projects list based on the provided search value.
      * Projects whose alias contains the search value (case-insensitive) will be displayed.
      *
-     * @param value the search term to filter projects by
+     * @param value the search term to filter projects by, or null or empty to display all known projects
      */
     public void filterProjects(String value) {
         projectsList.getItems().clear();
@@ -175,7 +181,8 @@ public class WelcomeProjectsPane extends ScrollPane {
 
     /**
      * Sets the sort property for the projects list.
-     * The projects will be automatically sorted when the sort property changes or when new projects are added.
+     * Sorts the current items immediately and listens for sort-value changes and changes to the current item list.
+     * Sorting may replace the item list, so the installed list listener does not follow subsequent replacements.
      *
      * @param observable the observable value containing the sort criteria
      */

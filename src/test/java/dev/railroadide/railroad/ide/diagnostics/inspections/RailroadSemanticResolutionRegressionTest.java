@@ -18,9 +18,9 @@ import static dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectio
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class RailroadSemanticResolutionRegressionTest {
+public class RailroadSemanticResolutionRegressionTest {
     @Test
-    void realRailroadStartupCodeDoesNotReportKnownFalseCallAndExceptionDiagnostics() throws Exception {
+    public void realRailroadStartupCodeDoesNotReportKnownFalseCallAndExceptionDiagnostics() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path railroadPath = sourceRoot.resolve("dev/railroadide/railroad/Railroad.java").normalize();
         Path preloaderPath = sourceRoot.resolve("dev/railroadide/railroad/RailroadPreloader.java").normalize();
@@ -45,7 +45,7 @@ class RailroadSemanticResolutionRegressionTest {
     }
 
     @Test
-    void projectEventBusPublishCallsResolveAcrossRealSources() throws Exception {
+    public void projectEventBusPublishCallsResolveAcrossRealSources() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(sourceRoot),
@@ -74,7 +74,7 @@ class RailroadSemanticResolutionRegressionTest {
     }
 
     @Test
-    void realRailroadPreloaderVarDeclarationsDoNotReportVoidAssignmentDiagnostics() throws Exception {
+    public void realRailroadPreloaderVarDeclarationsDoNotReportVoidAssignmentDiagnostics() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path preloaderPath = sourceRoot.resolve("dev/railroadide/railroad/RailroadPreloader.java").normalize();
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
@@ -90,7 +90,8 @@ class RailroadSemanticResolutionRegressionTest {
     }
 
     @Test
-    void realServicesAnonymousInterfacesAndGenericServiceLookupDoNotReportKnownFalseDiagnostics() throws Exception {
+    public void realServicesAnonymousInterfacesAndGenericServiceLookupDoNotReportKnownFalseDiagnostics()
+        throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path servicesPath = sourceRoot.resolve("dev/railroadide/railroad/Services.java").normalize();
         JavaSymbolIndex symbolIndex = new CompositeJavaSymbolIndex(List.of(
@@ -112,7 +113,7 @@ class RailroadSemanticResolutionRegressionTest {
     }
 
     @Test
-    void realDefaultGradleEnvironmentRecordAndObjectMembersDoNotReportKnownFalseDiagnostics() throws Exception {
+    public void realDefaultGradleEnvironmentRecordAndObjectMembersDoNotReportKnownFalseDiagnostics() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path environmentPath = sourceRoot.resolve("dev/railroadide/railroad/DefaultGradleEnvironment.java").normalize();
         Path compiledClasses = Path.of("build/classes/java/main").toAbsolutePath().normalize();
@@ -161,7 +162,7 @@ class RailroadSemanticResolutionRegressionTest {
     }
 
     @Test
-    void realWindowManagerFullyQualifiedAccessAndOverloadedConstructorsResolve() throws Exception {
+    public void realWindowManagerFullyQualifiedAccessAndOverloadedConstructorsResolve() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path windowManagerPath = sourceRoot.resolve("dev/railroadide/railroad/window/WindowManager.java").normalize();
         Path compiledClasses = Path.of("build/classes/java/main").toAbsolutePath().normalize();
@@ -189,7 +190,7 @@ class RailroadSemanticResolutionRegressionTest {
     }
 
     @Test
-    void realWindowEventsPublishCallsAndLambdaParametersResolve() throws Exception {
+    public void realWindowEventsPublishCallsAndLambdaParametersResolve() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path windowEventsPath = sourceRoot.resolve("dev/railroadide/railroad/window/WindowEvents.java").normalize();
         Path compiledClasses = Path.of("build/classes/java/main").toAbsolutePath().normalize();
@@ -213,7 +214,7 @@ class RailroadSemanticResolutionRegressionTest {
     }
 
     @Test
-    void realWindowBuilderFluentGenericsAndLambdaParametersResolve() throws Exception {
+    public void realWindowBuilderFluentGenericsAndLambdaParametersResolve() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path sourcePath = sourceRoot.resolve("dev/railroadide/railroad/window/WindowBuilder.java").normalize();
         Path compiledClasses = Path.of("build/classes/java/main").toAbsolutePath().normalize();
@@ -240,7 +241,7 @@ class RailroadSemanticResolutionRegressionTest {
     }
 
     @Test
-    void realCoreAccessibilityInspectionLambdaParameterCallsResolve() throws Exception {
+    public void realCoreAccessibilityInspectionLambdaParameterCallsResolve() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path sourceFile = sourceRoot.resolve(
             "dev/railroadide/railroad/ide/diagnostics/inspections/CoreAccessibilityInspection.java");
@@ -265,7 +266,7 @@ class RailroadSemanticResolutionRegressionTest {
     }
 
     @Test
-    void realNestedFormDataMembersRemainAccessibleFromTheirEnclosingComponent() throws Exception {
+    public void realNestedFormDataMembersRemainAccessibleFromTheirEnclosingComponent() throws Exception {
         Path sourceRoot = Path.of("src/main/java").toAbsolutePath().normalize();
         Path sourceFile = sourceRoot.resolve(
             "dev/railroadide/railroad/form/impl/CheckBoxComponent.java");

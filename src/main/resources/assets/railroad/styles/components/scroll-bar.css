@@ -1,0 +1,57 @@
+/* Reset all native track layers so scrollbars follow the active theme. */
+.scroll-bar {
+    -fx-background-color: -color-bg-default;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-padding: 0;
+    -fx-opacity: 1;
+}
+
+.scroll-bar > .track,
+.scroll-bar > .track-background {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-border-width: 0;
+}
+
+.scroll-bar > .thumb {
+    -fx-background-color: -color-fg-subtle;
+    -fx-background-insets: 1px;
+    -fx-background-radius: 2px;
+}
+
+.scroll-bar:hover > .thumb,
+.scroll-bar:focused > .thumb {
+    -fx-background-color: -color-fg-muted;
+}
+
+.scroll-bar:pressed > .thumb,
+.scroll-bar > .thumb:pressed {
+    -fx-background-color: -color-accent-fg;
+}
+
+.scroll-bar > .increment-button,
+.scroll-bar > .decrement-button,
+.scroll-bar > .increment-button > .increment-arrow,
+.scroll-bar > .decrement-button > .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-shape: "";
+}
+
+.scroll-pane > .corner {
+    -fx-background-color: -color-bg-default;
+    -fx-opacity: 1;
+}
+
+.rr-tree-view .scroll-bar,
+.gradle-tasks-tree-view .scroll-bar {
+    -fx-background-color: -color-surface-panel;
+}
+
+.editor-tab-pane .scroll-bar,
+.code-area .scroll-bar {
+    -fx-background-color: -color-surface-editor;
+}

@@ -2,18 +2,13 @@ package dev.railroadide.railroad.settings.keybinds;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.scene.Node;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyCombination;
-import javafx.scene.input.KeyEvent;
+import javafx.scene.input.*;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
+/** Defines a user-configurable keyboard or mouse action and its dispatch behavior. */
 public class Keybind {
     @Getter
     private final String id;
@@ -26,7 +21,7 @@ public class Keybind {
     @Getter
     private final List<KeybindContexts.KeybindContext> validContexts;
     @Getter
-    private final Map<KeybindContexts.KeybindContext, Consumer<Node>> actions;
+    private final Map<KeybindContexts.KeybindContext, Consumer<KeybindActionContext>> actions;
 
     /**
      * Creates a Keybind instance. Should not be called directly. See {@link Keybind.Builder}
@@ -39,8 +34,13 @@ public class Keybind {
      * @param actions A map of contexts to actions, when the keybind is pressed in that context, the corresponding
      *            action will be executed.
      */
-    private Keybind(String id, KeybindCategory category, List<KeybindData> defaultKeys,
-        List<KeybindContexts.KeybindContext> contexts, Map<KeybindContexts.KeybindContext, Consumer<Node>> actions) {
+    private Keybind(
+        String id,
+        KeybindCategory category,
+        List<KeybindData> defaultKeys,
+        List<KeybindContexts.KeybindContext> contexts,
+        Map<KeybindContexts.KeybindContext, Consumer<KeybindActionContext>> actions
+    ) {
         this.id = id;
         this.category = category;
         this.defaultKeys = defaultKeys;
@@ -56,6 +56,16 @@ public class Keybind {
      */
     public void addKey(KeyCode keyCode, KeyCombination.Modifier... modifiers) {
         keys.add(new KeybindData(keyCode, modifiers));
+    }
+
+    /**
+     * Adds a mouse-button binding with optional modifiers.
+     *
+     * @param mouseButton the mouse button to bind
+     * @param modifiers optional modifier keys
+     */
+    public void addMouseButton(MouseButton mouseButton, KeyCombination.Modifier... modifiers) {
+        keys.add(new KeybindData(mouseButton, modifiers));
     }
 
     /**
@@ -84,14 +94,51 @@ public class Keybind {
      * @return true if the KeyEvent matches any of the keybind's keys, false otherwise.
      */
     public boolean matches(KeyEvent keyEvent) {
-        for (KeybindData key : keys) {
-            if (key.getKeyCodeCombination().match(keyEvent))
-                return true;
-        }
-
-        return false;
+        return findMatchingBinding(keyEvent).isPresent();
     }
 
+    /**
+     * Checks whether a mouse event matches one of this keybind's configured bindings.
+     *
+     * @param mouseEvent the mouse event to match
+     * @return whether a binding matches
+     */
+    public boolean matches(MouseEvent mouseEvent) {
+        return findMatchingBinding(mouseEvent).isPresent();
+    }
+
+    /**
+     * Finds the configured keyboard binding matched by the supplied event.
+     *
+     * @param keyEvent the keyboard event to match
+     * @return the first matching binding, or an empty optional when none match
+     */
+    public Optional<KeybindData> findMatchingBinding(KeyEvent keyEvent) {
+        return keys.stream()
+            .filter(key -> {
+                KeyCombination combination = key.getKeyCodeCombination();
+                return combination != null && combination.match(keyEvent);
+            })
+            .findFirst();
+    }
+
+    /**
+     * Finds the configured mouse binding matched by the supplied event.
+     *
+     * @param mouseEvent the mouse event to match
+     * @return the first matching binding, or an empty optional when none match
+     */
+    public Optional<KeybindData> findMatchingBinding(MouseEvent mouseEvent) {
+        return keys.stream()
+            .filter(key -> key.matches(mouseEvent))
+            .findFirst();
+    }
+
+    /**
+     * Creates a builder for a keybind.
+     *
+     * @return a new keybind builder
+     */
     public static Builder builder() {
         return new Builder();
     }
@@ -105,7 +152,7 @@ public class Keybind {
         private final List<KeybindData> defaultKeys = new ArrayList<>();
         private final List<KeybindContexts.KeybindContext> validContexts = new ArrayList<>();
         private boolean ignoreAll = false;
-        private final Map<KeybindContexts.KeybindContext, Consumer<Node>> actions = new HashMap<>();
+        private final Map<KeybindContexts.KeybindContext, Consumer<KeybindActionContext>> actions = new HashMap<>();
 
         /**
          * Sets the ID of the keybind. This is used for localization and saving in settings.json.
@@ -142,6 +189,18 @@ public class Keybind {
         }
 
         /**
+         * Adds a mouse-button default binding.
+         *
+         * @param mouseButton the mouse button to bind
+         * @param modifiers optional modifier keys
+         * @return this builder
+         */
+        public Builder addDefaultMouseButton(MouseButton mouseButton, KeyCombination.Modifier... modifiers) {
+            defaultKeys.add(new KeybindData(mouseButton, modifiers));
+            return this;
+        }
+
+        /**
          * Adds a valid context for the keybind. This context determines where the keybind can be used.
          *
          * @param context The context in which the keybind is valid.
@@ -167,11 +226,22 @@ public class Keybind {
          * Adds an action to be executed when the keybind is pressed in a specific context.
          *
          * @param context The context in which the action should be executed.
-         * @param action The action to be executed when the keybind is pressed in the specified context.
+         * @param action The action to execute with the matched binding, input event, target node, and logical context.
          * @return the modified Builder instance.
          */
-        public Builder addAction(KeybindContexts.KeybindContext context, Consumer<Node> action) {
+        public Builder addAction(KeybindContexts.KeybindContext context, Consumer<KeybindActionContext> action) {
             actions.put(context, action);
+            return this;
+        }
+
+        /**
+         * Adds a keyboard or mouse combination to the default shortcut list.
+         *
+         * @param binding default keyboard or mouse combination
+         * @return this builder
+         */
+        public Builder addDefaultBinding(KeybindData binding) {
+            defaultKeys.add(binding);
             return this;
         }
 

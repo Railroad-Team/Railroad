@@ -14,6 +14,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
+/**
+ * Resolves the base Minecraft version used for the Fabric example mod from Switchboard metadata.
+ * Stores the resolved version and its branch name in the project context for later creation steps.
+ */
 public final class ResolveFabricMdkVersionStep implements CreationStep {
     @Override
     public String id() {

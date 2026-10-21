@@ -8,6 +8,8 @@ import java.util.List;
 
 /**
  * Provides language diagnostics for a document snapshot.
+ *
+ * @param <D> the diagnostic type produced by this provider
  */
 public interface DiagnosticsProvider<D extends EditorDiagnostic<?>> {
     /**

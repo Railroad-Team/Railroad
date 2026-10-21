@@ -10,16 +10,28 @@ import javafx.scene.control.Tab;
 public class LocalizedTab extends Tab {
     private String currentKey;
 
+    /**
+     * Creates a tab with a translated title that updates when the language changes.
+     *
+     * @param titleKey the localization key for the title
+     */
     public LocalizedTab(String titleKey) {
         super();
         setKey(titleKey);
         setText(L18n.localize(titleKey));
     }
 
+    /** Creates an empty tab without a localization key or language-change listener. */
     public LocalizedTab() {
         super();
     }
 
+    /**
+     * Creates a tab with a translated title and the supplied content.
+     *
+     * @param titleKey the localization key for the title
+     * @param content the node displayed when the tab is selected
+     */
     public LocalizedTab(String titleKey, Node content) {
         this(titleKey);
         setContent(content);
@@ -35,7 +47,7 @@ public class LocalizedTab extends Tab {
     }
 
     /**
-     * Sets the key and then updates the text of the label.
+     * Sets the key and then updates the tab title.
      * Adds a listener to the current language property to update the text when the language changes.
      *
      * @param key The localization key

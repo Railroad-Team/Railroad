@@ -21,14 +21,28 @@ import java.util.stream.Stream;
 public final class JavaProjectSemanticIndexer {
     private final JavaProjectSemanticExtractor extractor;
 
+    /**
+     * Creates a source indexer using the default Java declaration-fact extractor.
+     */
     public JavaProjectSemanticIndexer() {
         this(new JavaProjectSemanticExtractor());
     }
 
+    /**
+     * Creates a source indexer using a declaration-fact extractor.
+     *
+     * @param extractor the extractor used for each source file
+     */
     public JavaProjectSemanticIndexer(JavaProjectSemanticExtractor extractor) {
         this.extractor = Objects.requireNonNull(extractor, "extractor");
     }
 
+    /**
+     * Builds a semantic index from Java source files, processing multiple files concurrently.
+     *
+     * @param projectRoot the directory recursively searched for regular {@code .java} files
+     * @return the immutable project source index
+     */
     public JavaProjectSemanticIndex build(Path projectRoot) {
         Objects.requireNonNull(projectRoot, "projectRoot");
 
@@ -44,6 +58,12 @@ public final class JavaProjectSemanticIndexer {
         }
     }
 
+    /**
+     * Builds a semantic index from Java source files, processing multiple files concurrently.
+     *
+     * @param sourceFiles the source files to index; null entries are ignored
+     * @return the immutable project source index
+     */
     public JavaProjectSemanticIndex build(List<Path> sourceFiles) {
         Objects.requireNonNull(sourceFiles, "sourceFiles");
 
@@ -82,11 +102,25 @@ public final class JavaProjectSemanticIndexer {
         return builder.build();
     }
 
+    /**
+     * Extracts a semantic index entry for one Java source file.
+     *
+     * @param sourceFile the source file path
+     * @return the file's package, imports, and indexed declarations
+     * @throws UncheckedIOException if the source file cannot be read
+     */
     public JavaProjectSemanticIndex.SourceFileIndex indexFile(Path sourceFile) {
         Objects.requireNonNull(sourceFile, "sourceFile");
         return extractor.extract(sourceFile, readSource(sourceFile));
     }
 
+    /**
+     * Extracts a semantic index entry for one Java source file.
+     *
+     * @param sourceFile the source file path
+     * @param sourceContent the supplied Java text to index instead of reading the file
+     * @return the file's package, imports, and indexed declarations
+     */
     public JavaProjectSemanticIndex.SourceFileIndex indexFile(Path sourceFile, CharSequence sourceContent) {
         Objects.requireNonNull(sourceFile, "sourceFile");
         Objects.requireNonNull(sourceContent, "sourceContent");

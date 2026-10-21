@@ -26,6 +26,9 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.*;
 
+/**
+ * Displays installed plugins, their metadata, and editable enabled states for the settings UI.
+ */
 public class PluginsPane extends SplitPane {
     private static final double DEFAULT_DIVIDER_POSITION = 0.35;
 
@@ -58,10 +61,16 @@ public class PluginsPane extends SplitPane {
     private PluginDescriptor activeDescriptor;
     private boolean updatingDetailToggle;
 
+    /** Creates the pane with the plugin manager's current enabled states. */
     public PluginsPane() {
         this(PluginManager.getEnabledPlugins());
     }
 
+    /**
+     * Creates the pane with initial enabled states and adds any other loaded plugins as disabled.
+     *
+     * @param defaultEnabledPlugins initial plugin states, or {@code null} to start with all loaded plugins disabled
+     */
     public PluginsPane(Map<PluginDescriptor, Boolean> defaultEnabledPlugins) {
         HostServices services;
         try {
@@ -90,6 +99,7 @@ public class PluginsPane extends SplitPane {
         setupListPane();
         Node detailPane = setupDetailPane();
         getItems().setAll(createListSection(), detailPane);
+        setDividerPositions(DEFAULT_DIVIDER_POSITION);
         SplitPane.setResizableWithParent(getItems().getFirst(), false);
 
         PluginManager.getLoadedPluginsList().addListener((ListChangeListener<PluginLoadResult>) change -> {
@@ -121,10 +131,21 @@ public class PluginsPane extends SplitPane {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Settings.PLUGINS, this);
     }
 
+    /**
+     * Returns a snapshot of the enabled states currently displayed in the pane.
+     *
+     * @return a mutable copy mapping plugin descriptors to their enabled states
+     */
     public Map<PluginDescriptor, Boolean> getEnabledPlugins() {
         return new LinkedHashMap<>(enabledPlugins);
     }
 
+    /**
+     * Replaces the displayed enabled states and refreshes the plugin list.
+     * Loaded plugins absent from the supplied map are included as disabled.
+     *
+     * @param state plugin states to display, or {@code null} to mark all loaded plugins disabled
+     */
     public void setEnabledPlugins(Map<PluginDescriptor, Boolean> state) {
         enabledPlugins.clear();
         if (state != null) {
@@ -145,6 +166,7 @@ public class PluginsPane extends SplitPane {
         pluginListView.getStyleClass().add("plugins-pane-list-view");
         pluginListView.setBordered(true);
         pluginListView.setDense(true);
+        pluginListView.setAnimationsEnabled(false);
         pluginListView.getSelectionModel().selectedItemProperty()
             .addListener((_, _, descriptor) -> updateDetails(descriptor));
         pluginListView.setCellFactory(_ -> new PluginListCell());
@@ -185,6 +207,7 @@ public class PluginsPane extends SplitPane {
         nameLabel.getStyleClass().add("plugin-detail-name");
         nameLabel.setWrapText(true);
         metaLabel.getStyleClass().add("plugin-detail-meta");
+        metaLabel.setWrapText(true);
 
         detailToggle.selectedProperty().addListener((_, _, enabled) -> {
             if (updatingDetailToggle)
@@ -193,10 +216,11 @@ public class PluginsPane extends SplitPane {
         });
 
         var headerTexts = new VBox(nameLabel, metaLabel);
+        headerTexts.setMinWidth(0);
         headerTexts.getStyleClass().add("plugin-detail-header-texts");
         HBox.setHgrow(headerTexts, Priority.ALWAYS);
 
-        var header = new HBox(iconWrapper, headerTexts, detailToggle);
+        var header = new HBox(iconWrapper, headerTexts);
         header.setAlignment(Pos.CENTER_LEFT);
         header.getStyleClass().add("plugin-detail-header");
 
@@ -218,7 +242,7 @@ public class PluginsPane extends SplitPane {
 
         GridPane metadataGrid = buildMetadataGrid();
 
-        detailContainer.getChildren().addAll(header, descriptionValue, websiteLink, metadataGrid);
+        detailContainer.getChildren().addAll(header, detailToggle, descriptionValue, websiteLink, metadataGrid);
 
         var detailScroll = new ScrollPane(detailContainer);
         detailScroll.setFitToWidth(true);
@@ -227,6 +251,7 @@ public class PluginsPane extends SplitPane {
         detailScroll.getStyleClass().add("plugin-detail-scroll");
 
         var stack = new StackPane(placeholderBox, detailScroll);
+        stack.setMinWidth(0);
         StackPane.setAlignment(placeholderBox, Pos.CENTER);
 
         detailContainer.setVisible(false);
@@ -405,9 +430,13 @@ public class PluginsPane extends SplitPane {
         private boolean updating;
 
         private PluginListCell() {
+            setMinWidth(0);
+            setPrefWidth(0);
+            container.setMaxWidth(Double.MAX_VALUE);
             container.getStyleClass().add("plugin-cell-container");
 
             title.getStyleClass().add("plugin-cell-title");
+            title.setWrapText(true);
             subtitle.getStyleClass().add("plugin-cell-subtitle");
             subtitle.setWrapText(true);
 
@@ -431,6 +460,7 @@ public class PluginsPane extends SplitPane {
             });
 
             var textContainer = new VBox(title, subtitle);
+            textContainer.setMinWidth(0);
             textContainer.getStyleClass().add("plugin-cell-texts");
             HBox.setHgrow(textContainer, Priority.ALWAYS);
 
@@ -451,7 +481,8 @@ public class PluginsPane extends SplitPane {
             }
 
             title.setText(textOrFallback(descriptor.getName(), descriptor.getId()));
-            subtitle.setText(buildMetaText(descriptor));
+            subtitle.setText(L18n.localize("railroad.plugins.list.version",
+                textOrFallback(descriptor.getVersion(), L18n.localize("railroad.generic.unknown"))));
 
             updating = true;
             toggle.setSelected(enabledPlugins.getOrDefault(descriptor, false));

@@ -37,7 +37,8 @@ public final class BinaryDocumentSnapshot implements DocumentSnapshot {
         DocumentUri uri,
         DocumentVersion version,
         String languageId,
-        byte[] content) {
+        byte[] content
+    ) {
         this(id, uri, version, languageId, DocumentOrigin.unspecified(uri), content);
     }
 
@@ -60,7 +61,8 @@ public final class BinaryDocumentSnapshot implements DocumentSnapshot {
         DocumentUri uri,
         DocumentVersion version,
         String languageId,
-        ByteBuffer content) {
+        ByteBuffer content
+    ) {
         this(id, uri, version, languageId, DocumentOrigin.unspecified(uri), content);
     }
 
@@ -82,7 +84,8 @@ public final class BinaryDocumentSnapshot implements DocumentSnapshot {
         DocumentVersion version,
         String languageId,
         DocumentOrigin origin,
-        byte[] content) {
+        byte[] content
+    ) {
         this.id = Objects.requireNonNull(id, "id");
         this.uri = Objects.requireNonNull(uri, "uri");
         this.version = Objects.requireNonNull(version, "version");
@@ -111,7 +114,8 @@ public final class BinaryDocumentSnapshot implements DocumentSnapshot {
         DocumentVersion version,
         String languageId,
         DocumentOrigin origin,
-        ByteBuffer content) {
+        ByteBuffer content
+    ) {
         this(id, uri, version, languageId, origin, copyRemaining(content));
     }
 

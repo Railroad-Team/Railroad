@@ -8,6 +8,11 @@ import dev.railroadide.railroad.project.onboarding.keys.ForgeProjectKeys;
 
 import java.nio.file.Path;
 
+/**
+ * Creates the initial {@code META-INF/accesstransformer.cfg} when access transformers are enabled.
+ *
+ * @param files service used to create and write the access transformer file
+ */
 public record CreateAccessTransformerStep(FilesService files) implements CreationStep {
     @Override
     public String id() {

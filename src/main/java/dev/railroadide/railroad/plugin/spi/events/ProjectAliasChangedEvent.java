@@ -6,6 +6,10 @@ import dev.railroadide.railroad.plugin.spi.event.Event;
 /**
  * Represents an event that is triggered when a project's alias is changed.
  * This event contains the project whose alias has changed, the old alias, and the new alias.
+ *
+ * @param project the project whose alias has changed
+ * @param oldAlias the previous alias of the project
+ * @param newAlias the new alias of the project
  */
 public record ProjectAliasChangedEvent(Project project, String oldAlias, String newAlias) implements Event {
     /**

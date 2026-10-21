@@ -11,10 +11,10 @@ import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JavaProjectSemanticIndexTest {
+public class JavaProjectSemanticIndexTest {
 
     @Test
-    void publishedIndexCopiesInputsAndSupportsConcurrentReadsAfterBuilderReuse() throws Exception {
+    public void publishedIndexCopiesInputsAndSupportsConcurrentReadsAfterBuilderReuse() throws Exception {
         Path path = Path.of("Example.java");
         var descriptor = new JavaProjectSemanticIndex.SymbolDescriptor(
             SymbolKind.CLASS, "Example", "demo.Example", null, null, path, false, true);
@@ -60,7 +60,7 @@ class JavaProjectSemanticIndexTest {
     }
 
     @Test
-    void emptyIndexReturnsNoFilesOrSymbols() {
+    public void emptyIndexReturnsNoFilesOrSymbols() {
         JavaProjectSemanticIndex index = JavaProjectSemanticIndex.empty();
 
         assertTrue(index.files().isEmpty());
@@ -74,7 +74,7 @@ class JavaProjectSemanticIndexTest {
     }
 
     @Test
-    void indexesFilesPackagesSymbolsAndMembers() {
+    public void indexesFilesPackagesSymbolsAndMembers() {
         Path utilityPath = Path.of("src/main/java/demo/Utility.java");
         Path usePath = Path.of("src/main/java/demo/Use.java");
 
@@ -145,7 +145,7 @@ class JavaProjectSemanticIndexTest {
     }
 
     @Test
-    void builderRemoveFileRemovesIndexedDeclarations() {
+    public void builderRemoveFileRemovesIndexedDeclarations() {
         Path utilityPath = Path.of("src/main/java/demo/Utility.java");
 
         var utility = new JavaProjectSemanticIndex.SourceFileIndex(
@@ -175,7 +175,7 @@ class JavaProjectSemanticIndexTest {
     }
 
     @Test
-    void sourceFileIndexCollectsOnlyNonNullQualifiedNames() {
+    public void sourceFileIndexCollectsOnlyNonNullQualifiedNames() {
         Path path = Path.of("src/main/java/demo/Utility.java");
 
         var file = new JavaProjectSemanticIndex.SourceFileIndex(
@@ -206,7 +206,7 @@ class JavaProjectSemanticIndexTest {
     }
 
     @Test
-    void rejectsBlankImportAndSymbolNames() {
+    public void rejectsBlankImportAndSymbolNames() {
         Path path = Path.of("src/main/java/demo/Utility.java");
 
         assertThrows(IllegalArgumentException.class,

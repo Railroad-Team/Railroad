@@ -18,8 +18,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#IMPLICIT_NUMERIC_CONVERSION}.
+ */
 @RegisteredInspection
 public class CoreImplicitNumericConversionInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-implicit-numeric-conversion";
 
     private static final Map<String, Set<String>> WIDENING_CONVERSIONS = Map.of(
@@ -106,8 +112,11 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
         }
     }
 
-    private static void inspectVariableDeclarator(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode node) {
+    private static void inspectVariableDeclarator(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode node
+    ) {
         SyntaxNode initializer = context.firstDirectExpressionChild(node);
         if (initializer == null)
             return;
@@ -116,8 +125,11 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
         reportImplicitConversion(context, reporter, initializer, declaredType);
     }
 
-    private static void inspectAssignmentExpression(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode node) {
+    private static void inspectAssignmentExpression(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode node
+    ) {
         List<SyntaxNode> expressionChildren = context.directExpressionChildren(node);
         if (expressionChildren.size() != 2)
             return;
@@ -133,8 +145,13 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
         inspectCompoundAssignment(context, reporter, node, leftType, right);
     }
 
-    private static void inspectCompoundAssignment(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode assignment, Type leftType, SyntaxNode rightExpression) {
+    private static void inspectCompoundAssignment(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode assignment,
+        Type leftType,
+        SyntaxNode rightExpression
+    ) {
         if (!isNumericPrimitive(leftType))
             return;
 
@@ -158,8 +175,11 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
         reporter.report(assignment, ConversionKind.NARROWING.displayName(), promotedType, leftPrimitive);
     }
 
-    private static void inspectReturnStatement(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode node) {
+    private static void inspectReturnStatement(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode node
+    ) {
         SyntaxNode expression = context.firstDirectExpressionChild(node);
         if (expression == null)
             return;
@@ -179,8 +199,11 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
         reportImplicitConversion(context, reporter, expression, returnType);
     }
 
-    private static void inspectMethodInvocation(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode invocation) {
+    private static void inspectMethodInvocation(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode invocation
+    ) {
         SyntaxNode argumentList = context.directChild(invocation, JavaSyntaxKinds.ARGUMENT_LIST.id());
         if (argumentList == null)
             return;
@@ -225,8 +248,12 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
         return null;
     }
 
-    private static String promotedTypeForCompoundAssignment(JavaRuleContext context, SyntaxNode assignment,
-        String leftPrimitive, String rightPrimitive) {
+    private static String promotedTypeForCompoundAssignment(
+        JavaRuleContext context,
+        SyntaxNode assignment,
+        String leftPrimitive,
+        String rightPrimitive
+    ) {
         if (hasAnyOperator(context, assignment, SHIFTING_COMPOUND_ASSIGNMENT_OPERATORS))
             return unaryNumberPromotionType(leftPrimitive);
 
@@ -269,8 +296,12 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
         return operatorTokens.stream().anyMatch(token -> context.hasOperatorToken(node, token));
     }
 
-    private static void reportImplicitConversion(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode sourceExpression, Type targetType) {
+    private static void reportImplicitConversion(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode sourceExpression,
+        Type targetType
+    ) {
         if (isExplicitCastExpression(sourceExpression))
             return;
 
@@ -341,7 +372,8 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
     }
 
     private enum ConversionKind {
-        WIDENING("widening"), NARROWING("narrowing");
+        WIDENING("widening"),
+        NARROWING("narrowing");
 
         private final String displayName;
 

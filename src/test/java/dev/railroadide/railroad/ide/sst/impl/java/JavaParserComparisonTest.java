@@ -8,10 +8,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
-class JavaParserComparisonTest {
+public class JavaParserComparisonTest {
 
     @Test
-    void lexerAndSyntaxTreeExposeSameTokenTextSequence() {
+    public void lexerAndSyntaxTreeExposeSameTokenTextSequence() {
         String source = """
             package demo;
             // a comment

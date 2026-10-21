@@ -7,7 +7,7 @@ import dev.railroadide.railroad.registry.Registry;
 import java.nio.file.Path;
 import java.util.List;
 
-/*
+/**
  * Railroad Plugin API
  *
  * This interface defines the context in which a plugin operates, providing access to

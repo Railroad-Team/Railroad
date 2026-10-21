@@ -1,6 +1,5 @@
 package dev.railroadide.railroad.settings.ui;
 
-import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
@@ -19,7 +18,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -40,6 +38,9 @@ public class DetectedJdkListPane extends RRVBox {
     private final LocalizedLabel countLabel = new LocalizedLabel("railroad.settings.ide.jdk_management.detected.count",
         0);
 
+    /**
+     * Creates a pane that lists the JDK installations currently detected on the system.
+     */
     public DetectedJdkListPane() {
         setFillWidth(true);
         getStyleClass().add("detected-jdk-list-pane");
@@ -77,6 +78,9 @@ public class DetectedJdkListPane extends RRVBox {
         countLabel.setKey("railroad.settings.ide.jdk_management.detected.count", detected.size());
     }
 
+    /**
+     * Renders a detected JDK with its brand icon, version, name, and installation path.
+     */
     public static class JdkCell extends ListCell<JDK> {
         private final HBox container = new HBox();
         private final VBox textContainer = new VBox();
@@ -84,7 +88,15 @@ public class DetectedJdkListPane extends RRVBox {
         private final LocalizedLabel nameLabel = new LocalizedLabel("");
         private final LocalizedLabel pathLabel = new LocalizedLabel("");
 
+        /**
+         * Creates an empty JDK list cell and initializes its layout and styles.
+         */
         public JdkCell() {
+            setMinWidth(0);
+            setPrefWidth(0);
+            container.setMaxWidth(Double.MAX_VALUE);
+            textContainer.setMinWidth(0);
+            pathLabel.setWrapText(true);
             container.setAlignment(Pos.CENTER_LEFT);
             container.getStyleClass().add("detected-jdk-cell");
 
@@ -97,6 +109,12 @@ public class DetectedJdkListPane extends RRVBox {
             HBox.setHgrow(textContainer, Priority.ALWAYS);
         }
 
+        /**
+         * Updates the cell graphic and labels for the supplied JDK.
+         *
+         * @param item JDK represented by the cell
+         * @param empty whether the cell has no item
+         */
         @Override
         protected void updateItem(JDK item, boolean empty) {
             super.updateItem(item, empty);
@@ -109,9 +127,12 @@ public class DetectedJdkListPane extends RRVBox {
             Node iconView = null;
             if (brand.isImage()) {
                 try {
-                    var image = new Image(AppResources.getResourceAsStream(brand.getImagePath()), 20, 20, true, true);
-                    iconView = new ImageView(image);
-                } catch (Exception exception) {
+                    var imageView = new ImageView(JdkBrandIcons.get(brand));
+                    imageView.setFitWidth(20);
+                    imageView.setFitHeight(20);
+                    imageView.setPreserveRatio(true);
+                    iconView = imageView;
+                } catch (Exception | LinkageError exception) {
                     Railroad.LOGGER.error("Failed to load image icon for JDK brand {}", brand.name(), exception);
                 }
             } else if (brand.isIkon()) {

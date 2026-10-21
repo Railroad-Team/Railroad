@@ -7,6 +7,11 @@ import dev.railroadide.railroad.project.creation.service.FilesService;
 
 import java.nio.file.Path;
 
+/**
+ * Creates the project's root directory and any missing parent directories.
+ *
+ * @param files service used to create the directory hierarchy
+ */
 public record CreateDirectoriesStep(FilesService files) implements CreationStep {
     @Override
     public String id() {

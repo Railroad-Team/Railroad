@@ -17,8 +17,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#CAST_CONFLICTING_WITH_INSTANCEOF}.
+ */
 @RegisteredInspection
 public class CoreCastConflictingWithInstanceofInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:cast-conflicting-with-instanceof";
 
     private static final List<JavaInspectionRule> RULES = List.of(
@@ -39,15 +45,19 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
         return RULES;
     }
 
-    private static void reportCastConflictingWithInstanceof(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportCastConflictingWithInstanceof(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         reportCastConflictingWithInstanceofIfStatement(context, reporter);
         reportCastConflictingWithInstanceofWhileStatement(context, reporter);
         reportCastConflictingWithInstanceofForStatement(context, reporter);
     }
 
-    private static void reportCastConflictingWithInstanceofIfStatement(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportCastConflictingWithInstanceofIfStatement(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode ifNode : context.nodesOfKind(JavaSyntaxKinds.IF_STATEMENT.id())) {
             SyntaxNode condition = context.firstDirectExpressionChild(ifNode);
             if (condition == null)
@@ -65,8 +75,10 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
         }
     }
 
-    private static void reportCastConflictingWithInstanceofWhileStatement(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportCastConflictingWithInstanceofWhileStatement(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode whileNode : context.nodesOfKind(JavaSyntaxKinds.WHILE_STATEMENT.id())) {
             SyntaxNode condition = context.firstDirectExpressionChild(whileNode);
             if (condition == null)
@@ -76,8 +88,10 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
         }
     }
 
-    private static void reportCastConflictingWithInstanceofForStatement(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportCastConflictingWithInstanceofForStatement(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode forNode : context.nodesOfKind(JavaSyntaxKinds.FOR_STATEMENT.id())) {
             SyntaxNode condition = basicForConditionOf(forNode);
             SyntaxNode body = context.forBodyOf(forNode);
@@ -85,8 +99,12 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
         }
     }
 
-    private static void analyzeGuardedBody(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode condition, SyntaxNode body) {
+    private static void analyzeGuardedBody(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode condition,
+        SyntaxNode body
+    ) {
         InstanceofFact fact = extractPositiveInstanceofFact(context, condition);
         if (fact == null || body == null)
             return;
@@ -94,8 +112,12 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
         analyzeGuardedBody(context, reporter, fact, body);
     }
 
-    private static void analyzeGuardedBody(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        InstanceofFact fact, SyntaxNode body) {
+    private static void analyzeGuardedBody(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        InstanceofFact fact,
+        SyntaxNode body
+    ) {
         if (body == null)
             return;
 
@@ -120,8 +142,10 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
         }
     }
 
-    private static @Nullable InstanceofFact extractPositiveInstanceofFact(JavaRuleContext context,
-        SyntaxNode condition) {
+    private static @Nullable InstanceofFact extractPositiveInstanceofFact(
+        JavaRuleContext context,
+        SyntaxNode condition
+    ) {
         condition = context.unwrapTransparentExpression(condition);
         if (condition == null)
             return null;
@@ -162,8 +186,10 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
         return new InstanceofFact(variableName, testedTypeName);
     }
 
-    private static @Nullable InstanceofFact extractNegatedInstanceofFact(JavaRuleContext context,
-        SyntaxNode condition) {
+    private static @Nullable InstanceofFact extractNegatedInstanceofFact(
+        JavaRuleContext context,
+        SyntaxNode condition
+    ) {
         condition = context.unwrapTransparentExpression(condition);
         if (condition == null || !JavaSyntaxKinds.UNARY_EXPRESSION.id().equals(condition.kind().id()))
             return null;

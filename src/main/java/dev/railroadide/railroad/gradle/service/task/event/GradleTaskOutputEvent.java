@@ -14,5 +14,6 @@ import java.util.UUID;
 public record GradleTaskOutputEvent(
     UUID taskId,
     GradleTaskState state,
-    String output) {
+    String output
+) {
 }

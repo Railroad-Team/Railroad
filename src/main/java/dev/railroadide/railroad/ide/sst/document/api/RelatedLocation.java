@@ -18,7 +18,15 @@ package dev.railroadide.railroad.ide.sst.document.api;
  */
 public record RelatedLocation(
     Location<?> location,
-    String message) {
+    String message
+) {
+    /**
+     * Creates a related location with an explanatory message.
+     *
+     * @param location the related document location
+     * @param message the non-blank explanation of the relationship
+     * @throws IllegalArgumentException if the location is null or the message is null or blank
+     */
     public RelatedLocation {
         if (location == null)
             throw new IllegalArgumentException("Location cannot be null");

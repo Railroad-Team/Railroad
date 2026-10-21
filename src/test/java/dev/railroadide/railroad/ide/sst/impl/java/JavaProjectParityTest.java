@@ -10,12 +10,12 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JavaProjectParityTest {
+public class JavaProjectParityTest {
     private static final int MAX_REPORTED_MISMATCHES = 25;
     private static final Duration MAX_PARSE_TIME_PER_FILE = Duration.ofSeconds(180);
 
     @Test
-    void syntaxParserIsStableAcrossSstProjectSources() throws IOException {
+    public void syntaxParserIsStableAcrossSstProjectSources() throws IOException {
         List<Path> sourceFiles = JavaParserParitySupport.collectProjectJavaSources().stream()
             .filter(JavaProjectParityTest::isSstSource)
             .toList();

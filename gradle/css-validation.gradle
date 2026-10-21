@@ -1,0 +1,30 @@
+// Parse CSS without compiling or starting the application.
+dependencies {
+    cssValidationTestImplementation sourceSets.cssValidation.output
+    cssValidationTestImplementation 'org.junit.jupiter:junit-jupiter-api:6.0.0'
+    cssValidationTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:6.0.0'
+    cssValidationTestRuntimeOnly 'org.junit.platform:junit-platform-launcher:6.0.0'
+}
+
+configurations.cssValidationTestImplementation.extendsFrom configurations.cssValidationImplementation
+
+tasks.register('validateJavafxCss', JavaExec) {
+    group = 'verification'
+    description = 'Validates every application stylesheet with the JavaFX CSS parser.'
+    classpath = sourceSets.cssValidation.runtimeClasspath
+    mainClass = 'dev.railroadide.railroad.css.JavafxCssValidator'
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    args layout.projectDirectory.dir('src/main/resources/assets/railroad/styles').asFile.absolutePath
+}
+
+tasks.register('cssValidationTest', Test) {
+    group = 'verification'
+    description = 'Tests headless JavaFX CSS validation.'
+    testClassesDirs = sourceSets.cssValidationTest.output.classesDirs
+    classpath = sourceSets.cssValidationTest.runtimeClasspath
+    useJUnitPlatform()
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('validateJavafxCss'), tasks.named('cssValidationTest')
+}

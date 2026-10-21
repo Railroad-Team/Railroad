@@ -16,6 +16,10 @@ import java.util.Optional;
  * Locates a usable git executable from PATH or common install locations.
  */
 public class GitLocator {
+    /** Creates a stateless locator; executable discovery is exposed through static methods. */
+    public GitLocator() {
+    }
+
     /**
      * Finds a usable git executable path.
      *

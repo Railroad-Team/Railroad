@@ -12,9 +12,9 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class CodeEditorDiagnosticsTest {
+public class CodeEditorDiagnosticsTest {
     @Test
-    void discardsInvalidLocationsWhileRetainingValidFirstLineAndEofDiagnostics() {
+    public void discardsInvalidLocationsWhileRetainingValidFirstLineAndEofDiagnostics() {
         var id = DocumentId.create();
         var version = new DocumentVersion(3);
         var snapshot = new TextDocumentSnapshot(id, DocumentUri.inMemory(id), version,
@@ -40,7 +40,7 @@ class CodeEditorDiagnosticsTest {
     }
 
     @Test
-    void rejectsTextDiagnosticsForBinarySnapshots() {
+    public void rejectsTextDiagnosticsForBinarySnapshots() {
         var id = DocumentId.create();
         var version = DocumentVersion.initial();
         var snapshot = new BinaryDocumentSnapshot(id, DocumentUri.inMemory(id), version, "binary", new byte[5]);
@@ -50,7 +50,7 @@ class CodeEditorDiagnosticsTest {
     }
 
     @Test
-    void acceptsEmptyDiagnosticResults() {
+    public void acceptsEmptyDiagnosticResults() {
         var id = DocumentId.create();
         var snapshot = new TextDocumentSnapshot(id, DocumentUri.inMemory(id), DocumentVersion.initial(),
             "java", "", StandardCharsets.UTF_8);

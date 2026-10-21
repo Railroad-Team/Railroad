@@ -6,7 +6,10 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import java.util.Objects;
 import java.util.Optional;
 
-abstract class RedElement implements SyntaxNode {
+/**
+ * Syntax view that adds an absolute source position and parent link to a green element.
+ */
+public abstract class RedElement implements SyntaxNode {
     private final GreenElement green;
     private final RedNode parent;
     private final int start;

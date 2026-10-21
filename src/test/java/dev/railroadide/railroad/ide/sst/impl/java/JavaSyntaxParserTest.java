@@ -16,10 +16,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JavaSyntaxParserTest {
+public class JavaSyntaxParserTest {
 
     @Test
-    void carriesCallerSuppliedDocumentIdentity() {
+    public void carriesCallerSuppliedDocumentIdentity() {
         DocumentId documentId = DocumentId.create();
         DocumentUri documentUri = DocumentUri.virtual("memory", "tests/Identified.java");
         var documentVersion = new DocumentVersion(7);
@@ -36,7 +36,7 @@ class JavaSyntaxParserTest {
     }
 
     @Test
-    void parsesAndRetainsTheExactTextSnapshot() {
+    public void parsesAndRetainsTheExactTextSnapshot() {
         var snapshot = new TextDocumentSnapshot(
             DocumentId.create(),
             DocumentUri.virtual("memory", "tests/Snapshot.java"),
@@ -60,7 +60,7 @@ class JavaSyntaxParserTest {
     }
 
     @Test
-    void roundTripsSourceTextFromSyntaxTree() {
+    public void roundTripsSourceTextFromSyntaxTree() {
         String source = """
             package demo;
             import java.util.List;
@@ -75,7 +75,7 @@ class JavaSyntaxParserTest {
     }
 
     @Test
-    void includesExpectedTopLevelStructureKinds() {
+    public void includesExpectedTopLevelStructureKinds() {
         String source = """
             package demo;
             import java.util.List;
@@ -94,7 +94,7 @@ class JavaSyntaxParserTest {
     }
 
     @Test
-    void parseWithDiagnosticsReportsRecoveryArtifacts() {
+    public void parseWithDiagnosticsReportsRecoveryArtifacts() {
         String source = "class Broken { void run( { int x = ; }";
         JavaSyntaxParser.ParseResult result = JavaSyntaxParser.parseWithDiagnostics(source);
 
@@ -103,7 +103,7 @@ class JavaSyntaxParserTest {
     }
 
     @Test
-    void nestedGenericClosersDoNotConsumeFollowingImplementedType() {
+    public void nestedGenericClosersDoNotConsumeFollowingImplementedType() {
         String source = """
             import java.io.Serializable;
             import java.util.Comparator;
@@ -118,7 +118,7 @@ class JavaSyntaxParserTest {
     }
 
     @Test
-    void incrementalParseReusesTailForInTypeEdit() {
+    public void incrementalParseReusesTailForInTypeEdit() {
         String oldSource = """
             package demo;
             import java.util.List;
@@ -152,7 +152,7 @@ class JavaSyntaxParserTest {
     }
 
     @Test
-    void incrementalParseFallsBackForImportEdit() {
+    public void incrementalParseFallsBackForImportEdit() {
         String oldSource = """
             package demo;
             import java.util.List;
@@ -179,7 +179,7 @@ class JavaSyntaxParserTest {
     }
 
     @Test
-    void incrementalParseAcceptsOnlyALaterCallerSuppliedVersion() {
+    public void incrementalParseAcceptsOnlyALaterCallerSuppliedVersion() {
         String oldSource = "class A { int value = 1; }";
         String newSource = "class A { int value = 2; }";
         var previousVersion = new DocumentVersion(10);
@@ -209,7 +209,7 @@ class JavaSyntaxParserTest {
     }
 
     @Test
-    void incrementalParseUsesSnapshotContentIdentityAndVersionAtomically() {
+    public void incrementalParseUsesSnapshotContentIdentityAndVersionAtomically() {
         String oldSource = "class A { int value = 1; }";
         String newSource = "class A { int value = 20; }";
         var previousSnapshot = new TextDocumentSnapshot(
@@ -261,7 +261,7 @@ class JavaSyntaxParserTest {
     }
 
     @Test
-    void incrementalCompatibilityOverloadsPreserveOrigin() {
+    public void incrementalCompatibilityOverloadsPreserveOrigin() {
         String oldSource = "class A { int value = 1; }";
         String newSource = "class A { int value = 20; }";
         var origin = new DocumentOrigin(BackingKind.VIRTUAL, ProvenanceKind.DECOMPILED,

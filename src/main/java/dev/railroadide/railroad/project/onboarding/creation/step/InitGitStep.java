@@ -6,6 +6,12 @@ import dev.railroadide.railroad.project.creation.CreationStep;
 import dev.railroadide.railroad.project.creation.ProgressReporter;
 import dev.railroadide.railroad.project.creation.service.GitService;
 
+/**
+ * Initializes a repository in the project root when {@link ProjectData.DefaultKeys#INIT_GIT} is enabled.
+ * This step does not create an initial commit.
+ *
+ * @param git service used to initialize the repository
+ */
 public record InitGitStep(GitService git) implements CreationStep {
     @Override
     public String id() {

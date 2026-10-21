@@ -1,12 +1,73 @@
-/* Theme preview pane styling */
+/* Theme previews share the settings dialog surfaces and spacing. */
 .theme-preview-pane {
-    -fx-background-color: -color-bg-default;
+    -fx-background-color: -color-surface-editor;
 }
 
-.theme-preview-pane .image-view {
-    -fx-background-color: -color-bg-inset;
-    -fx-background-radius: 8px;
+.theme-preview-pane .theme-example-main-container {
+    -fx-background-color: -color-surface-editor;
+    -fx-padding: 20px;
+    -fx-spacing: 24px;
+}
+
+.theme-preview-pane .theme-example-header {
+    -fx-background-color: -color-surface-panel;
+    -fx-padding: 16px 20px;
+    -fx-spacing: 6px;
     -fx-border-color: -color-border-subtle;
-    -fx-border-width: 1px;
-    -fx-border-radius: 8px;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.theme-preview-pane .theme-dialog-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.theme-preview-pane .theme-dialog-subtitle {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 13px;
+}
+
+.theme-preview-pane .theme-section-title {
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-padding: 0 0 4px 0;
+}
+
+.theme-preview-pane .theme-example-footer {
+    -fx-background-color: -color-surface-frame;
+    -fx-padding: 12px 16px;
+    -fx-spacing: 8px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px 0 0 0;
+}
+
+.theme-preview-pane .theme-example-tall-list,
+.theme-preview-pane .theme-example-tall-table {
+    -fx-min-height: 180px;
+    -fx-pref-height: 180px;
+    -fx-max-height: 180px;
+    -fx-background-radius: 3px;
+    -fx-border-radius: 3px;
+    -fx-effect: null;
+}
+
+.theme-preview-pane .theme-example-row {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+
+.theme-preview-pane .button,
+.theme-preview-pane .text-field,
+.theme-preview-pane .combo-box,
+.theme-preview-pane .toggle-button {
+    -fx-effect: null;
+    -fx-background-radius: 3px;
+    -fx-border-radius: 3px;
+}
+
+.theme-preview-pane .theme-example-footer .button {
+    -fx-min-height: 30px;
+    -fx-pref-height: 30px;
+    -fx-min-width: 84px;
+    -fx-padding: 5px 12px;
 }

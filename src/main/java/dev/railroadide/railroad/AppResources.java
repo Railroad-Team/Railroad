@@ -5,13 +5,26 @@ import javafx.scene.image.Image;
 import java.io.InputStream;
 import java.net.URL;
 
+/**
+ * A utility class for accessing application resources.
+ */
 public class AppResources {
     private static final String DEFAULT_ICON_PATH = "images/logo.png";
 
+    /**
+     * Get the default application icon as an InputStream.
+     *
+     * @return The InputStream of the default application icon
+     */
     public static InputStream iconStream() {
         return getResourceAsStream(DEFAULT_ICON_PATH);
     }
 
+    /**
+     * Get the default application icon as an Image.
+     *
+     * @return The Image of the default application icon
+     */
     public static Image icon() {
         return new Image(iconStream());
     }

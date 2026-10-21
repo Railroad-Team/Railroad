@@ -1,0 +1,204 @@
+/* Debugger docks use the same theme surfaces and row treatments as Project. */
+.debugger-pane,
+.debugger-split {
+    -fx-background-color: -color-surface-panel;
+    -fx-padding: 0;
+}
+
+.debugger-split > .split-pane-divider {
+    -fx-background-color: -color-border-subtle;
+    -fx-padding: 0 1px 0 0;
+}
+
+.debugger-header {
+    -fx-padding: 3px 8px;
+    -fx-background-color: -color-surface-panel;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.debugger-status {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 12px;
+}
+
+.debugger-status:running {
+    -fx-text-fill: -color-success-fg;
+}
+
+.debugger-status:suspended {
+    -fx-text-fill: -color-warning-fg;
+}
+
+.debugger-status:failed,
+.debugger-tree .tree-cell:evaluation-error {
+    -fx-text-fill: -color-danger-fg;
+}
+
+.debugger-error {
+    -fx-padding: 8px 12px;
+    -fx-background-color: -color-danger-subtle;
+    -fx-text-fill: -color-danger-fg;
+}
+
+.debugger-title {
+    -fx-padding: 0 8px;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.debugger-header > .separator {
+    -fx-pref-height: 18px;
+    -fx-padding: 0 4px;
+}
+
+.debugger-thread-bar,
+.debugger-expression-bar {
+    -fx-padding: 4px 8px;
+    -fx-background-color: -color-surface-panel;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1px 0;
+    -fx-min-height: 36px;
+}
+
+.debugger-pane .debugger-thread-selector {
+    -fx-background-color: transparent;
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
+    -fx-border-color: transparent;
+    -fx-font-size: 12px;
+    -fx-min-height: 28px;
+    -fx-pref-height: -1;
+    -fx-padding: 2px 0;
+}
+
+.debugger-pane .debugger-thread-selector:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.debugger-pane .debugger-thread-selector:focused {
+    -fx-border-color: -color-accent-fg;
+    -fx-border-width: 1px;
+    -fx-effect: none;
+}
+
+.debugger-pane .debugger-thread-selector > .list-cell {
+    -fx-padding: 2px 6px !important;
+    -fx-cell-size: 24px;
+    -fx-min-height: 24px;
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-fg-default;
+}
+
+.debugger-pane .debugger-list,
+.debugger-pane .debugger-list:hover,
+.debugger-pane .debugger-list:focused {
+    -fx-background-color: -color-surface-panel;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+
+.debugger-pane .debugger-list .list-cell {
+    -fx-background-color: -color-surface-panel !important;
+    -fx-text-fill: -color-fg-default;
+    -fx-padding: 5px 10px !important;
+    -fx-cell-size: 28px;
+    -fx-border-color: transparent;
+    -fx-border-width: 1px;
+    -fx-font-size: 12px;
+}
+
+.debugger-pane .debugger-list .list-cell:filled:hover {
+    -fx-background-color: -color-bg-subtle !important;
+}
+
+.debugger-pane .debugger-list .list-cell:filled:selected {
+    -fx-background-color: -color-accent-subtle !important;
+}
+
+.debugger-pane .debugger-list .list-cell:filled:selected:hover {
+    -fx-background-color: -color-accent-muted !important;
+}
+
+.debugger-pane .debugger-list:focused .list-cell:filled:focused {
+    -fx-border-color: -color-accent-fg;
+}
+
+.debugger-pane .debugger-list > .virtual-flow > .corner {
+    -fx-background-color: -color-surface-panel;
+}
+
+.debugger-tree .tree-cell {
+    -fx-cell-size: -1;
+    -fx-min-height: 26px;
+    -fx-padding: 3px 8px;
+    -fx-graphic-text-gap: 4px;
+}
+
+.debugger-empty {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 12px;
+    -fx-padding: 12px;
+    -fx-alignment: center;
+    -fx-text-alignment: center;
+}
+
+.debugger-tree .tree-cell .ikonli-font-icon {
+    -fx-icon-size: 14px;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.ide-run-controls .debugger-location {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-fg-muted;
+    -fx-padding: 0 8px;
+}
+
+/* One border thickness and modest padding leave room for the text baseline. */
+.debugger-pane .debugger-expression-field {
+    -fx-font-family: "JetBrains Mono";
+    -fx-font-size: 12px;
+    -fx-padding: 3px 7px;
+    -fx-min-height: 28px;
+    -fx-pref-height: 28px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 1px;
+    -fx-background-radius: 3px;
+    -fx-border-radius: 3px;
+    -fx-effect: none;
+}
+
+.debugger-pane .debugger-expression-field:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.debugger-pane .debugger-expression-field:focused {
+    -fx-border-color: -color-accent-fg;
+    -fx-background-color: -color-surface-editor;
+    -fx-effect: none;
+}
+
+.debugger-variable-text Text {
+    -fx-font-family: "JetBrains Mono";
+    -fx-font-size: 13px;
+}
+
+.debugger-variable-name {
+    -fx-fill: -color-accent-fg;
+}
+
+.debugger-variable-value {
+    -fx-fill: -color-fg-default;
+}
+
+.debugger-variable-type {
+    -fx-fill: -color-fg-muted;
+}
+
+.debugger-variable-error {
+    -fx-fill: -color-danger-fg;
+}

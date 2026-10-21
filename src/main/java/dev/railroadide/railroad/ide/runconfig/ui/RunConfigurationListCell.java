@@ -1,5 +1,8 @@
 package dev.railroadide.railroad.ide.runconfig.ui;
 
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.RunCommands;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -18,6 +21,9 @@ import javafx.scene.layout.Region;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+/**
+ * Displays a run configuration with its type icon and run, debug, and context-menu actions.
+ */
 public class RunConfigurationListCell extends ListCell<RunConfiguration<?>> {
     private final RRHBox container = new RRHBox(6);
     private final Label nameLabel = new Label();
@@ -27,6 +33,11 @@ public class RunConfigurationListCell extends ListCell<RunConfiguration<?>> {
 
     private final Project project;
 
+    /**
+     * Creates a configuration cell whose execution and menu actions use the supplied project.
+     *
+     * @param project the project owning the configuration
+     */
     public RunConfigurationListCell(Project project) {
         this.project = project;
 
@@ -42,12 +53,8 @@ public class RunConfigurationListCell extends ListCell<RunConfiguration<?>> {
         runButton.setVariant(ButtonVariant.GHOST);
         runButton.getStyleClass().add("run-button");
         runButton.setFocusTraversable(false);
-        runButton.setOnAction(event -> {
-            RunConfiguration<?> config = getItem();
-            if (config != null) {
-                config.run(project);
-            }
-        });
+        CommandButtons.bind(runButton, RunCommands.RUN,
+            () -> CommandContext.withArgument(project, this, getItem()));
 
         debugButton.setTooltip(new LocalizedTooltip("railroad.runconfig.debug.tooltip"));
         debugButton.setSquare(true);
@@ -55,12 +62,8 @@ public class RunConfigurationListCell extends ListCell<RunConfiguration<?>> {
         debugButton.setVariant(ButtonVariant.GHOST);
         debugButton.getStyleClass().add("debug-button");
         debugButton.setFocusTraversable(false);
-        debugButton.setOnAction(event -> {
-            RunConfiguration<?> config = getItem();
-            if (config != null) {
-                config.debug(project);
-            }
-        });
+        CommandButtons.bind(debugButton, RunCommands.DEBUG,
+            () -> CommandContext.withArgument(project, this, getItem()));
 
         moreActionsButton.setTooltip(new LocalizedTooltip("railroad.runconfig.moreactions.tooltip"));
         moreActionsButton.setSquare(true);

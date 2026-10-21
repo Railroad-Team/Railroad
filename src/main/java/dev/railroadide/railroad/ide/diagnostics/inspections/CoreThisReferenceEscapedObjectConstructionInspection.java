@@ -14,8 +14,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#THIS_REFERENCE_ESCAPED_OBJECT_CONSTRUCTION}.
+ */
 @RegisteredInspection
 public class CoreThisReferenceEscapedObjectConstructionInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-this-reference-escaped-object-construction";
 
     private static final Set<String> KNOWN_COLLECTION_MODIFYING_METHODS = Set.of(
@@ -44,8 +50,10 @@ public class CoreThisReferenceEscapedObjectConstructionInspection implements Jav
                 CoreThisReferenceEscapedObjectConstructionInspection::reportThisReferenceEscapedObjectConstruction));
     }
 
-    private static void reportThisReferenceEscapedObjectConstruction(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportThisReferenceEscapedObjectConstruction(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode constructorNode : context.nodesOfKinds(JavaSyntaxKinds.CONSTRUCTOR_DECLARATION.id(),
             JavaSyntaxKinds.RECORD_COMPACT_CONSTRUCTOR.id())) {
             SyntaxNode body = context.directChild(constructorNode, JavaSyntaxKinds.BLOCK.id());

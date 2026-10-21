@@ -14,12 +14,23 @@ import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+/**
+ * Binary symbol index built from class directories, JAR archives, and JMOD archives.
+ */
 public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
-    private JavaLibrarySymbolIndex(Map<String, ClassStub> classStubsByQualifiedName,
-        Map<String, Path> sourceByQualifiedName) {
+    private JavaLibrarySymbolIndex(
+        Map<String, ClassStub> classStubsByQualifiedName,
+        Map<String, Path> sourceByQualifiedName
+    ) {
         super(classStubsByQualifiedName, sourceByQualifiedName);
     }
 
+    /**
+     * Scans unique library roots and indexes readable class files, logging individual scan failures.
+     *
+     * @param roots the class directories, JARs, or JMODs to scan; unavailable roots are skipped
+     * @return the symbol index for successfully parsed library classes
+     */
     public static JavaLibrarySymbolIndex build(List<Path> roots) {
         Map<String, ClassStub> stubsByQualifiedName = new LinkedHashMap<>();
         Map<String, Path> sourceByQualifiedName = new LinkedHashMap<>();
@@ -31,8 +42,11 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         return new JavaLibrarySymbolIndex(stubsByQualifiedName, sourceByQualifiedName);
     }
 
-    private static void scanRoot(Path root, Map<String, ClassStub> stubsByQualifiedName,
-        Map<String, Path> sourceByQualifiedName) {
+    private static void scanRoot(
+        Path root,
+        Map<String, ClassStub> stubsByQualifiedName,
+        Map<String, Path> sourceByQualifiedName
+    ) {
         if (root == null || Files.notExists(root) || !Files.isReadable(root))
             return;
 
@@ -47,8 +61,11 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         }
     }
 
-    private static void scanDirectory(Path root, Map<String, ClassStub> stubsByQualifiedName,
-        Map<String, Path> sourceByQualifiedName) {
+    private static void scanDirectory(
+        Path root,
+        Map<String, ClassStub> stubsByQualifiedName,
+        Map<String, Path> sourceByQualifiedName
+    ) {
         try (var paths = Files.walk(root)) {
             paths.filter(Files::isRegularFile)
                 .filter(path -> path.getFileName().toString().endsWith(".class"))
@@ -63,7 +80,8 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         Path classFile,
         Path origin,
         Map<String, ClassStub> stubsByQualifiedName,
-        Map<String, Path> sourceByQualifiedName) {
+        Map<String, Path> sourceByQualifiedName
+    ) {
         try {
             indexStub(ClassStubParser.parse(classFile), origin, stubsByQualifiedName, sourceByQualifiedName);
         } catch (ClassScanException exception) {
@@ -74,7 +92,8 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
     private static void scanArchive(
         Path archive,
         Map<String, ClassStub> stubsByQualifiedName,
-        Map<String, Path> sourceByQualifiedName) {
+        Map<String, Path> sourceByQualifiedName
+    ) {
         try (JarFile jarFile = new JarFile(archive.toFile())) {
             Enumeration<JarEntry> entries = jarFile.entries();
             while (entries.hasMoreElements()) {
@@ -102,7 +121,8 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         ClassStub stub,
         Path origin,
         Map<String, ClassStub> stubsByQualifiedName,
-        Map<String, Path> sourceByQualifiedName) {
+        Map<String, Path> sourceByQualifiedName
+    ) {
         String qualifiedName = stub.getFullName();
         if (qualifiedName == null || qualifiedName.isBlank())
             return;

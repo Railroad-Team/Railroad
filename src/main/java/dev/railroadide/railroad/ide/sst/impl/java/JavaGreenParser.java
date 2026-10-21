@@ -14,8 +14,13 @@ import org.jetbrains.annotations.ApiStatus;
 import java.util.*;
 import java.util.function.Predicate;
 
+/**
+ * Parses Java lexer tokens into immutable green syntax nodes, retaining trivia and
+ * representing malformed input with error nodes and missing tokens.
+ * The supplied lexer is consumed through EOF and remains owned by the caller.
+ */
 @ApiStatus.Internal
-final class JavaGreenParser {
+public final class JavaGreenParser {
     private static final Set<JavaTokenType> CONTEXTUAL_IDENTIFIER_TOKENS = Set.of(
         JavaTokenType.UNDERSCORE_KEYWORD,
         JavaTokenType.EXPORTS_KEYWORD,
@@ -138,15 +143,30 @@ final class JavaGreenParser {
     private int position;
     private int pendingTypeArgumentClosers;
 
-    JavaGreenParser(Lexer<JavaTokenType> lexer) {
+    /**
+     * Creates a parser that reads from the supplied lexer's current position.
+     *
+     * @param lexer Java token source to consume, including its EOF token
+     */
+    public JavaGreenParser(Lexer<JavaTokenType> lexer) {
         this.lexer = Objects.requireNonNull(lexer, "lexer");
     }
 
-    SyntaxTree parseSyntaxTree() {
+    /**
+     * Consumes the lexer and wraps the parsed compilation unit in a syntax tree.
+     *
+     * @return syntax tree containing the parsed nodes, tokens, and recovery markers
+     */
+    public SyntaxTree parseSyntaxTree() {
         return SyntaxInternalFactory.treeFromGreenRoot(parseGreenTree());
     }
 
-    GreenNode parseGreenTree() {
+    /**
+     * Consumes the lexer through EOF and parses a compilation unit.
+     *
+     * @return immutable compilation-unit root, including any syntax recovery nodes
+     */
+    public GreenNode parseGreenTree() {
         readAllTokens();
         position = 0;
         pendingTypeArgumentClosers = 0;
@@ -896,8 +916,13 @@ final class JavaGreenParser {
         return greenNode(JavaSyntaxKinds.RECORD_COMPONENT, children);
     }
 
-    private GreenNode parseTypeBody(SyntaxKind bodyKind, SyntaxKind memberKind, String ownerName,
-        boolean allowConstructors, boolean allowInitializers) {
+    private GreenNode parseTypeBody(
+        SyntaxKind bodyKind,
+        SyntaxKind memberKind,
+        String ownerName,
+        boolean allowConstructors,
+        boolean allowInitializers
+    ) {
         List<GreenElement> children = new ArrayList<>();
 
         expectSignificant(JavaTokenType.OPEN_BRACE, children);
@@ -1153,8 +1178,12 @@ final class JavaGreenParser {
         return greenNode(JavaSyntaxKinds.EMPTY_TYPE_DECLARATION, children);
     }
 
-    private GreenNode parseTypeBodyMember(SyntaxKind memberKind, String ownerName, boolean allowConstructors,
-        boolean allowInitializers) {
+    private GreenNode parseTypeBodyMember(
+        SyntaxKind memberKind,
+        String ownerName,
+        boolean allowConstructors,
+        boolean allowInitializers
+    ) {
         if (allowInitializers) {
             GreenNode staticInitializer = parseOptionalStaticInitializer();
             if (staticInitializer != null)
@@ -1172,8 +1201,12 @@ final class JavaGreenParser {
         return parseTypeBodyMemberFallback(memberKind);
     }
 
-    private GreenNode parseTypeBodyMemberWithRecovery(SyntaxKind memberKind, String ownerName,
-        boolean allowConstructors, boolean allowInitializers) {
+    private GreenNode parseTypeBodyMemberWithRecovery(
+        SyntaxKind memberKind,
+        String ownerName,
+        boolean allowConstructors,
+        boolean allowInitializers
+    ) {
         ParserCheckpoint checkpoint = mark();
         GreenNode member = parseTypeBodyMember(memberKind, ownerName, allowConstructors, allowInitializers);
         if (madeProgress(checkpoint))
@@ -3101,8 +3134,10 @@ final class JavaGreenParser {
         return prefix;
     }
 
-    private void consumeModifiersAndAnnotations(List<GreenElement> children,
-        Predicate<JavaTokenType> modifierPredicate) {
+    private void consumeModifiersAndAnnotations(
+        List<GreenElement> children,
+        Predicate<JavaTokenType> modifierPredicate
+    ) {
         consumeTrivia(children);
         boolean consumed;
         do {
@@ -3279,8 +3314,11 @@ final class JavaGreenParser {
         return synchronizeToFollowSet(children, followSet, false);
     }
 
-    private boolean synchronizeToFollowSet(List<GreenElement> children, Set<JavaTokenType> followSet,
-        boolean trackAngleDepth) {
+    private boolean synchronizeToFollowSet(
+        List<GreenElement> children,
+        Set<JavaTokenType> followSet,
+        boolean trackAngleDepth
+    ) {
         int parenDepth = 0;
         int bracketDepth = 0;
         int braceDepth = 0;

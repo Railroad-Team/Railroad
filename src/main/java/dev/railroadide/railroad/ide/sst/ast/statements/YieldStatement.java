@@ -9,6 +9,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A statement supplying a result to an enclosing switch expression.
+ *
+ * @param span source range occupied by this node
+ * @param value expression producing the switch result
+ */
 public record YieldStatement(Span span, Expression value) implements Statement {
     @Override
     public AstKind kind() {

@@ -7,6 +7,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Synchronized registry that preserves insertion order in all collection views.
+ * Each operation is synchronized on this registry instance.
+ *
+ * @param <T> type of values managed by this registry
+ */
 public class OrderedRegistry<T> implements Registry<T> {
     private final Map<String, T> registry = new LinkedHashMap<>();
 
@@ -15,7 +21,14 @@ public class OrderedRegistry<T> implements Registry<T> {
     @Getter
     private final Type type;
 
-    OrderedRegistry(String id, Type type) {
+    /**
+     * Creates an empty ordered registry with the supplied identifier and value type.
+     *
+     * @param id unique identifier for this registry
+     * @param type reflective type of values accepted by this registry
+     * @throws IllegalArgumentException if the identifier is blank or the type is null
+     */
+    public OrderedRegistry(String id, Type type) {
         if (id == null || id.isBlank())
             throw new IllegalArgumentException("Registry ID cannot be null or empty");
         if (type == null)

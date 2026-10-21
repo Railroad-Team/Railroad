@@ -35,9 +35,18 @@ public class DefaultPluginDescriptor implements PluginDescriptor {
      * @param mainClass The main class of the plugin.
      * @param dependencies The dependencies of the plugin, represented as MavenDeps.
      */
-    public DefaultPluginDescriptor(String id, String name, String version, String author, String description,
-        String website, String license, String iconPath, String mainClass,
-        MavenDeps dependencies) {
+    public DefaultPluginDescriptor(
+        String id,
+        String name,
+        String version,
+        String author,
+        String description,
+        String website,
+        String license,
+        String iconPath,
+        String mainClass,
+        MavenDeps dependencies
+    ) {
         this.id = id;
         this.name = name;
         this.version = version;

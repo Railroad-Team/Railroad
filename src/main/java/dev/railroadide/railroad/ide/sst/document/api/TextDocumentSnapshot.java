@@ -44,7 +44,8 @@ public final class TextDocumentSnapshot implements DocumentSnapshot {
         DocumentVersion version,
         String languageId,
         CharSequence text,
-        Charset encoding) {
+        Charset encoding
+    ) {
         this(id, uri, version, languageId, DocumentOrigin.unspecified(uri), text, encoding);
     }
 
@@ -68,7 +69,8 @@ public final class TextDocumentSnapshot implements DocumentSnapshot {
         String languageId,
         DocumentOrigin origin,
         CharSequence text,
-        Charset encoding) {
+        Charset encoding
+    ) {
         this.id = Objects.requireNonNull(id, "id");
         this.uri = Objects.requireNonNull(uri, "uri");
         this.version = Objects.requireNonNull(version, "version");

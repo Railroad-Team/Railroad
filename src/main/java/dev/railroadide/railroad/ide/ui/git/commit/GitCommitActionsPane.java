@@ -1,11 +1,17 @@
 package dev.railroadide.railroad.ide.ui.git.commit;
 
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.GitCommands;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.*;
 import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.vcs.git.commit.GitCommitData;
 
+/**
+ * Collects a commit message and options and submits selected changes to Git.
+ */
 public class GitCommitActionsPane extends RRVBox {
     private final Project project;
     private final GitCommitChangesPane gitCommitChanges;
@@ -15,6 +21,12 @@ public class GitCommitActionsPane extends RRVBox {
     private final RRTextField commitMessageField;
     private final RRTextArea commitDescriptionArea;
 
+    /**
+     * Creates commit message and option controls linked to a change-selection pane.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param gitCommitChanges change-selection pane supplying files to commit
+     */
     public GitCommitActionsPane(Project project, GitCommitChangesPane gitCommitChanges) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_COMMIT_ACTIONS, this);
         this.project = project;
@@ -51,10 +63,15 @@ public class GitCommitActionsPane extends RRVBox {
         footer.getChildren().addAll(commitButton, commitAndPushButton);
         getChildren().add(footer);
 
-        commitButton.setOnAction(event -> commitChanges(false));
-        commitAndPushButton.setOnAction(event -> commitChanges(true));
+        CommandButtons.bind(commitButton, GitCommands.COMMIT,
+            () -> CommandContext.withArgument(project, this, this));
+        CommandButtons.bind(commitAndPushButton, GitCommands.COMMIT_AND_PUSH,
+            () -> CommandContext.withArgument(project, this, this));
     }
 
+    /**
+     * Clears the commit message and description and resets amend and sign-off options.
+     */
     public void clearCommitFields() {
         this.commitMessageField.clear();
         this.commitDescriptionArea.clear();
@@ -62,6 +79,11 @@ public class GitCommitActionsPane extends RRVBox {
         this.signOffCheckbox.setSelected(false);
     }
 
+    /**
+     * Submits the selected changes and entered commit options, refreshes status, and clears the fields.
+     *
+     * @param pushAfterCommit whether Git should push after creating the commit
+     */
     public void commitChanges(boolean pushAfterCommit) {
         String message = this.commitMessageField.getText();
         String description = this.commitDescriptionArea.getText();

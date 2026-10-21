@@ -9,10 +9,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Launches a new process of the Railroad IDE application.
+ */
 public final class RailroadProcessLauncher {
     private RailroadProcessLauncher() {
     }
 
+    /**
+     * Launches a new process of the Railroad IDE application with the given project path.
+     *
+     * @param projectPath The path to the project to open in the new process.
+     * @throws IOException If an I/O error occurs while launching the new process.
+     */
     public static void openProject(Path projectPath) throws IOException {
         String projectArgument = "--project=" + projectPath.toAbsolutePath().normalize();
 
@@ -26,8 +35,7 @@ public final class RailroadProcessLauncher {
         launchDevelopmentProcess(projectArgument);
     }
 
-    private static void launchDevelopmentProcess(
-        String projectArgument) throws IOException {
+    private static void launchDevelopmentProcess(String projectArgument) throws IOException {
         Path javaExecutable = Path.of(
             System.getProperty("java.home"),
             "bin",

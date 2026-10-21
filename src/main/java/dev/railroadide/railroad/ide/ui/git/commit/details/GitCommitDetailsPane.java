@@ -16,7 +16,13 @@ import javafx.geometry.Pos;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Displays a selected commit and refreshes its repository reference metadata.
+ */
 public class GitCommitDetailsPane extends RRVBox {
+    /**
+     * Title displayed before a commit is selected.
+     */
     public static final String DEFAULT_TITLE = "Commit Details";
 
     private final StringProperty title = new SimpleStringProperty(DEFAULT_TITLE);
@@ -26,6 +32,11 @@ public class GitCommitDetailsPane extends RRVBox {
     private String headCommitHash = "";
     private Map<String, List<String>> tagsByCommit = Map.of();
 
+    /**
+     * Creates an initially empty commit-details pane and tracks metadata revisions.
+     *
+     * @param project project whose files and workspace are being displayed
+     */
     public GitCommitDetailsPane(Project project) {
         super();
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_COMMIT_DETAILS, this);
@@ -75,10 +86,20 @@ public class GitCommitDetailsPane extends RRVBox {
         }));
     }
 
+    /**
+     * Exposes the title of the displayed commit details.
+     *
+     * @return mutable title property
+     */
     public StringProperty titleProperty() {
         return title;
     }
 
+    /**
+     * Loads the commit body and selects the commit for display.
+     *
+     * @param commit commit to display or act on
+     */
     public void setCommit(GitCommit commit) {
         this.commit.set(this.project.getGitManager().getCommitWithBody(commit));
     }

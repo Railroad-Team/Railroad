@@ -1,6 +1,10 @@
 package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.CommandMenuItems;
+import dev.railroadide.railroad.command.MarkdownCommands;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.data.ProjectDataStore;
@@ -17,6 +21,8 @@ import dev.railroadide.railroad.window.WindowBuilder;
 import io.github.raghultech.markdown.javafx.preview.MarkdownWebView;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
@@ -42,9 +48,21 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 
+/**
+ * Displays Markdown source, rendered preview, or both with editing and layout controls.
+ */
 public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
+    /**
+     * Matches a decimal list marker followed by a word.
+     */
     public static final Pattern NUMBERED_LIST_PATTERN = Pattern.compile("\\d+\\. \\w+");
+    /**
+     * Matches an asterisk list marker followed by text.
+     */
     public static final Pattern BULLET_LIST_PATTERN = Pattern.compile("\\* .+");
+    /**
+     * Matches a dash list marker followed by text.
+     */
     public static final Pattern DASH_LIST_PATTERN = Pattern.compile("- .+");
     private static final Pattern HTML_LIST_ITEM_PATTERN = Pattern.compile("\\s*<li>.*</li>\\s*");
 
@@ -55,7 +73,6 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     @Getter
     private final Path markdownFile;
 
-    private TextEditorPane textEditorPane;
     private WebView webViewPane;
 
     private final HBox topRow;
@@ -67,15 +84,35 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
 
     private int scrollAmount;
 
+    private final ObjectProperty<TextEditorPane> editor = new SimpleObjectProperty<>();
+
+    /**
+     * Returns the property holding the Markdown source editor.
+     * The value is {@code null} until the editor is created and is cleared
+     * when this pane is closed.
+     *
+     * @return the non-null property holding the Markdown source editor
+     */
+    public ObjectProperty<TextEditorPane> editorProperty() {
+        return editor;
+    }
+
     @Override
     public void close() {
+        TextEditorPane textEditorPane = getMarkdownEditorPane();
         if (textEditorPane != null) {
             textEditorPane.close();
-            textEditorPane = null;
+            editorProperty().setValue(null);
         }
         Settings.THEME.removeListener(themeListener);
     }
 
+    /**
+     * Loads a Markdown file and restores the project preview layout.
+     *
+     * @param markdownFile Markdown file to load and edit
+     * @param project project whose files and workspace are being displayed
+     */
     public MarkdownPreviewPane(Path markdownFile, Project project) {
         this.markdownFile = markdownFile;
         this.project = project;
@@ -114,57 +151,70 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         showContent(pane, topRow);
     }
 
+    /**
+     * Returns the markdown editor pane property
+     *
+     * @return markdown editor pane (TextEditorPane)
+     */
+    public TextEditorPane getMarkdownEditorPane() {
+        return editorProperty().get();
+    }
+
     private TextEditorPane codeView() {
+        TextEditorPane textEditorPane = getMarkdownEditorPane();
         if (textEditorPane != null) {
             restoreEditorScroll();
             return textEditorPane;
         }
 
-        textEditorPane = new TextEditorPane(markdownFile, "markdown");
-        textEditorPane.textProperty().addListener(
+        editorProperty().setValue(new TextEditorPane(markdownFile, "markdown"));
+
+        TextEditorPane newTextEditorPane = getMarkdownEditorPane();
+
+        newTextEditorPane.textProperty().addListener(
             (_, _, newValue) -> preview.setContent(newValue));
 
-        textEditorPane.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+        newTextEditorPane.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode().equals(KeyCode.ENTER)) {
-                int caret = textEditorPane.getCaretPosition();
-                String upToCaret = textEditorPane.getText(0, caret);
+                int caret = newTextEditorPane.getCaretPosition();
+                String upToCaret = newTextEditorPane.getText(0, caret);
                 String lastLine = upToCaret.substring(upToCaret.lastIndexOf("\n") + 1);
 
                 if (NUMBERED_LIST_PATTERN.matcher(lastLine).matches()) {
                     event.consume();
 
                     int previousLineNumber = Integer.parseInt(lastLine.split("\\.")[0]);
-                    textEditorPane.insertText(caret, "\n" + (previousLineNumber + 1) + ". ");
+                    newTextEditorPane.insertText(caret, "\n" + (previousLineNumber + 1) + ". ");
                 }
 
                 if (BULLET_LIST_PATTERN.matcher(lastLine).matches()) {
                     event.consume();
 
-                    textEditorPane.insertText(caret, "\n* ");
+                    newTextEditorPane.insertText(caret, "\n* ");
                 }
 
                 if (DASH_LIST_PATTERN.matcher(lastLine).matches()) {
                     event.consume();
 
-                    textEditorPane.insertText(caret, "\n- ");
+                    newTextEditorPane.insertText(caret, "\n- ");
                 }
 
                 if (HTML_LIST_ITEM_PATTERN.matcher(lastLine).matches()) {
                     event.consume();
 
                     String item = "\n<li></li>";
-                    textEditorPane.insertText(caret, item);
-                    textEditorPane.moveTo(caret + "\n<li>".length());
+                    newTextEditorPane.insertText(caret, item);
+                    newTextEditorPane.moveTo(caret + "\n<li>".length());
                 }
             }
         });
 
-        textEditorPane.addEventFilter(ScrollEvent.SCROLL,
-            _ -> scrollAmount = (int) textEditorPane.getEstimatedScrollY());
+        newTextEditorPane.addEventFilter(ScrollEvent.SCROLL,
+            _ -> scrollAmount = (int) newTextEditorPane.getEstimatedScrollY());
 
         restoreEditorScroll();
 
-        return textEditorPane;
+        return newTextEditorPane;
     }
 
     private SplitPane splitView() {
@@ -206,6 +256,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     }
 
     private void restoreEditorScroll() {
+        TextEditorPane textEditorPane = getMarkdownEditorPane();
         if (textEditorPane != null) {
             Platform.runLater(() -> textEditorPane.scrollToPixel(0, scrollAmount));
         }
@@ -219,24 +270,14 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         var switchButtons = new RRHBox(codeView, splitView, previewView);
         switchButtons.setAlignment(Pos.TOP_RIGHT);
 
-        codeView.setOnAction(_ -> {
-            switchLayout(MarkdownLayoutType.CODE);
-            showContent(codeView(), topRow);
-            project.getDataStore().writeJson(MARKDOWN_LAYOUT_LOCATION, new MarkdownLayout(MarkdownLayoutType.CODE));
-        });
+        CommandButtons.bind(codeView, MarkdownCommands.CODE,
+            () -> CommandContext.withArgument(project, this, this));
 
-        splitView.setOnAction(_ -> {
-            switchLayout(MarkdownLayoutType.SPLIT);
-            showContent(splitView(), topRow);
-            project.getDataStore().writeJson(MARKDOWN_LAYOUT_LOCATION, new MarkdownLayout(MarkdownLayoutType.SPLIT));
-        });
+        CommandButtons.bind(splitView, MarkdownCommands.SPLIT,
+            () -> CommandContext.withArgument(project, this, this));
 
-        previewView.setOnAction(_ -> {
-            // hide markdown buttons in preview-only mode
-            switchLayout(MarkdownLayoutType.PREVIEW);
-            showContent(previewView(), topRow);
-            project.getDataStore().writeJson(MARKDOWN_LAYOUT_LOCATION, new MarkdownLayout(MarkdownLayoutType.PREVIEW));
-        });
+        CommandButtons.bind(previewView, MarkdownCommands.PREVIEW,
+            () -> CommandContext.withArgument(project, this, this));
 
         return switchButtons;
     }
@@ -292,7 +333,8 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         setButtonOnAction(codeBlockButton, "```", "```");
 
         Button imageButton = createButton(FontAwesomeSolid.IMAGE);
-        imageButton.setOnAction(event -> imageDialog());
+        CommandButtons.bind(imageButton, MarkdownCommands.IMAGE,
+            () -> CommandContext.withArgument(project, this, this));
 
         return new RRHBox(headingButton, boldButton, italicButton, quoteButton, codeButton, linkButton,
             unorderedListButton, orderedListButton, taskListButton, horizontalRuleButton, strikethroughButton,
@@ -308,12 +350,8 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
 
         var item = new CustomMenuItem(preview, true);
 
-        item.setOnAction(_ -> {
-            headingMenu.hide();
-            TextEditorPane editor = editorForInsertion();
-            editor.insertText(editor.getCaretPosition(), "#".repeat(level) + " ");
-            editor.requestFocus();
-        });
+        CommandMenuItems.bind(item, MarkdownCommands.heading(level),
+            () -> CommandContext.withArgument(project, this, this));
 
         return item;
     }
@@ -326,28 +364,54 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     }
 
     private void setButtonOnAction(Button button, String prefix) {
-        button.setOnAction(_ -> {
-            TextEditorPane editor = editorForInsertion();
-            editor.insertText(editor.getCaretPosition(), prefix + " ");
-            editor.requestFocus();
-        });
+        CommandButtons.bind(button, MarkdownCommands.insertion(prefix),
+            () -> CommandContext.withArgument(project, this, this));
     }
 
     private void setButtonOnAction(Button button, String prefix, String postfix) {
-        button.setOnAction(_ -> {
-            TextEditorPane editor = editorForInsertion();
-            int caretPosition = editor.getCaretPosition();
-            editor.insertText(caretPosition, prefix + postfix);
-            editor.moveTo(caretPosition + prefix.length());
-            editor.requestFocus();
-        });
+        CommandButtons.bind(button, MarkdownCommands.insertion(prefix),
+            () -> CommandContext.withArgument(project, this, this));
+    }
+
+    /**
+     * Applies and persists the layout selected by an existing toolbar action.
+     *
+     * @param layoutType requested layout
+     */
+    public void applyLayout(MarkdownLayoutType layoutType) {
+        switchLayout(layoutType);
+        showContent(switch (layoutType) {
+            case CODE -> codeView();
+            case SPLIT -> splitView();
+            case PREVIEW -> previewView();
+        }, topRow);
+        project.getDataStore().writeJson(MARKDOWN_LAYOUT_LOCATION, new MarkdownLayout(layoutType));
+    }
+
+    /**
+     * Inserts the syntax used by the existing Markdown formatting toolbar.
+     *
+     * @param prefix syntax inserted before the caret
+     * @param postfix closing syntax, or null for a prefix followed by a space
+     */
+    public void insertMarkdown(String prefix, String postfix) {
+        TextEditorPane editor = editorForInsertion();
+        int caret = editor.getCaretPosition();
+        editor.insertText(caret, prefix + (postfix == null ? " " : postfix));
+        if (postfix != null) {
+            editor.moveTo(caret + prefix.length());
+        }
+        editor.requestFocus();
     }
 
     private TextEditorPane editorForInsertion() {
-        return textEditorPane == null ? codeView() : textEditorPane;
+        return getMarkdownEditorPane() == null ? codeView() : getMarkdownEditorPane();
     }
 
-    private void imageDialog() {
+    /**
+     * Opens the existing image-insertion dialog.
+     */
+    public void imageDialog() {
         var altTextField = new RRTextField("railroad.markdown.image_dialog.image_alt_text", FontAwesomeSolid.IMAGE);
         var uriTextField = new RRTextField("railroad.markdown.image_dialog.image_uri_prompt", FontAwesomeSolid.LINK);
 
@@ -356,8 +420,9 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         altTextField.getStyleClass().add("markdown-image-dialog-field");
         uriTextField.getStyleClass().add("markdown-image-dialog-field");
 
-        if (textEditorPane != null && !textEditorPane.getSelectedText().isBlank()) {
-            altTextField.setText(textEditorPane.getSelectedText());
+        TextEditorPane currentEditor = getMarkdownEditorPane();
+        if (currentEditor != null && !currentEditor.getSelectedText().isBlank()) {
+            altTextField.setText(currentEditor.getSelectedText());
         }
 
         var form = new RRVBox(22, altTextField, uriTextField);
@@ -401,8 +466,12 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         }
     }
 
-    private void createDialogButtons(RRButton cancelButton, RRButton insertButton, RRTextField uriTextField,
-        RRTextField altTextField) {
+    private void createDialogButtons(
+        RRButton cancelButton,
+        RRButton insertButton,
+        RRTextField uriTextField,
+        RRTextField altTextField
+    ) {
         insertButton.setVariant(ButtonVariant.PRIMARY);
         insertButton.setButtonSize(ButtonSize.LARGE);
         insertButton.getStyleClass().add("markdown-image-dialog-button");
@@ -449,10 +518,29 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         editor.requestFocus();
     }
 
+    /**
+     * Stores the selected Markdown editor layout.
+     *
+     * @param layoutType source, preview, or split layout to display
+     */
     public record MarkdownLayout(MarkdownLayoutType layoutType) {
     }
 
+    /**
+     * Selects which Markdown source and preview panes are visible.
+     */
     public enum MarkdownLayoutType {
-        SPLIT, PREVIEW, CODE
+        /**
+         * Display source and rendered Markdown side by side.
+         */
+        SPLIT,
+        /**
+         * Display only the rendered Markdown preview.
+         */
+        PREVIEW,
+        /**
+         * Display only the Markdown source editor.
+         */
+        CODE
     }
 }

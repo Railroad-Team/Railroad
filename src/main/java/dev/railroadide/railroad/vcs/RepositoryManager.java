@@ -16,8 +16,22 @@ import java.util.List;
  */
 @Getter
 public class RepositoryManager implements VCSService {
+    /**
+     * Live observable collection of the managed VCS profiles.
+     *
+     * @return the mutable list of profiles
+     */
     private final ObservableList<VCSProfile> profiles = FXCollections.observableArrayList();
 
+    /** Creates a repository manager with no VCS profiles. */
+    public RepositoryManager() {
+    }
+
+    /**
+     * Creates a connection for each profile, fetches its repositories, and combines their current lists.
+     *
+     * @return a new list containing the repositories exposed by each connection after its fetch call
+     */
     @Override
     public List<Repository> listRepositories() {
         List<Repository> repositories = new ArrayList<>();
@@ -30,6 +44,11 @@ public class RepositoryManager implements VCSService {
         return repositories;
     }
 
+    /**
+     * Adds a profile if it is non-null and not already present.
+     *
+     * @param profile profile to add; null is ignored
+     */
     @Override
     public void addProfile(VCSProfile profile) {
         if (profile != null && !profiles.contains(profile)) {
@@ -37,6 +56,11 @@ public class RepositoryManager implements VCSService {
         }
     }
 
+    /**
+     * Removes a profile if present.
+     *
+     * @param profile profile to remove; null is ignored
+     */
     @Override
     public void removeProfile(VCSProfile profile) {
         if (profile != null) {

@@ -12,8 +12,14 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#LOWERCASE_CLASS_NAME}.
+ */
 @RegisteredInspection
 public class CoreLowerCaseClassNameInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-lower-case-class-names";
 
     private static final List<JavaInspectionRule> RULES = List.of(

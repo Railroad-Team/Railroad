@@ -14,8 +14,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#ILLEGAL_MODIFIER}.
+ */
 @RegisteredInspection
 public final class CoreModifierInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-modifiers";
 
     private static final String JAVA_CLASS_DECLARATION = "JAVA_CLASS_DECLARATION";
@@ -70,8 +76,11 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
         });
     }
 
-    private static void reportTypeDeclaration(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode node) {
+    private static void reportTypeDeclaration(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode node
+    ) {
         Map<JavaTokenType, Integer> modifierCounts = context.directModifierTokenCounts(node);
         Set<JavaTokenType> modifiers = modifierCounts.keySet();
         if (modifiers.isEmpty())
@@ -143,8 +152,11 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
         }
     }
 
-    private static void reportFieldDeclaration(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode node) {
+    private static void reportFieldDeclaration(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode node
+    ) {
         Map<JavaTokenType, Integer> modifierCounts = context.directModifierTokenCounts(node);
         Set<JavaTokenType> modifiers = modifierCounts.keySet();
         if (modifiers.isEmpty())
@@ -184,8 +196,11 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
         }
     }
 
-    private static void reportMethodDeclaration(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode node) {
+    private static void reportMethodDeclaration(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode node
+    ) {
         Map<JavaTokenType, Integer> modifierCounts = context.directModifierTokenCounts(node);
         Set<JavaTokenType> modifiers = modifierCounts.keySet();
         if (modifiers.isEmpty())
@@ -311,8 +326,11 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
         }
     }
 
-    private static void reportConstructorDeclaration(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode node) {
+    private static void reportConstructorDeclaration(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode node
+    ) {
         Map<JavaTokenType, Integer> modifierCounts = context.directModifierTokenCounts(node);
         Set<JavaTokenType> modifiers = modifierCounts.keySet();
         if (modifiers.isEmpty())
@@ -356,8 +374,11 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
         }
     }
 
-    private static void reportLocalVariableDeclaration(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode node) {
+    private static void reportLocalVariableDeclaration(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode node
+    ) {
         reportRestrictedModifierContext(
             context,
             reporter,
@@ -375,8 +396,11 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
             Set.of(JavaTokenType.FINAL_KEYWORD));
     }
 
-    private static void reportRecordComponent(JavaRuleContext context, JavaInspectionRuleReporter reporter,
-        SyntaxNode node) {
+    private static void reportRecordComponent(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode node
+    ) {
         reportRestrictedModifierContext(
             context,
             reporter,
@@ -390,7 +414,8 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
         JavaInspectionRuleReporter reporter,
         SyntaxNode node,
         String subject,
-        Set<JavaTokenType> allowedModifiers) {
+        Set<JavaTokenType> allowedModifiers
+    ) {
         Map<JavaTokenType, Integer> modifierCounts = context.directModifierTokenCounts(node);
         if (modifierCounts.isEmpty())
             return;
@@ -406,7 +431,8 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
     private static void reportDuplicateModifiers(
         JavaInspectionRuleReporter reporter,
         SyntaxNode node,
-        Map<JavaTokenType, Integer> modifierCounts) {
+        Map<JavaTokenType, Integer> modifierCounts
+    ) {
         modifierCounts.forEach((modifier, count) -> {
             if (count > 1) {
                 reporter.report(node, "duplicate modifier '%s'".formatted(modifierDisplayName(modifier)));
@@ -414,8 +440,11 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
         });
     }
 
-    private static void reportConflictingAccessModifiers(JavaInspectionRuleReporter reporter, SyntaxNode node,
-        Set<JavaTokenType> modifiers) {
+    private static void reportConflictingAccessModifiers(
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode node,
+        Set<JavaTokenType> modifiers
+    ) {
         List<String> accessModifiers = new ArrayList<>();
         if (modifiers.contains(JavaTokenType.PUBLIC_KEYWORD)) {
             accessModifiers.add("public");
@@ -436,7 +465,8 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
         SyntaxNode node,
         Set<JavaTokenType> modifiers,
         JavaTokenType modifier,
-        String message) {
+        String message
+    ) {
         if (modifiers.contains(modifier)) {
             reporter.report(node, message);
         }

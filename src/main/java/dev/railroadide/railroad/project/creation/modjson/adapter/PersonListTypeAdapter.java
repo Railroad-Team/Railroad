@@ -11,9 +11,19 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Converts Fabric author and contributor arrays containing names or person objects.
+ */
 public class PersonListTypeAdapter extends TypeAdapter<List<Person>> {
     private final Gson gson = new Gson();
 
+    /**
+     * Reads people from an array, treating strings as names and skipping null entries.
+     *
+     * @param in the reader positioned at the array
+     * @return the people in their input order
+     * @throws IOException if reading fails or an entry has an unsupported JSON token
+     */
     @Override
     public List<Person> read(JsonReader in) throws IOException {
         List<Person> people = new ArrayList<>();
@@ -40,6 +50,14 @@ public class PersonListTypeAdapter extends TypeAdapter<List<Person>> {
         return people;
     }
 
+    /**
+     * Writes people without contact information as names and other people as objects.
+     * A null or empty list is written as JSON null.
+     *
+     * @param out the destination JSON writer
+     * @param value the list of people to serialize, or {@code null}
+     * @throws IOException if writing fails
+     */
     @Override
     public void write(JsonWriter out, List<Person> value) throws IOException {
         if (value == null || value.isEmpty()) {

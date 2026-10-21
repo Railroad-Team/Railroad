@@ -105,8 +105,10 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
         return List.copyOf(recentRequests);
     }
 
-    private GradleTaskExecutionResult execute(GradleTaskExecutionRequest request,
-        ToolingGradleTaskExecutionHandle handle) {
+    private GradleTaskExecutionResult execute(
+        GradleTaskExecutionRequest request,
+        ToolingGradleTaskExecutionHandle handle
+    ) {
         GradleConnector connector = GradleConnector.newConnector()
             .forProjectDirectory(project.getPath().toFile());
         ToolingGradleModelService.configureConnector(connector, environment);
@@ -181,9 +183,11 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
         return args;
     }
 
-    private void applyDebugConfiguration(GradleTaskExecutionRequest request,
+    private void applyDebugConfiguration(
+        GradleTaskExecutionRequest request,
         BuildLauncher build,
-        ToolingGradleTaskExecutionHandle handle) {
+        ToolingGradleTaskExecutionHandle handle
+    ) {
         if (!request.debug())
             return;
 

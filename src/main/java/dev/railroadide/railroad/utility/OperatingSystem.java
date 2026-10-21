@@ -9,7 +9,22 @@ import java.util.Locale;
  * It provides methods to detect the current operating system and retrieve it.
  */
 public enum OperatingSystem {
-    WINDOWS, MAC, LINUX, UNKNOWN;
+    /**
+     * Represents the Windows operating system.
+     */
+    WINDOWS,
+    /**
+     * Represents the Mac operating system.
+     */
+    MAC,
+    /**
+     * Represents the Linux operating system.
+     */
+    LINUX,
+    /**
+     * Represents an unknown or unsupported operating system.
+     */
+    UNKNOWN;
 
     /**
      * The current operating system detected at runtime.
@@ -40,15 +55,39 @@ public enum OperatingSystem {
         return UNKNOWN;
     }
 
+    /**
+     * Checks if the current operating system is Mac.
+     *
+     * @return true if the current OS is Mac, false otherwise
+     */
     public static boolean isMac() {
         return CURRENT == MAC;
     }
 
+    /**
+     * Checks if the current operating system is Windows.
+     *
+     * @return true if the current OS is Windows, false otherwise
+     */
     public static boolean isWindows() {
         return CURRENT == WINDOWS;
     }
 
+    /**
+     * Checks if the current operating system is Linux.
+     *
+     * @return true if the current OS is Linux, false otherwise
+     */
     public static boolean isLinux() {
         return CURRENT == LINUX;
+    }
+
+    /**
+     * Checks if the current operating system is unknown or unsupported.
+     *
+     * @return true if the current OS is unknown, false otherwise
+     */
+    public static boolean isUnknown() {
+        return CURRENT == UNKNOWN;
     }
 }

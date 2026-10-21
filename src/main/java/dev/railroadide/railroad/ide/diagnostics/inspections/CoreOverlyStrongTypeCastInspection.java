@@ -12,8 +12,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#OVERLY_STRONG_TYPE_CAST}.
+ */
 @RegisteredInspection
 public class CoreOverlyStrongTypeCastInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-overly-strong-type-cast";
 
     @Override
@@ -67,8 +73,13 @@ public class CoreOverlyStrongTypeCastInspection implements JavaInspectionRulePro
         }
     }
 
-    private static void reportOverlyStrongReceiverCastForMethodInvocation(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter, SyntaxNode castNode, SyntaxNode invocationNode, String castTypeName) {
+    private static void reportOverlyStrongReceiverCastForMethodInvocation(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode castNode,
+        SyntaxNode invocationNode,
+        String castTypeName
+    ) {
         SyntaxNode selectorNode = context.selectorNameNode(invocationNode);
         if (selectorNode == null)
             return;
@@ -90,8 +101,13 @@ public class CoreOverlyStrongTypeCastInspection implements JavaInspectionRulePro
         reporter.report(castNode, context.simpleTypeName(castTypeName), context.simpleTypeName(weakerType));
     }
 
-    private static void reportOverlyStrongReceiverCastForFieldAccess(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter, SyntaxNode castNode, SyntaxNode invocationNode, String castTypeName) {
+    private static void reportOverlyStrongReceiverCastForFieldAccess(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode castNode,
+        SyntaxNode invocationNode,
+        String castTypeName
+    ) {
         SyntaxNode selectorNode = context.selectorNameNode(invocationNode);
         if (selectorNode == null)
             return;
@@ -107,8 +123,12 @@ public class CoreOverlyStrongTypeCastInspection implements JavaInspectionRulePro
         reporter.report(castNode, context.simpleTypeName(castTypeName), context.simpleTypeName(weakerType));
     }
 
-    private static @Nullable String findWeakerTypeDeclaringMethod(JavaRuleContext context, String castTypeName,
-        String methodName, int argumentCount) {
+    private static @Nullable String findWeakerTypeDeclaringMethod(
+        JavaRuleContext context,
+        String castTypeName,
+        String methodName,
+        int argumentCount
+    ) {
         for (String candidate : superTypesOf(context, castTypeName)) {
             if (candidate.equals(castTypeName))
                 continue;
@@ -120,8 +140,11 @@ public class CoreOverlyStrongTypeCastInspection implements JavaInspectionRulePro
         return null;
     }
 
-    private static @Nullable String findWeakerTypeDeclaringField(JavaRuleContext context, String castTypeName,
-        String fieldName) {
+    private static @Nullable String findWeakerTypeDeclaringField(
+        JavaRuleContext context,
+        String castTypeName,
+        String fieldName
+    ) {
         for (String candidate : superTypesOf(context, castTypeName)) {
             if (candidate.equals(castTypeName))
                 continue;
@@ -155,8 +178,12 @@ public class CoreOverlyStrongTypeCastInspection implements JavaInspectionRulePro
         return List.copyOf(superTypes);
     }
 
-    private static boolean declaresMethod(JavaRuleContext context, String ownerTypeName, String methodName,
-        int argumentCount) {
+    private static boolean declaresMethod(
+        JavaRuleContext context,
+        String ownerTypeName,
+        String methodName,
+        int argumentCount
+    ) {
         for (JavaRuleContext.MethodDescriptor method : context.declaredMethodDescriptors(ownerTypeName)) {
             // TODO: Check that the types of the parameters are compatible, not just the count
             if (method.name().equals(methodName) && method.parameterTypes().size() == argumentCount)

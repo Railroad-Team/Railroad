@@ -9,9 +9,9 @@ import static dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectio
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class CoreCastConflictingWithInstanceofInspectionTest {
+public class CoreCastConflictingWithInstanceofInspectionTest {
     @Test
-    void coreCastConflictingWithInstanceofRuleEmitsDiagnosticForIncompatibleCastInPositiveBranch() {
+    public void coreCastConflictingWithInstanceofRuleEmitsDiagnosticForIncompatibleCastInPositiveBranch() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj) {
@@ -28,7 +28,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticForCompatibleSubtypeCast() {
+    public void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticForCompatibleSubtypeCast() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj) {
@@ -43,7 +43,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticForNegatedInstanceofBranchInCurrentMvp() {
+    public void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticForNegatedInstanceofBranchInCurrentMvp() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj) {
@@ -58,7 +58,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticForSameTypeCast() {
+    public void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticForSameTypeCast() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj) {
@@ -73,7 +73,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticForCompatibleSupertypeCast() {
+    public void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticForCompatibleSupertypeCast() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj) {
@@ -88,7 +88,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticForDifferentVariableCast() {
+    public void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticForDifferentVariableCast() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj, Object other) {
@@ -103,7 +103,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticForMethodCallExpressionInCurrentMvp() {
+    public void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticForMethodCallExpressionInCurrentMvp() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 Object value() {
@@ -122,7 +122,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleEmitsDiagnosticInsideBlockThenBranch() {
+    public void coreCastConflictingWithInstanceofRuleEmitsDiagnosticInsideBlockThenBranch() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj) {
@@ -138,7 +138,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleEmitsDiagnosticForSingleStatementThenBranch() {
+    public void coreCastConflictingWithInstanceofRuleEmitsDiagnosticForSingleStatementThenBranch() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj) {
@@ -155,7 +155,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticOutsideThenBranch() {
+    public void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticOutsideThenBranch() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj) {
@@ -171,7 +171,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleHandlesPatternInstanceofSyntax() {
+    public void coreCastConflictingWithInstanceofRuleHandlesPatternInstanceofSyntax() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj) {
@@ -188,7 +188,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleHandlesParenthesizedCondition() {
+    public void coreCastConflictingWithInstanceofRuleHandlesParenthesizedCondition() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj) {
@@ -203,7 +203,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleEmitsDiagnosticInsideElseBranchOfNegatedInstanceof() {
+    public void coreCastConflictingWithInstanceofRuleEmitsDiagnosticInsideElseBranchOfNegatedInstanceof() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj) {
@@ -222,7 +222,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleEmitsDiagnosticInsideWhileLoopBody() {
+    public void coreCastConflictingWithInstanceofRuleEmitsDiagnosticInsideWhileLoopBody() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj) {
@@ -240,7 +240,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleEmitsDiagnosticInsideForLoopBody() {
+    public void coreCastConflictingWithInstanceofRuleEmitsDiagnosticInsideForLoopBody() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj) {
@@ -258,7 +258,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticInsideDoWhileBodyBeforeCondition() {
+    public void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticInsideDoWhileBodyBeforeCondition() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj) {
@@ -273,7 +273,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticForConflictingCastInNegatedThenBranch() {
+    public void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticForConflictingCastInNegatedThenBranch() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj) {
@@ -288,7 +288,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleEmitsDiagnosticInsideNestedIfWithinPositiveBranch() {
+    public void coreCastConflictingWithInstanceofRuleEmitsDiagnosticInsideNestedIfWithinPositiveBranch() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj, boolean flag) {
@@ -307,7 +307,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleEmitsDiagnosticForInstanceofAndAdditionalCondition() {
+    public void coreCastConflictingWithInstanceofRuleEmitsDiagnosticForInstanceofAndAdditionalCondition() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj, boolean flag) {
@@ -324,7 +324,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleEmitsDiagnosticForAdditionalConditionAndInstanceof() {
+    public void coreCastConflictingWithInstanceofRuleEmitsDiagnosticForAdditionalConditionAndInstanceof() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj, boolean flag) {
@@ -341,7 +341,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticForCompatibleCastInCompoundCondition() {
+    public void coreCastConflictingWithInstanceofRuleDoesNotEmitDiagnosticForCompatibleCastInCompoundCondition() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj, boolean flag) {
@@ -356,7 +356,7 @@ class CoreCastConflictingWithInstanceofInspectionTest {
     }
 
     @Test
-    void coreCastConflictingWithInstanceofRuleEmitsDiagnosticInsideElseBranchOfNegatedCompoundCondition() {
+    public void coreCastConflictingWithInstanceofRuleEmitsDiagnosticInsideElseBranchOfNegatedCompoundCondition() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreCastConflictingWithInstanceofInspection(), """
             class Example {
                 void run(Object obj, boolean flag) {

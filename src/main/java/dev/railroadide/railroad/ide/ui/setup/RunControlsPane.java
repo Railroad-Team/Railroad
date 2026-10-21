@@ -1,7 +1,9 @@
 package dev.railroadide.railroad.ide.ui.setup;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.ide.IDESetup;
+import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.command.*;
+import dev.railroadide.railroad.ide.debug.DebuggingManager;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.ui.RunConfigurationContextMenuManager;
 import dev.railroadide.railroad.ide.runconfig.ui.RunConfigurationListCell;
@@ -9,12 +11,14 @@ import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRHBox;
+import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.ui.localized.LocalizedComboBox;
 import dev.railroadide.railroad.ui.localized.LocalizedMenuItem;
 import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
 import dev.railroadide.railroad.ui.styling.ButtonSize;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
@@ -22,7 +26,10 @@ import javafx.scene.Node;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.SeparatorMenuItem;
+import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
@@ -35,6 +42,7 @@ import java.util.concurrent.CompletableFuture;
  * manages tracking of currently running configurations to support multiple instances.
  */
 public final class RunControlsPane extends RRHBox {
+    @Getter
     private final Project project;
     private final LocalizedComboBox<RunConfiguration<?>> runConfigurationsComboBox;
     private final RRButton runButton = new RRButton("", FontAwesomeSolid.PLAY);
@@ -49,24 +57,82 @@ public final class RunControlsPane extends RRHBox {
     private final LocalizedTooltip debugRestartTooltip = new LocalizedTooltip(
         "railroad.ide.toolbar.debug.restart.tooltip");
 
+    /**
+     * Creates project run-configuration selection and execution controls.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @return run controls node
+     */
     public static Node create(Project project) {
         return new RunControlsPane(project);
     }
 
     private RunControlsPane(Project project) {
         super(4);
+        getStyleClass().add("ide-run-controls");
         this.project = project;
         setAlignment(Pos.CENTER_LEFT);
 
         runConfigurationsComboBox = createRunConfigurationsComboBox();
         configureButtons();
+        Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.RUN_CONTROLS, this);
+
+        var addConfiguration = new RRButton("railroad.ide.toolbar.add_configuration", FontAwesomeSolid.PLUS);
+        addConfiguration.setVariant(ButtonVariant.GHOST);
+        addConfiguration.setButtonSize(ButtonSize.SMALL);
+        addConfiguration.getStyleClass().add("add-run-configuration-button");
+        addConfiguration.setMinWidth(USE_PREF_SIZE);
+        CommandButtons.bind(addConfiguration, RunCommands.EDIT, () -> CommandContext.forProject(project, this));
+        var noConfigurations = Bindings.isEmpty(project.getRunConfigManager().getConfigurations());
+        addConfiguration.visibleProperty().bind(noConfigurations);
+        addConfiguration.managedProperty().bind(addConfiguration.visibleProperty());
+        runConfigurationsComboBox.visibleProperty().bind(noConfigurations.not());
+        runConfigurationsComboBox.managedProperty().bind(runConfigurationsComboBox.visibleProperty());
+        setMinWidth(USE_PREF_SIZE);
 
         getChildren().addAll(
+            addConfiguration,
             runConfigurationsComboBox,
             runButton,
             debugButton,
             stopButton,
             moreActionsButton);
+        DebuggingManager debugging = project.getDebuggingManager();
+        getChildren().addAll(
+            debugControl(RunCommands.RESUME, FontAwesomeSolid.PLAY),
+            debugControl(RunCommands.PAUSE, FontAwesomeSolid.PAUSE),
+            debugControl(RunCommands.STEP_OVER, FontAwesomeSolid.ARROW_RIGHT),
+            debugControl(RunCommands.STEP_INTO, FontAwesomeSolid.ARROW_DOWN),
+            debugControl(RunCommands.STEP_OUT, FontAwesomeSolid.ARROW_UP));
+        var debugLocation = new Label();
+        debugLocation.getStyleClass().add("debugger-location");
+        debugLocation.setMinWidth(0);
+        debugLocation.setMaxWidth(240);
+        var locationTooltip = new Tooltip();
+        locationTooltip.textProperty().bind(debugging.getLocation());
+        debugLocation.setTooltip(locationTooltip);
+        debugLocation.textProperty().bind(debugging.getLocation());
+        debugLocation.visibleProperty().bind(debugging.pausedProperty());
+        debugLocation.managedProperty().bind(debugLocation.visibleProperty());
+        getChildren().add(debugLocation);
+    }
+
+    private RRButton debugControl(Command<RunConfiguration<?>> command, FontAwesomeSolid icon) {
+        var button = new RRButton("", icon);
+        button.setSquare(true);
+        button.setButtonSize(ButtonSize.SMALL);
+        button.setVariant(ButtonVariant.GHOST);
+        button.setFocusTraversable(false);
+        button.getStyleClass().addAll("toolbar-button", "debugger-control");
+        button.setTooltip(new LocalizedTooltip(command.displayNameKey()));
+        button.setAccessibleText(L18n.localize(command.displayNameKey()));
+        var debugging = project.getDebuggingManager();
+        button.visibleProperty().bind(debugging.activeProperty());
+        button.managedProperty().bind(button.visibleProperty());
+        CommandButtons.bind(button, command, () -> CommandContext.forProject(project, this),
+            debugging.activeProperty(), debugging.pausedProperty(), debugging.getCommandPending(),
+            debugging.getState(), debugging.selectedThreadProperty());
+        return button;
     }
 
     private LocalizedComboBox<RunConfiguration<?>> createRunConfigurationsComboBox() {
@@ -77,6 +143,7 @@ public final class RunControlsPane extends RRHBox {
             return object.uuid().toString();
         });
 
+        comboBox.getStyleClass().add("ide-toolbar-selector");
         comboBox.getItems().setAll(project.getRunConfigManager().getConfigurations());
         comboBox.getItems().add(null);
 
@@ -115,7 +182,7 @@ public final class RunControlsPane extends RRHBox {
 
                 if (item == null) {
                     if (project.getRunConfigManager().getConfigurations().isEmpty()) {
-                        setText(L18n.localize("railroad.ide.toolbar.no_run_configurations"));
+                        setText(L18n.localize("railroad.ide.toolbar.add_configuration"));
                     } else {
                         setText(L18n.localize("railroad.ide.toolbar.edit_run_configurations"));
                     }
@@ -138,17 +205,7 @@ public final class RunControlsPane extends RRHBox {
         runButton.getStyleClass().addAll("toolbar-button", "run-button");
         runButton.setFocusTraversable(false);
         runButton.setDisable(true);
-        runButton.setOnAction(_ -> {
-            RunConfiguration<?> selected = runConfigurationsComboBox.getValue();
-            if (selected == null || isConfigurationStopping(selected))
-                return;
-
-            if (isConfigurationRunning(selected) && !allowsMultipleInstances(selected)) {
-                restartConfiguration(selected, false);
-            } else {
-                startConfigurationExecution(false);
-            }
-        });
+        CommandButtons.bind(runButton, RunCommands.RUN, () -> CommandContext.forProject(project, this));
 
         debugButton.setSquare(true);
         debugButton.setButtonSize(ButtonSize.SMALL);
@@ -157,17 +214,7 @@ public final class RunControlsPane extends RRHBox {
         debugButton.getStyleClass().addAll("toolbar-button", "debug-button");
         debugButton.setFocusTraversable(false);
         debugButton.setDisable(true);
-        debugButton.setOnAction(_ -> {
-            RunConfiguration<?> selected = runConfigurationsComboBox.getValue();
-            if (selected == null || isConfigurationStopping(selected) || !selected.isDebuggingSupported(project))
-                return;
-
-            if (isConfigurationRunning(selected) && !allowsMultipleInstances(selected)) {
-                restartConfiguration(selected, true);
-            } else {
-                startConfigurationExecution(true);
-            }
-        });
+        CommandButtons.bind(debugButton, RunCommands.DEBUG, () -> CommandContext.forProject(project, this));
 
         stopButton.setSquare(true);
         stopButton.setButtonSize(ButtonSize.SMALL);
@@ -178,14 +225,7 @@ public final class RunControlsPane extends RRHBox {
         stopButton.setDisable(true);
         stopButton.setVisible(false);
         stopButton.managedProperty().bind(stopButton.visibleProperty());
-        stopButton.setOnAction(event -> {
-            var runningConfigs = getRunningConfigurations();
-            if (runningConfigs.size() > 1) {
-                showStopMenu(runningConfigs);
-            } else {
-                stopActiveConfiguration();
-            }
-        });
+        CommandButtons.bind(stopButton, RunCommands.STOP, () -> CommandContext.forProject(project, this));
 
         moreActionsButton.setSquare(true);
         moreActionsButton.setButtonSize(ButtonSize.SMALL);
@@ -197,7 +237,7 @@ public final class RunControlsPane extends RRHBox {
         moreActionsButton.setOnAction(_ -> {
             RunConfiguration<?> item = runConfigurationsComboBox.getValue();
             if (item == null) {
-                IDESetup.showEditRunConfigurationsWindow(project, null);
+                CommandDispatcher.execute(RunCommands.EDIT, CommandContext.forProject(project, this));
                 return;
             }
 
@@ -208,6 +248,86 @@ public final class RunControlsPane extends RRHBox {
         runConfigurationsComboBox.valueProperty().addListener((_, _, _) -> updateRunControls());
         runConfigurationsComboBox.getSelectionModel().selectFirst();
         updateRunControls();
+    }
+
+    /**
+     * Returns the toolbar's selected run configuration.
+     *
+     * @return selected configuration, or null
+     */
+    public RunConfiguration<?> selectedConfiguration() {
+        return runConfigurationsComboBox.getValue();
+    }
+
+    /**
+     * Checks selection, stopping state, and debug support for a run request.
+     *
+     * @param configuration configuration to operate on, or null when no selection exists
+     * @param debug whether the request uses debugging
+     * @return whether the configuration can start or restart
+     */
+    public boolean canExecuteConfiguration(RunConfiguration<?> configuration, boolean debug) {
+        return configuration != null && !isConfigurationStopping(configuration) &&
+            (!debug || configuration.isDebuggingSupported(project));
+    }
+
+    /**
+     * Checks whether a configuration is running and not already stopping.
+     *
+     * @param configuration configuration to operate on, or null when no selection exists
+     * @return whether a stop request can be made
+     */
+    public boolean canStopConfiguration(RunConfiguration<?> configuration) {
+        return isConfigurationRunning(configuration) && !isConfigurationStopping(configuration);
+    }
+
+    /**
+     * Checks whether any tracked execution can still be stopped.
+     *
+     * @return whether a stoppable execution exists
+     */
+    public boolean hasRunningConfigurations() {
+        return getRunningConfigurations().stream().anyMatch(this::canStopConfiguration);
+    }
+
+    /**
+     * Starts or restarts a configuration through the shared execution tracking.
+     *
+     * @param configuration configuration to operate on, or null when no selection exists
+     * @param debug whether the request uses debugging
+     */
+    public void executeConfiguration(RunConfiguration<?> configuration, boolean debug) {
+        if (!canExecuteConfiguration(configuration, debug))
+            return;
+        runConfigurationsComboBox.setValue(configuration);
+        if (isConfigurationRunning(configuration) && !allowsMultipleInstances(configuration)) {
+            restartConfiguration(configuration, debug);
+        } else {
+            startConfigurationExecution(configuration, debug);
+        }
+    }
+
+    /**
+     * Stops the sole running configuration or opens the existing stop-selection menu.
+     */
+    public void requestStop() {
+        var running = getRunningConfigurations();
+        if (running.size() > 1) {
+            showStopMenu(running);
+        } else if (!running.isEmpty()) {
+            stopConfiguration(running.getFirst());
+        }
+    }
+
+    /**
+     * Requests stop for every tracked configuration that is not already stopping.
+     */
+    public void stopAllConfigurations() {
+        for (var configuration : getRunningConfigurations()) {
+            if (canStopConfiguration(configuration)) {
+                stopConfiguration(configuration);
+            }
+        }
     }
 
     private void startConfigurationExecution(boolean debug) {
@@ -224,7 +344,15 @@ public final class RunControlsPane extends RRHBox {
         incrementRunningConfiguration(configuration);
         updateRunControls();
 
-        var execution = debug ? configuration.debug(project) : configuration.run(project);
+        CompletableFuture<?> execution;
+        try {
+            execution = debug ? configuration.debug(project) : configuration.run(project);
+        } catch (Throwable failure) {
+            decrementRunningConfiguration(configuration);
+            updateRunControls();
+            Railroad.LOGGER.error("Unable to start run configuration", failure);
+            return;
+        }
 
         execution.whenComplete((_, throwable) -> Platform.runLater(() -> {
             if (throwable != null) {
@@ -241,7 +369,13 @@ public final class RunControlsPane extends RRHBox {
         stopConfiguration(active);
     }
 
-    private CompletableFuture<Void> stopConfiguration(@Nullable RunConfiguration<?> configuration) {
+    /**
+     * Requests stop and updates the tracked stopping state.
+     *
+     * @param configuration configuration to operate on, or null when no selection exists
+     * @return future completed when the stop operation finishes
+     */
+    public CompletableFuture<Void> stopConfiguration(@Nullable RunConfiguration<?> configuration) {
         var future = new CompletableFuture<Void>();
         if (configuration == null) {
             future.complete(null);
@@ -292,7 +426,8 @@ public final class RunControlsPane extends RRHBox {
     }
 
     private void restartConfiguration(RunConfiguration<?> configuration, boolean debug) {
-        stopConfiguration(configuration).thenAccept(_ -> startConfigurationExecution(configuration, debug));
+        stopConfiguration(configuration)
+            .thenRun(() -> Platform.runLater(() -> startConfigurationExecution(configuration, debug)));
     }
 
     private void updateRunControls() {
@@ -312,8 +447,8 @@ public final class RunControlsPane extends RRHBox {
         runButton.setTooltip(canRestart ? restartButtonTooltip : runButtonTooltip);
         debugButton.setDisable(!(canDebugRestart || canStartDebug));
         debugButton.setTooltip(canDebugRestart ? debugRestartTooltip : debugButtonTooltip);
-        stopButton.setDisable(!isRunning || isStopping);
-        stopButton.setVisible(isRunning);
+        stopButton.setDisable(!hasRunningConfigurations());
+        stopButton.setVisible(!runningConfigurations.isEmpty());
     }
 
     private void incrementRunningConfiguration(RunConfiguration<?> configuration) {
@@ -375,10 +510,8 @@ public final class RunControlsPane extends RRHBox {
             }
 
             var item = new MenuItem(label);
-            item.setOnAction(_ -> {
-                runConfigurationsComboBox.setValue(configuration);
-                stopConfiguration(configuration);
-            });
+            CommandMenuItems.bind(item, RunCommands.STOP,
+                () -> CommandContext.withArgument(project, this, configuration));
             menu.getItems().add(item);
         }
 
@@ -387,11 +520,8 @@ public final class RunControlsPane extends RRHBox {
         }
 
         var stopAllItem = new LocalizedMenuItem("railroad.ide.toolbar.stop.all");
-        stopAllItem.setOnAction(event -> {
-            for (RunConfiguration<?> configuration : runningConfigs) {
-                stopConfiguration(configuration);
-            }
-        });
+        CommandMenuItems.bind(stopAllItem, RunCommands.STOP_ALL,
+            () -> CommandContext.forProject(project, this));
         menu.getItems().add(stopAllItem);
 
         menu.show(stopButton, Side.BOTTOM, 0, 0);

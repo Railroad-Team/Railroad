@@ -16,8 +16,14 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR}.
+ */
 @RegisteredInspection
 public class CoreSerializableClassWithUnconstructableAncestorInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-serializable-class-with-unconstructable-ancestor";
 
     @Override
@@ -36,8 +42,10 @@ public class CoreSerializableClassWithUnconstructableAncestorInspection implemen
                 CoreSerializableClassWithUnconstructableAncestorInspection::reportSerializableClassWithUnconstructableAncestor));
     }
 
-    private static void reportSerializableClassWithUnconstructableAncestor(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportSerializableClassWithUnconstructableAncestor(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         Map<String, SyntaxNode> localTypeDeclarations = context.localTypeDeclarations();
         for (SyntaxNode classNode : context.nodesOfKind(JavaSyntaxKinds.CLASS_DECLARATION.id())) {
             Symbol classSymbol = context.declaredSymbol(classNode).orElse(null);
@@ -63,7 +71,8 @@ public class CoreSerializableClassWithUnconstructableAncestorInspection implemen
         JavaRuleContext context,
         String ancestorQualifiedName,
         String usageTypeQualifiedName,
-        Map<String, SyntaxNode> localTypeDeclarations) {
+        Map<String, SyntaxNode> localTypeDeclarations
+    ) {
         SyntaxNode localDeclaration = localTypeDeclarations.get(ancestorQualifiedName);
         if (localDeclaration != null)
             return hasAccessibleLocalNoArgConstructor(context, localDeclaration, ancestorQualifiedName,
@@ -94,7 +103,8 @@ public class CoreSerializableClassWithUnconstructableAncestorInspection implemen
         JavaRuleContext context,
         SyntaxNode typeNode,
         String ownerQualifiedName,
-        String usageTypeQualifiedName) {
+        String usageTypeQualifiedName
+    ) {
         List<SyntaxNode> constructors = new ArrayList<>();
         context.traverseDescendants(typeNode, node -> {
             if (!Objects.equals(JavaSyntaxKinds.CONSTRUCTOR_DECLARATION.id(), node.kind().id()))
@@ -154,7 +164,8 @@ public class CoreSerializableClassWithUnconstructableAncestorInspection implemen
         String ownerQualifiedName,
         String usageTypeQualifiedName,
         int modifiers,
-        String ownerPackageName) {
+        String ownerPackageName
+    ) {
         if (Modifier.isPublic(modifiers))
             return true;
 

@@ -15,8 +15,20 @@ public final class SimpleSymbol implements Symbol {
     private final @Nullable String qualifiedName;
     private final @Nullable SyntaxNode declaration;
 
-    public SimpleSymbol(SymbolKind kind, String simpleName, @Nullable String qualifiedName,
-        @Nullable SyntaxNode declaration) {
+    /**
+     * Creates a symbol with a nonblank simple name and optional qualified name and declaration.
+     *
+     * @param kind the symbol category
+     * @param simpleName the nonblank unqualified symbol name
+     * @param qualifiedName the qualified symbol name, or {@code null} if unavailable
+     * @param declaration the declaring syntax node, or {@code null} for a symbol without source syntax
+     */
+    public SimpleSymbol(
+        SymbolKind kind,
+        String simpleName,
+        @Nullable String qualifiedName,
+        @Nullable SyntaxNode declaration
+    ) {
         this.kind = Objects.requireNonNull(kind, "kind");
         this.simpleName = Objects.requireNonNull(simpleName, "simpleName");
         if (simpleName.isBlank())

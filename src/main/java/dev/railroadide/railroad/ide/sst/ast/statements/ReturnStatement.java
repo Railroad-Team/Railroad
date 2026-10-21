@@ -11,9 +11,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * A return from a callable, optionally supplying a result expression.
+ *
+ * @param span source range occupied by this node
+ * @param expression optional result expression; empty for a return without a value
+ */
 public record ReturnStatement(
     Span span,
-    Optional<Expression> expression) implements Statement {
+    Optional<Expression> expression
+) implements Statement {
     @Override
     public AstKind kind() {
         return AstKind.RETURN_STATEMENT;

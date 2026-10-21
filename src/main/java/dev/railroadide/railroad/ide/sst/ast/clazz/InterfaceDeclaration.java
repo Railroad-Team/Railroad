@@ -14,6 +14,17 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * An interface declaration with generic parameters, extended interfaces, and body declarations.
+ *
+ * @param span source range occupied by this node
+ * @param modifiers modifiers attached to the declaration
+ * @param annotations annotations attached to this node
+ * @param name declared interface name
+ * @param typeParameters declared type parameters
+ * @param extendsTypes extended interface types
+ * @param declarations contained declarations in source order
+ */
 public record InterfaceDeclaration(
     Span span,
     List<Modifier> modifiers,
@@ -21,7 +32,8 @@ public record InterfaceDeclaration(
     NameExpression name,
     List<TypeParameter> typeParameters,
     List<TypeRef> extendsTypes,
-    List<ClassBodyDeclaration> declarations) implements TypeDeclaration {
+    List<ClassBodyDeclaration> declarations
+) implements TypeDeclaration {
     @Override
     public AstKind kind() {
         return AstKind.INTERFACE_DECLARATION;

@@ -10,7 +10,7 @@
     -fx-icon-color: #cd4b55 !important;
 }
 
-.stop-button:hover .ikonli-font-icon{
+.stop-button:hover .ikonli-font-icon {
     -fx-icon-color: #e5737a !important;
 }
 
@@ -71,27 +71,211 @@
     -fx-icon-color: #f59aa4 !important;
 }
 
-.run-configuration-editor-empty-state {
-    -fx-spacing: 8px;
-    -fx-padding: 20px;
+.run-configuration-editor-pane {
+    -fx-background-color: -color-surface-frame;
+    -fx-padding: 0;
+    -fx-spacing: 0;
+    -fx-pref-width: 72em;
+    -fx-pref-height: 48em;
 }
 
-.run-configuration-editor-empty-state-description {
-    -fx-max-width: 320px;
+.run-configuration-editor-header {
+    -fx-background-color: -color-surface-panel;
+    -fx-padding: 1em 1.25em;
+    -fx-spacing: 0.25em;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.run-configuration-editor-title {
+    -fx-font-size: 1.15em;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.run-configuration-editor-project {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 0.93em;
+}
+
+.run-configuration-editor-split-pane {
+    -fx-background-color: -color-surface-panel;
+    -fx-padding: 0;
+}
+
+.run-configuration-editor-split-pane > .split-pane-divider {
+    -fx-background-color: -color-border-subtle;
+    -fx-padding: 0 0.5px;
+}
+
+.run-configuration-editor-sidebar {
+    -fx-background-color: -color-surface-panel;
+    -fx-min-width: 16em;
+    -fx-pref-width: 19em;
 }
 
 .run-configuration-editor-top-bar {
-    -fx-spacing: 5px;
-    -fx-padding: 5px;
+    -fx-background-color: transparent;
+    -fx-spacing: 0.5em;
+    -fx-padding: 0.75em;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.run-configuration-tree-view {
+    -fx-background-color: -color-surface-panel;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 0.5em;
+}
+
+.run-configuration-tree-view .tree-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -color-fg-default;
+    -fx-padding: 0.35em 0.5em;
+    -fx-background-radius: 0.25em;
+    -fx-graphic-text-gap: 0.5em;
+}
+
+.run-configuration-tree-view .tree-cell:filled:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.run-configuration-tree-view .tree-cell:filled:selected {
+    -fx-background-color: -color-accent-muted;
+}
+
+.run-configuration-tree-view .tree-disclosure-node > .arrow {
+    -fx-background-color: -color-fg-muted;
+}
+
+.run-configuration-tree-icon {
+    -fx-icon-size: 14px;
+}
+
+.run-configuration-details-pane,
+.run-configuration-form-scroll,
+.run-configuration-form-scroll > .viewport {
+    -fx-background-color: -color-surface-editor;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+}
+
+.run-configuration-editor-pane .form-root {
+    -fx-background-color: transparent;
+    -fx-padding: 1.25em;
+    -fx-spacing: 1em;
+}
+
+.run-configuration-editor-pane .form-section-root {
+    -fx-background-color: -color-surface-panel;
+    -fx-background-radius: 0.5em;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 0.5em;
+    -fx-padding: 1em;
+    -fx-spacing: 0.75em;
+}
+
+.run-configuration-editor-pane .form-section-title {
+    -fx-font-size: 1em;
+    -fx-font-weight: bold;
+    -fx-fill: -color-fg-default;
+}
+
+.run-configuration-editor-pane .field-container,
+.run-configuration-editor-pane .form-field-group,
+.run-configuration-editor-pane .form-radio-button-group,
+.run-configuration-editor-pane .runconfig-picker,
+.run-configuration-editor-pane .runconfig-picker-toolbar,
+.run-configuration-editor-pane .field-vertical-layout {
+    -fx-background-color: transparent;
+    -fx-spacing: 0.5em;
+}
+
+.run-configuration-editor-pane .rr-button.primary .ikonli-font-icon {
+    -fx-icon-color: -color-fg-emphasis;
+    -fx-fill: -color-fg-emphasis;
+}
+
+.run-configuration-editor-pane .field-label {
+    -fx-min-width: 3em;
+}
+
+.run-configuration-editor-pane .form-file-input,
+.run-configuration-editor-pane .form-directory-input {
+    -fx-background-color: transparent;
+}
+
+.run-configuration-editor-pane .text-area.error {
+    -fx-border-color: -color-danger-emphasis;
+    -fx-border-width: 1px;
+}
+
+.run-configuration-editor-pane .combo-box {
+    -fx-max-width: infinity;
+}
+
+.run-configuration-editor-pane .run-configuration-runtime-picker {
+    -fx-min-width: 16em;
+    -fx-pref-width: 28em;
+    -fx-min-height: 5.5em;
+    -fx-pref-height: 5.5em;
+    -fx-max-height: 5.5em;
+}
+
+.run-configuration-runtime-picker .detected-jdk-cell {
+    -fx-spacing: 0.75em;
+}
+
+.run-configuration-runtime-picker .detected-jdk-name,
+.run-configuration-runtime-picker .detected-jdk-path {
+    -fx-font-size: 0.85em;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.run-configuration-editor-empty-state {
+    -fx-background-color: -color-surface-editor;
+    -fx-spacing: 0.75em;
+    -fx-padding: 2em;
+}
+
+.run-configuration-editor-empty-state-icon {
+    -fx-icon-size: 28px;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.run-configuration-editor-empty-state-title {
+    -fx-font-size: 1.15em;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.run-configuration-editor-empty-state-description {
+    -fx-max-width: 28em;
+    -fx-text-alignment: center;
+    -fx-text-fill: -color-fg-muted;
 }
 
 .run-configuration-editor-bottom-bar {
-    -fx-spacing: 5px;
-    -fx-padding: 5px 10px;
+    -fx-background-color: -color-surface-panel;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px 0 0 0;
+    -fx-spacing: 0.5em;
+    -fx-padding: 0.75em 1em;
 }
 
 .run-config-combobox {
-    -fx-pref-width: 200px;
+    -fx-min-width: 16em;
+    -fx-pref-width: 20em;
+}
+
+.add-run-configuration-button {
+    -fx-font-size: 1em;
+    -fx-min-height: 2em;
+    -fx-pref-height: 2em;
+    -fx-padding: 0 0.5em;
 }
 
 .runconfig-gradle-jdk-combobox {

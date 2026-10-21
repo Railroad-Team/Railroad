@@ -9,9 +9,9 @@ import static dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectio
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class CoreSerializationInspectionTest {
+public class CoreSerializationInspectionTest {
     @Test
-    void coreSerializationRuleEmitsDiagnosticForDirectAncestorWithoutNoArgConstructor() {
+    public void coreSerializationRuleEmitsDiagnosticForDirectAncestorWithoutNoArgConstructor() {
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreSerializableClassWithUnconstructableAncestorInspection(), """
                 import java.io.Serializable;
@@ -30,7 +30,7 @@ class CoreSerializationInspectionTest {
     }
 
     @Test
-    void coreSerializationRuleEmitsDiagnosticForIndirectNonSerializableAncestor() {
+    public void coreSerializationRuleEmitsDiagnosticForIndirectNonSerializableAncestor() {
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreSerializableClassWithUnconstructableAncestorInspection(), """
                 import java.io.Serializable;
@@ -53,7 +53,7 @@ class CoreSerializationInspectionTest {
     }
 
     @Test
-    void coreSerializationRuleEmitsDiagnosticForPrivateNoArgConstructor() {
+    public void coreSerializationRuleEmitsDiagnosticForPrivateNoArgConstructor() {
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreSerializableClassWithUnconstructableAncestorInspection(), """
                 import java.io.Serializable;
@@ -72,7 +72,7 @@ class CoreSerializationInspectionTest {
     }
 
     @Test
-    void coreSerializationRuleDoesNotEmitDiagnosticForImplicitDefaultConstructor() {
+    public void coreSerializationRuleDoesNotEmitDiagnosticForImplicitDefaultConstructor() {
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreSerializableClassWithUnconstructableAncestorInspection(), """
                 import java.io.Serializable;
@@ -89,7 +89,7 @@ class CoreSerializationInspectionTest {
     }
 
     @Test
-    void coreSerializationRuleDoesNotEmitDiagnosticForAccessibleProtectedNoArgConstructor() {
+    public void coreSerializationRuleDoesNotEmitDiagnosticForAccessibleProtectedNoArgConstructor() {
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreSerializableClassWithUnconstructableAncestorInspection(), """
                 import java.io.Serializable;
@@ -107,7 +107,7 @@ class CoreSerializationInspectionTest {
     }
 
     @Test
-    void coreSerializationRuleDoesNotEmitDiagnosticForNestedAncestorImplicitPackagePrivateNoArgConstructor() {
+    public void coreSerializationRuleDoesNotEmitDiagnosticForNestedAncestorImplicitPackagePrivateNoArgConstructor() {
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreSerializableClassWithUnconstructableAncestorInspection(), """
                 import java.io.Serializable;
@@ -126,7 +126,7 @@ class CoreSerializationInspectionTest {
     }
 
     @Test
-    void coreSerializationRuleDoesNotEmitDiagnosticForNonSerializableClass() {
+    public void coreSerializationRuleDoesNotEmitDiagnosticForNonSerializableClass() {
         List<SemanticDiagnostic> diagnostics = runProvider(
             new CoreSerializableClassWithUnconstructableAncestorInspection(), """
                 class Base {

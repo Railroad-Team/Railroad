@@ -10,9 +10,9 @@ import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class SyntaxPublicationTest {
+public class SyntaxPublicationTest {
     @Test
-    void coldChildCachePublishesStableIdentitiesAndCopiesGreenInputs() throws Exception {
+    public void coldChildCachePublishesStableIdentitiesAndCopiesGreenInputs() throws Exception {
         var tokens = new ArrayList<GreenElement>(List.of(new GreenToken(SyntaxKind.ROOT, "ab")));
         var nested = new GreenNode(SyntaxKind.ROOT, tokens);
         var children = new ArrayList<GreenElement>(List.of(nested));

@@ -70,7 +70,8 @@ public final class SyntaxTree {
         DocumentId documentId,
         DocumentUri documentUri,
         DocumentVersion documentVersion,
-        SyntaxNode root) {
+        SyntaxNode root
+    ) {
         this(compatibilitySnapshot(documentId, documentUri, documentVersion, root), root);
     }
 
@@ -135,7 +136,8 @@ public final class SyntaxTree {
         DocumentId documentId,
         DocumentUri documentUri,
         DocumentVersion documentVersion,
-        SyntaxNode root) {
+        SyntaxNode root
+    ) {
         return new TextDocumentSnapshot(
             Objects.requireNonNull(documentId, "documentId"),
             Objects.requireNonNull(documentUri, "documentUri"),

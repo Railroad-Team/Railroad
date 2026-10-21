@@ -19,7 +19,8 @@ public record DiffFile(
     @Nullable Path newPath,
     boolean isBinary,
     List<String> headers,
-    List<DiffHunk> hunks) {
+    List<DiffHunk> hunks
+) {
     /**
      * Returns whether the file was newly added in this diff.
      *

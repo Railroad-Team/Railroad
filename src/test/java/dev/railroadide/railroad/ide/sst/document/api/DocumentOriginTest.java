@@ -7,9 +7,9 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class DocumentOriginTest {
+public class DocumentOriginTest {
     @Test
-    void copiesSourcesAndExposesAnImmutableList() {
+    public void copiesSourcesAndExposesAnImmutableList() {
         var reference = new OriginReference(DocumentUri.parse("jar:file:///library.jar!/A.class"));
         var sources = new ArrayList<>(List.of(reference));
         var origin = new DocumentOrigin(BackingKind.VIRTUAL, ProvenanceKind.DECOMPILED, sources);
@@ -21,7 +21,7 @@ class DocumentOriginTest {
     }
 
     @Test
-    void rejectsMissingMetadataAndSources() {
+    public void rejectsMissingMetadataAndSources() {
         assertThrows(NullPointerException.class, () -> new DocumentOrigin(null, ProvenanceKind.ORIGINAL));
         assertThrows(NullPointerException.class, () -> new DocumentOrigin(BackingKind.FILE, null));
         assertThrows(NullPointerException.class,
@@ -34,7 +34,7 @@ class DocumentOriginTest {
     }
 
     @Test
-    void compatibilityOriginUsesLocationWithoutGuessingProvenance() {
+    public void compatibilityOriginUsesLocationWithoutGuessingProvenance() {
         assertEquals(BackingKind.FILE, DocumentOrigin.unspecified(DocumentUri.parse("FILE:///A.java")).backing());
         assertEquals(BackingKind.MEMORY, DocumentOrigin.unspecified(DocumentUri.virtual("memory", "A.java")).backing());
         assertEquals(BackingKind.ARCHIVE_ENTRY,

@@ -25,20 +25,39 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Map;
 
 /**
  * Diagnostics provider backed by the SST semantic analyzer.
+ *
+ * @param project project being analyzed
+ * @param projectIndex shared symbol index, or null to resolve it from the project
  */
-public record JavaDiagnosticsProvider(Project project,
-    @Nullable JavaSymbolIndex projectIndex) implements DiagnosticsProvider<TextEditorDiagnostic> {
+public record JavaDiagnosticsProvider(
+    Project project,
+    @Nullable JavaSymbolIndex projectIndex
+) implements DiagnosticsProvider<TextEditorDiagnostic> {
+    /**
+     * Creates diagnostics without project indexing; the snapshot supplies the source path.
+     */
     public JavaDiagnosticsProvider() {
         this(null, null);
     }
 
+    /**
+     * Creates diagnostics that resolve a symbol index from the supplied project.
+     *
+     * @param project the project being analyzed
+     */
     public JavaDiagnosticsProvider(Project project) {
         this(project, null);
     }
 
+    /**
+     * Creates diagnostics using the symbol index shared by a project scan.
+     *
+     * @param context the project and semantic context to inspect
+     */
     public JavaDiagnosticsProvider(ProjectDiagnosticsContext context) {
         this(context.project(), context.javaSymbolIndex());
     }
@@ -91,8 +110,12 @@ public record JavaDiagnosticsProvider(Project project,
         return List.copyOf(diagnostics);
     }
 
-    private List<SemanticDiagnostic> runRegisteredInspections(Path filePath, String document,
-        SemanticModel semanticModel, JavaSymbolIndex symbolIndex) {
+    private List<SemanticDiagnostic> runRegisteredInspections(
+        Path filePath,
+        String document,
+        SemanticModel semanticModel,
+        JavaSymbolIndex symbolIndex
+    ) {
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
         var context = new JavaRuleContext(filePath, document, semanticModel, symbolIndex);
         JavaInspectionReporter reporter = diagnostic -> diagnostics
@@ -115,8 +138,8 @@ public record JavaDiagnosticsProvider(Project project,
 
     private static List<JavaInspectionRuleProvider> sortedRuleProviders() {
         return JavaInspectionRegistries.ruleProviderEntries().entrySet().stream()
-            .sorted(java.util.Map.Entry.comparingByKey())
-            .map(java.util.Map.Entry::getValue)
+            .sorted(Map.Entry.comparingByKey())
+            .map(Map.Entry::getValue)
             .toList();
     }
 }

@@ -11,9 +11,19 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Converts Fabric entrypoint arrays between string or object entries and entrypoint models.
+ */
 public class EntrypointListTypeAdapter extends TypeAdapter<List<Entrypoint>> {
     private final Gson gson = new Gson();
 
+    /**
+     * Reads an entrypoint array, skipping null entries and supplying missing default adapters.
+     *
+     * @param in the reader positioned at the array
+     * @return the entrypoints in their input order
+     * @throws IOException if reading fails or an entry has an unsupported JSON token
+     */
     @Override
     public List<Entrypoint> read(JsonReader in) throws IOException {
         List<Entrypoint> entrypoints = new ArrayList<>();
@@ -44,6 +54,14 @@ public class EntrypointListTypeAdapter extends TypeAdapter<List<Entrypoint>> {
         return entrypoints;
     }
 
+    /**
+     * Writes default-adapter entrypoints as strings and other entrypoints as objects.
+     * A null list is written as JSON null.
+     *
+     * @param out the destination JSON writer
+     * @param value the entrypoint list to serialize, or {@code null}
+     * @throws IOException if writing fails
+     */
     @Override
     public void write(JsonWriter out, List<Entrypoint> value) throws IOException {
         if (value == null) {

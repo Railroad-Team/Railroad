@@ -12,14 +12,27 @@ import javafx.stage.Stage;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Forwards a stage's mouse and keyboard events to the application event bus.
+ * Retains the installed handlers so they can be removed together.
+ */
 public class WindowEvents {
     private final Stage stage;
     private final List<TrackedEventHandler<?>> eventHandlers = new ArrayList<>();
 
+    /**
+     * Creates an event tracker without installing any handlers.
+     *
+     * @param stage the stage whose input events will be forwarded
+     */
     public WindowEvents(Stage stage) {
         this.stage = stage;
     }
 
+    /**
+     * Installs handlers that publish mouse and keyboard events to the application event bus.
+     * Each call installs another set of handlers; call {@link #stopTracking()} before restarting.
+     */
     public void beginTracking() {
         addEventHandler(MouseEvent.MOUSE_CLICKED, event -> Railroad.EVENT_BUS.publish(new MouseClickedEvent(event)));
 
@@ -50,6 +63,10 @@ public class WindowEvents {
         eventHandlers.add(new TrackedEventHandler<>(eventType, handler));
     }
 
+    /**
+     * Removes all handlers installed by this tracker and clears the tracked registrations.
+     * Calling this method when no handlers are registered has no effect.
+     */
     public void stopTracking() {
         for (TrackedEventHandler<?> trackedHandler : eventHandlers) {
             trackedHandler.unregister(stage);

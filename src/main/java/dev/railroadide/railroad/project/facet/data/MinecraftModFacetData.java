@@ -82,5 +82,10 @@ public abstract class MinecraftModFacetData {
      */
     private String minecraftVersion;
 
+    /**
+     * Returns the version of the mod loader used by this project.
+     *
+     * @return the loader version, or null when it has not been populated
+     */
     public abstract String getLoaderVersion();
 }

@@ -8,13 +8,13 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JavaProjectSemanticPersistenceTest {
+public class JavaProjectSemanticPersistenceTest {
 
     @TempDir
-    Path tempDir;
+    public Path tempDir;
 
     @Test
-    void savesAndLoadsProjectSemanticIndex() throws Exception {
+    public void savesAndLoadsProjectSemanticIndex() throws Exception {
         Path root = tempDir.resolve("project");
         Path aFile = root.resolve("src/main/java/demo/A.java");
         Files.createDirectories(aFile.getParent());
@@ -39,7 +39,7 @@ class JavaProjectSemanticPersistenceTest {
     }
 
     @Test
-    void ignoresStaleManifestEntries() throws Exception {
+    public void ignoresStaleManifestEntries() throws Exception {
         Path root = tempDir.resolve("project");
         Path aFile = root.resolve("src/main/java/demo/A.java");
         Files.createDirectories(aFile.getParent());
@@ -68,7 +68,7 @@ class JavaProjectSemanticPersistenceTest {
     }
 
     @Test
-    void updatesPersistedSnapshotAfterOneFileChanges() throws Exception {
+    public void updatesPersistedSnapshotAfterOneFileChanges() throws Exception {
         Path root = tempDir.resolve("project");
         Path aFile = writeSource(root, "A.java", "class A {}");
         writeSource(root, "B.java", "class B {}");
@@ -87,7 +87,7 @@ class JavaProjectSemanticPersistenceTest {
     }
 
     @Test
-    void removesDeletedFileFromPersistedSnapshot() throws Exception {
+    public void removesDeletedFileFromPersistedSnapshot() throws Exception {
         Path root = tempDir.resolve("project");
         Path aFile = writeSource(root, "A.java", "class A {}");
         Path bFile = writeSource(root, "B.java", "class B {}");

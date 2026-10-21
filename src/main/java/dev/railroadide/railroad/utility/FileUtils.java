@@ -1,7 +1,12 @@
 package dev.railroadide.railroad.utility;
 
+import com.kodedu.terminalfx.Terminal;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.ui.setup.TerminalFactory;
+import dev.railroadide.railroad.ui.id.UIIds;
 import javafx.scene.Node;
+import javafx.scene.control.Tab;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -19,9 +24,12 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+/**
+ * Utility class for file operations.
+ */
 public final class FileUtils {
     private FileUtils() {
-        // Utility class, no instantiation
+        throw new UnsupportedOperationException("Instantiated utility class");
     }
 
     /**
@@ -71,15 +79,20 @@ public final class FileUtils {
     public static void updateKeyValuePair(String key, String value, Path file) throws IOException {
         var stringBuilder = new StringBuilder();
 
+        boolean found = false;
         List<String> lines = Files.readAllLines(file);
         for (String line : lines) {
             if (line.startsWith(key + "=")) {
+                found = true;
                 line = key + "=" + value;
             }
 
             stringBuilder.append(line).append("\n");
         }
 
+        if (!found) {
+            stringBuilder.append(key).append("=").append(value).append("\n");
+        }
         Files.writeString(file, stringBuilder.toString());
     }
 
@@ -274,6 +287,7 @@ public final class FileUtils {
         String extension = getExtension(path.toString());
         if (extension == null)
             return new FontIcon(FontAwesomeRegular.FILE);
+        extension = extension.toLowerCase(Locale.ROOT);
 
         return switch (extension) {
             case "png", "jpg", "jpeg", "gif", "bmp", "webp" -> new FontIcon(FontAwesomeRegular.FILE_IMAGE);
@@ -385,11 +399,24 @@ public final class FileUtils {
             return "0 B";
 
         int unit = 1024;
+        if (size < unit)
+            return size + " B";
+
         int exp = (int) (Math.log(size) / Math.log(unit));
-        char pre = "KMGTPE".charAt(exp - 1);
+        String prefixes = "KMGTPE";
+        exp = Math.min(exp, prefixes.length());
+        char pre = prefixes.charAt(exp - 1);
         return String.format("%.1f %sB", size / Math.pow(unit, exp), pre);
     }
 
+    /**
+     * Copies the contents of a directory to another directory.
+     *
+     * @param src the source directory
+     * @param dst the destination directory
+     * @param options options specifying how the copy should be done
+     * @throws RuntimeException if an error occurs during copying
+     */
     public static void copyDirectoryContents(Path src, Path dst, CopyOption... options) {
         try (Stream<Path> files = Files.walk(src)) {
             files.forEach(source -> {
@@ -438,5 +465,28 @@ public final class FileUtils {
             return null;
 
         return path.toAbsolutePath().normalize();
+    }
+
+    /**
+     * Opens a terminal in the specified path.
+     *
+     * @param path the path to open the terminal in
+     */
+    public static void openInTerminal(Path path) {
+        Services.UI_MANAGER.lookup(UIIds.IDE.IDE_BOTTOM_DOCK).ifPresent(pane -> {
+            Terminal terminal = TerminalFactory.create(Files.isDirectory(path) ? path : path.getParent());
+            if (!Files.isDirectory(path)) {
+                terminal.onTerminalFxReady(() -> terminal.command(path.getFileName().toString()));
+            }
+
+            Tab terminalTab = pane.addTab("Terminal (" +
+                pane.getTabs()
+                    .stream()
+                    .filter(tab -> tab.getContent() instanceof Terminal)
+                    .count()
+                + ")", terminal);
+
+            pane.getSelectionModel().select(terminalTab);
+        });
     }
 }

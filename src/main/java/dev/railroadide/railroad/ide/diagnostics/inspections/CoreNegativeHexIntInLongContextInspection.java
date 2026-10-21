@@ -18,8 +18,14 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#NEGATIVE_HEX_INT_IN_LONG_CONTEXT}.
+ */
 @RegisteredInspection
 public class CoreNegativeHexIntInLongContextInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-negative-hex-int-in-long-context";
 
     @Override
@@ -38,8 +44,10 @@ public class CoreNegativeHexIntInLongContextInspection implements JavaInspection
                 CoreNegativeHexIntInLongContextInspection::reportNegativeHexIntInLongContext));
     }
 
-    private static void reportNegativeHexIntInLongContext(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportNegativeHexIntInLongContext(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode literalExprNode : context.nodesOfKinds(JavaSyntaxKinds.LITERAL_EXPRESSION.id())) {
             if (!isHexIntegerLiteral(literalExprNode))
                 continue;

@@ -11,10 +11,10 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests for the {@link JarsignerCLIBuilder} class, ensuring correct argument construction and behavior
  * for the `jarsigner` command-line tool.
  */
-class JarsignerCLIBuilderTest {
+public class JarsignerCLIBuilderTest {
 
     @Test
-    void signConfiguresOperationAndClearsVerifyAliases() {
+    public void signConfiguresOperationAndClearsVerifyAliases() {
         JarsignerCLIBuilder builder = JarsignerCLIBuilder.create(TestJdks.create(21));
         builder.verify("old.jar", "alpha");
         builder.sign("app.jar", "releaseAlias");
@@ -28,7 +28,7 @@ class JarsignerCLIBuilderTest {
     }
 
     @Test
-    void verifyCollectsAliasesAndClearsSigningAlias() {
+    public void verifyCollectsAliasesAndClearsSigningAlias() {
         JarsignerCLIBuilder builder = JarsignerCLIBuilder.create(TestJdks.create(21));
         builder.sign("app.jar", "releaseAlias");
         builder.verify("bundle.jar", "alpha", "beta");
@@ -42,7 +42,7 @@ class JarsignerCLIBuilderTest {
     }
 
     @Test
-    void storePasswordFromEnvironmentUsesExpectedSyntax() {
+    public void storePasswordFromEnvironmentUsesExpectedSyntax() {
         JarsignerCLIBuilder builder = JarsignerCLIBuilder.create(TestJdks.create(21));
         builder.storePasswordFromEnv("STORE_PASS");
 

@@ -15,11 +15,19 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 
+/**
+ * Displays searchable local and remote branch lists for a project.
+ */
 public class GitBranchesPane extends RRVBox {
     private final TextField searchBar;
     private final GitLocalBranchesListView localBranchesListView;
     private final GitRemoteBranchesListView remoteBranchesListView;
 
+    /**
+     * Creates searchable local and remote branch sections for the project.
+     *
+     * @param project project whose files and workspace are being displayed
+     */
     public GitBranchesPane(Project project) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_BRANCHES, this);
         searchBar = new RRTextField("railroad.git.branches.search.placeholder");

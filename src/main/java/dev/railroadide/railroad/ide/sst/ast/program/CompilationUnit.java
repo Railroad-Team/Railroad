@@ -16,12 +16,18 @@ import java.util.Optional;
  * <p>
  * A compilation unit contains an optional package declaration, zero or more imports, and
  * zero or more top-level type declarations. Start AST-based analysis here.
+ *
+ * @param span source range occupied by this node
+ * @param packageDeclaration optional package declaration
+ * @param importDeclarations import declarations in source order
+ * @param typeDeclarations top-level type declarations
  */
 public record CompilationUnit(
     Span span,
     Optional<PackageDeclaration> packageDeclaration,
     List<ImportDeclaration> importDeclarations,
-    List<TypeDeclaration> typeDeclarations) implements AstNode {
+    List<TypeDeclaration> typeDeclarations
+) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.COMPILATION_UNIT;

@@ -11,11 +11,20 @@ import java.util.Map;
 
 import static java.nio.file.StandardWatchEventKinds.*;
 
+/**
+ * Watches a directory tree for created, deleted, and modified entries.
+ */
 public class WatchTask extends Task<Void> {
     private final Path path;
     private final Map<WatchKey, Path> keys = new HashMap<>();
     private final FileChangeListener fileChangeListener;
 
+    /**
+     * Creates a task that watches the supplied directory tree.
+     *
+     * @param path filesystem path to operate on
+     * @param fileChangeListener callback receiving filesystem changes
+     */
     public WatchTask(Path path, FileChangeListener fileChangeListener) {
         this.path = path;
         this.fileChangeListener = fileChangeListener;
@@ -98,8 +107,17 @@ public class WatchTask extends Task<Void> {
         keys.put(key, dir);
     }
 
+    /**
+     * Receives filesystem changes from the watch task thread.
+     */
     @FunctionalInterface
     public interface FileChangeListener {
+        /**
+         * Handles a filesystem entry change on the watch task thread.
+         *
+         * @param path filesystem path to operate on
+         * @param kind filesystem event kind
+         */
         void onFileChange(Path path, WatchEvent.Kind<?> kind);
     }
 }

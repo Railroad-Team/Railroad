@@ -8,9 +8,21 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.Objects;
 import java.util.Set;
 
-final class SimpleJavaInspectionRule implements JavaInspectionRule {
+/**
+ * An inspection rule backed by immutable metadata and an evaluation callback.
+ */
+public final class SimpleJavaInspectionRule implements JavaInspectionRule {
+    /**
+     * Evaluates a rule and reports findings through its reporter.
+     */
     @FunctionalInterface
-    interface Evaluator {
+    public interface Evaluator {
+        /**
+         * Evaluates the inspection against the supplied source context.
+         *
+         * @param context source and semantic context to inspect
+         * @param reporter destination for reported diagnostics
+         */
         void evaluate(JavaRuleContext context, JavaInspectionRuleReporter reporter);
     }
 
@@ -20,12 +32,22 @@ final class SimpleJavaInspectionRule implements JavaInspectionRule {
     private final Set<String> tags;
     private final Evaluator evaluator;
 
-    SimpleJavaInspectionRule(
+    /**
+     * Creates an inspection rule, taking an immutable copy of its tags.
+     *
+     * @param id stable rule or provider identifier
+     * @param severity default diagnostic severity
+     * @param template format string for diagnostic messages
+     * @param tags categories used to group and enable the rule
+     * @param evaluator callback that evaluates this rule
+     */
+    public SimpleJavaInspectionRule(
         String id,
         SemanticDiagnostic.Severity severity,
         String template,
         Set<String> tags,
-        Evaluator evaluator) {
+        Evaluator evaluator
+    ) {
         this.id = Objects.requireNonNull(id, "id");
         this.severity = Objects.requireNonNull(severity, "severity");
         this.template = Objects.requireNonNull(template, "template");

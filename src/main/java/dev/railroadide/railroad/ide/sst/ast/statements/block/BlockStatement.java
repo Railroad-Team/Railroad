@@ -9,6 +9,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A brace-delimited sequence of statements.
+ *
+ * @param span source range occupied by this node
+ * @param statements statements in source order
+ */
 public record BlockStatement(Span span, List<Statement> statements) implements Statement {
     @Override
     public AstKind kind() {

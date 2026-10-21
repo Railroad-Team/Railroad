@@ -12,6 +12,12 @@ import dev.railroadide.railroad.project.onboarding.keys.MinecraftProjectKeys;
 
 import java.nio.file.Path;
 
+/**
+ * Renames the template Mixin configuration files using the mod ID and updates their mixin packages.
+ * Client configuration is processed as well when split sources are enabled.
+ *
+ * @param files service used to move, read, and rewrite the JSON configurations
+ */
 public record RenameMixinsStep(FilesService files) implements CreationStep {
     @Override
     public String id() {

@@ -11,9 +11,16 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleReporter
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 
 import java.util.*;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#DUPLICATE_DECLARATION}.
+ */
 @RegisteredInspection
 public final class CoreDuplicateDeclarationInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-duplicate-declaration";
     private static final String JAVA_BLOCK = "JAVA_BLOCK";
     private static final String JAVA_METHOD_DECLARATION = "JAVA_METHOD_DECLARATION";
@@ -46,8 +53,12 @@ public final class CoreDuplicateDeclarationInspection implements JavaInspectionR
     public List<JavaInspectionRule> rules() {
         return RULES;
     }
-    private static void visitScopes(JavaRuleContext context, SyntaxNode node, ScopeTracker scope,
-        JavaInspectionRuleReporter reporter) {
+    private static void visitScopes(
+        JavaRuleContext context,
+        SyntaxNode node,
+        ScopeTracker scope,
+        JavaInspectionRuleReporter reporter
+    ) {
         Symbol symbol = context.declaredSymbol(node).orElse(null);
         if (symbol != null && symbol.kind() != SymbolKind.IMPORT && !"_".equals(symbol.simpleName())) {
             if (JAVA_PATTERN.equals(node.kind().id())) {
@@ -87,7 +98,7 @@ public final class CoreDuplicateDeclarationInspection implements JavaInspectionR
                 parameterTypes.add("<unknown>");
             } else {
                 parameterTypes
-                    .add(context.hasTokenKind(child, dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType.ELLIPSIS)
+                    .add(context.hasTokenKind(child, JavaTokenType.ELLIPSIS)
                         ? typeText + "[]"
                         : typeText);
             }

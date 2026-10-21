@@ -14,7 +14,12 @@ import java.util.function.Consumer;
 public final class IDEContentRouter {
     private final IDEPane idePane;
 
-    IDEContentRouter(IDEPane idePane) {
+    /**
+     * Creates a content router for one IDE workspace.
+     *
+     * @param idePane workspace that owns the target editor panes
+     */
+    public IDEContentRouter(IDEPane idePane) {
         this.idePane = Objects.requireNonNull(idePane, "IDE pane cannot be null");
     }
 
@@ -33,6 +38,12 @@ public final class IDEContentRouter {
             .ifPresent(router -> router.routeOnApplicationThread(target, action)));
     }
 
+    /**
+     * Requests the destination workspace mode and runs the content action on the JavaFX application thread.
+     *
+     * @param target registered workspace destination for the content
+     * @param action operation to run when the destination mode is available and its pane is found
+     */
     public void route(WorkspaceContentTarget target, Consumer<DetachableTabPane> action) {
         Objects.requireNonNull(target, "Content target cannot be null");
         Objects.requireNonNull(action, "Content action cannot be null");

@@ -35,7 +35,8 @@ public record GitCommit(
     long committerTimestampEpochSeconds,
 
     List<String> parentHashes,
-    @Nullable String body) {
+    @Nullable String body
+) {
     /**
      * Creates a commit with only author metadata and optional parents.
      *
@@ -47,8 +48,15 @@ public record GitCommit(
      * @param authorTimestamp author timestamp in epoch seconds
      * @param parentHashes parent commit hashes
      */
-    public GitCommit(String hash, String shortHash, String subject, String authorName, String authorEmail,
-        long authorTimestamp, String... parentHashes) {
+    public GitCommit(
+        String hash,
+        String shortHash,
+        String subject,
+        String authorName,
+        String authorEmail,
+        long authorTimestamp,
+        String... parentHashes
+    ) {
         this(
             hash,
             shortHash,

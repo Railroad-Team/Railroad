@@ -11,8 +11,11 @@ import java.util.Objects;
 /**
  * A text property capable of localizing its content.
  * <p>
- * Bind a pre-exiting text property to it to use its behavior.
+ * Bind a pre-existing text property to it to use its behavior.
  * Use a bidirectional binding if you plan on also using un-localized text.
+ * Translations refresh when the language, key, or arguments change. Directly setting text to a value
+ * different from the last translation disables language-driven refreshes until the key or arguments
+ * change, or {@link #setTranslation(String, Object...)} is called.
  */
 public class LocalizedTextProperty extends StringPropertyBase {
     private static final String DEFAULT_NAME = "";
@@ -25,12 +28,13 @@ public class LocalizedTextProperty extends StringPropertyBase {
     private String translated;
 
     /**
-     * The constructor of {@code LocalizedTextProperty}
+     * Creates a property and immediately translates its initial key with the supplied arguments.
      *
      * @param bean the bean of this {@code StringProperty}
-     * @param name the name of this {@code StringProperty}
-     * @param initialValue the initial value of the wrapped value
+     * @param name the name of this {@code StringProperty}, or {@code null} for an empty name
+     * @param initialValue the initial translation key, or {@code null} for a null text value
      * @param args optional args to format the localized string
+     * @throws NullPointerException if the argument array is {@code null}
      */
     public LocalizedTextProperty(Object bean, String name, String initialValue, Object... args) {
         super("");
@@ -47,6 +51,10 @@ public class LocalizedTextProperty extends StringPropertyBase {
         updateTranslation(true);
     }
 
+    /**
+     * Installs listeners for language, key, and argument changes. Key and argument changes reactivate
+     * translation after a direct text assignment; language changes preserve that inactive state.
+     */
     protected void initialize() {
         L18n.currentLanguageProperty()
             .addListener(_ -> updateTranslation(false));
@@ -88,6 +96,7 @@ public class LocalizedTextProperty extends StringPropertyBase {
         }
     }
 
+    /** Disables automatic translation when the text differs from the last translated value. */
     @Override
     protected void invalidated() {
         if (!Objects.equals(get(), translated)) {
@@ -96,7 +105,9 @@ public class LocalizedTextProperty extends StringPropertyBase {
     }
 
     /**
-     * {@inheritDoc}
+     * Returns the owning bean supplied at construction.
+     *
+     * @return the owning bean, which may be {@code null}
      */
     @Override
     public Object getBean() {
@@ -104,7 +115,9 @@ public class LocalizedTextProperty extends StringPropertyBase {
     }
 
     /**
-     * {@inheritDoc}
+     * Returns the name supplied at construction, with {@code null} normalized to an empty string.
+     *
+     * @return the non-null property name
      */
     @Override
     public String getName() {
@@ -112,16 +125,29 @@ public class LocalizedTextProperty extends StringPropertyBase {
     }
 
     /**
-     * @return A property containing this property's translationKey
+     * Exposes the key property used to select the translation. Changes trigger a translation refresh.
+     *
+     * @return the writable translation-key property
      */
     public StringProperty translationKeyProperty() {
         return this.translationKey;
     }
 
+    /**
+     * Returns the key currently used to look up translated text.
+     *
+     * @return the translation key, or {@code null} when no key is set
+     */
     public String getTranslationKey() {
         return translationKey.get();
     }
 
+    /**
+     * Changes the translation key, treating null or whitespace-only keys as no translation.
+     * A changed key refreshes the text using the current arguments.
+     *
+     * @param translationKey the translation key, or {@code null} or blank to clear it
+     */
     public void setTranslationKey(String translationKey) {
         if (translationKey == null || translationKey.trim().isEmpty()) {
             this.translationKey.set(null);
@@ -131,16 +157,30 @@ public class LocalizedTextProperty extends StringPropertyBase {
     }
 
     /**
-     * @return A property containing this property's translation arguments
+     * Exposes the list property holding the translation's formatting arguments.
+     * Changes to the list trigger a translation refresh.
+     *
+     * @return the writable translation-argument list property
      */
     public ListProperty<Object> translationArgsProperty() {
         return this.translationArgs;
     }
 
+    /**
+     * Returns the live list of formatting arguments used by the translation.
+     *
+     * @return the observable argument list; mutations refresh the translated text
+     */
     public ObservableList<Object> getTranslationArgs() {
         return translationArgs.get();
     }
 
+    /**
+     * Replaces the formatting arguments. An empty array or a single null argument clears the list.
+     *
+     * @param args the replacement formatting arguments
+     * @throws NullPointerException if the argument array is {@code null}
+     */
     public void setTranslationArgs(Object... args) {
         if (args.length == 0 || (args.length == 1 && args[0] == null)) {
             this.translationArgs.clear();
@@ -149,6 +189,13 @@ public class LocalizedTextProperty extends StringPropertyBase {
         }
     }
 
+    /**
+     * Updates the key and arguments together, then translates once and reactivates automatic updates.
+     *
+     * @param translationKey the translation key, or {@code null} or blank to clear it
+     * @param args the replacement formatting arguments; an empty array or single null clears them
+     * @throws NullPointerException if the argument array is {@code null}
+     */
     public void setTranslation(String translationKey, Object... args) {
         blockedUpdates = true;
         setTranslationKey(translationKey);

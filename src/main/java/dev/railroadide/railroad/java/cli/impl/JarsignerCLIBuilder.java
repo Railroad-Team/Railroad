@@ -760,7 +760,18 @@ public class JarsignerCLIBuilder implements CLIBuilder<Process, JarsignerCLIBuil
      */
     @Getter
     public enum VerboseDetail {
-        ALL("all"), GROUPED("grouped"), SUMMARY("summary");
+        /**
+         * Displays each archive entry and, when requested, its signer certificates.
+         */
+        ALL("all"),
+        /**
+         * Groups entries with the same signer information.
+         */
+        GROUPED("grouped"),
+        /**
+         * Summarizes each group of entries with the same signer information.
+         */
+        SUMMARY("summary");
 
         private final String token;
 
@@ -774,7 +785,9 @@ public class JarsignerCLIBuilder implements CLIBuilder<Process, JarsignerCLIBuil
      */
     @Getter
     private enum PasswordSource {
-        DIRECT(""), ENVIRONMENT(":env"), FILE(":file");
+        DIRECT(""),
+        ENVIRONMENT(":env"),
+        FILE(":file");
 
         private final String suffix;
 
@@ -788,7 +801,9 @@ public class JarsignerCLIBuilder implements CLIBuilder<Process, JarsignerCLIBuil
      */
     @Getter
     private enum OperationMode {
-        SIGN(null), VERIFY("-verify"), VERSION("-version");
+        SIGN(null),
+        VERIFY("-verify"),
+        VERSION("-version");
 
         private final String flag;
 

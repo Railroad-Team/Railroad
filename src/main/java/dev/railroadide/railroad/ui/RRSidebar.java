@@ -10,18 +10,37 @@ import javafx.util.Duration;
 import lombok.Getter;
 
 /**
- * A modern sidebar component with enhanced styling and smooth transitions.
- * Perfect for navigation menus and side panels.
+ * A styled sidebar with header, growing content, and footer containers, plus collapse transitions.
  */
 public class RRSidebar extends VBox {
     private SidebarPosition position = SidebarPosition.LEFT;
     private SidebarSize size = SidebarSize.MEDIUM;
+    /**
+     * The requested collapse state, updated before any transition completes.
+     *
+     * @return whether the sidebar is marked collapsed
+     */
     @Getter
     private boolean isCollapsed = false;
+    /**
+     * The container above the main sidebar content.
+     *
+     * @return the mutable header container
+     */
     @Getter
     private VBox header;
+    /**
+     * The central container that receives remaining vertical space.
+     *
+     * @return the mutable main content container
+     */
     @Getter
     private VBox content;
+    /**
+     * The container below the main sidebar content.
+     *
+     * @return the mutable footer container
+     */
     @Getter
     private VBox footer;
 
@@ -35,7 +54,8 @@ public class RRSidebar extends VBox {
     /**
      * Constructs a new sidebar with the specified position.
      *
-     * @param position the position of the sidebar (LEFT or RIGHT)
+     * @param position the position style and collapse direction of the sidebar
+     * @throws NullPointerException if {@code position} is {@code null}
      */
     public RRSidebar(SidebarPosition position) {
         this.position = position;
@@ -65,7 +85,11 @@ public class RRSidebar extends VBox {
     }
 
     /**
-     * Set the sidebar position
+     * Updates the position style and direction used by subsequent collapse transitions.
+     * This does not place the sidebar in its parent's layout.
+     *
+     * @param position position variant to apply
+     * @throws NullPointerException if {@code position} is {@code null}
      */
     public void setPosition(SidebarPosition position) {
         this.position = position;
@@ -73,7 +97,10 @@ public class RRSidebar extends VBox {
     }
 
     /**
-     * Set the sidebar size
+     * Updates the sidebar's CSS size variant.
+     *
+     * @param size size variant to apply
+     * @throws NullPointerException if {@code size} is {@code null}
      */
     public void setSidebarSize(SidebarSize size) {
         this.size = size;
@@ -81,7 +108,9 @@ public class RRSidebar extends VBox {
     }
 
     /**
-     * Set the sidebar as collapsed
+     * Updates the collapse flag and starts translation and opacity transitions when it changes.
+     *
+     * @param collapsed whether to mark the sidebar collapsed
      */
     public void setCollapsed(boolean collapsed) {
         if (this.isCollapsed != collapsed) {
@@ -91,56 +120,64 @@ public class RRSidebar extends VBox {
     }
 
     /**
-     * Toggle collapse state
+     * Reverses the collapse flag and starts the corresponding transitions.
      */
     public void toggleCollapse() {
         setCollapsed(!isCollapsed);
     }
 
     /**
-     * Add content to the header
+     * Appends nodes to the header container.
+     *
+     * @param nodes nodes to append in layout order
      */
     public void addHeaderContent(Node... nodes) {
         header.getChildren().addAll(nodes);
     }
 
     /**
-     * Add content to the main content area
+     * Appends nodes to the main content container.
+     *
+     * @param nodes nodes to append in layout order
      */
     public void addContent(Node... nodes) {
         content.getChildren().addAll(nodes);
     }
 
     /**
-     * Add content to the footer
+     * Appends nodes to the footer container.
+     *
+     * @param nodes nodes to append in layout order
      */
     public void addFooterContent(Node... nodes) {
         footer.getChildren().addAll(nodes);
     }
 
     /**
-     * Clear header content
+     * Removes every node from the header container.
      */
     public void clearHeader() {
         header.getChildren().clear();
     }
 
     /**
-     * Clear main content
+     * Removes every node from the main content container.
      */
     public void clearContent() {
         content.getChildren().clear();
     }
 
     /**
-     * Clear footer content
+     * Removes every node from the footer container.
      */
     public void clearFooter() {
         footer.getChildren().clear();
     }
 
     /**
-     * Set the sidebar as floating
+     * Toggles the floating CSS style.
+     *
+     * @param floating whether to apply floating styling
      */
     public void setFloating(boolean floating) {
         if (floating) {
@@ -151,7 +188,9 @@ public class RRSidebar extends VBox {
     }
 
     /**
-     * Set the sidebar as transparent
+     * Toggles the transparent CSS style.
+     *
+     * @param transparent whether to apply transparent styling
      */
     public void setTransparent(boolean transparent) {
         if (transparent) {
@@ -195,11 +234,25 @@ public class RRSidebar extends VBox {
         }
     }
 
+    /**
+     * Sidebar position variants that determine styling and collapse direction.
+     */
     public enum SidebarPosition {
-        LEFT, RIGHT;
+        /** Left-side styling and a leftward collapse translation. */
+        LEFT,
+        /** Right-side styling and a rightward collapse translation. */
+        RIGHT;
     }
 
+    /**
+     * CSS size variants for a sidebar.
+     */
     public enum SidebarSize {
-        SMALL, MEDIUM, LARGE;
+        /** The small size variant. */
+        SMALL,
+        /** The default medium size variant. */
+        MEDIUM,
+        /** The large size variant. */
+        LARGE;
     }
 }

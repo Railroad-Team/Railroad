@@ -5,9 +5,11 @@ import dev.railroadide.railroad.Railroad;
 import java.util.HashMap;
 import java.util.Map;
 
+/** Registry and factory for logical contexts in which keybinds may be active. */
 public class KeybindContexts {
     private static final Map<String, KeybindContext> contexts = new HashMap<>();
 
+    /** Context marker that makes a keybind active in every context. */
     public static final KeybindContext ALL = registerContext(new KeybindContext("all"));
 
     /**
@@ -43,6 +45,11 @@ public class KeybindContexts {
         return contexts.get(id);
     }
 
+    /**
+     * Identifies a logical area or mode in which keybinds can be dispatched.
+     *
+     * @param id unique context identifier
+     */
     public record KeybindContext(String id) {
     }
 }

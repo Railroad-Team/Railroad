@@ -15,6 +15,11 @@ public final class NotImplementedPaneFactory {
     private NotImplementedPaneFactory() {
     }
 
+    /**
+     * Creates a localized placeholder for an unavailable feature.
+     *
+     * @return placeholder card node
+     */
     public static Node create() {
         var card = new RRCard(16);
         card.setAlignment(Pos.CENTER);

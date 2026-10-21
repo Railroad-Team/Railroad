@@ -10,16 +10,16 @@ import java.util.UUID;
 /**
  * Utility class for creating and retrieving JDK instances for testing purposes.
  */
-final class TestJdks {
+public final class TestJdks {
     private TestJdks() {
     }
 
-    static JDK create(int release) {
+    public static JDK create(int release) {
         Path home = Path.of("build", "test-jdk-" + release + "-" + UUID.randomUUID());
         return new JDK(home, "test-jdk-" + release, JavaVersion.fromMajor(release), JDK.Brand.UNKNOWN);
     }
 
-    static JDK currentRuntime() {
+    public static JDK currentRuntime() {
         String javaHome = System.getProperty("java.home");
         if (javaHome == null || javaHome.isBlank())
             throw new IllegalStateException("java.home property is not set");

@@ -1,6 +1,9 @@
 package dev.railroadide.railroad.ide.ui.git.sync;
 
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.command.CommandButtons;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.GitCommands;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.RRHBox;
@@ -16,7 +19,15 @@ import javafx.scene.control.ComboBox;
 import javafx.util.StringConverter;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
+/**
+ * Provides remote selection and synchronization actions.
+ */
 public class GitSyncControlsPane extends RRVBox {
+    /**
+     * Creates remote selection and synchronization controls for a repository.
+     *
+     * @param gitManager repository service supplying state and Git operations
+     */
     public GitSyncControlsPane(GitManager gitManager) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Git.GIT_SYNC_CONTROLS, this);
         getStyleClass().add("git-sync-controls-pane-root");
@@ -71,16 +82,19 @@ public class GitSyncControlsPane extends RRVBox {
 
         var fetchButton = new RRButton("railroad.git.sync.controls.fetch", FontAwesomeSolid.SYNC);
         fetchButton.getStyleClass().add("git-sync-controls-fetch-button");
-        fetchButton.setOnAction(_ -> gitManager.fetch());
+        CommandButtons.bind(fetchButton, GitCommands.FETCH,
+            () -> CommandContext.withArgument(null, this, gitManager));
 
         var pullButton = new RRButton("railroad.git.sync.controls.pull", FontAwesomeSolid.DOWNLOAD);
         pullButton.getStyleClass().add("git-sync-controls-pull-button");
-        pullButton.setOnAction(_ -> gitManager.pull());
+        CommandButtons.bind(pullButton, GitCommands.PULL,
+            () -> CommandContext.withArgument(null, this, gitManager));
 
         var pushButton = new RRButton("railroad.git.sync.controls.push", FontAwesomeSolid.PAPER_PLANE);
         pushButton.setVariant(ButtonVariant.SECONDARY);
         pushButton.getStyleClass().add("git-sync-controls-push-button");
-        pushButton.setOnAction(_ -> gitManager.push());
+        CommandButtons.bind(pushButton, GitCommands.PUSH,
+            () -> CommandContext.withArgument(null, this, gitManager));
 
         var buttonsHbox = new RRHBox(2, fetchButton, pullButton, pushButton);
         buttonsHbox.getStyleClass().add("git-sync-controls-buttons-hbox");

@@ -8,9 +8,9 @@ import java.util.List;
 import static dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectionTestSupport.runProvider;
 import static org.junit.jupiter.api.Assertions.*;
 
-class CoreConstantConditionalExpressionInspectionTest {
+public class CoreConstantConditionalExpressionInspectionTest {
     @Test
-    void coreConstantConditionalExpressionRuleFlagsHardcodedIfLiteral() {
+    public void coreConstantConditionalExpressionRuleFlagsHardcodedIfLiteral() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 void m() {
@@ -24,7 +24,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleFlagsHardcodedWhileLiteral() {
+    public void coreConstantConditionalExpressionRuleFlagsHardcodedWhileLiteral() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 void m() {
@@ -38,7 +38,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleFlagsHardcodedDoWhileLiteral() {
+    public void coreConstantConditionalExpressionRuleFlagsHardcodedDoWhileLiteral() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 void m() {
@@ -52,7 +52,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleFlagsHardcodedForLiteral() {
+    public void coreConstantConditionalExpressionRuleFlagsHardcodedForLiteral() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 void m() {
@@ -66,7 +66,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleFlagsHardcodedTernaryLiteral() {
+    public void coreConstantConditionalExpressionRuleFlagsHardcodedTernaryLiteral() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 void m() {
@@ -80,7 +80,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleFlagsUnaryCompileTimeConstant() {
+    public void coreConstantConditionalExpressionRuleFlagsUnaryCompileTimeConstant() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 void m() {
@@ -94,7 +94,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleFlagsBinaryCompileTimeConstant() {
+    public void coreConstantConditionalExpressionRuleFlagsBinaryCompileTimeConstant() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 void m() {
@@ -108,7 +108,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleFlagsNamedCompileTimeConstant() {
+    public void coreConstantConditionalExpressionRuleFlagsNamedCompileTimeConstant() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 static final boolean DEBUG = false;
@@ -124,7 +124,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleFlagsLocalDataFlowConstant() {
+    public void coreConstantConditionalExpressionRuleFlagsLocalDataFlowConstant() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 void m() {
@@ -139,7 +139,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleFlagsBranchNarrowedThenCondition() {
+    public void coreConstantConditionalExpressionRuleFlagsBranchNarrowedThenCondition() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 void m(boolean p) {
@@ -155,7 +155,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleFlagsBranchNarrowedElseCondition() {
+    public void coreConstantConditionalExpressionRuleFlagsBranchNarrowedElseCondition() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 void m(boolean p) {
@@ -172,7 +172,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleFlagsAssignmentDrivenDataFlowConstant() {
+    public void coreConstantConditionalExpressionRuleFlagsAssignmentDrivenDataFlowConstant() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 void m() {
@@ -188,7 +188,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleDoesNotLeakShadowedFactsAcrossScopes() {
+    public void coreConstantConditionalExpressionRuleDoesNotLeakShadowedFactsAcrossScopes() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 void m() {
@@ -207,7 +207,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleFlagsSingleStatementBranchNarrowing() {
+    public void coreConstantConditionalExpressionRuleFlagsSingleStatementBranchNarrowing() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 void m(boolean p) {
@@ -226,7 +226,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleFlagsLoopConditionFromKnownFact() {
+    public void coreConstantConditionalExpressionRuleFlagsLoopConditionFromKnownFact() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 void m() {
@@ -241,7 +241,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleDoesNotPreserveLoopFactWhenVariableIsUpdated() {
+    public void coreConstantConditionalExpressionRuleDoesNotPreserveLoopFactWhenVariableIsUpdated() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 void m() {
@@ -260,7 +260,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleDoesNotTreatNonFinalNamedValueAsCompileTimeConstant() {
+    public void coreConstantConditionalExpressionRuleDoesNotTreatNonFinalNamedValueAsCompileTimeConstant() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 static boolean DEBUG = false;
@@ -276,7 +276,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleProducesExpectedMessagesForEachRuleKind() {
+    public void coreConstantConditionalExpressionRuleProducesExpectedMessagesForEachRuleKind() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 static final boolean DEBUG = false;
@@ -304,7 +304,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleDoesNotDuplicateHardcodedAndCompileTimeReports() {
+    public void coreConstantConditionalExpressionRuleDoesNotDuplicateHardcodedAndCompileTimeReports() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 void m() {
@@ -320,7 +320,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleIgnoresWhileTrueIdiom() {
+    public void coreConstantConditionalExpressionRuleIgnoresWhileTrueIdiom() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 void m() {
@@ -338,7 +338,7 @@ class CoreConstantConditionalExpressionInspectionTest {
     }
 
     @Test
-    void coreConstantConditionalExpressionRuleDoesNotFlagDynamicExpressions() {
+    public void coreConstantConditionalExpressionRuleDoesNotFlagDynamicExpressions() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreConstantConditionalExpressionInspection(), """
             class Example {
                 boolean get() { return true; }

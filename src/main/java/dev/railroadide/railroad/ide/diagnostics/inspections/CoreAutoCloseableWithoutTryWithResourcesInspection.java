@@ -15,8 +15,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for {@link JavaSemanticRules#AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES}.
+ */
 @RegisteredInspection
 public class CoreAutoCloseableWithoutTryWithResourcesInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-auto-closeable-without-try-with-resources";
 
     @Override
@@ -35,8 +41,10 @@ public class CoreAutoCloseableWithoutTryWithResourcesInspection implements JavaI
                 CoreAutoCloseableWithoutTryWithResourcesInspection::reportAutoCloseableWithoutTryWithResources));
     }
 
-    private static void reportAutoCloseableWithoutTryWithResources(JavaRuleContext context,
-        JavaInspectionRuleReporter reporter) {
+    private static void reportAutoCloseableWithoutTryWithResources(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter
+    ) {
         for (SyntaxNode declarator : context.nodesOfKind(JavaSyntaxKinds.VARIABLE_DECLARATOR.id())) {
             SyntaxNode declaration = declarator.parent().orElse(null);
             if (declaration == null
@@ -73,8 +81,11 @@ public class CoreAutoCloseableWithoutTryWithResourcesInspection implements JavaI
         return false;
     }
 
-    private static String autoCloseableQualifiedTypeName(JavaRuleContext context, SyntaxNode declarator,
-        SyntaxNode initializer) {
+    private static String autoCloseableQualifiedTypeName(
+        JavaRuleContext context,
+        SyntaxNode declarator,
+        SyntaxNode initializer
+    ) {
         SyntaxNode declaration = declarator.parent().orElse(null);
         if (declaration != null) {
             SyntaxNode typeRef = context.directChild(declaration, JavaSyntaxKinds.TYPE_REFERENCE.id());

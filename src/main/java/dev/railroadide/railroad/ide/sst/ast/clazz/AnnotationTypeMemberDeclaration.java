@@ -15,13 +15,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * An annotation element declaration with a return type and optional default expression.
+ *
+ * @param span source range occupied by this node
+ * @param modifiers modifiers attached to the declaration
+ * @param annotations annotations attached to this node
+ * @param type declared return type of the annotation element
+ * @param name declared annotation element name
+ * @param defaultValue optional default annotation value
+ */
 public record AnnotationTypeMemberDeclaration(
     Span span,
     List<Modifier> modifiers,
     List<Annotation> annotations,
     TypeRef type,
     NameExpression name,
-    Optional<Expression> defaultValue) implements AnnotationMember {
+    Optional<Expression> defaultValue
+) implements AnnotationMember {
     @Override
     public AstKind kind() {
         return AstKind.ANNOTATION_TYPE_MEMBER_DECLARATION;

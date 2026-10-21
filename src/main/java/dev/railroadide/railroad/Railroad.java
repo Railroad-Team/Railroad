@@ -2,16 +2,15 @@ package dev.railroadide.railroad;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import de.codecentric.centerdevice.javafxsvg.SvgImageLoaderFactory;
-import de.codecentric.centerdevice.javafxsvg.dimension.PrimitiveDimensionProvider;
 import dev.railroadide.logger.Logger;
 import dev.railroadide.logger.LoggerManager;
 import dev.railroadide.logger.LoggerService;
+import dev.railroadide.railroad.command.Commands;
 import dev.railroadide.railroad.config.ConfigHandler;
-import dev.railroadide.railroad.ide.language.LanguageSupports;
 import dev.railroadide.railroad.ide.WorkspaceModes;
-import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
+import dev.railroadide.railroad.ide.language.LanguageSupports;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationTypes;
+import dev.railroadide.railroad.ide.ui.WorkspaceContentTargets;
 import dev.railroadide.railroad.java.JDKManager;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.localization.Languages;
@@ -59,7 +58,13 @@ import java.util.concurrent.ExecutorService;
  * starting the application and handling the main window of the application
  */
 public class Railroad extends Application {
+    /**
+     * The HTTP client used for making HTTP requests
+     */
     public static final OkHttpClient HTTP_CLIENT = new OkHttpClient();
+    /**
+     * The logger used for logging messages
+     */
     public static final Logger LOGGER = LoggerManager.create(Railroad.class)
         .service(LoggerService.builder()
             .logDirectory(ConfigHandler.getConfigDirectory().resolve("logs"))
@@ -67,8 +72,14 @@ public class Railroad extends Application {
             .addLogFile("latest.log")
             .build())
         .build();
+    /**
+     * The HTTP client used for making HTTP requests without following redirects
+     */
     public static final OkHttpClient HTTP_CLIENT_NO_FOLLOW = new OkHttpClient.Builder().followRedirects(false)
         .followSslRedirects(false).build();
+    /**
+     * The Gson instance used for JSON serialization and deserialization
+     */
     public static final Gson GSON = new GsonBuilder()
         .setPrettyPrinting()
         .disableHtmlEscaping()
@@ -76,13 +87,30 @@ public class Railroad extends Application {
         .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeTypeAdapter())
         .registerTypeHierarchyAdapter(Path.class, new PathTypeAdapter())
         .create();
+    /**
+     * The project manager used for managing projects
+     */
     public static final ProjectManager PROJECT_MANAGER = new ProjectManager();
+    /**
+     * The repository manager used for managing VCS repositories
+     */
     public static final RepositoryManager REPOSITORY_MANAGER = new RepositoryManager();
+    /**
+     * The event bus used for publishing and subscribing to events
+     */
     public static final EventBus EVENT_BUS = new DefaultEventBus();
+    /**
+     * The window manager used for managing application windows
+     */
     public static final WindowManager WINDOW_MANAGER = new WindowManager();
     private static HostServices hostServices;
     private volatile Throwable startupException;
 
+    /**
+     * The main method (entrypoint) of the application
+     *
+     * @param args The command line arguments
+     */
     public static void main(String[] args) {
         RailroadLauncher.launchWithPreloader(args);
     }
@@ -114,6 +142,7 @@ public class Railroad extends Application {
             new InitializationStep("Loading configuration", ConfigHandler::initConfig),
             new InitializationStep("Scanning plugins",
                 () -> PluginManager.loadPlugins(ConfigHandler.getConfigDirectory().resolve("plugins"))),
+            new InitializationStep("Registering commands", Commands::initialize),
             new InitializationStep("Registering keybinds", Keybinds::initialize),
             new InitializationStep("Scanning language files", Languages::initialize),
             new InitializationStep("Loading settings", Settings::initialize),
@@ -173,8 +202,6 @@ public class Railroad extends Application {
         }
 
         try {
-            SvgImageLoaderFactory.install(new PrimitiveDimensionProvider());
-
             List<Project> projects = Railroad.PROJECT_MANAGER.getProjects();
             Optional<Project> optProject = getParameters()
                 .getNamed()
@@ -208,6 +235,12 @@ public class Railroad extends Application {
     @Override
     public void stop() {
         LOGGER.info("Stopping Railroad");
+
+        Project openProject = PROJECT_MANAGER.getOpenProject();
+        if (openProject != null) {
+            openProject.close();
+        }
+
         Railroad.EVENT_BUS.publish(new ApplicationStopEvent());
         ConfigHandler.saveConfig();
         ShutdownHooks.runHooks();

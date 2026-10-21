@@ -17,6 +17,8 @@ import java.util.concurrent.Executors;
  * Provides thread-safe access to the per-project data directory ({@code PROJECT/.railroad}).
  * Callers can store any number of files (JSON, binary, etc.) and use the provided helpers to
  * work with bytes, text, or JSON-serialized DTOs.
+ * Path resolution creates missing files and parent directories, including during reads and existence checks.
+ * Absolute paths, normalized parent traversal, and symbolic links resolving outside the data directory are rejected.
  */
 public final class ProjectDataStore {
     private final Project project;
@@ -27,12 +29,21 @@ public final class ProjectDataStore {
     private volatile ExecutorService watchExecutor;
     private volatile Path watchRoot;
 
+    /**
+     * Creates a data store bound to a project; the data directory is created on first access.
+     *
+     * @param project the project whose data is managed
+     * @throws NullPointerException if the project is null
+     */
     public ProjectDataStore(Project project) {
         this.project = Objects.requireNonNull(project, "project");
     }
 
     /**
      * Ensures the per-project data directory exists and returns it.
+     *
+     * @return the project root resolved with {@code .railroad}
+     * @throws IllegalStateException if the project path is unset or the directory cannot be created
      */
     public Path dataDirectory() {
         Path projectPath = project.getPath();
@@ -51,6 +62,12 @@ public final class ProjectDataStore {
 
     /**
      * Resolves a path within the per-project data directory.
+     *
+     * @param first the initial relative path segment
+     * @param more additional path segments
+     * @return the resolved path, creating an empty file and parent directories when absent
+     * @throws IllegalArgumentException if the path is absolute or escapes the data directory
+     * @throws IllegalStateException if creating or resolving the path fails
      */
     public Path resolve(String first, String... more) {
         return resolveInternal(Path.of(first, more));
@@ -58,6 +75,10 @@ public final class ProjectDataStore {
 
     /**
      * Registers a listener that will be notified whenever a file under {@code .railroad} changes.
+     *
+     * @param listener the listener to invoke on the background watcher thread
+     * @throws NullPointerException if the listener is null
+     * @throws IllegalStateException if the data directory or watcher cannot be created
      */
     public void addFileChangeListener(FileChangeListener listener) {
         Objects.requireNonNull(listener, "listener");
@@ -67,6 +88,8 @@ public final class ProjectDataStore {
 
     /**
      * Removes a previously registered listener. When none remain the watcher is stopped.
+     *
+     * @param listener the listener to remove, or null to do nothing
      */
     public void removeFileChangeListener(FileChangeListener listener) {
         if (listener == null)
@@ -81,6 +104,11 @@ public final class ProjectDataStore {
     /**
      * Stores raw bytes at the given relative path (creating parent directories if needed).
      * Passing {@code null} bytes deletes the file.
+     *
+     * @param relativePath the file path relative to the data directory
+     * @param bytes the replacement contents, or null to delete the file
+     * @throws IllegalArgumentException if the path is absolute or escapes the data directory
+     * @throws IllegalStateException if resolving, writing, or deleting the file fails
      */
     public synchronized void writeBytes(String relativePath, byte[] bytes) {
         Objects.requireNonNull(relativePath, "relativePath");
@@ -105,6 +133,11 @@ public final class ProjectDataStore {
 
     /**
      * Writes UTF-8 text to the given relative path.
+     *
+     * @param relativePath the file path relative to the data directory
+     * @param content the replacement text, or null to delete the file
+     * @throws IllegalArgumentException if the path is absolute or escapes the data directory
+     * @throws IllegalStateException if resolving, writing, or deleting the file fails
      */
     public synchronized void writeString(String relativePath, CharSequence content) {
         writeBytes(relativePath, content == null ? null : content.toString().getBytes(StandardCharsets.UTF_8));
@@ -112,13 +145,24 @@ public final class ProjectDataStore {
 
     /**
      * Serializes a DTO as JSON and stores it at the given relative path (e.g. {@code configs/plugin.json}).
+     *
+     * @param <T> the value type
+     * @param relativePath the file path relative to the data directory
+     * @param value the value to serialize, or null to delete the file
+     * @throws IllegalArgumentException if the path is absolute or escapes the data directory
+     * @throws IllegalStateException if resolving, writing, or deleting the file fails
      */
     public synchronized <T> void writeJson(String relativePath, T value) {
         writeString(relativePath, value == null ? null : Railroad.GSON.toJson(value));
     }
 
     /**
-     * Reads all bytes from the given relative path if the file exists.
+     * Reads all bytes from the given relative path after resolving it, creating an empty file if absent.
+     *
+     * @param relativePath the file path relative to the data directory
+     * @return the file contents, or empty if the file disappears before the existence check
+     * @throws IllegalArgumentException if the path is absolute or escapes the data directory
+     * @throws IllegalStateException if resolving or reading the file fails
      */
     public synchronized Optional<byte[]> readBytes(String relativePath) {
         Objects.requireNonNull(relativePath, "relativePath");
@@ -136,6 +180,11 @@ public final class ProjectDataStore {
 
     /**
      * Reads a UTF-8 encoded file as text.
+     *
+     * @param relativePath the file path relative to the data directory
+     * @return the decoded contents, including an empty string for a newly created file, or empty if it disappears
+     * @throws IllegalArgumentException if the path is absolute or escapes the data directory
+     * @throws IllegalStateException if resolving or reading the file fails
      */
     public synchronized Optional<String> readString(String relativePath) {
         return readBytes(relativePath).map(bytes -> new String(bytes, StandardCharsets.UTF_8));
@@ -143,6 +192,14 @@ public final class ProjectDataStore {
 
     /**
      * Deserializes JSON from the given relative path into {@code type}.
+     *
+     * @param <T> the deserialized value type
+     * @param relativePath the JSON file path relative to the data directory
+     * @param type the class to deserialize
+     * @return the parsed value, or empty for a missing, blank, newly created, or JSON-null file
+     * @throws IllegalArgumentException if the path is absolute or escapes the data directory
+     * @throws IllegalStateException if resolving or reading the file fails
+     * @throws com.google.gson.JsonParseException if the contents cannot be deserialized
      */
     public synchronized <T> Optional<T> readJson(String relativePath, Class<T> type) {
         Objects.requireNonNull(type, "type");
@@ -152,6 +209,10 @@ public final class ProjectDataStore {
 
     /**
      * Deletes the file at the given relative path, if it exists.
+     *
+     * @param relativePath the file path relative to the data directory
+     * @throws IllegalArgumentException if the path is absolute or escapes the data directory
+     * @throws IllegalStateException if resolving or deleting the file fails
      */
     public synchronized void delete(String relativePath) {
         Objects.requireNonNull(relativePath, "relativePath");
@@ -165,7 +226,12 @@ public final class ProjectDataStore {
     }
 
     /**
-     * Returns {@code true} if a file exists at the given relative path.
+     * Checks existence after resolving the path, which creates an empty file if absent.
+     *
+     * @param relativePath the path relative to the data directory
+     * @return whether the resolved path exists at the time of the check
+     * @throws IllegalArgumentException if the path is absolute or escapes the data directory
+     * @throws IllegalStateException if resolving the path fails
      */
     public synchronized boolean exists(String relativePath) {
         Objects.requireNonNull(relativePath, "relativePath");
@@ -175,6 +241,9 @@ public final class ProjectDataStore {
 
     /**
      * Lists all files under the project data directory, returned as paths relative to it.
+     *
+     * @return the regular files found recursively, relative to the data directory
+     * @throws IllegalStateException if the data directory cannot be created or enumerated
      */
     public synchronized List<Path> listFiles() {
         Path dir = dataDirectory();
@@ -363,8 +432,15 @@ public final class ProjectDataStore {
         }
     }
 
+    /** Receives file and directory changes from the background data directory watcher. */
     @FunctionalInterface
     public interface FileChangeListener {
+        /**
+         * Handles a creation, modification, or deletion event in the project data directory.
+         *
+         * @param relativePath the changed path relative to the data directory
+         * @param kind the file system event kind
+         */
         void onFileChanged(Path relativePath, WatchEvent.Kind<?> kind);
     }
 }

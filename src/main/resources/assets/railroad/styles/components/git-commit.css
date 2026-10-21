@@ -46,7 +46,9 @@
     -fx-fill: -color-fg-muted;
 }
 
-.git-commit-change-tree-cell, .git-commit-change-icon-container, .git-commit-change-text-container {
+.git-commit-change-tree-cell,
+.git-commit-change-icon-container,
+.git-commit-change-text-container {
     -fx-background-color: transparent;
 }
 
@@ -92,7 +94,8 @@
     -fx-fill: #ffd33d;
 }
 
-.git-file-item-untracked > .git-commit-change-title-text, .git-file-item-ignored > .git-commit-change-title-text {
+.git-file-item-untracked > .git-commit-change-title-text,
+.git-file-item-ignored > .git-commit-change-title-text {
     -fx-fill: #728294;
 }
 

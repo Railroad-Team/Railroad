@@ -9,6 +9,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * Dispatches events synchronously to listeners subscribed to the event class or its supertypes.
+ * Listener failures are logged without preventing delivery to the remaining listeners.
+ */
 public class DefaultEventBus implements EventBus {
     private final Map<Class<? extends Event>, CopyOnWriteArrayList<EventListener<? extends Event>>> subscribers = new ConcurrentHashMap<>();
 
@@ -25,7 +29,7 @@ public class DefaultEventBus implements EventBus {
                     EventListener<Event> typedListener = (EventListener<Event>) listener;
                     try {
                         typedListener.handle(event);
-                    } catch (RuntimeException exception) {
+                    } catch (Throwable exception) {
                         Railroad.LOGGER.error("Event listener failed while handling {}", eventType.getName(),
                             exception);
                     }

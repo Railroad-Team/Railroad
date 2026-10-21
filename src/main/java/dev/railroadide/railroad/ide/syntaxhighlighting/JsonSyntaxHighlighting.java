@@ -9,6 +9,9 @@ import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Highlights JSON keys, strings, numbers, boolean values, and null literals.
+ */
 public class JsonSyntaxHighlighting {
     private static final String STRING = "\\\"(?:\\\\.|[^\\\"\\\\])*\\\"";
     private static final String NUMBER = "-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?";
@@ -22,6 +25,12 @@ public class JsonSyntaxHighlighting {
             + "|(?<BOOLEAN>" + BOOLEAN + ")"
             + "|(?<NULL>" + NULL + ")");
 
+    /**
+     * Computes editor style spans for the supplied source text.
+     *
+     * @param text source text to highlight
+     * @return style spans containing syntax CSS classes
+     */
     public static StyleSpans<Collection<String>> computeHighlighting(String text) {
         long start = System.currentTimeMillis();
         Matcher matcher = PATTERN.matcher(text);

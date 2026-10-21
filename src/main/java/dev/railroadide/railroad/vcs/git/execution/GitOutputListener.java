@@ -4,6 +4,7 @@ package dev.railroadide.railroad.vcs.git.execution;
  * Callback interface for streaming git process output.
  */
 public interface GitOutputListener {
+    /** Listener that discards stdout lines, stdout records, and stderr lines. */
     GitOutputListener NO_OP = new GitOutputListener() {
         /**
          * Ignores stdout lines.

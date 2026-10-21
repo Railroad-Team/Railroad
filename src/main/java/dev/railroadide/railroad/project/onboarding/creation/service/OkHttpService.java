@@ -15,6 +15,13 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 
+/**
+ * Downloads project resources with OkHttp and checks for missing resources with HEAD requests.
+ * Downloads use a temporary file beside the destination before atomically replacing it.
+ * Recognized connection failures are retried after five seconds with no attempt limit.
+ *
+ * @param client HTTP client used for download and availability requests
+ */
 public record OkHttpService(OkHttpClient client) implements HttpService {
     @Override
     public void download(URI uri, Path dest) throws IOException {

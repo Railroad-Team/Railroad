@@ -10,17 +10,23 @@ import java.util.Objects;
 public sealed interface Location<R extends Range<?>> permits Location.TextLocation, Location.BinaryLocation {
 
     /**
-     * The identity of the current document
+     * Returns the identity of the targeted document.
+     *
+     * @return the logical document identity
      */
     DocumentId documentId();
 
     /**
-     * The version of the current document
+     * Returns the content revision targeted by this location.
+     *
+     * @return the document version
      */
     DocumentVersion documentVersion();
 
     /**
-     * The targeted range of content within the document
+     * Returns the targeted range of content within the document.
+     *
+     * @return the half-open content range
      */
     R range();
 
@@ -34,13 +40,32 @@ public sealed interface Location<R extends Range<?>> permits Location.TextLocati
 
     /**
      * A text location with a zero-based line and UTF-16 column for the range start.
+     *
+     * @param documentId the targeted document identity
+     * @param documentVersion the targeted content revision
+     * @param range the half-open UTF-16 offset range
+     * @param line the zero-based line of the range start
+     * @param column the zero-based UTF-16 column of the range start
      */
     record TextLocation(
         DocumentId documentId,
         DocumentVersion documentVersion,
         TextRange range,
         int line,
-        int column) implements Location<TextRange> {
+        int column
+    ) implements Location<TextRange> {
+        /**
+         * Creates a text location with non-negative line and column coordinates.
+         * Use {@link #from(TextDocumentSnapshot, int, int)} to derive coordinates from a snapshot.
+         *
+         * @param documentId the targeted document identity
+         * @param documentVersion the targeted content revision
+         * @param range the half-open UTF-16 offset range
+         * @param line the zero-based line of the range start
+         * @param column the zero-based UTF-16 column of the range start
+         * @throws NullPointerException if the identity, version, or range is null
+         * @throws IllegalArgumentException if the line or column is negative
+         */
         public TextLocation {
             Objects.requireNonNull(documentId, "documentId");
             Objects.requireNonNull(documentVersion, "documentVersion");
@@ -53,6 +78,17 @@ public sealed interface Location<R extends Range<?>> permits Location.TextLocati
                 throw new IllegalArgumentException("Column must be non-negative");
         }
 
+        /**
+         * Creates a location whose bounds and start coordinates are derived from a text snapshot.
+         *
+         * @param snapshot the targeted text revision
+         * @param start the inclusive UTF-16 start offset
+         * @param end the exclusive UTF-16 end offset
+         * @return a validated location in the snapshot
+         * @throws NullPointerException if the snapshot is null
+         * @throws IllegalArgumentException if the bounds are negative or reversed
+         * @throws IndexOutOfBoundsException if either bound exceeds the text length
+         */
         public static TextLocation from(TextDocumentSnapshot snapshot, int start, int end) {
             Objects.requireNonNull(snapshot, "snapshot");
 
@@ -91,16 +127,43 @@ public sealed interface Location<R extends Range<?>> permits Location.TextLocati
         }
     }
 
+    /**
+     * A byte range in a specific binary document revision.
+     *
+     * @param documentId the targeted document identity
+     * @param documentVersion the targeted content revision
+     * @param range the half-open byte offset range
+     */
     record BinaryLocation(
         DocumentId documentId,
         DocumentVersion documentVersion,
-        BinaryRange range) implements Location<BinaryRange> {
+        BinaryRange range
+    ) implements Location<BinaryRange> {
+        /**
+         * Creates a binary location; snapshot bounds are checked by {@link #validateAgainst(DocumentSnapshot)}.
+         *
+         * @param documentId the targeted document identity
+         * @param documentVersion the targeted content revision
+         * @param range the half-open byte offset range
+         * @throws NullPointerException if any argument is null
+         */
         public BinaryLocation {
             Objects.requireNonNull(documentId, "documentId");
             Objects.requireNonNull(documentVersion, "documentVersion");
             Objects.requireNonNull(range, "range");
         }
 
+        /**
+         * Creates a location whose byte range is validated against a binary snapshot.
+         *
+         * @param snapshot the targeted binary revision
+         * @param start the inclusive byte start offset
+         * @param end the exclusive byte end offset
+         * @return a validated location in the snapshot
+         * @throws NullPointerException if the snapshot is null
+         * @throws IllegalArgumentException if the bounds are negative or reversed
+         * @throws IndexOutOfBoundsException if the range exceeds the snapshot size
+         */
         public static BinaryLocation from(BinaryDocumentSnapshot snapshot, int start, int end) {
             Objects.requireNonNull(snapshot, "snapshot");
 

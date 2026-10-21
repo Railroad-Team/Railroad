@@ -34,6 +34,9 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+/**
+ * Resolves Java source roots, dependency paths, and JDK configuration from project metadata.
+ */
 public class JavaLanguageIndexContextContributor implements LanguageIndexContextContributor {
     private static final MavenModelService MAVEN_MODELS = new DefaultMavenModelService();
 

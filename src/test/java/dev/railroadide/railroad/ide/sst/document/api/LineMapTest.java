@@ -5,9 +5,9 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class LineMapTest {
+public class LineMapTest {
     @Test
-    void handlesLineEndings() {
+    public void handlesLineEndings() {
         var map = new LineMap("Hello\r\nWorld\n");
 
         assertEquals(3, map.lineCount());
@@ -23,7 +23,7 @@ class LineMapTest {
     }
 
     @Test
-    void convertsOffsetsToPositions() {
+    public void convertsOffsetsToPositions() {
         var map = new LineMap("Hello\r\nWorld\n");
 
         assertEquals(new TextPosition(0, 0), map.positionAt(0));
@@ -42,7 +42,7 @@ class LineMapTest {
     }
 
     @Test
-    void offsetsAndPositionsRoundTrip() {
+    public void offsetsAndPositionsRoundTrip() {
         String text = "Hello\r\nWorld\nGoodbye\rTest\n\n";
         var map = new LineMap(text);
 
@@ -57,7 +57,7 @@ class LineMapTest {
     }
 
     @Test
-    void convertsPositionsToOffsets() {
+    public void convertsPositionsToOffsets() {
         var map = new LineMap("Hello\r\nWorld\n");
 
         assertEquals(0, map.offsetAt(new TextPosition(0, 0)));
@@ -71,7 +71,7 @@ class LineMapTest {
     }
 
     @Test
-    void convertsPositionsInEmptyDocumentsAndEmptyLines() {
+    public void convertsPositionsInEmptyDocumentsAndEmptyLines() {
         var empty = new LineMap("");
         assertEquals(0, empty.offsetAt(new TextPosition(0, 0)));
         assertThrows(IndexOutOfBoundsException.class, () -> empty.offsetAt(new TextPosition(0, 1)));
@@ -86,7 +86,7 @@ class LineMapTest {
     }
 
     @Test
-    void convertsPositionsAcrossMixedTerminators() {
+    public void convertsPositionsAcrossMixedTerminators() {
         var map = new LineMap("a\rb\nc\r\nd");
 
         assertEquals(1, map.offsetAt(new TextPosition(0, 1)));
@@ -99,7 +99,7 @@ class LineMapTest {
     }
 
     @Test
-    void convertsUtf16ColumnsToOffsets() {
+    public void convertsUtf16ColumnsToOffsets() {
         var map = new LineMap("\uD83D\uDE00\n\uD83D\uDE80!");
 
         assertEquals(1, map.offsetAt(new TextPosition(0, 1)));
@@ -110,7 +110,7 @@ class LineMapTest {
     }
 
     @Test
-    void countsBothSurrogateCodeUnitsInPositions() {
+    public void countsBothSurrogateCodeUnitsInPositions() {
         var map = new LineMap("A\uD83D\uDE00B\n");
 
         assertEquals(0, map.lineStart(0));
@@ -126,7 +126,7 @@ class LineMapTest {
     }
 
     @Test
-    void countsCombiningCharactersAndTabsAsCodeUnits() {
+    public void countsCombiningCharactersAndTabsAsCodeUnits() {
         String text = "e\u0301\tHello";
         var map = new LineMap(text);
 
@@ -140,7 +140,7 @@ class LineMapTest {
     }
 
     @Test
-    void rejectsInvalidOffsetsAndPositions() {
+    public void rejectsInvalidOffsetsAndPositions() {
         var map = new LineMap("abc\ndef");
 
         assertThrows(IndexOutOfBoundsException.class, () -> map.positionAt(-1));
@@ -154,7 +154,7 @@ class LineMapTest {
     }
 
     @Test
-    void rejectsPositionsBeyondLineOrColumnBounds() {
+    public void rejectsPositionsBeyondLineOrColumnBounds() {
         var map = new LineMap("Hello\r\nWorld\n");
 
         // A column cannot reach the next line's start; that offset belongs to the next line.
@@ -167,14 +167,14 @@ class LineMapTest {
     }
 
     @Test
-    void rejectsNullPosition() {
+    public void rejectsNullPosition() {
         var map = new LineMap("Hello");
 
         assertThrows(NullPointerException.class, () -> map.offsetAt(null));
     }
 
     @Test
-    void handlesEmptyDocument() {
+    public void handlesEmptyDocument() {
         var map = new LineMap("");
 
         assertEquals(1, map.lineCount());
@@ -183,31 +183,31 @@ class LineMapTest {
     }
 
     @Test
-    void handlesSingleLineWithoutTerminator() {
+    public void handlesSingleLineWithoutTerminator() {
         assertLines("Hello world", new int[]{0}, new int[]{11});
     }
 
     @Test
-    void excludesEachKindOfLineTerminatorFromLineEnds() {
+    public void excludesEachKindOfLineTerminatorFromLineEnds() {
         assertLines("one\ntwo", new int[]{0, 4}, new int[]{3, 7});
         assertLines("one\rtwo", new int[]{0, 4}, new int[]{3, 7});
         assertLines("one\r\ntwo", new int[]{0, 5}, new int[]{3, 8});
     }
 
     @Test
-    void retainsEmptyFinalLineAfterEachKindOfTerminator() {
+    public void retainsEmptyFinalLineAfterEachKindOfTerminator() {
         assertLines("one\n", new int[]{0, 4}, new int[]{3, 4});
         assertLines("one\r", new int[]{0, 4}, new int[]{3, 4});
         assertLines("one\r\n", new int[]{0, 5}, new int[]{3, 5});
     }
 
     @Test
-    void handlesLeadingAndConsecutiveEmptyLines() {
+    public void handlesLeadingAndConsecutiveEmptyLines() {
         assertLines("\n\ntext\n\n", new int[]{0, 1, 2, 7, 8}, new int[]{0, 1, 6, 7, 8});
     }
 
     @Test
-    void handlesDocumentsContainingOnlyTerminators() {
+    public void handlesDocumentsContainingOnlyTerminators() {
         assertLines("\n", new int[]{0, 1}, new int[]{0, 1});
         assertLines("\r", new int[]{0, 1}, new int[]{0, 1});
         assertLines("\r\n", new int[]{0, 2}, new int[]{0, 2});
@@ -215,22 +215,22 @@ class LineMapTest {
     }
 
     @Test
-    void handlesMixedTerminatorsWithoutTrailingNewline() {
+    public void handlesMixedTerminatorsWithoutTrailingNewline() {
         assertLines("a\rb\nc\r\nd", new int[]{0, 2, 4, 7}, new int[]{1, 3, 5, 8});
     }
 
     @Test
-    void usesUtf16OffsetsForSupplementaryCharacters() {
+    public void usesUtf16OffsetsForSupplementaryCharacters() {
         assertLines("\uD83D\uDE00\n\uD83D\uDE80!", new int[]{0, 3}, new int[]{2, 6});
     }
 
     @Test
-    void rejectsNullText() {
+    public void rejectsNullText() {
         assertThrows(NullPointerException.class, () -> new LineMap(null));
     }
 
     @Test
-    void rejectsLineIndicesOutsideTheMap() {
+    public void rejectsLineIndicesOutsideTheMap() {
         var map = new LineMap("first\nsecond");
 
         assertThrows(IndexOutOfBoundsException.class, () -> map.lineStart(-1));

@@ -18,6 +18,11 @@ import java.util.Objects;
 public record DocumentVersion(long value) implements Comparable<DocumentVersion> {
     private static final DocumentVersion INITIAL = new DocumentVersion(0);
 
+    /**
+     * Creates a document revision from a nonnegative sequence value.
+     *
+     * @param value the nonnegative revision number
+     */
     public DocumentVersion {
         if (value < 0)
             throw new IllegalArgumentException("Document version cannot be negative: " + value);

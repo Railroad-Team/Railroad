@@ -14,7 +14,8 @@ import java.util.StringJoiner;
 public record GitSigningStatus(
     boolean enabled,
     Format format,
-    String signingKey) {
+    String signingKey
+) {
     /**
      * Creates signing status from raw git config values.
      *
@@ -24,8 +25,12 @@ public record GitSigningStatus(
      * @param gpgProgram value of {@code gpg.program}
      * @return normalized signing status
      */
-    public static GitSigningStatus fromGitConfigValues(String gpgSignSetting, String gpgFormatSetting,
-        String userSigningKey, String gpgProgram) {
+    public static GitSigningStatus fromGitConfigValues(
+        String gpgSignSetting,
+        String gpgFormatSetting,
+        String userSigningKey,
+        String gpgProgram
+    ) {
         boolean enabled = "true".equalsIgnoreCase(gpgSignSetting) || "always".equalsIgnoreCase(gpgSignSetting);
         Format format;
         if ("openpgp".equalsIgnoreCase(gpgFormatSetting)) {
@@ -45,7 +50,12 @@ public record GitSigningStatus(
      * Supported signing formats reported by git config.
      */
     public enum Format {
-        OPENPGP, SSH, UNKNOWN
+        /** The configuration explicitly selects OpenPGP signing. */
+        OPENPGP,
+        /** The configuration explicitly selects SSH signing. */
+        SSH,
+        /** The configured format is absent or is not recognized by the parser. */
+        UNKNOWN
     }
 
     /**

@@ -16,5 +16,6 @@ import java.util.UUID;
 public record GradleTaskErrorEvent(
     UUID taskId,
     GradleTaskState state,
-    String errorMessage) {
+    String errorMessage
+) {
 }

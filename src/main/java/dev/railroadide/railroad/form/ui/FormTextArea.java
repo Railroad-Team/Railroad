@@ -27,8 +27,16 @@ public class FormTextArea extends InformativeLabeledHBox<TextArea> implements Ha
      * @param wrapText whether text should wrap to new lines
      * @param translate whether to use localization for the prompt text
      */
-    public FormTextArea(String labelKey, boolean required, String text, String promptText, boolean editable,
-        boolean resizable, boolean wrapText, boolean translate) {
+    public FormTextArea(
+        String labelKey,
+        boolean required,
+        String text,
+        String promptText,
+        boolean editable,
+        boolean resizable,
+        boolean wrapText,
+        boolean translate
+    ) {
         super(labelKey, required, createParams(text, promptText, editable, resizable, wrapText, translate));
     }
 
@@ -43,8 +51,14 @@ public class FormTextArea extends InformativeLabeledHBox<TextArea> implements Ha
      * @param translate whether to use localization
      * @return a map containing the component parameters
      */
-    private static Map<String, Object> createParams(String text, String promptText, boolean editable, boolean resizable,
-        boolean wrapText, boolean translate) {
+    private static Map<String, Object> createParams(
+        String text,
+        String promptText,
+        boolean editable,
+        boolean resizable,
+        boolean wrapText,
+        boolean translate
+    ) {
         Map<String, Object> params = new HashMap<>();
         if (text != null) {
             params.put("text", text);

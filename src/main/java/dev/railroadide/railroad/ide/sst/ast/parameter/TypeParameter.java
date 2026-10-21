@@ -12,11 +12,20 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A named generic type parameter with annotations and upper bounds.
+ *
+ * @param span source range occupied by this node
+ * @param annotations annotations attached to this node
+ * @param name declared generic type parameter name
+ * @param bounds upper bounds of the type parameter
+ */
 public record TypeParameter(
     Span span,
     List<Annotation> annotations,
     NameExpression name,
-    List<TypeRef> bounds) implements AstNode {
+    List<TypeRef> bounds
+) implements AstNode {
     @Override
     public AstKind kind() {
         return AstKind.TYPE_PARAMETER;

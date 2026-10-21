@@ -10,7 +10,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+/**
+ * Connects a change item to checkbox selection and supports compact directory chains.
+ */
 public class CommitTreeItem extends RRCheckBoxTreeItem<ChangeItem> {
+    /**
+     * Creates a checkbox tree entry and connects its selection callback.
+     *
+     * @param item change model rendered by the tree entry
+     */
     public CommitTreeItem(ChangeItem item) {
         super(item);
 
@@ -20,6 +28,9 @@ public class CommitTreeItem extends RRCheckBoxTreeItem<ChangeItem> {
         }
     }
 
+    /**
+     * Recursively merges directory chains with one child into compact path-labelled entries.
+     */
     public void collapseSingleChildDirectories() {
         for (TreeItem<ChangeItem> child : new ArrayList<>(getChildren())) {
             if (child instanceof CommitTreeItem commitChild) {

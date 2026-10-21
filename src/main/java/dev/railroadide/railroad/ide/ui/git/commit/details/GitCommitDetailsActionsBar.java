@@ -5,7 +5,16 @@ import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.vcs.git.commit.GitCommit;
 import javafx.geometry.Pos;
 
+/**
+ * Groups copy, checkout, branch, tag, cherry-pick, and revert actions for a commit.
+ */
 public class GitCommitDetailsActionsBar extends RRHBox {
+    /**
+     * Creates the repository action buttons for the supplied commit.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param commit commit to display or act on
+     */
     public GitCommitDetailsActionsBar(Project project, GitCommit commit) {
         super(5);
         getStyleClass().add("git-commit-details-buttons-hbox");

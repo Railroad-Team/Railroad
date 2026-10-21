@@ -35,67 +35,147 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 // TODO: Add a way to make the content translatable with arguments
+/**
+ * Builds a styled alert scene with a title, message, and dismissal buttons.
+ * Titles and content are translated by default, and Enter submits the alert.
+ *
+ * @param <T> the builder type returned by fluent configuration methods
+ */
 @SuppressWarnings("unchecked")
 public class AlertBuilder<T extends AlertBuilder<?>> {
+    /** The alert heading text or translation key. */
     protected String title = "";
+    /** Whether the heading is interpreted as a translation key. */
     protected boolean translateTitle = true;
+    /** The message text or translation key. */
     protected String content = "";
+    /** Whether the message is interpreted as a translation key. */
     protected boolean translateContent = true;
+    /** The callback invoked when the alert is dismissed. */
     protected Runnable onClose = () -> {
     };
+    /** The severity controlling the icon, styling, and button labels. */
     protected AlertType alertType = AlertType.INFO;
+    /** Whether Enter activates the primary button. */
     protected boolean submitOnEnter = true;
 
+    /**
+     * Creates an informational alert builder with default settings.
+     *
+     * @return a new alert builder
+     */
     public static AlertBuilder<?> create() {
         return new AlertBuilder<>();
     }
 
+    /**
+     * Sets the alert heading and whether it should be translated.
+     *
+     * @param title the heading text or translation key
+     * @param translate whether to translate the heading
+     * @return this builder
+     */
     public T title(String title, boolean translate) {
         this.title = title;
         this.translateTitle = translate;
         return (T) this;
     }
 
+    /**
+     * Sets the alert heading and enables translation.
+     *
+     * @param title the heading translation key
+     * @return this builder
+     */
     public T title(String title) {
         return title(title, true);
     }
 
+    /**
+     * Sets whether the alert heading is translated.
+     *
+     * @param translate whether to interpret the heading as a translation key
+     * @return this builder
+     */
     public T translateTitle(boolean translate) {
         this.translateTitle = translate;
         return (T) this;
     }
 
+    /**
+     * Sets the alert message and whether it should be translated.
+     *
+     * @param content the message text or translation key
+     * @param translate whether to translate the message
+     * @return this builder
+     */
     public T content(String content, boolean translate) {
         this.content = content;
         this.translateContent = translate;
         return (T) this;
     }
 
+    /**
+     * Sets the alert message and enables translation.
+     *
+     * @param content the message translation key
+     * @return this builder
+     */
     public T content(String content) {
         return content(content, true);
     }
 
+    /**
+     * Sets whether the alert message is translated.
+     *
+     * @param translate whether to interpret the message as a translation key
+     * @return this builder
+     */
     public T translateContent(boolean translate) {
         this.translateContent = translate;
         return (T) this;
     }
 
+    /**
+     * Sets the callback for dismissal by a button, Escape, or a window close request.
+     *
+     * @param onClose the dismissal callback, or null for no action
+     * @return this builder
+     */
     public T onClose(Runnable onClose) {
         this.onClose = onClose == null ? () -> {
         } : onClose;
         return (T) this;
     }
 
+    /**
+     * Sets the severity used for the alert icon, styling, and button labels.
+     *
+     * @param alertType the alert severity
+     * @return this builder
+     */
     public T alertType(AlertType alertType) {
         this.alertType = alertType;
         return (T) this;
     }
 
+    /**
+     * Sets whether Enter activates the primary alert button.
+     *
+     * @param submitOnEnter whether to submit when Enter is pressed
+     * @return this builder
+     */
     public T submitOnEnter(boolean submitOnEnter) {
         this.submitOnEnter = submitOnEnter;
         return (T) this;
     }
 
+    /**
+     * Creates the styled alert scene with dismissal handlers and an entrance animation.
+     * Both buttons and Escape invoke the close callback before closing or hiding the window.
+     *
+     * @return a new alert scene ready to attach to a window
+     */
     public Scene buildScene() {
         var overlay = new RRStackPane();
         overlay.getStyleClass().add("alert-overlay");

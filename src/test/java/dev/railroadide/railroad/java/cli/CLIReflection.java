@@ -5,11 +5,11 @@ import java.lang.reflect.Field;
 /**
  * Utility class for accessing private fields of CLI builder classes using reflection for testing purposes.
  */
-final class CLIReflection {
+public final class CLIReflection {
     private CLIReflection() {
     }
 
-    static <T> T readField(Object target, String fieldName, Class<T> type) {
+    public static <T> T readField(Object target, String fieldName, Class<T> type) {
         try {
             Field field = findField(target.getClass(), fieldName);
             field.setAccessible(true);

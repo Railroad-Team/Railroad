@@ -10,42 +10,66 @@ import java.util.*;
 import static dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer.*;
 
 /** Declaration collection and mutable state shared by semantic resolution passes. */
-final class JavaDeclarationAnalysis {
+public final class JavaDeclarationAnalysis {
     private JavaDeclarationAnalysis() {
     }
 
-    static void collect(Context context, SyntaxNode compilationUnit) {
+    /**
+     * Collects compilation-unit declarations and scopes into the shared analysis context.
+     *
+     * @param context the mutable analysis state receiving declarations
+     * @param compilationUnit the compilation-unit syntax root
+     */
+    public static void collect(Context context, SyntaxNode compilationUnit) {
         new DeclarationCollector(context).visitCompilationUnit(compilationUnit);
     }
 
-    static final class Context {
-        final SyntaxNode syntaxRoot;
-        final Scope rootScope;
+    /**
+     * Mutable declaration, scope, symbol-resolution, and inferred-type state shared by Java analysis passes.
+     */
+    public static final class Context {
+        public final SyntaxNode syntaxRoot;
+        public final Scope rootScope;
         private final SemanticModel.Builder builder;
         private final Map<SyntaxNode, Scope> scopeByNode = new IdentityHashMap<>();
         private final Map<SyntaxNode, Symbol> declaredSymbolByNode = new IdentityHashMap<>();
         private final Map<SyntaxNode, Symbol> resolvedSymbolByNode = new IdentityHashMap<>();
         private final Map<SyntaxNode, Type> inferredTypeByNode = new IdentityHashMap<>();
-        final @Nullable JavaSymbolIndex projectIndex;
+        public final @Nullable JavaSymbolIndex projectIndex;
         @Nullable
-        String currentPackageName;
+        public String currentPackageName;
 
-        Context(
+        /**
+         * Creates shared analysis state backed by the supplied semantic-model builder.
+         *
+         * @param syntaxRoot the syntax-tree root being analyzed
+         * @param rootScope the compilation unit's root scope
+         * @param builder the builder receiving semantic facts
+         * @param projectIndex the external project symbol index, or {@code null} to use standard-library resolution
+         */
+        public Context(
             SyntaxNode syntaxRoot,
             Scope rootScope,
             SemanticModel.Builder builder,
-            @Nullable JavaSymbolIndex projectIndex) {
+            @Nullable JavaSymbolIndex projectIndex
+        ) {
             this.syntaxRoot = syntaxRoot;
             this.rootScope = rootScope;
             this.builder = builder;
             this.projectIndex = projectIndex;
         }
 
-        void attachScope(SyntaxNode node, Scope scope) {
+        private void attachScope(SyntaxNode node, Scope scope) {
             scopeByNode.put(node, scope);
         }
 
-        Scope scopeFor(SyntaxNode node) {
+        /**
+         * Finds the scope attached to a node or its nearest ancestor, falling back to the root scope.
+         *
+         * @param node the syntax node whose scope is needed
+         * @return the nearest enclosing scope, or the root scope
+         */
+        public Scope scopeFor(SyntaxNode node) {
             Scope scope = scopeByNode.get(node);
             if (scope != null)
                 return scope;
@@ -63,37 +87,72 @@ final class JavaDeclarationAnalysis {
             }
         }
 
-        void declare(SyntaxNode declarationNode, Symbol symbol) {
+        private void declare(SyntaxNode declarationNode, Symbol symbol) {
             declaredSymbolByNode.put(declarationNode, symbol);
             builder.declare(declarationNode, symbol);
         }
 
-        void resolve(SyntaxNode referenceNode, Symbol symbol) {
+        /**
+         * Records a resolved symbol in this context and the semantic-model builder.
+         *
+         * @param referenceNode the syntax reference being resolved
+         * @param symbol the symbol identified by the reference
+         */
+        public void resolve(SyntaxNode referenceNode, Symbol symbol) {
             resolvedSymbolByNode.put(referenceNode, symbol);
             builder.resolve(referenceNode, symbol);
         }
 
+        /**
+         * Looks up the symbol previously resolved for a syntax node.
+         *
+         * @param node the reference node to query
+         * @return the resolved symbol, or {@code null} if none was recorded
+         */
         @Nullable
-        Symbol resolvedSymbol(SyntaxNode node) {
+        public Symbol resolvedSymbol(SyntaxNode node) {
             return resolvedSymbolByNode.get(node);
         }
 
+        /**
+         * Looks up the symbol declared by a syntax node.
+         *
+         * @param node the declaration node to query
+         * @return the declared symbol, or {@code null} if none was recorded
+         */
         @Nullable
-        Symbol declaredSymbol(SyntaxNode node) {
+        public Symbol declaredSymbol(SyntaxNode node) {
             return declaredSymbolByNode.get(node);
         }
 
-        void type(SyntaxNode node, Type type) {
+        /**
+         * Records an inferred type in this context and the semantic-model builder.
+         *
+         * @param node the syntax node receiving a type
+         * @param type the inferred semantic type
+         */
+        public void type(SyntaxNode node, Type type) {
             inferredTypeByNode.put(node, type);
             builder.type(node, type);
         }
 
+        /**
+         * Looks up the inferred type previously recorded for a syntax node.
+         *
+         * @param node the syntax node to query
+         * @return the inferred type, or {@code null} if none was recorded
+         */
         @Nullable
-        Type inferredType(SyntaxNode node) {
+        public Type inferredType(SyntaxNode node) {
             return inferredTypeByNode.get(node);
         }
 
-        List<Symbol> allTypeSymbols() {
+        /**
+         * Collects the declared class, interface, enum, annotation, and record symbols.
+         *
+         * @return an immutable snapshot of declared type symbols
+         */
+        public List<Symbol> allTypeSymbols() {
             List<Symbol> symbols = new ArrayList<>();
             for (Symbol symbol : declaredSymbolByNode.values()) {
                 if (isTypeSymbol(symbol.kind())) {
@@ -103,12 +162,23 @@ final class JavaDeclarationAnalysis {
             return List.copyOf(symbols);
         }
 
-        List<Symbol> allDeclaredSymbols() {
+        /**
+         * Collects every symbol recorded by declaration analysis.
+         *
+         * @return an immutable snapshot of declared symbols
+         */
+        public List<Symbol> allDeclaredSymbols() {
             return List.copyOf(declaredSymbolByNode.values());
         }
 
+        /**
+         * Walks the node's ancestors to find the nearest enclosing declared type.
+         *
+         * @param node the syntax node to start from, or {@code null}
+         * @return the enclosing type symbol, or {@code null} if none exists
+         */
         @Nullable
-        Symbol enclosingTypeSymbol(SyntaxNode node) {
+        public Symbol enclosingTypeSymbol(SyntaxNode node) {
             if (node == null)
                 return null;
             SyntaxNode current = node;
@@ -124,8 +194,14 @@ final class JavaDeclarationAnalysis {
             }
         }
 
+        /**
+         * Walks the node's ancestors to find the outermost enclosing declared type.
+         *
+         * @param node the syntax node to start from, or {@code null}
+         * @return the outermost enclosing type symbol, or {@code null} if none exists
+         */
         @Nullable
-        Symbol topLevelEnclosingTypeSymbol(SyntaxNode node) {
+        public Symbol topLevelEnclosingTypeSymbol(SyntaxNode node) {
             if (node == null)
                 return null;
             SyntaxNode current = node;
@@ -260,7 +336,8 @@ final class JavaDeclarationAnalysis {
             Scope scope,
             SymbolKind symbolKind,
             JavaTokenType declarationKeyword,
-            @Nullable String enclosingTypeQualifiedName) {
+            @Nullable String enclosingTypeQualifiedName
+        ) {
             String simpleName = identifierAfterKeyword(declarationNode, declarationKeyword);
             if (simpleName == null || simpleName.isBlank()) {
                 for (SyntaxNode child : declarationNode.children()) {
@@ -330,8 +407,11 @@ final class JavaDeclarationAnalysis {
             }
         }
 
-        private void declareLocalVariables(SyntaxNode localVariableDeclaration, Scope scope,
-            @Nullable String ownerQualifiedName) {
+        private void declareLocalVariables(
+            SyntaxNode localVariableDeclaration,
+            Scope scope,
+            @Nullable String ownerQualifiedName
+        ) {
             for (SyntaxNode child : localVariableDeclaration.children()) {
                 if (!JavaSyntaxKinds.VARIABLE_DECLARATOR.id().equals(child.kind().id()))
                     continue;
@@ -364,8 +444,11 @@ final class JavaDeclarationAnalysis {
             return scope.child();
         }
 
-        private Scope declareConstructor(SyntaxNode constructorDeclaration, Scope scope,
-            @Nullable String ownerQualifiedName) {
+        private Scope declareConstructor(
+            SyntaxNode constructorDeclaration,
+            Scope scope,
+            @Nullable String ownerQualifiedName
+        ) {
             String constructorName = identifierBeforeChildKind(constructorDeclaration,
                 JavaSyntaxKinds.PARAMETER_LIST.id());
             if (constructorName == null || constructorName.isBlank()) {
@@ -385,8 +468,11 @@ final class JavaDeclarationAnalysis {
             declareSymbol(scope, parameterNode, SymbolKind.PARAMETER, parameterName, qualifiedName);
         }
 
-        private void declareRecordComponent(SyntaxNode recordComponentNode, Scope scope,
-            @Nullable String ownerQualifiedName) {
+        private void declareRecordComponent(
+            SyntaxNode recordComponentNode,
+            Scope scope,
+            @Nullable String ownerQualifiedName
+        ) {
             String componentName = lastIdentifierLikeTokenText(recordComponentNode);
             if (componentName == null || componentName.isBlank())
                 return;
@@ -420,7 +506,8 @@ final class JavaDeclarationAnalysis {
             SyntaxNode declarationNode,
             SymbolKind kind,
             String simpleName,
-            @Nullable String qualifiedName) {
+            @Nullable String qualifiedName
+        ) {
             Symbol symbol = new SimpleSymbol(kind, simpleName, qualifiedName, declarationNode);
             scope.declare(symbol);
             context.declare(declarationNode, symbol);

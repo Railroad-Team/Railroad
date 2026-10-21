@@ -19,6 +19,9 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import java.nio.file.Path;
 import java.util.Objects;
 
+/**
+ * Input pane for selecting the Git executable used by the application.
+ */
 public class GitExecutablePathPane extends RRHBox {
     private final ObjectProperty<Path> gitExecutablePath = new SimpleObjectProperty<>();
 
@@ -28,6 +31,12 @@ public class GitExecutablePathPane extends RRHBox {
         "railroad.generic.download",
         FontAwesomeSolid.DOWNLOAD);
 
+    /**
+     * Creates a Git executable selector initialized with an optional path.
+     * If no path is supplied, the pane attempts to locate Git automatically.
+     *
+     * @param path initial Git executable path, or {@code null} to auto-detect Git
+     */
     public GitExecutablePathPane(@Nullable Path path) {
         getStyleClass().add("git-executable-path-pane");
         browseButton.textFieldProperty().set(pathField);
@@ -77,14 +86,29 @@ public class GitExecutablePathPane extends RRHBox {
         setGitExecutablePath(path);
     }
 
+    /**
+     * Returns the selected Git executable path.
+     *
+     * @return the selected path, or {@code null} when none is set
+     */
     public Path getGitExecutablePath() {
         return gitExecutablePath.get();
     }
 
+    /**
+     * Returns the observable property containing the selected Git executable path.
+     *
+     * @return the Git executable path property
+     */
     public ObjectProperty<Path> gitExecutablePathProperty() {
         return gitExecutablePath;
     }
 
+    /**
+     * Sets the Git executable path displayed by this pane.
+     *
+     * @param gitExecutablePath path to the Git executable, or {@code null} to clear it
+     */
     public void setGitExecutablePath(Path gitExecutablePath) {
         this.gitExecutablePath.set(gitExecutablePath);
     }

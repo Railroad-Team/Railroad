@@ -31,6 +31,11 @@ public class FabricFacetData extends MinecraftModFacetData {
      */
     private boolean isArchitecturyLoom;
 
+    /**
+     * Returns the configured Fabric Loader version.
+     *
+     * @return the Fabric Loader version, or null when unknown
+     */
     @Override
     public String getLoaderVersion() {
         return fabricLoaderVersion;

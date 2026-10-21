@@ -10,7 +10,16 @@ import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Applies Java syntax styles using named regular-expression groups.
+ */
 public class RegexJavaSyntaxHighlighting {
+    /**
+     * Computes editor style spans for the supplied source text.
+     *
+     * @param text source text to highlight
+     * @return style spans containing syntax CSS classes
+     */
     public static StyleSpans<Collection<String>> computeHighlighting(String text) {
         long start = System.currentTimeMillis();
         Matcher matcher = Java.PATTERN.matcher(text);
@@ -67,6 +76,9 @@ public class RegexJavaSyntaxHighlighting {
         return styleClass;
     }
 
+    /**
+     * Holds the regular-expression vocabulary used by the Java highlighter.
+     */
     public static class Java {
         private static final String[] KEYWORDS = new String[]{
             "abstract", "assert", "boolean", "break", "byte",

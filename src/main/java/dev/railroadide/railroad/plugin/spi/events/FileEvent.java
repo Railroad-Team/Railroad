@@ -7,6 +7,9 @@ import dev.railroadide.railroad.plugin.spi.event.Event;
  * Represents an event related to file operations within the Railroad IDE.
  * This event is used to notify subscribers about various file-related actions such as opening, closing,
  * saving, deleting, activating, and deactivating files.
+ *
+ * @param file The file associated with this event. Must not be null.
+ * @param eventType The type of file event (e.g., OPENED, CLOSED, SAVED, etc.). Must not be null.
  */
 public record FileEvent(Document file, EventType eventType) implements Event {
     /**
@@ -82,6 +85,17 @@ public record FileEvent(Document file, EventType eventType) implements Event {
      * Enum representing the different types of file events.
      */
     public enum EventType {
-        OPENED, CLOSED, SAVED, DELETED, ACTIVATED, DEACTIVATED
+        /** The file was opened. */
+        OPENED,
+        /** The file was closed. */
+        CLOSED,
+        /** The file was saved. */
+        SAVED,
+        /** The file was deleted. */
+        DELETED,
+        /** The file became active. */
+        ACTIVATED,
+        /** The file became inactive. */
+        DEACTIVATED
     }
 }

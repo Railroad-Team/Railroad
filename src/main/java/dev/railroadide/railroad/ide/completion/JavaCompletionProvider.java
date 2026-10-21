@@ -12,8 +12,17 @@ import java.util.Objects;
 
 /**
  * Completion provider backed by the SST semantic pipeline.
+ *
+ * @param project project whose editor features or debug state are managed
+ * @param filePath source file path used for analysis
  */
 public record JavaCompletionProvider(Project project, Path filePath) implements CompletionProvider {
+    /**
+     * Creates a completion provider requiring a project and source file path.
+     *
+     * @param project project whose editor features or debug state are managed
+     * @param filePath source file path used for analysis
+     */
     public JavaCompletionProvider {
         Objects.requireNonNull(project, "project");
         Objects.requireNonNull(filePath, "filePath");

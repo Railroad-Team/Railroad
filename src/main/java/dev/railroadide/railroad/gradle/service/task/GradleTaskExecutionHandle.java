@@ -16,21 +16,29 @@ import java.util.function.Consumer;
 public interface GradleTaskExecutionHandle {
 
     /**
+     * Gets the unique identifier for this execution handle.
+     *
      * @return the unique identifier assigned to this execution.
      */
     UUID id();
 
     /**
+     * Gets the request that initiated this execution handle.
+     *
      * @return the request that produced this execution handle.
      */
     GradleTaskExecutionRequest request();
 
     /**
+     * Gets the current state of the Gradle task execution.
+     *
      * @return the current state of the Gradle task execution
      */
     GradleTaskState currentState();
 
     /**
+     * Gets the debug port if the task is running in debug mode.
+     *
      * @return the debug port if the task is running in debug mode, otherwise empty
      */
     Optional<Integer> debugPort();
@@ -69,6 +77,8 @@ public interface GradleTaskExecutionHandle {
     void onStatusChanged(Consumer<GradleTaskStatusEvent> listener);
 
     /**
+     * Returns a future that completes when the task finishes, either successfully or with a failure.
+     *
      * @return a future that completes when the task finishes, either successfully or with a failure
      */
     CompletableFuture<GradleTaskExecutionResult> completionFuture();

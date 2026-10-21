@@ -14,6 +14,9 @@ import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+/**
+ * Railroad checkbox with localized text, optional graphics, press animations, and a loading indicator.
+ */
 public class RRCheckBox extends CheckBox {
 
     private FontIcon icon;
@@ -23,16 +26,31 @@ public class RRCheckBox extends CheckBox {
     private RotateTransition loadingSpinnerAnimation;
 
     private final BooleanProperty isLoading = new SimpleBooleanProperty(this, "isLoading", false);
+    /**
+     * Reports whether the loading presentation is active.
+     *
+     * @return true while the control displays its loading indicator
+     */
     public boolean getIsLoading() {
         return isLoading.get();
     }
 
     private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
 
+    /**
+     * Creates a checkbox with empty text and default styling.
+     */
     public RRCheckBox() {
         this("");
     }
 
+    /**
+     * Creates a checkbox with an icon.
+     *
+     * @param localizationKey the translation key for the label
+     * @param icon the icon to display, or null for no icon
+     * @param args formatting arguments for the translation
+     */
     public RRCheckBox(String localizationKey, Ikon icon, Object... args) {
         super();
 
@@ -40,6 +58,13 @@ public class RRCheckBox extends CheckBox {
         setIcon(icon);
     }
 
+    /**
+     * Creates a checkbox with a custom graphic.
+     *
+     * @param localizationKey the translation key for the label
+     * @param graphic the graphic to display, or null for none
+     * @param args formatting arguments for the translation
+     */
     public RRCheckBox(String localizationKey, Node graphic, Object... args) {
         super();
 
@@ -47,6 +72,12 @@ public class RRCheckBox extends CheckBox {
         setGraphic(graphic);
     }
 
+    /**
+     * Creates a checkbox with localized text.
+     *
+     * @param localizationKey the translation key for the label
+     * @param args formatting arguments for the translation
+     */
     public RRCheckBox(String localizationKey, Object... args) {
         super();
 
@@ -106,7 +137,9 @@ public class RRCheckBox extends CheckBox {
     }
 
     /**
-     * Set an icon for the checkbox
+     * Sets the icon used by the control's normal presentation.
+     *
+     * @param iconCode the icon to display, or null to remove the configured icon
      */
     public void setIcon(Ikon iconCode) {
         if (icon != null && getGraphic() == icon) {
@@ -160,7 +193,7 @@ public class RRCheckBox extends CheckBox {
     }
 
     /**
-     * Called when the button has started loading
+     * Disables the control, replaces its graphic with a spinner, and temporarily replaces localized text.
      */
     protected void onLoading() {
         textProperty().unbindBidirectional(localizedText);
@@ -185,7 +218,7 @@ public class RRCheckBox extends CheckBox {
     }
 
     /**
-     * Called when the button has stopped loading
+     * Stops the spinner, re-enables the control, and restores its localized text and graphic.
      */
     protected void onNotLoading() {
         loadingSpinnerAnimation.stop();

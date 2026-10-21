@@ -10,6 +10,13 @@ import dev.railroadide.railroad.project.onboarding.creation.ProjectContextKeys;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
+/**
+ * Extracts {@code example-mod.zip}, copies the selected branch's files into the project root,
+ * and removes the archive and its extracted directory.
+ *
+ * @param files service used to locate, copy, and clean up template files
+ * @param zip service used to extract the downloaded archive
+ */
 public record ExtractFabricExampleModStep(FilesService files, ZipService zip) implements CreationStep {
     @Override
     public String id() {

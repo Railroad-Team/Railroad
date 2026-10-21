@@ -13,8 +13,14 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Provides built-in Java inspections for .
+ */
 @RegisteredInspection
 public final class CoreNameResolutionInspection implements JavaInspectionRuleProvider {
+    /**
+     * Stable identifier used to register this inspection provider.
+     */
     public static final String ID = "railroad:core-name-resolution";
     private static final String JAVA_NAME_EXPRESSION = "JAVA_NAME_EXPRESSION";
 

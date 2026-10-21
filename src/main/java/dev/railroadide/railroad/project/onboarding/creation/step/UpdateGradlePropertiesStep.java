@@ -21,6 +21,12 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Locale;
 
+/**
+ * Updates an existing {@code gradle.properties} with memory settings, mappings, and mod metadata.
+ * Writes the loader-specific property names for Fabric, Forge, or NeoForge projects.
+ *
+ * @param files service used to locate and update the properties file
+ */
 public record UpdateGradlePropertiesStep(FilesService files) implements CreationStep {
     @Override
     public String id() {

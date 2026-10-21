@@ -6,11 +6,20 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
 import java.util.List;
 import java.util.Optional;
 
-final class SyntaxTreeValidator {
+/**
+ * Checks syntax-tree ranges, child ordering, token leaves, and parent-link consistency.
+ */
+public final class SyntaxTreeValidator {
     private SyntaxTreeValidator() {
     }
 
-    static void validate(SyntaxNode root) {
+    /**
+     * Validates root position, parent links, contiguous child ranges, and token leaves, throwing on inconsistency.
+     *
+     * @param root the parentless syntax root expected to begin at offset zero
+     * @throws IllegalStateException if a source range, parent link, or child sequence is inconsistent
+     */
+    public static void validate(SyntaxNode root) {
         if (root.start() != 0)
             throw new IllegalStateException("syntax root must start at 0, got " + root.start());
 
