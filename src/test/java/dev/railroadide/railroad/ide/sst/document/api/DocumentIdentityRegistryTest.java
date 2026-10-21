@@ -124,6 +124,32 @@ public class DocumentIdentityRegistryTest {
     }
 
     @Test
+    public void archiveEntryUrisHaveStableAndDistinctIdentities() {
+        DocumentUri first = DocumentUri.parse("jar:file:///libs/first.jar!/com/example/A.class");
+        DocumentUri second = DocumentUri.parse("jar:file:///libs/first.jar!/com/example/B.class");
+        DocumentUri third = DocumentUri.parse("jar:file:///libs/second.jar!/com/example/A.class");
+        var registry = new DocumentIdentityRegistry();
+
+        assertTrue(first.filePath().isEmpty());
+        assertTrue(second.filePath().isEmpty());
+        assertTrue(third.filePath().isEmpty());
+
+        DocumentId firstId = registry.getOrCreate(first);
+        assertEquals(firstId, registry.getOrCreate(first));
+
+        DocumentId secondId = registry.getOrCreate(second);
+        DocumentId thirdId = registry.getOrCreate(third);
+
+        assertNotEquals(firstId, secondId);
+        assertNotEquals(firstId, thirdId);
+        assertNotEquals(secondId, thirdId);
+        assertEquals(firstId, registry.getOrCreate(first));
+        assertEquals(firstId, registry.find(first).orElseThrow());
+        assertEquals(secondId, registry.find(second).orElseThrow());
+        assertEquals(thirdId, registry.find(third).orElseThrow());
+    }
+
+    @Test
     public void identityRetainsItsLogicalIdWhenItsCurrentUriChanges() {
         var registry = new DocumentIdentityRegistry();
         DocumentIdentity identity = registry.identify(DocumentUri.virtual("memory", "before"));
