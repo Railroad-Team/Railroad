@@ -40,7 +40,6 @@ import org.fxmisc.richtext.model.StyleSpansBuilder;
 import org.jspecify.annotations.Nullable;
 
 import javax.tools.Diagnostic;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
@@ -239,26 +238,19 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (!supportsDiagnostics())
             return;
 
-        requestDiagnostics(getText());
+        requestDiagnostics();
         multiPlainChanges()
             .successionEnds(DIAGNOSTIC_DEBOUNCE)
-            .subscribe(changes -> requestDiagnostics(getText()));
+            .subscribe(changes -> requestDiagnostics());
     }
 
-    private void requestDiagnostics(String text) {
+    private void requestDiagnostics() {
         if (!supportsDiagnostics())
             return;
 
         int generation = diagnosticsGeneration.incrementAndGet();
 
-        var snapshot = new TextDocumentSnapshot(
-            DocumentId.create(),
-            DocumentUri.fromPath(filePath),
-            DocumentVersion.parse(Integer.toString(generation)),
-            languageId,
-            new DocumentOrigin(BackingKind.FILE, ProvenanceKind.ORIGINAL),
-            text,
-            StandardCharsets.UTF_8);
+        TextDocumentSnapshot snapshot = captureSnapshot();
 
         CompletableFuture.supplyAsync(() -> diagnosticsProvider.compute(snapshot), worker)
             .thenAccept(result -> Platform.runLater(() -> applyDiagnosticsIfLatest(generation, result, snapshot)))
