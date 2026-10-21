@@ -66,12 +66,12 @@ public final class JavaLanguageSupport extends BaseLanguageSupport {
 
     @Override
     public LanguageFeatureFactory<CompletionProvider> completionFactory() {
-        return JavaCompletionProvider::new;
+        return (project, _) -> new JavaCompletionProvider(project);
     }
 
     @Override
     public LanguageFeatureFactory<SignatureHelpProvider> signatureHelpFactory() {
-        return (project, file) -> new JdtJavaSignatureHelpProvider(file, JavaCodeEditorPane.resolveSystemModules());
+        return (_, _) -> new JdtJavaSignatureHelpProvider(JavaCodeEditorPane.resolveSystemModules());
     }
 
     @Override

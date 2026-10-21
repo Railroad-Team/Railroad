@@ -181,7 +181,8 @@ public final class ProjectDiagnosticsScanner {
         if (projectDiagnosticsFactory != null)
             return projectDiagnosticsFactory.create(diagnosticsContext, target.path());
 
-        return target.support().diagnosticsFactory().create(diagnosticsContext.project(), target.path());
+        return target.support().diagnosticsFactory().create(diagnosticsContext.project(),
+            DocumentUri.fromPath(target.path()));
     }
 
     private static List<ScanTarget> scanTargets(ProjectIndexContext context) {

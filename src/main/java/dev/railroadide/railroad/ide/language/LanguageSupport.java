@@ -108,7 +108,7 @@ public interface LanguageSupport {
     }
 
     /**
-     * Returns a factory for file diagnostics.
+     * Returns a factory for document diagnostics.
      *
      * @return the feature factory, or {@code null} if unsupported
      */

@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRuleEngine;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.project.*;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
@@ -175,6 +177,23 @@ public class CoreInspectionRulesTest {
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_PUBLIC_CLASS_NOT_NAMED_AFTER_FILE".equals(d.code())));
         assertTrue(diagnostics.stream().anyMatch(
             d -> d.message().contains("Public class 'Wrong' must be declared in a file named 'Example.java'")));
+    }
+
+    @Test
+    public void corePublicClassNotNamedAfterFileRuleSkipsDocumentsWithoutFileNames() {
+        String source = "public class Wrong {}";
+        var model = JavaSemanticAnalyzer.analyzeFacts(source);
+        for (DocumentUri uri : List.of(
+            DocumentUri.virtual("generated", "/demo/"),
+            DocumentUri.parse("jar:file:///libs/example.jar!/"))) {
+            var context = new JavaRuleContext(uri, source, model);
+            List<SemanticDiagnostic> diagnostics = new ArrayList<>();
+
+            assertDoesNotThrow(() -> JavaInspectionRuleEngine.runRules(
+                new CorePublicClassNotNamedAfterFileInspection(), context, diagnostics::add));
+
+            assertTrue(diagnostics.isEmpty());
+        }
     }
 
     @Test

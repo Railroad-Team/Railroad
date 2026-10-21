@@ -1,8 +1,10 @@
 package dev.railroadide.railroad.plugin.spi.inspection;
 
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
+import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
@@ -17,6 +19,52 @@ import java.lang.reflect.Modifier;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaRuleContextTest {
+
+    @Test
+    public void exposesPhysicalLocationFromPathAndUriConstructors() {
+        Path path = Path.of("sources", "Example.java");
+        DocumentUri uri = DocumentUri.fromPath(path);
+        String source = "class Example {}";
+        var model = JavaSemanticAnalyzer.analyzeFacts(source);
+        var index = JavaProjectSemanticIndex.empty();
+
+        for (JavaRuleContext context : List.of(
+            new JavaRuleContext(path, source, model),
+            new JavaRuleContext(path, source, model, index),
+            new JavaRuleContext(uri, source, model),
+            new JavaRuleContext(uri, source, model, index))) {
+            assertEquals(uri, context.documentUri());
+            assertEquals(path.toAbsolutePath().normalize(), context.physicalPath().orElseThrow());
+            assertEquals(context.physicalPath().orElseThrow(), context.filePath());
+            assertEquals(source, context.documentText());
+            assertSame(model, context.semanticModel());
+        }
+    }
+
+    @Test
+    public void exposesVirtualLocationAndRejectsPhysicalPathAccess() {
+        String source = "class Example {}";
+        var model = JavaSemanticAnalyzer.analyzeFacts(source);
+        var index = JavaProjectSemanticIndex.empty();
+
+        for (DocumentUri uri : List.of(
+            DocumentUri.virtual("generated", "/demo/Example.java"),
+            DocumentUri.parse("jar:file:///libs/example.jar!/demo/Example.java"))) {
+            for (JavaRuleContext context : List.of(
+                new JavaRuleContext(uri, source, model),
+                new JavaRuleContext(uri, source, model, index))) {
+                assertEquals(uri, context.documentUri());
+                assertTrue(context.physicalPath().isEmpty());
+                assertEquals(source, context.documentText());
+                assertSame(model, context.semanticModel());
+
+                IllegalStateException exception = assertThrows(IllegalStateException.class, context::filePath);
+                assertTrue(exception.getMessage().contains("no physical filesystem path"));
+                assertTrue(exception.getMessage().contains(uri.toString()));
+                assertTrue(exception.getMessage().contains("physicalPath()"));
+            }
+        }
+    }
 
     @Test
     public void exposesImportAndStaticResolutionHelpers() {

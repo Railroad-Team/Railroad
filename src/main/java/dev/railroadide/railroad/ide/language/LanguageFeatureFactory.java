@@ -1,22 +1,21 @@
 package dev.railroadide.railroad.ide.language;
 
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 
-import java.nio.file.Path;
-
 /**
- * Creates a language feature for a file in a project.
+ * Creates language features for physical or virtual documents in a project.
  *
  * @param <T> the created feature type
  */
 @FunctionalInterface
 public interface LanguageFeatureFactory<T> {
     /**
-     * Creates the feature for the supplied file and project context.
+     * Creates a feature for a physical or virtual document.
      *
      * @param project the project whose files and configuration are used
-     * @param file the source file to process
+     * @param documentUri the physical or virtual document location
      * @return the feature instance
      */
-    T create(Project project, Path file);
+    T create(Project project, DocumentUri documentUri);
 }

@@ -10,6 +10,7 @@ import dev.railroadide.railroad.ide.classparser.stub.ConstructorStub;
 import dev.railroadide.railroad.ide.classparser.stub.FieldStub;
 import dev.railroadide.railroad.ide.classparser.stub.MethodStub;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
@@ -103,7 +104,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
     private static final String JAVA_TRY_RESOURCE = "JAVA_TRY_RESOURCE";
     private static final String JAVA_BLOCK = "JAVA_BLOCK";
 
-    private final Path filePath;
+    private final DocumentUri documentUri;
     private final String documentText;
     private final SemanticModel semanticModel;
     private final @Nullable JavaSymbolIndex symbolIndex;
@@ -148,7 +149,38 @@ public final class JavaRuleContext implements LanguageRuleContext {
         SemanticModel semanticModel,
         @Nullable JavaSymbolIndex symbolIndex
     ) {
-        this.filePath = Objects.requireNonNull(filePath, "filePath");
+        this(DocumentUri.fromPath(Objects.requireNonNull(filePath, "filePath")), documentText, semanticModel,
+            symbolIndex);
+    }
+
+    /**
+     * Creates a rule context for a physical or virtual document without a project symbol index.
+     *
+     * @param documentUri the document being inspected
+     * @param documentText the complete source text
+     * @param semanticModel the semantic model for the document
+     * @throws NullPointerException if any argument is {@code null}
+     */
+    public JavaRuleContext(DocumentUri documentUri, String documentText, SemanticModel semanticModel) {
+        this(documentUri, documentText, semanticModel, null);
+    }
+
+    /**
+     * Creates a rule context for a physical or virtual document with an optional project symbol index.
+     *
+     * @param documentUri the document being inspected
+     * @param documentText the complete source text
+     * @param semanticModel the semantic model for the document
+     * @param symbolIndex the project symbol index, or {@code null} to use JDK types
+     * @throws NullPointerException if the URI, text, or semantic model is {@code null}
+     */
+    public JavaRuleContext(
+        DocumentUri documentUri,
+        String documentText,
+        SemanticModel semanticModel,
+        @Nullable JavaSymbolIndex symbolIndex
+    ) {
+        this.documentUri = Objects.requireNonNull(documentUri, "documentUri");
         this.documentText = Objects.requireNonNull(documentText, "documentText");
         this.semanticModel = Objects.requireNonNull(semanticModel, "semanticModel");
         this.symbolIndex = symbolIndex;
@@ -295,9 +327,37 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return JavaLanguageSupport.LANGUAGE_ID;
     }
 
+    /**
+     * Returns the physical or virtual location of the inspected document.
+     *
+     * @return document URI
+     */
+    @Override
+    public DocumentUri documentUri() {
+        return documentUri;
+    }
+
+    /**
+     * Returns the document's physical path when its URI identifies a file.
+     *
+     * @return the physical path, or empty for virtual documents
+     */
+    public Optional<Path> physicalPath() {
+        return documentUri.filePath();
+    }
+
+    /**
+     * Returns the physical path for compatibility with existing file-based inspections.
+     * Use {@link #physicalPath()} when the document may be virtual.
+     *
+     * @return the physical source path
+     * @throws IllegalStateException if the document has no physical path
+     */
     @Override
     public Path filePath() {
-        return filePath;
+        return physicalPath().orElseThrow(() -> new IllegalStateException(
+            "Document has no physical filesystem path: " + documentUri
+                + ". Use physicalPath() to check availability."));
     }
 
     @Override

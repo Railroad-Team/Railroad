@@ -11,6 +11,7 @@ import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagn
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.document.api.Location.TextLocation;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 
@@ -39,8 +40,7 @@ public record JdtDiagnosticsProvider() implements DiagnosticsProvider<TextEditor
         parser.setBindingsRecovery(false);
         parser.setStatementsRecovery(true);
         parser.setSource(source);
-        parser.setUnitName(
-            snapshot.uri().filePath().get().getFileName().toString());
+        parser.setUnitName(compilationUnitName(snapshot.uri()));
 
         Map<String, String> options = JavaCore.getOptions();
         JavaCore.setComplianceOptions(JavaCore.VERSION_21, options);
@@ -49,6 +49,16 @@ public record JdtDiagnosticsProvider() implements DiagnosticsProvider<TextEditor
         CompilationUnit unit = (CompilationUnit) parser.createAST(null);
 
         return toDiagnostics(unit.getProblems(), source, snapshot);
+    }
+
+    /**
+     * Derives a compilation-unit filename from a physical or virtual document URI.
+     *
+     * @param uri document location, including opaque archive-entry URIs
+     * @return the final path segment, or {@code Snapshot.java} when no filename is available
+     */
+    public static String compilationUnitName(DocumentUri uri) {
+        return uri.fileName().orElse("Snapshot.java");
     }
 
     private static List<TextEditorDiagnostic> toDiagnostics(
