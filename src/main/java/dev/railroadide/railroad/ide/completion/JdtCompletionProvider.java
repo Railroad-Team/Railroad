@@ -1,5 +1,8 @@
 package dev.railroadide.railroad.ide.completion;
 
+import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import org.eclipse.jdt.core.dom.*;
 import org.jetbrains.annotations.Nullable;
 
@@ -11,13 +14,27 @@ import java.util.stream.Collectors;
 /**
  * Default completion provider using Eclipse JDT to resolve types and members.
  *
- * @param filePath source file path used for analysis
+ * @param filePath optional legacy file context; completion uses the supplied snapshot
  * @param systemModulePaths paths supplied to the JDT binding environment
  */
-public record JdtCompletionProvider(Path filePath, String[] systemModulePaths) implements CompletionProvider {
+public record JdtCompletionProvider(@Nullable Path filePath, String[] systemModulePaths) implements CompletionProvider {
+    /**
+     * Creates a JDT provider whose document location is supplied by each snapshot.
+     *
+     * @param systemModulePaths paths supplied to the JDT binding environment
+     */
+    public JdtCompletionProvider(String[] systemModulePaths) {
+        this(null, systemModulePaths);
+    }
+
     @Override
-    public @Nullable CompletionResult compute(String document, int triggerAt) {
-        if (document == null || document.isEmpty() || triggerAt < 0 || triggerAt >= document.length())
+    public @Nullable CompletionResult compute(DocumentSnapshot snapshot, int triggerAt) {
+        if (!(snapshot instanceof TextDocumentSnapshot textSnapshot)
+            || !JavaLanguageSupport.LANGUAGE_ID.equals(textSnapshot.languageId()))
+            return null;
+
+        String document = textSnapshot.text();
+        if (document.isEmpty() || triggerAt < 0 || triggerAt >= document.length())
             return null;
 
         if (document.charAt(triggerAt) != '.')
@@ -33,7 +50,7 @@ public record JdtCompletionProvider(Path filePath, String[] systemModulePaths) i
         parser.setResolveBindings(true);
         parser.setBindingsRecovery(true);
         parser.setStatementsRecovery(true);
-        parser.setUnitName(filePath.getFileName().toString());
+        parser.setUnitName(snapshot.uri().fileName().orElse("Snapshot.java"));
         parser.setEnvironment(systemModulePaths, null, null, false);
 
         CompilationUnit unit = (CompilationUnit) parser.createAST(null);

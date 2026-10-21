@@ -52,8 +52,8 @@ public class CorePublicClassNotNamedAfterFileInspection implements JavaInspectio
         JavaRuleContext context,
         JavaInspectionRuleReporter reporter
     ) {
-        String fileName = context.filePath().getFileName().toString();
-        if (!fileName.endsWith(".java"))
+        String fileName = context.documentUri().fileName().orElse(null);
+        if (fileName == null || !fileName.endsWith(".java"))
             return;
 
         String expectedClassName = fileName.substring(0, fileName.length() - ".java".length());

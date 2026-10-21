@@ -58,15 +58,7 @@ public record JdtDiagnosticsProvider() implements DiagnosticsProvider<TextEditor
      * @return the final path segment, or {@code Snapshot.java} when no filename is available
      */
     public static String compilationUnitName(DocumentUri uri) {
-        String path = uri.value().getPath();
-        if (path == null) {
-            path = uri.value().getSchemeSpecificPart();
-        }
-
-        if (path == null || path.isEmpty() || path.endsWith("/"))
-            return "Snapshot.java";
-
-        return path.substring(path.lastIndexOf('/') + 1);
+        return uri.fileName().orElse("Snapshot.java");
     }
 
     private static List<TextEditorDiagnostic> toDiagnostics(

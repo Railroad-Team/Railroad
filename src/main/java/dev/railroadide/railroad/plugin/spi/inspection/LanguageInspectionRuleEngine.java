@@ -50,7 +50,7 @@ public final class LanguageInspectionRuleEngine {
                     "Inspection rule '{}:{}' failed for {}",
                     provider.id(),
                     rule.id(),
-                    context.filePath(),
+                    context.documentUri(),
                     exception);
             }
         }

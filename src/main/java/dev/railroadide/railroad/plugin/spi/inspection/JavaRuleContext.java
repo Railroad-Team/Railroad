@@ -332,6 +332,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
      *
      * @return document URI
      */
+    @Override
     public DocumentUri documentUri() {
         return documentUri;
     }

@@ -5,6 +5,7 @@ import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagn
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import dev.railroadide.railroad.ide.sst.document.api.Location.TextLocation;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
@@ -20,7 +21,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 
 import javax.tools.Diagnostic;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -38,7 +38,7 @@ public record JavaDiagnosticsProvider(
     @Nullable JavaSymbolIndex projectIndex
 ) implements DiagnosticsProvider<TextEditorDiagnostic> {
     /**
-     * Creates diagnostics without project indexing; the snapshot supplies the source path.
+     * Creates diagnostics without project indexing; the snapshot supplies the document URI.
      */
     public JavaDiagnosticsProvider() {
         this(null, null);
@@ -85,7 +85,7 @@ public record JavaDiagnosticsProvider(
             semanticModel = JavaSemanticAnalyzer.analyzeFacts(document);
         }
 
-        List<SemanticDiagnostic> semanticDiagnostics = runRegisteredInspections(snapshot.uri().filePath().get(),
+        List<SemanticDiagnostic> semanticDiagnostics = runRegisteredInspections(snapshot.uri(),
             document, semanticModel, symbolIndex);
         char[] source = document.toCharArray();
 
@@ -111,13 +111,13 @@ public record JavaDiagnosticsProvider(
     }
 
     private List<SemanticDiagnostic> runRegisteredInspections(
-        Path filePath,
+        DocumentUri documentUri,
         String document,
         SemanticModel semanticModel,
         JavaSymbolIndex symbolIndex
     ) {
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
-        var context = new JavaRuleContext(filePath, document, semanticModel, symbolIndex);
+        var context = new JavaRuleContext(documentUri, document, semanticModel, symbolIndex);
         JavaInspectionReporter reporter = diagnostic -> diagnostics
             .add(Objects.requireNonNull(diagnostic, "diagnostic"));
 
@@ -129,7 +129,7 @@ public record JavaDiagnosticsProvider(
                 JavaInspectionRuleEngine.runRules(provider, context, reporter);
             } catch (Exception exception) {
                 Railroad.LOGGER.error("Plugin Java inspection rule provider '{}' failed for {}", provider.id(),
-                    filePath, exception);
+                    documentUri, exception);
             }
         }
 

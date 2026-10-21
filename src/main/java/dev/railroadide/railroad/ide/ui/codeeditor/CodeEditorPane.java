@@ -389,7 +389,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (!supportsCompletion())
             return;
 
-        String snapshot = getText();
+        TextDocumentSnapshot snapshot = captureSnapshot();
         int generation = completionGeneration.incrementAndGet();
         CompletableFuture.supplyAsync(() -> completionProvider.compute(snapshot, dotIndex), worker)
             .thenAccept(result -> Platform.runLater(() -> {

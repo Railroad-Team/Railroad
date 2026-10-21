@@ -1,6 +1,11 @@
 package dev.railroadide.railroad.ide.ui.codeeditor;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentOrigin;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
+import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import dev.railroadide.railroad.ide.ui.editor.EditorSaveState;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
@@ -27,6 +32,7 @@ import org.fxmisc.richtext.model.PlainTextChange;
 import org.reactfx.Subscription;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -94,6 +100,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     private final ReadOnlyBooleanWrapper saved = new ReadOnlyBooleanWrapper(this, "saved");
     private final ReadOnlyBooleanWrapper saveFailed = new ReadOnlyBooleanWrapper(this, "saveFailed");
     private final AtomicLong editVersion = new AtomicLong();
+    private final DocumentId documentId = DocumentId.create();
     private final AtomicLong savedVersion = new AtomicLong();
     private volatile boolean backingFileMissing;
     private volatile boolean discardChangesOnClose;
@@ -172,6 +179,18 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         });
 
         shutdownRegistration = ShutdownHooks.registerHook(this::close);
+    }
+
+    /**
+     * Captures the current editor content and location for background language features.
+     * Call on the JavaFX thread; the returned snapshot remains readable after subsequent edits.
+     *
+     * @return immutable text revision with this editor's stable identity and current edit version
+     */
+    protected final TextDocumentSnapshot captureSnapshot() {
+        DocumentUri uri = DocumentUri.fromPath(filePath);
+        return new TextDocumentSnapshot(documentId, uri, new DocumentVersion(editVersion.get()), languageId,
+            DocumentOrigin.original(uri), getText(), StandardCharsets.UTF_8);
     }
 
     @Override

@@ -1,18 +1,20 @@
 package dev.railroadide.railroad.ide.completion;
 
+import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Abstraction for providing code completion suggestions.
+ * Provides code completion suggestions for an immutable document revision.
  */
+@FunctionalInterface
 public interface CompletionProvider {
     /**
      * Computes completion suggestions for the specified trigger location.
      *
-     * @param document full document snapshot
-     * @param triggerAt index of the trigger character (e.g. '.')
-     * @return a {@link CompletionResult} or {@code null} if completions are not available
+     * @param snapshot the immutable physical or virtual document revision to inspect
+     * @param triggerAt zero-based UTF-16 offset of the trigger character in the snapshot text (e.g. '.')
+     * @return a {@link CompletionResult}, or {@code null} when the content, language, or trigger is unsupported
      */
     @Nullable
-    CompletionResult compute(String document, int triggerAt);
+    CompletionResult compute(DocumentSnapshot snapshot, int triggerAt);
 }
