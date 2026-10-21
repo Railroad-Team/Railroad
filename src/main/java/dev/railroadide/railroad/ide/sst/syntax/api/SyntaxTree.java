@@ -10,6 +10,9 @@ import java.util.Objects;
 
 /**
  * Entry point for a parsed concrete syntax tree.
+ * A completed tree retains its exact source snapshot and immutable nodes. It supports
+ * concurrent reads after safe publication and uses reference equality. Creating a newer
+ * tree does not invalidate this tree or its node identities.
  * <p>
  * Most consumers start here, obtain the {@linkplain #root() root node}, and then traverse
  * via {@link SyntaxNode#children()} or helpers such as

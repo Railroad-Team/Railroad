@@ -1,6 +1,10 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.document.api.BackingKind;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentOrigin;
+import dev.railroadide.railroad.ide.sst.document.api.OriginReference;
+import dev.railroadide.railroad.ide.sst.document.api.ProvenanceKind;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
@@ -254,6 +258,28 @@ class JavaSyntaxParserTest {
         assertThrows(
             IllegalArgumentException.class,
             () -> JavaSyntaxParser.parseIncremental(previousTree, "not the old source", newSource, edit));
+    }
+
+    @Test
+    void incrementalCompatibilityOverloadsPreserveOrigin() {
+        String oldSource = "class A { int value = 1; }";
+        String newSource = "class A { int value = 20; }";
+        var origin = new DocumentOrigin(BackingKind.VIRTUAL, ProvenanceKind.DECOMPILED,
+            List.of(new OriginReference(DocumentUri.parse("jar:file:///library.jar!/A.class"))));
+        var snapshot = new TextDocumentSnapshot(DocumentId.create(), DocumentUri.virtual("decompiled", "A.java"),
+            new DocumentVersion(5), "java", origin, oldSource, StandardCharsets.UTF_16);
+        SyntaxTree tree = JavaSyntaxParser.parse(snapshot);
+        var edit = new JavaSyntaxParser.TextEdit(oldSource.indexOf("1"), 1, "20");
+
+        var next = JavaSyntaxParser.parseIncremental(tree, oldSource, newSource, edit).tree().documentSnapshot();
+        var versioned = JavaSyntaxParser.parseIncremental(tree, new DocumentVersion(9), oldSource, newSource, edit)
+            .tree().documentSnapshot();
+
+        assertSame(origin, next.origin());
+        assertSame(origin, versioned.origin());
+        assertEquals(snapshot.encoding(), next.encoding());
+        assertEquals(snapshot.version().next(), next.version());
+        assertEquals(new DocumentVersion(9), versioned.version());
     }
 
     private static long countKind(List<String> kinds, String kindId) {

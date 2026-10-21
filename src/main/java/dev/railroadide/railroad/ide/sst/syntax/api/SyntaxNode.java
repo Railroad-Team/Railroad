@@ -9,6 +9,9 @@ import java.util.Optional;
  * This is the primary tree API used by inspections. Nodes expose parser kinds, source
  * offsets, and parent/child relationships while remaining independent of the internal
  * green/red tree implementation.
+ * Implementations used in a published tree must be deeply immutable and safe for
+ * concurrent reads. Lazy caches must preserve stable node identity and safely publish
+ * immutable values. Trees retain nodes rather than cloning provider implementations.
  * <p>
  * Contract:
  * <ul>

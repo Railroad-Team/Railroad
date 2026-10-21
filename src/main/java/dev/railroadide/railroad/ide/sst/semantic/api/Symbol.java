@@ -9,6 +9,9 @@ import java.util.Optional;
  * <p>
  * A symbol represents something that can be declared and/or referenced in Java source,
  * such as a type, field, method, parameter, or local variable.
+ * Implementations supplied to published semantic models or scopes must be deeply
+ * immutable and safe for concurrent reads, including any attached syntax node.
+ * Models retain symbol identity; they do not clone provider-defined implementations.
  */
 public interface Symbol {
     /**

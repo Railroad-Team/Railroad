@@ -9,11 +9,7 @@ import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic;
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagnostic;
 import dev.railroadide.railroad.ide.signature.SignatureHelp;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
-import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.ui.DiagnosticPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRListView;
@@ -48,7 +44,6 @@ import org.fxmisc.richtext.model.StyleSpansBuilder;
 import org.jspecify.annotations.Nullable;
 
 import javax.tools.Diagnostic;
-
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -274,6 +269,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             DocumentUri.fromPath(filePath),
             DocumentVersion.parse(Integer.toString(generation)),
             languageId,
+            new DocumentOrigin(BackingKind.FILE, ProvenanceKind.ORIGINAL),
             text,
             StandardCharsets.UTF_8);
 
@@ -292,13 +288,28 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
         diagnosticPopup.hide();
 
-        visibleDiagnostics = diagnostics;
+        visibleDiagnostics = validatedDiagnostics(diagnostics, snapshot);
         boolean lineDecorationsChanged = recomputeLineDecorations();
         applyEditorStyles();
         restoreBracketHighlight();
         if (lineDecorationsChanged) {
             requestLayout();
         }
+    }
+
+    public static List<TextEditorDiagnostic> validatedDiagnostics(List<TextEditorDiagnostic> diagnostics,
+        DocumentSnapshot snapshot) {
+        List<TextEditorDiagnostic> valid = new ArrayList<>();
+        for (TextEditorDiagnostic diagnostic : diagnostics) {
+            try {
+                diagnostic.location().validateAgainst(snapshot);
+                valid.add(diagnostic);
+            } catch (IllegalArgumentException | IndexOutOfBoundsException | NullPointerException exception) {
+                Railroad.LOGGER.warn("Discarding diagnostic with an invalid location for snapshot {} version {}",
+                    snapshot.id(), snapshot.version(), exception);
+            }
+        }
+        return List.copyOf(valid);
     }
 
     private void installDiagnosticPopupHandlers() {
@@ -919,10 +930,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         Map<Integer, String> updatedMessages = new LinkedHashMap<>();
 
         for (TextEditorDiagnostic diagnostic : visibleDiagnostics) {
-            int line = (int) diagnostic.location().line();
-            if (line <= 0)
-                continue;
-
+            int line = diagnostic.location().line() + 1;
             Diagnostic.Kind kind = diagnostic.kind();
             Diagnostic.Kind effectiveKind = kind == Diagnostic.Kind.ERROR
                 ? Diagnostic.Kind.ERROR

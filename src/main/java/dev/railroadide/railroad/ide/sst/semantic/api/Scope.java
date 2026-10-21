@@ -5,18 +5,31 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 
 /**
- * Mutable lexical scope used during declaration and resolution passes.
+ * Lexical scope constructed during declaration and resolution, then frozen for publication.
  * <p>
- * This type is part of the public semantic model so consumers can inspect the final scope
- * tree, but it is primarily produced by semantic analysis rather than constructed by
- * plugin code.
+ * Construction is thread-confined. {@link SemanticModel.Builder#build()} freezes the
+ * entire connected hierarchy before exposing it. Freezing is permanent: retained
+ * construction references cannot change a published scope. Frozen scopes support
+ * concurrent reads after safe publication without external synchronisation.
  */
 public final class Scope {
     private final @Nullable Scope parent;
     private final Map<String, List<Symbol>> declarationsByName = new LinkedHashMap<>();
+    private final List<Scope> children = new ArrayList<>();
+    private boolean frozen;
 
+    /**
+     * Creates a construction scope, registering it with its parent when present.
+     *
+     * @param parent enclosing scope, or {@code null} for a root
+     * @throws IllegalStateException if the parent has already been frozen
+     */
     public Scope(@Nullable Scope parent) {
         this.parent = parent;
+        if (parent != null) {
+            parent.requireMutable();
+            parent.children.add(this);
+        }
     }
 
     /**
@@ -28,6 +41,8 @@ public final class Scope {
 
     /**
      * Creates a child scope linked to this scope.
+     *
+     * @throws IllegalStateException if this scope has been frozen
      */
     public Scope child() {
         return new Scope(this);
@@ -41,9 +56,53 @@ public final class Scope {
     }
 
     /**
+     * Returns an immutable list of directly nested scopes in construction order.
+     * During construction this is a detached view of the current children.
+     *
+     * @return child scopes
+     */
+    public List<Scope> children() {
+        return List.copyOf(children);
+    }
+
+    /**
+     * Permanently freezes this scope, its ancestors, and all their descendants.
+     * This operation is idempotent and must run on the construction thread before
+     * sharing the hierarchy. Symbols must satisfy {@link Symbol}'s immutability contract.
+     *
+     * @return this scope
+     */
+    public Scope freeze() {
+        Scope root = this;
+        while (root.parent != null) {
+            root = root.parent;
+        }
+        if (root.frozen)
+            return this;
+
+        Deque<Scope> pending = new ArrayDeque<>();
+        pending.add(root);
+        while (!pending.isEmpty()) {
+            Scope scope = pending.removeFirst();
+            scope.declarationsByName.replaceAll((_, symbols) -> List.copyOf(symbols));
+            scope.frozen = true;
+            pending.addAll(scope.children);
+        }
+        return this;
+    }
+
+    private void requireMutable() {
+        if (frozen)
+            throw new IllegalStateException("Scope has been frozen for publication");
+    }
+
+    /**
      * Records a symbol declaration in this scope.
+     *
+     * @throws IllegalStateException if this scope has been frozen
      */
     public void declare(Symbol symbol) {
+        requireMutable();
         Objects.requireNonNull(symbol, "symbol");
         declarationsByName
             .computeIfAbsent(symbol.simpleName(), _ -> new ArrayList<>())
@@ -92,6 +151,6 @@ public final class Scope {
     public Map<String, List<Symbol>> snapshotDeclarations() {
         Map<String, List<Symbol>> copy = new LinkedHashMap<>();
         declarationsByName.forEach((name, symbols) -> copy.put(name, List.copyOf(symbols)));
-        return Map.copyOf(copy);
+        return Collections.unmodifiableMap(copy);
     }
 }
