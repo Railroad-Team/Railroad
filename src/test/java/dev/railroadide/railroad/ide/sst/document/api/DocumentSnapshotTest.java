@@ -219,6 +219,96 @@ public class DocumentSnapshotTest {
     }
 
     @Test
+    public void generatedDocumentRetainsIdentityAndOrigin() {
+        DocumentUri uri = DocumentUri.virtual("generated", "demo/Example.java");
+        var registry = new DocumentIdentityRegistry();
+        DocumentId id = registry.getOrCreate(uri);
+        DocumentVersion version = registry.currentVersion(id);
+        var origin = new DocumentOrigin(BackingKind.VIRTUAL, ProvenanceKind.GENERATED);
+        var original = new TextDocumentSnapshot(
+            id, uri, version, "java", origin, "class Example {}", StandardCharsets.UTF_8);
+
+        assertTrue(uri.filePath().isEmpty());
+        assertEquals(id, original.id());
+        assertEquals(uri, original.uri());
+        assertEquals(origin, original.origin());
+        assertEquals("class Example {}", original.text());
+
+        DocumentVersion nextVersion = registry.advanceVersion(id);
+        var updated = new TextDocumentSnapshot(
+            id, uri, nextVersion, "java", origin, "class Example { int value; }", StandardCharsets.UTF_8);
+
+        assertEquals(id, updated.id());
+        assertEquals(uri, updated.uri());
+        assertEquals(origin, updated.origin());
+        assertEquals(version.next(), updated.version());
+        assertEquals("class Example { int value; }", updated.text());
+        assertEquals(id, original.id());
+        assertEquals(uri, original.uri());
+        assertEquals(origin, original.origin());
+        assertEquals(version, original.version());
+        assertEquals("class Example {}", original.text());
+        assertEquals(id, registry.getOrCreate(uri));
+        assertEquals(id, registry.find(uri).orElseThrow());
+    }
+
+    @Test
+    public void decompiledDocumentReferencesOriginalBinary() {
+        DocumentUri binaryUri = DocumentUri.parse("jar:file:///libs/example.jar!/demo/Example.class");
+        var binary = new BinaryDocumentSnapshot(
+            DocumentId.create(), binaryUri, DocumentVersion.initial(), "application/java-vm",
+            DocumentOrigin.original(binaryUri), new byte[]{(byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE});
+        DocumentId decompiledId = DocumentId.create();
+        DocumentUri decompiledUri = DocumentUri.virtual("decompiled", "demo/Example.java");
+        var origin = new DocumentOrigin(
+            BackingKind.VIRTUAL, ProvenanceKind.DECOMPILED, List.of(new OriginReference(binaryUri)));
+        var decompiled = new TextDocumentSnapshot(
+            decompiledId, decompiledUri, DocumentVersion.initial(), "java", origin,
+            "package demo; class Example {}", StandardCharsets.UTF_8);
+
+        assertNotEquals(binary.id(), decompiled.id());
+        assertEquals(decompiledId, decompiled.id());
+        assertEquals(binaryUri, binary.uri());
+        assertEquals(decompiledUri, decompiled.uri());
+        assertEquals(BackingKind.ARCHIVE_ENTRY, binary.origin().backing());
+        assertEquals(origin, decompiled.origin());
+        assertEquals(BackingKind.VIRTUAL, decompiled.origin().backing());
+        assertEquals(ProvenanceKind.DECOMPILED, decompiled.origin().provenance());
+        assertEquals(List.of(new OriginReference(binary.uri())), decompiled.origin().sources());
+        assertTrue(binary.uri().filePath().isEmpty());
+        assertTrue(decompiled.uri().filePath().isEmpty());
+    }
+
+    @Test
+    public void releasingVirtualDocumentPreservesExistingSnapshots() {
+        DocumentUri uri = DocumentUri.virtual("decompiled", "Example.java");
+        var registry = new DocumentIdentityRegistry();
+        DocumentId documentId = registry.getOrCreate(uri);
+        DocumentVersion version = registry.advanceVersion(documentId);
+        var snapshot = new TextDocumentSnapshot(
+            documentId, uri, version, "java",
+            new DocumentOrigin(BackingKind.VIRTUAL, ProvenanceKind.DECOMPILED),
+            "class Example {}", StandardCharsets.UTF_8);
+
+        registry.release(documentId);
+
+        assertEquals(documentId, snapshot.id());
+        assertEquals(uri, snapshot.uri());
+        assertEquals(version, snapshot.version());
+        assertEquals("class Example {}", snapshot.text());
+        assertTrue(registry.find(uri).isEmpty());
+
+        DocumentId replacementId = registry.getOrCreate(uri);
+
+        assertNotEquals(documentId, replacementId);
+        assertEquals(replacementId, registry.find(uri).orElseThrow());
+        assertEquals(documentId, snapshot.id());
+        assertEquals(uri, snapshot.uri());
+        assertEquals(version, snapshot.version());
+        assertEquals("class Example {}", snapshot.text());
+    }
+
+    @Test
     public void textSnapshotAlsoAcceptsPhysicalDocumentLocations() {
         DocumentUri physicalUri = DocumentUri.fromPath(Path.of("Example.java").toAbsolutePath());
 
