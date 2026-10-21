@@ -23,7 +23,7 @@ public record RelatedLocation(
         if (location == null)
             throw new IllegalArgumentException("Location cannot be null");
 
-        if (message == null || message.isEmpty())
-            throw new IllegalArgumentException("Message cannot be null or empty");
+        if (message == null || message.isBlank())
+            throw new IllegalArgumentException("Message cannot be null or blank");
     }
 }
