@@ -10,9 +10,12 @@ import dev.railroadide.railroad.ide.diagnostics.inspections.CoreNameResolutionIn
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationManager;
+import dev.railroadide.railroad.ide.sst.document.api.BackingKind;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentOrigin;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
+import dev.railroadide.railroad.ide.sst.document.api.ProvenanceKind;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
 import dev.railroadide.railroad.java.JDK;
@@ -69,6 +72,32 @@ public class JavaDiagnosticsProviderTest {
         List<TextEditorDiagnostic> diagnostics = provider.compute(snapshot);
 
         assertTrue(diagnostics.stream().anyMatch(diagnostic -> "SEM_UNRESOLVED_NAME".equals(diagnostic.code())));
+    }
+
+    @Test
+    public void reportsPublicClassFilenameMismatchInGeneratedVirtualDocument() {
+        ensureJavaLanguageSupportRegistered();
+        var snapshot = new TextDocumentSnapshot(
+            DocumentId.create(),
+            DocumentUri.virtual("generated", "/demo/Expected.java"),
+            DocumentVersion.initial(),
+            JavaLanguageSupport.LANGUAGE_ID,
+            new DocumentOrigin(BackingKind.VIRTUAL, ProvenanceKind.GENERATED),
+            "public class Wrong {}",
+            StandardCharsets.UTF_8);
+        var provider = new JavaDiagnosticsProvider();
+
+        assertTrue(snapshot.uri().filePath().isEmpty());
+
+        List<TextEditorDiagnostic> diagnostics = assertDoesNotThrow(() -> provider.compute(snapshot));
+
+        TextEditorDiagnostic mismatch = diagnostics.stream()
+            .filter(diagnostic -> "SEM_PUBLIC_CLASS_NOT_NAMED_AFTER_FILE".equals(diagnostic.code()))
+            .findFirst()
+            .orElse(null);
+        assertNotNull(mismatch, "Generated virtual documents must receive the public-class-filename inspection");
+        assertEquals(Diagnostic.Kind.ERROR, mismatch.kind());
+        assertEquals("Public class 'Wrong' must be declared in a file named 'Expected.java'", mismatch.message());
     }
 
     @Test
