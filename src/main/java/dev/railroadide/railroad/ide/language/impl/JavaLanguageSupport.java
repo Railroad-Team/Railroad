@@ -56,7 +56,7 @@ public final class JavaLanguageSupport extends BaseLanguageSupport {
 
     @Override
     public LanguageFeatureFactory<DiagnosticsProvider> diagnosticsFactory() {
-        return LanguageFeatureFactory.fromUri((project, _) -> new JavaDiagnosticsProvider(project));
+        return (project, _) -> new JavaDiagnosticsProvider(project);
     }
 
     @Override
@@ -66,13 +66,12 @@ public final class JavaLanguageSupport extends BaseLanguageSupport {
 
     @Override
     public LanguageFeatureFactory<CompletionProvider> completionFactory() {
-        return LanguageFeatureFactory.fromUri((project, _) -> new JavaCompletionProvider(project));
+        return (project, _) -> new JavaCompletionProvider(project);
     }
 
     @Override
     public LanguageFeatureFactory<SignatureHelpProvider> signatureHelpFactory() {
-        return LanguageFeatureFactory
-            .fromUri((_, _) -> new JdtJavaSignatureHelpProvider(JavaCodeEditorPane.resolveSystemModules()));
+        return (_, _) -> new JdtJavaSignatureHelpProvider(JavaCodeEditorPane.resolveSystemModules());
     }
 
     @Override

@@ -42,7 +42,7 @@ public record CodeEditorConfig(
 
     /**
      * Creates document-specific providers from the available language-support factories.
-     * This compatibility entry point converts the path to an absolute, normalized file URI.
+     * Converts the path to an absolute, normalized file URI before invoking the factories.
      * Use {@link #fromDocument} when the caller already has a document URI.
      *
      * @param project project whose files and workspace are being displayed
@@ -63,14 +63,12 @@ public record CodeEditorConfig(
 
     /**
      * Creates providers for a physical or virtual document without opening an editor.
-     * Legacy Path-only factories support file URIs through their compatibility bridge.
      *
      * @param project project whose files and workspace are being displayed
      * @param documentUri document for which services are created
      * @param languageSupport language support whose provider factories should be used
      * @param highlightingProvider syntax style provider, or null when unavailable
      * @return configuration with null entries for unavailable services
-     * @throws UnsupportedOperationException if an available legacy factory cannot handle the document URI
      */
     public static CodeEditorConfig fromDocument(
         Project project,
@@ -87,13 +85,13 @@ public record CodeEditorConfig(
         var signatureHelpFactory = languageSupport.signatureHelpFactory();
         CompletionProvider completionProvider = completionFactory == null
             ? null
-            : completionFactory.createForDocument(project, documentUri);
+            : completionFactory.create(project, documentUri);
         DiagnosticsProvider diagnosticsProvider = diagnosticsFactory == null
             ? null
-            : diagnosticsFactory.createForDocument(project, documentUri);
+            : diagnosticsFactory.create(project, documentUri);
         SignatureHelpProvider signatureHelpProvider = signatureHelpFactory == null
             ? null
-            : signatureHelpFactory.createForDocument(project, documentUri);
+            : signatureHelpFactory.create(project, documentUri);
 
         return new CodeEditorConfig(
             languageSupport.languageId(),
