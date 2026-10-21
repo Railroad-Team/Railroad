@@ -20,8 +20,7 @@ import java.util.Objects;
 public record AddressRange(
     String addressSpaceId,
     long start,
-    long end
-) {
+    long end) {
     public AddressRange {
         Objects.requireNonNull(addressSpaceId, "addressSpaceId must not be null");
         if (addressSpaceId.isBlank())
