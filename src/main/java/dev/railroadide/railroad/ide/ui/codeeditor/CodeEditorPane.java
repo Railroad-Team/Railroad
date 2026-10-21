@@ -543,14 +543,15 @@ public abstract class CodeEditorPane extends TextEditorPane {
             return;
         }
 
-        String snapshot = getText();
+        String text = getText();
         int caret = getCaretPosition();
-        if (!shouldRequestSignatureHelp(snapshot, caret, textChanged)) {
+        if (!shouldRequestSignatureHelp(text, caret, textChanged)) {
             hideSignatureHelp();
             return;
         }
 
         int generation = signatureGeneration.incrementAndGet();
+        TextDocumentSnapshot snapshot = captureSnapshot();
 
         CompletableFuture.supplyAsync(() -> signatureHelpProvider.compute(snapshot, caret), worker)
             .thenAccept(help -> Platform.runLater(() -> applySignatureHelp(generation, help)))

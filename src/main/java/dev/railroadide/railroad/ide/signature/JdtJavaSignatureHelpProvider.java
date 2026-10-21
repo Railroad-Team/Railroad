@@ -1,6 +1,9 @@
 package dev.railroadide.railroad.ide.signature;
 
 import dev.railroadide.railroad.ide.completion.JdtCompletionProvider;
+import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import org.eclipse.jdt.core.dom.*;
 import org.jetbrains.annotations.Nullable;
 
@@ -13,13 +16,29 @@ import java.util.List;
  * analysing the document and producing {@link SignatureHelp} records; UI logic
  * remains in the editor.
  *
- * @param filePath source file path used for analysis
+ * @param filePath optional legacy file context; signature help uses the supplied snapshot
  * @param systemModulePaths paths supplied to the JDT binding environment
  */
-public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModulePaths) implements SignatureHelpProvider {
+public record JdtJavaSignatureHelpProvider(@Nullable Path filePath, String[] systemModulePaths)
+    implements
+        SignatureHelpProvider {
+    /**
+     * Creates a JDT provider whose document location is supplied by each snapshot.
+     *
+     * @param systemModulePaths paths supplied to the JDT binding environment
+     */
+    public JdtJavaSignatureHelpProvider(String[] systemModulePaths) {
+        this(null, systemModulePaths);
+    }
+
     @Override
-    public @Nullable SignatureHelp compute(String document, int caretPosition) {
-        if (document == null || document.isEmpty() || caretPosition < 0)
+    public @Nullable SignatureHelp compute(DocumentSnapshot snapshot, int caretPosition) {
+        if (!(snapshot instanceof TextDocumentSnapshot textSnapshot)
+            || !JavaLanguageSupport.LANGUAGE_ID.equals(textSnapshot.languageId()))
+            return null;
+
+        String document = textSnapshot.text();
+        if (document.isEmpty() || caretPosition < 0)
             return null;
 
         ASTParser parser = ASTParser.newParser(AST.getJLSLatest()); // TODO: Detect version from project settings
@@ -28,7 +47,7 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
         parser.setResolveBindings(true);
         parser.setBindingsRecovery(true);
         parser.setStatementsRecovery(true);
-        parser.setUnitName(filePath.getFileName().toString());
+        parser.setUnitName(snapshot.uri().fileName().orElse("Snapshot.java"));
         parser.setEnvironment(systemModulePaths, null, null, false);
 
         CompilationUnit unit = (CompilationUnit) parser.createAST(null);

@@ -71,7 +71,7 @@ public final class JavaLanguageSupport extends BaseLanguageSupport {
 
     @Override
     public LanguageFeatureFactory<SignatureHelpProvider> signatureHelpFactory() {
-        return (project, file) -> new JdtJavaSignatureHelpProvider(file, JavaCodeEditorPane.resolveSystemModules());
+        return (_, _) -> new JdtJavaSignatureHelpProvider(JavaCodeEditorPane.resolveSystemModules());
     }
 
     @Override
