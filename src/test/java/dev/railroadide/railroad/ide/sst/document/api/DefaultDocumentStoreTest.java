@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -14,7 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DefaultDocumentStoreTest {
-    private final DefaultDocumentStore store = new DefaultDocumentStore();
+    private final WorkspaceConfigurationSnapshot initialConfiguration = new WorkspaceConfigurationSnapshot(0, Set.of());
+    private final DefaultDocumentStore store = new DefaultDocumentStore("project-a", initialConfiguration);
     private final DocumentId id = DocumentId.create();
 
     @Test
@@ -136,7 +138,7 @@ public class DefaultDocumentStoreTest {
     @Test
     public void newerBackingReplacesCurrentBacking() {
         var backing = snapshot(new DocumentVersion(5), "backing");
-        var newerBacking = snapshot(new DocumentVersion(7), "newer backing");
+        var newerBacking = snapshot(new DocumentVersion(6), "newer backing");
 
         store.publishBacking(backing);
         store.publishBacking(newerBacking);
@@ -808,7 +810,7 @@ public class DefaultDocumentStoreTest {
         var text = snapshot(new DocumentVersion(5), "abc");
         var binary = new BinaryDocumentSnapshot(id, text.uri(), text.version(), text.languageId(),
             text.text().getBytes(StandardCharsets.UTF_8));
-        var binaryStore = new DefaultDocumentStore();
+        var binaryStore = new DefaultDocumentStore("project-binary", initialConfiguration);
         store.publishBacking(text);
         binaryStore.publishBacking(binary);
 
@@ -821,6 +823,625 @@ public class DefaultDocumentStoreTest {
         assertSame(binary, binaryStore.current(id).orElseThrow());
         assertNull(binaryStore.state(id).orElseThrow().overlay());
         assertEquals(1L, binaryStore.capture().revision());
+    }
+
+    @Test
+    public void capturedWorkspaceRetainsProjectIdAfterLaterPublications() {
+        assertEquals("project-a", store.capture().projectId());
+        var backing = snapshot(new DocumentVersion(5), "backing");
+        var overlay = snapshot(new DocumentVersion(6), "unsaved edits");
+        store.publishBacking(backing);
+        var workspace = store.capture();
+
+        store.publishOverlay(overlay);
+        var newerWorkspace = store.capture();
+
+        assertEquals("project-a", workspace.projectId());
+        assertEquals(1L, workspace.revision());
+        assertSame(backing, workspace.document(id).orElseThrow());
+        assertEquals("project-a", newerWorkspace.projectId());
+        assertEquals(2L, newerWorkspace.revision());
+        assertSame(overlay, newerWorkspace.document(id).orElseThrow());
+    }
+
+    @Test
+    public void storesForDifferentProjectsAdvanceWorkspaceRevisionsIndependently() {
+        var otherStore = new DefaultDocumentStore("project-b", initialConfiguration);
+        var otherId = DocumentId.create();
+        var backing = snapshot(new DocumentVersion(5), "project A backing");
+        var otherBacking = snapshot(otherId, new DocumentVersion(5), "project B backing");
+        assertEquals(0L, store.capture().revision());
+        assertEquals(0L, otherStore.capture().revision());
+
+        store.publishBacking(backing);
+        assertEquals(1L, store.capture().revision());
+        assertEquals(0L, otherStore.capture().revision());
+
+        otherStore.publishBacking(otherBacking);
+        assertEquals(1L, store.capture().revision());
+        assertEquals(1L, otherStore.capture().revision());
+
+        var overlay = snapshot(new DocumentVersion(6), "project A edits");
+        store.publishOverlay(overlay);
+        assertEquals(2L, store.capture().revision());
+        assertEquals(1L, otherStore.capture().revision());
+
+        var newerOtherBacking = snapshot(otherId, new DocumentVersion(6), "project B external change");
+        otherStore.publishBacking(newerOtherBacking);
+        assertEquals(2L, store.capture().revision());
+        assertEquals(2L, otherStore.capture().revision());
+
+        var otherOverlay = snapshot(otherId, new DocumentVersion(7), "project B edits");
+        otherStore.publishOverlay(otherOverlay);
+        var workspace = store.capture();
+        var otherWorkspace = otherStore.capture();
+        assertEquals("project-a", workspace.projectId());
+        assertEquals("project-b", otherWorkspace.projectId());
+        assertEquals(2L, workspace.revision());
+        assertEquals(3L, otherWorkspace.revision());
+        assertSame(overlay, workspace.document(id).orElseThrow());
+        assertSame(otherOverlay, otherWorkspace.document(otherId).orElseThrow());
+        assertEquals(Optional.empty(), workspace.document(otherId));
+        assertEquals(Optional.empty(), otherWorkspace.document(id));
+    }
+
+    @Test
+    public void captureStartsWithSuppliedEmptyConfigurationAtRevisionZero() {
+        var workspace = store.capture();
+
+        assertEquals("project-a", workspace.projectId());
+        assertEquals(0L, workspace.revision());
+        assertTrue(workspace.documents().isEmpty());
+        assertSame(initialConfiguration, workspace.configuration());
+        assertEquals(0L, workspace.configuration().revision());
+        assertEquals(Set.of(), workspace.configuration().moduleIds());
+    }
+
+    @Test
+    public void captureRetainsPublishedConfigurationAndDocumentsAfterLaterChanges() {
+        var backing = snapshot(new DocumentVersion(5), "backing");
+        var overlay = snapshot(new DocumentVersion(6), "edits");
+        var configuration = new WorkspaceConfigurationSnapshot(7, Set.of("main"));
+        var newerConfiguration = new WorkspaceConfigurationSnapshot(8, Set.of("main", "tests"));
+        store.publishBacking(backing);
+        store.publishConfiguration(configuration);
+        var workspace = store.capture();
+
+        store.publishOverlay(overlay);
+        store.publishConfiguration(newerConfiguration);
+        var newerWorkspace = store.capture();
+
+        assertEquals("project-a", workspace.projectId());
+        assertEquals(2L, workspace.revision());
+        assertSame(configuration, workspace.configuration());
+        assertSame(backing, workspace.document(id).orElseThrow());
+        assertEquals("project-a", newerWorkspace.projectId());
+        assertEquals(4L, newerWorkspace.revision());
+        assertSame(newerConfiguration, newerWorkspace.configuration());
+        assertSame(overlay, newerWorkspace.document(id).orElseThrow());
+    }
+
+    @Test
+    public void configurationRevisionAdvancesIndependentlyOfWorkspaceRevision() {
+        store.publishBacking(snapshot(new DocumentVersion(5), "backing"));
+        store.publishOverlay(snapshot(new DocumentVersion(6), "edits"));
+        assertEquals(2L, store.capture().revision());
+
+        var configuration = new WorkspaceConfigurationSnapshot(1, Set.of("main"));
+        store.publishConfiguration(configuration);
+        assertEquals(3L, store.capture().revision());
+        assertSame(configuration, store.capture().configuration());
+
+        var newerConfiguration = new WorkspaceConfigurationSnapshot(10, Set.of("main", "tests"));
+        store.publishConfiguration(newerConfiguration);
+        assertEquals(4L, store.capture().revision());
+        assertSame(newerConfiguration, store.capture().configuration());
+    }
+
+    @Test
+    public void rejectedOrUnchangedConfigurationsPreserveCapturedStateAndRevision() {
+        var configuration = new WorkspaceConfigurationSnapshot(7, Set.of("main"));
+        store.publishBacking(snapshot(new DocumentVersion(5), "backing"));
+        store.publishConfiguration(configuration);
+        var originalWorkspace = store.capture();
+
+        assertThrows(IllegalArgumentException.class,
+            () -> store.publishConfiguration(new WorkspaceConfigurationSnapshot(6, Set.of("main"))));
+        assertEquals(originalWorkspace, store.capture());
+
+        assertThrows(IllegalArgumentException.class,
+            () -> store.publishConfiguration(new WorkspaceConfigurationSnapshot(7, Set.of("changed"))));
+        assertEquals(originalWorkspace, store.capture());
+
+        store.publishConfiguration(new WorkspaceConfigurationSnapshot(7, Set.of("main")));
+        assertEquals(originalWorkspace, store.capture());
+        assertSame(configuration, store.capture().configuration());
+    }
+
+    @Test
+    public void configurationOnlyChangeAdvancesWorkspaceRevisionAndPreservesEarlierCapture() {
+        var configuration = new WorkspaceConfigurationSnapshot(1, Set.of("core", "java"));
+        store.publishConfiguration(configuration);
+        var workspace = store.capture();
+        assertEquals(1L, workspace.revision());
+
+        var newerConfiguration = new WorkspaceConfigurationSnapshot(2, Set.of("core", "java", "resources"));
+        store.publishConfiguration(newerConfiguration);
+        var newerWorkspace = store.capture();
+
+        assertSame(newerConfiguration, newerWorkspace.configuration());
+        assertEquals(2L, newerWorkspace.configuration().revision());
+        assertEquals(Set.of("core", "java", "resources"), newerWorkspace.configuration().moduleIds());
+        assertEquals(workspace.revision() + 1, newerWorkspace.revision());
+        assertEquals(2L, newerWorkspace.revision());
+        assertTrue(newerWorkspace.documents().isEmpty());
+
+        assertSame(configuration, workspace.configuration());
+        assertEquals(1L, workspace.configuration().revision());
+        assertEquals(Set.of("core", "java"), workspace.configuration().moduleIds());
+        assertEquals(1L, workspace.revision());
+        assertTrue(workspace.documents().isEmpty());
+    }
+
+    @Test
+    public void firstCaptureRetainsSuppliedInitialConfigurationAtWorkspaceRevisionZero() {
+        var configuration = new WorkspaceConfigurationSnapshot(7, Set.of("core", "java"));
+        var initializedStore = new DefaultDocumentStore("existing-project", configuration);
+
+        var workspace = initializedStore.capture();
+
+        assertEquals("existing-project", workspace.projectId());
+        assertEquals(0L, workspace.revision());
+        assertSame(configuration, workspace.configuration());
+        assertEquals(7L, workspace.configuration().revision());
+        assertEquals(Set.of("core", "java"), workspace.configuration().moduleIds());
+        assertTrue(workspace.documents().isEmpty());
+    }
+
+    @Test
+    public void sameVersionBackingWithDifferentTextIsRejectedWithoutChangingStateOrRevision() {
+        var backing = snapshot(new DocumentVersion(5), "int x = 10;");
+        var overlay = snapshot(new DocumentVersion(6), "unsaved edits");
+        var replacement = snapshot(new DocumentVersion(5), "int x = 20;");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        var originalState = store.state(id).orElseThrow();
+        var originalWorkspace = store.capture();
+
+        assertThrows(IllegalArgumentException.class, () -> store.publishBacking(replacement));
+
+        assertEquals(originalState, store.state(id).orElseThrow());
+        assertEquals(originalWorkspace, store.capture());
+        assertEquals(2L, store.capture().revision());
+        assertSame(backing, store.state(id).orElseThrow().backing());
+        assertSame(overlay, store.current(id).orElseThrow());
+    }
+
+    @Test
+    public void sameVersionOverlayWithDifferentTextIsRejectedWithoutChangingStateOrRevision() {
+        var backing = snapshot(new DocumentVersion(4), "backing");
+        var overlay = snapshot(new DocumentVersion(5), "int x = 10;");
+        var newerBacking = snapshot(new DocumentVersion(7), "external change");
+        var replacement = snapshot(new DocumentVersion(5), "int x = 20;");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        store.publishBacking(newerBacking);
+        var originalState = store.state(id).orElseThrow();
+        var originalWorkspace = store.capture();
+
+        assertThrows(IllegalArgumentException.class, () -> store.publishOverlay(replacement));
+
+        assertEquals(originalState, store.state(id).orElseThrow());
+        assertEquals(originalWorkspace, store.capture());
+        assertEquals(3L, store.capture().revision());
+        assertSame(newerBacking, store.state(id).orElseThrow().backing());
+        assertSame(overlay, store.current(id).orElseThrow());
+    }
+
+    @Test
+    public void sameVersionBackingWithIdenticalContentAllowsMetadataChanges() {
+        var backing = snapshot(new DocumentVersion(5), "int x = 10;");
+        var replacement = new TextDocumentSnapshot(
+            id, DocumentUri.virtual("generated", "/Renamed.txt"), backing.version(), "text",
+            new DocumentOrigin(BackingKind.VIRTUAL, ProvenanceKind.GENERATED),
+            backing.text(), StandardCharsets.UTF_16);
+        store.publishBacking(backing);
+
+        store.publishBacking(replacement);
+
+        assertSame(replacement, store.state(id).orElseThrow().backing());
+        assertSame(replacement, store.current(id).orElseThrow());
+        assertEquals(backing.version(), store.current(id).orElseThrow().version());
+        assertEquals(2L, store.capture().revision());
+    }
+
+    @Test
+    public void sameVersionStaleOverlayWithIdenticalContentAllowsMetadataChangesAndPreservesBase() {
+        var backing = snapshot(new DocumentVersion(4), "backing");
+        var overlay = snapshot(new DocumentVersion(5), "int x = 10;");
+        var newerBacking = snapshot(new DocumentVersion(7), "external change");
+        var replacement = new TextDocumentSnapshot(
+            id, DocumentUri.virtual("generated", "/Renamed.txt"), overlay.version(), "text",
+            new DocumentOrigin(BackingKind.VIRTUAL, ProvenanceKind.GENERATED),
+            overlay.text(), StandardCharsets.UTF_16);
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        store.publishBacking(newerBacking);
+
+        store.publishOverlay(replacement);
+
+        var state = store.state(id).orElseThrow();
+        assertSame(newerBacking, state.backing());
+        assertSame(replacement, state.overlay());
+        assertSame(replacement, store.current(id).orElseThrow());
+        assertEquals(backing.version(), state.baseBackingVersion());
+        assertTrue(state.isStale());
+        assertEquals(4L, store.capture().revision());
+    }
+
+    @Test
+    public void sameVersionBinaryPublicationsRejectChangedBytesAndAllowIdenticalBytes() {
+        var backing = new BinaryDocumentSnapshot(id, DocumentUri.inMemory(id), new DocumentVersion(5),
+            "binary", new byte[]{1, 2});
+        var overlay = new BinaryDocumentSnapshot(id, backing.uri(), new DocumentVersion(6),
+            "binary", new byte[]{3, 4});
+        var changedBacking = new BinaryDocumentSnapshot(id, backing.uri(), backing.version(),
+            "binary", new byte[]{1, 3});
+        var changedOverlay = new BinaryDocumentSnapshot(id, overlay.uri(), overlay.version(),
+            "binary", new byte[]{3, 5});
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        var originalState = store.state(id).orElseThrow();
+        var originalWorkspace = store.capture();
+
+        assertThrows(IllegalArgumentException.class, () -> store.publishBacking(changedBacking));
+        assertEquals(originalState, store.state(id).orElseThrow());
+        assertEquals(originalWorkspace, store.capture());
+        assertThrows(IllegalArgumentException.class, () -> store.publishOverlay(changedOverlay));
+        assertEquals(originalState, store.state(id).orElseThrow());
+        assertEquals(originalWorkspace, store.capture());
+
+        var identicalBacking = new BinaryDocumentSnapshot(id, backing.uri(), backing.version(),
+            "binary", new byte[]{1, 2});
+        var identicalOverlay = new BinaryDocumentSnapshot(id, overlay.uri(), overlay.version(),
+            "binary", new byte[]{3, 4});
+        store.publishBacking(identicalBacking);
+        store.publishOverlay(identicalOverlay);
+
+        var state = store.state(id).orElseThrow();
+        assertSame(identicalBacking, state.backing());
+        assertSame(identicalOverlay, state.overlay());
+        assertSame(identicalOverlay, store.current(id).orElseThrow());
+        assertEquals(backing.version(), state.baseBackingVersion());
+        assertEquals(4L, store.capture().revision());
+    }
+
+    @Test
+    public void removingBackingOnlyDocumentRemovesItFromCurrentStateAndCapture() {
+        var backing = snapshot(new DocumentVersion(5), "backing");
+        store.publishBacking(backing);
+        var originalWorkspace = store.capture();
+
+        store.removeBacking(id, backing.version());
+
+        assertEquals(Optional.empty(), store.current(id));
+        assertEquals(Optional.empty(), store.state(id));
+        var workspace = store.capture();
+        assertEquals(Optional.empty(), workspace.document(id));
+        assertTrue(workspace.documents().isEmpty());
+        assertEquals(2L, workspace.revision());
+        assertSame(backing, originalWorkspace.document(id).orElseThrow());
+        assertEquals(1L, originalWorkspace.revision());
+    }
+
+    @Test
+    public void removingBackingPreservesExactOverlayAndBaseAndMakesItStale() {
+        var backing = snapshot(new DocumentVersion(5), "backing");
+        var overlay = snapshot(new DocumentVersion(6), "unsaved edits");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        var originalState = store.state(id).orElseThrow();
+        assertFalse(originalState.isStale());
+
+        store.removeBacking(id, backing.version());
+
+        var state = store.state(id).orElseThrow();
+        assertNull(state.backing());
+        assertSame(overlay, state.overlay());
+        assertSame(overlay, store.current(id).orElseThrow());
+        assertEquals(backing.version(), state.baseBackingVersion());
+        assertTrue(state.isStale());
+        var workspace = store.capture();
+        assertEquals(1, workspace.documents().size());
+        assertSame(overlay, workspace.document(id).orElseThrow());
+        assertEquals(3L, workspace.revision());
+        assertSame(backing, originalState.backing());
+        assertFalse(originalState.isStale());
+    }
+
+    @Test
+    public void removingBackingWithWrongExpectedVersionPreservesStateAndWorkspaceRevision() {
+        var backing = snapshot(new DocumentVersion(5), "backing");
+        var overlay = snapshot(new DocumentVersion(6), "unsaved edits");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        var originalState = store.state(id).orElseThrow();
+        var originalWorkspace = store.capture();
+
+        for (var expectedVersion : List.of(new DocumentVersion(3), new DocumentVersion(7))) {
+            assertThrows(IllegalStateException.class, () -> store.removeBacking(id, expectedVersion));
+            assertEquals(originalState, store.state(id).orElseThrow());
+            assertEquals(originalWorkspace, store.capture());
+            assertSame(backing, store.state(id).orElseThrow().backing());
+            assertSame(overlay, store.current(id).orElseThrow());
+        }
+    }
+
+    @Test
+    public void removingAbsentBackingPreservesStateAndWorkspaceRevision() {
+        var emptyWorkspace = store.capture();
+        assertThrows(IllegalStateException.class, () -> store.removeBacking(id, new DocumentVersion(5)));
+        assertEquals(emptyWorkspace, store.capture());
+
+        var overlay = snapshot(new DocumentVersion(6), "unsaved document");
+        store.publishOverlay(overlay);
+        var originalState = store.state(id).orElseThrow();
+        var originalWorkspace = store.capture();
+
+        assertThrows(IllegalStateException.class, () -> store.removeBacking(id, new DocumentVersion(5)));
+
+        assertEquals(originalState, store.state(id).orElseThrow());
+        assertEquals(originalWorkspace, store.capture());
+        assertSame(overlay, store.current(id).orElseThrow());
+        assertFalse(store.state(id).orElseThrow().isStale());
+    }
+
+    @Test
+    public void restoringBackingPreservesStaleOverlay() {
+        var backing = snapshot(new DocumentVersion(5), "int x = 10;");
+        var overlay = snapshot(new DocumentVersion(6), "int x = 20;");
+        var restoredBacking = snapshot(new DocumentVersion(7), "int x = 30;");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+
+        store.removeBacking(id, backing.version());
+        var deletedState = store.state(id).orElseThrow();
+        assertNull(deletedState.backing());
+        assertTrue(deletedState.isStale());
+
+        store.publishBacking(restoredBacking);
+
+        var state = store.state(id).orElseThrow();
+        assertSame(restoredBacking, state.backing());
+        assertSame(overlay, state.overlay());
+        assertSame(overlay, store.current(id).orElseThrow());
+        assertEquals(new DocumentVersion(5), state.baseBackingVersion());
+        assertTrue(state.isStale());
+        var workspace = store.capture();
+        assertEquals(1, workspace.documents().size());
+        assertSame(overlay, workspace.document(id).orElseThrow());
+        assertEquals(4L, workspace.revision());
+    }
+
+    @Test
+    public void deletedBackingRejectsReusedOrOlderVersionsWithoutChangingWorkspace() {
+        var backing = snapshot(new DocumentVersion(5), "original content");
+        store.publishBacking(backing);
+        store.removeBacking(id, backing.version());
+        var originalWorkspace = store.capture();
+
+        var rejectedSnapshots = List.of(
+            snapshot(new DocumentVersion(5), "different content"),
+            snapshot(new DocumentVersion(4), "older content"),
+            backing);
+        for (var rejected : rejectedSnapshots) {
+            assertThrows(IllegalArgumentException.class, () -> store.publishBacking(rejected));
+            assertEquals(Optional.empty(), store.current(id));
+            assertEquals(Optional.empty(), store.state(id));
+            assertEquals(originalWorkspace, store.capture());
+            assertEquals(2L, store.capture().revision());
+        }
+    }
+
+    @Test
+    public void deletedBackingAcceptsStrictlyNewerVersion() {
+        var backing = snapshot(new DocumentVersion(5), "original content");
+        var restoredBacking = snapshot(new DocumentVersion(6), "recreated content");
+        store.publishBacking(backing);
+        store.removeBacking(id, backing.version());
+
+        store.publishBacking(restoredBacking);
+
+        var state = store.state(id).orElseThrow();
+        assertSame(restoredBacking, state.backing());
+        assertNull(state.overlay());
+        assertSame(restoredBacking, store.current(id).orElseThrow());
+        var workspace = store.capture();
+        assertSame(restoredBacking, workspace.document(id).orElseThrow());
+        assertEquals(3L, workspace.revision());
+    }
+
+    @Test
+    public void deletedBackingHistoryTracksLatestBackingRatherThanOverlayBase() {
+        var backing = snapshot(new DocumentVersion(5), "original content");
+        var overlay = snapshot(new DocumentVersion(6), "unsaved edits");
+        var newerBacking = snapshot(new DocumentVersion(7), "external change");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        store.publishBacking(newerBacking);
+        store.removeBacking(id, newerBacking.version());
+        var originalState = store.state(id).orElseThrow();
+        var originalWorkspace = store.capture();
+
+        for (var version : List.of(new DocumentVersion(5), new DocumentVersion(6), new DocumentVersion(7))) {
+            var rejected = snapshot(version, "reused backing revision");
+            assertThrows(IllegalArgumentException.class, () -> store.publishBacking(rejected));
+            assertEquals(originalState, store.state(id).orElseThrow());
+            assertEquals(originalWorkspace, store.capture());
+            assertSame(overlay, store.current(id).orElseThrow());
+            assertEquals(4L, store.capture().revision());
+        }
+
+        var restoredBacking = snapshot(new DocumentVersion(8), "recreated content");
+        store.publishBacking(restoredBacking);
+
+        var state = store.state(id).orElseThrow();
+        assertSame(restoredBacking, state.backing());
+        assertSame(overlay, state.overlay());
+        assertSame(overlay, store.current(id).orElseThrow());
+        assertEquals(backing.version(), state.baseBackingVersion());
+        assertTrue(state.isStale());
+        assertEquals(5L, store.capture().revision());
+    }
+
+    @Test
+    public void deletedBackingRemembersCommittedOverlayVersion() {
+        var backing = snapshot(new DocumentVersion(5), "original content");
+        var overlay = snapshot(new DocumentVersion(6), "saved edits");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        store.commitOverlay(id, backing.version(), overlay.version());
+        store.removeBacking(id, overlay.version());
+        var originalWorkspace = store.capture();
+
+        assertThrows(IllegalArgumentException.class,
+            () -> store.publishBacking(snapshot(overlay.version(), "reused committed revision")));
+
+        assertEquals(Optional.empty(), store.current(id));
+        assertEquals(originalWorkspace, store.capture());
+        assertEquals(4L, store.capture().revision());
+    }
+
+    @Test
+    public void deletedBackingRemembersDiscardedRevision() {
+        var backing = snapshot(new DocumentVersion(5), "original content");
+        var overlay = snapshot(new DocumentVersion(6), "unsaved edits");
+        var restoredBacking = snapshot(new DocumentVersion(7), backing.text());
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        store.discardOverlay(id, backing.version(), overlay.version(), restoredBacking);
+        store.removeBacking(id, restoredBacking.version());
+        var originalWorkspace = store.capture();
+
+        for (var version : List.of(new DocumentVersion(6), new DocumentVersion(7))) {
+            var rejected = snapshot(version, "reused discarded revision");
+            assertThrows(IllegalArgumentException.class, () -> store.publishBacking(rejected));
+            assertEquals(Optional.empty(), store.current(id));
+            assertEquals(originalWorkspace, store.capture());
+            assertEquals(4L, store.capture().revision());
+        }
+    }
+
+    @Test
+    public void removingUnchangedOverlayRetainsExactBackingAndVersion() {
+        var backing = snapshot(new DocumentVersion(5), "int x = 10;");
+        var overlay = snapshot(new DocumentVersion(5), backing.text());
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        var originalWorkspace = store.capture();
+        assertSame(overlay, store.current(id).orElseThrow());
+
+        store.removeUnchangedOverlay(id, backing.version(), overlay.version());
+
+        var state = store.state(id).orElseThrow();
+        assertSame(backing, state.backing());
+        assertSame(backing, store.current(id).orElseThrow());
+        assertEquals(new DocumentVersion(5), store.current(id).orElseThrow().version());
+        assertNull(state.overlay());
+        assertNull(state.baseBackingVersion());
+        assertFalse(state.isStale());
+        var workspace = store.capture();
+        assertSame(backing, workspace.document(id).orElseThrow());
+        assertEquals(3L, workspace.revision());
+        assertSame(overlay, originalWorkspace.document(id).orElseThrow());
+        assertEquals(2L, originalWorkspace.revision());
+    }
+
+    @Test
+    public void removingModifiedOverlayAsUnchangedIsRejectedWithoutChangingStateOrRevision() {
+        var backing = snapshot(new DocumentVersion(5), "int x = 10;");
+        var overlay = snapshot(new DocumentVersion(6), "int x = 20;");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        var originalState = store.state(id).orElseThrow();
+        var originalWorkspace = store.capture();
+
+        assertThrows(IllegalStateException.class,
+            () -> store.removeUnchangedOverlay(id, backing.version(), overlay.version()));
+
+        assertEquals(originalState, store.state(id).orElseThrow());
+        assertEquals(originalWorkspace, store.capture());
+        assertSame(overlay, store.current(id).orElseThrow());
+        assertEquals(2L, store.capture().revision());
+    }
+
+    @Test
+    public void removingStaleOverlayAsUnchangedIsRejectedWithoutChangingStateOrRevision() {
+        var backing = snapshot(new DocumentVersion(5), "int x = 10;");
+        var overlay = snapshot(new DocumentVersion(6), "int x = 20;");
+        var newerBacking = snapshot(new DocumentVersion(7), "int x = 30;");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        store.publishBacking(newerBacking);
+        var originalState = store.state(id).orElseThrow();
+        var originalWorkspace = store.capture();
+
+        var exception = assertThrows(IllegalStateException.class,
+            () -> store.removeUnchangedOverlay(id, newerBacking.version(), overlay.version()));
+
+        assertEquals("Cannot remove a stale overlay as unchanged.", exception.getMessage());
+        assertEquals(originalState, store.state(id).orElseThrow());
+        assertEquals(originalWorkspace, store.capture());
+        assertSame(overlay, store.current(id).orElseThrow());
+        assertEquals(3L, store.capture().revision());
+    }
+
+    @Test
+    public void removingUnchangedOverlayWithMismatchedExpectedVersionsPreservesStateAndRevision() {
+        var backing = snapshot(new DocumentVersion(5), "int x = 10;");
+        var overlay = snapshot(new DocumentVersion(5), backing.text());
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        var originalState = store.state(id).orElseThrow();
+        var originalWorkspace = store.capture();
+
+        assertThrows(IllegalStateException.class,
+            () -> store.removeUnchangedOverlay(id, new DocumentVersion(4), overlay.version()));
+        assertEquals(originalState, store.state(id).orElseThrow());
+        assertEquals(originalWorkspace, store.capture());
+
+        assertThrows(IllegalStateException.class,
+            () -> store.removeUnchangedOverlay(id, backing.version(), new DocumentVersion(4)));
+        assertEquals(originalState, store.state(id).orElseThrow());
+        assertEquals(originalWorkspace, store.capture());
+        assertSame(overlay, store.current(id).orElseThrow());
+        assertEquals(2L, store.capture().revision());
+    }
+
+    @Test
+    public void removingUnchangedOverlayRequiresBothBackingAndOverlay() {
+        var emptyWorkspace = store.capture();
+        assertThrows(IllegalStateException.class,
+            () -> store.removeUnchangedOverlay(id, new DocumentVersion(5), new DocumentVersion(5)));
+        assertEquals(emptyWorkspace, store.capture());
+
+        var backing = snapshot(new DocumentVersion(5), "int x = 10;");
+        store.publishBacking(backing);
+        var backingOnlyWorkspace = store.capture();
+        assertThrows(IllegalStateException.class,
+            () -> store.removeUnchangedOverlay(id, backing.version(), backing.version()));
+        assertEquals(backingOnlyWorkspace, store.capture());
+
+        var overlay = snapshot(new DocumentVersion(5), backing.text());
+        store.publishOverlay(overlay);
+        store.removeBacking(id, backing.version());
+        var originalState = store.state(id).orElseThrow();
+        var overlayOnlyWorkspace = store.capture();
+        assertThrows(IllegalStateException.class,
+            () -> store.removeUnchangedOverlay(id, backing.version(), overlay.version()));
+        assertEquals(originalState, store.state(id).orElseThrow());
+        assertEquals(overlayOnlyWorkspace, store.capture());
+        assertSame(overlay, store.current(id).orElseThrow());
     }
 
     private TextDocumentSnapshot snapshot(DocumentVersion version, String text) {

@@ -6,12 +6,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class WorkspaceSnapshotTest {
+    private final WorkspaceConfigurationSnapshot configuration = new WorkspaceConfigurationSnapshot(0, Set.of());
     private final DocumentId mainId = DocumentId.create();
     private final DocumentId utilsId = DocumentId.create();
     private final TextDocumentSnapshot main = snapshot(mainId, DocumentVersion.initial(), "class Main {}");
@@ -20,7 +22,7 @@ public class WorkspaceSnapshotTest {
     @Test
     public void changesToOriginalMapDoNotAffectCapturedDocuments() {
         Map<DocumentId, DocumentSnapshot> documents = new HashMap<>(Map.of(mainId, main, utilsId, utils));
-        var workspace = new WorkspaceSnapshot(documents, 42L);
+        var workspace = new WorkspaceSnapshot("project-test", documents, configuration, 42L);
         var addedId = DocumentId.create();
 
         documents.put(mainId, snapshot(mainId, main.version().next(), "class Main { int x; }"));
@@ -29,6 +31,7 @@ public class WorkspaceSnapshotTest {
 
         assertEquals(2, workspace.documents().size());
         assertEquals(42L, workspace.revision());
+        assertEquals("project-test", workspace.projectId());
         assertSame(main, workspace.document(mainId).orElseThrow());
         assertSame(utils, workspace.document(utilsId).orElseThrow());
         assertEquals(Optional.empty(), workspace.document(addedId));
@@ -36,7 +39,7 @@ public class WorkspaceSnapshotTest {
 
     @Test
     public void capturedDocumentMapCannotBeModified() {
-        var workspace = new WorkspaceSnapshot(Map.of(mainId, main, utilsId, utils), 0L);
+        var workspace = new WorkspaceSnapshot("project-test", Map.of(mainId, main, utilsId, utils), configuration, 0L);
         var replacement = snapshot(mainId, main.version().next(), "class Main { int x; }");
 
         assertThrows(UnsupportedOperationException.class, () -> workspace.documents().put(mainId, replacement));
@@ -50,7 +53,7 @@ public class WorkspaceSnapshotTest {
 
     @Test
     public void lookupsReturnOriginalSnapshotsOrEmptyForUnknownDocuments() {
-        var workspace = new WorkspaceSnapshot(Map.of(mainId, main, utilsId, utils), 0L);
+        var workspace = new WorkspaceSnapshot("project-test", Map.of(mainId, main, utilsId, utils), configuration, 0L);
 
         assertSame(main, workspace.document(mainId).orElseThrow());
         assertSame(utils, workspace.document(utilsId).orElseThrow());
