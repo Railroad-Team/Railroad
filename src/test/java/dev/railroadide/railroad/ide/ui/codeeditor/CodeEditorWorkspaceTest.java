@@ -24,12 +24,91 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.lang.reflect.Field;
+import javafx.animation.Animation;
+import javafx.animation.PauseTransition;
+import javafx.event.ActionEvent;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class CodeEditorWorkspaceTest {
     @TempDir
     public Path directory;
+
+    @Test
+    public void workspaceChangesDebounceDiagnosticsAcrossFxTurns() throws Exception {
+        Path file = directory.resolve("Example.java");
+        Files.writeString(file, "class Example {}");
+        DocumentId id = DocumentId.create();
+        var store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()));
+        BlockingQueue<WorkspaceSnapshot> requests = new LinkedBlockingQueue<>();
+        DiagnosticsProvider<TextEditorDiagnostic> provider = new DiagnosticsProvider<>() {
+            @Override
+            public List<TextEditorDiagnostic> compute(DocumentSnapshot snapshot) {
+                throw new AssertionError("Expected a captured workspace");
+            }
+
+            @Override
+            public List<TextEditorDiagnostic> compute(WorkspaceSnapshot workspace, DocumentId documentId) {
+                requests.add(workspace);
+                return List.of();
+            }
+        };
+        TestEditor editor = onFx(() -> {
+            Project project = new RailroadProject(directory, "Debounced workspace", new WritableImage(1, 1));
+            var pane = new TestEditor(project, id, file,
+                new CodeEditorConfig("java", null, provider, null, null));
+            store.publishBacking(pane.captureSnapshot());
+            pane.setDocumentStore(store);
+            return pane;
+        });
+        Field delayField = CodeEditorPane.class.getDeclaredField("workspaceDiagnosticsDelay");
+        delayField.setAccessible(true);
+        PauseTransition delay = (PauseTransition) delayField.get(editor);
+        Method refresh = CodeEditorPane.class.getDeclaredMethod("refreshWorkspaceFeatures");
+        refresh.setAccessible(true);
+        try {
+            assertNotNull(requests.poll(10, TimeUnit.SECONDS));
+            for (long revision = 1; revision <= 3; revision++) {
+                long next = revision;
+                onFx(() -> {
+                    store.publishConfiguration(new WorkspaceConfigurationSnapshot(next, Set.of("module-" + next)));
+                    // Process each burst in its own FX turn and control the timer explicitly.
+                    refresh.invoke(editor);
+                    assertEquals(Animation.Status.RUNNING, delay.getStatus());
+                    assertEquals(300, delay.getDuration().toMillis());
+                    delay.pause();
+                    assertTrue(requests.isEmpty(), "Changes must wait for the debounce to finish");
+                    return null;
+                });
+            }
+            onFx(() -> {
+                delay.getOnFinished().handle(new ActionEvent());
+                return null;
+            });
+            WorkspaceSnapshot refreshed = requests.poll(10, TimeUnit.SECONDS);
+            assertNotNull(refreshed);
+            assertEquals(store.capture(), refreshed);
+            assertEquals(3, refreshed.configuration().revision());
+            editor.awaitWorkerCompletion();
+            onFx(() -> {
+                store.publishConfiguration(new WorkspaceConfigurationSnapshot(4, Set.of("closing")));
+                refresh.invoke(editor);
+                editor.discardChangesOnClose();
+                editor.close();
+                assertEquals(Animation.Status.STOPPED, delay.getStatus());
+                assertTrue(requests.isEmpty());
+                return null;
+            });
+        } finally {
+            onFx(() -> {
+                editor.discardChangesOnClose();
+                editor.close();
+                editor.dispose();
+                return null;
+            });
+        }
+    }
 
     @Test
     public void configurationChangeRetriesPendingDiagnostics() throws Exception {

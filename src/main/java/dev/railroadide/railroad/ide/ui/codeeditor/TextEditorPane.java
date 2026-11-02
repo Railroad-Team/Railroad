@@ -733,6 +733,8 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
      * Writes a destination and lets its owner finalize identity and store state using
      * the exact persisted snapshot before this editor adopts its new saved location.
      * A failing finalizer retains the original location and saved baseline.
+     * Once finalization succeeds, failures in watcher, UI, or event updates are logged
+     * separately and do not change the successful save result.
      *
      * @param newPath destination file
      * @param finalizeSave owner transition, including any rollback of identity on failure
@@ -798,22 +800,8 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                     StandardOpenOption.TRUNCATE_EXISTING);
 
                 finalizeSave.accept(savedSnapshot);
-                filePath = normalizedPath;
-                JavaFXUtils.runOnApplicationThread(gutter::refresh);
-                pendingExternalText = null;
-                closeExternalChangeDialog();
-                backingFileMissing = false;
-                discardChangesOnClose = false;
-                lastSavedText.set(snapshot);
-                pendingSnapshot.set(savedSnapshot);
-                savedVersion.set(snapshotVersion);
-                updateAfterSave(snapshotVersion, EditorSaveState.CLEAN);
-                restartExternalWatcher();
-                Railroad.EVENT_BUS.publish(new DocumentEvent(document(), DocumentEvent.EventType.SAVED));
-                return true;
             } catch (IOException | RuntimeException exception) {
-                if (!filePath.toAbsolutePath().normalize().equals(normalizedPath)
-                    && editVersion.get() == snapshotVersion) {
+                if (editVersion.get() == snapshotVersion) {
                     editVersion.set(previousEditVersion);
                     pendingSnapshot.set(previousPending);
                 }
@@ -821,6 +809,29 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 Railroad.LOGGER.error("Failed to write file {}", normalizedPath, exception);
                 return false;
             }
+
+            filePath = normalizedPath;
+            pendingExternalText = null;
+            backingFileMissing = false;
+            discardChangesOnClose = false;
+            lastSavedText.set(snapshot);
+            pendingSnapshot.set(savedSnapshot);
+            savedVersion.set(snapshotVersion);
+            afterSaveAs("update save state", () -> updateAfterSave(snapshotVersion, EditorSaveState.CLEAN));
+            afterSaveAs("refresh the gutter", () -> JavaFXUtils.runOnApplicationThread(gutter::refresh));
+            afterSaveAs("close the external-change dialog", this::closeExternalChangeDialog);
+            afterSaveAs("restart the file watcher", this::restartExternalWatcher);
+            afterSaveAs("publish the save event",
+                () -> Railroad.EVENT_BUS.publish(new DocumentEvent(document(), DocumentEvent.EventType.SAVED)));
+            return true;
+        }
+    }
+
+    private void afterSaveAs(String action, Runnable update) {
+        try {
+            update.run();
+        } catch (RuntimeException exception) {
+            Railroad.LOGGER.warn("Saved {}, but could not {}", filePath, action, exception);
         }
     }
 

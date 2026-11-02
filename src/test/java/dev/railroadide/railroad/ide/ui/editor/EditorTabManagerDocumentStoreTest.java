@@ -19,6 +19,7 @@ import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.event.EventListener;
 import dev.railroadide.railroad.plugin.spi.events.DocumentModifiedEvent;
+import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
 import dev.railroadide.railroad.plugin.spi.events.DocumentRenamedEvent;
 import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
 import dev.railroadide.railroad.project.RailroadProject;
@@ -63,6 +64,69 @@ public class EditorTabManagerDocumentStoreTest {
     public Path tempDirectory;
     private Project project;
     private EditorTab tab;
+
+    @Test
+    public void saveAsRemainsSuccessfulWhenPostCommitWatcherRestartFails() throws Exception {
+        Path source = tempDirectory.resolve("Original.java");
+        Path destination = tempDirectory.resolve("Saved.java");
+        Files.writeString(source, "class Original {}");
+        onFxThread(() -> {
+            tab = openInTabPane(source);
+            TextEditorPane editor = tab.view().activeEditor();
+            disableDebouncedAutosave(editor);
+            editor.replaceText("class Original { int local; }");
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            long revision = store.capture().revision();
+            var savedEvents = new AtomicInteger();
+            EventListener<DocumentEvent> savedListener = event -> {
+                if (event.isSavedEvent() && event.file().getUri().equals(DocumentUri.fromPath(destination))) {
+                    savedEvents.incrementAndGet();
+                }
+            };
+            Field watcherField = TextEditorPane.class.getDeclaredField("watcherExecutor");
+            watcherField.setAccessible(true);
+            ExecutorService watcher = (ExecutorService) watcherField.get(editor);
+            Field storeField = Services.IDE_STATE.getClass().getDeclaredField("documentStore");
+            storeField.setAccessible(true);
+            DocumentStore injectingStore = (DocumentStore) Proxy.newProxyInstance(DocumentStore.class.getClassLoader(),
+                new Class<?>[]{DocumentStore.class}, (proxy, method, args) -> {
+                    try {
+                        Object result = method.invoke(store, args);
+                        if (method.getName().equals("commitSaveAs")) {
+                            // The disk write and store commit succeed. Reject the subsequent watcher submission.
+                            watcher.shutdownNow();
+                        }
+                        return result;
+                    } catch (InvocationTargetException exception) {
+                        throw exception.getCause();
+                    }
+                });
+            Railroad.EVENT_BUS.subscribe(DocumentEvent.class, savedListener);
+            storeField.set(Services.IDE_STATE, injectingStore);
+            try {
+                assertTrue(Services.EDITOR_TAB_MANAGER.saveAsActive(destination));
+            } finally {
+                storeField.set(Services.IDE_STATE, store);
+                Railroad.EVENT_BUS.unsubscribe(DocumentEvent.class, savedListener);
+            }
+            assertEquals(1, savedEvents.get(), "Watcher failure must not suppress the save notification");
+            assertEquals(destination, editor.getFilePath());
+            assertEquals(destination, tab.path());
+            assertEquals(DocumentUri.fromPath(destination.toRealPath()), tab.identity().uri());
+            TextDocumentSnapshot backing = (TextDocumentSnapshot) store.current(tab.documentId()).orElseThrow();
+            assertEquals(editor.getText(), Files.readString(destination));
+            assertEquals(editor.getText(), backing.text());
+            assertEquals(DocumentUri.fromPath(destination), backing.uri());
+            assertEquals(backing.version(), editor.captureSnapshot().version());
+            assertEquals(EditorSaveState.CLEAN, editor.saveState());
+            assertNull(store.state(tab.documentId()).orElseThrow().overlay());
+            assertEquals(revision + 1, store.capture().revision());
+            editor.replaceText("class Original { int next; }");
+            assertTrue(editor.saveNow());
+            assertEquals(editor.getText(), Files.readString(destination));
+            return null;
+        });
+    }
 
     @Test
     public void saveAsStoreFailureRollsBackLocationAndRetainsRecoverableDraft() throws Exception {

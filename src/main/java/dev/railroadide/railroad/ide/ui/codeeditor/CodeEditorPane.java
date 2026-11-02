@@ -17,6 +17,7 @@ import dev.railroadide.railroad.utility.ShutdownHooks;
 import io.github.palexdev.mfxresources.fonts.MFXFontIcon;
 import io.github.palexdev.mfxresources.fonts.fontawesome.FontAwesomeSolid;
 import javafx.application.Platform;
+import javafx.animation.PauseTransition;
 import javafx.beans.value.ChangeListener;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
@@ -75,6 +76,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     // region Diagnostics state
     protected static final Duration DIAGNOSTIC_DEBOUNCE = Duration.ofMillis(300);
+    private final PauseTransition workspaceDiagnosticsDelay = new PauseTransition(
+        javafx.util.Duration.millis(DIAGNOSTIC_DEBOUNCE.toMillis()));
 
     protected final Map<Integer, Diagnostic.Kind> lineSeverity = new ConcurrentHashMap<>();
     protected final Map<Integer, String> lineDiagnosticMessages = new ConcurrentHashMap<>();
@@ -151,6 +154,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         signaturePopup.getContent().add(signaturePopupContainer);
 
         configureGutter();
+        workspaceDiagnosticsDelay.setOnFinished(_ -> requestDiagnostics());
 
         subscriptions.add(plainTextChanges().subscribe(_ -> {
             diagnosticsGeneration.incrementAndGet();
@@ -188,6 +192,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             return;
 
         codeEditorClosed = true;
+        workspaceDiagnosticsDelay.stop();
         if (workspaceSubscription != null) {
             workspaceSubscription.close();
             workspaceSubscription = null;
@@ -209,6 +214,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     @Override
     protected void documentStoreAttached() {
+        workspaceDiagnosticsDelay.stop();
         if (workspaceSubscription != null) {
             workspaceSubscription.close();
         }
@@ -254,7 +260,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         diagnosticPopup.hide();
         hideAutoComplete();
         hideSignatureHelp();
-        requestDiagnostics();
+        workspaceDiagnosticsDelay.playFromStart();
     }
 
     private @Nullable WorkspaceSnapshot captureFeatureWorkspace() {
@@ -354,6 +360,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
 
     private void requestDiagnostics() {
+        workspaceDiagnosticsDelay.stop();
         if (codeEditorClosed || !supportsDiagnostics())
             return;
 
