@@ -9,13 +9,7 @@ import dev.railroadide.railroad.ide.language.LanguageSupport;
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.language.impl.ImageLanguageSupport;
 import dev.railroadide.railroad.ide.language.impl.PlainTextLanguageSupport;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentOrigin;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentState;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentStore;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
-import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.ui.*;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
@@ -69,6 +63,17 @@ import static dev.railroadide.railroad.ide.ui.editor.EditorTabSessionState.DEFAU
  */
 @SuppressWarnings("resource")
 public class EditorTabManager {
+    /**
+     * Reports whether an open source editor owns file watching and persistence for a document.
+     * Call on the JavaFX application thread.
+     *
+     * @param id document identity to inspect
+     * @return whether a live text editor owns this document
+     */
+    public boolean hasOpenTextEditor(DocumentId id) {
+        EditorTab tab = openTabs.get(id);
+        return tab != null && tab.view().activeEditor() != null && !tab.view().activeEditor().isEditorClosed();
+    }
     private final Map<DocumentId, EditorTab> openTabs = new LinkedHashMap<>();
     private final Deque<ClosedEditorTab> recentlyClosedTabs = new ArrayDeque<>();
     private final Set<EditorTab> tabsByRecency = new LinkedHashSet<>();
@@ -483,44 +488,9 @@ public class EditorTabManager {
             return null;
         }
 
-        TextEditorPane editor = editorOpenView.activeEditor();
-        if (editor != null) {
-            Services.IDE_STATE.getDocumentStore().ifPresent(store -> {
-                if (!editor.isInitialContentLoaded()) {
-                    editor.setDocumentStore(store);
-                    return;
-                }
-                TextDocumentSnapshot loaded = editor.captureSnapshot();
-                DocumentState state = store.state(identity.id()).orElse(null);
-                if (state != null && state.overlay() instanceof TextDocumentSnapshot) {
-                    if (!(state.backing() instanceof TextDocumentSnapshot backing)
-                        || !backing.text().equals(loaded.text()) || !backing.uri().equals(loaded.uri())) {
-                        editor.restoreSavedVersion(store.latestVersion(identity.id()).orElse(loaded.version()).next());
-                        store.publishBacking(editor.captureSnapshot());
-                    }
-                    store.relocate(identity.id(), loaded.uri());
-                    DocumentState retained = store.state(identity.id()).orElseThrow();
-                    editor.restoreOverlay((TextDocumentSnapshot) retained.overlay(), retained.backing().version(),
-                        retained.isStale());
-                } else if (state != null && state.overlay() == null
-                    && state.backing() instanceof TextDocumentSnapshot backing) {
-                    if (backing.text().equals(loaded.text()) && backing.uri().equals(loaded.uri())) {
-                        editor.restoreSavedVersion(backing.version());
-                    } else {
-                        editor.restoreSavedVersion(backing.version().next());
-                        store.publishBacking(editor.captureSnapshot());
-                    }
-                } else {
-                    if (state == null || state.backing() == null) {
-                        store.latestVersion(identity.id())
-                            .ifPresent(version -> editor.restoreSavedVersion(version.next()));
-                        loaded = editor.captureSnapshot();
-                    }
-                    store.publishBacking(loaded);
-                }
-                editor.setDocumentStore(store);
-            });
-        }
+        initializeEditor(editorOpenView.activeEditor(), identity);
+        editorOpenView.activeEditorProperty().addListener((_, _, current) -> initializeEditor(current,
+            Services.IDE_STATE.findDocumentIdentity(document.getUri()).orElse(identity)));
 
         boolean preview = request.preview()
             && !request.pinned()
@@ -572,6 +542,53 @@ public class EditorTabManager {
             enforceTabLimit(editorTab);
         }
         return editorTab;
+    }
+
+    private void initializeEditor(TextEditorPane editor, DocumentIdentity identity) {
+        if (editor != null) {
+            Services.IDE_STATE.getDocumentStore().ifPresent(store -> {
+                DocumentState retainedState = store.state(identity.id()).orElse(null);
+                if (!editor.isInitialContentLoaded()) {
+                    if (retainedState != null && retainedState.overlay() instanceof TextDocumentSnapshot draft) {
+                        editor.restoreOverlay(draft,
+                            retainedState.backing() == null ? null : retainedState.backing().version(),
+                            retainedState.isStale());
+                    }
+                    editor.setDocumentStore(store);
+                    return;
+                }
+                TextDocumentSnapshot loaded = editor.captureSnapshot();
+                DocumentState state = store.state(identity.id()).orElse(null);
+                if (state != null && state.overlay() instanceof TextDocumentSnapshot) {
+                    if (!(state.backing() instanceof TextDocumentSnapshot backing)
+                        || !backing.text().equals(loaded.text()) || !backing.uri().equals(loaded.uri())) {
+                        editor.restoreSavedVersion(store.latestVersion(identity.id()).orElse(loaded.version()).next());
+                        store.publishBacking(editor.captureSnapshot());
+                    }
+                    store.relocate(identity.id(), loaded.uri());
+                    DocumentState retained = store.state(identity.id()).orElseThrow();
+                    editor.restoreOverlay((TextDocumentSnapshot) retained.overlay(), retained.backing().version(),
+                        retained.isStale());
+                } else if (state != null && state.overlay() == null
+                    && state.backing() instanceof TextDocumentSnapshot backing) {
+                    if (backing.text().equals(loaded.text()) && backing.uri().equals(loaded.uri())) {
+                        editor.restoreSavedVersion(backing.version());
+                    } else {
+                        editor.restoreSavedVersion(store.latestVersion(identity.id()).orElse(backing.version()).next());
+                        store.publishBacking(editor.captureSnapshot());
+                    }
+                } else {
+                    if (state == null || state.backing() == null) {
+                        store.latestVersion(identity.id())
+                            .ifPresent(version -> editor.restoreSavedVersion(version.next()));
+                        loaded = editor.captureSnapshot();
+                    }
+                    store.publishBacking(loaded);
+                }
+                editor.setDocumentStore(store);
+            });
+        }
+
     }
 
     private void restoreWorkspaceOnApplicationThread(
@@ -1594,10 +1611,28 @@ public class EditorTabManager {
      * @return whether all editors completed closure
      */
     public boolean prepareProjectClose() {
-        for (EditorTab editorTab : List.copyOf(openTabs.values())) {
-            requestClose(editorTab);
-            if (openTabs.containsKey(editorTab.documentId()))
+        List<EditorTab> closing = List.copyOf(openTabs.values());
+        for (EditorTab editorTab : closing) {
+            if (!discardApprovedTabs.contains(editorTab) && !save(editorTab)) {
+                TextEditorPane editor = editorTab.view().activeEditor();
+                if (editor == null || !editor.hasPendingExternalChange()) {
+                    showFailedCloseDialog(editorTab);
+                }
                 return false;
+            }
+        }
+        if (closing.stream().anyMatch(tab -> !discardApprovedTabs.contains(tab) && tab.dirty()))
+            return false;
+        for (EditorTab editorTab : closing) {
+            TextEditorPane editor = editorTab.view().activeEditor();
+            if (editor != null) {
+                if (discardApprovedTabs.contains(editorTab)) {
+                    editor.close();
+                } else {
+                    editor.closeRetainingDraft();
+                }
+            }
+            requestClose(editorTab);
         }
         return true;
     }
@@ -1608,6 +1643,9 @@ public class EditorTabManager {
         TextEditorPane editor = editorTab.view().activeEditor();
         if (editor != null) {
             closeRemovedEditor(editor);
+        }
+        if (editorTab.view().content() instanceof MarkdownPreviewPane markdown) {
+            markdown.close();
         }
         if (openTabs.remove(editorTab.documentId()) == null)
             return;
@@ -1654,6 +1692,8 @@ public class EditorTabManager {
     }
 
     private void handleCloseRequest(EditorTab editorTab, Event event) {
+        if (editorTab.view().activeEditor() != null && editorTab.view().activeEditor().isEditorClosed())
+            return;
         if (discardApprovedTabs.remove(editorTab)) {
             pendingCloseSnapshots.put(editorTab.documentId(), captureClosedTab(editorTab));
             if (editorTab.view().activeEditor() != null) {

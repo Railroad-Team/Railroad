@@ -103,6 +103,16 @@ public interface DocumentStore {
     void publishBacking(DocumentSnapshot snapshot);
 
     /**
+     * Publishes a disk read only if the document still matches the state observed before reading.
+     * Rejection leaves the workspace unchanged, allowing the owner to read the file again.
+     *
+     * @param snapshot immutable backing read from disk
+     * @param expectedState state before the read, or null for an absent document
+     * @throws IllegalStateException if the document changed during the read
+     */
+    void publishBacking(DocumentSnapshot snapshot, DocumentState expectedState);
+
+    /**
      * Removes published backing after validating its expected version. An existing
      * overlay and its base revision are retained; otherwise the document is removed.
      * The highest published backing revision is retained to validate reappearance.

@@ -1,27 +1,19 @@
 package dev.railroadide.railroad.ide;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.ide.sst.document.api.DefaultDocumentStore;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentityRegistry;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentStore;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
-import dev.railroadide.railroad.ide.sst.document.api.WorkspaceConfigurationSnapshot;
+import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
 import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
 import dev.railroadide.railroad.plugin.spi.services.IDEStateService;
+import javafx.application.Platform;
 import lombok.Getter;
 
+import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Tracks the current project and open documents and publishes their lifecycle events.
@@ -36,6 +28,8 @@ public class DefaultIDEStateService implements IDEStateService {
     private volatile DocumentStore documentStore;
     private volatile Project currentProject;
     private ProjectWorkspaceConfiguration workspaceConfiguration;
+    @Getter(lombok.AccessLevel.NONE)
+    private ProjectDocumentSynchronizer documentSynchronizer;
     private long openedProjectAtMillis = -1L;
     private Document activeDocument;
 
@@ -64,6 +58,10 @@ public class DefaultIDEStateService implements IDEStateService {
 
     private void setCurrentProject_internal(Project project) {
         if (project != currentProject) {
+            if (documentSynchronizer != null) {
+                documentSynchronizer.close();
+                documentSynchronizer = null;
+            }
             WorkspaceConfigurationSnapshot initialConfiguration = project == null
                 ? null
                 : ProjectWorkspaceConfiguration.initial(project);
@@ -76,6 +74,14 @@ public class DefaultIDEStateService implements IDEStateService {
                 : new DefaultDocumentStore(project.getId(), initialConfiguration);
             if (project != null) {
                 workspaceConfiguration = new ProjectWorkspaceConfiguration(project, documentStore);
+                try {
+                    documentSynchronizer = new ProjectDocumentSynchronizer(project.getPath(), documentStore,
+                        documentIdentities,
+                        id -> Services.EDITOR_TAB_MANAGER.hasOpenTextEditor(id),
+                        Platform::runLater);
+                } catch (IOException exception) {
+                    Railroad.LOGGER.error("Unable to monitor workspace documents", exception);
+                }
             }
         }
         this.currentProject = project;

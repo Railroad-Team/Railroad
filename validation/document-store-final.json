@@ -1,6 +1,6 @@
 {
-  "validated_at_utc": "2026-11-02T22:59:02+00:00",
-  "candidate_base_commit": "48c578793beb428516f20aee233f92ed3411e4bf",
+  "validated_at_utc": "2026-11-02T23:39:12.723930+00:00",
+  "candidate_base_commit": "0b04b65cc0afdb82da3edeec97c8e486c05a4481",
   "environment": {
     "jdk": "Eclipse Temurin 25.0.1+8",
     "platform": "Windows amd64",
@@ -8,11 +8,11 @@
     "RAILROAD_SCAN_PATH": null
   },
   "full_validation": {
-    "command": ".\\gradlew.bat -I <heap-init.gradle> formatCheck check --continue --console=plain",
+    "command": ".\\gradlew.bat -I <heap-init.gradle> formatCheck -PformatAll javadocCoverageCheck check --continue --console=plain",
     "heap_init": "allprojects { tasks.withType(Test).configureEach { maxHeapSize = '4g' } }",
     "excluded_tests": [],
     "main_tests": {
-      "tests": 858,
+      "tests": 873,
       "failures": 1,
       "errors": 0,
       "skipped": 0
@@ -31,7 +31,15 @@
     },
     "format_check": "passed",
     "validated_javafx_stylesheets": 67,
-    "overall_check": "failed solely on RailroadProjectDiagnosticsRegressionTest.currentRailroadSourcesHaveNoErrorDiagnostics"
+    "overall_check": "failed solely on RailroadProjectDiagnosticsRegressionTest.currentRailroadSourcesHaveNoErrorDiagnostics",
+    "format_all_apply": "passed: .\\gradlew.bat format -PformatAll --console=plain",
+    "javadoc_coverage": {
+      "complete": 8230,
+      "total": 8230,
+      "incomplete": 0,
+      "gate": "javadocCoverageCheck",
+      "result": "passed"
+    }
   },
   "compatibility": {
     "focused_tests_passed": 71,
@@ -42,7 +50,7 @@
       "JdtJavaSignatureHelpProviderTest"
     ],
     "workspace_delegation_test": "CodeEditorWorkspaceTest.existingProvidersReceiveExactDocumentFromCapturedWorkspace",
-    "public_production_signatures_changed_in_this_followup": false
+    "public_production_signatures_changed_in_this_followup": true
   },
   "self_analysis_comparison": {
     "baseline_commit": "1ab7c18caff0ac5176ec7beb81deb2c401a2fd3b",
@@ -53,11 +61,11 @@
     "removed_diagnostics": 0,
     "method": "Use the same unchanged analyzer and candidate runtime classpath to scan the baseline archive and candidate source trees separately.",
     "normalization": [
-      "Remove the JUnit assertion wrapper.",
-      "Normalize only source-path separators and numeric source offsets; retain diagnostic codes, messages and multiplicities.",
+      "Remove the org.opentest4j.AssertionFailedError prefix; retain lines containing SEM_.",
+      "Normalize source-path separators to forward slashes and replace numeric source offsets immediately before SEM_ with <offset>.",
       "Sort normalized diagnostic lines, including duplicates; join with LF and include a final LF."
     ],
-    "normalized_multiset_sha256": "0c124f99d0bff1a68e84b8c0636d8eef4b70f5a555a837911dd1753cf8313f9f",
+    "normalized_multiset_sha256": "4fccdf8edc9135285c6130e75fc665ab88d59b0ea4f39b81e48b09a8de2b980c",
     "baseline_archive_command": "git archive 1ab7c18caff0ac5176ec7beb81deb2c401a2fd3b src -o <baseline.zip>",
     "baseline_setup": "Extract baseline.zip into a separate directory. Set Test.workingDir to that directory and write reports to a separate directory. Keep the same 4g heap and run the candidate build, so only the scanned source tree changes.",
     "baseline_test_command": ".\\gradlew.bat -I <baseline-init.gradle> test --tests \"*RailroadProjectDiagnosticsRegressionTest\" --console=plain",
@@ -66,5 +74,10 @@
   "acceptance_recommendation": {
     "focused_pr": "Accept the documented pre-existing self-analysis failure as a scoped baseline exception; the full check remains failing.",
     "issue_188": "Keep open until the zero-error self-analysis acceptance criterion passes. This validation does not establish that criterion."
+  },
+  "review_followup": {
+    "findings_addressed": 9,
+    "java_dependency_analysis": "Separate dependent PR; legacy Java analysis remains unchanged in this PR.",
+    "focused_regressions_added": 15
   }
 }

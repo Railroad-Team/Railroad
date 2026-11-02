@@ -5,29 +5,26 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentOrigin;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentState;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentStore;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
-import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
-import dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.ui.MarkdownPreviewPane;
+import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.event.EventListener;
-import dev.railroadide.railroad.plugin.spi.events.DocumentModifiedEvent;
 import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
+import dev.railroadide.railroad.plugin.spi.events.DocumentModifiedEvent;
 import dev.railroadide.railroad.plugin.spi.events.DocumentRenamedEvent;
 import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
 import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.theme.ThemeManager;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.event.Event;
 import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.image.WritableImage;
+import javafx.stage.Stage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,27 +32,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.reactfx.Subscription;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import javafx.scene.control.TabPane;
-import java.lang.reflect.Method;
-import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
-import java.lang.reflect.Field;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import javafx.stage.Stage;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -64,6 +53,173 @@ public class EditorTabManagerDocumentStoreTest {
     public Path tempDirectory;
     private Project project;
     private EditorTab tab;
+
+    @BeforeAll
+    public static void startJavaFx() throws Exception {
+        WorkspaceModes.initialize();
+        var started = new CountDownLatch(1);
+        try {
+            Platform.startup(started::countDown);
+        } catch (IllegalStateException alreadyStarted) {
+            Platform.runLater(started::countDown);
+        }
+        assertTrue(started.await(10, TimeUnit.SECONDS));
+        Field hostServices = Railroad.class.getDeclaredField("hostServices");
+        hostServices.setAccessible(true);
+        if (hostServices.get(null) == null) {
+            hostServices.set(null, new Railroad().getHostServices());
+        }
+    }
+
+    @Test
+    public void markdownSourceUsesStoreForSaveAsAndDiscard() throws Exception {
+        Path file = tempDirectory.resolve("notes.md");
+        Path moved = tempDirectory.resolve("moved.md");
+        Files.writeString(file, "# Original");
+        onFxThread(() -> {
+            project.getDataStore().writeJson("markdown.json", new MarkdownPreviewPane.MarkdownLayout(
+                MarkdownPreviewPane.MarkdownLayoutType.CODE));
+            tab = openInTabPane(file);
+            TextEditorPane editor = tab.view().activeEditor();
+            assertNotNull(editor);
+            disableDebouncedAutosave(editor);
+            DocumentId id = tab.documentId();
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            assertEquals(id, editor.captureSnapshot().id());
+            editor.replaceText("# Saved markdown");
+            assertTrue(tab.dirty());
+            assertEquals(editor.getText(), ((TextDocumentSnapshot) store.current(id).orElseThrow()).text());
+            assertTrue(Services.EDITOR_TAB_MANAGER.saveAsActive(moved));
+            assertEquals(DocumentUri.fromPath(moved), store.current(id).orElseThrow().uri());
+            assertNull(store.state(id).orElseThrow().overlay());
+            editor.replaceText("# Discarded");
+            closeManagedTab(true);
+            assertEquals("# Saved markdown", ((TextDocumentSnapshot) store.current(id).orElseThrow()).text());
+            assertNull(store.state(id).orElseThrow().overlay());
+            tab = openInTabPane(moved);
+            assertEquals(id, tab.documentId());
+            assertEquals("# Saved markdown", tab.view().activeEditor().getText());
+            return null;
+        });
+    }
+
+    @Test
+    public void markdownPreviewAttachesLazySourceEditorToStore() throws Exception {
+        Path file = tempDirectory.resolve("preview.md");
+        Files.writeString(file, "# Preview");
+        onFxThread(() -> {
+            project.getDataStore().writeJson("markdown.json", new MarkdownPreviewPane.MarkdownLayout(
+                MarkdownPreviewPane.MarkdownLayoutType.PREVIEW));
+            tab = openInTabPane(file);
+            assertNull(tab.view().activeEditor());
+            MarkdownPreviewPane markdown = (MarkdownPreviewPane) tab.view().content();
+            markdown.applyLayout(MarkdownPreviewPane.MarkdownLayoutType.CODE);
+            TextEditorPane editor = tab.view().activeEditor();
+            assertNotNull(editor);
+            disableDebouncedAutosave(editor);
+            editor.replaceText("# Lazy draft");
+            assertTrue(tab.dirty());
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            assertEquals(editor.getText(),
+                ((TextDocumentSnapshot) store.current(tab.documentId()).orElseThrow()).text());
+            assertTrue(Services.EDITOR_TAB_MANAGER.saveActive().failedTabs().isEmpty());
+            assertFalse(tab.dirty());
+            assertEquals("# Lazy draft", Files.readString(file));
+            return null;
+        });
+    }
+
+    @Test
+    public void changedReopenAdvancesBeyondDiscardedOverlay() throws Exception {
+        Path file = tempDirectory.resolve("History.java");
+        Files.writeString(file, "class History {}");
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            TextEditorPane editor = tab.view().activeEditor();
+            disableDebouncedAutosave(editor);
+            editor.replaceText("class History { int discarded; }");
+            DocumentId id = tab.documentId();
+            DocumentVersion discarded = editor.captureSnapshot().version();
+            closeManagedTab(true);
+            Files.writeString(file, "class History { int external; }");
+            tab = openInTabPane(file);
+            disableDebouncedAutosave(tab.view().activeEditor());
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            assertEquals(discarded.next(), store.current(id).orElseThrow().version());
+            tab.view().activeEditor().appendText("\n");
+            assertTrue(store.current(id).orElseThrow().version().isAfter(discarded.next()));
+            return null;
+        });
+    }
+
+    @Test
+    public void directSaveAsCannotBypassAttachedDocumentOwner() throws Exception {
+        Path source = tempDirectory.resolve("Owned.java");
+        Path target = tempDirectory.resolve("Bypassed.java");
+        Files.writeString(source, "class Owned {}");
+        onFxThread(() -> {
+            tab = openInTabPane(source);
+            TextEditorPane editor = tab.view().activeEditor();
+            disableDebouncedAutosave(editor);
+            editor.replaceText("class Owned { int draft; }");
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            WorkspaceSnapshot before = store.capture();
+            assertFalse(editor.saveAs(target));
+            assertFalse(editor.saveAs(target, () -> fail("Unmanaged finalizer must not run")));
+            assertFalse(Files.exists(target));
+            assertEquals(source, editor.getFilePath());
+            assertEquals(before, store.capture());
+            assertTrue(editor.saveAs(source));
+            assertNull(store.state(tab.documentId()).orElseThrow().overlay());
+            return null;
+        });
+    }
+
+    @Test
+    public void unreadableReopenRestoresRetainedDraft() throws Exception {
+        assertUnreadableDraftRecovery(false);
+    }
+
+    @Test
+    public void unreadableReopenRestoresDraftWithoutBacking() throws Exception {
+        assertUnreadableDraftRecovery(true);
+    }
+
+    private void assertUnreadableDraftRecovery(boolean removeBacking) throws Exception {
+        Path file = tempDirectory.resolve("Recovery.java");
+        Files.writeString(file, "class Recovery {}");
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            TextEditorPane editor = tab.view().activeEditor();
+            disableDebouncedAutosave(editor);
+            editor.replaceText("class Recovery { int preciousDraft; }");
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            DocumentId id = tab.documentId();
+            TextDocumentSnapshot draft = (TextDocumentSnapshot) store.current(id).orElseThrow();
+            editor.closeRetainingDraft();
+            tab.tab().getTabPane().getTabs().remove(tab.tab());
+            Event.fireEvent(tab.tab(), new Event(tab.tab(), tab.tab(), Tab.CLOSED_EVENT));
+            if (removeBacking) {
+                store.removeBacking(id, store.state(id).orElseThrow().backing().version());
+            }
+            Files.write(file, new byte[]{(byte) 0xc3, 0x28});
+            WorkspaceSnapshot before = store.capture();
+            tab = openInTabPane(file);
+            TextEditorPane recovered = tab.view().activeEditor();
+            disableDebouncedAutosave(recovered);
+            assertFalse(recovered.isInitialContentLoaded());
+            assertEquals(draft.text(), recovered.getText());
+            assertEquals(draft.version(), recovered.captureSnapshot().version());
+            assertSame(draft, store.current(id).orElseThrow());
+            assertEquals(before, store.capture());
+            assertEquals(EditorSaveState.ERROR, recovered.saveState());
+            assertFalse(recovered.saveNow());
+            assertArrayEquals(new byte[]{(byte) 0xc3, 0x28}, Files.readAllBytes(file));
+            recovered.replaceText(draft.text() + " // continued");
+            assertEquals(recovered.getText(), ((TextDocumentSnapshot) store.current(id).orElseThrow()).text());
+            return null;
+        });
+    }
 
     @Test
     public void saveAsRemainsSuccessfulWhenPostCommitWatcherRestartFails() throws Exception {
@@ -265,22 +421,51 @@ public class EditorTabManagerDocumentStoreTest {
         });
     }
 
-    @BeforeAll
-    public static void startJavaFx() throws Exception {
-        WorkspaceModes.initialize();
-        var started = new CountDownLatch(1);
-        try {
-            Platform.startup(started::countDown);
-        } catch (IllegalStateException alreadyStarted) {
-            Platform.runLater(started::countDown);
-        }
-        assertTrue(started.await(10, TimeUnit.SECONDS));
+    @Test
+    public void projectCloseFailureLeavesEveryTabOpenAndSessionIntact() throws Exception {
+        Path firstFile = tempDirectory.resolve("First.java");
+        Path secondFile = tempDirectory.resolve("Second.java");
+        Files.writeString(firstFile, "class First {}");
+        Files.writeString(secondFile, "class Second {}");
+        onFxThread(() -> {
+            EditorTab first = openInTabPane(firstFile);
+            tab = openInTabPane(secondFile);
+            TextEditorPane firstEditor = first.view().activeEditor();
+            TextEditorPane secondEditor = tab.view().activeEditor();
+            disableDebouncedAutosave(firstEditor);
+            disableDebouncedAutosave(secondEditor);
+            firstEditor.replaceText("class First { int savedInPreflight; }");
+            secondEditor.replaceText("class Second { int retained; }");
+            Files.delete(secondFile);
+            secondEditor.markBackingFileDeleted();
+            Field dialogs = EditorTabManager.class.getDeclaredField("failedCloseDialogs");
+            dialogs.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            Map<EditorTab, Stage> failedDialogs = (Map<EditorTab, Stage>) dialogs.get(Services.EDITOR_TAB_MANAGER);
+            failedDialogs.put(tab, new Stage());
+            assertFalse(Services.EDITOR_TAB_MANAGER.prepareProjectClose());
+            assertFalse(firstEditor.isEditorClosed());
+            assertFalse(secondEditor.isEditorClosed());
+            assertNotNull(first.tab().getTabPane());
+            assertNotNull(tab.tab().getTabPane());
+            assertEquals(2, Services.EDITOR_TAB_MANAGER.captureSessionState().size());
+            assertEquals(firstEditor.getText(), Files.readString(firstFile));
+            Services.EDITOR_TAB_MANAGER.discardUnsavedChangesOnClose();
+            assertTrue(Services.EDITOR_TAB_MANAGER.prepareProjectClose());
+            assertTrue(firstEditor.isEditorClosed());
+            assertTrue(secondEditor.isEditorClosed());
+            tab = null;
+            return null;
+        });
     }
 
     @BeforeEach
     public void openProject() throws Exception {
         onFxThread(() -> {
             LanguageSupports.initialize();
+            if (ThemeManager.getTheme() == null) {
+                ThemeManager.setTheme("");
+            }
             project = new RailroadProject(tempDirectory, "Backing publication test", new WritableImage(1, 1));
             Services.IDE_STATE.setCurrentProject(project);
             return null;

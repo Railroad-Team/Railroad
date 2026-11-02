@@ -8,6 +8,7 @@ import dev.railroadide.railroad.ide.language.EditorOpenView;
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
+import dev.railroadide.railroad.ide.ui.MarkdownPreviewPane;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
@@ -104,6 +105,14 @@ public final class EditorTab {
         if (editor != null) {
             this.saveState.bind(editor.saveStateProperty());
         }
+        view.activeEditorProperty().addListener((_, _, current) -> {
+            this.saveState.unbind();
+            if (current != null) {
+                this.saveState.bind(current.saveStateProperty());
+            } else {
+                this.saveState.set(EditorSaveState.CLEAN);
+            }
+        });
         this.dirty.bind(this.saveState.isNotEqualTo(EditorSaveState.CLEAN));
         this.saving.bind(this.saveState.isEqualTo(EditorSaveState.SAVING));
         this.saved.bind(this.saveState.isEqualTo(EditorSaveState.CLEAN));
@@ -409,6 +418,9 @@ public final class EditorTab {
         this.identity.set(Objects.requireNonNull(identity));
         Path normalizedPath = Objects.requireNonNull(path).toAbsolutePath().normalize();
         this.path.set(normalizedPath);
+        if (view.content() instanceof MarkdownPreviewPane markdown) {
+            markdown.rebind(normalizedPath);
+        }
         this.tab.setId(normalizedPath.toString());
     }
 

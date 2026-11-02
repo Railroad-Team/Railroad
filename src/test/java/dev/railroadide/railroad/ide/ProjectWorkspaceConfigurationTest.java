@@ -8,7 +8,9 @@ import dev.railroadide.railroad.gradle.service.GradleModelService;
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.plugin.spi.events.ProjectConfigurationChangedEvent;
 import dev.railroadide.railroad.project.RailroadProject;
-import dev.railroadide.railroad.project.facet.*;
+import dev.railroadide.railroad.project.facet.Facet;
+import dev.railroadide.railroad.project.facet.FacetManager;
+import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroadplugin.dto.RailroadModule;
 import javafx.scene.image.WritableImage;
 import org.gradle.tooling.model.DomainObjectSet;
@@ -136,12 +138,46 @@ public class ProjectWorkspaceConfigurationTest {
         assertTrue(models.listeners.isEmpty());
     }
 
-    private GradleBuildModel model(String id, Path classpath) {
+    @Test
+    public void classpathOrderChangesAdvanceConfiguration() throws Exception {
+        Files.writeString(directory.resolve("build.gradle"), "plugins { id 'java' }");
+        RailroadProject project = new RailroadProject(directory, "Modules", new WritableImage(1, 1)) {
+            @Override
+            public boolean hasFacet(FacetType<?> type) {
+                return type.equals(FacetManager.GRADLE);
+            }
+
+            @Override
+            public List<Facet<?>> getFacets() {
+                return List.of(new Facet<>(FacetManager.GRADLE));
+            }
+        };
+        var models = new FakeModels();
+        Field service = GradleManager.class.getDeclaredField("modelService");
+        service.setAccessible(true);
+        service.set(project.getGradleManager(), models);
+        var store = new DefaultDocumentStore(project.getId(), ProjectWorkspaceConfiguration.initial(project));
+        Path first = directory.resolve("z.jar");
+        Path second = directory.resolve("a.jar");
+        try (ProjectWorkspaceConfiguration tracker = new ProjectWorkspaceConfiguration(project, store)) {
+            models.publish(model(":main", first, second));
+            WorkspaceSnapshot before = store.capture();
+            String original = before.configuration().settings().get("module.:main.classpath");
+            assertTrue(original.indexOf(first.toString()) < original.indexOf(second.toString()));
+            models.publish(model(":main", second, first));
+            String reordered = store.capture().configuration().settings().get("module.:main.classpath");
+            assertTrue(reordered.indexOf(second.toString()) < reordered.indexOf(first.toString()));
+            assertEquals(before.configuration().revision() + 1, store.capture().configuration().revision());
+            assertEquals(original, before.configuration().settings().get("module.:main.classpath"));
+        }
+    }
+
+    private GradleBuildModel model(String id, Path... classpath) {
         RailroadModule module = (RailroadModule) Proxy.newProxyInstance(RailroadModule.class.getClassLoader(),
             new Class<?>[]{RailroadModule.class}, (proxy, method, args) -> switch (method.getName()) {
                 case "getPath" -> id;
                 case "getProjectDir" -> directory;
-                case "getClasspathRoots" -> List.of(classpath.toFile());
+                case "getClasspathRoots" -> Arrays.stream(classpath).map(Path::toFile).toList();
                 case "getDependencyRoots", "getModulePathRoots" -> List.of();
                 case "getContentRoots" -> new ModelSet<>();
                 case "hashCode" -> System.identityHashCode(proxy);

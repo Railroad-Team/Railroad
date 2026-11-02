@@ -12,28 +12,18 @@ import dev.railroadide.railroad.plugin.spi.events.ProjectConfigurationChangedEve
 import dev.railroadide.railroad.project.FacetDetectedEvent;
 import dev.railroadide.railroad.project.data.ProjectDataStore;
 import dev.railroadide.railroad.project.facet.FacetManager;
-import dev.railroadide.railroadplugin.dto.RailroadJavaLanguageSettings;
-import dev.railroadide.railroadplugin.dto.RailroadModule;
-import dev.railroadide.railroadplugin.dto.RailroadContentRoot;
-import dev.railroadide.railroadplugin.dto.RailroadSourceDirectory;
-import dev.railroadide.railroadplugin.dto.RailroadCompilerOutput;
+import dev.railroadide.railroadplugin.dto.*;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.HashSet;
-import java.io.Reader;
-import org.apache.maven.model.Model;
-import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.List;
 
 /** Publishes immutable project configuration when facets, project settings, or imported modules change. */
 public final class ProjectWorkspaceConfiguration implements AutoCloseable {
@@ -180,7 +170,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
 
     private static String paths(Collection<File> files) {
         return files.stream().map(file -> file.toPath().toAbsolutePath().normalize().toString())
-            .sorted().collect(Collectors.joining("\n"));
+            .collect(Collectors.joining("\n"));
     }
 
     private static void languageSettings(

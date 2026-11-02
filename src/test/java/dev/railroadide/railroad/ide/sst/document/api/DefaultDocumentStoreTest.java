@@ -7,25 +7,66 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class DefaultDocumentStoreTest {
     private final WorkspaceConfigurationSnapshot initialConfiguration = new WorkspaceConfigurationSnapshot(0, Set.of());
     private final DefaultDocumentStore store = new DefaultDocumentStore("project-a", initialConfiguration);
     private final DocumentId id = DocumentId.create();
+
+    @Test
+    public void delayedDiskReadCannotOverwriteACommittedOverlay() {
+        store.publishBacking(snapshot(new DocumentVersion(1), "original"));
+        store.publishOverlay(snapshot(new DocumentVersion(2), "saved"));
+        DocumentState observed = store.state(id).orElseThrow();
+        store.commitOverlay(id, observed.backing().version(), observed.overlay().version());
+        WorkspaceSnapshot saved = store.capture();
+        assertThrows(IllegalStateException.class,
+            () -> store.publishBacking(snapshot(new DocumentVersion(3), "original"), observed));
+        assertEquals(saved, store.capture());
+    }
+
+    @Test
+    public void abandonedOverlayRevisionCannotBeReusedForDifferentContent() {
+        TextDocumentSnapshot backing = snapshot(new DocumentVersion(1), "backing");
+        TextDocumentSnapshot draft = snapshot(new DocumentVersion(2), "draft");
+        store.publishBacking(backing);
+        store.publishOverlay(draft);
+        WorkspaceSnapshot retained = store.capture();
+        store.removeOverlay(id, draft.version());
+        WorkspaceSnapshot before = store.capture();
+        assertThrows(IllegalArgumentException.class,
+            () -> store.publishOverlay(snapshot(draft.version(), "different")));
+        assertThrows(IllegalArgumentException.class,
+            () -> store.publishBacking(snapshot(draft.version(), "different")));
+        assertEquals(before, store.capture());
+        store.publishOverlay(snapshot(draft.version(), draft.text()));
+        assertTrue(retained.document(id).orElseThrow().hasSameRevision(store.current(id).orElseThrow()));
+    }
+
+    @Test
+    public void overlayMayAdvanceToUnusedRevisionBelowExternalBacking() {
+        store.publishBacking(snapshot(new DocumentVersion(1), "original"));
+        store.publishOverlay(snapshot(new DocumentVersion(2), "draft"));
+        store.publishBacking(snapshot(new DocumentVersion(5), "external"));
+        store.publishOverlay(snapshot(new DocumentVersion(3), "next edit"));
+        assertTrue(store.state(id).orElseThrow().isStale());
+        assertEquals(new DocumentVersion(3), store.current(id).orElseThrow().version());
+    }
+
+    @Test
+    public void revisionHistoryDistinguishesExactUtf16AndSnapshotKind() {
+        store.publishOverlay(snapshot(new DocumentVersion(2), "\uD800"));
+        store.removeOverlay(id, new DocumentVersion(2));
+        assertThrows(IllegalArgumentException.class,
+            () -> store.publishOverlay(snapshot(new DocumentVersion(2), "?")));
+        assertThrows(IllegalArgumentException.class,
+            () -> store.publishBacking(new BinaryDocumentSnapshot(id, DocumentUri.inMemory(id),
+                new DocumentVersion(2), "binary", new byte[]{63})));
+    }
 
     @Test
     public void saveAsAtomicallyCommitsStaleOverlayAndNotifiesOnce() {

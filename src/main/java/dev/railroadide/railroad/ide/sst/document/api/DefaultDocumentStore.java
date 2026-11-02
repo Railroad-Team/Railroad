@@ -2,10 +2,10 @@ package dev.railroadide.railroad.ide.sst.document.api;
 
 import lombok.Synchronized;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -17,12 +17,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Deleting backing may remove an active entry, but its highest backing version remains
  * recorded for the lifetime of this store. Captures contain active current snapshots
  * and the retained immutable configuration, without referencing this mutable store.
+ * Compact content fingerprints reserve published ID/version pairs for this session,
+ * including discarded revisions, without retaining every previous document body.
  */
 public final class DefaultDocumentStore implements DocumentStore {
     private final String projectId;
     private final Map<DocumentId, Entry> entries = new HashMap<>();
     private final Map<DocumentId, DocumentVersion> lastBackingVersions = new HashMap<>();
     private final Map<DocumentId, DocumentVersion> latestVersions = new HashMap<>();
+    private final Map<DocumentId, Map<DocumentVersion, byte[]>> revisionContents = new HashMap<>();
     private WorkspaceConfigurationSnapshot configuration;
     private long workspaceRevision;
     private final CopyOnWriteArrayList<Runnable> changeListeners = new CopyOnWriteArrayList<>();
@@ -46,39 +49,32 @@ public final class DefaultDocumentStore implements DocumentStore {
         }
     }
 
-    @Synchronized
-    @Override
-    public void commitSaveAs(DocumentSnapshot savedSnapshot, DocumentState expectedState) {
-        Objects.requireNonNull(savedSnapshot, "savedSnapshot");
-        DocumentId id = savedSnapshot.id();
-        if (!Objects.equals(state(id).orElse(null), expectedState))
-            throw new IllegalStateException("Document changed while Save As was in progress.");
-
-        DocumentSnapshot backing = expectedState == null ? null : expectedState.backing();
-        DocumentSnapshot overlay = expectedState == null ? null : expectedState.overlay();
-        DocumentVersion latest = latestVersions.get(id);
-        boolean relocatingBacking = overlay == null && backing != null
-            && backing.version().equals(savedSnapshot.version()) && hasSameContent(backing, savedSnapshot);
-        if (!relocatingBacking && latest != null && (savedSnapshot.version().isBefore(latest)
-            || expectedState == null && savedSnapshot.version().equals(latest)))
-            throw new IllegalArgumentException("Save As cannot reuse an abandoned document revision.");
-        if (overlay != null && !hasSameContent(overlay, savedSnapshot))
-            throw new IllegalArgumentException("Saved content must match the editor overlay.");
-        if (backing != null && savedSnapshot.version().equals(backing.version())
-            && !hasSameContent(backing, savedSnapshot))
-            throw new IllegalArgumentException("Content cannot change at the same backing version.");
-        if (expectedState != null && expectedState.isStale()
-            && (!savedSnapshot.version().isAfter(overlay.version())
-                || backing != null && !savedSnapshot.version().isAfter(backing.version())))
-            throw new IllegalArgumentException("Saving a stale overlay requires a newer version.");
-        DocumentVersion lastBacking = lastBackingVersions.get(id);
-        if (backing == null && lastBacking != null && !savedSnapshot.version().isAfter(lastBacking))
-            throw new IllegalArgumentException("Reappearing backing requires a newer version.");
-
-        entries.put(id, new Entry(savedSnapshot, null));
-        lastBackingVersions.put(id, savedSnapshot.version());
-        observeVersion(savedSnapshot);
-        workspaceChanged();
+    private static byte[] fingerprint(DocumentSnapshot snapshot) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            switch (snapshot) {
+                case TextDocumentSnapshot text -> {
+                    digest.update((byte) 1);
+                    // Hash exact UTF-16 code units, including unpaired surrogates.
+                    ByteBuffer buffer = ByteBuffer.allocate(8192);
+                    for (int index = 0; index < text.text().length(); index++) {
+                        if (buffer.remaining() < Character.BYTES) {
+                            digest.update(buffer.flip());
+                            buffer.clear();
+                        }
+                        buffer.putChar(text.text().charAt(index));
+                    }
+                    digest.update(buffer.flip());
+                }
+                case BinaryDocumentSnapshot binary -> {
+                    digest.update((byte) 2);
+                    digest.update(binary.bytes());
+                }
+            }
+            return digest.digest();
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("Required SHA-256 implementation is unavailable", exception);
+        }
     }
 
     /**
@@ -110,9 +106,54 @@ public final class DefaultDocumentStore implements DocumentStore {
         return Optional.ofNullable(latestVersions.get(id));
     }
 
+    @Synchronized
+    @Override
+    public void commitSaveAs(DocumentSnapshot savedSnapshot, DocumentState expectedState) {
+        Objects.requireNonNull(savedSnapshot, "savedSnapshot");
+        validateRevisionContent(savedSnapshot);
+        DocumentId id = savedSnapshot.id();
+        if (!Objects.equals(state(id).orElse(null), expectedState))
+            throw new IllegalStateException("Document changed while Save As was in progress.");
+
+        DocumentSnapshot backing = expectedState == null ? null : expectedState.backing();
+        DocumentSnapshot overlay = expectedState == null ? null : expectedState.overlay();
+        DocumentVersion latest = latestVersions.get(id);
+        boolean relocatingBacking = overlay == null && backing != null
+            && backing.version().equals(savedSnapshot.version()) && hasSameContent(backing, savedSnapshot);
+        if (!relocatingBacking && latest != null && (savedSnapshot.version().isBefore(latest)
+            || expectedState == null && savedSnapshot.version().equals(latest)))
+            throw new IllegalArgumentException("Save As cannot reuse an abandoned document revision.");
+        if (overlay != null && !hasSameContent(overlay, savedSnapshot))
+            throw new IllegalArgumentException("Saved content must match the editor overlay.");
+        if (backing != null && savedSnapshot.version().equals(backing.version())
+            && !hasSameContent(backing, savedSnapshot))
+            throw new IllegalArgumentException("Content cannot change at the same backing version.");
+        if (expectedState != null && expectedState.isStale()
+            && (!savedSnapshot.version().isAfter(overlay.version())
+                || backing != null && !savedSnapshot.version().isAfter(backing.version())))
+            throw new IllegalArgumentException("Saving a stale overlay requires a newer version.");
+        DocumentVersion lastBacking = lastBackingVersions.get(id);
+        if (backing == null && lastBacking != null && !savedSnapshot.version().isAfter(lastBacking))
+            throw new IllegalArgumentException("Reappearing backing requires a newer version.");
+
+        entries.put(id, new Entry(savedSnapshot, null));
+        lastBackingVersions.put(id, savedSnapshot.version());
+        observeVersion(savedSnapshot);
+        workspaceChanged();
+    }
+
     private void observeVersion(DocumentSnapshot snapshot) {
+        revisionContents.computeIfAbsent(snapshot.id(), _ -> new HashMap<>())
+            .computeIfAbsent(snapshot.version(), _ -> fingerprint(snapshot));
         latestVersions.merge(snapshot.id(), snapshot.version(),
             (first, second) -> first.isAfter(second) ? first : second);
+    }
+
+    private void validateRevisionContent(DocumentSnapshot snapshot) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        byte[] previous = revisionContents.getOrDefault(snapshot.id(), Map.of()).get(snapshot.version());
+        if (previous != null && !Arrays.equals(previous, fingerprint(snapshot)))
+            throw new IllegalArgumentException("A published document revision cannot be reused for different content.");
     }
 
     @Synchronized
@@ -164,7 +205,17 @@ public final class DefaultDocumentStore implements DocumentStore {
 
     @Synchronized
     @Override
+    public void publishBacking(DocumentSnapshot snapshot, DocumentState expectedState) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        if (!Objects.equals(state(snapshot.id()).orElse(null), expectedState))
+            throw new IllegalStateException("Document changed while disk content was being read.");
+        publishBacking(snapshot);
+    }
+
+    @Synchronized
+    @Override
     public void publishBacking(DocumentSnapshot snapshot) {
+        Objects.requireNonNull(snapshot, "snapshot");
         Entry entry = entries.get(snapshot.id());
         if (entry == null || entry.backing() == null) {
             DocumentVersion lastBackingVersion = lastBackingVersions.get(snapshot.id());
@@ -199,6 +250,7 @@ public final class DefaultDocumentStore implements DocumentStore {
             entry = new Entry(snapshot, overlay);
         }
 
+        validateRevisionContent(snapshot);
         entries.put(snapshot.id(), entry);
         lastBackingVersions.put(snapshot.id(), snapshot.version());
         observeVersion(snapshot);
@@ -233,6 +285,7 @@ public final class DefaultDocumentStore implements DocumentStore {
     @Synchronized
     @Override
     public void publishOverlay(DocumentSnapshot snapshot) {
+        Objects.requireNonNull(snapshot, "snapshot");
         Entry entry = entries.get(snapshot.id());
         if (entry == null) {
             entry = new Entry(null, new OverlayState(snapshot, null));
@@ -271,6 +324,7 @@ public final class DefaultDocumentStore implements DocumentStore {
             entry = new Entry(backing, new OverlayState(snapshot, baseBackingVersion));
         }
 
+        validateRevisionContent(snapshot);
         entries.put(snapshot.id(), entry);
         observeVersion(snapshot);
         workspaceChanged();
@@ -331,6 +385,7 @@ public final class DefaultDocumentStore implements DocumentStore {
         Objects.requireNonNull(expectedBackingVersion, "expectedBackingVersion");
         Objects.requireNonNull(expectedOverlayVersion, "expectedOverlayVersion");
         Objects.requireNonNull(resolvedSnapshot, "resolvedSnapshot");
+        validateRevisionContent(resolvedSnapshot);
 
         if (!backing.version().equals(expectedBackingVersion))
             throw new IllegalStateException(
@@ -429,7 +484,9 @@ public final class DefaultDocumentStore implements DocumentStore {
     }
 
     private void replaceCommittedBacking(DocumentId id, DocumentSnapshot savedSnapshot) {
+        validateRevisionContent(savedSnapshot);
         entries.put(id, new Entry(savedSnapshot, null));
+        observeVersion(savedSnapshot);
         lastBackingVersions.put(id, savedSnapshot.version());
         workspaceChanged();
     }
@@ -481,7 +538,9 @@ public final class DefaultDocumentStore implements DocumentStore {
             throw new IllegalArgumentException(
                 "Saved snapshot version must be strictly between the backing and overlay versions.");
 
+        validateRevisionContent(savedSnapshot);
         entries.put(id, new Entry(savedSnapshot, new OverlayState(overlay.snapshot(), savedSnapshot.version())));
+        observeVersion(savedSnapshot);
         lastBackingVersions.put(id, savedSnapshot.version());
         workspaceChanged();
     }
@@ -553,6 +612,7 @@ public final class DefaultDocumentStore implements DocumentStore {
         Objects.requireNonNull(expectedBackingVersion, "expectedBackingVersion");
         Objects.requireNonNull(expectedOverlayVersion, "expectedOverlayVersion");
         Objects.requireNonNull(restoredBacking, "restoredBacking");
+        validateRevisionContent(restoredBacking);
 
         if (!backing.version().equals(expectedBackingVersion))
             throw new IllegalStateException(

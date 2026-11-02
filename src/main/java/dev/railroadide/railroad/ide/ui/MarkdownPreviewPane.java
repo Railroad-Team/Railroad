@@ -1,11 +1,11 @@
 package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.command.CommandButtons;
 import dev.railroadide.railroad.command.CommandContext;
 import dev.railroadide.railroad.command.CommandMenuItems;
 import dev.railroadide.railroad.command.MarkdownCommands;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.data.ProjectDataStore;
@@ -74,7 +74,8 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     private final MarkdownWebView preview;
     private final DocumentId documentId;
     @Getter
-    private final Path markdownFile;
+    private Path markdownFile;
+    private boolean closed;
 
     private WebView webViewPane;
 
@@ -102,12 +103,26 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
 
     @Override
     public void close() {
+        if (closed)
+            return;
         TextEditorPane textEditorPane = getMarkdownEditorPane();
         if (textEditorPane != null) {
             textEditorPane.close();
+            if (!textEditorPane.isEditorClosed())
+                return;
             editorProperty().setValue(null);
         }
+        closed = true;
         Settings.THEME.removeListener(themeListener);
+    }
+
+    /**
+     * Updates the source location used when the source editor is created after a move.
+     *
+     * @param path current document path
+     */
+    public void rebind(Path path) {
+        markdownFile = Objects.requireNonNull(path).toAbsolutePath().normalize();
     }
 
     /**
@@ -166,6 +181,8 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     }
 
     private TextEditorPane codeView() {
+        if (closed)
+            throw new IllegalStateException("Markdown view is closed");
         TextEditorPane textEditorPane = getMarkdownEditorPane();
         if (textEditorPane != null) {
             restoreEditorScroll();
