@@ -11,6 +11,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.Objects;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot;
 
 /**
  * Completion provider backed by the SST semantic pipeline.
@@ -19,6 +21,18 @@ import java.util.Objects;
  * @param filePath optional legacy file context; completion uses the supplied snapshot
  */
 public record JavaCompletionProvider(Project project, @Nullable Path filePath) implements CompletionProvider {
+    @Override
+    public @Nullable CompletionResult compute(
+        WorkspaceSnapshot workspace,
+        DocumentId id,
+        int triggerAt
+    ) {
+        if (!(workspace.document(id).orElseThrow() instanceof TextDocumentSnapshot text)
+            || !JavaLanguageSupport.LANGUAGE_ID.equals(text.languageId()))
+            return null;
+        return JavaSemanticCompletionEngine.compute(text.text(), triggerAt,
+            JavaLanguageSupport.analysisContextProvider().index(workspace));
+    }
     /**
      * Creates a completion provider whose document location is supplied by each snapshot.
      *

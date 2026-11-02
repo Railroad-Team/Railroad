@@ -7,6 +7,7 @@ import dev.railroadide.railroad.ide.completion.CompletionItem;
 import dev.railroadide.railroad.ide.completion.CompletionResult;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaSourceSnapshotIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticModel;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
@@ -451,8 +452,13 @@ public final class JavaSemanticCompletionEngine {
             return null;
 
         try {
+            String source = projectIndex instanceof JavaSourceSnapshotIndex captured
+                ? captured.sourceText(sourceFile).orElse(null)
+                : Files.readString(sourceFile);
+            if (source == null)
+                return null;
             SemanticModel declarationModel = JavaSemanticAnalyzer
-                .analyzeDeclarationsFacts(Files.readString(sourceFile));
+                .analyzeDeclarationsFacts(source);
             return typeDeclarationInfoInModel(ownerQualifiedName, declarationModel, projectIndex);
         } catch (IOException exception) {
             return null;

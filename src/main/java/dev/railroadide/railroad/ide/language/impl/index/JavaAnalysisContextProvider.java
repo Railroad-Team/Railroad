@@ -23,11 +23,23 @@ import java.util.Set;
 import java.util.stream.Stream;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot;
 
 /**
  * Combines Java project, library, and JDK symbol indexes, caching library and JDK scans.
  */
 public final class JavaAnalysisContextProvider {
+    private final JavaWorkspaceAnalysisProvider workspaceAnalysis = new JavaWorkspaceAnalysisProvider();
+
+    /**
+     * Returns Java analysis inputs pinned to captured source documents and configuration.
+     *
+     * @param workspace immutable request workspace
+     * @return captured Java source and dependency context
+     */
+    public JavaWorkspaceAnalysis index(WorkspaceSnapshot workspace) {
+        return workspaceAnalysis.capture(workspace);
+    }
     private final DefaultProjectIndexContextResolver resolver = new DefaultProjectIndexContextResolver();
     private final ConcurrentMap<LibraryIndexKey, JavaLibrarySymbolIndex> libraryIndexes = new ConcurrentHashMap<>();
     private final ConcurrentMap<Path, JavaJdkSymbolIndex> jdkIndexes = new ConcurrentHashMap<>();

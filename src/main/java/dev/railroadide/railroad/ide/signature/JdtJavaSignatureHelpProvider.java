@@ -10,6 +10,16 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.language.impl.index.JavaWorkspaceAnalysis;
+import java.nio.file.Files;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
+import java.util.stream.Stream;
+import dev.railroadide.railroad.Railroad;
 
 /**
  * Signature help provider backed by Eclipse JDT. Responsible solely for
@@ -33,6 +43,57 @@ public record JdtJavaSignatureHelpProvider(@Nullable Path filePath, String[] sys
 
     @Override
     public @Nullable SignatureHelp compute(DocumentSnapshot snapshot, int caretPosition) {
+        return compute(snapshot, caretPosition, systemModulePaths, null);
+    }
+
+    @Override
+    public @Nullable SignatureHelp compute(WorkspaceSnapshot workspace, DocumentId id, int caretPosition) {
+        DocumentSnapshot snapshot = workspace.document(id).orElseThrow();
+        if (!(snapshot instanceof TextDocumentSnapshot text) || !"java".equals(text.languageId()))
+            return null;
+        JavaWorkspaceAnalysis analysis = JavaLanguageSupport.analysisContextProvider().index(workspace);
+        Path staged = null;
+        try {
+            staged = Files.createTempDirectory("railroad-java-signatures-");
+            for (var entry : analysis.sourceIndex().files().values()) {
+                String packageName = entry.packageName();
+                Path directory = packageName == null ? staged : staged.resolve(packageName.replace('.', '/'));
+                Path target = directory.resolve(entry.path().getFileName());
+                if (!target.normalize().startsWith(staged))
+                    throw new IllegalArgumentException("Source location escapes the request directory");
+                Files.createDirectories(directory);
+                Files.writeString(target, analysis.sourceTexts().get(entry.path()), StandardCharsets.UTF_8);
+            }
+            List<String> classpath = new ArrayList<>(analysis.classpath().stream().map(Path::toString).toList());
+            Path jmods = analysis.jdkHome().resolve("jmods");
+            if (Files.isDirectory(jmods)) {
+                try (Stream<Path> modules = Files.list(jmods)) {
+                    modules.sorted().map(Path::toString).forEach(classpath::add);
+                }
+            }
+            return compute(snapshot, caretPosition, classpath.toArray(String[]::new),
+                new String[]{staged.toString()});
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Cannot prepare captured Java sources for signature help", exception);
+        } finally {
+            if (staged != null) {
+                try (Stream<Path> files = Files.walk(staged)) {
+                    for (Path file : files.sorted(Comparator.reverseOrder()).toList()) {
+                        Files.deleteIfExists(file);
+                    }
+                } catch (IOException exception) {
+                    Railroad.LOGGER.warn("Cannot remove signature request directory {}", staged, exception);
+                }
+            }
+        }
+    }
+
+    private @Nullable SignatureHelp compute(
+        DocumentSnapshot snapshot,
+        int caretPosition,
+        String[] classpath,
+        String[] sourceRoots
+    ) {
         if (!(snapshot instanceof TextDocumentSnapshot textSnapshot)
             || !JavaLanguageSupport.LANGUAGE_ID.equals(textSnapshot.languageId()))
             return null;
@@ -48,7 +109,8 @@ public record JdtJavaSignatureHelpProvider(@Nullable Path filePath, String[] sys
         parser.setBindingsRecovery(true);
         parser.setStatementsRecovery(true);
         parser.setUnitName(snapshot.uri().fileName().orElse("Snapshot.java"));
-        parser.setEnvironment(systemModulePaths, null, null, false);
+        parser.setEnvironment(classpath, sourceRoots,
+            sourceRoots == null ? null : new String[]{StandardCharsets.UTF_8.name()}, false);
 
         CompilationUnit unit = (CompilationUnit) parser.createAST(null);
         int searchAt = Math.max(0,
