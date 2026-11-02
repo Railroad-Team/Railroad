@@ -29,11 +29,13 @@ public interface DocumentStore {
      * An existing overlay and its base revision are retained, even if the new backing
      * makes that overlay stale. Backing revisions created by commit and discard are
      * included in the retained version history.
+     * A backing snapshot that shares the current overlay's version must also share
+     * its content. Different backing and overlay versions may contain different content.
      *
      * @param snapshot immutable backing snapshot
      * @throws NullPointerException if the snapshot is {@code null}
      * @throws IllegalArgumentException if the version regresses, or content differs
-     *             at the current backing version, or reappearing backing does not
+     *             at the current backing or overlay version, or reappearing backing does not
      *             advance beyond its last published backing revision
      */
     void publishBacking(DocumentSnapshot snapshot);
@@ -62,11 +64,13 @@ public interface DocumentStore {
      * A first overlay captures the current backing version as its base, or an absent
      * base when no backing exists. Later overlay publications preserve that base,
      * including while backing is absent or has advanced beyond the overlay version.
+     * Every overlay publication that shares the backing's version must share its
+     * content, including updates to an existing stale overlay.
      *
      * @param snapshot immutable overlay snapshot
      * @throws NullPointerException if the snapshot is {@code null}
      * @throws IllegalArgumentException if its version regresses, or content differs
-     *             at the current overlay version or a first overlay's backing version
+     *             at the current overlay or backing version
      */
     void publishOverlay(DocumentSnapshot snapshot);
 

@@ -72,7 +72,13 @@ public final class DefaultDocumentStore implements DocumentStore {
                         "A backing snapshot with the same version as the current backing must have the same content.");
             }
 
-            entry = new Entry(snapshot, entry.overlay());
+            OverlayState overlay = entry.overlay();
+            if (overlay != null && overlay.snapshot().version().equals(snapshot.version())
+                && !hasSameContent(overlay.snapshot(), snapshot))
+                throw new IllegalArgumentException(
+                    "A backing snapshot with the same version as the current overlay must have the same content.");
+
+            entry = new Entry(snapshot, overlay);
         }
 
         entries.put(snapshot.id(), entry);
@@ -132,11 +138,11 @@ public final class DefaultDocumentStore implements DocumentStore {
                 if (snapshot.version().isBefore(backing.version()))
                     throw new IllegalArgumentException(
                         "Cannot publish an initial overlay with an older version than the backing snapshot.");
-
-                if (snapshot.version().equals(backing.version()) && !hasSameContent(backing, snapshot))
-                    throw new IllegalArgumentException(
-                        "An initial overlay with the same version as backing must have the same content.");
             }
+
+            if (backing != null && snapshot.version().equals(backing.version()) && !hasSameContent(backing, snapshot))
+                throw new IllegalArgumentException(
+                    "An overlay snapshot with the same version as backing must have the same content.");
 
             DocumentVersion baseBackingVersion;
             if (overlay != null) {
