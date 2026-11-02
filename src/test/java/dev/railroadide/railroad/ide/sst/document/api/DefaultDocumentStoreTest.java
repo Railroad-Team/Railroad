@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -25,6 +26,62 @@ public class DefaultDocumentStoreTest {
     private final WorkspaceConfigurationSnapshot initialConfiguration = new WorkspaceConfigurationSnapshot(0, Set.of());
     private final DefaultDocumentStore store = new DefaultDocumentStore("project-a", initialConfiguration);
     private final DocumentId id = DocumentId.create();
+
+    @Test
+    public void saveAsAtomicallyCommitsStaleOverlayAndNotifiesOnce() {
+        store.publishBacking(snapshot(new DocumentVersion(1), "original"));
+        TextDocumentSnapshot local = snapshot(new DocumentVersion(2), "local");
+        store.publishOverlay(local);
+        store.publishBacking(snapshot(new DocumentVersion(3), "external"));
+        DocumentState expected = store.state(id).orElseThrow();
+        WorkspaceSnapshot before = store.capture();
+        var notifications = new AtomicInteger();
+        DocumentStore.ChangeSubscription subscription = store.onChange(notifications::incrementAndGet);
+        DocumentUri target = DocumentUri.parse("memory:///saved.java");
+        var saved = new TextDocumentSnapshot(id, target, new DocumentVersion(4), "java", "local",
+            StandardCharsets.UTF_8);
+        assertThrows(IllegalArgumentException.class, () -> store.commitSaveAs(local, expected));
+        assertEquals(before, store.capture());
+        assertEquals(0, notifications.get());
+        store.commitSaveAs(saved, expected);
+        assertSame(saved, store.current(id).orElseThrow());
+        assertNull(store.state(id).orElseThrow().overlay());
+        assertEquals(before.revision() + 1, store.capture().revision());
+        assertEquals(1, notifications.get());
+        assertThrows(IllegalStateException.class, () -> store.commitSaveAs(saved, expected));
+        assertEquals(1, notifications.get());
+        subscription.close();
+        store.publishConfiguration(new WorkspaceConfigurationSnapshot(1, Set.of()));
+        assertEquals(1, notifications.get());
+    }
+
+    @Test
+    public void saveAsWithoutBackingRemovesOverlayInOneTransition() {
+        TextDocumentSnapshot local = snapshot(new DocumentVersion(2), "local");
+        store.publishOverlay(local);
+        DocumentState expected = store.state(id).orElseThrow();
+        WorkspaceSnapshot before = store.capture();
+        store.commitSaveAs(local, expected);
+        assertSame(local, store.current(id).orElseThrow());
+        assertNull(store.state(id).orElseThrow().overlay());
+        assertEquals(before.revision() + 1, store.capture().revision());
+        assertSame(local, before.document(id).orElseThrow());
+    }
+
+    @Test
+    public void saveAsRelocatesBackingAfterNewerOverlayWasDiscarded() {
+        TextDocumentSnapshot backing = snapshot(new DocumentVersion(1), "saved");
+        store.publishBacking(backing);
+        TextDocumentSnapshot discarded = snapshot(new DocumentVersion(2), "discarded");
+        store.publishOverlay(discarded);
+        store.removeOverlay(id, discarded.version());
+        DocumentUri target = DocumentUri.parse("memory:///saved.java");
+        var saved = new TextDocumentSnapshot(id, target, backing.version(), "java", "saved",
+            StandardCharsets.UTF_8);
+        store.commitSaveAs(saved, store.state(id).orElseThrow());
+        assertSame(saved, store.current(id).orElseThrow());
+        assertEquals(discarded.version(), store.latestVersion(id).orElseThrow());
+    }
 
     @Test
     public void removingStaleOverlayRetainsBackingAndRejectsChangedExpectedVersion() {

@@ -21,6 +21,34 @@ import java.util.Optional;
  */
 public interface DocumentStore {
     /**
+     * Observes successful workspace changes. Callbacks run on the publishing thread and
+     * must not block or mutate the store. Schedule UI work separately. Closing the
+     * registration stops future notifications.
+     * Rejected operations and no-ops do not notify observers.
+     *
+     * @param listener callback that invalidates a previously captured workspace
+     * @return registration to close when the observer is disposed
+     */
+    ChangeSubscription onChange(Runnable listener);
+
+    /** A workspace observer registration whose removal cannot throw a checked exception. */
+    interface ChangeSubscription extends AutoCloseable {
+        @Override
+        void close();
+    }
+
+    /**
+     * Atomically records a successful Save As, replacing backing and clearing any overlay.
+     * The expected state may be null for an unpublished document. Rejection leaves all
+     * snapshots and revisions unchanged. The saved content must match any existing overlay;
+     * stale overlays require a version newer than both snapshots. Location metadata may change.
+     *
+     * @param savedSnapshot exact content persisted at the destination
+     * @param expectedState document state observed before writing, or null if absent
+     */
+    void commitSaveAs(DocumentSnapshot savedSnapshot, DocumentState expectedState);
+
+    /**
      * Returns the highest backing revision retained even after backing removal.
      *
      * @param id logical document identity

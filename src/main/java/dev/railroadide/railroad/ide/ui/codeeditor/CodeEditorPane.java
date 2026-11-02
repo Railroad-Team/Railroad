@@ -51,6 +51,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Provides a text editor with configurable highlighting, completion, diagnostics, and signature help.
@@ -68,6 +69,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
     private final ShutdownHooks.Registration workerShutdownRegistration;
     private boolean codeEditorClosed;
     private final List<Subscription> subscriptions = new ArrayList<>();
+    private DocumentStore.ChangeSubscription workspaceSubscription;
+    private WorkspaceSnapshot observedWorkspace;
+    private final AtomicBoolean workspaceRefreshQueued = new AtomicBoolean();
 
     // region Diagnostics state
     protected static final Duration DIAGNOSTIC_DEBOUNCE = Duration.ofMillis(300);
@@ -184,6 +188,10 @@ public abstract class CodeEditorPane extends TextEditorPane {
             return;
 
         codeEditorClosed = true;
+        if (workspaceSubscription != null) {
+            workspaceSubscription.close();
+            workspaceSubscription = null;
+        }
         subscriptions.forEach(Subscription::unsubscribe);
         subscriptions.clear();
         diagnosticsGeneration.incrementAndGet();
@@ -201,9 +209,52 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     @Override
     protected void documentStoreAttached() {
+        if (workspaceSubscription != null) {
+            workspaceSubscription.close();
+        }
+        DocumentStore store = getDocumentStore();
+        workspaceSubscription = store.onChange(() -> {
+            if (workspaceRefreshQueued.compareAndSet(false, true)) {
+                Platform.runLater(this::refreshWorkspaceFeatures);
+            }
+        });
+        observedWorkspace = store.capture();
         if (diagnosticsProvider != null) {
             requestDiagnostics();
         }
+    }
+
+    private void refreshWorkspaceFeatures() {
+        workspaceRefreshQueued.set(false);
+        if (codeEditorClosed)
+            return;
+        WorkspaceSnapshot latest = captureFeatureWorkspace();
+        WorkspaceSnapshot previous = observedWorkspace;
+        observedWorkspace = latest;
+        if (previous == null || latest == null)
+            return;
+        Map<DocumentId, DocumentSnapshot> oldDependencies = new HashMap<>(previous.documents());
+        Map<DocumentId, DocumentSnapshot> newDependencies = new HashMap<>(latest.documents());
+        oldDependencies.remove(documentId);
+        newDependencies.remove(documentId);
+        DocumentSnapshot oldDocument = previous.document(documentId).orElse(null);
+        DocumentSnapshot newDocument = latest.document(documentId).orElse(null);
+        boolean changedWithoutEditing = oldDocument != newDocument
+            && oldDocument instanceof TextDocumentSnapshot oldText
+            && newDocument instanceof TextDocumentSnapshot newText && oldText.text().equals(newText.text());
+        if (!changedWithoutEditing && previous.configuration().equals(latest.configuration())
+            && oldDependencies.equals(newDependencies))
+            return;
+
+        diagnosticsGeneration.incrementAndGet();
+        completionGeneration.incrementAndGet();
+        signatureGeneration.incrementAndGet();
+        visibleDiagnostics = List.of();
+        recomputeLineDecorations();
+        diagnosticPopup.hide();
+        hideAutoComplete();
+        hideSignatureHelp();
+        requestDiagnostics();
     }
 
     private @Nullable WorkspaceSnapshot captureFeatureWorkspace() {

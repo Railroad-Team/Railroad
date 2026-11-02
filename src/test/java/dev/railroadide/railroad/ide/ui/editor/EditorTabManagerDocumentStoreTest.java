@@ -50,6 +50,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javafx.scene.control.TabPane;
 import java.lang.reflect.Method;
+import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
+import java.lang.reflect.Field;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import javafx.stage.Stage;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -58,6 +63,143 @@ public class EditorTabManagerDocumentStoreTest {
     public Path tempDirectory;
     private Project project;
     private EditorTab tab;
+
+    @Test
+    public void saveAsStoreFailureRollsBackLocationAndRetainsRecoverableDraft() throws Exception {
+        assertSaveAsStoreFailure(false);
+    }
+
+    @Test
+    public void saveAsStoreFailureRetainsStaleOverlayAndOriginalVersion() throws Exception {
+        assertSaveAsStoreFailure(true);
+    }
+
+    private void assertSaveAsStoreFailure(boolean stale) throws Exception {
+        Path source = tempDirectory.resolve("Old.java");
+        Path destination = tempDirectory.resolve("New.java");
+        Files.writeString(source, "class Old {}");
+        onFxThread(() -> {
+            tab = openInTabPane(source);
+            TextEditorPane editor = tab.view().activeEditor();
+            disableDebouncedAutosave(editor);
+            editor.replaceText("class Old { int local; }");
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            if (stale) {
+                Files.writeString(source, "class Old { int external; }");
+                store.publishBacking(new TextDocumentSnapshot(tab.documentId(), DocumentUri.fromPath(source),
+                    editor.captureSnapshot().version().next(), "java", "class Old { int external; }",
+                    StandardCharsets.UTF_8));
+            }
+            WorkspaceSnapshot before = store.capture();
+            DocumentVersion editorVersion = editor.captureSnapshot().version();
+            DocumentIdentity identity = tab.identity();
+            Field storeField = Services.IDE_STATE.getClass().getDeclaredField("documentStore");
+            storeField.setAccessible(true);
+            DocumentStore failingStore = (DocumentStore) Proxy.newProxyInstance(DocumentStore.class.getClassLoader(),
+                new Class<?>[]{DocumentStore.class}, (proxy, method, args) -> {
+                    if (method.getName().equals("commitSaveAs"))
+                        throw new IllegalStateException("Injected Save As store failure");
+                    try {
+                        return method.invoke(store, args);
+                    } catch (InvocationTargetException exception) {
+                        throw exception.getCause();
+                    }
+                });
+            storeField.set(Services.IDE_STATE, failingStore);
+            try {
+                assertFalse(Services.EDITOR_TAB_MANAGER.saveAsActive(destination));
+            } finally {
+                storeField.set(Services.IDE_STATE, store);
+            }
+            assertEquals(before, store.capture());
+            assertEquals(identity, tab.identity());
+            assertEquals(source, tab.path());
+            assertEquals(source, editor.getFilePath());
+            assertEquals(editorVersion, editor.captureSnapshot().version());
+            assertEquals(DocumentUri.fromPath(source), tab.document().getUri());
+            assertEquals(identity, Services.IDE_STATE.findDocumentIdentity(identity.uri()).orElseThrow());
+            assertTrue(Services.IDE_STATE.findDocumentIdentity(DocumentUri.fromPath(destination)).isEmpty());
+            assertEquals("class Old { int local; }", editor.getText());
+            assertEquals(editor.getText(), ((TextDocumentSnapshot) store.current(identity.id()).orElseThrow()).text());
+            assertEquals(editor.getText(), Files.readString(destination));
+            assertEquals(stale ? "class Old { int external; }" : "class Old {}", Files.readString(source));
+            assertTrue(editor.dirty());
+            assertTrue(Services.EDITOR_TAB_MANAGER.saveAsActive(destination));
+            assertEquals(destination, editor.getFilePath());
+            assertEquals(DocumentUri.fromPath(destination), store.current(identity.id()).orElseThrow().uri());
+            assertNull(store.state(identity.id()).orElseThrow().overlay());
+            assertEquals(before.revision() + 1, store.capture().revision());
+            return null;
+        });
+    }
+
+    @Test
+    public void forcedClosureAfterFailedWriteRetainsDraftAndStopsEditorResources() throws Exception {
+        Path file = tempDirectory.resolve("Forced.java");
+        Files.writeString(file, "class Forced {}");
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            TextEditorPane editor = tab.view().activeEditor();
+            disableDebouncedAutosave(editor);
+            editor.replaceText("class Forced { int local; }");
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            DocumentState before = store.state(tab.documentId()).orElseThrow();
+            // A directory at the original path deterministically makes persistence fail.
+            Files.delete(file);
+            Files.createDirectory(file);
+            tab.tab().getTabPane().getTabs().remove(tab.tab());
+            Event.fireEvent(tab.tab(), new Event(tab.tab(), tab.tab(), Tab.CLOSED_EVENT));
+            assertTrue(editor.isEditorClosed());
+            assertSame(before.overlay(), store.state(tab.documentId()).orElseThrow().overlay());
+            Field watcher = TextEditorPane.class.getDeclaredField("watcherExecutor");
+            watcher.setAccessible(true);
+            assertTrue(((ExecutorService) watcher.get(editor)).isShutdown());
+            Field worker = CodeEditorPane.class
+                .getDeclaredField("worker");
+            worker.setAccessible(true);
+            assertTrue(((ExecutorService) worker.get(editor)).isShutdown());
+            DocumentId id = tab.documentId();
+            Files.delete(file);
+            Files.writeString(file, "class Forced {}");
+            tab = openInTabPane(file);
+            assertEquals(id, tab.documentId());
+            assertEquals("class Forced { int local; }", tab.view().activeEditor().getText());
+            assertTrue(tab.view().activeEditor().dirty());
+            return null;
+        });
+    }
+
+    @Test
+    public void projectClosePreparationKeepsFailedEditorUntilDiscardApproved() throws Exception {
+        Path file = tempDirectory.resolve("Shutdown.java");
+        Files.writeString(file, "class Shutdown {}");
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            TextEditorPane editor = tab.view().activeEditor();
+            disableDebouncedAutosave(editor);
+            editor.replaceText("class Shutdown { int local; }");
+            Files.delete(file);
+            editor.markBackingFileDeleted();
+            // The application normally initializes dialog styles. Register a harmless
+            // existing dialog so this lifecycle test does not construct unrelated UI.
+            Field dialogs = EditorTabManager.class.getDeclaredField("failedCloseDialogs");
+            dialogs.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            Map<EditorTab, Stage> failedDialogs = (Map<EditorTab, Stage>) dialogs.get(Services.EDITOR_TAB_MANAGER);
+            failedDialogs.put(tab, new Stage());
+            assertFalse(Services.EDITOR_TAB_MANAGER.prepareProjectClose());
+            assertFalse(editor.isEditorClosed());
+            assertNotNull(tab.tab().getTabPane());
+            assertTrue(Services.IDE_STATE.getDocumentStore().orElseThrow().state(tab.documentId()).orElseThrow()
+                .overlay() != null);
+            Services.EDITOR_TAB_MANAGER.discardUnsavedChangesOnClose();
+            assertTrue(Services.EDITOR_TAB_MANAGER.prepareProjectClose());
+            assertTrue(editor.isEditorClosed());
+            assertTrue(Services.IDE_STATE.getDocumentStore().orElseThrow().state(tab.documentId()).isEmpty());
+            tab = null;
+            return null;
+        });
+    }
 
     @BeforeAll
     public static void startJavaFx() throws Exception {

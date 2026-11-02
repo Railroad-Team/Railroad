@@ -13,6 +13,7 @@ import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentOrigin;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentState;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentStore;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import dev.railroadide.railroad.ide.ui.*;
@@ -1344,9 +1345,9 @@ public class EditorTabManager {
      * Saves the active editor to a destination and rebinds its document identity and path.
      * The logical document ID is retained. A destination registered under a different
      * ID is rejected before writing, including when that document has no open tab.
-     * After rebinding, clean backing receives the new location, or the saved overlay
-     * is committed atomically at that location, without advancing its content version.
-     * If rebinding fails after writing, the destination is retained and store state is unchanged.
+     * The persisted snapshot replaces backing and clears the overlay in one atomic transition.
+     * If rebinding or store finalization fails, the destination is retained, the original
+     * editor location is restored, and its draft remains available for retry.
      *
      * @param targetPath destination file for the active document
      * @return true if saving and any required rebinding succeed
@@ -1376,13 +1377,18 @@ public class EditorTabManager {
 
         Path previousPath = editorTab.path();
         DocumentIdentity previousIdentity = editorTab.identity();
-        if (!editor.saveAs(normalizedTarget, () -> {
+        DocumentStore store = Services.IDE_STATE.getDocumentStore().orElse(null);
+        DocumentState expectedState = store == null ? null : store.state(editorTab.documentId()).orElse(null);
+        if (!editor.saveAs(normalizedTarget, savedSnapshot -> {
             try {
                 DocumentIdentity reboundIdentity = Services.IDE_STATE.rebindDocument(previousIdentity, targetUri);
                 if (editorTab.document() instanceof FileSystemDocument fileSystemDocument) {
                     fileSystemDocument.rebind(normalizedTarget);
                 }
                 editorTab.rebind(reboundIdentity, normalizedTarget);
+                if (store != null) {
+                    store.commitSaveAs(savedSnapshot, expectedState);
+                }
             } catch (RuntimeException exception) {
                 try {
                     Services.IDE_STATE.findDocumentIdentity(targetUri)
@@ -1396,7 +1402,7 @@ public class EditorTabManager {
                     exception.addSuppressed(rollbackFailure);
                 }
                 Railroad.LOGGER.error(
-                    "Save As wrote {} but identity rebinding failed; the destination file was retained",
+                    "Save As wrote {} but finalization failed; the original editor location and draft were retained",
                     normalizedTarget, exception);
                 throw exception;
             }
@@ -1404,44 +1410,6 @@ public class EditorTabManager {
             return false;
 
         refreshTabPresentations();
-        TextDocumentSnapshot contentToSave = editor.captureSnapshot();
-        var savedSnapshot = new TextDocumentSnapshot(contentToSave.id(), targetUri,
-            contentToSave.version(),
-            contentToSave.languageId(), DocumentOrigin.original(targetUri), contentToSave.text(),
-            contentToSave.encoding());
-        try {
-            Services.IDE_STATE.getDocumentStore()
-                .ifPresent(store -> {
-                    DocumentState state = store.state(editorTab.documentId()).orElse(null);
-                    if (state == null) {
-                        store.publishBacking(savedSnapshot);
-                        return;
-                    }
-                    if (state.backing() == null) {
-                        store.publishBacking(savedSnapshot);
-                        if (state.overlay() != null) {
-                            store.removeOverlay(editorTab.documentId(), state.overlay().version());
-                        }
-                        return;
-                    }
-
-                    if (state.overlay() == null) {
-                        store.publishBacking(savedSnapshot);
-                    } else {
-                        if (state.isStale()) {
-                            store.reconcileOverlay(editorTab.documentId(), state.backing().version(),
-                                state.overlay().version(), savedSnapshot);
-                        }
-                        store.commitOverlay(editorTab.documentId(), state.backing().version(),
-                            state.isStale() ? savedSnapshot.version() : state.overlay().version(),
-                            savedSnapshot);
-                    }
-                });
-        } catch (RuntimeException exception) {
-            Railroad.LOGGER.error("Save As wrote {} and rebound its identity, but updating the document store failed",
-                normalizedTarget, exception);
-            return false;
-        }
         return true;
     }
 
@@ -1606,13 +1574,40 @@ public class EditorTabManager {
             EditorViewState.capture(editorTab.view().activeEditor()));
     }
 
+    private void closeRemovedEditor(TextEditorPane editor) {
+        try {
+            editor.close();
+        } catch (RuntimeException exception) {
+            Railroad.LOGGER.warn("Failed to close removed editor {}; retaining its draft", editor.getFilePath(),
+                exception);
+        }
+        if (!editor.isEditorClosed()) {
+            editor.closeRetainingDraft();
+        }
+        editor.dispose();
+    }
+
+    /**
+     * Closes editors through the normal save/discard policy before releasing the project store.
+     * A failed save keeps its tab open and prevents project closure.
+     *
+     * @return whether all editors completed closure
+     */
+    public boolean prepareProjectClose() {
+        for (EditorTab editorTab : List.copyOf(openTabs.values())) {
+            requestClose(editorTab);
+            if (openTabs.containsKey(editorTab.documentId()))
+                return false;
+        }
+        return true;
+    }
+
     private void handleClosed(EditorTab editorTab) {
         if (!openTabs.containsKey(editorTab.documentId()))
             return;
         TextEditorPane editor = editorTab.view().activeEditor();
         if (editor != null) {
-            editor.close();
-            editor.dispose();
+            closeRemovedEditor(editor);
         }
         if (openTabs.remove(editorTab.documentId()) == null)
             return;
@@ -1849,7 +1844,7 @@ public class EditorTabManager {
 
     private void resetTracking() {
         openTabs.values().stream().map(EditorTab::view).map(EditorOpenView::activeEditor)
-            .filter(Objects::nonNull).forEach(TextEditorPane::close);
+            .filter(Objects::nonNull).forEach(this::closeRemovedEditor);
         selectionGeneration++;
         selectionUpdateScheduled = false;
         replacingPreview = false;

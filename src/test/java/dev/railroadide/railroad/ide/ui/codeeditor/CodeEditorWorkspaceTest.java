@@ -23,12 +23,113 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.lang.reflect.Method;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class CodeEditorWorkspaceTest {
     @TempDir
     public Path directory;
+
+    @Test
+    public void configurationChangeRetriesPendingDiagnostics() throws Exception {
+        assertWorkspaceChangeRetriesDiagnostics("configuration");
+    }
+
+    @Test
+    public void dependencyEditRetriesPendingDiagnostics() throws Exception {
+        assertWorkspaceChangeRetriesDiagnostics("dependency");
+    }
+
+    @Test
+    public void relocationWithoutEditingRetriesPendingDiagnostics() throws Exception {
+        assertWorkspaceChangeRetriesDiagnostics("location");
+    }
+
+    private void assertWorkspaceChangeRetriesDiagnostics(String change) throws Exception {
+        Path file = directory.resolve("Example.java");
+        Files.writeString(file, "class Example {}");
+        DocumentId id = DocumentId.create();
+        DocumentId dependencyId = DocumentId.create();
+        var store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()));
+        var dependency = new TextDocumentSnapshot(dependencyId, DocumentUri.inMemory(dependencyId),
+            DocumentVersion.initial(), "java", "original", StandardCharsets.UTF_8);
+        store.publishBacking(dependency);
+        var releaseOld = new CountDownLatch(1);
+        BlockingQueue<WorkspaceSnapshot> requests = new LinkedBlockingQueue<>();
+        var calls = new AtomicInteger();
+        DiagnosticsProvider<TextEditorDiagnostic> provider = new DiagnosticsProvider<>() {
+            @Override
+            public List<TextEditorDiagnostic> compute(DocumentSnapshot snapshot) {
+                throw new AssertionError("Expected a workspace request");
+            }
+
+            @Override
+            public List<TextEditorDiagnostic> compute(WorkspaceSnapshot workspace, DocumentId documentId) {
+                int call = calls.incrementAndGet();
+                requests.add(workspace);
+                if (call == 1) {
+                    try {
+                        assertTrue(releaseOld.await(10, TimeUnit.SECONDS));
+                    } catch (InterruptedException exception) {
+                        Thread.currentThread().interrupt();
+                        throw new AssertionError(exception);
+                    }
+                }
+                TextDocumentSnapshot document = (TextDocumentSnapshot) workspace.document(documentId).orElseThrow();
+                return List.of(new TextEditorDiagnostic(Location.TextLocation.from(document, 0, 1),
+                    Diagnostic.Kind.ERROR, call == 1 ? "OLD" : "NEW", "result"));
+            }
+        };
+        TestEditor editor = onFx(() -> {
+            Project project = new RailroadProject(directory, "Workspace retry", new WritableImage(1, 1));
+            var pane = new TestEditor(project, id, file,
+                new CodeEditorConfig("java", null, provider, null, null));
+            store.publishBacking(pane.captureSnapshot());
+            pane.setDocumentStore(store);
+            return pane;
+        });
+        try {
+            WorkspaceSnapshot original = requests.poll(10, TimeUnit.SECONDS);
+            assertNotNull(original);
+            if (change.equals("configuration")) {
+                store.publishConfiguration(new WorkspaceConfigurationSnapshot(1, Set.of(":changed")));
+            } else if (change.equals("location")) {
+                store.relocate(id, DocumentUri.fromPath(directory.resolve("Moved.java")));
+            } else {
+                store.publishBacking(
+                    new TextDocumentSnapshot(dependencyId, dependency.uri(), dependency.version().next(),
+                        "java", "changed", StandardCharsets.UTF_8));
+            }
+            WorkspaceSnapshot retried = requests.poll(10, TimeUnit.SECONDS);
+            assertNotNull(retried, "Workspace changes must retry diagnostics without a local edit");
+            assertEquals(((TextDocumentSnapshot) original.document(id).orElseThrow()).text(),
+                ((TextDocumentSnapshot) retried.document(id).orElseThrow()).text());
+            assertEquals(store.capture(), retried);
+            releaseOld.countDown();
+            editor.awaitWorkerCompletion();
+            onFx(() -> {
+                assertEquals(1, editor.visibleDiagnostics.size());
+                assertEquals("NEW", editor.visibleDiagnostics.getFirst().code());
+                editor.discardChangesOnClose();
+                editor.close();
+                editor.dispose();
+                return null;
+            });
+            int closedCalls = calls.get();
+            store.publishConfiguration(new WorkspaceConfigurationSnapshot(2, Set.of(":closed")));
+            onFx(() -> null);
+            assertEquals(closedCalls, calls.get(), "Closed editors must detach workspace observers");
+        } finally {
+            releaseOld.countDown();
+            onFx(() -> {
+                editor.discardChangesOnClose();
+                editor.close();
+                editor.dispose();
+                return null;
+            });
+        }
+    }
 
     @BeforeAll
     public static void startFx() throws Exception {
@@ -160,6 +261,8 @@ public class CodeEditorWorkspaceTest {
             @Override
             public List<TextEditorDiagnostic> compute(WorkspaceSnapshot workspace, DocumentId id) {
                 block(workspace, entered, release);
+                if (workspace != entered.getNow(null))
+                    return List.of();
                 completedWith.set(workspace);
                 TextDocumentSnapshot snapshot = (TextDocumentSnapshot) workspace.document(id).orElseThrow();
                 return List.of(new TextEditorDiagnostic(Location.TextLocation.from(snapshot, 0, 1),

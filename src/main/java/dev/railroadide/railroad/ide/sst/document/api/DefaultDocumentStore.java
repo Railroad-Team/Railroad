@@ -6,9 +6,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * In-memory {@link DocumentStore} for one project. All public store operations share
+ * In-memory {@link DocumentStore} for one project. Snapshot and publication operations share
  * the instance lock supplied by Lombok's {@link Synchronized}, so validation,
  * replacement, revision updates, and capture are atomic with respect to one another.
  * <p>
@@ -24,6 +25,61 @@ public final class DefaultDocumentStore implements DocumentStore {
     private final Map<DocumentId, DocumentVersion> latestVersions = new HashMap<>();
     private WorkspaceConfigurationSnapshot configuration;
     private long workspaceRevision;
+    private final CopyOnWriteArrayList<Runnable> changeListeners = new CopyOnWriteArrayList<>();
+
+    @Override
+    public ChangeSubscription onChange(Runnable listener) {
+        Objects.requireNonNull(listener, "listener");
+        changeListeners.add(listener);
+        return () -> changeListeners.remove(listener);
+    }
+
+    private void workspaceChanged() {
+        workspaceRevision++;
+        for (Runnable listener : changeListeners) {
+            try {
+                listener.run();
+            } catch (RuntimeException exception) {
+                System.getLogger(DefaultDocumentStore.class.getName())
+                    .log(System.Logger.Level.WARNING, "Workspace observer failed", exception);
+            }
+        }
+    }
+
+    @Synchronized
+    @Override
+    public void commitSaveAs(DocumentSnapshot savedSnapshot, DocumentState expectedState) {
+        Objects.requireNonNull(savedSnapshot, "savedSnapshot");
+        DocumentId id = savedSnapshot.id();
+        if (!Objects.equals(state(id).orElse(null), expectedState))
+            throw new IllegalStateException("Document changed while Save As was in progress.");
+
+        DocumentSnapshot backing = expectedState == null ? null : expectedState.backing();
+        DocumentSnapshot overlay = expectedState == null ? null : expectedState.overlay();
+        DocumentVersion latest = latestVersions.get(id);
+        boolean relocatingBacking = overlay == null && backing != null
+            && backing.version().equals(savedSnapshot.version()) && hasSameContent(backing, savedSnapshot);
+        if (!relocatingBacking && latest != null && (savedSnapshot.version().isBefore(latest)
+            || expectedState == null && savedSnapshot.version().equals(latest)))
+            throw new IllegalArgumentException("Save As cannot reuse an abandoned document revision.");
+        if (overlay != null && !hasSameContent(overlay, savedSnapshot))
+            throw new IllegalArgumentException("Saved content must match the editor overlay.");
+        if (backing != null && savedSnapshot.version().equals(backing.version())
+            && !hasSameContent(backing, savedSnapshot))
+            throw new IllegalArgumentException("Content cannot change at the same backing version.");
+        if (expectedState != null && expectedState.isStale()
+            && (!savedSnapshot.version().isAfter(overlay.version())
+                || backing != null && !savedSnapshot.version().isAfter(backing.version())))
+            throw new IllegalArgumentException("Saving a stale overlay requires a newer version.");
+        DocumentVersion lastBacking = lastBackingVersions.get(id);
+        if (backing == null && lastBacking != null && !savedSnapshot.version().isAfter(lastBacking))
+            throw new IllegalArgumentException("Reappearing backing requires a newer version.");
+
+        entries.put(id, new Entry(savedSnapshot, null));
+        lastBackingVersions.put(id, savedSnapshot.version());
+        observeVersion(savedSnapshot);
+        workspaceChanged();
+    }
 
     /**
      * Creates a document store owned by one project, with workspace revision zero.
@@ -72,7 +128,7 @@ public final class DefaultDocumentStore implements DocumentStore {
         } else {
             entries.put(id, new Entry(entry.backing(), null));
         }
-        workspaceRevision++;
+        workspaceChanged();
     }
 
     @Synchronized
@@ -91,7 +147,7 @@ public final class DefaultDocumentStore implements DocumentStore {
 
         entries.put(id, new Entry(backing,
             overlay == null ? null : new OverlayState(overlaySnapshot, overlay.baseBackingVersion())));
-        workspaceRevision++;
+        workspaceChanged();
     }
 
     private static DocumentSnapshot relocated(DocumentSnapshot snapshot, DocumentUri uri) {
@@ -146,7 +202,7 @@ public final class DefaultDocumentStore implements DocumentStore {
         entries.put(snapshot.id(), entry);
         lastBackingVersions.put(snapshot.id(), snapshot.version());
         observeVersion(snapshot);
-        workspaceRevision++;
+        workspaceChanged();
     }
 
     @Synchronized
@@ -171,7 +227,7 @@ public final class DefaultDocumentStore implements DocumentStore {
             entries.put(id, new Entry(null, entry.overlay()));
         }
 
-        workspaceRevision++;
+        workspaceChanged();
     }
 
     @Synchronized
@@ -217,7 +273,7 @@ public final class DefaultDocumentStore implements DocumentStore {
 
         entries.put(snapshot.id(), entry);
         observeVersion(snapshot);
-        workspaceRevision++;
+        workspaceChanged();
     }
 
     @Synchronized
@@ -298,7 +354,7 @@ public final class DefaultDocumentStore implements DocumentStore {
 
         entries.put(id, new Entry(backing, new OverlayState(resolvedSnapshot, expectedBackingVersion)));
         observeVersion(resolvedSnapshot);
-        workspaceRevision++;
+        workspaceChanged();
     }
 
     @Synchronized
@@ -375,7 +431,7 @@ public final class DefaultDocumentStore implements DocumentStore {
     private void replaceCommittedBacking(DocumentId id, DocumentSnapshot savedSnapshot) {
         entries.put(id, new Entry(savedSnapshot, null));
         lastBackingVersions.put(id, savedSnapshot.version());
-        workspaceRevision++;
+        workspaceChanged();
     }
 
     @Synchronized
@@ -427,7 +483,7 @@ public final class DefaultDocumentStore implements DocumentStore {
 
         entries.put(id, new Entry(savedSnapshot, new OverlayState(overlay.snapshot(), savedSnapshot.version())));
         lastBackingVersions.put(id, savedSnapshot.version());
-        workspaceRevision++;
+        workspaceChanged();
     }
 
     @Synchronized
@@ -471,7 +527,7 @@ public final class DefaultDocumentStore implements DocumentStore {
                 "Only an overlay with the same version and content as backing can be removed without a new revision.");
 
         entries.put(id, new Entry(backing, null));
-        workspaceRevision++;
+        workspaceChanged();
     }
 
     @Synchronized
@@ -532,7 +588,7 @@ public final class DefaultDocumentStore implements DocumentStore {
         entries.put(id, new Entry(restoredBacking, null));
         observeVersion(restoredBacking);
         lastBackingVersions.put(id, restoredBacking.version());
-        workspaceRevision++;
+        workspaceChanged();
     }
 
     @Synchronized
@@ -572,7 +628,7 @@ public final class DefaultDocumentStore implements DocumentStore {
         }
 
         this.configuration = configuration;
-        workspaceRevision++;
+        workspaceChanged();
     }
 
     private static boolean hasSameContent(DocumentSnapshot backing, DocumentSnapshot restoredBacking) {

@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Edits a file with observable save state, autosaving, and external-file change handling.
@@ -288,6 +289,19 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         return closed;
     }
 
+    private boolean retainDraftOnClose;
+
+    /**
+     * Releases a forcibly removed editor without retrying persistence or discarding its
+     * published overlay. Reopening the document can recover that draft from the store.
+     */
+    public final void closeRetainingDraft() {
+        synchronized (saveLock) {
+            retainDraftOnClose = true;
+            close();
+        }
+    }
+
     @Override
     public void close() {
         synchronized (saveLock) {
@@ -299,15 +313,17 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 pendingSaveTask = null;
             }
 
-            if (!discardChangesOnClose) {
+            if (!discardChangesOnClose && !retainDraftOnClose) {
                 // Every edit updates the immutable pending snapshot before the autosave debounce.
                 if (!persistSnapshot(pendingSnapshot.get()))
                     return;
             }
-            DocumentStore store = documentStore;
-            DocumentState state = store == null ? null : store.state(documentId).orElse(null);
-            if (state != null && state.overlay() != null) {
-                store.removeOverlay(documentId, state.overlay().version());
+            if (!retainDraftOnClose) {
+                DocumentStore store = documentStore;
+                DocumentState state = store == null ? null : store.state(documentId).orElse(null);
+                if (state != null && state.overlay() != null) {
+                    store.removeOverlay(documentId, state.overlay().version());
+                }
             }
             closed = true;
         }
@@ -710,6 +726,20 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
      */
     public boolean saveAs(Path newPath, Runnable rebindIdentity) {
         Objects.requireNonNull(rebindIdentity, "rebindIdentity");
+        return saveAs(newPath, saved -> rebindIdentity.run());
+    }
+
+    /**
+     * Writes a destination and lets its owner finalize identity and store state using
+     * the exact persisted snapshot before this editor adopts its new saved location.
+     * A failing finalizer retains the original location and saved baseline.
+     *
+     * @param newPath destination file
+     * @param finalizeSave owner transition, including any rollback of identity on failure
+     * @return whether persistence and finalization succeeded
+     */
+    public boolean saveAs(Path newPath, Consumer<TextDocumentSnapshot> finalizeSave) {
+        Objects.requireNonNull(finalizeSave, "finalizeSave");
         Path normalizedPath = Objects.requireNonNull(newPath, "New path cannot be null")
             .toAbsolutePath()
             .normalize();
@@ -726,6 +756,8 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             }
 
             String snapshot = getText();
+            long previousEditVersion = editVersion.get();
+            TextDocumentSnapshot previousPending = pendingSnapshot.get();
             DocumentStore store = documentStore;
             DocumentState state = store == null ? null : store.state(documentId).orElse(null);
             if (state == null && store != null) {
@@ -749,6 +781,10 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 pendingSnapshot.set(captureSnapshot());
             }
             long snapshotVersion = editVersion.get();
+            DocumentUri uri = DocumentUri.fromPath(normalizedPath);
+            var savedSnapshot = new TextDocumentSnapshot(documentId, uri,
+                new DocumentVersion(snapshotVersion), languageId, DocumentOrigin.original(uri), snapshot,
+                StandardCharsets.UTF_8);
             updateForVersion(snapshotVersion, EditorSaveState.SAVING);
             try {
                 Path parent = normalizedPath.getParent();
@@ -761,7 +797,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                     StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING);
 
-                rebindIdentity.run();
+                finalizeSave.accept(savedSnapshot);
                 filePath = normalizedPath;
                 JavaFXUtils.runOnApplicationThread(gutter::refresh);
                 pendingExternalText = null;
@@ -769,16 +805,19 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 backingFileMissing = false;
                 discardChangesOnClose = false;
                 lastSavedText.set(snapshot);
-                DocumentUri uri = DocumentUri.fromPath(filePath);
-                pendingSnapshot.set(new TextDocumentSnapshot(documentId, uri, new DocumentVersion(snapshotVersion),
-                    languageId, DocumentOrigin.original(uri), snapshot, StandardCharsets.UTF_8));
+                pendingSnapshot.set(savedSnapshot);
                 savedVersion.set(snapshotVersion);
                 updateAfterSave(snapshotVersion, EditorSaveState.CLEAN);
                 restartExternalWatcher();
                 Railroad.EVENT_BUS.publish(new DocumentEvent(document(), DocumentEvent.EventType.SAVED));
                 return true;
             } catch (IOException | RuntimeException exception) {
-                updateAfterSave(snapshotVersion, EditorSaveState.ERROR);
+                if (!filePath.toAbsolutePath().normalize().equals(normalizedPath)
+                    && editVersion.get() == snapshotVersion) {
+                    editVersion.set(previousEditVersion);
+                    pendingSnapshot.set(previousPending);
+                }
+                setSaveState(EditorSaveState.ERROR);
                 Railroad.LOGGER.error("Failed to write file {}", normalizedPath, exception);
                 return false;
             }
