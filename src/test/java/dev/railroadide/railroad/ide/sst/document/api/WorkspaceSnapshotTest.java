@@ -120,6 +120,12 @@ public class WorkspaceSnapshotTest {
         assertEquals(Optional.empty(), workspace.document(mainId));
     }
 
+    @Test
+    public void documentMapKeyMustMatchSnapshotIdentity() {
+        assertThrows(IllegalArgumentException.class,
+            () -> new WorkspaceSnapshot("project-test", Map.of(mainId, utils), configuration, 0));
+    }
+
     private TextDocumentSnapshot snapshot(DocumentId id, DocumentVersion version, String text) {
         return new TextDocumentSnapshot(id, DocumentUri.inMemory(id), version, "java", text, StandardCharsets.UTF_8);
     }

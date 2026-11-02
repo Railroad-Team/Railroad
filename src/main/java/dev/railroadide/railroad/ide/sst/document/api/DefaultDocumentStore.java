@@ -34,13 +34,16 @@ public final class DefaultDocumentStore implements DocumentStore {
      * The initial configuration is retained as supplied and does not count as a
      * publication, regardless of its own configuration revision or module IDs.
      *
-     * @param projectId identity retained by every captured workspace
+     * @param projectId nonblank identity retained by every captured workspace
      * @param initialConfiguration configuration retained by the initial workspace capture
      * @throws NullPointerException if either argument is {@code null}
+     * @throws IllegalArgumentException if the project identity is blank
      */
     public DefaultDocumentStore(String projectId, WorkspaceConfigurationSnapshot initialConfiguration) {
         this.projectId = Objects.requireNonNull(projectId, "projectId");
         this.configuration = Objects.requireNonNull(initialConfiguration, "initialConfiguration");
+        if (this.projectId.isBlank())
+            throw new IllegalArgumentException("Project ID cannot be blank");
     }
 
     /** {@inheritDoc} */

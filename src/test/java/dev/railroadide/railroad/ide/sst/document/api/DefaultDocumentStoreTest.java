@@ -1638,6 +1638,14 @@ public class DefaultDocumentStoreTest {
         }
     }
 
+    @Test
+    public void blankProjectIdsAreRejectedByStoreConstructor() {
+        for (var projectId : List.of("", " ", "\t\n")) {
+            assertThrows(IllegalArgumentException.class,
+                () -> new DefaultDocumentStore(projectId, initialConfiguration));
+        }
+    }
+
     private void assertCaptureMatchesPublishedBacking(
         WorkspaceSnapshot workspace,
         List<TextDocumentSnapshot> publications

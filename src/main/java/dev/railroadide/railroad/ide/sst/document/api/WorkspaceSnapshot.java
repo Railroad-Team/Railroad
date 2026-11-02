@@ -18,7 +18,7 @@ import java.util.Optional;
  * does not represent a simultaneous snapshot of filesystem contents.
  *
  * @param projectId nonblank identity of the project owning the captured workspace
- * @param documents captured documents indexed by logical document identity
+ * @param documents captured documents indexed by their own logical document identities
  * @param configuration captured workspace configuration
  * @param revision nonnegative workspace revision captured atomically with documents and configuration
  */
@@ -29,17 +29,18 @@ public record WorkspaceSnapshot(
     long revision
 ) {
     /**
-     * Validates project identity, configuration, and revision, and copies the supplied
+     * Validates project identity, configuration, revision, and document identities, and copies the supplied
      * mapping into an unmodifiable map.
      * Document snapshots and configuration are already immutable and are retained directly.
      *
      * @param projectId nonblank identity of the project owning the captured workspace
-     * @param documents captured documents
+     * @param documents captured documents; each key must equal its snapshot's {@link DocumentSnapshot#id()}
      * @param configuration captured workspace configuration
      * @param revision nonnegative captured workspace revision; zero is valid
      * @throws NullPointerException if project identity, configuration, document map,
      *             or any document key or value is {@code null}
-     * @throws IllegalArgumentException if project identity is blank or revision is negative
+     * @throws IllegalArgumentException if project identity is blank, revision is negative,
+     *             or a document key differs from its snapshot's identity
      */
     public WorkspaceSnapshot {
         projectId = Objects.requireNonNull(projectId, "projectId");
@@ -52,6 +53,10 @@ public record WorkspaceSnapshot(
             throw new IllegalArgumentException("Workspace revision cannot be negative");
 
         documents = Map.copyOf(documents);
+        for (var entry : documents.entrySet()) {
+            if (!entry.getKey().equals(entry.getValue().id()))
+                throw new IllegalArgumentException("Document map key must match the snapshot's document ID.");
+        }
     }
 
     /**
