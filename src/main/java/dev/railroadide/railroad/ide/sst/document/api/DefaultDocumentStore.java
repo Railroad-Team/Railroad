@@ -9,6 +9,7 @@ import java.util.Optional;
 
 public final class DefaultDocumentStore implements DocumentStore {
     private final Map<DocumentId, Entry> entries = new HashMap<>();
+    private long workspaceRevision;
 
     @Synchronized
     @Override
@@ -17,6 +18,9 @@ public final class DefaultDocumentStore implements DocumentStore {
         if (entry == null) {
             entry = new Entry(snapshot, null);
         } else {
+            if (entry.backing() == snapshot)
+                return;
+
             if (entry.backing() != null && entry.backing().version().isAfter(snapshot.version()))
                 throw new IllegalArgumentException(
                     "Cannot publish a backing snapshot with an older version than the current backing snapshot.");
@@ -25,6 +29,7 @@ public final class DefaultDocumentStore implements DocumentStore {
         }
 
         entries.put(snapshot.id(), entry);
+        workspaceRevision++;
     }
 
     @Synchronized
@@ -34,17 +39,37 @@ public final class DefaultDocumentStore implements DocumentStore {
         if (entry == null) {
             entry = new Entry(null, new OverlayState(snapshot, null));
         } else {
-            if (entry.overlay() != null && entry.overlay().snapshot().version().isAfter(snapshot.version()))
+            DocumentSnapshot backing = entry.backing();
+            OverlayState overlay = entry.overlay();
+            if (overlay != null && overlay.snapshot() == snapshot)
+                return;
+
+            if (overlay != null && overlay.snapshot().version().isAfter(snapshot.version()))
                 throw new IllegalArgumentException(
                     "Cannot publish an overlay snapshot with an older version than the current overlay snapshot.");
 
-            DocumentVersion baseBackingVersion = entry.overlay() != null
-                ? entry.overlay().baseBackingVersion()
-                : entry.backing().version();
-            entry = new Entry(entry.backing(), new OverlayState(snapshot, baseBackingVersion));
+            if (overlay == null && backing != null) {
+                if (snapshot.version().isBefore(backing.version()))
+                    throw new IllegalArgumentException(
+                        "Cannot publish an initial overlay with an older version than the backing snapshot.");
+
+                if (snapshot.version().equals(backing.version()) && !hasSameContent(backing, snapshot))
+                    throw new IllegalArgumentException(
+                        "An initial overlay with the same version as backing must have the same content.");
+            }
+
+            DocumentVersion baseBackingVersion;
+            if (overlay != null) {
+                baseBackingVersion = overlay.baseBackingVersion();
+            } else {
+                baseBackingVersion = backing != null ? backing.version() : null;
+            }
+
+            entry = new Entry(backing, new OverlayState(snapshot, baseBackingVersion));
         }
 
         entries.put(snapshot.id(), entry);
+        workspaceRevision++;
     }
 
     @Synchronized
@@ -124,6 +149,7 @@ public final class DefaultDocumentStore implements DocumentStore {
                 "Resolved snapshot must have a version greater than the backing version.");
 
         entries.put(id, new Entry(backing, new OverlayState(resolvedSnapshot, expectedBackingVersion)));
+        workspaceRevision++;
     }
 
     @Synchronized
@@ -163,6 +189,7 @@ public final class DefaultDocumentStore implements DocumentStore {
             throw new IllegalStateException("Committed overlay must have a newer version than its backing.");
 
         entries.put(id, new Entry(overlay.snapshot(), null));
+        workspaceRevision++;
     }
 
     @Synchronized
@@ -221,6 +248,26 @@ public final class DefaultDocumentStore implements DocumentStore {
                 "Restored backing must have a version greater than both the backing and overlay versions.");
 
         entries.put(id, new Entry(restoredBacking, null));
+        workspaceRevision++;
+    }
+
+    @Synchronized
+    @Override
+    public WorkspaceSnapshot capture() {
+        Map<DocumentId, DocumentSnapshot> capturedDocuments = new HashMap<>();
+        for (Map.Entry<DocumentId, Entry> entry : this.entries.entrySet()) {
+            DocumentId id = entry.getKey();
+            Entry value = entry.getValue();
+            if (value.backing() == null && value.overlay() == null)
+                throw new IllegalStateException("Cannot capture a document with no published snapshots.");
+
+            DocumentSnapshot snapshot = value.overlay() != null
+                ? value.overlay().snapshot()
+                : value.backing();
+            capturedDocuments.put(id, snapshot);
+        }
+
+        return new WorkspaceSnapshot(capturedDocuments, workspaceRevision);
     }
 
     private static boolean hasSameContent(DocumentSnapshot backing, DocumentSnapshot restoredBacking) {

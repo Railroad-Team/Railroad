@@ -5,6 +5,16 @@ import java.util.Optional;
 public interface DocumentStore {
     void publishBacking(DocumentSnapshot snapshot);
 
+    /**
+     * Publishes editor content, preserving an existing overlay's base backing revision.
+     * A first overlay over existing backing must have a later version, or the same
+     * version and identical text or binary content. An existing overlay may remain
+     * older than backing as long as its own version does not decrease.
+     *
+     * @param snapshot immutable overlay snapshot
+     * @throws IllegalArgumentException if its version regresses, or a first overlay
+     *             has the backing's version with different content
+     */
     void publishOverlay(DocumentSnapshot snapshot);
 
     Optional<DocumentSnapshot> current(DocumentId id);
@@ -66,4 +76,18 @@ public interface DocumentStore {
         DocumentVersion expectedOverlayVersion,
         DocumentSnapshot restoredBacking
     );
+
+    /**
+     * Atomically captures the store's published documents, preferring each document's
+     * overlay when present. Later publications do not affect the captured state.
+     * The workspace revision starts at zero and advances once per successful state
+     * change, including backing updates hidden by an overlay. Republishing the exact
+     * same snapshot instance to its existing slot is a no-op. Reads and rejected
+     * operations do not advance the revision.
+     * This operation captures published store state and performs no filesystem I/O;
+     * it does not guarantee a simultaneous snapshot of filesystem contents.
+     *
+     * @return immutable workspace snapshot
+     */
+    WorkspaceSnapshot capture();
 }

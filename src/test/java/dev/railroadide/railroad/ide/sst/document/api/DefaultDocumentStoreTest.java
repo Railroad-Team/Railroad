@@ -161,10 +161,13 @@ public class DefaultDocumentStoreTest {
         var replacement = snapshot(new DocumentVersion(5), "backing");
 
         store.publishBacking(backing);
+        assertEquals(1L, store.capture().revision());
         store.publishBacking(backing);
+        assertEquals(1L, store.capture().revision());
         assertSame(backing, store.current(id).orElseThrow());
 
         store.publishBacking(replacement);
+        assertEquals(2L, store.capture().revision());
         assertSame(replacement, store.current(id).orElseThrow());
     }
 
@@ -174,10 +177,13 @@ public class DefaultDocumentStoreTest {
         var replacement = snapshot(new DocumentVersion(5), "overlay");
 
         store.publishOverlay(overlay);
+        assertEquals(1L, store.capture().revision());
         store.publishOverlay(overlay);
+        assertEquals(1L, store.capture().revision());
         assertSame(overlay, store.current(id).orElseThrow());
 
         store.publishOverlay(replacement);
+        assertEquals(2L, store.capture().revision());
         assertSame(replacement, store.current(id).orElseThrow());
     }
 
@@ -316,6 +322,7 @@ public class DefaultDocumentStoreTest {
         assertTrue(store.state(id).orElseThrow().isStale());
 
         store.reconcileOverlay(id, backing.version(), overlay.version(), resolved);
+        assertEquals(4L, store.capture().revision());
 
         var state = store.state(id).orElseThrow();
         assertSame(backing, state.backing());
@@ -393,6 +400,7 @@ public class DefaultDocumentStoreTest {
         var currentBeforeCommit = store.current(id).orElseThrow();
 
         store.commitOverlay(id, backing.version(), overlay.version());
+        assertEquals(3L, store.capture().revision());
 
         var state = store.state(id).orElseThrow();
         assertSame(overlay, state.backing());
@@ -419,6 +427,7 @@ public class DefaultDocumentStoreTest {
             () -> store.commitOverlay(id, newerBacking.version(), overlay.version()));
 
         assertEquals("Cannot commit a stale overlay.", exception.getMessage());
+        assertEquals(3L, store.capture().revision());
         var state = store.state(id).orElseThrow();
         assertEquals(originalState, state);
         assertSame(newerBacking, state.backing());
@@ -429,9 +438,9 @@ public class DefaultDocumentStoreTest {
     }
 
     @Test
-    public void equalVersionOverlayWithDifferentContentCannotBeCommitted() {
+    public void equalVersionOverlayCannotBeCommitted() {
         var backing = snapshot(new DocumentVersion(5), "backing");
-        var overlay = snapshot(new DocumentVersion(5), "different content");
+        var overlay = snapshot(new DocumentVersion(5), backing.text());
 
         store.publishBacking(backing);
         store.publishOverlay(overlay);
@@ -461,6 +470,7 @@ public class DefaultDocumentStoreTest {
         store.publishOverlay(overlay);
 
         store.discardOverlay(id, backing.version(), overlay.version(), restoredBacking);
+        assertEquals(3L, store.capture().revision());
 
         var current = store.current(id).orElseThrow();
         assertSame(restoredBacking, current);
@@ -589,10 +599,238 @@ public class DefaultDocumentStoreTest {
         }
     }
 
+    @Test
+    public void captureIncludesBothDocumentsAndPrefersOverlay() {
+        var backing = snapshot(new DocumentVersion(5), "class Main {}");
+        var overlay = snapshot(new DocumentVersion(6), "class Main { int x; }");
+        var utilsId = DocumentId.create();
+        var utils = snapshot(utilsId, new DocumentVersion(5), "class Utils {}");
+
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        store.publishBacking(utils);
+
+        var workspace = store.capture();
+
+        assertEquals(2, workspace.documents().size());
+        assertSame(overlay, workspace.document(id).orElseThrow());
+        assertSame(utils, workspace.document(utilsId).orElseThrow());
+    }
+
+    @Test
+    public void capturedWorkspaceRetainsExactSnapshotsAfterNewerPublications() {
+        var backing = snapshot(new DocumentVersion(5), "class Main {}");
+        var overlay = snapshot(new DocumentVersion(6), "class Main { int x; }");
+        var utilsId = DocumentId.create();
+        var utils = snapshot(utilsId, new DocumentVersion(5), "class Utils {}");
+
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        store.publishBacking(utils);
+        var workspace = store.capture();
+
+        var newerBacking = snapshot(new DocumentVersion(7), "class Main { int external; }");
+        var newerOverlay = snapshot(new DocumentVersion(8), "class Main { int edited; }");
+        var newerUtils = snapshot(utilsId, new DocumentVersion(6), "class Utils { int edited; }");
+        store.publishBacking(newerBacking);
+        store.publishOverlay(newerOverlay);
+        store.publishBacking(newerUtils);
+        var newerWorkspace = store.capture();
+
+        assertEquals(2, newerWorkspace.documents().size());
+        assertEquals(6L, newerWorkspace.revision());
+        assertSame(newerOverlay, newerWorkspace.document(id).orElseThrow());
+        assertSame(newerUtils, newerWorkspace.document(utilsId).orElseThrow());
+
+        assertEquals(2, workspace.documents().size());
+        assertEquals(3L, workspace.revision());
+        assertSame(overlay, workspace.document(id).orElseThrow());
+        assertSame(utils, workspace.document(utilsId).orElseThrow());
+    }
+
+    @Test
+    public void workspaceRevisionTracksSuccessfulChangesAndIgnoresRejectedPublicationsAndReads() {
+        var backing = snapshot(new DocumentVersion(5), "backing");
+        var overlay = snapshot(new DocumentVersion(6), "unsaved edits");
+        var newerBacking = snapshot(new DocumentVersion(7), "external change");
+
+        assertEquals(0L, store.capture().revision());
+
+        store.publishBacking(backing);
+        assertEquals(1L, store.capture().revision());
+
+        store.publishOverlay(overlay);
+        assertEquals(2L, store.capture().revision());
+
+        store.publishBacking(newerBacking);
+        var workspace = store.capture();
+        assertEquals(3L, workspace.revision());
+        assertSame(overlay, workspace.document(id).orElseThrow());
+        var originalState = store.state(id).orElseThrow();
+        assertTrue(originalState.isStale());
+
+        assertThrows(IllegalArgumentException.class, () -> store.publishBacking(backing));
+        assertEquals(3L, store.capture().revision());
+        assertThrows(IllegalArgumentException.class,
+            () -> store.publishOverlay(snapshot(new DocumentVersion(3), "older overlay")));
+        assertEquals(3L, store.capture().revision());
+        assertEquals(originalState, store.state(id).orElseThrow());
+        assertSame(overlay, store.current(id).orElseThrow());
+        assertEquals(3L, store.capture().revision());
+    }
+
+    @Test
+    public void republishingExactSnapshotsPreservesRevisionAndStaleOverlayBase() {
+        var backing = snapshot(new DocumentVersion(5), "backing");
+        var overlay = snapshot(new DocumentVersion(6), "unsaved edits");
+        var newerBacking = snapshot(new DocumentVersion(7), "external change");
+
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        store.publishBacking(newerBacking);
+        var originalState = store.state(id).orElseThrow();
+        assertEquals(3L, store.capture().revision());
+
+        store.publishBacking(newerBacking);
+        assertEquals(3L, store.capture().revision());
+        store.publishOverlay(overlay);
+        assertEquals(3L, store.capture().revision());
+        assertEquals(originalState, store.state(id).orElseThrow());
+        assertEquals(backing.version(), store.state(id).orElseThrow().baseBackingVersion());
+        assertTrue(store.state(id).orElseThrow().isStale());
+        assertSame(overlay, store.current(id).orElseThrow());
+    }
+
+    @Test
+    public void initialOverlayOlderThanBackingIsRejectedWithoutChangingStateOrRevision() {
+        var backing = snapshot(new DocumentVersion(5), "backing");
+        var overlay = snapshot(new DocumentVersion(3), "older overlay");
+        store.publishBacking(backing);
+        var originalState = store.state(id).orElseThrow();
+
+        assertThrows(IllegalArgumentException.class, () -> store.publishOverlay(overlay));
+
+        assertEquals(originalState, store.state(id).orElseThrow());
+        assertSame(backing, store.current(id).orElseThrow());
+        assertEquals(1L, store.capture().revision());
+    }
+
+    @Test
+    public void equalVersionInitialOverlayWithDifferentContentIsRejectedWithoutChangingStateOrRevision() {
+        var backing = snapshot(new DocumentVersion(5), "int x = 10;");
+        var overlay = snapshot(new DocumentVersion(5), "int x = 20;");
+        store.publishBacking(backing);
+        var originalState = store.state(id).orElseThrow();
+
+        assertThrows(IllegalArgumentException.class, () -> store.publishOverlay(overlay));
+
+        assertEquals(originalState, store.state(id).orElseThrow());
+        assertSame(backing, store.current(id).orElseThrow());
+        assertEquals(1L, store.capture().revision());
+    }
+
+    @Test
+    public void equalVersionInitialOverlayWithIdenticalContentIsAccepted() {
+        var backing = snapshot(new DocumentVersion(5), "int x = 10;");
+        var overlay = snapshot(new DocumentVersion(5), backing.text());
+        store.publishBacking(backing);
+
+        store.publishOverlay(overlay);
+
+        var state = store.state(id).orElseThrow();
+        assertSame(backing, state.backing());
+        assertSame(overlay, state.overlay());
+        assertSame(overlay, store.current(id).orElseThrow());
+        assertEquals(backing.version(), state.baseBackingVersion());
+        assertFalse(state.isStale());
+        assertEquals(2L, store.capture().revision());
+    }
+
+    @Test
+    public void initialOverlayWithoutBackingIsAccepted() {
+        var overlay = snapshot(new DocumentVersion(1), "unsaved document");
+
+        store.publishOverlay(overlay);
+
+        var state = store.state(id).orElseThrow();
+        assertNull(state.backing());
+        assertNull(state.baseBackingVersion());
+        assertSame(overlay, state.overlay());
+        assertSame(overlay, store.current(id).orElseThrow());
+        assertFalse(state.isStale());
+        assertEquals(1L, store.capture().revision());
+    }
+
+    @Test
+    public void staleOverlayCanBeEditedWhileItsVersionRemainsBelowBacking() {
+        var backing = snapshot(new DocumentVersion(5), "backing");
+        var overlay = snapshot(new DocumentVersion(6), "unsaved edits");
+        var newerBacking = snapshot(new DocumentVersion(9), "external change");
+        var editedOverlay = snapshot(new DocumentVersion(7), "more unsaved edits");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        store.publishBacking(newerBacking);
+
+        store.publishOverlay(editedOverlay);
+
+        var state = store.state(id).orElseThrow();
+        assertSame(newerBacking, state.backing());
+        assertSame(editedOverlay, state.overlay());
+        assertSame(editedOverlay, store.current(id).orElseThrow());
+        assertEquals(backing.version(), state.baseBackingVersion());
+        assertTrue(state.isStale());
+        assertEquals(4L, store.capture().revision());
+    }
+
+    @Test
+    public void equalVersionInitialBinaryOverlayRequiresIdenticalBytes() {
+        var version = new DocumentVersion(5);
+        var backing = new BinaryDocumentSnapshot(id, DocumentUri.inMemory(id), version, "binary", new byte[]{1, 2, 3});
+        var different = new BinaryDocumentSnapshot(id, backing.uri(), version, "binary", new byte[]{1, 2, 4});
+        var identical = new BinaryDocumentSnapshot(id, backing.uri(), version, "binary", new byte[]{1, 2, 3});
+        store.publishBacking(backing);
+        var originalState = store.state(id).orElseThrow();
+
+        assertThrows(IllegalArgumentException.class, () -> store.publishOverlay(different));
+        assertEquals(originalState, store.state(id).orElseThrow());
+        assertEquals(1L, store.capture().revision());
+
+        store.publishOverlay(identical);
+
+        assertSame(identical, store.current(id).orElseThrow());
+        assertEquals(version, store.state(id).orElseThrow().baseBackingVersion());
+        assertFalse(store.state(id).orElseThrow().isStale());
+        assertEquals(2L, store.capture().revision());
+    }
+
+    @Test
+    public void equalVersionInitialOverlayCannotChangeBetweenTextAndBinary() {
+        var text = snapshot(new DocumentVersion(5), "abc");
+        var binary = new BinaryDocumentSnapshot(id, text.uri(), text.version(), text.languageId(),
+            text.text().getBytes(StandardCharsets.UTF_8));
+        var binaryStore = new DefaultDocumentStore();
+        store.publishBacking(text);
+        binaryStore.publishBacking(binary);
+
+        assertThrows(IllegalArgumentException.class, () -> store.publishOverlay(binary));
+        assertThrows(IllegalArgumentException.class, () -> binaryStore.publishOverlay(text));
+
+        assertSame(text, store.current(id).orElseThrow());
+        assertNull(store.state(id).orElseThrow().overlay());
+        assertEquals(1L, store.capture().revision());
+        assertSame(binary, binaryStore.current(id).orElseThrow());
+        assertNull(binaryStore.state(id).orElseThrow().overlay());
+        assertEquals(1L, binaryStore.capture().revision());
+    }
+
     private TextDocumentSnapshot snapshot(DocumentVersion version, String text) {
+        return snapshot(id, version, text);
+    }
+
+    private TextDocumentSnapshot snapshot(DocumentId documentId, DocumentVersion version, String text) {
         return new TextDocumentSnapshot(
-            id,
-            DocumentUri.inMemory(id),
+            documentId,
+            DocumentUri.inMemory(documentId),
             version,
             "java",
             text,
