@@ -284,7 +284,11 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         return documentStore;
     }
 
-    /** @return whether this editor completed closure */
+    /**
+     * Reports whether this editor has completed its close transition.
+     *
+     * @return whether this editor completed closure
+     */
     public final boolean isEditorClosed() {
         return closed;
     }
