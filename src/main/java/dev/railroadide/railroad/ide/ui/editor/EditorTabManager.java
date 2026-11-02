@@ -484,7 +484,19 @@ public class EditorTabManager {
         TextEditorPane editor = editorOpenView.activeEditor();
         if (editor != null && editor.isInitialContentLoaded()) {
             Services.IDE_STATE.getDocumentStore().ifPresent(store -> {
-                store.publishBacking(editor.captureSnapshot());
+                var loaded = editor.captureSnapshot();
+                var state = store.state(identity.id()).orElse(null);
+                if (state != null && state.overlay() == null
+                    && state.backing() instanceof TextDocumentSnapshot backing) {
+                    if (backing.text().equals(loaded.text()) && backing.uri().equals(loaded.uri())) {
+                        editor.restoreSavedVersion(backing.version());
+                    } else {
+                        editor.restoreSavedVersion(backing.version().next());
+                        store.publishBacking(editor.captureSnapshot());
+                    }
+                } else {
+                    store.publishBacking(loaded);
+                }
                 editor.setDocumentStore(store);
             });
         }

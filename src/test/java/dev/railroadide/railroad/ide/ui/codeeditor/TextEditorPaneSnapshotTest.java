@@ -138,15 +138,15 @@ public class TextEditorPaneSnapshotTest {
         Platform.runLater(openEditor);
         TextEditorPane editor = openEditor.get(10, TimeUnit.SECONDS);
         var reloaded = new CompletableFuture<Void>();
-        ChangeListener<EditorSaveState> reloadListener = (observable, oldState, newState) -> {
-            if (newState == EditorSaveState.CLEAN && updatedText.equals(editor.getText())) {
+        ChangeListener<String> reloadListener = (observable, oldText, newText) -> {
+            if (updatedText.equals(newText)) {
                 reloaded.complete(null);
             }
         };
 
         try {
             var captureOriginal = new FutureTask<>(() -> {
-                editor.saveStateProperty().addListener(reloadListener);
+                editor.textProperty().addListener(reloadListener);
                 return editor.captureSnapshot();
             });
             Platform.runLater(captureOriginal);
@@ -171,7 +171,7 @@ public class TextEditorPaneSnapshotTest {
             });
         } finally {
             onFxThread(() -> {
-                editor.saveStateProperty().removeListener(reloadListener);
+                editor.textProperty().removeListener(reloadListener);
                 editor.discardChangesOnClose();
                 editor.close();
                 editor.dispose();

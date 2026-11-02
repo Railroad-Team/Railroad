@@ -6,12 +6,17 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentOrigin;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentState;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentStore;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.plugin.spi.event.EventListener;
+import dev.railroadide.railroad.plugin.spi.events.DocumentModifiedEvent;
 import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
 import dev.railroadide.railroad.project.RailroadProject;
 import javafx.application.Platform;
@@ -28,6 +33,7 @@ import org.reactfx.Subscription;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.Callable;
@@ -37,6 +43,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -116,6 +123,165 @@ public class EditorTabManagerDocumentStoreTest {
     }
 
     @Test
+    public void reopeningSavedDocumentPreservesStoreVersion() throws Exception {
+        Path file = tempDirectory.resolve("Example.java");
+        String savedText = "class Example { int savedValue; }";
+        String reopenedEdit = "class Example { int savedValue; int nextValue; }";
+        Files.writeString(file, "class Example {}");
+
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            var originalTab = tab;
+            var originalEditor = tab.view().activeEditor();
+            disableDebouncedAutosave(originalEditor);
+            var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            var id = tab.documentId();
+            var initialBacking = store.state(id).orElseThrow().backing();
+            originalEditor.replaceText(savedText);
+            assertTrue(originalEditor.saveNow());
+
+            var savedBacking = assertInstanceOf(TextDocumentSnapshot.class, store.state(id).orElseThrow().backing());
+            assertEquals(savedText, savedBacking.text());
+            assertTrue(savedBacking.version().isAfter(initialBacking.version()));
+            assertNull(store.state(id).orElseThrow().overlay());
+            var savedWorkspace = store.capture();
+            var originalTabPane = originalTab.tab().getTabPane();
+
+            Services.EDITOR_TAB_MANAGER.close(originalTab);
+            tab = null;
+            originalEditor.close();
+            originalEditor.dispose();
+
+            assertFalse(originalTabPane.getTabs().contains(originalTab.tab()));
+            assertSame(project, Services.IDE_STATE.getCurrentProject());
+            assertSame(store, Services.IDE_STATE.getDocumentStore().orElseThrow());
+            assertSame(savedBacking, store.state(id).orElseThrow().backing());
+            assertNull(store.state(id).orElseThrow().overlay());
+            assertSame(savedBacking, store.current(id).orElseThrow());
+            assertSame(savedBacking, store.capture().document(id).orElseThrow());
+            assertEquals(savedWorkspace, store.capture());
+
+            tab = assertDoesNotThrow(() -> openInTabPane(file));
+            assertNotNull(tab);
+            var reopenedEditor = tab.view().activeEditor();
+            disableDebouncedAutosave(reopenedEditor);
+            assertNotSame(originalTab, tab);
+            assertNotSame(originalEditor, reopenedEditor);
+            assertEquals(id, tab.documentId());
+            assertEquals(id, reopenedEditor.captureSnapshot().id());
+            assertEquals(savedBacking.version(), reopenedEditor.captureSnapshot().version());
+            assertEquals(savedText, reopenedEditor.getText());
+            assertEquals(EditorSaveState.CLEAN, reopenedEditor.saveState());
+            assertSame(savedBacking, store.state(id).orElseThrow().backing());
+            assertNull(store.state(id).orElseThrow().overlay());
+            assertEquals(savedWorkspace, store.capture());
+
+            assertDoesNotThrow(() -> reopenedEditor.replaceText(reopenedEdit));
+
+            var editedState = store.state(id).orElseThrow();
+            var overlay = assertInstanceOf(TextDocumentSnapshot.class, editedState.overlay());
+            assertSame(savedBacking, editedState.backing());
+            assertEquals(id, overlay.id());
+            assertEquals(reopenedEdit, overlay.text());
+            assertTrue(overlay.version().isAfter(savedBacking.version()));
+            assertEquals(overlay.version(), reopenedEditor.captureSnapshot().version());
+            assertEquals(savedBacking.version(), editedState.baseBackingVersion());
+            assertFalse(editedState.isStale());
+            assertEquals(EditorSaveState.DIRTY, reopenedEditor.saveState());
+            assertSame(overlay, store.current(id).orElseThrow());
+            assertSame(overlay, store.capture().document(id).orElseThrow());
+            assertEquals(savedWorkspace.revision() + 1, store.capture().revision());
+            return null;
+        });
+    }
+
+    @Test
+    public void reopeningExternallyModifiedDocumentPublishesNewBacking() throws Exception {
+        Path file = tempDirectory.resolve("Example.java");
+        String savedText = "class Example { int savedValue; }";
+        String externalText = "class Example { int externalValue; }";
+        String reopenedEdit = "class Example { int externalValue; int nextValue; }";
+        Files.writeString(file, "class Example {}");
+
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            var originalTab = tab;
+            var originalEditor = tab.view().activeEditor();
+            disableDebouncedAutosave(originalEditor);
+            var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            var id = tab.documentId();
+            var initialBacking = store.state(id).orElseThrow().backing();
+            originalEditor.replaceText(savedText);
+            assertTrue(originalEditor.saveNow());
+
+            var savedBacking = assertInstanceOf(TextDocumentSnapshot.class, store.state(id).orElseThrow().backing());
+            assertTrue(savedBacking.version().isAfter(initialBacking.version()));
+            assertEquals(savedText, savedBacking.text());
+            assertNull(store.state(id).orElseThrow().overlay());
+            var savedWorkspace = store.capture();
+            var originalTabPane = originalTab.tab().getTabPane();
+
+            Services.EDITOR_TAB_MANAGER.close(originalTab);
+            tab = null;
+            originalEditor.close();
+            originalEditor.dispose();
+
+            assertFalse(originalTabPane.getTabs().contains(originalTab.tab()));
+            assertSame(project, Services.IDE_STATE.getCurrentProject());
+            assertSame(store, Services.IDE_STATE.getDocumentStore().orElseThrow());
+            assertSame(savedBacking, store.state(id).orElseThrow().backing());
+            assertNull(store.state(id).orElseThrow().overlay());
+            assertEquals(savedWorkspace, store.capture());
+
+            Files.writeString(file, externalText);
+            assertSame(savedBacking, store.current(id).orElseThrow());
+            assertEquals(savedWorkspace, store.capture());
+
+            tab = assertDoesNotThrow(() -> openInTabPane(file));
+            assertNotNull(tab);
+            var reopenedEditor = tab.view().activeEditor();
+            disableDebouncedAutosave(reopenedEditor);
+            var reopenedState = store.state(id).orElseThrow();
+            var newBacking = assertInstanceOf(TextDocumentSnapshot.class, reopenedState.backing());
+            assertNotSame(originalEditor, reopenedEditor);
+            assertEquals(id, tab.documentId());
+            assertEquals(id, newBacking.id());
+            assertEquals(id, reopenedEditor.captureSnapshot().id());
+            assertEquals(DocumentUri.fromPath(file), newBacking.uri());
+            assertEquals(externalText, reopenedEditor.getText());
+            assertEquals(externalText, newBacking.text());
+            assertEquals(savedBacking.version().next(), newBacking.version());
+            assertEquals(newBacking.version(), reopenedEditor.captureSnapshot().version());
+            assertEquals(EditorSaveState.CLEAN, reopenedEditor.saveState());
+            assertNull(reopenedState.overlay());
+            assertNull(reopenedState.baseBackingVersion());
+            assertFalse(reopenedState.isStale());
+            assertSame(newBacking, store.current(id).orElseThrow());
+            assertSame(newBacking, store.capture().document(id).orElseThrow());
+            assertEquals(savedWorkspace.revision() + 1, store.capture().revision());
+            assertSame(savedBacking, savedWorkspace.document(id).orElseThrow());
+            assertEquals(savedText, savedBacking.text());
+
+            assertDoesNotThrow(() -> reopenedEditor.replaceText(reopenedEdit));
+
+            var editedState = store.state(id).orElseThrow();
+            var overlay = assertInstanceOf(TextDocumentSnapshot.class, editedState.overlay());
+            assertSame(newBacking, editedState.backing());
+            assertEquals(id, overlay.id());
+            assertEquals(reopenedEdit, overlay.text());
+            assertTrue(overlay.version().isAfter(newBacking.version()));
+            assertEquals(overlay.version(), reopenedEditor.captureSnapshot().version());
+            assertEquals(newBacking.version(), editedState.baseBackingVersion());
+            assertFalse(editedState.isStale());
+            assertEquals(EditorSaveState.DIRTY, reopenedEditor.saveState());
+            assertSame(overlay, store.current(id).orElseThrow());
+            assertSame(overlay, store.capture().document(id).orElseThrow());
+            assertEquals(savedWorkspace.revision() + 2, store.capture().revision());
+            return null;
+        });
+    }
+
+    @Test
     public void editingJavaFilePublishesOverlayWhilePreservingBacking() throws Exception {
         Path file = tempDirectory.resolve("Example.java");
         String originalText = "class Example {}";
@@ -149,6 +315,376 @@ public class EditorTabManagerDocumentStoreTest {
             assertEquals(originalWorkspace.revision() + 1, store.capture().revision());
             return null;
         });
+    }
+
+    @Test
+    public void externalModificationOfCleanFileUpdatesBackingWithoutOverlay() throws Exception {
+        assertCleanExternalReload(false);
+    }
+
+    @Test
+    public void externalModificationOfPreviouslySavedFileAdvancesBackingWithoutAutosave() throws Exception {
+        assertCleanExternalReload(true);
+    }
+
+    @Test
+    public void externalModificationOfDirtyFileMarksOverlayStale() throws Exception {
+        Path file = tempDirectory.resolve("Example.java");
+        String originalText = "class Example {}";
+        String unsavedText = "class Example { int unsavedValue; }";
+        String externalText = "class Example { int externalValue; }";
+        Files.writeString(file, originalText);
+        var dialogText = new AtomicReference<String>();
+
+        TextEditorPane editor = onFxThread(() -> {
+            var identity = Services.IDE_STATE.identifyDocument(new FileSystemDocument(file, "java"));
+            var pane = new TextEditorPane(identity.id(), file, "java") {
+                @Override
+                protected void showExternalChangeDialog(String disk) {
+                    // Record the conflict presentation without opening an interactive dialog.
+                    dialogText.set(disk);
+                }
+            };
+            disableDebouncedAutosave(pane);
+            var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            store.publishBacking(pane.captureSnapshot());
+            pane.setDocumentStore(store);
+            return pane;
+        });
+
+        try {
+            var before = onFxThread(() -> {
+                editor.replaceText(unsavedText);
+                var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+                var state = store.state(editor.captureSnapshot().id()).orElseThrow();
+                var overlay = assertInstanceOf(TextDocumentSnapshot.class, state.overlay());
+                assertEquals(unsavedText, overlay.text());
+                assertTrue(overlay.version().isAfter(state.backing().version()));
+                assertEquals(state.backing().version(), state.baseBackingVersion());
+                assertFalse(state.isStale());
+
+                Files.writeString(file, externalText);
+                var handleExternalChange = TextEditorPane.class.getDeclaredMethod("handleExternalChange", Path.class);
+                handleExternalChange.setAccessible(true);
+                handleExternalChange.invoke(editor, file);
+                return state;
+            });
+
+            // Inspect after the handler's queued FX processing, without waiting for a watcher notification.
+            onFxThread(() -> {
+                var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+                var id = before.overlay().id();
+                var state = store.state(id).orElseThrow();
+                var backing = assertInstanceOf(TextDocumentSnapshot.class, state.backing());
+                var overlay = assertInstanceOf(TextDocumentSnapshot.class, state.overlay());
+                assertAll(
+                    () -> assertEquals(externalText, backing.text()),
+                    () -> assertTrue(backing.version().isAfter(before.backing().version())),
+                    () -> assertTrue(backing.version().isAfter(before.overlay().version())),
+                    () -> assertSame(before.overlay(), overlay),
+                    () -> assertEquals(before.overlay().version(), overlay.version()),
+                    () -> assertEquals(unsavedText, overlay.text()),
+                    () -> assertEquals(before.baseBackingVersion(), state.baseBackingVersion()),
+                    () -> assertTrue(state.isStale()),
+                    () -> assertEquals(unsavedText, editor.getText()),
+                    () -> assertEquals(EditorSaveState.DIRTY, editor.saveState()),
+                    () -> assertSame(overlay, store.current(id).orElseThrow()),
+                    () -> assertSame(overlay, store.capture().document(id).orElseThrow()),
+                    () -> assertTrue(editor.hasPendingExternalChange()),
+                    () -> assertEquals(externalText, dialogText.get()));
+
+                var conflictedWorkspace = store.capture();
+                var editorVersion = editor.captureSnapshot().version();
+                assertTrue(editorVersion.compareTo(backing.version()) >= 0);
+                var handleExternalChange = TextEditorPane.class.getDeclaredMethod("handleExternalChange", Path.class);
+                handleExternalChange.setAccessible(true);
+                handleExternalChange.invoke(editor, file);
+                // Exercise duplicate conflict processing too, even if the watcher coalesces identical notifications.
+                var processExternalChange = TextEditorPane.class.getDeclaredMethod("processExternalChange", Path.class);
+                processExternalChange.setAccessible(true);
+                processExternalChange.invoke(editor, file);
+                assertSame(backing, store.state(id).orElseThrow().backing());
+                assertSame(overlay, store.state(id).orElseThrow().overlay());
+                assertEquals(conflictedWorkspace, store.capture());
+                assertEquals(editorVersion, editor.captureSnapshot().version());
+                assertTrue(editor.hasPendingExternalChange());
+
+                String furtherEdits = "class Example { int unsavedValue; int moreEdits; }";
+                editor.replaceText(furtherEdits);
+                var editedState = store.state(id).orElseThrow();
+                var editedOverlay = assertInstanceOf(TextDocumentSnapshot.class, editedState.overlay());
+                assertSame(backing, editedState.backing());
+                assertEquals(furtherEdits, editedOverlay.text());
+                assertTrue(editedOverlay.version().isAfter(backing.version()));
+                assertEquals(before.baseBackingVersion(), editedState.baseBackingVersion());
+                assertTrue(editedState.isStale());
+                assertEquals(furtherEdits, editor.getText());
+                assertSame(editedOverlay, store.current(id).orElseThrow());
+                assertTrue(editor.hasPendingExternalChange());
+                return null;
+            });
+        } finally {
+            onFxThread(() -> {
+                editor.discardChangesOnClose();
+                editor.close();
+                editor.dispose();
+                return null;
+            });
+        }
+    }
+
+    @Test
+    public void reloadingExternalChangeDiscardsStaleOverlay() throws Exception {
+        Path file = tempDirectory.resolve("Example.java");
+        String unsavedText = "class Example { int unsavedValue; }";
+        String externalText = "class Example { int externalValue; }";
+        Files.writeString(file, "class Example {}");
+        var dialogText = new AtomicReference<String>();
+        TextEditorPane editor = onFxThread(() -> {
+            var identity = Services.IDE_STATE.identifyDocument(new FileSystemDocument(file, "java"));
+            var pane = new TextEditorPane(identity.id(), file, "java") {
+                @Override
+                protected void showExternalChangeDialog(String disk) {
+                    dialogText.set(disk);
+                }
+            };
+            var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            store.publishBacking(pane.captureSnapshot());
+            pane.setDocumentStore(store);
+            return pane;
+        });
+        var edited = new CompletableFuture<DocumentModifiedEvent>();
+        var reloaded = new CompletableFuture<DocumentModifiedEvent>();
+        EventListener<DocumentModifiedEvent> listener = event -> {
+            if (file.equals(event.file().getPath())) {
+                if (event.changes().stream().anyMatch(change -> change.newContent().contains("unsavedValue"))) {
+                    edited.complete(event);
+                }
+                if (event.changes().stream().anyMatch(change -> change.newContent().contains("externalValue"))) {
+                    reloaded.complete(event);
+                }
+            }
+        };
+        Railroad.EVENT_BUS.subscribe(DocumentModifiedEvent.class, listener);
+
+        try {
+            onFxThread(() -> {
+                editor.replaceText(unsavedText);
+                Files.writeString(file, externalText);
+                var handleExternalChange = TextEditorPane.class.getDeclaredMethod("handleExternalChange", Path.class);
+                handleExternalChange.setAccessible(true);
+                handleExternalChange.invoke(editor, file);
+                return null;
+            });
+            edited.get(10, TimeUnit.SECONDS);
+
+            var restoredWorkspace = onFxThread(() -> {
+                var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+                var id = editor.captureSnapshot().id();
+                var before = store.state(id).orElseThrow();
+                var externalBacking = assertInstanceOf(TextDocumentSnapshot.class, before.backing());
+                assertEquals(externalText, externalBacking.text());
+                assertEquals(unsavedText, editor.getText());
+                assertTrue(before.isStale());
+                assertTrue(editor.hasPendingExternalChange());
+                assertEquals(externalText, dialogText.get());
+
+                // Distinct backing metadata ensures discard copies the backing rather than the stale overlay.
+                var backingUri = DocumentUri.fromPath(tempDirectory.resolve("Backing.java"));
+                var backing = new TextDocumentSnapshot(id, backingUri, externalBacking.version(), "java-source",
+                    DocumentOrigin.unspecified(backingUri), externalText, StandardCharsets.UTF_16LE);
+                store.publishBacking(backing);
+                var beforeReload = store.capture();
+                var pendingSaveTask = TextEditorPane.class.getDeclaredField("pendingSaveTask");
+                pendingSaveTask.setAccessible(true);
+                assertNotNull(pendingSaveTask.get(editor));
+
+                var resolveExternalChange = TextEditorPane.class.getDeclaredMethod("resolveExternalChange",
+                    boolean.class);
+                resolveExternalChange.setAccessible(true);
+                resolveExternalChange.invoke(editor, true);
+
+                var state = store.state(id).orElseThrow();
+                var restored = assertInstanceOf(TextDocumentSnapshot.class, state.backing());
+                assertNull(state.overlay());
+                assertNull(state.baseBackingVersion());
+                assertFalse(state.isStale());
+                assertEquals(externalText, restored.text());
+                assertTrue(restored.version().isAfter(backing.version()));
+                assertTrue(restored.version().isAfter(before.overlay().version()));
+                assertEquals(backing.uri(), restored.uri());
+                assertEquals(backing.languageId(), restored.languageId());
+                assertEquals(backing.origin(), restored.origin());
+                assertEquals(backing.encoding(), restored.encoding());
+                assertEquals(externalText, editor.getText());
+                assertEquals(restored.version(), editor.captureSnapshot().version());
+                assertEquals(EditorSaveState.CLEAN, editor.saveState());
+                assertFalse(editor.hasPendingExternalChange());
+                assertSame(restored, store.current(id).orElseThrow());
+                assertSame(restored, store.capture().document(id).orElseThrow());
+                assertEquals(beforeReload.revision() + 1, store.capture().revision());
+                assertNull(pendingSaveTask.get(editor));
+                var savedVersion = TextEditorPane.class.getDeclaredField("savedVersion");
+                savedVersion.setAccessible(true);
+                assertEquals(restored.version().value(), ((AtomicLong) savedVersion.get(editor)).get());
+                var pendingSnapshot = TextEditorPane.class.getDeclaredField("pendingSnapshot");
+                pendingSnapshot.setAccessible(true);
+                assertSame(restored, ((AtomicReference<?>) pendingSnapshot.get(editor)).get());
+                return store.capture();
+            });
+
+            reloaded.get(10, TimeUnit.SECONDS);
+            onFxThread(() -> {
+                var pendingSaveTask = TextEditorPane.class.getDeclaredField("pendingSaveTask");
+                pendingSaveTask.setAccessible(true);
+                assertNull(pendingSaveTask.get(editor));
+                assertEquals(restoredWorkspace, Services.IDE_STATE.getDocumentStore().orElseThrow().capture());
+                assertEquals(externalText, Files.readString(file));
+                return null;
+            });
+        } finally {
+            Railroad.EVENT_BUS.unsubscribe(DocumentModifiedEvent.class, listener);
+            onFxThread(() -> {
+                editor.discardChangesOnClose();
+                editor.close();
+                editor.dispose();
+                return null;
+            });
+        }
+    }
+
+    @Test
+    public void keepingLocalChangesReconcilesAndSavesStaleOverlay() throws Exception {
+        assertKeepingLocalChanges(false);
+    }
+
+    @Test
+    public void keepingLocalChangesRetainsReconciledOverlayWhenDiskWriteFails() throws Exception {
+        assertKeepingLocalChanges(true);
+    }
+
+    @Test
+    public void secondExternalChangeBeforeResolutionUpdatesBacking() throws Exception {
+        Path file = tempDirectory.resolve("Example.java");
+        String unsavedText = "class Example { int unsavedValue; }";
+        String firstExternalText = "class Example { int firstExternalValue; }";
+        String latestExternalText = "class Example { int latestExternalValue; }";
+        Files.writeString(file, "class Example {}");
+        var dialogText = new AtomicReference<String>();
+        var saveRequests = new AtomicInteger();
+        var reconciliations = new AtomicInteger();
+        var reconciledBackingVersion = new AtomicReference<DocumentVersion>();
+        var reconciledOverlay = new AtomicReference<TextDocumentSnapshot>();
+        TextEditorPane editor = onFxThread(() -> {
+            var identity = Services.IDE_STATE.identifyDocument(new FileSystemDocument(file, "java"));
+            var pane = new TextEditorPane(identity.id(), file, "java") {
+                @Override
+                protected void showExternalChangeDialog(String disk) {
+                    dialogText.set(disk);
+                }
+
+                @Override
+                public boolean saveNow() {
+                    saveRequests.incrementAndGet();
+                    return super.saveNow();
+                }
+            };
+            disableDebouncedAutosave(pane);
+            var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            store.publishBacking(pane.captureSnapshot());
+            pane.setDocumentStore((DocumentStore) Proxy.newProxyInstance(DocumentStore.class.getClassLoader(),
+                new Class<?>[]{DocumentStore.class}, (proxy, method, args) -> {
+                    if (method.getName().equals("reconcileOverlay")) {
+                        reconciliations.incrementAndGet();
+                        reconciledBackingVersion.set((DocumentVersion) args[1]);
+                        reconciledOverlay.set((TextDocumentSnapshot) args[3]);
+                    }
+                    try {
+                        return method.invoke(store, args);
+                    } catch (InvocationTargetException exception) {
+                        throw exception.getCause();
+                    }
+                }));
+            return pane;
+        });
+
+        try {
+            onFxThread(() -> {
+                editor.replaceText(unsavedText);
+                Files.writeString(file, firstExternalText);
+                var handleExternalChange = TextEditorPane.class.getDeclaredMethod("handleExternalChange", Path.class);
+                handleExternalChange.setAccessible(true);
+                handleExternalChange.invoke(editor, file);
+                return null;
+            });
+            onFxThread(() -> {
+                var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+                var id = editor.captureSnapshot().id();
+                var before = store.state(id).orElseThrow();
+                assertEquals(firstExternalText, assertInstanceOf(TextDocumentSnapshot.class, before.backing()).text());
+                assertEquals(firstExternalText, dialogText.get());
+                assertTrue(before.isStale());
+                var beforeClick = store.capture();
+                var resolveExternalChange = TextEditorPane.class.getDeclaredMethod("resolveExternalChange",
+                    boolean.class);
+                resolveExternalChange.setAccessible(true);
+
+                // Write and click in the same FX task, before a watcher notification can be processed.
+                Files.writeString(file, latestExternalText);
+                resolveExternalChange.invoke(editor, false);
+
+                var refreshed = store.state(id).orElseThrow();
+                var latestBacking = assertInstanceOf(TextDocumentSnapshot.class, refreshed.backing());
+                assertAll(
+                    () -> assertEquals(latestExternalText, Files.readString(file)),
+                    () -> assertEquals(latestExternalText, dialogText.get()),
+                    () -> assertEquals(latestExternalText, latestBacking.text()),
+                    () -> assertTrue(latestBacking.version().isAfter(before.backing().version())),
+                    () -> assertTrue(latestBacking.version().isAfter(before.overlay().version())),
+                    () -> assertSame(before.overlay(), refreshed.overlay()),
+                    () -> assertEquals(before.baseBackingVersion(), refreshed.baseBackingVersion()),
+                    () -> assertTrue(refreshed.isStale()),
+                    () -> assertSame(before.overlay(), store.current(id).orElseThrow()),
+                    () -> assertSame(before.overlay(), store.capture().document(id).orElseThrow()),
+                    () -> assertEquals(unsavedText, editor.getText()),
+                    () -> assertEquals(EditorSaveState.DIRTY, editor.saveState()),
+                    () -> assertTrue(editor.hasPendingExternalChange()),
+                    () -> assertEquals(0, saveRequests.get()),
+                    () -> assertEquals(0, reconciliations.get()),
+                    () -> assertEquals(beforeClick.revision() + 1, store.capture().revision()));
+                var refreshedWorkspace = store.capture();
+
+                resolveExternalChange.invoke(editor, false);
+
+                var saved = store.state(id).orElseThrow();
+                var savedBacking = assertInstanceOf(TextDocumentSnapshot.class, saved.backing());
+                assertEquals(1, saveRequests.get());
+                assertEquals(1, reconciliations.get());
+                assertEquals(latestBacking.version(), reconciledBackingVersion.get());
+                assertSame(reconciledOverlay.get(), savedBacking);
+                assertTrue(savedBacking.version().isAfter(latestBacking.version()));
+                assertEquals(unsavedText, savedBacking.text());
+                assertNull(saved.overlay());
+                assertNull(saved.baseBackingVersion());
+                assertFalse(saved.isStale());
+                assertEquals(unsavedText, Files.readString(file));
+                assertEquals(unsavedText, editor.getText());
+                assertEquals(savedBacking.version(), editor.captureSnapshot().version());
+                assertEquals(EditorSaveState.CLEAN, editor.saveState());
+                assertFalse(editor.hasPendingExternalChange());
+                assertSame(savedBacking, store.current(id).orElseThrow());
+                assertSame(savedBacking, store.capture().document(id).orElseThrow());
+                assertEquals(refreshedWorkspace.revision() + 2, store.capture().revision());
+                return null;
+            });
+        } finally {
+            onFxThread(() -> {
+                editor.discardChangesOnClose();
+                editor.close();
+                editor.dispose();
+                return null;
+            });
+        }
     }
 
     @Test
@@ -574,6 +1110,234 @@ public class EditorTabManagerDocumentStoreTest {
             return null;
         });
         assertArrayEquals(invalidUtf8, Files.readAllBytes(file));
+    }
+
+    private void assertKeepingLocalChanges(boolean failWrite) throws Exception {
+        Path file = tempDirectory.resolve("Example.java");
+        Path failedWriteTarget = Files.createDirectory(tempDirectory.resolve("write-target-directory"));
+        String unsavedText = "class Example { int unsavedValue; }";
+        String externalText = "class Example { int externalValue; }";
+        Files.writeString(file, "class Example {}");
+        var dialogText = new AtomicReference<String>();
+        TextEditorPane editor = onFxThread(() -> {
+            var identity = Services.IDE_STATE.identifyDocument(new FileSystemDocument(file, "java"));
+            var pane = new TextEditorPane(identity.id(), file, "java") {
+                @Override
+                protected void showExternalChangeDialog(String disk) {
+                    dialogText.set(disk);
+                }
+
+                @Override
+                public boolean saveNow() {
+                    if (!failWrite)
+                        return super.saveNow();
+
+                    Path originalPath = filePath;
+                    ChangeListener<EditorSaveState> failDiskWrite = (_, _, state) -> {
+                        if (state == EditorSaveState.SAVING) {
+                            // Fail the actual write after baseline validation, leaving the external file intact.
+                            filePath = failedWriteTarget;
+                        }
+                    };
+                    saveStateProperty().addListener(failDiskWrite);
+                    try {
+                        return super.saveNow();
+                    } finally {
+                        filePath = originalPath;
+                        saveStateProperty().removeListener(failDiskWrite);
+                    }
+                }
+            };
+            disableDebouncedAutosave(pane);
+            var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            store.publishBacking(pane.captureSnapshot());
+            pane.setDocumentStore(store);
+            return pane;
+        });
+
+        try {
+            onFxThread(() -> {
+                editor.replaceText(unsavedText);
+                Files.writeString(file, externalText);
+                var handleExternalChange = TextEditorPane.class.getDeclaredMethod("handleExternalChange", Path.class);
+                handleExternalChange.setAccessible(true);
+                handleExternalChange.invoke(editor, file);
+                return null;
+            });
+            onFxThread(() -> {
+                var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+                var id = editor.captureSnapshot().id();
+                var before = store.state(id).orElseThrow();
+                assertEquals(externalText, assertInstanceOf(TextDocumentSnapshot.class, before.backing()).text());
+                assertTrue(before.isStale());
+                assertEquals(unsavedText, editor.getText());
+                assertTrue(editor.hasPendingExternalChange());
+                assertEquals(externalText, dialogText.get());
+                var beforeKeep = store.capture();
+                var beforeWrite = new AtomicReference<DocumentState>();
+                ChangeListener<EditorSaveState> captureBeforeWrite = (_, _, state) -> {
+                    if (state == EditorSaveState.SAVING) {
+                        beforeWrite.set(store.state(id).orElseThrow());
+                    }
+                };
+                editor.saveStateProperty().addListener(captureBeforeWrite);
+                try {
+                    var resolveExternalChange = TextEditorPane.class.getDeclaredMethod("resolveExternalChange",
+                        boolean.class);
+                    resolveExternalChange.setAccessible(true);
+                    resolveExternalChange.invoke(editor, false);
+                } finally {
+                    editor.saveStateProperty().removeListener(captureBeforeWrite);
+                }
+
+                var reconciled = beforeWrite.get();
+                assertNotNull(reconciled);
+                var reconciledOverlay = assertInstanceOf(TextDocumentSnapshot.class, reconciled.overlay());
+                assertSame(before.backing(), reconciled.backing());
+                assertEquals(unsavedText, reconciledOverlay.text());
+                assertTrue(reconciledOverlay.version().isAfter(before.backing().version()));
+                assertTrue(reconciledOverlay.version().isAfter(before.overlay().version()));
+                assertEquals(before.backing().version(), reconciled.baseBackingVersion());
+                assertFalse(reconciled.isStale());
+
+                var state = store.state(id).orElseThrow();
+                assertFalse(state.isStale());
+                assertEquals(unsavedText, editor.getText());
+                assertEquals(reconciledOverlay.version(), editor.captureSnapshot().version());
+                assertFalse(editor.hasPendingExternalChange());
+                if (failWrite) {
+                    assertEquals(EditorSaveState.ERROR, editor.saveState());
+                    assertTrue(editor.dirty());
+                    assertSame(before.backing(), state.backing());
+                    assertSame(reconciledOverlay, state.overlay());
+                    assertEquals(before.backing().version(), state.baseBackingVersion());
+                    assertEquals(externalText, Files.readString(file));
+                    assertSame(reconciledOverlay, store.current(id).orElseThrow());
+                    assertSame(reconciledOverlay, store.capture().document(id).orElseThrow());
+                    assertEquals(beforeKeep.revision() + 1, store.capture().revision());
+                } else {
+                    assertEquals(EditorSaveState.CLEAN, editor.saveState());
+                    assertFalse(editor.dirty());
+                    assertSame(reconciledOverlay, state.backing());
+                    assertNull(state.overlay());
+                    assertNull(state.baseBackingVersion());
+                    assertEquals(unsavedText, Files.readString(file));
+                    assertSame(reconciledOverlay, store.current(id).orElseThrow());
+                    assertSame(reconciledOverlay, store.capture().document(id).orElseThrow());
+                    assertEquals(beforeKeep.revision() + 2, store.capture().revision());
+                }
+                return null;
+            });
+        } finally {
+            onFxThread(() -> {
+                editor.discardChangesOnClose();
+                editor.close();
+                editor.dispose();
+                return null;
+            });
+        }
+    }
+
+    private void assertCleanExternalReload(boolean saveFirst) throws Exception {
+        Path file = tempDirectory.resolve("Example.java");
+        String originalText = "class Example {}";
+        String updatedText = "class Example { int externalValue; }";
+        Files.writeString(file, originalText);
+        var modified = new CompletableFuture<DocumentModifiedEvent>();
+        var userModified = new CompletableFuture<DocumentModifiedEvent>();
+        String userText = "class Example { int userValue; }";
+        EventListener<DocumentModifiedEvent> modifiedListener = event -> {
+            if (file.equals(event.file().getPath())) {
+                if (event.changes().stream().anyMatch(change -> change.newContent().contains("externalValue"))) {
+                    modified.complete(event);
+                }
+                if (event.changes().stream().anyMatch(change -> change.newContent().contains("userValue"))) {
+                    userModified.complete(event);
+                }
+            }
+        };
+        var becameDirty = new AtomicBoolean();
+        Railroad.EVENT_BUS.subscribe(DocumentModifiedEvent.class, modifiedListener);
+
+        try {
+            var originalBacking = onFxThread(() -> {
+                tab = openInTabPane(file);
+                var editor = tab.view().activeEditor();
+                if (saveFirst) {
+                    editor.replaceText("class Example { int savedValue; }");
+                    assertTrue(editor.saveNow());
+                }
+                editor.saveStateProperty().addListener((_, _, newState) -> {
+                    if (newState == EditorSaveState.DIRTY) {
+                        becameDirty.set(true);
+                    }
+                });
+                var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+                var state = store.state(tab.documentId()).orElseThrow();
+                assertEquals(EditorSaveState.CLEAN, editor.saveState());
+                assertNull(state.overlay());
+                var backing = assertInstanceOf(TextDocumentSnapshot.class, state.backing());
+                assertEquals(saveFirst ? "class Example { int savedValue; }" : originalText, backing.text());
+
+                Files.writeString(file, updatedText);
+                var handleExternalChange = TextEditorPane.class.getDeclaredMethod("handleExternalChange", Path.class);
+                handleExternalChange.setAccessible(true);
+                handleExternalChange.invoke(editor, file);
+                return backing;
+            });
+
+            // The handler queues reload processing before this next FX task, independently of watcher timing.
+            var reloadedWorkspace = onFxThread(() -> {
+                var editor = tab.view().activeEditor();
+                var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+                var id = tab.documentId();
+                assertEquals(updatedText, editor.getText());
+                assertEquals(EditorSaveState.CLEAN, editor.saveState());
+                assertFalse(editor.dirty());
+                assertFalse(becameDirty.get());
+                assertFalse(editor.hasPendingExternalChange());
+
+                var state = store.state(id).orElseThrow();
+                var backing = assertInstanceOf(TextDocumentSnapshot.class, state.backing());
+                assertAll(
+                    () -> assertEquals(updatedText, backing.text()),
+                    () -> assertTrue(backing.version().isAfter(originalBacking.version())),
+                    () -> assertEquals(backing.version(), editor.captureSnapshot().version()),
+                    () -> assertNull(state.overlay()),
+                    () -> assertSame(backing, store.current(id).orElseThrow()),
+                    () -> assertSame(backing, store.capture().document(id).orElseThrow()));
+                return store.capture();
+            });
+
+            // Wait for the real debounced callback to notify language features, then inspect its completed work.
+            assertFalse(modified.get(10, TimeUnit.SECONDS).changes().isEmpty());
+            onFxThread(() -> {
+                var pendingSaveTask = TextEditorPane.class.getDeclaredField("pendingSaveTask");
+                pendingSaveTask.setAccessible(true);
+                assertNull(pendingSaveTask.get(tab.view().activeEditor()));
+                assertEquals(reloadedWorkspace, Services.IDE_STATE.getDocumentStore().orElseThrow().capture());
+                assertEquals(updatedText, Files.readString(file));
+
+                // The reload guard must be reset so subsequent user edits publish ordinary overlays.
+                var editor = tab.view().activeEditor();
+                editor.replaceText(userText);
+                var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+                var state = store.state(tab.documentId()).orElseThrow();
+                assertSame(reloadedWorkspace.document(tab.documentId()).orElseThrow(), state.backing());
+                assertEquals(userText, assertInstanceOf(TextDocumentSnapshot.class, state.overlay()).text());
+                assertEquals(EditorSaveState.DIRTY, editor.saveState());
+                return null;
+            });
+            assertFalse(userModified.get(10, TimeUnit.SECONDS).changes().isEmpty());
+            onFxThread(() -> {
+                var pendingSaveTask = TextEditorPane.class.getDeclaredField("pendingSaveTask");
+                pendingSaveTask.setAccessible(true);
+                assertNotNull(pendingSaveTask.get(tab.view().activeEditor()));
+                return null;
+            });
+        } finally {
+            Railroad.EVENT_BUS.unsubscribe(DocumentModifiedEvent.class, modifiedListener);
+        }
     }
 
     private void assertBackingDeletion(boolean dirty, boolean saveFirst) throws Exception {
