@@ -884,8 +884,20 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             if (editVersion.get() == savedVersion.get()) {
                 editVersion.incrementAndGet();
             }
+            DocumentStore store = documentStore;
+            DocumentState state = store != null ? store.state(documentId).orElse(null) : null;
+            if (state != null && state.backing() != null && state.overlay() == null) {
+                editVersion.accumulateAndGet(state.backing().version().next().value(), Math::max);
+            }
             setSaveState(EditorSaveState.ERROR);
-            pendingSnapshot.set(captureSnapshot());
+            TextDocumentSnapshot snapshot = captureSnapshot();
+            pendingSnapshot.set(snapshot);
+            if (state != null && state.backing() != null) {
+                if (state.overlay() == null) {
+                    store.publishOverlay(snapshot);
+                }
+                store.removeBacking(documentId, state.backing().version());
+            }
             if (pendingSaveTask != null) {
                 pendingSaveTask.cancel(false);
                 pendingSaveTask = null;

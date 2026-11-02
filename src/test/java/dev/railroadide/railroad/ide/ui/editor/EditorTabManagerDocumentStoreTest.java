@@ -16,6 +16,8 @@ import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
 import dev.railroadide.railroad.project.RailroadProject;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
+import javafx.event.Event;
+import javafx.scene.control.Tab;
 import javafx.scene.image.WritableImage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -74,7 +76,9 @@ public class EditorTabManagerDocumentStoreTest {
                 if (tab != null) {
                     var editor = tab.view().activeEditor();
                     editor.discardChangesOnClose();
-                    Services.EDITOR_TAB_MANAGER.close(tab);
+                    // Cleanup discards even missing files without prompting to retry a failed save.
+                    tab.tab().getTabPane().getTabs().remove(tab.tab());
+                    Event.fireEvent(tab.tab(), new Event(tab.tab(), tab.tab(), Tab.CLOSED_EVENT));
                     editor.close();
                     editor.dispose();
                 }
@@ -145,6 +149,21 @@ public class EditorTabManagerDocumentStoreTest {
             assertEquals(originalWorkspace.revision() + 1, store.capture().revision());
             return null;
         });
+    }
+
+    @Test
+    public void deletingCleanFileCreatesOverlayBeforeRemovingBacking() throws Exception {
+        assertBackingDeletion(false, false);
+    }
+
+    @Test
+    public void deletingPreviouslySavedFileCreatesOverlayWithNewerVersion() throws Exception {
+        assertBackingDeletion(false, true);
+    }
+
+    @Test
+    public void deletingDirtyFilePreservesExistingOverlay() throws Exception {
+        assertBackingDeletion(true, false);
     }
 
     @Test
@@ -555,6 +574,67 @@ public class EditorTabManagerDocumentStoreTest {
             return null;
         });
         assertArrayEquals(invalidUtf8, Files.readAllBytes(file));
+    }
+
+    private void assertBackingDeletion(boolean dirty, boolean saveFirst) throws Exception {
+        Path file = tempDirectory.resolve("Example.java");
+        String originalText = "class Example {}";
+        String editedText = "class Example { int x; }";
+        Files.writeString(file, originalText);
+
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            var editor = tab.view().activeEditor();
+            var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            var id = tab.documentId();
+            if (dirty || saveFirst) {
+                editor.replaceText(editedText);
+            }
+            if (saveFirst) {
+                assertTrue(editor.saveNow());
+            }
+            assertEquals(dirty, editor.dirty());
+            var before = store.state(id).orElseThrow();
+            var beforeWorkspace = store.capture();
+            String expectedText = dirty || saveFirst ? editedText : originalText;
+
+            // Both notifications run before the watcher can deliver its own notification on the FX thread.
+            Files.delete(file);
+            editor.markBackingFileDeleted();
+
+            var state = store.state(id).orElseThrow();
+            var overlay = assertInstanceOf(TextDocumentSnapshot.class, state.overlay());
+            assertNull(state.backing());
+            assertEquals(expectedText, editor.getText());
+            assertEquals(expectedText, overlay.text());
+            assertEquals(id, overlay.id());
+            assertTrue(overlay.version().isAfter(before.backing().version()));
+            assertEquals(before.backing().version(), state.baseBackingVersion());
+            assertTrue(state.isStale());
+            if (dirty) {
+                assertSame(before.overlay(), overlay);
+            }
+            assertEquals(overlay.version(), editor.captureSnapshot().version());
+            assertSame(overlay, store.current(id).orElseThrow());
+            var deletedWorkspace = store.capture();
+            assertSame(overlay, deletedWorkspace.document(id).orElseThrow());
+            assertEquals(beforeWorkspace.revision() + (dirty ? 1 : 2), deletedWorkspace.revision());
+            assertTrue(editor.isBackingFileMissing());
+            assertEquals(EditorSaveState.ERROR, editor.saveState());
+            assertFalse(editor.saveNow());
+            assertFalse(Files.exists(file));
+
+            editor.markBackingFileDeleted();
+
+            assertEquals(state, store.state(id).orElseThrow());
+            assertSame(overlay, store.current(id).orElseThrow());
+            assertEquals(deletedWorkspace, store.capture());
+            assertEquals(overlay.version(), editor.captureSnapshot().version());
+            assertEquals(expectedText, editor.getText());
+            assertFalse(editor.saveNow());
+            assertFalse(Files.exists(file));
+            return null;
+        });
     }
 
     private EditorTab openInTabPane(Path file) throws ReflectiveOperationException {
