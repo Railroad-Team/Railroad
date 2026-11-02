@@ -100,7 +100,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     private final ReadOnlyBooleanWrapper saved = new ReadOnlyBooleanWrapper(this, "saved");
     private final ReadOnlyBooleanWrapper saveFailed = new ReadOnlyBooleanWrapper(this, "saveFailed");
     private final AtomicLong editVersion = new AtomicLong();
-    private final DocumentId documentId = DocumentId.create();
+    private final DocumentId documentId;
     private final AtomicLong savedVersion = new AtomicLong();
     private volatile boolean backingFileMissing;
     private volatile boolean discardChangesOnClose;
@@ -153,10 +153,13 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     /**
      * Creates a file editor, loads its initial contents, and configures saving and file watching.
      *
+     * @param documentId authoritative logical identity supplied by the editor owner
      * @param item file to open in the editor
      * @param languageId identifier of the document language
+     * @throws NullPointerException if any argument is {@code null}
      */
-    public TextEditorPane(Path item, String languageId) {
+    public TextEditorPane(DocumentId documentId, Path item, String languageId) {
+        this.documentId = Objects.requireNonNull(documentId, "documentId");
         this.filePath = Objects.requireNonNull(item, "item");
         this.languageId = Objects.requireNonNull(languageId, "languageId");
         dirty.bind(saveState.isNotEqualTo(EditorSaveState.CLEAN));
@@ -184,6 +187,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     /**
      * Captures the current editor content and location for background language features.
      * Call on the JavaFX thread; the returned snapshot remains readable after subsequent edits.
+     * Every capture retains the document identity supplied at construction.
      *
      * @return immutable text revision with this editor's stable identity and current edit version
      */

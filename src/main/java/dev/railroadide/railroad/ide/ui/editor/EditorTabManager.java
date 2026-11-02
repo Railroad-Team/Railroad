@@ -469,7 +469,9 @@ public class EditorTabManager {
             return null;
         }
 
-        var editorOpenView = support.open(project, normalizedPath);
+        var document = new FileSystemDocument(normalizedPath, support.languageId());
+        DocumentIdentity identity = Services.IDE_STATE.identifyDocument(document);
+        var editorOpenView = support.open(project, identity.id(), normalizedPath);
         if (editorOpenView == null) {
             if (request.openExternally()) {
                 FileUtils.openInDefaultApplication(normalizedPath);
@@ -477,8 +479,6 @@ public class EditorTabManager {
             return null;
         }
 
-        var document = new FileSystemDocument(normalizedPath, support.languageId());
-        DocumentIdentity identity = Services.IDE_STATE.identifyDocument(document);
         boolean preview = request.preview()
             && !request.pinned()
             && Boolean.TRUE.equals(Settings.ENABLE_PREVIEW_TABS.getValue());

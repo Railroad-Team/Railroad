@@ -1,10 +1,13 @@
 package dev.railroadide.railroad.ide;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.sst.document.api.DefaultDocumentStore;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentityRegistry;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentStore;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
+import dev.railroadide.railroad.ide.sst.document.api.WorkspaceConfigurationSnapshot;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
@@ -19,9 +22,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Tracks the current project and open documents and publishes their lifecycle events.
+ * Owns one document store for the current project session, releasing it on project close.
  */
 @Getter
 public class DefaultIDEStateService implements IDEStateService {
@@ -29,6 +34,7 @@ public class DefaultIDEStateService implements IDEStateService {
     private final Map<Document, Long> openDocuments = new LinkedHashMap<>();
     private final Map<Path, Long> recentFiles = new HashMap<>();
     private DocumentIdentityRegistry documentIdentities = new DocumentIdentityRegistry();
+    private DocumentStore documentStore;
     private Project currentProject;
     private long openedProjectAtMillis = -1L;
     private Document activeDocument;
@@ -57,6 +63,11 @@ public class DefaultIDEStateService implements IDEStateService {
     }
 
     private void setCurrentProject_internal(Project project) {
+        if (project != currentProject) {
+            documentStore = project == null
+                ? null
+                : new DefaultDocumentStore(project.getId(), new WorkspaceConfigurationSnapshot(0, Set.of()));
+        }
         this.currentProject = project;
         this.openedProjectAtMillis = project != null ? System.currentTimeMillis() : -1L;
         if (project == null) {
@@ -136,6 +147,11 @@ public class DefaultIDEStateService implements IDEStateService {
             .flatMap(firstIdentity -> documentIdentities.findIdentity(second.getUri())
                 .map(secondIdentity -> firstIdentity.id().equals(secondIdentity.id())))
             .orElse(false);
+    }
+
+    @Override
+    public Optional<DocumentStore> getDocumentStore() {
+        return Optional.ofNullable(documentStore);
     }
 
     @Override

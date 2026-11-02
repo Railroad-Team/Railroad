@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.command.CommandButtons;
 import dev.railroadide.railroad.command.CommandContext;
 import dev.railroadide.railroad.command.CommandMenuItems;
@@ -44,6 +45,7 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
@@ -70,6 +72,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     private static final String MARKDOWN_LAYOUT_LOCATION = "markdown.json";
 
     private final MarkdownWebView preview;
+    private final DocumentId documentId;
     @Getter
     private final Path markdownFile;
 
@@ -110,10 +113,12 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     /**
      * Loads a Markdown file and restores the project preview layout.
      *
+     * @param documentId authoritative logical identity retained by the lazy source editor
      * @param markdownFile Markdown file to load and edit
      * @param project project whose files and workspace are being displayed
      */
-    public MarkdownPreviewPane(Path markdownFile, Project project) {
+    public MarkdownPreviewPane(DocumentId documentId, Path markdownFile, Project project) {
+        this.documentId = Objects.requireNonNull(documentId, "documentId");
         this.markdownFile = markdownFile;
         this.project = project;
 
@@ -167,7 +172,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
             return textEditorPane;
         }
 
-        editorProperty().setValue(new TextEditorPane(markdownFile, "markdown"));
+        editorProperty().setValue(new TextEditorPane(documentId, markdownFile, "markdown"));
 
         TextEditorPane newTextEditorPane = getMarkdownEditorPane();
 

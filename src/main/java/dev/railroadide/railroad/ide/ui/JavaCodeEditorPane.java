@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.ui.codeeditor.BreakpointGutterBinding;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorConfig;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
@@ -33,11 +34,12 @@ public class JavaCodeEditorPane extends CodeEditorPane {
      * Creates a Java editor with the supplied language-service configuration.
      *
      * @param project project whose files and workspace are being displayed
+     * @param documentId authoritative logical identity shared with the editor tab
      * @param item file to open in the editor
      * @param config language-service configuration for the editor
      */
-    public JavaCodeEditorPane(Project project, Path item, CodeEditorConfig config) {
-        super(project, item, config);
+    public JavaCodeEditorPane(Project project, DocumentId documentId, Path item, CodeEditorConfig config) {
+        super(project, documentId, item, config);
         breakpointBinding = new BreakpointGutterBinding(getGutter(), this, this::getFilePath,
             Services.BREAKPOINT_SERVICE);
     }

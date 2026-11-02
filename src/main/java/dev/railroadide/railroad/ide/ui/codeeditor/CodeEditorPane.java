@@ -112,8 +112,17 @@ public abstract class CodeEditorPane extends TextEditorPane {
     protected volatile StyleSpans<Collection<String>> lastAppliedStyles = null;
     // endregion
 
-    protected CodeEditorPane(Project project, Path filePath, CodeEditorConfig config) {
-        super(filePath, config.languageId());
+    /**
+     * Creates a code editor using the owner's document identity and language services.
+     *
+     * @param project project whose files and workspace are being displayed
+     * @param documentId authoritative logical identity shared with the editor tab
+     * @param filePath file to open in the editor
+     * @param config language-service configuration for the editor
+     * @throws NullPointerException if any argument is {@code null}
+     */
+    protected CodeEditorPane(Project project, DocumentId documentId, Path filePath, CodeEditorConfig config) {
+        super(documentId, filePath, config.languageId());
         this.project = Objects.requireNonNull(project, "project");
         Objects.requireNonNull(filePath, "filePath");
         config = Objects.requireNonNull(config, "config");
