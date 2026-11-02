@@ -1,0 +1,39 @@
+{
+  "validated_at_utc": "2026-11-02T23:45:39.960265+00:00",
+  "source_commit": "5a5ebcd5398ee63bb3312e7891ed2bbd73b2239a",
+  "base_commit": "e70bbdcf12c129ce8ebf75221cc6214f055048b3",
+  "main_tests": {
+    "tests": 876,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "tooling_tests": {
+    "tests": 17,
+    "failures": 0
+  },
+  "sole_test_failure": "RailroadProjectDiagnosticsRegressionTest.currentRailroadSourcesHaveNoErrorDiagnostics",
+  "self_analysis": {
+    "baseline_commit": "1ab7c18caff0ac5176ec7beb81deb2c401a2fd3b",
+    "baseline_diagnostics": 242,
+    "candidate_diagnostics": 242,
+    "added": 0,
+    "removed": 0,
+    "normalization": "Same source-offset normalization as document-store-final.json",
+    "normalized_multiset_sha256": "4fccdf8edc9135285c6130e75fc665ab88d59b0ea4f39b81e48b09a8de2b980c"
+  },
+  "javadoc_coverage": {
+    "complete": 8238,
+    "total": 8238,
+    "incomplete": 0
+  },
+  "format_all_apply": "passed",
+  "format_all_check": "passed",
+  "commands": [
+    ".\\gradlew.bat -I <heap-init.gradle> formatCheck -PformatAll javadocCoverageCheck check --continue --console=plain",
+    ".\\gradlew.bat format -PformatAll --console=plain",
+    ".\\gradlew.bat formatCheck -PformatAll javadocCoverageCheck --console=plain"
+  ],
+  "initial_full_check_formatting": "The Windows rebase restored CRLF working-tree files. format -PformatAll normalized them; git diff showed no content changes. Final formatting/Javadoc gates were run separately.",
+  "runtime": "Eclipse Temurin 25.0.1+8; Windows amd64; full-test heap 4g; no test exclusions"
+}
