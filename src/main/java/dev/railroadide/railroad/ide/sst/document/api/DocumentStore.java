@@ -27,8 +27,8 @@ public interface DocumentStore {
      * After backing removal, its next publication must have a strictly newer version
      * than the highest previously published backing revision for that document ID.
      * An existing overlay and its base revision are retained, even if the new backing
-     * makes that overlay stale. Backing revisions created by commit and discard are
-     * included in the retained version history.
+     * makes that overlay stale. Backing revisions created by commit, discard, and
+     * save acknowledgement are included in the retained version history.
      * A backing snapshot that shares the current overlay's version must also share
      * its content. Different backing and overlay versions may contain different content.
      *
@@ -138,6 +138,66 @@ public interface DocumentStore {
         DocumentId id,
         DocumentVersion expectedBackingVersion,
         DocumentVersion expectedOverlayVersion
+    );
+
+    /**
+     * Commits an overlay using the exact snapshot persisted at a possibly new location.
+     * Performs the same backing, overlay, expected-version, and staleness validation as
+     * {@link #commitOverlay(DocumentId, DocumentVersion, DocumentVersion)}. The saved
+     * snapshot must match the overlay's document ID, version, and text or binary content;
+     * its URI and origin metadata may reflect the new location.
+     * <p>
+     * Atomically retains the supplied snapshot as backing, removes the overlay, updates
+     * backing-version history, and advances the workspace revision once. Rejection
+     * preserves all store state. The caller must persist this exact snapshot and finish
+     * identity rebinding before calling; this operation performs no filesystem I/O.
+     *
+     * @param id logical document identity
+     * @param expectedBackingVersion backing revision observed by the save operation
+     * @param expectedOverlayVersion overlay revision saved by the save operation
+     * @param savedSnapshot exact immutable snapshot successfully persisted by the caller
+     * @throws NullPointerException if either expected version or the saved snapshot is {@code null}
+     * @throws IllegalStateException if backing or overlay is absent, either expected
+     *             version differs, the overlay is stale, or its version is not strictly newer than backing
+     * @throws IllegalArgumentException if the saved document ID, version, or content differs from the overlay
+     */
+    void commitOverlay(
+        DocumentId id,
+        DocumentVersion expectedBackingVersion,
+        DocumentVersion expectedOverlayVersion,
+        DocumentSnapshot savedSnapshot
+    );
+
+    /**
+     * Records a successfully persisted revision while retaining newer unsaved edits.
+     * Both backing and overlay must exist, match the expected versions, and have a
+     * non-stale relationship. The saved snapshot must belong to this document and
+     * have a version strictly newer than backing and strictly older than the overlay.
+     * <p>
+     * Atomically replaces backing with the exact saved snapshot, retains the exact
+     * overlay snapshot, and advances its base to the saved version so it remains fresh.
+     * Updates backing-version history and advances the workspace revision once.
+     * Rejected acknowledgements leave all published state and revisions unchanged.
+     * <p>
+     * Call only after the exact saved snapshot has been successfully persisted.
+     * This operation performs no filesystem I/O and cannot verify persisted content
+     * or detect external filesystem changes; those checks belong to the caller.
+     *
+     * @param id logical document identity
+     * @param expectedBackingVersion backing revision expected when acknowledging the save
+     * @param expectedOverlayVersion current overlay revision expected when acknowledging the save
+     * @param savedSnapshot exact immutable snapshot successfully persisted by the caller
+     * @throws NullPointerException if either expected version or the saved snapshot is {@code null}
+     * @throws IllegalStateException if backing or overlay is absent, either expected
+     *             version differs, or the overlay is stale
+     * @throws IllegalArgumentException if the saved document ID differs, or its version
+     *             is not strictly between the backing and overlay versions
+     */
+    void acknowledgeSavedRevision(
+        DocumentId id,
+        DocumentVersion expectedBackingVersion,
+        DocumentVersion expectedOverlayVersion,
+        DocumentSnapshot savedSnapshot
     );
 
     /**

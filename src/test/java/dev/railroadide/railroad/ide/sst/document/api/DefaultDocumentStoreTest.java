@@ -14,6 +14,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -417,6 +418,217 @@ public class DefaultDocumentStoreTest {
         assertNull(state.overlay());
         assertNull(state.baseBackingVersion());
         assertFalse(state.isStale());
+    }
+
+    @Test
+    public void relocatedOverlayCommitRetainsExactSavedSnapshotAtNewLocation() {
+        var backing = snapshot(new DocumentVersion(5), "original backing");
+        var overlay = snapshot(new DocumentVersion(6), "edited content");
+        var newUri = DocumentUri.virtual("saved", "/New.java");
+        var saved = new TextDocumentSnapshot(id, newUri, overlay.version(), overlay.languageId(),
+            DocumentOrigin.original(newUri), overlay.text(), overlay.encoding());
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        var originalWorkspace = store.capture();
+
+        store.commitOverlay(id, backing.version(), overlay.version(), saved);
+
+        var state = store.state(id).orElseThrow();
+        assertSame(saved, state.backing());
+        assertNull(state.overlay());
+        assertNull(state.baseBackingVersion());
+        assertFalse(state.isStale());
+        assertSame(saved, store.current(id).orElseThrow());
+        assertSame(saved, store.capture().document(id).orElseThrow());
+        assertEquals(originalWorkspace.revision() + 1, store.capture().revision());
+        assertSame(overlay, originalWorkspace.document(id).orElseThrow());
+
+        store.removeBacking(id, saved.version());
+        assertThrows(IllegalArgumentException.class, () -> store.publishBacking(saved));
+    }
+
+    @Test
+    public void relocatedOverlayCommitRejectsMismatchedSavedSnapshotsWithoutChangingState() {
+        var backing = snapshot(new DocumentVersion(5), "original backing");
+        var overlay = snapshot(new DocumentVersion(6), "edited content");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        var originalState = store.state(id).orElseThrow();
+        var originalWorkspace = store.capture();
+
+        for (var saved : List.of(
+            snapshot(overlay.version(), "different content"),
+            snapshot(new DocumentVersion(5), overlay.text()),
+            snapshot(new DocumentVersion(7), overlay.text()),
+            snapshot(DocumentId.create(), overlay.version(), overlay.text()))) {
+            assertThrows(IllegalArgumentException.class,
+                () -> store.commitOverlay(id, backing.version(), overlay.version(), saved));
+            var state = store.state(id).orElseThrow();
+            assertEquals(originalState, state);
+            assertSame(backing, state.backing());
+            assertSame(overlay, state.overlay());
+            assertEquals(originalWorkspace, store.capture());
+        }
+    }
+
+    @Test
+    public void relocatedOverlayCommitRejectsStaleOverlayWithoutChangingState() {
+        var backing = snapshot(new DocumentVersion(5), "original backing");
+        var overlay = snapshot(new DocumentVersion(6), "edited content");
+        var updatedBacking = snapshot(new DocumentVersion(7), "external edits");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        store.publishBacking(updatedBacking);
+        var originalState = store.state(id).orElseThrow();
+        var originalWorkspace = store.capture();
+
+        assertThrows(IllegalStateException.class,
+            () -> store.commitOverlay(id, updatedBacking.version(), overlay.version(), overlay));
+
+        assertEquals(originalState, store.state(id).orElseThrow());
+        assertEquals(originalWorkspace, store.capture());
+    }
+
+    @Test
+    public void savingOlderRevisionRetainsNewerOverlayAndAdvancesItsBase() {
+        var backing = snapshot(new DocumentVersion(5), "original backing");
+        var savedRevision = snapshot(new DocumentVersion(6), "saved edits");
+        var newerOverlay = snapshot(new DocumentVersion(7), "newer unsaved edits");
+
+        store.publishBacking(backing);
+        store.publishOverlay(savedRevision);
+
+        // Further edits arrive while the save of v6 is in progress.
+        store.publishOverlay(newerOverlay);
+
+        var beforeAcknowledgement = store.capture();
+        store.acknowledgeSavedRevision(id, backing.version(), newerOverlay.version(), savedRevision);
+
+        var state = store.state(id).orElseThrow();
+        assertAll(
+            () -> assertSame(savedRevision, state.backing()),
+            () -> assertSame(newerOverlay, state.overlay()),
+            () -> assertSame(newerOverlay, store.current(id).orElseThrow()),
+            () -> assertSame(newerOverlay, store.capture().document(id).orElseThrow()),
+            () -> assertEquals(beforeAcknowledgement.revision() + 1, store.capture().revision()),
+            () -> assertEquals(savedRevision.version(), state.baseBackingVersion(),
+                "The retained overlay must be based on the revision that was successfully saved"),
+            () -> assertFalse(state.isStale(), "Saving an older edit must not make newer edits stale"));
+    }
+
+    @Test
+    public void savedAcknowledgementRejectsChangedBackingWithoutChangingState() {
+        var backing = snapshot(new DocumentVersion(5), "original backing");
+        var overlay = snapshot(new DocumentVersion(7), "unsaved edits");
+        var newerBacking = snapshot(new DocumentVersion(6), "external change");
+        var saved = snapshot(new DocumentVersion(6), "saved edits");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        store.publishBacking(newerBacking);
+        var originalState = store.state(id).orElseThrow();
+        var originalWorkspace = store.capture();
+        assertTrue(originalState.isStale());
+
+        var exception = assertThrows(IllegalStateException.class,
+            () -> store.acknowledgeSavedRevision(id, backing.version(), overlay.version(), saved));
+
+        assertEquals(
+            "Cannot acknowledge a saved revision for a document whose backing version has changed since acknowledgement was requested.",
+            exception.getMessage());
+        var state = store.state(id).orElseThrow();
+        assertEquals(originalState, state);
+        assertSame(newerBacking, state.backing());
+        assertSame(overlay, state.overlay());
+        assertEquals(backing.version(), state.baseBackingVersion());
+        assertTrue(state.isStale());
+        assertSame(overlay, store.current(id).orElseThrow());
+        assertSame(overlay, store.capture().document(id).orElseThrow());
+        assertEquals(originalWorkspace.revision(), store.capture().revision());
+        assertEquals(originalWorkspace, store.capture());
+    }
+
+    @Test
+    public void savedAcknowledgementRejectsChangedOverlayWithoutChangingState() {
+        var backing = snapshot(new DocumentVersion(5), "original backing");
+        var overlay = snapshot(new DocumentVersion(7), "unsaved edits");
+        var newerOverlay = snapshot(new DocumentVersion(8), "newer unsaved edits");
+        var saved = snapshot(new DocumentVersion(6), "saved edits");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        store.publishOverlay(newerOverlay);
+        var originalState = store.state(id).orElseThrow();
+        var originalWorkspace = store.capture();
+        assertFalse(originalState.isStale());
+
+        var exception = assertThrows(IllegalStateException.class,
+            () -> store.acknowledgeSavedRevision(id, backing.version(), overlay.version(), saved));
+
+        assertEquals(
+            "Cannot acknowledge a saved revision for a document whose overlay version has changed since acknowledgement was requested.",
+            exception.getMessage());
+        var state = store.state(id).orElseThrow();
+        assertEquals(originalState, state);
+        assertSame(backing, state.backing());
+        assertSame(newerOverlay, state.overlay());
+        assertEquals(backing.version(), state.baseBackingVersion());
+        assertFalse(state.isStale());
+        assertSame(newerOverlay, store.current(id).orElseThrow());
+        assertSame(newerOverlay, store.capture().document(id).orElseThrow());
+        assertEquals(originalWorkspace.revision(), store.capture().revision());
+        assertEquals(originalWorkspace, store.capture());
+    }
+
+    @Test
+    public void savedAcknowledgementRequiresVersionStrictlyBetweenBackingAndOverlay() {
+        var backing = snapshot(new DocumentVersion(5), "original backing");
+        var overlay = snapshot(new DocumentVersion(7), "newer unsaved edits");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        var originalState = store.state(id).orElseThrow();
+        var originalRevision = store.capture().revision();
+
+        for (long version : List.of(4L, 5L, 7L, 8L)) {
+            var saved = snapshot(new DocumentVersion(version), "saved edits");
+            assertThrows(IllegalArgumentException.class,
+                () -> store.acknowledgeSavedRevision(id, backing.version(), overlay.version(), saved));
+            assertEquals(originalState, store.state(id).orElseThrow());
+            assertEquals(originalRevision, store.capture().revision());
+        }
+    }
+
+    @Test
+    public void savedAcknowledgementRejectsDifferentDocumentIdentity() {
+        var backing = snapshot(new DocumentVersion(5), "original backing");
+        var overlay = snapshot(new DocumentVersion(7), "newer unsaved edits");
+        var saved = snapshot(DocumentId.create(), new DocumentVersion(6), "other document");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        var originalState = store.state(id).orElseThrow();
+        var originalRevision = store.capture().revision();
+
+        assertThrows(IllegalArgumentException.class,
+            () -> store.acknowledgeSavedRevision(id, backing.version(), overlay.version(), saved));
+
+        assertEquals(originalState, store.state(id).orElseThrow());
+        assertEquals(originalRevision, store.capture().revision());
+    }
+
+    @Test
+    public void acknowledgedSavedRevisionRemainsInBackingVersionHistory() {
+        var backing = snapshot(new DocumentVersion(5), "original backing");
+        var saved = snapshot(new DocumentVersion(6), "saved edits");
+        var overlay = snapshot(new DocumentVersion(7), "newer unsaved edits");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        store.acknowledgeSavedRevision(id, backing.version(), overlay.version(), saved);
+        store.removeBacking(id, saved.version());
+        var originalState = store.state(id).orElseThrow();
+        var originalRevision = store.capture().revision();
+
+        assertThrows(IllegalArgumentException.class, () -> store.publishBacking(saved));
+
+        assertEquals(originalState, store.state(id).orElseThrow());
+        assertEquals(originalRevision, store.capture().revision());
     }
 
     @Test

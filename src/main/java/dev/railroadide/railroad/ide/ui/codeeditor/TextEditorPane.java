@@ -3,6 +3,8 @@ package dev.railroadide.railroad.ide.ui.codeeditor;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentOrigin;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentState;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentStore;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
@@ -80,8 +82,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     private final EditorGutter gutter;
 
     private final AtomicReference<String> lastSavedText = new AtomicReference<>("");
-    private final AtomicReference<String> pendingSnapshot = new AtomicReference<>("");
-    private final AtomicLong pendingSnapshotVersion = new AtomicLong();
+    private final AtomicReference<TextDocumentSnapshot> pendingSnapshot = new AtomicReference<>();
 
     private final ExecutorService watcherExecutor = Executors.newSingleThreadExecutor(
         namedThreadFactory("railroad-editor-watch-"));
@@ -101,6 +102,8 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     private final ReadOnlyBooleanWrapper saveFailed = new ReadOnlyBooleanWrapper(this, "saveFailed");
     private final AtomicLong editVersion = new AtomicLong();
     private final DocumentId documentId;
+    private final boolean initialContentLoaded;
+    private volatile DocumentStore documentStore;
     private final AtomicLong savedVersion = new AtomicLong();
     private volatile boolean backingFileMissing;
     private volatile boolean discardChangesOnClose;
@@ -170,7 +173,8 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         gutter = new EditorGutter(this);
         setMouseOverTextDelay(Duration.ofMillis(500));
 
-        loadInitialContent();
+        initialContentLoaded = loadInitialContent();
+        pendingSnapshot.set(captureSnapshot());
         configureFontControls();
         configureTabBehaviour();
         subscribeToChanges();
@@ -185,16 +189,39 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     }
 
     /**
-     * Captures the current editor content and location for background language features.
+     * Captures the current editor content and location for document publication and language features.
      * Call on the JavaFX thread; the returned snapshot remains readable after subsequent edits.
      * Every capture retains the document identity supplied at construction.
      *
      * @return immutable text revision with this editor's stable identity and current edit version
      */
-    protected final TextDocumentSnapshot captureSnapshot() {
+    public final TextDocumentSnapshot captureSnapshot() {
         DocumentUri uri = DocumentUri.fromPath(filePath);
         return new TextDocumentSnapshot(documentId, uri, new DocumentVersion(editVersion.get()), languageId,
             DocumentOrigin.original(uri), getText(), StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Reports whether construction successfully read the initial text from the file.
+     * Missing or unreadable files use empty fallback text, which must not be published
+     * as backing content. Later edits and reloads do not change this initial-load result.
+     *
+     * @return true if the initial file read succeeded, including an empty file
+     */
+    public final boolean isInitialContentLoaded() {
+        return initialContentLoaded;
+    }
+
+    /**
+     * Associates this editor with the store that already contains its initial backing
+     * snapshot. Subsequent text changes publish immutable overlays to this store.
+     * Call on the JavaFX thread after successful backing publication.
+     *
+     * @param documentStore project store that owns this document's backing snapshot
+     * @throws NullPointerException if the store is {@code null}
+     */
+    public final void setDocumentStore(DocumentStore documentStore) {
+        this.documentStore = Objects.requireNonNull(documentStore, "documentStore");
     }
 
     @Override
@@ -211,9 +238,8 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             }
 
             if (!discardChangesOnClose) {
-                // Capture the editor directly as pendingSnapshot may still be behind the
-                // multiPlainChanges debounce.
-                persistSnapshot(getText(), editVersion.get());
+                // Every edit updates the immutable pending snapshot before the autosave debounce.
+                persistSnapshot(pendingSnapshot.get());
             }
         }
 
@@ -256,12 +282,14 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         };
     }
 
-    private void loadInitialContent() {
+    private boolean loadInitialContent() {
+        boolean loaded = false;
         try {
             if (Files.exists(filePath)) {
                 String content = Files.readString(filePath);
                 replaceText(content);
                 lastSavedText.set(content);
+                loaded = true;
             } else {
                 replaceText("");
                 lastSavedText.set("");
@@ -274,6 +302,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             lastSavedText.set("");
             setSaveState(EditorSaveState.CLEAN);
         }
+        return loaded;
     }
 
     private void configureFontControls() {
@@ -419,25 +448,28 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         dirtySubscription = plainTextChanges().subscribe(_ -> {
             discardChangesOnClose = false;
             editVersion.incrementAndGet();
+            TextDocumentSnapshot snapshot = captureSnapshot();
+            pendingSnapshot.set(snapshot);
+            if (documentStore != null) {
+                documentStore.publishOverlay(snapshot);
+            }
             setSaveState(EditorSaveState.DIRTY);
         });
         changeSubscription = multiPlainChanges()
             .successionEnds(CHANGE_DEBOUNCE)
             .subscribe(changes -> {
-                String snapshot = getText();
-                pendingSnapshot.set(snapshot);
-                pendingSnapshotVersion.set(editVersion.get());
+                TextDocumentSnapshot snapshot = pendingSnapshot.get();
 
                 List<DocumentModifiedEvent.Change> diff = changes.stream()
-                    .map(change -> buildChange(snapshot, change))
+                    .map(change -> buildChange(snapshot.text(), change))
                     .toList();
                 publishFileModifiedEvent(diff);
 
-                scheduleSave();
+                scheduleSave(snapshot);
             });
     }
 
-    private void scheduleSave() {
+    private void scheduleSave(TextDocumentSnapshot snapshot) {
         synchronized (saveLock) {
             if (closed)
                 return;
@@ -451,14 +483,20 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                     if (closed)
                         return;
 
-                    persistSnapshot(pendingSnapshot.get(), pendingSnapshotVersion.get());
+                    persistSnapshot(snapshot);
                 }
             }, SAVE_DELAY.toMillis(), TimeUnit.MILLISECONDS);
         }
     }
 
-    private boolean persistSnapshot(String snapshot, long snapshotVersion) {
-        if (snapshot == null)
+    private boolean persistSnapshot(TextDocumentSnapshot savedSnapshot) {
+        if (savedSnapshot == null)
+            return true;
+
+        String snapshot = savedSnapshot.text();
+        long snapshotVersion = savedSnapshot.version().value();
+        // A cancelled task can already be waiting for saveLock behind a newer manual save.
+        if (snapshotVersion < savedVersion.get())
             return true;
 
         if (pendingExternalText != null)
@@ -492,6 +530,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         String lastSaved = lastSavedText.get();
         if (snapshot.equals(lastSaved)) {
             savedVersion.set(snapshotVersion);
+            acknowledgeSavedSnapshot(savedSnapshot);
             updateAfterSave(snapshotVersion, EditorSaveState.CLEAN);
             return true;
         }
@@ -506,6 +545,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             Files.writeString(filePath, snapshot, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             lastSavedText.set(snapshot);
             savedVersion.set(snapshotVersion);
+            acknowledgeSavedSnapshot(savedSnapshot);
             updateAfterSave(snapshotVersion, EditorSaveState.CLEAN);
             Railroad.EVENT_BUS.publish(new DocumentEvent(document(), DocumentEvent.EventType.SAVED));
             return true;
@@ -513,6 +553,36 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             updateAfterSave(snapshotVersion, EditorSaveState.ERROR);
             Railroad.LOGGER.error("Failed to write file {}", filePath, exception);
             return false;
+        }
+    }
+
+    private void acknowledgeSavedSnapshot(TextDocumentSnapshot savedSnapshot) {
+        DocumentStore store = documentStore;
+        if (store == null)
+            return;
+
+        for (int attempt = 0; attempt < 3; attempt++) {
+            DocumentState state = store.state(savedSnapshot.id()).orElse(null);
+            if (state == null || state.backing() == null || state.isStale()
+                || !(state.overlay() instanceof TextDocumentSnapshot overlay)
+                || !savedSnapshot.version().isAfter(state.backing().version()))
+                return;
+
+            try {
+                if (overlay.version().equals(savedSnapshot.version())) {
+                    if (!overlay.text().equals(savedSnapshot.text()))
+                        return;
+
+                    store.commitOverlay(savedSnapshot.id(), state.backing().version(), overlay.version());
+                } else if (overlay.version().isAfter(savedSnapshot.version())) {
+                    store.acknowledgeSavedRevision(savedSnapshot.id(), state.backing().version(), overlay.version(),
+                        savedSnapshot);
+                }
+                return;
+            } catch (IllegalStateException exception) {
+                Railroad.LOGGER.debug("Retrying save acknowledgement for {} because the document state changed",
+                    savedSnapshot.id(), exception);
+            }
         }
     }
 
@@ -531,11 +601,9 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 pendingSaveTask = null;
             }
 
-            String snapshot = getText();
-            long snapshotVersion = editVersion.get();
+            TextDocumentSnapshot snapshot = captureSnapshot();
             pendingSnapshot.set(snapshot);
-            pendingSnapshotVersion.set(snapshotVersion);
-            return persistSnapshot(snapshot, snapshotVersion);
+            return persistSnapshot(snapshot);
         }
     }
 
@@ -546,6 +614,25 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
      * @return true when the save succeeds and the backing path is updated
      */
     public boolean saveAs(Path newPath) {
+        return saveAs(newPath, () -> {
+        });
+    }
+
+    /**
+     * Writes the current contents to a new path, then lets the owner rebind its identity
+     * before changing the editor's location or announcing the save. A failing callback
+     * leaves the editor's previous location and saved baseline intact. The written
+     * destination is retained; filesystem writes are not rolled back.
+     * Call on the JavaFX thread. When the path is unchanged, this performs an ordinary
+     * save without calling the rebinding callback.
+     *
+     * @param newPath destination file
+     * @param rebindIdentity owner callback run after the write and before the editor switches paths
+     * @return true when writing, rebinding, and updating the editor succeed
+     * @throws NullPointerException if either argument is {@code null}
+     */
+    public boolean saveAs(Path newPath, Runnable rebindIdentity) {
+        Objects.requireNonNull(rebindIdentity, "rebindIdentity");
         Path normalizedPath = Objects.requireNonNull(newPath, "New path cannot be null")
             .toAbsolutePath()
             .normalize();
@@ -575,6 +662,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                     StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING);
 
+                rebindIdentity.run();
                 filePath = normalizedPath;
                 JavaFXUtils.runOnApplicationThread(gutter::refresh);
                 pendingExternalText = null;
@@ -582,8 +670,9 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 backingFileMissing = false;
                 discardChangesOnClose = false;
                 lastSavedText.set(snapshot);
-                pendingSnapshot.set(snapshot);
-                pendingSnapshotVersion.set(snapshotVersion);
+                DocumentUri uri = DocumentUri.fromPath(filePath);
+                pendingSnapshot.set(new TextDocumentSnapshot(documentId, uri, new DocumentVersion(snapshotVersion),
+                    languageId, DocumentOrigin.original(uri), snapshot, StandardCharsets.UTF_8));
                 savedVersion.set(snapshotVersion);
                 updateAfterSave(snapshotVersion, EditorSaveState.CLEAN);
                 restartExternalWatcher();
@@ -772,11 +861,11 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 savedVersion.set(editVersion.get());
             }
             setSaveState(contentDirty ? EditorSaveState.DIRTY : EditorSaveState.CLEAN);
-            pendingSnapshot.set(currentText);
-            pendingSnapshotVersion.set(editVersion.get());
+            TextDocumentSnapshot snapshot = captureSnapshot();
+            pendingSnapshot.set(snapshot);
             restartExternalWatcher();
             if (contentDirty) {
-                scheduleSave();
+                scheduleSave(snapshot);
             }
         }
     }
@@ -796,8 +885,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 editVersion.incrementAndGet();
             }
             setSaveState(EditorSaveState.ERROR);
-            pendingSnapshot.set(getText());
-            pendingSnapshotVersion.set(editVersion.get());
+            pendingSnapshot.set(captureSnapshot());
             if (pendingSaveTask != null) {
                 pendingSaveTask.cancel(false);
                 pendingSaveTask = null;
@@ -992,8 +1080,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             moveTo(Math.min(caret, getLength()));
         }
         lastSavedText.set(disk);
-        pendingSnapshot.set(disk);
-        pendingSnapshotVersion.set(editVersion.get());
+        pendingSnapshot.set(captureSnapshot());
         pendingExternalText = null;
         backingFileMissing = false;
         markCurrentVersionSaved();

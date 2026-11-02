@@ -18,15 +18,10 @@ import java.util.Optional;
  * and the retained immutable configuration, without referencing this mutable store.
  */
 public final class DefaultDocumentStore implements DocumentStore {
-    /** Project identity shared by every workspace capture. */
     private final String projectId;
-    /** Active backing and overlay snapshots, guarded by the instance lock. */
     private final Map<DocumentId, Entry> entries = new HashMap<>();
-    /** Highest backing versions, including commit/discard revisions, retained after deletion. */
     private final Map<DocumentId, DocumentVersion> lastBackingVersions = new HashMap<>();
-    /** Published immutable configuration, guarded by the instance lock. */
     private WorkspaceConfigurationSnapshot configuration;
-    /** Store-state revision, independent of document and configuration revisions. */
     private long workspaceRevision;
 
     /**
@@ -46,7 +41,6 @@ public final class DefaultDocumentStore implements DocumentStore {
             throw new IllegalArgumentException("Project ID cannot be blank");
     }
 
-    /** {@inheritDoc} */
     @Synchronized
     @Override
     public void publishBacking(DocumentSnapshot snapshot) {
@@ -89,7 +83,6 @@ public final class DefaultDocumentStore implements DocumentStore {
         workspaceRevision++;
     }
 
-    /** {@inheritDoc} */
     @Synchronized
     @Override
     public void removeBacking(DocumentId id, DocumentVersion expectedBackingVersion) {
@@ -115,7 +108,6 @@ public final class DefaultDocumentStore implements DocumentStore {
         workspaceRevision++;
     }
 
-    /** {@inheritDoc} */
     @Synchronized
     @Override
     public void publishOverlay(DocumentSnapshot snapshot) {
@@ -161,7 +153,6 @@ public final class DefaultDocumentStore implements DocumentStore {
         workspaceRevision++;
     }
 
-    /** {@inheritDoc} */
     @Synchronized
     @Override
     public Optional<DocumentSnapshot> current(DocumentId id) {
@@ -180,7 +171,6 @@ public final class DefaultDocumentStore implements DocumentStore {
         return Optional.empty();
     }
 
-    /** {@inheritDoc} */
     @Synchronized
     @Override
     public Optional<DocumentState> state(DocumentId id) {
@@ -195,7 +185,6 @@ public final class DefaultDocumentStore implements DocumentStore {
             overlay != null ? overlay.baseBackingVersion() : null));
     }
 
-    /** {@inheritDoc} */
     @Synchronized
     @Override
     public void reconcileOverlay(
@@ -244,10 +233,41 @@ public final class DefaultDocumentStore implements DocumentStore {
         workspaceRevision++;
     }
 
-    /** {@inheritDoc} */
     @Synchronized
     @Override
     public void commitOverlay(
+        DocumentId id,
+        DocumentVersion expectedBackingVersion,
+        DocumentVersion expectedOverlayVersion
+    ) {
+        DocumentSnapshot overlay = validateOverlayCommit(id, expectedBackingVersion, expectedOverlayVersion);
+        replaceCommittedBacking(id, overlay);
+    }
+
+    @Synchronized
+    @Override
+    public void commitOverlay(
+        DocumentId id,
+        DocumentVersion expectedBackingVersion,
+        DocumentVersion expectedOverlayVersion,
+        DocumentSnapshot savedSnapshot
+    ) {
+        Objects.requireNonNull(savedSnapshot, "savedSnapshot");
+        DocumentSnapshot overlay = validateOverlayCommit(id, expectedBackingVersion, expectedOverlayVersion);
+        if (!savedSnapshot.id().equals(id))
+            throw new IllegalArgumentException(
+                "Saved snapshot must have the same document ID as the committed overlay.");
+
+        if (!savedSnapshot.version().equals(overlay.version()))
+            throw new IllegalArgumentException("Saved snapshot must have the same version as the committed overlay.");
+
+        if (!hasSameContent(overlay, savedSnapshot))
+            throw new IllegalArgumentException("Saved snapshot must have the same content as the committed overlay.");
+
+        replaceCommittedBacking(id, savedSnapshot);
+    }
+
+    private DocumentSnapshot validateOverlayCommit(
         DocumentId id,
         DocumentVersion expectedBackingVersion,
         DocumentVersion expectedOverlayVersion
@@ -281,12 +301,67 @@ public final class DefaultDocumentStore implements DocumentStore {
         if (!overlay.snapshot().version().isAfter(backing.version()))
             throw new IllegalStateException("Committed overlay must have a newer version than its backing.");
 
-        entries.put(id, new Entry(overlay.snapshot(), null));
-        lastBackingVersions.put(id, overlay.snapshot().version());
+        return overlay.snapshot();
+    }
+
+    private void replaceCommittedBacking(DocumentId id, DocumentSnapshot savedSnapshot) {
+        entries.put(id, new Entry(savedSnapshot, null));
+        lastBackingVersions.put(id, savedSnapshot.version());
         workspaceRevision++;
     }
 
-    /** {@inheritDoc} */
+    @Synchronized
+    @Override
+    public void acknowledgeSavedRevision(
+        DocumentId id,
+        DocumentVersion expectedBackingVersion,
+        DocumentVersion expectedOverlayVersion,
+        DocumentSnapshot savedSnapshot
+    ) {
+        Entry entry = entries.get(id);
+        if (entry == null)
+            throw new IllegalStateException(
+                "Cannot acknowledge a saved revision for a document with no published snapshots.");
+
+        DocumentSnapshot backing = entry.backing();
+        if (backing == null)
+            throw new IllegalStateException(
+                "Cannot acknowledge a saved revision for a document with no published backing.");
+
+        OverlayState overlay = entry.overlay();
+        if (overlay == null)
+            throw new IllegalStateException(
+                "Cannot acknowledge a saved revision for a document with no published overlay.");
+
+        Objects.requireNonNull(expectedBackingVersion, "expectedBackingVersion");
+        Objects.requireNonNull(expectedOverlayVersion, "expectedOverlayVersion");
+        Objects.requireNonNull(savedSnapshot, "savedSnapshot");
+
+        if (!backing.version().equals(expectedBackingVersion))
+            throw new IllegalStateException(
+                "Cannot acknowledge a saved revision for a document whose backing version has changed since acknowledgement was requested.");
+
+        if (!overlay.snapshot().version().equals(expectedOverlayVersion))
+            throw new IllegalStateException(
+                "Cannot acknowledge a saved revision for a document whose overlay version has changed since acknowledgement was requested.");
+
+        if (!backing.version().equals(overlay.baseBackingVersion()))
+            throw new IllegalStateException("Cannot acknowledge a saved revision for a stale overlay.");
+
+        if (!savedSnapshot.id().equals(id))
+            throw new IllegalArgumentException(
+                "Saved snapshot must have the same document ID as the document being acknowledged.");
+
+        if (!savedSnapshot.version().isAfter(backing.version())
+            || !savedSnapshot.version().isBefore(overlay.snapshot().version()))
+            throw new IllegalArgumentException(
+                "Saved snapshot version must be strictly between the backing and overlay versions.");
+
+        entries.put(id, new Entry(savedSnapshot, new OverlayState(overlay.snapshot(), savedSnapshot.version())));
+        lastBackingVersions.put(id, savedSnapshot.version());
+        workspaceRevision++;
+    }
+
     @Synchronized
     @Override
     public void removeUnchangedOverlay(
@@ -331,7 +406,6 @@ public final class DefaultDocumentStore implements DocumentStore {
         workspaceRevision++;
     }
 
-    /** {@inheritDoc} */
     @Synchronized
     @Override
     public void discardOverlay(
@@ -392,7 +466,6 @@ public final class DefaultDocumentStore implements DocumentStore {
         workspaceRevision++;
     }
 
-    /** {@inheritDoc} */
     @Synchronized
     @Override
     public WorkspaceSnapshot capture() {
@@ -412,7 +485,6 @@ public final class DefaultDocumentStore implements DocumentStore {
         return new WorkspaceSnapshot(projectId, capturedDocuments, configuration, workspaceRevision);
     }
 
-    /** {@inheritDoc} */
     @Synchronized
     @Override
     public void publishConfiguration(WorkspaceConfigurationSnapshot configuration) {
@@ -433,14 +505,6 @@ public final class DefaultDocumentStore implements DocumentStore {
         workspaceRevision++;
     }
 
-    /**
-     * Compares text characters or complete binary bytes without comparing metadata.
-     * Text and binary snapshots never have the same content representation.
-     *
-     * @param backing existing snapshot to compare
-     * @param restoredBacking candidate snapshot to compare
-     * @return whether both snapshots have the same representation and content
-     */
     private static boolean hasSameContent(DocumentSnapshot backing, DocumentSnapshot restoredBacking) {
         return switch (backing) {
             case TextDocumentSnapshot text -> restoredBacking instanceof TextDocumentSnapshot restoredText
@@ -450,25 +514,12 @@ public final class DefaultDocumentStore implements DocumentStore {
         };
     }
 
-    /**
-     * Published state of an active document; at least one snapshot is present.
-     *
-     * @param backing current backing snapshot, or {@code null} if absent
-     * @param overlay current overlay state, or {@code null} if absent
-     */
     private record Entry(
         DocumentSnapshot backing,
         OverlayState overlay
     ) {
     }
 
-    /**
-     * Immutable overlay snapshot and the backing revision on which it is based.
-     *
-     * @param snapshot published editor snapshot
-     * @param baseBackingVersion backing revision at creation or reconciliation, or
-     *            {@code null} if the overlay was created without backing
-     */
     private record OverlayState(
         DocumentSnapshot snapshot,
         DocumentVersion baseBackingVersion

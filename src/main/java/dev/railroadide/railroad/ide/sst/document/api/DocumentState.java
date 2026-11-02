@@ -2,15 +2,15 @@ package dev.railroadide.railroad.ide.sst.document.api;
 
 /**
  * Immutable view of a document's published snapshots and the backing revision on
- * which its overlay was created or last explicitly reconciled. Further overlay edits
- * retain that base revision.
+ * which its overlay was created, last explicitly reconciled, or advanced by acknowledging
+ * a saved revision. Further overlay edits retain that base revision.
  * Removing backing preserves the overlay and its base. This value retains its
  * snapshots and does not observe later changes to the store.
  *
  * @param backing backing snapshot, or {@code null} if absent or removed
  * @param overlay overlay snapshot, or {@code null} if none has been published
- * @param baseBackingVersion backing revision captured when the overlay was created
- *            or last explicitly reconciled; retained after backing removal and
+ * @param baseBackingVersion backing revision captured when the overlay was created,
+ *            last explicitly reconciled, or advanced by save acknowledgement; retained after backing removal and
  *            {@code null} if no overlay exists or it was created without backing
  */
 public record DocumentState(DocumentSnapshot backing, DocumentSnapshot overlay, DocumentVersion baseBackingVersion) {
