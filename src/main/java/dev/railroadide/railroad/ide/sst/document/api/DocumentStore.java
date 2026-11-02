@@ -21,6 +21,40 @@ import java.util.Optional;
  */
 public interface DocumentStore {
     /**
+     * Returns the highest backing revision retained even after backing removal.
+     *
+     * @param id logical document identity
+     * @return last backing version, or empty for a never-published document
+     */
+    Optional<DocumentVersion> lastBackingVersion(DocumentId id);
+
+    /**
+     * Returns the highest content revision observed, including overlays removed during closure.
+     *
+     * @param id logical document identity
+     * @return highest published version, or empty for a new document
+     */
+    Optional<DocumentVersion> latestVersion(DocumentId id);
+
+    /**
+     * Removes an overlay, including a stale overlay or one without backing. Backing is retained.
+     *
+     * @param id logical document identity
+     * @param expectedOverlayVersion overlay observed by the owner
+     * @throws IllegalStateException if the overlay is absent or has changed
+     */
+    void removeOverlay(DocumentId id, DocumentVersion expectedOverlayVersion);
+
+    /**
+     * Updates both published locations atomically without changing content versions or the overlay base.
+     * An absent document or an unchanged location is a no-op.
+     *
+     * @param id logical document identity
+     * @param uri new document location
+     */
+    void relocate(DocumentId id, DocumentUri uri);
+
+    /**
      * Publishes backing content. Reusing its current version requires identical text
      * or binary content, while metadata may change. Republishing the same snapshot
      * instance is a no-op.

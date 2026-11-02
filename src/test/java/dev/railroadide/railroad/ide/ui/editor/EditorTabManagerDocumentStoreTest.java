@@ -6,17 +6,20 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentOrigin;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentState;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentStore;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.event.EventListener;
 import dev.railroadide.railroad.plugin.spi.events.DocumentModifiedEvent;
+import dev.railroadide.railroad.plugin.spi.events.DocumentRenamedEvent;
 import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
 import dev.railroadide.railroad.project.RailroadProject;
 import javafx.application.Platform;
@@ -45,6 +48,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import javafx.scene.control.TabPane;
+import java.lang.reflect.Method;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -118,6 +123,338 @@ public class EditorTabManagerDocumentStoreTest {
             assertNull(store.state(tab.documentId()).orElseThrow().overlay());
             assertSame(backing, store.capture().document(tab.documentId()).orElseThrow());
             assertEquals(1, store.capture().revision());
+            return null;
+        });
+    }
+
+    @Test
+    public void autosavedDocumentClosesAndReopensWithoutAbandonedOverlay() throws Exception {
+        Path file = tempDirectory.resolve("Autosave.java");
+        String editedText = "class Autosave { int value; }";
+        Files.writeString(file, "class Autosave {}");
+        CompletableFuture<TextDocumentSnapshot> committed = new CompletableFuture<>();
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            TextEditorPane editor = tab.view().activeEditor();
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            editor.setDocumentStore((DocumentStore) Proxy.newProxyInstance(DocumentStore.class.getClassLoader(),
+                new Class<?>[]{DocumentStore.class}, (proxy, method, args) -> {
+                    try {
+                        Object result = method.invoke(store, args);
+                        if (method.getName().equals("commitOverlay")) {
+                            committed
+                                .complete((TextDocumentSnapshot) store.state(tab.documentId()).orElseThrow().backing());
+                        }
+                        return result;
+                    } catch (InvocationTargetException exception) {
+                        throw exception.getCause();
+                    }
+                }));
+            editor.replaceText(editedText);
+            return null;
+        });
+        TextDocumentSnapshot saved = committed.get(10, TimeUnit.SECONDS);
+        onFxThread(() -> {
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            DocumentId id = tab.documentId();
+            closeManagedTab(false);
+            assertSame(saved, store.current(id).orElseThrow());
+            assertNull(store.state(id).orElseThrow().overlay());
+            WorkspaceSnapshot closed = store.capture();
+            tab = openInTabPane(file);
+            assertEquals(id, tab.documentId());
+            assertEquals(saved.version(), tab.view().activeEditor().captureSnapshot().version());
+            assertEquals(editedText, tab.view().activeEditor().getText());
+            assertEquals(closed, store.capture());
+            assertEquals(editedText, Files.readString(file));
+            return null;
+        });
+    }
+
+    @Test
+    public void discardingOnCloseRemovesOverlayAndRetainsBacking() throws Exception {
+        Path file = tempDirectory.resolve("Discard.java");
+        Files.writeString(file, "class Discard {}");
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            TextEditorPane editor = tab.view().activeEditor();
+            disableDebouncedAutosave(editor);
+            DocumentId id = tab.documentId();
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            TextDocumentSnapshot backing = (TextDocumentSnapshot) store.current(id).orElseThrow();
+            editor.replaceText("class Discard { int unsaved; }");
+            DocumentVersion discardedVersion = editor.captureSnapshot().version();
+            closeManagedTab(true);
+            assertSame(backing, store.current(id).orElseThrow());
+            assertNull(store.state(id).orElseThrow().overlay());
+            assertEquals(backing.text(), Files.readString(file));
+            tab = openInTabPane(file);
+            assertEquals(backing.text(), tab.view().activeEditor().getText());
+            tab.view().activeEditor().replaceText("class Discard { int fresh; }");
+            assertTrue(store.state(id).orElseThrow().overlay().version().isAfter(discardedVersion));
+            return null;
+        });
+    }
+
+    @Test
+    public void discardingStaleOverlayOnCloseRetainsExternalBacking() throws Exception {
+        Path file = tempDirectory.resolve("Stale.java");
+        Files.writeString(file, "class Stale {}");
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            TextEditorPane editor = tab.view().activeEditor();
+            disableDebouncedAutosave(editor);
+            DocumentId id = tab.documentId();
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            editor.replaceText("class Stale { int unsaved; }");
+            var external = new TextDocumentSnapshot(id, DocumentUri.fromPath(file),
+                editor.captureSnapshot().version().next(), "java", DocumentOrigin.original(DocumentUri.fromPath(file)),
+                "class Stale { int external; }", StandardCharsets.UTF_8);
+            Files.writeString(file, external.text());
+            store.publishBacking(external);
+            assertTrue(store.state(id).orElseThrow().isStale());
+            closeManagedTab(true);
+            assertSame(external, store.current(id).orElseThrow());
+            assertNull(store.state(id).orElseThrow().overlay());
+            assertEquals(external.text(), Files.readString(file));
+            return null;
+        });
+    }
+
+    @Test
+    public void deletedDocumentCanBeDiscardedRecreatedAndReopened() throws Exception {
+        Path file = tempDirectory.resolve("Recreated.java");
+        Files.writeString(file, "class Recreated {}");
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            TextEditorPane editor = tab.view().activeEditor();
+            DocumentId id = tab.documentId();
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            DocumentVersion oldVersion = store.current(id).orElseThrow().version();
+            Files.delete(file);
+            editor.markBackingFileDeleted();
+            DocumentVersion deletedVersion = store.current(id).orElseThrow().version();
+            closeManagedTab(true);
+            assertTrue(store.state(id).isEmpty());
+            assertEquals(oldVersion, store.lastBackingVersion(id).orElseThrow());
+            Files.writeString(file, "class Recreated { int fresh; }");
+            tab = openInTabPane(file);
+            assertEquals(id, tab.documentId());
+            TextDocumentSnapshot backing = (TextDocumentSnapshot) store.current(id).orElseThrow();
+            assertEquals(deletedVersion.next(), backing.version());
+            assertEquals("class Recreated { int fresh; }", backing.text());
+            assertNull(store.state(id).orElseThrow().overlay());
+            tab.view().activeEditor().replaceText("class Recreated { int edited; }");
+            assertTrue(store.state(id).orElseThrow().overlay().version().isAfter(backing.version()));
+            return null;
+        });
+    }
+
+    @Test
+    public void movingDirtyDocumentRelocatesBothSnapshotsBeforeSaving() throws Exception {
+        Path file = tempDirectory.resolve("Move.java");
+        Path destination = Files.createDirectories(tempDirectory.resolve("moved")).resolve("Moved.java");
+        Files.writeString(file, "class Move {}");
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            TextEditorPane editor = tab.view().activeEditor();
+            disableDebouncedAutosave(editor);
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            DocumentId id = tab.documentId();
+            editor.replaceText("class Move { int unsaved; }");
+            DocumentState before = store.state(id).orElseThrow();
+            Files.move(file, destination);
+            Railroad.EVENT_BUS.publish(new DocumentRenamedEvent(new FileSystemDocument(destination, "java"),
+                file.getFileName().toString(), destination.getFileName().toString(), DocumentUri.fromPath(file)));
+            DocumentState moved = store.state(id).orElseThrow();
+            assertEquals(DocumentUri.fromPath(destination), moved.backing().uri());
+            assertEquals(DocumentUri.fromPath(destination), moved.overlay().uri());
+            assertEquals(before.backing().version(), moved.backing().version());
+            assertEquals(before.overlay().version(), moved.overlay().version());
+            assertEquals(before.baseBackingVersion(), moved.baseBackingVersion());
+            editor.replaceText("class Move { int next; }");
+            assertTrue(editor.saveNow());
+            assertEquals("class Move { int next; }", Files.readString(destination));
+            assertNull(store.state(id).orElseThrow().overlay());
+            assertEquals(DocumentUri.fromPath(destination), store.current(id).orElseThrow().uri());
+            return null;
+        });
+    }
+
+    private void closeManagedTab(boolean discard) {
+        EditorTab closing = tab;
+        TextEditorPane editor = closing.view().activeEditor();
+        TabPane pane = closing.tab().getTabPane();
+        if (discard) {
+            Services.EDITOR_TAB_MANAGER.discardUnsavedChangesOnClose();
+        }
+        Services.EDITOR_TAB_MANAGER.close(closing);
+        assertTrue(editor.isEditorClosed());
+        assertFalse(pane.getTabs().contains(closing.tab()));
+        tab = null;
+    }
+
+    @Test
+    public void saveAsAfterExternalChangeReconcilesBeforePromotingLocalContent() throws Exception {
+        Path file = tempDirectory.resolve("Conflict.java");
+        Path target = tempDirectory.resolve("Kept.java");
+        Files.writeString(file, "class Conflict {}");
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            TextEditorPane editor = tab.view().activeEditor();
+            disableDebouncedAutosave(editor);
+            editor.replaceText("class Conflict { int local; }");
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            DocumentId id = tab.documentId();
+            var external = new TextDocumentSnapshot(id, DocumentUri.fromPath(file),
+                editor.captureSnapshot().version().next(), "java", "class Conflict { int external; }",
+                StandardCharsets.UTF_8);
+            Files.writeString(file, external.text());
+            store.publishBacking(external);
+            assertTrue(Services.EDITOR_TAB_MANAGER.saveAsActive(target));
+            DocumentState saved = store.state(id).orElseThrow();
+            assertNull(saved.overlay());
+            assertEquals("class Conflict { int local; }", ((TextDocumentSnapshot) saved.backing()).text());
+            assertTrue(saved.backing().version().isAfter(external.version()));
+            assertEquals(DocumentUri.fromPath(target), saved.backing().uri());
+            editor.replaceText("class Conflict { int later; }");
+            assertTrue(editor.saveNow());
+            assertEquals("class Conflict { int later; }", Files.readString(target));
+            assertNull(store.state(id).orElseThrow().overlay());
+            assertEquals(external.text(), Files.readString(file));
+            return null;
+        });
+    }
+
+    @Test
+    public void failedCloseRetainsUnsavedOverlayUntilExplicitDiscard() throws Exception {
+        Path file = tempDirectory.resolve("Unsaved.java");
+        Files.writeString(file, "class Unsaved {}");
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            TextEditorPane editor = tab.view().activeEditor();
+            disableDebouncedAutosave(editor);
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            DocumentId id = tab.documentId();
+            editor.replaceText("class Unsaved { int local; }");
+            Files.delete(file);
+            editor.markBackingFileDeleted();
+            WorkspaceSnapshot before = store.capture();
+            editor.close();
+            assertFalse(editor.isEditorClosed());
+            assertEquals(before, store.capture());
+            assertEquals("class Unsaved { int local; }", editor.getText());
+            assertSame(before.document(id).orElseThrow(), store.current(id).orElseThrow());
+            closeManagedTab(true);
+            assertTrue(store.state(id).isEmpty());
+            return null;
+        });
+    }
+
+    @Test
+    public void reopeningRetainedDraftRestoresEditorAndStoreToSameContent() throws Exception {
+        Path file = tempDirectory.resolve("Recovered.java");
+        Files.writeString(file, "class Recovered {}");
+        onFxThread(() -> {
+            DocumentId id = Services.IDE_STATE.identifyDocument(new FileSystemDocument(file, "java")).id();
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            DocumentUri uri = DocumentUri.fromPath(file);
+            var backing = new TextDocumentSnapshot(id, uri, new DocumentVersion(4), "java",
+                "class Recovered {}", StandardCharsets.UTF_8);
+            var draft = new TextDocumentSnapshot(id, uri, new DocumentVersion(5), "java",
+                "class Recovered { int draft; }", StandardCharsets.UTF_8);
+            store.publishBacking(backing);
+            store.publishOverlay(draft);
+            WorkspaceSnapshot before = store.capture();
+            tab = openInTabPane(file);
+            TextEditorPane editor = tab.view().activeEditor();
+            disableDebouncedAutosave(editor);
+            assertEquals(draft.text(), editor.getText());
+            assertEquals(draft.version(), editor.captureSnapshot().version());
+            assertSame(draft, store.current(id).orElseThrow());
+            assertEquals(before, store.capture());
+            editor.replaceText("class Recovered { int next; }");
+            assertTrue(store.current(id).orElseThrow().version().isAfter(draft.version()));
+            closeManagedTab(true);
+            assertSame(backing, store.current(id).orElseThrow());
+            return null;
+        });
+    }
+
+    @Test
+    public void externalChangeMatchingLocalTextMakesBackingAuthoritative() throws Exception {
+        Path file = tempDirectory.resolve("Matched.java");
+        String text = "class Matched { int local; }";
+        Files.writeString(file, "class Matched {}");
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            TextEditorPane editor = tab.view().activeEditor();
+            disableDebouncedAutosave(editor);
+            editor.replaceText(text);
+            Files.writeString(file, text);
+            Method handler = TextEditorPane.class.getDeclaredMethod("handleExternalChange",
+                Path.class);
+            handler.setAccessible(true);
+            handler.invoke(editor, file);
+            return null;
+        });
+        onFxThread(() -> {
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            DocumentState state = store.state(tab.documentId()).orElseThrow();
+            assertNull(state.overlay());
+            assertEquals(text, ((TextDocumentSnapshot) state.backing()).text());
+            assertEquals(state.backing().version(), tab.view().activeEditor().captureSnapshot().version());
+            assertEquals(EditorSaveState.CLEAN, tab.view().activeEditor().saveState());
+            assertFalse(tab.view().activeEditor().hasPendingExternalChange());
+            return null;
+        });
+    }
+
+    @Test
+    public void movingClosedDocumentKeepsIdentityAndReusesRelocatedBacking() throws Exception {
+        Path file = tempDirectory.resolve("Closed.java");
+        Path moved = Files.createDirectories(tempDirectory.resolve("other")).resolve("Moved.java");
+        Files.writeString(file, "class Closed {}");
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            DocumentId id = tab.documentId();
+            closeManagedTab(false);
+            Files.move(file, moved);
+            Railroad.EVENT_BUS.publish(new DocumentRenamedEvent(new FileSystemDocument(moved, "java"),
+                "Closed.java", "Moved.java", DocumentUri.fromPath(file)));
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            WorkspaceSnapshot relocated = store.capture();
+            assertEquals(DocumentUri.fromPath(moved), store.current(id).orElseThrow().uri());
+            tab = openInTabPane(moved);
+            assertEquals(id, tab.documentId());
+            assertEquals(relocated, store.capture());
+            return null;
+        });
+    }
+
+    @Test
+    public void editsAfterFailedInitialReadCanBeSavedAsWithoutPublishingFallbackBacking() throws Exception {
+        Path file = tempDirectory.resolve("Unreadable.java");
+        Path destination = tempDirectory.resolve("Recovered.java");
+        Files.write(file, new byte[]{(byte) 0xc3, 0x28});
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            TextEditorPane editor = tab.view().activeEditor();
+            disableDebouncedAutosave(editor);
+            DocumentId id = tab.documentId();
+            DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+            assertFalse(editor.isInitialContentLoaded());
+            assertTrue(store.state(id).isEmpty());
+            editor.replaceText("class Recovered { int local; }");
+            assertNull(store.state(id).orElseThrow().backing());
+            assertEquals(editor.getText(), ((TextDocumentSnapshot) store.current(id).orElseThrow()).text());
+            assertTrue(Services.EDITOR_TAB_MANAGER.saveAsActive(destination));
+            assertNull(store.state(id).orElseThrow().overlay());
+            assertEquals(DocumentUri.fromPath(destination), store.current(id).orElseThrow().uri());
+            editor.replaceText("class Recovered { int next; }");
+            assertTrue(editor.saveNow());
+            assertEquals("class Recovered { int next; }", Files.readString(destination));
+            assertNull(store.state(id).orElseThrow().overlay());
             return null;
         });
     }

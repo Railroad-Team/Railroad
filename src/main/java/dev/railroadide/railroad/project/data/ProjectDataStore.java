@@ -2,6 +2,7 @@ package dev.railroadide.railroad.project.data;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.plugin.spi.events.ProjectConfigurationChangedEvent;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -126,6 +127,9 @@ public final class ProjectDataStore {
             }
 
             Files.write(target, bytes);
+            if (relativePath.endsWith(".json")) {
+                Railroad.EVENT_BUS.publish(new ProjectConfigurationChangedEvent(project));
+            }
         } catch (IOException exception) {
             throw new IllegalStateException("Failed to write project data file " + target, exception);
         }
@@ -220,6 +224,9 @@ public final class ProjectDataStore {
 
         try {
             Files.deleteIfExists(target);
+            if (relativePath.endsWith(".json")) {
+                Railroad.EVENT_BUS.publish(new ProjectConfigurationChangedEvent(project));
+            }
         } catch (IOException exception) {
             throw new IllegalStateException("Failed to delete project data file " + target, exception);
         }

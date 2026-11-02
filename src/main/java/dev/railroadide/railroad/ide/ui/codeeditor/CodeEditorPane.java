@@ -38,6 +38,7 @@ import org.fxmisc.richtext.model.StyleSpan;
 import org.fxmisc.richtext.model.StyleSpans;
 import org.fxmisc.richtext.model.StyleSpansBuilder;
 import org.jspecify.annotations.Nullable;
+import org.reactfx.Subscription;
 
 import javax.tools.Diagnostic;
 import java.nio.file.Path;
@@ -66,6 +67,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         namedThreadFactory("railroad-code-editor-worker-%d"));
     private final ShutdownHooks.Registration workerShutdownRegistration;
     private boolean codeEditorClosed;
+    private final List<Subscription> subscriptions = new ArrayList<>();
 
     // region Diagnostics state
     protected static final Duration DIAGNOSTIC_DEBOUNCE = Duration.ofMillis(300);
@@ -146,6 +148,16 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
         configureGutter();
 
+        subscriptions.add(plainTextChanges().subscribe(_ -> {
+            diagnosticsGeneration.incrementAndGet();
+            completionGeneration.incrementAndGet();
+            signatureGeneration.incrementAndGet();
+            visibleDiagnostics = List.of();
+            recomputeLineDecorations();
+            diagnosticPopup.hide();
+            hideAutoComplete();
+            hideSignatureHelp();
+        }));
         installSyntaxHighlighting();
         if (supportsDiagnostics()) {
             installDiagnostics();
@@ -167,7 +179,16 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (codeEditorClosed)
             return;
 
+        super.close();
+        if (!isEditorClosed())
+            return;
+
         codeEditorClosed = true;
+        subscriptions.forEach(Subscription::unsubscribe);
+        subscriptions.clear();
+        diagnosticsGeneration.incrementAndGet();
+        completionGeneration.incrementAndGet();
+        signatureGeneration.incrementAndGet();
         workerShutdownRegistration.close();
         worker.shutdownNow();
         diagnosticPopup.hide();
@@ -176,7 +197,35 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (completionPopup != null) {
             completionPopup.hide();
         }
-        super.close();
+    }
+
+    @Override
+    protected void documentStoreAttached() {
+        if (diagnosticsProvider != null) {
+            requestDiagnostics();
+        }
+    }
+
+    private @Nullable WorkspaceSnapshot captureFeatureWorkspace() {
+        DocumentStore store = getDocumentStore();
+        return store == null ? null : store.capture();
+    }
+
+    private boolean isCurrent(WorkspaceSnapshot workspace) {
+        if (codeEditorClosed)
+            return false;
+
+        DocumentSnapshot snapshot = workspace.document(documentId).orElse(null);
+        if (!(snapshot instanceof TextDocumentSnapshot text) || !getText().equals(text.text()))
+            return false;
+
+        DocumentStore store = getDocumentStore();
+        if (store == null)
+            return false;
+
+        WorkspaceSnapshot latest = store.capture();
+        return latest.documents().equals(workspace.documents())
+            && latest.configuration().equals(workspace.configuration());
     }
 
     // region Gutter
@@ -214,13 +263,13 @@ public abstract class CodeEditorPane extends TextEditorPane {
     // region Syntax Highlighting
     private void installSyntaxHighlighting() {
         requestHighlight(getText());
-        multiPlainChanges()
+        subscriptions.add(multiPlainChanges()
             .successionEnds(HIGHLIGHT_DEBOUNCE)
-            .subscribe(changes -> requestHighlight(getText()));
+            .subscribe(changes -> requestHighlight(getText())));
     }
 
     private void requestHighlight(String snapshot) {
-        if (!supportsHighlighting())
+        if (codeEditorClosed || !supportsHighlighting())
             return;
 
         int generation = highlightGeneration.incrementAndGet();
@@ -233,7 +282,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
 
     private void applyHighlightIfLatest(int generation, StyleSpans<Collection<String>> spans) {
-        if (highlightGeneration.get() != generation)
+        if (codeEditorClosed || highlightGeneration.get() != generation)
             return;
 
         lastHighlight = spans;
@@ -248,21 +297,28 @@ public abstract class CodeEditorPane extends TextEditorPane {
             return;
 
         requestDiagnostics();
-        multiPlainChanges()
+        subscriptions.add(multiPlainChanges()
             .successionEnds(DIAGNOSTIC_DEBOUNCE)
-            .subscribe(changes -> requestDiagnostics());
+            .subscribe(changes -> requestDiagnostics()));
     }
 
     private void requestDiagnostics() {
-        if (!supportsDiagnostics())
+        if (codeEditorClosed || !supportsDiagnostics())
             return;
 
         int generation = diagnosticsGeneration.incrementAndGet();
 
-        TextDocumentSnapshot snapshot = captureSnapshot();
+        WorkspaceSnapshot workspace = captureFeatureWorkspace();
+        if (workspace == null
+            || !(workspace.document(documentId).orElse(null) instanceof TextDocumentSnapshot snapshot))
+            return;
 
-        CompletableFuture.supplyAsync(() -> diagnosticsProvider.compute(snapshot), worker)
-            .thenAccept(result -> Platform.runLater(() -> applyDiagnosticsIfLatest(generation, result, snapshot)))
+        CompletableFuture.supplyAsync(() -> diagnosticsProvider.compute(workspace, documentId), worker)
+            .thenAccept(result -> Platform.runLater(() -> {
+                if (isCurrent(workspace)) {
+                    applyDiagnosticsIfLatest(generation, result, snapshot);
+                }
+            }))
             .exceptionally(throwable -> {
                 Railroad.LOGGER.error("Failed to analyse diagnostics", throwable);
                 return null;
@@ -364,7 +420,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (!supportsCompletion())
             return;
 
-        plainTextChanges().subscribe(this::showAutocomplete);
+        subscriptions.add(plainTextChanges().subscribe(this::showAutocomplete));
 
         setOnMouseClicked(event -> hideAutoComplete());
         focusedProperty().addListener((obs, oldValue, newValue) -> {
@@ -387,14 +443,16 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
 
     private void triggerCompletion(int dotIndex) {
-        if (!supportsCompletion())
+        if (codeEditorClosed || !supportsCompletion())
             return;
 
-        TextDocumentSnapshot snapshot = captureSnapshot();
+        WorkspaceSnapshot workspace = captureFeatureWorkspace();
+        if (workspace == null || workspace.document(documentId).isEmpty())
+            return;
         int generation = completionGeneration.incrementAndGet();
-        CompletableFuture.supplyAsync(() -> completionProvider.compute(snapshot, dotIndex), worker)
+        CompletableFuture.supplyAsync(() -> completionProvider.compute(workspace, documentId, dotIndex), worker)
             .thenAccept(result -> Platform.runLater(() -> {
-                if (completionGeneration.get() != generation)
+                if (completionGeneration.get() != generation || !isCurrent(workspace))
                     return;
 
                 if (result == null || result.items().isEmpty()) {
@@ -535,9 +593,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
         caretPositionProperty().addListener((obs, oldPos, newPos) -> requestSignatureHelp(false));
 
-        plainTextChanges()
+        subscriptions.add(plainTextChanges()
             .successionEnds(Duration.ofMillis(120))
-            .subscribe(change -> requestSignatureHelp(true));
+            .subscribe(change -> requestSignatureHelp(true)));
 
         focusedProperty().addListener((obs, oldValue, newValue) -> {
             if (!newValue) {
@@ -547,7 +605,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
 
     private void requestSignatureHelp(boolean textChanged) {
-        if (!supportsSignatureHelp()) {
+        if (codeEditorClosed || !supportsSignatureHelp()) {
             hideSignatureHelp();
             return;
         }
@@ -560,10 +618,16 @@ public abstract class CodeEditorPane extends TextEditorPane {
         }
 
         int generation = signatureGeneration.incrementAndGet();
-        TextDocumentSnapshot snapshot = captureSnapshot();
+        WorkspaceSnapshot workspace = captureFeatureWorkspace();
+        if (workspace == null || workspace.document(documentId).isEmpty())
+            return;
 
-        CompletableFuture.supplyAsync(() -> signatureHelpProvider.compute(snapshot, caret), worker)
-            .thenAccept(help -> Platform.runLater(() -> applySignatureHelp(generation, help)))
+        CompletableFuture.supplyAsync(() -> signatureHelpProvider.compute(workspace, documentId, caret), worker)
+            .thenAccept(help -> Platform.runLater(() -> {
+                if (isCurrent(workspace)) {
+                    applySignatureHelp(generation, help);
+                }
+            }))
             .exceptionally(throwable -> {
                 Railroad.LOGGER.error("Failed to compute signature help", throwable);
                 return null;

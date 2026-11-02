@@ -21,6 +21,7 @@ public final class DefaultDocumentStore implements DocumentStore {
     private final String projectId;
     private final Map<DocumentId, Entry> entries = new HashMap<>();
     private final Map<DocumentId, DocumentVersion> lastBackingVersions = new HashMap<>();
+    private final Map<DocumentId, DocumentVersion> latestVersions = new HashMap<>();
     private WorkspaceConfigurationSnapshot configuration;
     private long workspaceRevision;
 
@@ -39,6 +40,70 @@ public final class DefaultDocumentStore implements DocumentStore {
         this.configuration = Objects.requireNonNull(initialConfiguration, "initialConfiguration");
         if (this.projectId.isBlank())
             throw new IllegalArgumentException("Project ID cannot be blank");
+    }
+
+    @Synchronized
+    @Override
+    public Optional<DocumentVersion> lastBackingVersion(DocumentId id) {
+        return Optional.ofNullable(lastBackingVersions.get(id));
+    }
+
+    @Synchronized
+    @Override
+    public Optional<DocumentVersion> latestVersion(DocumentId id) {
+        return Optional.ofNullable(latestVersions.get(id));
+    }
+
+    private void observeVersion(DocumentSnapshot snapshot) {
+        latestVersions.merge(snapshot.id(), snapshot.version(),
+            (first, second) -> first.isAfter(second) ? first : second);
+    }
+
+    @Synchronized
+    @Override
+    public void removeOverlay(DocumentId id, DocumentVersion expectedOverlayVersion) {
+        Entry entry = entries.get(id);
+        if (entry == null || entry.overlay() == null
+            || !entry.overlay().snapshot().version().equals(expectedOverlayVersion))
+            throw new IllegalStateException("Cannot remove an absent or changed overlay.");
+
+        if (entry.backing() == null) {
+            entries.remove(id);
+        } else {
+            entries.put(id, new Entry(entry.backing(), null));
+        }
+        workspaceRevision++;
+    }
+
+    @Synchronized
+    @Override
+    public void relocate(DocumentId id, DocumentUri uri) {
+        Objects.requireNonNull(uri, "uri");
+        Entry entry = entries.get(id);
+        if (entry == null)
+            return;
+
+        DocumentSnapshot backing = relocated(entry.backing(), uri);
+        OverlayState overlay = entry.overlay();
+        DocumentSnapshot overlaySnapshot = overlay == null ? null : relocated(overlay.snapshot(), uri);
+        if (backing == entry.backing() && (overlay == null || overlaySnapshot == overlay.snapshot()))
+            return;
+
+        entries.put(id, new Entry(backing,
+            overlay == null ? null : new OverlayState(overlaySnapshot, overlay.baseBackingVersion())));
+        workspaceRevision++;
+    }
+
+    private static DocumentSnapshot relocated(DocumentSnapshot snapshot, DocumentUri uri) {
+        if (snapshot == null || snapshot.uri().equals(uri))
+            return snapshot;
+
+        return switch (snapshot) {
+            case TextDocumentSnapshot text -> new TextDocumentSnapshot(text.id(), uri, text.version(),
+                text.languageId(), text.origin(), text.text(), text.encoding());
+            case BinaryDocumentSnapshot binary -> new BinaryDocumentSnapshot(binary.id(), uri, binary.version(),
+                binary.languageId(), binary.origin(), binary.bytes());
+        };
     }
 
     @Synchronized
@@ -80,6 +145,7 @@ public final class DefaultDocumentStore implements DocumentStore {
 
         entries.put(snapshot.id(), entry);
         lastBackingVersions.put(snapshot.id(), snapshot.version());
+        observeVersion(snapshot);
         workspaceRevision++;
     }
 
@@ -150,6 +216,7 @@ public final class DefaultDocumentStore implements DocumentStore {
         }
 
         entries.put(snapshot.id(), entry);
+        observeVersion(snapshot);
         workspaceRevision++;
     }
 
@@ -230,6 +297,7 @@ public final class DefaultDocumentStore implements DocumentStore {
                 "Resolved snapshot must have a version greater than the backing version.");
 
         entries.put(id, new Entry(backing, new OverlayState(resolvedSnapshot, expectedBackingVersion)));
+        observeVersion(resolvedSnapshot);
         workspaceRevision++;
     }
 
@@ -462,6 +530,7 @@ public final class DefaultDocumentStore implements DocumentStore {
                 "Restored backing must have a version greater than both the backing and overlay versions.");
 
         entries.put(id, new Entry(restoredBacking, null));
+        observeVersion(restoredBacking);
         lastBackingVersions.put(id, restoredBacking.version());
         workspaceRevision++;
     }
@@ -494,7 +563,8 @@ public final class DefaultDocumentStore implements DocumentStore {
                 "Cannot publish a configuration snapshot with an older revision than the current configuration revision.");
 
         if (configuration.revision() == this.configuration.revision()) {
-            if (!configuration.moduleIds().equals(this.configuration.moduleIds()))
+            if (!configuration.moduleIds().equals(this.configuration.moduleIds())
+                || !configuration.settings().equals(this.configuration.settings()))
                 throw new IllegalArgumentException(
                     "Cannot publish a configuration snapshot with the same revision but different module IDs.");
 

@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.ide.completion;
 
 import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -17,4 +19,16 @@ public interface CompletionProvider {
      */
     @Nullable
     CompletionResult compute(DocumentSnapshot snapshot, int triggerAt);
+
+    /**
+     * Computes suggestions within one captured workspace. Existing providers receive its document snapshot.
+     *
+     * @param workspace immutable request workspace
+     * @param id document to inspect
+     * @param triggerAt trigger offset
+     * @return suggestions, or {@code null} when unsupported
+     */
+    default @Nullable CompletionResult compute(WorkspaceSnapshot workspace, DocumentId id, int triggerAt) {
+        return compute(workspace.document(id).orElseThrow(), triggerAt);
+    }
 }

@@ -5,6 +5,7 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.language.LanguageSupport;
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.plugin.spi.events.ProjectConfigurationChangedEvent;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -88,6 +89,12 @@ public final class ProjectLanguageIndexCoordinator {
     public void handleFileChange(Path path, WatchEvent.Kind<?> kind) {
         Objects.requireNonNull(path, "path");
         Objects.requireNonNull(kind, "kind");
+        if (List
+            .of("pom.xml", "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts",
+                "gradle.properties")
+            .contains(path.getFileName().toString())) {
+            Railroad.EVENT_BUS.publish(new ProjectConfigurationChangedEvent(context.project()));
+        }
 
         LanguageSupport support = findSupport(path);
         if (support == null || support.createIndexer() == null)

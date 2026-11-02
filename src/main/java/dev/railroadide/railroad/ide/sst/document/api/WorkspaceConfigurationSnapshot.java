@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.sst.document.api;
 
 import java.util.Set;
+import java.util.Map;
 
 /**
  * Immutable configuration metadata captured with a workspace's documents.
@@ -13,16 +14,28 @@ import java.util.Set;
  *
  * @param revision nonnegative configuration revision
  * @param moduleIds module identities belonging to this configuration
+ * @param settings immutable project and module analysis settings keyed by qualified setting name
  */
 public record WorkspaceConfigurationSnapshot(
     long revision,
-    Set<String> moduleIds
+    Set<String> moduleIds,
+    Map<String, String> settings
 ) {
+    /**
+     * Creates configuration metadata without additional settings, for existing callers.
+     *
+     * @param revision configuration revision
+     * @param moduleIds module identities
+     */
+    public WorkspaceConfigurationSnapshot(long revision, Set<String> moduleIds) {
+        this(revision, moduleIds, Map.of());
+    }
     /**
      * Creates a configuration revision with an immutable copy of its module identities.
      *
      * @param revision nonnegative configuration revision
      * @param moduleIds module identities to copy
+     * @param settings immutable copies of project and module settings
      * @throws IllegalArgumentException if the revision is negative
      * @throws NullPointerException if the module set or any module identity is {@code null}
      */
@@ -31,5 +44,6 @@ public record WorkspaceConfigurationSnapshot(
             throw new IllegalArgumentException("Revision cannot be negative");
 
         moduleIds = Set.copyOf(moduleIds);
+        settings = Map.copyOf(settings);
     }
 }

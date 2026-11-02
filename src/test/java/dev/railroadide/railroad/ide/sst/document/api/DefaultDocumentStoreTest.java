@@ -27,6 +27,60 @@ public class DefaultDocumentStoreTest {
     private final DocumentId id = DocumentId.create();
 
     @Test
+    public void removingStaleOverlayRetainsBackingAndRejectsChangedExpectedVersion() {
+        TextDocumentSnapshot backing = snapshot(new DocumentVersion(1), "backing");
+        TextDocumentSnapshot overlay = snapshot(new DocumentVersion(2), "local");
+        TextDocumentSnapshot external = snapshot(new DocumentVersion(3), "external");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        store.publishBacking(external);
+        WorkspaceSnapshot before = store.capture();
+        assertThrows(IllegalStateException.class, () -> store.removeOverlay(id, new DocumentVersion(4)));
+        assertEquals(before, store.capture());
+        store.removeOverlay(id, overlay.version());
+        assertSame(external, store.current(id).orElseThrow());
+        assertNull(store.state(id).orElseThrow().overlay());
+        assertEquals(before.revision() + 1, store.capture().revision());
+        assertSame(overlay, before.document(id).orElseThrow());
+    }
+
+    @Test
+    public void removingOverlayWithoutBackingRetainsBackingHistory() {
+        TextDocumentSnapshot backing = snapshot(new DocumentVersion(4), "backing");
+        TextDocumentSnapshot overlay = snapshot(new DocumentVersion(5), "local");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        store.removeBacking(id, backing.version());
+        store.removeOverlay(id, overlay.version());
+        assertTrue(store.state(id).isEmpty());
+        assertTrue(store.capture().documents().isEmpty());
+        assertEquals(backing.version(), store.lastBackingVersion(id).orElseThrow());
+        assertThrows(IllegalArgumentException.class, () -> store.publishBacking(backing));
+    }
+
+    @Test
+    public void relocatingSnapshotsAtomicallyPreservesVersionsBaseAndOldCaptures() {
+        TextDocumentSnapshot backing = snapshot(new DocumentVersion(1), "backing");
+        TextDocumentSnapshot overlay = snapshot(new DocumentVersion(2), "local");
+        store.publishBacking(backing);
+        store.publishOverlay(overlay);
+        WorkspaceSnapshot before = store.capture();
+        DocumentUri target = DocumentUri.parse("memory:///renamed.java");
+        store.relocate(id, target);
+        DocumentState moved = store.state(id).orElseThrow();
+        assertEquals(target, moved.backing().uri());
+        assertEquals(target, moved.overlay().uri());
+        assertEquals(backing.version(), moved.backing().version());
+        assertEquals(overlay.version(), moved.overlay().version());
+        assertEquals(backing.version(), moved.baseBackingVersion());
+        assertSame(overlay, before.document(id).orElseThrow());
+        assertEquals(before.revision() + 1, store.capture().revision());
+        WorkspaceSnapshot relocated = store.capture();
+        store.relocate(id, target);
+        assertEquals(relocated, store.capture());
+    }
+
+    @Test
     public void unknownDocumentReturnsEmpty() {
         assertEquals(Optional.empty(), store.current(id));
         assertEquals(Optional.empty(), store.state(id));

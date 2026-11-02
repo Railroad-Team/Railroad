@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Tracks the current project and open documents and publishes their lifecycle events.
@@ -34,8 +33,9 @@ public class DefaultIDEStateService implements IDEStateService {
     private final Map<Document, Long> openDocuments = new LinkedHashMap<>();
     private final Map<Path, Long> recentFiles = new HashMap<>();
     private DocumentIdentityRegistry documentIdentities = new DocumentIdentityRegistry();
-    private DocumentStore documentStore;
-    private Project currentProject;
+    private volatile DocumentStore documentStore;
+    private volatile Project currentProject;
+    private ProjectWorkspaceConfiguration workspaceConfiguration;
     private long openedProjectAtMillis = -1L;
     private Document activeDocument;
 
@@ -64,9 +64,19 @@ public class DefaultIDEStateService implements IDEStateService {
 
     private void setCurrentProject_internal(Project project) {
         if (project != currentProject) {
+            WorkspaceConfigurationSnapshot initialConfiguration = project == null
+                ? null
+                : ProjectWorkspaceConfiguration.initial(project);
+            if (workspaceConfiguration != null) {
+                workspaceConfiguration.close();
+                workspaceConfiguration = null;
+            }
             documentStore = project == null
                 ? null
-                : new DefaultDocumentStore(project.getId(), new WorkspaceConfigurationSnapshot(0, Set.of()));
+                : new DefaultDocumentStore(project.getId(), initialConfiguration);
+            if (project != null) {
+                workspaceConfiguration = new ProjectWorkspaceConfiguration(project, documentStore);
+            }
         }
         this.currentProject = project;
         this.openedProjectAtMillis = project != null ? System.currentTimeMillis() : -1L;

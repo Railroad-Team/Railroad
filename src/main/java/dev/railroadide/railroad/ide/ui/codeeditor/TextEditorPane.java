@@ -101,7 +101,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     private final ReadOnlyBooleanWrapper saved = new ReadOnlyBooleanWrapper(this, "saved");
     private final ReadOnlyBooleanWrapper saveFailed = new ReadOnlyBooleanWrapper(this, "saveFailed");
     private final AtomicLong editVersion = new AtomicLong();
-    private final DocumentId documentId;
+    protected final DocumentId documentId;
     private final boolean initialContentLoaded;
     private volatile DocumentStore documentStore;
     private final AtomicLong savedVersion = new AtomicLong();
@@ -228,6 +228,40 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     }
 
     /**
+     * Recovers a retained draft during initialization without treating restoration as a user edit.
+     * Call on the JavaFX thread before attaching the store. Stale drafts retain a pending conflict.
+     *
+     * @param snapshot retained editor overlay
+     * @param backingVersion current disk baseline revision
+     * @param stale whether the draft needs resolution against that baseline
+     * @throws NullPointerException if either snapshot or backing version is null
+     * @throws IllegalArgumentException if the overlay belongs to another document
+     */
+    public final void restoreOverlay(TextDocumentSnapshot snapshot, DocumentVersion backingVersion, boolean stale) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        Objects.requireNonNull(backingVersion, "backingVersion");
+        if (!documentId.equals(snapshot.id()))
+            throw new IllegalArgumentException("Overlay belongs to another document");
+        applyingExternalReload = true;
+        try {
+            replaceText(snapshot.text());
+        } finally {
+            applyingExternalReload = false;
+        }
+        editVersion.set(snapshot.version().value());
+        savedVersion.set(backingVersion.value());
+        pendingSnapshot.set(snapshot);
+        setSaveState(snapshot.version().equals(backingVersion) && snapshot.text().equals(lastSavedText.get())
+            ? EditorSaveState.CLEAN
+            : EditorSaveState.DIRTY);
+        if (stale) {
+            pendingExternalText = lastSavedText.get();
+            Path restoredPath = filePath;
+            Platform.runLater(() -> processExternalChange(restoredPath));
+        }
+    }
+
+    /**
      * Associates this editor with the store that already contains its initial backing
      * snapshot. Subsequent text changes publish immutable overlays to this store.
      * Call on the JavaFX thread after the initial backing has been published or reused.
@@ -237,6 +271,21 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
      */
     public final void setDocumentStore(DocumentStore documentStore) {
         this.documentStore = Objects.requireNonNull(documentStore, "documentStore");
+        documentStoreAttached();
+    }
+
+    /** Notifies subclasses after the initialized document has been attached to its store. */
+    protected void documentStoreAttached() {
+    }
+
+    /** @return the associated project store, or {@code null} before initialization */
+    protected final DocumentStore getDocumentStore() {
+        return documentStore;
+    }
+
+    /** @return whether this editor completed closure */
+    public final boolean isEditorClosed() {
+        return closed;
     }
 
     @Override
@@ -245,8 +294,6 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             if (closed)
                 return;
 
-            closed = true;
-
             if (pendingSaveTask != null) {
                 pendingSaveTask.cancel(false);
                 pendingSaveTask = null;
@@ -254,8 +301,15 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
 
             if (!discardChangesOnClose) {
                 // Every edit updates the immutable pending snapshot before the autosave debounce.
-                persistSnapshot(pendingSnapshot.get());
+                if (!persistSnapshot(pendingSnapshot.get()))
+                    return;
             }
+            DocumentStore store = documentStore;
+            DocumentState state = store == null ? null : store.state(documentId).orElse(null);
+            if (state != null && state.overlay() != null) {
+                store.removeOverlay(documentId, state.overlay().version());
+            }
+            closed = true;
         }
 
         JavaFXUtils.runOnApplicationThread(this::closeExternalChangeDialog);
@@ -462,6 +516,10 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     private void subscribeToChanges() {
         dirtySubscription = plainTextChanges().subscribe(_ -> {
             discardChangesOnClose = false;
+            if (documentStore != null) {
+                documentStore.latestVersion(documentId)
+                    .ifPresent(version -> editVersion.accumulateAndGet(version.value(), Math::max));
+            }
             editVersion.incrementAndGet();
             TextDocumentSnapshot snapshot = captureSnapshot();
             pendingSnapshot.set(snapshot);
@@ -668,6 +726,28 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             }
 
             String snapshot = getText();
+            DocumentStore store = documentStore;
+            DocumentState state = store == null ? null : store.state(documentId).orElse(null);
+            if (state == null && store != null) {
+                store.latestVersion(documentId).ifPresent(version -> {
+                    if (version.value() >= editVersion.get()) {
+                        editVersion.set(version.next().value());
+                    }
+                });
+            }
+            if (state != null && (state.isStale() || state.backing() == null
+                || state.overlay() == null && state.backing() instanceof TextDocumentSnapshot backing
+                    && (!backing.text().equals(snapshot) || editVersion.get() != backing.version().value()))) {
+                long latestVersion = editVersion.get();
+                if (state.backing() != null) {
+                    latestVersion = Math.max(latestVersion, state.backing().version().value());
+                }
+                if (state.overlay() != null) {
+                    latestVersion = Math.max(latestVersion, state.overlay().version().value());
+                }
+                editVersion.set(new DocumentVersion(latestVersion).next().value());
+                pendingSnapshot.set(captureSnapshot());
+            }
             long snapshotVersion = editVersion.get();
             updateForVersion(snapshotVersion, EditorSaveState.SAVING);
             try {
@@ -860,6 +940,9 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             }
 
             filePath = normalizedPath;
+            if (documentStore != null) {
+                documentStore.relocate(documentId, DocumentUri.fromPath(normalizedPath));
+            }
             JavaFXUtils.runOnApplicationThread(gutter::refresh);
             pendingExternalText = null;
             closeExternalChangeDialog();
@@ -1043,6 +1126,10 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
 
             String disk = pendingExternalText;
             if (disk.equals(getText()) || (!hasUnsavedChanges() && displayedExternalText == null)) {
+                if (disk.equals(getText()) && documentStore != null
+                    && documentStore.state(documentId).map(state -> state.overlay() != null).orElse(false)) {
+                    publishExternalBacking(disk);
+                }
                 reloadExternalText(disk);
             } else {
                 publishExternalBacking(disk);
@@ -1170,6 +1257,16 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         }
         DocumentStore store = documentStore;
         DocumentState state = store != null ? store.state(documentId).orElse(null) : null;
+        if (restoredBacking == null && state != null && state.overlay() != null
+            && state.backing() instanceof TextDocumentSnapshot backing && backing.text().equals(disk)
+            && getText().equals(disk)) {
+            long latestVersion = Math.max(editVersion.get(),
+                Math.max(backing.version().value(), state.overlay().version().value()));
+            restoredBacking = new TextDocumentSnapshot(backing.id(), backing.uri(),
+                new DocumentVersion(latestVersion).next(),
+                backing.languageId(), backing.origin(), disk, backing.encoding());
+            store.discardOverlay(documentId, backing.version(), state.overlay().version(), restoredBacking);
+        }
         boolean cleanReload = restoredBacking == null && !hasUnsavedChanges()
             && (state == null || state.overlay() == null);
         int caret = getCaretPosition();
