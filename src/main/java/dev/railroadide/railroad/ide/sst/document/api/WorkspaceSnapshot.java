@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.sst.document.api;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -16,10 +17,10 @@ import java.util.Optional;
  * state under the store's lock. This value has no connection to the live store and
  * does not represent a simultaneous snapshot of filesystem contents.
  *
- * @param projectId identity of the project owning the captured workspace
+ * @param projectId nonblank identity of the project owning the captured workspace
  * @param documents captured documents indexed by logical document identity
  * @param configuration captured workspace configuration
- * @param revision workspace revision captured atomically with documents and configuration
+ * @param revision nonnegative workspace revision captured atomically with documents and configuration
  */
 public record WorkspaceSnapshot(
     String projectId,
@@ -28,16 +29,28 @@ public record WorkspaceSnapshot(
     long revision
 ) {
     /**
-     * Copies the supplied mapping into an unmodifiable map.
+     * Validates project identity, configuration, and revision, and copies the supplied
+     * mapping into an unmodifiable map.
      * Document snapshots and configuration are already immutable and are retained directly.
      *
-     * @param projectId identity of the project owning the captured workspace
+     * @param projectId nonblank identity of the project owning the captured workspace
      * @param documents captured documents
      * @param configuration captured workspace configuration
-     * @param revision captured workspace revision
-     * @throws NullPointerException if the map or any key or value is {@code null}
+     * @param revision nonnegative captured workspace revision; zero is valid
+     * @throws NullPointerException if project identity, configuration, document map,
+     *             or any document key or value is {@code null}
+     * @throws IllegalArgumentException if project identity is blank or revision is negative
      */
     public WorkspaceSnapshot {
+        projectId = Objects.requireNonNull(projectId, "projectId");
+        configuration = Objects.requireNonNull(configuration, "configuration");
+
+        if (projectId.isBlank())
+            throw new IllegalArgumentException("Project ID cannot be blank");
+
+        if (revision < 0)
+            throw new IllegalArgumentException("Workspace revision cannot be negative");
+
         documents = Map.copyOf(documents);
     }
 

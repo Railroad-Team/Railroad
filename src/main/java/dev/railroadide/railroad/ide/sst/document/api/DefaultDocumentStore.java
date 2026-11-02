@@ -76,7 +76,7 @@ public final class DefaultDocumentStore implements DocumentStore {
             if (overlay != null && overlay.snapshot().version().equals(snapshot.version())
                 && !hasSameContent(overlay.snapshot(), snapshot))
                 throw new IllegalArgumentException(
-                    "A backing snapshot with the same version as the current overlay must have the same content.");
+                    "Backing and overlay cannot have different content at the same document version.");
 
             entry = new Entry(snapshot, overlay);
         }
@@ -142,7 +142,7 @@ public final class DefaultDocumentStore implements DocumentStore {
 
             if (backing != null && snapshot.version().equals(backing.version()) && !hasSameContent(backing, snapshot))
                 throw new IllegalArgumentException(
-                    "An overlay snapshot with the same version as backing must have the same content.");
+                    "Backing and overlay cannot have different content at the same document version.");
 
             DocumentVersion baseBackingVersion;
             if (overlay != null) {

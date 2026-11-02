@@ -3,9 +3,15 @@ package dev.railroadide.railroad.ide.sst.document.api;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -1454,8 +1460,10 @@ public class DefaultDocumentStoreTest {
         var originalState = store.state(id).orElseThrow();
         var originalWorkspace = store.capture();
 
-        assertThrows(IllegalArgumentException.class, () -> store.publishBacking(conflictingBacking));
+        var exception = assertThrows(IllegalArgumentException.class, () -> store.publishBacking(conflictingBacking));
 
+        assertEquals("Backing and overlay cannot have different content at the same document version.",
+            exception.getMessage());
         var state = store.state(id).orElseThrow();
         assertEquals(originalState, state);
         assertSame(backing, state.backing());
@@ -1477,8 +1485,10 @@ public class DefaultDocumentStoreTest {
         var originalState = store.state(id).orElseThrow();
         var originalWorkspace = store.capture();
 
-        assertThrows(IllegalArgumentException.class, () -> store.publishOverlay(conflictingOverlay));
+        var exception = assertThrows(IllegalArgumentException.class, () -> store.publishOverlay(conflictingOverlay));
 
+        assertEquals("Backing and overlay cannot have different content at the same document version.",
+            exception.getMessage());
         var state = store.state(id).orElseThrow();
         assertEquals(originalState, state);
         assertSame(newerBacking, state.backing());
@@ -1530,6 +1540,122 @@ public class DefaultDocumentStoreTest {
         var workspace = store.capture();
         assertSame(matchingOverlay, workspace.document(id).orElseThrow());
         assertEquals(4L, workspace.revision());
+    }
+
+    @Test
+    public void initialOverlayCannotConflictWithBackingAtSameRevision() {
+        var backing = snapshot(new DocumentVersion(6), "external changes");
+        var conflictingOverlay = snapshot(new DocumentVersion(6), "unsaved changes");
+        store.publishBacking(backing);
+        var originalState = store.state(id).orElseThrow();
+        var originalWorkspace = store.capture();
+
+        var exception = assertThrows(IllegalArgumentException.class, () -> store.publishOverlay(conflictingOverlay));
+
+        assertEquals("Backing and overlay cannot have different content at the same document version.",
+            exception.getMessage());
+        var state = store.state(id).orElseThrow();
+        assertEquals(originalState, state);
+        assertSame(backing, state.backing());
+        assertNull(state.overlay());
+        assertSame(backing, store.current(id).orElseThrow());
+        assertEquals(originalWorkspace, store.capture());
+        assertEquals(1L, store.capture().revision());
+    }
+
+    @Test
+    public void concurrentPublicationAndCaptureRemainConsistent() throws Exception {
+        var publications = new ArrayList<TextDocumentSnapshot>();
+        for (int version = 1; version <= 100; version++) {
+            publications.add(snapshot(new DocumentVersion(version), "revision " + version));
+        }
+        var initialWorkspace = store.capture();
+        assertCaptureMatchesPublishedBacking(initialWorkspace, publications);
+        var ready = new CountDownLatch(2);
+        var start = new CountDownLatch(1);
+        var midpointCaptured = new CountDownLatch(1);
+        var writerDone = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        try {
+            Future<?> writer = executor.submit(() -> {
+                ready.countDown();
+                try {
+                    assertTrue(start.await(10, TimeUnit.SECONDS));
+                    for (var publication : publications) {
+                        store.publishBacking(publication);
+                        if (publication.version().value() == 50) {
+                            assertTrue(midpointCaptured.await(10, TimeUnit.SECONDS));
+                        }
+                    }
+                    return null;
+                } finally {
+                    writerDone.countDown();
+                }
+            });
+            Future<List<WorkspaceSnapshot>> reader = executor.submit(() -> {
+                ready.countDown();
+                try {
+                    assertTrue(start.await(10, TimeUnit.SECONDS));
+                    var captures = new ArrayList<WorkspaceSnapshot>();
+                    long previousRevision = 0;
+                    do {
+                        var workspace = store.capture();
+                        assertCaptureMatchesPublishedBacking(workspace, publications);
+                        assertTrue(workspace.revision() >= previousRevision, "Captured revisions must not decrease");
+                        previousRevision = workspace.revision();
+                        captures.add(workspace);
+                        if (workspace.revision() == 50) {
+                            midpointCaptured.countDown();
+                        }
+                    } while (writerDone.getCount() != 0);
+
+                    var finalWorkspace = store.capture();
+                    assertCaptureMatchesPublishedBacking(finalWorkspace, publications);
+                    assertTrue(finalWorkspace.revision() >= previousRevision);
+                    assertEquals(100L, finalWorkspace.revision());
+                    captures.add(finalWorkspace);
+                    return captures;
+                } finally {
+                    midpointCaptured.countDown();
+                }
+            });
+
+            assertTrue(ready.await(10, TimeUnit.SECONDS));
+            start.countDown();
+            writer.get(20, TimeUnit.SECONDS);
+            var captures = reader.get(20, TimeUnit.SECONDS);
+            assertTrue(captures.stream().anyMatch(workspace -> workspace.revision() == 50));
+
+            assertCaptureMatchesPublishedBacking(initialWorkspace, publications);
+            for (var workspace : captures) {
+                assertCaptureMatchesPublishedBacking(workspace, publications);
+            }
+        } finally {
+            start.countDown();
+            executor.shutdownNow();
+            assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
+        }
+    }
+
+    private void assertCaptureMatchesPublishedBacking(
+        WorkspaceSnapshot workspace,
+        List<TextDocumentSnapshot> publications
+    ) {
+        assertEquals("project-a", workspace.projectId());
+        assertSame(initialConfiguration, workspace.configuration());
+        long revision = workspace.revision();
+        if (revision == 0) {
+            assertTrue(workspace.documents().isEmpty());
+            assertEquals(Optional.empty(), workspace.document(id));
+        } else {
+            assertTrue(revision > 0 && revision <= publications.size());
+            assertEquals(1, workspace.documents().size());
+            var document = workspace.document(id).orElseThrow();
+            assertEquals(revision, document.version().value());
+            assertSame(publications.get(Math.toIntExact(revision) - 1), document);
+            assertEquals("revision " + revision, ((TextDocumentSnapshot) document).text());
+        }
     }
 
     private TextDocumentSnapshot snapshot(DocumentVersion version, String text) {
