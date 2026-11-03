@@ -5,6 +5,7 @@ import dev.railroadide.railroad.command.CommandButtons;
 import dev.railroadide.railroad.command.CommandContext;
 import dev.railroadide.railroad.command.CommandMenuItems;
 import dev.railroadide.railroad.command.MarkdownCommands;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.data.ProjectDataStore;
@@ -44,6 +45,7 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
@@ -70,8 +72,10 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     private static final String MARKDOWN_LAYOUT_LOCATION = "markdown.json";
 
     private final MarkdownWebView preview;
+    private final DocumentId documentId;
     @Getter
-    private final Path markdownFile;
+    private Path markdownFile;
+    private boolean closed;
 
     private WebView webViewPane;
 
@@ -99,21 +103,37 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
 
     @Override
     public void close() {
+        if (closed)
+            return;
         TextEditorPane textEditorPane = getMarkdownEditorPane();
         if (textEditorPane != null) {
             textEditorPane.close();
+            if (!textEditorPane.isEditorClosed())
+                return;
             editorProperty().setValue(null);
         }
+        closed = true;
         Settings.THEME.removeListener(themeListener);
+    }
+
+    /**
+     * Updates the source location used when the source editor is created after a move.
+     *
+     * @param path current document path
+     */
+    public void rebind(Path path) {
+        markdownFile = Objects.requireNonNull(path).toAbsolutePath().normalize();
     }
 
     /**
      * Loads a Markdown file and restores the project preview layout.
      *
+     * @param documentId authoritative logical identity retained by the lazy source editor
      * @param markdownFile Markdown file to load and edit
      * @param project project whose files and workspace are being displayed
      */
-    public MarkdownPreviewPane(Path markdownFile, Project project) {
+    public MarkdownPreviewPane(DocumentId documentId, Path markdownFile, Project project) {
+        this.documentId = Objects.requireNonNull(documentId, "documentId");
         this.markdownFile = markdownFile;
         this.project = project;
 
@@ -161,13 +181,15 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     }
 
     private TextEditorPane codeView() {
+        if (closed)
+            throw new IllegalStateException("Markdown view is closed");
         TextEditorPane textEditorPane = getMarkdownEditorPane();
         if (textEditorPane != null) {
             restoreEditorScroll();
             return textEditorPane;
         }
 
-        editorProperty().setValue(new TextEditorPane(markdownFile, "markdown"));
+        editorProperty().setValue(new TextEditorPane(documentId, markdownFile, "markdown"));
 
         TextEditorPane newTextEditorPane = getMarkdownEditorPane();
 

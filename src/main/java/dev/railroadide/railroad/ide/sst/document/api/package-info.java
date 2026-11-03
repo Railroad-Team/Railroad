@@ -14,6 +14,18 @@
  * binary inputs are copied and exposed only through defensive copies or read-only
  * buffers.
  * <p>
+ * {@link dev.railroadide.railroad.ide.sst.document.api.DocumentStore} publishes backing
+ * snapshots and editor overlays for one project. An overlay remains current even when
+ * its backing changes or disappears; its captured base revision identifies staleness.
+ * Reconciliation, commit, discard, and unchanged-overlay removal provide explicit
+ * transitions between editor and backing state. These operations perform no filesystem I/O.
+ * {@link dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot} captures current
+ * documents, project identity, and immutable
+ * {@link dev.railroadide.railroad.ide.sst.document.api.WorkspaceConfigurationSnapshot}
+ * metadata together. Workspace revisions count store-state changes independently of
+ * configuration revisions and document content versions. Older captures remain usable
+ * after later publications or removals.
+ * <p>
  * Identity does not imply location or snapshot equality. A rename retains the same ID
  * while changing its URI, an edit advances the version while retaining the ID, and a
  * copy receives a different ID. Snapshots use reference equality; hasSameRevision compares

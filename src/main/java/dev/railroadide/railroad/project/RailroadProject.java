@@ -270,6 +270,8 @@ public class RailroadProject implements Project {
         Project currentProject = Railroad.PROJECT_MANAGER.getOpenProject();
         if (currentProject != null && !ProjectPathIdentityUtils.matches(currentProject.getPath(), getPath())) {
             currentProject.close();
+            if (Railroad.PROJECT_MANAGER.getOpenProject() != null)
+                return;
         }
 
         Railroad.LOGGER.debug("Opening project: {}", getPathString());
@@ -321,6 +323,8 @@ public class RailroadProject implements Project {
             ProjectConfig projectConfig = dataStore.readJson(PROJECT_CONFIG_LOCATION, ProjectConfig.class)
                 .orElseGet(ProjectConfig::new);
             EditorWorkspaceSessionState editorWorkspace = Services.EDITOR_TAB_MANAGER.captureWorkspaceSession();
+            if (!Services.EDITOR_TAB_MANAGER.prepareProjectClose())
+                return;
             List<EditorTabSessionState> editorTabs = editorWorkspace.tabs();
             Railroad.LOGGER.debug("Persisting {} editor tabs for project {}", editorTabs.size(), getPathString());
             projectConfig.setEditorWorkspace(editorWorkspace);

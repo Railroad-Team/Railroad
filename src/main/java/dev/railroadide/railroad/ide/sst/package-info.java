@@ -60,8 +60,8 @@
  * require no close/dispose or reference counting. Release unused references and let
  * garbage collection reclaim unreachable graphs, including parent/child cycles.
  * <p>
- * Validity is separate from currentness. The future DocumentStore, workspace snapshot,
- * and analysis scheduler subsystems must capture a coherent request context and check it
+ * Validity is separate from currentness. The DocumentStore, workspace snapshot,
+ * and analysis scheduler subsystems capture a coherent request context and check it
  * at the actual editor publication boundary. Match document ID/version and the active
  * snapshot/request generation, including metadata, workspace/index dependencies, and
  * closed-document state as appropriate. An old completion must never overwrite newer
@@ -70,7 +70,8 @@
  * current results plus explicitly bounded pending work/history, release replaced results,
  * and clear owned caches when sessions close. Workspace snapshots must compose immutable
  * document, syntax, semantic, and index results for a coherent captured workspace state;
- * no workspace snapshot or central snapshot manager is implemented here.
+ * the document store captures document and configuration state; index providers retain
+ * their own publication and cache lifecycles.
  *
  * <h2>Existing indexes and follow-up boundaries</h2>
  * JavaProjectSemanticIndex copies builder maps and nested lists; its SourceFileIndex,
@@ -89,11 +90,10 @@
  * bounds in that subsystem. ProjectLanguageIndexService owns current indexes by project
  * and language, but its lifecycle/publication rules still need to meet the policy above.
  * <p>
- * CodeEditorPane rejects superseded diagnostic generations on the UI thread, but allocates
- * fresh IDs per request and relies on worker shutdown at close without an explicit
- * closed-editor publication check. Stable owner identity and complete close/metadata/
- * workspace invalidation belong to the DocumentStore/editor scheduling migration;
- * this change does not claim that migration is complete.
+ * CodeEditorPane captures one workspace per language request and retains the stable
+ * document identity. UI publication rejects changed documents, metadata, configuration,
+ * superseded request generations, and closed editors. Existing document-only providers
+ * remain compatible through workspace-aware default adapters.
  * <p>
  * JavaSemanticAnalyzer's process-wide JDK stub cache uses lock/volatile publication and
  * holds one runtime's data, rather than historical snapshots, but its public stub graph

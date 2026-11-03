@@ -3,6 +3,8 @@ package dev.railroadide.railroad.ide.diagnostics;
 import org.jetbrains.annotations.NotNull;
 
 import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot;
 
 import java.util.List;
 
@@ -20,4 +22,15 @@ public interface DiagnosticsProvider<D extends EditorDiagnostic<?>> {
      */
     @NotNull
     List<D> compute(DocumentSnapshot snapshot);
+
+    /**
+     * Computes diagnostics within one captured workspace, delegating to existing providers by default.
+     *
+     * @param workspace immutable request workspace
+     * @param id document to inspect
+     * @return diagnostics for the captured revision
+     */
+    default @NotNull List<D> compute(WorkspaceSnapshot workspace, DocumentId id) {
+        return compute(workspace.document(id).orElseThrow());
+    }
 }

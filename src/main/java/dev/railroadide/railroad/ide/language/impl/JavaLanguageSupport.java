@@ -17,6 +17,7 @@ import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexPersisten
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexer;
 import dev.railroadide.railroad.ide.signature.JdtJavaSignatureHelpProvider;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticPersistence;
 import dev.railroadide.railroad.ide.syntaxhighlighting.TreeSitterJavaSyntaxHighlighting;
 import dev.railroadide.railroad.ide.ui.JavaCodeEditorPane;
@@ -45,9 +46,10 @@ public final class JavaLanguageSupport extends BaseLanguageSupport {
     }
 
     @Override
-    public EditorOpenView open(Project project, Path file) {
+    public EditorOpenView open(Project project, DocumentId documentId, Path file) {
         var editorPane = new JavaCodeEditorPane(
             project,
+            documentId,
             file,
             CodeEditorConfig.fromLanguageSupport(project, file, this,
                 TreeSitterJavaSyntaxHighlighting::computeHighlighting));

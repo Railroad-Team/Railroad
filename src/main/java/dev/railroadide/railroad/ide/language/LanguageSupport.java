@@ -8,6 +8,7 @@ import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexPersisten
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexer;
 import dev.railroadide.railroad.ide.language.ProjectDiagnosticsFeatureFactory;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import org.jspecify.annotations.Nullable;
 
@@ -64,12 +65,15 @@ public interface LanguageSupport {
 
     /**
      * Creates the editor view for a file in the supplied project.
+     * Text editors, including those created lazily by the view, must retain the
+     * supplied document identity in their captured snapshots.
      *
      * @param project the project whose files and configuration are used
+     * @param documentId authoritative logical document identity allocated by the IDE owner
      * @param file the source file to process
      * @return the opened content and optional active text editor
      */
-    EditorOpenView open(Project project, Path file);
+    EditorOpenView open(Project project, DocumentId documentId, Path file);
 
     /**
      * Reports whether this language uses text editing; the default is true.

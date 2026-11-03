@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.language.impl;
 
 import dev.railroadide.railroad.ide.language.BaseBinaryLanguageSupport;
 import dev.railroadide.railroad.ide.language.EditorOpenView;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.ui.ImageViewerPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.utility.FileUtils;
@@ -27,7 +28,7 @@ public class ImageLanguageSupport extends BaseBinaryLanguageSupport {
     }
 
     @Override
-    public EditorOpenView open(Project project, Path file) {
+    public EditorOpenView open(Project project, DocumentId documentId, Path file) {
         return new EditorOpenView(
             new ImageViewerPane(file),
             null,

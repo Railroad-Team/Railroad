@@ -9,9 +9,7 @@ import dev.railroadide.railroad.ide.language.LanguageSupport;
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.language.impl.ImageLanguageSupport;
 import dev.railroadide.railroad.ide.language.impl.PlainTextLanguageSupport;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
+import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.ui.*;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
@@ -65,6 +63,17 @@ import static dev.railroadide.railroad.ide.ui.editor.EditorTabSessionState.DEFAU
  */
 @SuppressWarnings("resource")
 public class EditorTabManager {
+    /**
+     * Reports whether an open source editor owns file watching and persistence for a document.
+     * Call on the JavaFX application thread.
+     *
+     * @param id document identity to inspect
+     * @return whether a live text editor owns this document
+     */
+    public boolean hasOpenTextEditor(DocumentId id) {
+        EditorTab tab = openTabs.get(id);
+        return tab != null && tab.view().activeEditor() != null && !tab.view().activeEditor().isEditorClosed();
+    }
     private final Map<DocumentId, EditorTab> openTabs = new LinkedHashMap<>();
     private final Deque<ClosedEditorTab> recentlyClosedTabs = new ArrayDeque<>();
     private final Set<EditorTab> tabsByRecency = new LinkedHashSet<>();
@@ -469,7 +478,9 @@ public class EditorTabManager {
             return null;
         }
 
-        var editorOpenView = support.open(project, normalizedPath);
+        var document = new FileSystemDocument(normalizedPath, support.languageId());
+        DocumentIdentity identity = Services.IDE_STATE.identifyDocument(document);
+        var editorOpenView = support.open(project, identity.id(), normalizedPath);
         if (editorOpenView == null) {
             if (request.openExternally()) {
                 FileUtils.openInDefaultApplication(normalizedPath);
@@ -477,8 +488,10 @@ public class EditorTabManager {
             return null;
         }
 
-        var document = new FileSystemDocument(normalizedPath, support.languageId());
-        DocumentIdentity identity = Services.IDE_STATE.identifyDocument(document);
+        initializeEditor(editorOpenView.activeEditor(), identity);
+        editorOpenView.activeEditorProperty().addListener((_, _, current) -> initializeEditor(current,
+            Services.IDE_STATE.findDocumentIdentity(document.getUri()).orElse(identity)));
+
         boolean preview = request.preview()
             && !request.pinned()
             && Boolean.TRUE.equals(Settings.ENABLE_PREVIEW_TABS.getValue());
@@ -529,6 +542,53 @@ public class EditorTabManager {
             enforceTabLimit(editorTab);
         }
         return editorTab;
+    }
+
+    private void initializeEditor(TextEditorPane editor, DocumentIdentity identity) {
+        if (editor != null) {
+            Services.IDE_STATE.getDocumentStore().ifPresent(store -> {
+                DocumentState retainedState = store.state(identity.id()).orElse(null);
+                if (!editor.isInitialContentLoaded()) {
+                    if (retainedState != null && retainedState.overlay() instanceof TextDocumentSnapshot draft) {
+                        editor.restoreOverlay(draft,
+                            retainedState.backing() == null ? null : retainedState.backing().version(),
+                            retainedState.isStale());
+                    }
+                    editor.setDocumentStore(store);
+                    return;
+                }
+                TextDocumentSnapshot loaded = editor.captureSnapshot();
+                DocumentState state = store.state(identity.id()).orElse(null);
+                if (state != null && state.overlay() instanceof TextDocumentSnapshot) {
+                    if (!(state.backing() instanceof TextDocumentSnapshot backing)
+                        || !backing.text().equals(loaded.text()) || !backing.uri().equals(loaded.uri())) {
+                        editor.restoreSavedVersion(store.latestVersion(identity.id()).orElse(loaded.version()).next());
+                        store.publishBacking(editor.captureSnapshot());
+                    }
+                    store.relocate(identity.id(), loaded.uri());
+                    DocumentState retained = store.state(identity.id()).orElseThrow();
+                    editor.restoreOverlay((TextDocumentSnapshot) retained.overlay(), retained.backing().version(),
+                        retained.isStale());
+                } else if (state != null && state.overlay() == null
+                    && state.backing() instanceof TextDocumentSnapshot backing) {
+                    if (backing.text().equals(loaded.text()) && backing.uri().equals(loaded.uri())) {
+                        editor.restoreSavedVersion(backing.version());
+                    } else {
+                        editor.restoreSavedVersion(store.latestVersion(identity.id()).orElse(backing.version()).next());
+                        store.publishBacking(editor.captureSnapshot());
+                    }
+                } else {
+                    if (state == null || state.backing() == null) {
+                        store.latestVersion(identity.id())
+                            .ifPresent(version -> editor.restoreSavedVersion(version.next()));
+                        loaded = editor.captureSnapshot();
+                    }
+                    store.publishBacking(loaded);
+                }
+                editor.setDocumentStore(store);
+            });
+        }
+
     }
 
     private void restoreWorkspaceOnApplicationThread(
@@ -1300,6 +1360,11 @@ public class EditorTabManager {
 
     /**
      * Saves the active editor to a destination and rebinds its document identity and path.
+     * The logical document ID is retained. A destination registered under a different
+     * ID is rejected before writing, including when that document has no open tab.
+     * The persisted snapshot replaces backing and clears the overlay in one atomic transition.
+     * If rebinding or store finalization fails, the destination is retained, the original
+     * editor location is restored, and its draft remains available for retry.
      *
      * @param targetPath destination file for the active document
      * @return true if saving and any required rebinding succeed
@@ -1315,41 +1380,54 @@ public class EditorTabManager {
             return false;
 
         Path normalizedTarget = targetPath.toAbsolutePath().normalize();
-        if (pathsMatch(editorTab.path(), normalizedTarget))
-            return save(editorTab);
-
-        Optional<DocumentIdentity> targetIdentity = Services.IDE_STATE.findDocumentIdentity(
-            DocumentUri.fromPath(normalizedTarget));
-        EditorTab conflictingTab = targetIdentity.map(DocumentIdentity::id).map(openTabs::get).orElse(null);
-        if (conflictingTab != null && conflictingTab != editorTab) {
-            Railroad.LOGGER.warn("Cannot save {} as {} because that document is already open", editorTab.path(),
+        DocumentUri targetUri = DocumentUri.fromPath(normalizedTarget);
+        Optional<DocumentIdentity> targetIdentity = Services.IDE_STATE.findDocumentIdentity(targetUri);
+        if (targetIdentity.isPresent() && !targetIdentity.get().id().equals(editorTab.documentId())) {
+            Railroad.LOGGER.warn("Cannot save {} as {} because that destination belongs to another document identity",
+                editorTab.path(),
                 normalizedTarget);
             return false;
         }
 
+        if (pathsMatch(editorTab.path(), normalizedTarget))
+            return save(editorTab);
+
         Path previousPath = editorTab.path();
-        DocumentId previousId = editorTab.documentId();
-        if (!editor.saveAs(normalizedTarget))
+        DocumentIdentity previousIdentity = editorTab.identity();
+        DocumentStore store = Services.IDE_STATE.getDocumentStore().orElse(null);
+        DocumentState expectedState = store == null ? null : store.state(editorTab.documentId()).orElse(null);
+        if (!editor.saveAs(normalizedTarget, savedSnapshot -> {
+            try {
+                DocumentIdentity reboundIdentity = Services.IDE_STATE.rebindDocument(previousIdentity, targetUri);
+                if (editorTab.document() instanceof FileSystemDocument fileSystemDocument) {
+                    fileSystemDocument.rebind(normalizedTarget);
+                }
+                editorTab.rebind(reboundIdentity, normalizedTarget);
+                if (store != null) {
+                    store.commitSaveAs(savedSnapshot, expectedState);
+                }
+            } catch (RuntimeException exception) {
+                try {
+                    Services.IDE_STATE.findDocumentIdentity(targetUri)
+                        .filter(identity -> identity.id().equals(previousIdentity.id()))
+                        .ifPresent(identity -> Services.IDE_STATE.rebindDocument(identity, previousIdentity.uri()));
+                    if (editorTab.document() instanceof FileSystemDocument fileSystemDocument) {
+                        fileSystemDocument.rebind(previousPath);
+                    }
+                    editorTab.rebind(previousIdentity, previousPath);
+                } catch (RuntimeException rollbackFailure) {
+                    exception.addSuppressed(rollbackFailure);
+                }
+                Railroad.LOGGER.error(
+                    "Save As wrote {} but finalization failed; the original editor location and draft were retained",
+                    normalizedTarget, exception);
+                throw exception;
+            }
+        }))
             return false;
 
-        try {
-            DocumentIdentity reboundIdentity = targetIdentity
-                .filter(identity -> !Objects.equals(identity.id(), previousId))
-                .orElseGet(() -> Services.IDE_STATE.rebindDocument(
-                    editorTab.identity(),
-                    DocumentUri.fromPath(normalizedTarget)));
-            if (editorTab.document() instanceof FileSystemDocument fileSystemDocument) {
-                fileSystemDocument.rebind(normalizedTarget);
-            }
-            replaceOpenTabIdentity(previousId, reboundIdentity.id());
-            editorTab.rebind(reboundIdentity, normalizedTarget);
-            refreshTabPresentations();
-            return true;
-        } catch (RuntimeException exception) {
-            editor.rebind(previousPath);
-            Railroad.LOGGER.error("Failed to rebind editor from {} to {}", previousPath, normalizedTarget, exception);
-            return false;
-        }
+        refreshTabPresentations();
+        return true;
     }
 
     /**
@@ -1358,27 +1436,18 @@ public class EditorTabManager {
     public void discardUnsavedChangesOnClose() {
         openTabs.values().stream()
             .filter(EditorTab::dirty)
-            .map(EditorTab::view)
-            .map(EditorOpenView::activeEditor)
-            .filter(Objects::nonNull)
-            .forEach(TextEditorPane::discardChangesOnClose);
+            .forEach(tab -> {
+                TextEditorPane editor = tab.view().activeEditor();
+                if (editor != null) {
+                    editor.discardChangesOnClose();
+                    discardApprovedTabs.add(tab);
+                }
+            });
     }
 
     private boolean save(EditorTab editorTab) {
         TextEditorPane editor = editorTab.view().activeEditor();
         return editor == null || editor.saveNow();
-    }
-
-    private void replaceOpenTabIdentity(DocumentId previousId, DocumentId newId) {
-        if (previousId.equals(newId))
-            return;
-
-        var reboundTabs = new LinkedHashMap<DocumentId, EditorTab>();
-        openTabs.forEach((documentId, tab) -> reboundTabs.put(
-            documentId.equals(previousId) ? newId : documentId,
-            tab));
-        openTabs.clear();
-        openTabs.putAll(reboundTabs);
     }
 
     /**
@@ -1522,7 +1591,62 @@ public class EditorTabManager {
             EditorViewState.capture(editorTab.view().activeEditor()));
     }
 
+    private void closeRemovedEditor(TextEditorPane editor) {
+        try {
+            editor.close();
+        } catch (RuntimeException exception) {
+            Railroad.LOGGER.warn("Failed to close removed editor {}; retaining its draft", editor.getFilePath(),
+                exception);
+        }
+        if (!editor.isEditorClosed()) {
+            editor.closeRetainingDraft();
+        }
+        editor.dispose();
+    }
+
+    /**
+     * Closes editors through the normal save/discard policy before releasing the project store.
+     * A failed save keeps its tab open and prevents project closure.
+     *
+     * @return whether all editors completed closure
+     */
+    public boolean prepareProjectClose() {
+        List<EditorTab> closing = List.copyOf(openTabs.values());
+        for (EditorTab editorTab : closing) {
+            if (!discardApprovedTabs.contains(editorTab) && !save(editorTab)) {
+                TextEditorPane editor = editorTab.view().activeEditor();
+                if (editor == null || !editor.hasPendingExternalChange()) {
+                    showFailedCloseDialog(editorTab);
+                }
+                return false;
+            }
+        }
+        if (closing.stream().anyMatch(tab -> !discardApprovedTabs.contains(tab) && tab.dirty()))
+            return false;
+        for (EditorTab editorTab : closing) {
+            TextEditorPane editor = editorTab.view().activeEditor();
+            if (editor != null) {
+                if (discardApprovedTabs.contains(editorTab)) {
+                    editor.close();
+                } else {
+                    editor.closeRetainingDraft();
+                }
+            }
+            requestClose(editorTab);
+        }
+        return true;
+    }
+
     private void handleClosed(EditorTab editorTab) {
+        if (!openTabs.containsKey(editorTab.documentId()))
+            return;
+        TextEditorPane editor = editorTab.view().activeEditor();
+        if (editor != null) {
+            closeRemovedEditor(editor);
+        }
+        if (editorTab.view().content() instanceof MarkdownPreviewPane markdown) {
+            markdown.close();
+        }
         if (openTabs.remove(editorTab.documentId()) == null)
             return;
 
@@ -1568,8 +1692,13 @@ public class EditorTabManager {
     }
 
     private void handleCloseRequest(EditorTab editorTab, Event event) {
+        if (editorTab.view().activeEditor() != null && editorTab.view().activeEditor().isEditorClosed())
+            return;
         if (discardApprovedTabs.remove(editorTab)) {
             pendingCloseSnapshots.put(editorTab.documentId(), captureClosedTab(editorTab));
+            if (editorTab.view().activeEditor() != null) {
+                editorTab.view().activeEditor().close();
+            }
             return;
         }
 
@@ -1582,6 +1711,14 @@ public class EditorTabManager {
             return;
         }
 
+        TextEditorPane editor = editorTab.view().activeEditor();
+        if (editor != null) {
+            editor.close();
+            if (!editor.isEditorClosed()) {
+                event.consume();
+                return;
+            }
+        }
         pendingCloseSnapshots.put(editorTab.documentId(), captureClosedTab(editorTab));
     }
 
@@ -1649,11 +1786,24 @@ public class EditorTabManager {
             return;
 
         Path normalizedNewPath = newPath.get().toAbsolutePath().normalize();
-        Path previousPath = normalizedNewPath.resolveSibling(event.oldName());
-        Runnable update = () -> findOpen(previousPath).ifPresent(editorTab -> {
+        DocumentUri targetUri = DocumentUri.fromPath(normalizedNewPath);
+        Runnable update = () -> Services.IDE_STATE.findDocumentIdentity(event.previousUri()).ifPresent(identity -> {
             DocumentIdentity reboundIdentity = Services.IDE_STATE.rebindDocument(
-                editorTab.identity(),
-                DocumentUri.fromPath(normalizedNewPath));
+                identity,
+                targetUri);
+            Services.IDE_STATE.getDocumentStore()
+                .ifPresent(store -> store.relocate(identity.id(), targetUri));
+            List<ClosedEditorTab> relocatedTabs = recentlyClosedTabs.stream()
+                .map(closed -> closed.documentId().equals(identity.id())
+                    ? new ClosedEditorTab(reboundIdentity, normalizedNewPath, closed.pinned(), closed.preview(),
+                        closed.editorGroupId(), closed.previousIndex(), closed.viewState())
+                    : closed)
+                .toList();
+            recentlyClosedTabs.clear();
+            recentlyClosedTabs.addAll(relocatedTabs);
+            EditorTab editorTab = openTabs.get(identity.id());
+            if (editorTab == null)
+                return;
             if (editorTab.document() instanceof FileSystemDocument fileSystemDocument) {
                 fileSystemDocument.rebind(normalizedNewPath);
             }
@@ -1733,6 +1883,8 @@ public class EditorTabManager {
     }
 
     private void resetTracking() {
+        openTabs.values().stream().map(EditorTab::view).map(EditorOpenView::activeEditor)
+            .filter(Objects::nonNull).forEach(this::closeRemovedEditor);
         selectionGeneration++;
         selectionUpdateScheduled = false;
         replacingPreview = false;

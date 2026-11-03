@@ -1,9 +1,16 @@
 package dev.railroadide.railroad.ide.ui.codeeditor;
 
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.WorkspaceModes;
+import dev.railroadide.railroad.ide.language.LanguageSupports;
+import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.ui.editor.EditorSaveState;
+import dev.railroadide.railroad.ide.ui.editor.EditorTab;
+import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
+import dev.railroadide.railroad.project.RailroadProject;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
+import javafx.scene.image.WritableImage;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -17,7 +24,9 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static dev.railroadide.railroad.ide.ui.editor.EditorTabSessionState.DEFAULT_EDITOR_GROUP_ID;
 
 public class TextEditorPaneSnapshotTest {
     @TempDir
@@ -33,6 +42,7 @@ public class TextEditorPaneSnapshotTest {
             Platform.runLater(started::countDown);
         }
         assertTrue(started.await(10, TimeUnit.SECONDS));
+        LanguageSupports.initialize();
     }
 
     @Test
@@ -41,7 +51,8 @@ public class TextEditorPaneSnapshotTest {
         String originalText = "class Example {}";
         String editedText = "class Example { int value; }";
         Files.writeString(file, originalText);
-        var openEditor = new FutureTask<>(() -> new TextEditorPane(file, "java"));
+        var documentId = Services.IDE_STATE.identifyDocument(new FileSystemDocument(file, "java")).id();
+        var openEditor = new FutureTask<>(() -> new TextEditorPane(documentId, file, "java"));
         Platform.runLater(openEditor);
         TextEditorPane editor = openEditor.get(10, TimeUnit.SECONDS);
 
@@ -51,6 +62,7 @@ public class TextEditorPaneSnapshotTest {
                 var unchanged = editor.captureSnapshot();
 
                 assertEquals(originalText, original.text());
+                assertSame(documentId, original.id());
                 assertEquals(original.id(), unchanged.id());
                 assertEquals(original.version(), unchanged.version());
 
@@ -82,7 +94,8 @@ public class TextEditorPaneSnapshotTest {
         String originalText = "class Example {}";
         String editedText = "class Example { int value; }";
         Files.writeString(file, originalText);
-        var openEditor = new FutureTask<>(() -> new TextEditorPane(file, "java"));
+        var documentId = Services.IDE_STATE.identifyDocument(new FileSystemDocument(file, "java")).id();
+        var openEditor = new FutureTask<>(() -> new TextEditorPane(documentId, file, "java"));
         Platform.runLater(openEditor);
         TextEditorPane editor = openEditor.get(10, TimeUnit.SECONDS);
 
@@ -120,19 +133,20 @@ public class TextEditorPaneSnapshotTest {
         String originalText = "class Example {}";
         String updatedText = "class Example { int externalValue; }";
         Files.writeString(file, originalText);
-        var openEditor = new FutureTask<>(() -> new TextEditorPane(file, "java"));
+        var documentId = Services.IDE_STATE.identifyDocument(new FileSystemDocument(file, "java")).id();
+        var openEditor = new FutureTask<>(() -> new TextEditorPane(documentId, file, "java"));
         Platform.runLater(openEditor);
         TextEditorPane editor = openEditor.get(10, TimeUnit.SECONDS);
         var reloaded = new CompletableFuture<Void>();
-        ChangeListener<EditorSaveState> reloadListener = (observable, oldState, newState) -> {
-            if (newState == EditorSaveState.CLEAN && updatedText.equals(editor.getText())) {
+        ChangeListener<String> reloadListener = (observable, oldText, newText) -> {
+            if (updatedText.equals(newText)) {
                 reloaded.complete(null);
             }
         };
 
         try {
             var captureOriginal = new FutureTask<>(() -> {
-                editor.saveStateProperty().addListener(reloadListener);
+                editor.textProperty().addListener(reloadListener);
                 return editor.captureSnapshot();
             });
             Platform.runLater(captureOriginal);
@@ -157,7 +171,47 @@ public class TextEditorPaneSnapshotTest {
             });
         } finally {
             onFxThread(() -> {
-                editor.saveStateProperty().removeListener(reloadListener);
+                editor.textProperty().removeListener(reloadListener);
+                editor.discardChangesOnClose();
+                editor.close();
+                editor.dispose();
+            });
+        }
+    }
+
+    @Test
+    public void javaEditorSnapshotsUseEditorTabIdentityBeforeAndAfterEditing() throws Exception {
+        Path file = tempDirectory.resolve("Identity.java");
+        Files.writeString(file, "class Identity {}");
+        var document = new FileSystemDocument(file, "java");
+        var identity = Services.IDE_STATE.identifyDocument(document);
+        var openEditor = new FutureTask<>(() -> {
+            var project = new RailroadProject(tempDirectory, "Identity test", new WritableImage(1, 1));
+            return new JavaLanguageSupport().open(project, identity.id(), file);
+        });
+        Platform.runLater(openEditor);
+        var view = openEditor.get(10, TimeUnit.SECONDS);
+        TextEditorPane editor = view.activeEditor();
+
+        try {
+            onFxThread(() -> {
+                var tab = new EditorTab(identity, document, view, DEFAULT_EDITOR_GROUP_ID, false, false);
+                var original = editor.captureSnapshot();
+                assertEquals(tab.documentId(), original.id());
+                assertSame(identity.id(), original.id());
+                assertEquals(Services.IDE_STATE.identifyDocument(new FileSystemDocument(file, "java")).id(),
+                    original.id());
+
+                editor.replaceText("class Identity { int value; }");
+                var edited = editor.captureSnapshot();
+
+                assertEquals(tab.documentId(), edited.id());
+                assertSame(original.id(), edited.id());
+                assertTrue(edited.version().isAfter(original.version()));
+                assertEquals("class Identity { int value; }", edited.text());
+            });
+        } finally {
+            onFxThread(() -> {
                 editor.discardChangesOnClose();
                 editor.close();
                 editor.dispose();

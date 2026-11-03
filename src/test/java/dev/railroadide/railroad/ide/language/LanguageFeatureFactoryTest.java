@@ -65,7 +65,7 @@ public class LanguageFeatureFactoryTest {
         CompletionProvider completion = (snapshot, trigger) -> CompletionResult.empty();
         var support = new BaseLanguageSupport("test", "Test", Set.of("test")) {
             @Override
-            public EditorOpenView open(Project project, Path file) {
+            public EditorOpenView open(Project project, DocumentId documentId, Path file) {
                 throw new AssertionError("Feature creation must not open an editor");
             }
 
@@ -93,7 +93,7 @@ public class LanguageFeatureFactoryTest {
         CompletionProvider completion = (snapshot, trigger) -> CompletionResult.empty();
         var support = new BaseLanguageSupport("test", "Test", Set.of("test")) {
             @Override
-            public EditorOpenView open(Project project, Path file) {
+            public EditorOpenView open(Project project, DocumentId documentId, Path file) {
                 throw new AssertionError("Feature creation must not open an editor");
             }
 

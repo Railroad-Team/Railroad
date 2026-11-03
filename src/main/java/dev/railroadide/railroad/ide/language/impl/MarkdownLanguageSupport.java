@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.language.impl;
 
 import dev.railroadide.railroad.ide.language.BaseLanguageSupport;
 import dev.railroadide.railroad.ide.language.EditorOpenView;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.ui.MarkdownPreviewPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 
@@ -20,8 +21,8 @@ public final class MarkdownLanguageSupport extends BaseLanguageSupport {
     }
 
     @Override
-    public EditorOpenView open(Project project, Path file) {
-        var editorPane = new MarkdownPreviewPane(file, project);
+    public EditorOpenView open(Project project, DocumentId documentId, Path file) {
+        var editorPane = new MarkdownPreviewPane(documentId, file, project);
         return new EditorOpenView(editorPane, null, languageId());
     }
 }

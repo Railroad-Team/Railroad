@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.language.impl;
 
 import dev.railroadide.railroad.ide.language.BaseLanguageSupport;
 import dev.railroadide.railroad.ide.language.EditorOpenView;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.syntaxhighlighting.JsonSyntaxHighlighting;
 import dev.railroadide.railroad.ide.ui.JsonCodeEditorPane;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorConfig;
@@ -22,9 +23,10 @@ public final class JsonLanguageSupport extends BaseLanguageSupport {
     }
 
     @Override
-    public EditorOpenView open(Project project, Path file) {
+    public EditorOpenView open(Project project, DocumentId documentId, Path file) {
         var editor = new JsonCodeEditorPane(
             project,
+            documentId,
             file,
             CodeEditorConfig.fromLanguageSupport(project, file, this, JsonSyntaxHighlighting::computeHighlighting));
         return new EditorOpenView(
