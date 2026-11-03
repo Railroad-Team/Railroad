@@ -4,6 +4,7 @@ import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.project.*;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CancellationException;
 
 /** Builds reusable Java analysis inputs exclusively from captured documents and configuration. */
 public final class JavaWorkspaceAnalysisProvider {
@@ -28,6 +29,8 @@ public final class JavaWorkspaceAnalysisProvider {
      */
     public synchronized JavaWorkspaceAnalysis capture(WorkspaceSnapshot workspace) {
         Objects.requireNonNull(workspace);
+        if (Thread.currentThread().isInterrupted())
+            throw new CancellationException("Java analysis cancelled");
         return workspaces.computeIfAbsent(workspace, this::build);
     }
 
@@ -36,6 +39,8 @@ public final class JavaWorkspaceAnalysisProvider {
         Map<Path, String> texts = new HashMap<>();
         var indexer = new JavaProjectSemanticIndexer();
         for (DocumentSnapshot document : workspace.documents().values()) {
+            if (Thread.currentThread().isInterrupted())
+                throw new CancellationException("Java analysis cancelled");
             if (!(document instanceof TextDocumentSnapshot text) || !"java".equals(text.languageId()))
                 continue;
             Path path = text.uri().filePath().orElseGet(() -> Path.of(".railroad", "virtual", text.id().toString(),
@@ -51,7 +56,7 @@ public final class JavaWorkspaceAnalysisProvider {
         Path jdk = jdkHome(configuration);
         JavaSymbolIndex binary = binaries.computeIfAbsent(configuration, _ -> new CompositeJavaSymbolIndex(List.of(
             JavaLibrarySymbolIndex.build(classpath), jdks.computeIfAbsent(jdk, JavaJdkSymbolIndex::build))));
-        return new JavaWorkspaceAnalysis(sources, new CompositeJavaSymbolIndex(List.of(sources, binary)), texts,
+        return new JavaWorkspaceAnalysis(sources, new JavaSourcePrecedenceIndex(sources, binary), texts,
             classpath, jdk);
     }
 

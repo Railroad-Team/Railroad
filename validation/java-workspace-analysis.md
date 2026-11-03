@@ -1,46 +1,62 @@
-# Java workspace analysis
+# Captured Java source analysis
 
-Depends on upstream PR #652. This follow-up separates the Java provider implementation
-from DocumentStore lifecycle integration.
+PR #653 adapts the Java providers to the DocumentStore contract merged in #652.
+The scope is captured Java **source** dependencies. It does not introduce a new
+module-resolution model or binary-artifact snapshot infrastructure.
 
-## Request inputs
+## Request inputs and compatibility
 
-The workspace overloads of diagnostics, completion and signature help obtain their
-Java dependencies from one captured workspace. They do not query the current project
-model or the live project language index. Legacy document-only overloads retain their
-existing behavior for provider compatibility.
+Workspace overloads of diagnostics, completion and signature help derive their Java
+source declarations and bodies from the supplied capture, including unsaved overlays
+and closed files. They do not query the live project source index. Legacy document-only
+provider overloads retain their existing behavior.
 
-`JavaWorkspaceAnalysisProvider` extracts source declarations from the current Java text
-snapshots in the capture, including unsaved overlays and closed files. It retains those
-source bodies so inherited-member completion cannot fall back to a newer disk file.
-Weak workspace/document caches share extraction across editors without retaining an
-unbounded history of source bodies.
+Source types take precedence over older compiled types of the same name. Completion
+also resolves inherited members from captured source bodies rather than reopening disk.
+Weak workspace/document caches reuse extraction without retaining an unbounded source
+version history. Classpath ordering comes from the captured configuration.
 
-Classpath order and JDK selection come from the captured configuration. Configured
-project compiler-output directories are excluded because their class files can describe
-newer or older content than the captured sources. Immutable library/JDK indexes are
-pinned for the configuration. These external binary artifacts are read when a
-configuration is first analyzed; this is not an atomic snapshot of external JAR/JDK
-bytes at `DocumentStore.capture()`. Replacing an artifact at the same path requires a
-new configuration revision. Module selection retains the existing project-wide index
-scope; per-module dependency visibility is a separate concern.
+The adapter preserves the existing project-wide source-index scope. Per-module visibility,
+per-module toolchain selection and module dependency graphs are deferred. When JDT staging
+finds different source bodies with the same package and filename, it omits that ambiguous
+unit rather than letting map iteration choose one module's declaration. Such a dependency
+may have no signature result until module-aware analysis is implemented.
 
-JDT signature help uses a temporary source tree containing only captured Java source
-bodies. It is removed in `finally`, including when parsing fails. JDT receives the
-captured dependency paths and configured JDK, and no live project source roots.
-Temporary source staging is deliberately request scoped; large workspaces should be
-profiled before introducing a shared staging lifecycle.
+External dependency/toolchain files are assumed stable during a request, as in the legacy
+pipeline. Semantic diagnostics/completion cache parsed library and JDK symbols; JDT uses
+the configured binary paths. Detecting in-place JAR/JDK replacement and pinning external
+artifact bytes across features are deferred. A captured Java source workspace is not an
+atomic snapshot of the entire compiler environment. Language-neutral binary document
+snapshots in DocumentStore remain unchanged.
 
-## Regression coverage
+## Signature staging and lifecycle
 
-- Delay completion until after dependencies have changed and their disk file has been
-  deleted. Resolve inherited members from the original unsaved source capture.
-- Change a dependency after capture. Diagnostics and JDT signature help resolve its
-  original signature; a new capture sees the changed dependency.
-- Change classpath ordering before starting analysis of an old capture. Old and new
-  requests preserve their respective binary precedence.
-- Run the existing provider and editor snapshot tests to retain document-only provider
-  compatibility and stale-result rejection.
+JDT receives immutable captured dependency trees. Its current compilation unit is supplied
+directly from the captured buffer, so editing that unit does not rewrite its dependencies.
+A four-entry source-only LRU cache reuses those trees. Evicted trees remain readable while
+a parser holds a lease; the final reader removes an evicted tree. Process shutdown retires
+all entries. New-tree failures and cancellation clean partially materialized directories.
+Interrupted workers stop staging and JDT receives a cancellation-aware progress monitor.
 
-The DocumentStore PR's pre-existing self-analysis baseline remains independent of this
-follow-up. Neither PR closes #188's zero-error self-analysis criterion.
+No binary archive cache or new module graph is introduced by this staging cache.
+
+## Validation and profiling
+
+Focused regressions cover retained unsaved dependencies, inheritance after disk deletion,
+source-over-binary precedence, classpath ordering, ambiguous source-unit handling,
+interruption, materialization failure, source-tree reuse and eviction with active readers.
+Existing editor stale-result and document-only provider tests remain applicable.
+
+Run the standalone profile against Railroad's actual Java sources with:
+
+```powershell
+.\gradlew.bat -I validation/java-workspace-profile.gradle profileCapturedJavaSignatures --console=plain
+```
+
+The harness verifies a signature resolved from another captured Railroad source file,
+then measures repeated requests and requests after editing the current buffer. It uses
+Gradle's test runtime classpath and a 4 GiB heap. Timings are observations, not CI thresholds.
+Recorded measurements and full-test evidence are in `java-workspace-analysis.json`.
+
+The pre-existing self-analysis baseline is independent of this source adapter. This PR
+must not add diagnostics to that baseline and does not claim to repair its existing errors.

@@ -1,0 +1,18 @@
+allprojects {
+    plugins.withId('java') {
+        sourceSets {
+            signatureProfile {
+                java.srcDir 'validation/profile'
+                compileClasspath += sourceSets.test.runtimeClasspath
+                runtimeClasspath += output + compileClasspath
+            }
+        }
+        tasks.register('profileCapturedJavaSignatures', JavaExec) {
+            dependsOn tasks.named('signatureProfileClasses')
+            classpath = sourceSets.signatureProfile.runtimeClasspath
+            mainClass = 'SignatureSnapshotProfile'
+            maxHeapSize = '4g'
+            args projectDir.absolutePath
+        }
+    }
+}

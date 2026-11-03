@@ -22,6 +22,48 @@ public class JavaWorkspaceAnalysisTest {
     @TempDir
     public Path directory;
 
+    @Test
+    public void capturedSourceShadowsAnOlderBinaryOfTheSameType() throws Exception {
+        DefaultDocumentStore store = store();
+        Path binary = library("old-classes", "binaryOnly");
+        store.publishConfiguration(new WorkspaceConfigurationSnapshot(1, Set.of(":"),
+            Map.of("module.:.classpath", binary.toString())));
+        TextDocumentSnapshot dependency = source("Library.java",
+            "package demo; public class Library { public int sourceOnly; }");
+        TextDocumentSnapshot use = source("Use.java", "package demo; class Use { void run(Library l) { l. } }");
+        store.publishBacking(dependency);
+        store.publishBacking(use);
+        Project project = (Project) Proxy.newProxyInstance(Project.class.getClassLoader(),
+            new Class<?>[]{Project.class},
+            (_, method, _) -> {
+                throw new AssertionError("Live project access: " + method.getName());
+            });
+        CompletionResult result = new JavaCompletionProvider(project).compute(store.capture(), use.id(),
+            use.text().indexOf("l.") + 1);
+        assertNotNull(result);
+        assertTrue(result.items().stream().anyMatch(item -> item.insertText().equals("sourceOnly")));
+        assertFalse(result.items().stream().anyMatch(item -> item.insertText().equals("binaryOnly")));
+    }
+
+    @Test
+    public void signatureHelpUsesCapturedSourceInsteadOfItsOlderClassFile() throws Exception {
+        DefaultDocumentStore store = store();
+        Path binary = library("old-signature-classes", "binaryOnly");
+        store.publishConfiguration(new WorkspaceConfigurationSnapshot(1, Set.of(":"),
+            Map.of("module.:.classpath", binary.toString())));
+        TextDocumentSnapshot dependency = source("Library.java",
+            "package demo; public class Library { public int captured(int count) { return count; } }");
+        TextDocumentSnapshot use = source("Use.java",
+            "package demo; class Use { void run(Library l) { l.captured(1); } }");
+        store.publishBacking(dependency);
+        store.publishBacking(use);
+        SignatureHelp help = new JdtJavaSignatureHelpProvider(new String[0]).compute(store.capture(), use.id(),
+            use.text().indexOf("1)") + 1);
+        assertNotNull(help);
+        assertEquals("captured", help.methodName());
+        assertEquals("int", help.parameters().getFirst().type());
+    }
+
     @BeforeAll
     public static void initialize() {
         WorkspaceModes.initialize();

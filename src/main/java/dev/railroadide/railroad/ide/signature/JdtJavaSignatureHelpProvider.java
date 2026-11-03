@@ -17,9 +17,8 @@ import java.nio.file.Files;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Comparator;
 import java.util.stream.Stream;
-import dev.railroadide.railroad.Railroad;
+import org.eclipse.core.runtime.NullProgressMonitor;
 
 /**
  * Signature help provider backed by Eclipse JDT. Responsible solely for
@@ -32,6 +31,7 @@ import dev.railroadide.railroad.Railroad;
 public record JdtJavaSignatureHelpProvider(@Nullable Path filePath, String[] systemModulePaths)
     implements
         SignatureHelpProvider {
+    private static final JavaSignatureSourceCache SOURCES = new JavaSignatureSourceCache(4);
     /**
      * Creates a JDT provider whose document location is supplied by each snapshot.
      *
@@ -51,19 +51,10 @@ public record JdtJavaSignatureHelpProvider(@Nullable Path filePath, String[] sys
         DocumentSnapshot snapshot = workspace.document(id).orElseThrow();
         if (!(snapshot instanceof TextDocumentSnapshot text) || !"java".equals(text.languageId()))
             return null;
+        JavaSignatureSources.checkCancelled();
         JavaWorkspaceAnalysis analysis = JavaLanguageSupport.analysisContextProvider().index(workspace);
-        Path staged = null;
-        try {
-            staged = Files.createTempDirectory("railroad-java-signatures-");
-            for (var entry : analysis.sourceIndex().files().values()) {
-                String packageName = entry.packageName();
-                Path directory = packageName == null ? staged : staged.resolve(packageName.replace('.', '/'));
-                Path target = directory.resolve(entry.path().getFileName());
-                if (!target.normalize().startsWith(staged))
-                    throw new IllegalArgumentException("Source location escapes the request directory");
-                Files.createDirectories(directory);
-                Files.writeString(target, analysis.sourceTexts().get(entry.path()), StandardCharsets.UTF_8);
-            }
+        JavaSignatureSources.checkCancelled();
+        try (JavaSignatureSourceCache.Lease sources = SOURCES.acquire(analysis, text)) {
             List<String> classpath = new ArrayList<>(analysis.classpath().stream().map(Path::toString).toList());
             Path jmods = analysis.jdkHome().resolve("jmods");
             if (Files.isDirectory(jmods)) {
@@ -72,19 +63,9 @@ public record JdtJavaSignatureHelpProvider(@Nullable Path filePath, String[] sys
                 }
             }
             return compute(snapshot, caretPosition, classpath.toArray(String[]::new),
-                new String[]{staged.toString()});
+                new String[]{sources.directory().toString()});
         } catch (IOException exception) {
             throw new UncheckedIOException("Cannot prepare captured Java sources for signature help", exception);
-        } finally {
-            if (staged != null) {
-                try (Stream<Path> files = Files.walk(staged)) {
-                    for (Path file : files.sorted(Comparator.reverseOrder()).toList()) {
-                        Files.deleteIfExists(file);
-                    }
-                } catch (IOException exception) {
-                    Railroad.LOGGER.warn("Cannot remove signature request directory {}", staged, exception);
-                }
-            }
         }
     }
 
@@ -112,7 +93,13 @@ public record JdtJavaSignatureHelpProvider(@Nullable Path filePath, String[] sys
         parser.setEnvironment(classpath, sourceRoots,
             sourceRoots == null ? null : new String[]{StandardCharsets.UTF_8.name()}, false);
 
-        CompilationUnit unit = (CompilationUnit) parser.createAST(null);
+        JavaSignatureSources.checkCancelled();
+        CompilationUnit unit = (CompilationUnit) parser.createAST(new NullProgressMonitor() {
+            @Override
+            public boolean isCanceled() {
+                return Thread.currentThread().isInterrupted() || super.isCanceled();
+            }
+        });
         int searchAt = Math.max(0,
             Math.min(Math.max(document.length() - 1, 0), caretPosition > 0 ? caretPosition - 1 : 0));
         var finder = new NodeFinder(unit, searchAt, 0);
