@@ -30,7 +30,7 @@ public record ClassStub(
     List<MethodStub> methods, // Methods in the class
     List<ConstructorStub> constructors, // Constructors in the class
     int modifiers, // Modifiers (e.g., public, abstract)
-    List<AnnotationStub> annotations // Annotations on the class
+    List<AnnotationStub> annotations, // Annotations on the class
     String enclosingClassName
 ) implements Stub {
     /**
