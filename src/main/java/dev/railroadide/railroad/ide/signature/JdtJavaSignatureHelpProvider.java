@@ -10,6 +10,15 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.language.impl.index.JavaWorkspaceAnalysis;
+import java.nio.file.Files;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.util.stream.Stream;
+import org.eclipse.core.runtime.NullProgressMonitor;
 
 /**
  * Signature help provider backed by Eclipse JDT. Responsible solely for
@@ -22,6 +31,7 @@ import java.util.List;
 public record JdtJavaSignatureHelpProvider(@Nullable Path filePath, String[] systemModulePaths)
     implements
         SignatureHelpProvider {
+    private static final JavaSignatureSourceCache SOURCES = new JavaSignatureSourceCache(4);
     /**
      * Creates a JDT provider whose document location is supplied by each snapshot.
      *
@@ -33,6 +43,47 @@ public record JdtJavaSignatureHelpProvider(@Nullable Path filePath, String[] sys
 
     @Override
     public @Nullable SignatureHelp compute(DocumentSnapshot snapshot, int caretPosition) {
+        return compute(snapshot, caretPosition, systemModulePaths, null);
+    }
+
+    @Override
+    public @Nullable SignatureHelp compute(WorkspaceSnapshot workspace, DocumentId id, int caretPosition) {
+        DocumentSnapshot snapshot = workspace.document(id).orElseThrow();
+        if (!(snapshot instanceof TextDocumentSnapshot text) || !"java".equals(text.languageId()))
+            return null;
+        JavaSignatureSources.checkCancelled();
+        JavaWorkspaceAnalysis analysis = JavaLanguageSupport.analysisContextProvider().index(workspace, id);
+        JavaSignatureSources.checkCancelled();
+        try (JavaSignatureSourceCache.Lease sources = SOURCES.acquire(analysis, text)) {
+            List<String> classpath = new ArrayList<>(analysis.classpath().stream().map(Path::toString).toList());
+            Path jmods = analysis.jdkHome().resolve("jmods");
+            if (Files.isDirectory(jmods)) {
+                try (Stream<Path> modules = Files.list(jmods)) {
+                    modules.filter(path -> path.getFileName().toString().endsWith(".jmod"))
+                        .sorted().map(Path::toString).forEach(classpath::add);
+                }
+            } else {
+                for (String runtime : List.of("jre/lib/rt.jar", "lib/rt.jar")) {
+                    Path archive = analysis.jdkHome().resolve(runtime);
+                    if (Files.isRegularFile(archive)) {
+                        classpath.add(archive.toString());
+                        break;
+                    }
+                }
+            }
+            return compute(snapshot, caretPosition, classpath.toArray(String[]::new),
+                new String[]{sources.directory().toString()});
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Cannot prepare captured Java sources for signature help", exception);
+        }
+    }
+
+    private @Nullable SignatureHelp compute(
+        DocumentSnapshot snapshot,
+        int caretPosition,
+        String[] classpath,
+        String[] sourceRoots
+    ) {
         if (!(snapshot instanceof TextDocumentSnapshot textSnapshot)
             || !JavaLanguageSupport.LANGUAGE_ID.equals(textSnapshot.languageId()))
             return null;
@@ -48,9 +99,16 @@ public record JdtJavaSignatureHelpProvider(@Nullable Path filePath, String[] sys
         parser.setBindingsRecovery(true);
         parser.setStatementsRecovery(true);
         parser.setUnitName(snapshot.uri().fileName().orElse("Snapshot.java"));
-        parser.setEnvironment(systemModulePaths, null, null, false);
+        parser.setEnvironment(classpath, sourceRoots,
+            sourceRoots == null ? null : new String[]{StandardCharsets.UTF_8.name()}, false);
 
-        CompilationUnit unit = (CompilationUnit) parser.createAST(null);
+        JavaSignatureSources.checkCancelled();
+        CompilationUnit unit = (CompilationUnit) parser.createAST(new NullProgressMonitor() {
+            @Override
+            public boolean isCanceled() {
+                return Thread.currentThread().isInterrupted() || super.isCanceled();
+            }
+        });
         int searchAt = Math.max(0,
             Math.min(Math.max(document.length() - 1, 0), caretPosition > 0 ? caretPosition - 1 : 0));
         var finder = new NodeFinder(unit, searchAt, 0);

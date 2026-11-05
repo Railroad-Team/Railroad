@@ -6,6 +6,7 @@ import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRuleEngine;
 import dev.railroadide.railroad.ide.indexing.Indexes;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaSourceSnapshotIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.*;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
@@ -13,7 +14,6 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import org.jetbrains.annotations.Nullable;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -2272,13 +2272,13 @@ public final class JavaSemanticAnalyzer {
             if (owner == null)
                 return null;
             try {
-                String source = Files.readString(owner.sourceFile());
+                String source = JavaSourceSnapshotIndex.readSource(projectIndex, owner.sourceFile());
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 var sourceContext = new JavaRuleContext(
                     owner.sourceFile(), source, model, projectIndex);
                 return findProjectSourceTypeParameterInfo(
                     model.syntaxTree().root(), model, sourceContext,
-                    ownerQualifiedName, variableName);
+                    owner.qualifiedName(), variableName);
             } catch (Exception _) {
                 return null;
             }
@@ -3233,14 +3233,14 @@ public final class JavaSemanticAnalyzer {
                 return List.of();
 
             try {
-                String source = Files.readString(sourceType.sourceFile());
+                String source = JavaSourceSnapshotIndex.readSource(projectIndex, sourceType.sourceFile());
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 var sourceContext = new JavaRuleContext(sourceType.sourceFile(), source, model, projectIndex);
                 Map<String, List<String>> collected = new LinkedHashMap<>();
                 collectDirectSuperTypesFromSourceFile(sourceContext, model.syntaxTree().root(), collected);
                 collected
                     .forEach((name, supers) -> directSuperTypesByQualifiedName.putIfAbsent(name, List.copyOf(supers)));
-                return directSuperTypesByQualifiedName.getOrDefault(qualifiedTypeName, List.of());
+                return directSuperTypesByQualifiedName.getOrDefault(sourceType.qualifiedName(), List.of());
             } catch (Exception _) {
                 return List.of();
             }
@@ -3433,13 +3433,13 @@ public final class JavaSemanticAnalyzer {
             }
 
             try {
-                String source = Files.readString(ownerType.sourceFile());
+                String source = JavaSourceSnapshotIndex.readSource(projectIndex, ownerType.sourceFile());
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 var sourceContext = new JavaRuleContext(
                     ownerType.sourceFile(), source, model, projectIndex);
                 Map<String, Type> accessorTypes = new LinkedHashMap<>();
                 collectProjectRecordAccessorTypes(
-                    model.syntaxTree().root(), model, sourceContext, ownerQualifiedName, accessorTypes);
+                    model.syntaxTree().root(), model, sourceContext, ownerType.qualifiedName(), accessorTypes);
                 Map<String, Type> copy = Collections.unmodifiableMap(new LinkedHashMap<>(accessorTypes));
                 projectRecordAccessorTypesByOwner.put(ownerQualifiedName, copy);
                 return copy;
@@ -3539,7 +3539,7 @@ public final class JavaSemanticAnalyzer {
             if (symbol.kind() != SymbolKind.METHOD)
                 return List.of();
             try {
-                String source = Files.readString(symbol.sourceFile());
+                String source = JavaSourceSnapshotIndex.readSource(projectIndex, symbol.sourceFile());
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 var sourceContext = new JavaRuleContext(symbol.sourceFile(), source, model, projectIndex);
                 List<Type> match = findProjectMethodParameterTypes(
@@ -3566,11 +3566,11 @@ public final class JavaSemanticAnalyzer {
             if (owner == null)
                 return List.of();
             try {
-                String source = Files.readString(owner.sourceFile());
+                String source = JavaSourceSnapshotIndex.readSource(projectIndex, owner.sourceFile());
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 var sourceContext = new JavaRuleContext(
                     owner.sourceFile(), source, model, projectIndex);
-                return List.copyOf(sourceContext.declaredMethodDescriptors(ownerQualifiedName));
+                return List.copyOf(sourceContext.declaredMethodDescriptors(owner.qualifiedName()));
             } catch (Exception _) {
                 return List.of();
             }
@@ -3698,7 +3698,7 @@ public final class JavaSemanticAnalyzer {
                 return new Type.UnknownType("<unknown>");
 
             try {
-                String source = Files.readString(symbol.sourceFile());
+                String source = JavaSourceSnapshotIndex.readSource(projectIndex, symbol.sourceFile());
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 var sourceContext = new JavaRuleContext(
                     symbol.sourceFile(),
@@ -5828,12 +5828,12 @@ public final class JavaSemanticAnalyzer {
             if (descriptor == null)
                 return List.of();
             try {
-                String source = Files.readString(descriptor.sourceFile());
+                String source = JavaSourceSnapshotIndex.readSource(projectIndex, descriptor.sourceFile());
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 var sourceContext = new JavaRuleContext(
                     descriptor.sourceFile(), source, model, projectIndex);
                 return findIndexedDirectSuperTypes(
-                    model.syntaxTree().root(), model, sourceContext, ownerQualifiedName);
+                    model.syntaxTree().root(), model, sourceContext, descriptor.qualifiedName());
             } catch (Exception _) {
                 return List.of();
             }
@@ -5996,10 +5996,10 @@ public final class JavaSemanticAnalyzer {
                 return List.of();
 
             try {
-                String source = Files.readString(descriptor.sourceFile());
+                String source = JavaSourceSnapshotIndex.readSource(projectIndex, descriptor.sourceFile());
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 return findDeclaredTypeParameterNames(
-                    model.syntaxTree().root(), model, ownerQualifiedName);
+                    model.syntaxTree().root(), model, descriptor.qualifiedName());
             } catch (Exception _) {
                 return List.of();
             }

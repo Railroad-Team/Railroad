@@ -6,6 +6,8 @@ import dev.railroadide.railroad.gradle.model.GradleModelListener;
 import dev.railroadide.railroad.gradle.service.GradleModelService;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentStore;
 import dev.railroadide.railroad.ide.sst.document.api.WorkspaceConfigurationSnapshot;
+import dev.railroadide.railroad.ide.language.impl.index.JavaLanguageIndexContext;
+import dev.railroadide.railroad.ide.language.impl.index.JavaLanguageIndexContextContributor;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.event.EventListener;
 import dev.railroadide.railroad.plugin.spi.events.ProjectConfigurationChangedEvent;
@@ -22,6 +24,8 @@ import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -33,6 +37,12 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
     private final ProjectDataStore.FileChangeListener settingsListener;
     private final GradleModelListener modelListener;
     private final EventListener<ProjectConfigurationChangedEvent> configurationListener;
+    private final Function<Project, JavaLanguageIndexContext> dependencyResolver;
+    private final ExecutorService dependencyWorkers = Executors.newVirtualThreadPerTaskExecutor();
+    private Future<?> dependencyTask;
+    private CompletableFuture<Void> resolution = CompletableFuture.completedFuture(null);
+    private Map<String, String> requestedSettings;
+    private long resolutionGeneration;
     private GradleModelService modelService;
     private boolean closed;
 
@@ -43,8 +53,24 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
      * @param store store receiving immutable configuration revisions
      */
     public ProjectWorkspaceConfiguration(Project project, DocumentStore store) {
+        this(project, store, new JavaLanguageIndexContextContributor()::resolveWorkspace);
+    }
+
+    /**
+     * Subscribes to configuration changes with a Maven resolver that runs on a background worker.
+     *
+     * @param project configuration owner
+     * @param store store receiving immutable configuration revisions
+     * @param dependencyResolver resolver invoked off the caller thread for Maven projects
+     */
+    public ProjectWorkspaceConfiguration(
+        Project project,
+        DocumentStore store,
+        Function<Project, JavaLanguageIndexContext> dependencyResolver
+    ) {
         this.project = project;
         this.store = store;
+        this.dependencyResolver = Objects.requireNonNull(dependencyResolver);
         facetListener = event -> {
             if (event.project() == project) {
                 refreshSettings();
@@ -81,6 +107,18 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             Railroad.LOGGER.warn("Cannot watch project settings for {}", project.getPath(), exception);
         }
         attachModelService();
+        if (isMavenProject()) {
+            refreshSettings();
+        }
+    }
+
+    /**
+     * Returns completion of the currently requested dependency resolution and its configuration publication.
+     *
+     * @return completion for the current request; superseded or closed requests are cancelled
+     */
+    public synchronized CompletableFuture<Void> ready() {
+        return resolution.copy();
     }
 
     /**
@@ -108,17 +146,84 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         if (closed)
             return;
 
+        Map<String, String> settings = settings(project);
+        if (isMavenProject()) {
+            resolveMaven(settings);
+            return;
+        }
+        cancelResolution();
         WorkspaceConfigurationSnapshot current = store.capture().configuration();
         Map<String, String> values = new TreeMap<>(current.settings());
         values.keySet().removeIf(key -> key.startsWith("project."));
-        values.putAll(settings(project));
+        if (modelService == null) {
+            values.keySet().removeIf(key -> key.startsWith("module.") || key.startsWith("gradle."));
+        }
+        values.putAll(settings);
         publish(modelService == null ? moduleIds(values) : current.moduleIds(), values);
     }
 
+    private boolean isMavenProject() {
+        return project.hasFacet(FacetManager.MAVEN) && !project.hasFacet(FacetManager.GRADLE);
+    }
+
+    private void resolveMaven(Map<String, String> settings) {
+        if (settings.equals(requestedSettings) && !resolution.isCompletedExceptionally())
+            return;
+        cancelResolution();
+        requestedSettings = Map.copyOf(settings);
+        long generation = resolutionGeneration;
+        WorkspaceConfigurationSnapshot expected = store.capture().configuration();
+        Path root = project.getPath();
+        Map<String, String> inputs = requestedSettings;
+        CompletableFuture<Void> completed = new CompletableFuture<>();
+        resolution = completed;
+        dependencyTask = dependencyWorkers.submit(() -> {
+            try {
+                JavaLanguageIndexContext context = dependencyResolver.apply(project);
+                Map<String, String> values = new TreeMap<>(inputs);
+                captureJavaConfiguration(root, context, values);
+                synchronized (this) {
+                    if (closed || generation != resolutionGeneration || !root.equals(project.getPath())
+                        || store.capture().configuration() != expected || !isMavenProject()) {
+                        completed.cancel(false);
+                        return;
+                    }
+                    // A changed POM may reach the filesystem before its configuration event is delivered.
+                    if (!inputs.equals(settings(project))) {
+                        refreshSettings();
+                        completed.cancel(false);
+                        return;
+                    }
+                    publish(moduleIds(values), values);
+                }
+                completed.complete(null);
+            } catch (Exception exception) {
+                synchronized (this) {
+                    if (!closed && generation == resolutionGeneration) {
+                        Railroad.LOGGER.warn("Cannot resolve workspace dependencies for {}", root, exception);
+                    }
+                }
+                completed.completeExceptionally(exception);
+            }
+        });
+    }
+
+    private void cancelResolution() {
+        resolutionGeneration++;
+        if (dependencyTask != null) {
+            dependencyTask.cancel(true);
+            dependencyTask = null;
+        }
+        resolution.cancel(false);
+        resolution = CompletableFuture.completedFuture(null);
+        requestedSettings = null;
+    }
+
     private synchronized void publishModel(GradleBuildModel model) {
-        if (closed || model.project() == null)
+        if (closed || model.project() == null || !project.hasFacet(FacetManager.GRADLE))
             return;
 
+        cancelResolution();
         Map<String, String> values = new TreeMap<>(store.capture().configuration().settings());
         values.keySet().removeIf(key -> key.startsWith("module.") || key.startsWith("gradle."));
         values.put("gradle.version", model.gradleVersion());
@@ -198,6 +303,11 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         values.put("project.facets", project.getFacets().stream().map(facet -> facet.getType().id())
             .sorted().collect(Collectors.joining("\n")));
         captureMavenModules(project.getPath(), project.getPath(), values, new HashSet<>());
+        if (!project.hasFacet(FacetManager.GRADLE) && !project.hasFacet(FacetManager.MAVEN)) {
+            captureJavaConfiguration(project.getPath(),
+                new JavaLanguageIndexContextContributor().resolveWorkspace(project),
+                values);
+        }
         for (String name : List.of("pom.xml", "build.gradle", "build.gradle.kts", "settings.gradle",
             "settings.gradle.kts", "gradle.properties")) {
             Path file = project.getPath().resolve(name);
@@ -223,6 +333,25 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             }
         }
         return values;
+    }
+
+    private static void captureJavaConfiguration(
+        Path root,
+        JavaLanguageIndexContext context,
+        Map<String, String> values
+    ) {
+        String prefix = "module.:.";
+        values.put(prefix + "directory", root.toAbsolutePath().normalize().toString());
+        values.put(prefix + "classpath", paths(context.classpathRoots().stream().map(Path::toFile).toList()));
+        values.put(prefix + "modulePath", paths(context.modulePathRoots().stream().map(Path::toFile).toList()));
+        values.put(prefix + "dependencies", paths(context.dependencyRoots().stream().map(Path::toFile).toList()));
+        values.put(prefix + "sources", Stream.concat(
+            context.sourceRoots().stream().map(path -> path + ":generated=false"),
+            context.generatedRoots().stream().map(path -> path + ":generated=true"))
+            .collect(Collectors.joining("\n")));
+        if (context.jdkHome() != null) {
+            values.put(prefix + "jdkHome", context.jdkHome().toString());
+        }
     }
 
     private static Set<String> moduleIds(Map<String, String> settings) {
@@ -261,6 +390,8 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
     @Override
     public synchronized void close() {
         closed = true;
+        cancelResolution();
+        dependencyWorkers.shutdownNow();
         Railroad.EVENT_BUS.unsubscribe(FacetDetectedEvent.class, facetListener);
         Railroad.EVENT_BUS.unsubscribe(ProjectConfigurationChangedEvent.class, configurationListener);
         project.getDataStore().removeFileChangeListener(settingsListener);

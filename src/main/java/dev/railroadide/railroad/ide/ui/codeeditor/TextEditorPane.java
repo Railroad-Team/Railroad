@@ -342,7 +342,6 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             try {
                 watchService.close();
             } catch (IOException _) {
-                // Nothing to do here
             }
         }
 
@@ -1141,7 +1140,6 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         } catch (InterruptedException _) {
             Thread.currentThread().interrupt();
         } catch (ClosedWatchServiceException _) {
-            // watcher closed during shutdown
         }
     }
 

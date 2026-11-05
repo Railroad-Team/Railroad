@@ -18,6 +18,8 @@ public class ClassStubVisitor extends ClassVisitor {
     private final List<AnnotationStub> annotations = new ArrayList<>();
     private String className;
     private String packageName;
+    private String internalClassName;
+    private String enclosingClassName;
     private int modifiers;
     private List<TypeParameter> typeParameters = new ArrayList<>();
     private Type superClass;
@@ -32,6 +34,7 @@ public class ClassStubVisitor extends ClassVisitor {
 
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+        internalClassName = name;
         int lastSlashIndex = name.lastIndexOf('/');
         this.className = (lastSlashIndex == -1) ? name : name.substring(lastSlashIndex + 1);
         this.packageName = (lastSlashIndex == -1) ? "" : name.substring(0, lastSlashIndex).replace('/', '.');
@@ -58,6 +61,18 @@ public class ClassStubVisitor extends ClassVisitor {
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
         String annotationName = org.objectweb.asm.Type.getType(descriptor).getClassName();
         return new AnnotationStubVisitor(annotationName, this.annotations::add);
+    }
+
+    @Override
+    public void visitInnerClass(String name, String outerName, String innerName, int access) {
+        if (name.equals(internalClassName) && outerName != null) {
+            enclosingClassName = outerName.replace('/', '.');
+        }
+    }
+
+    @Override
+    public void visitOuterClass(String owner, String name, String descriptor) {
+        enclosingClassName = owner.replace('/', '.');
     }
 
     @Override
@@ -174,7 +189,8 @@ public class ClassStubVisitor extends ClassVisitor {
             methods,
             constructors,
             modifiers,
-            annotations);
+            annotations,
+            enclosingClassName);
     }
 
     private static class AnnotationStubVisitor extends AnnotationVisitor {

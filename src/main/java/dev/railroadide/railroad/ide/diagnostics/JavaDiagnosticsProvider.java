@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Map;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot;
 
 /**
  * Diagnostics provider backed by the SST semantic analyzer.
@@ -37,6 +39,14 @@ public record JavaDiagnosticsProvider(
     Project project,
     @Nullable JavaSymbolIndex projectIndex
 ) implements DiagnosticsProvider<TextEditorDiagnostic> {
+    @Override
+    public @NotNull List<TextEditorDiagnostic> compute(
+        WorkspaceSnapshot workspace,
+        DocumentId id
+    ) {
+        return new JavaDiagnosticsProvider(null, JavaLanguageSupport.analysisContextProvider().index(workspace, id))
+            .compute(workspace.document(id).orElseThrow());
+    }
     /**
      * Creates diagnostics without project indexing; the snapshot supplies the document URI.
      */

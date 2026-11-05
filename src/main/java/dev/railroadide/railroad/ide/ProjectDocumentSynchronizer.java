@@ -281,7 +281,6 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
         } catch (ClosedWatchServiceException _) {
-            // Project shutdown closes the blocking watcher.
         }
     }
 

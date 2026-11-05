@@ -7,6 +7,7 @@ import dev.railroadide.railroad.ide.completion.CompletionItem;
 import dev.railroadide.railroad.ide.completion.CompletionResult;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaSourceSnapshotIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticModel;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
@@ -16,7 +17,6 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.lang.reflect.Modifier;
@@ -442,6 +442,9 @@ public final class JavaSemanticCompletionEngine {
         SemanticModel model,
         @Nullable JavaSymbolIndex projectIndex
     ) {
+        if (projectIndex != null) {
+            ownerQualifiedName = projectIndex.canonicalTypeName(ownerQualifiedName);
+        }
         TypeDeclarationInfo inCurrentModel = typeDeclarationInfoInModel(ownerQualifiedName, model, projectIndex);
         if (inCurrentModel != null)
             return inCurrentModel;
@@ -451,8 +454,9 @@ public final class JavaSemanticCompletionEngine {
             return null;
 
         try {
+            String source = JavaSourceSnapshotIndex.readSource(projectIndex, sourceFile);
             SemanticModel declarationModel = JavaSemanticAnalyzer
-                .analyzeDeclarationsFacts(Files.readString(sourceFile));
+                .analyzeDeclarationsFacts(source);
             return typeDeclarationInfoInModel(ownerQualifiedName, declarationModel, projectIndex);
         } catch (IOException exception) {
             return null;
