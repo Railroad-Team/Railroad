@@ -19,6 +19,7 @@ import java.util.concurrent.*;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticCompletionEngine;
 import dev.railroadide.railroad.ide.sst.project.JavaSourceSnapshotIndex;
 import javax.tools.Diagnostic;
+import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaWorkspaceAnalysisTest {
@@ -162,6 +163,131 @@ public class JavaWorkspaceAnalysisTest {
         writer.visitEnd();
         Files.write(file, writer.toByteArray());
         return root;
+    }
+
+    @Test
+    public void capturedEnclosingTypeHidesRemovedBinaryDescendantsAcrossAllLookups() throws Exception {
+        Path binaries = directory.resolve("nested-classes");
+        writeClass(binaries, "demo/Outer", null, null, "java/lang/Object", null);
+        writeClass(binaries, "demo/Outer$Removed", "demo/Outer", null, "java/lang/Object", null);
+        writeClass(binaries, "demo/Outer$Removed$Deep", "demo/Outer$Removed", null, "java/lang/Object", null);
+        writeClass(binaries, "demo/Outer$Dollar", null, null, "java/lang/Object", null);
+        DefaultDocumentStore store = store();
+        store.publishConfiguration(configuration(1, binaries));
+        store.publishBacking(source("Outer.java", "package demo; public class Outer {}"));
+        JavaWorkspaceAnalysis analysis = new JavaWorkspaceAnalysisProvider().capture(store.capture());
+        for (String name : List.of("demo.Outer$Removed", "demo.Outer$Removed$Deep")) {
+            assertFalse(analysis.declaredQualifiedNames().contains(name));
+            assertFalse(analysis.typeNames().contains(name));
+            assertNull(analysis.lookupClassStub(name));
+            assertTrue(analysis.lookupQualifiedName(name).isEmpty());
+            assertTrue(analysis.lookupQualifiedName(name + "#binaryOnly").isEmpty());
+            assertTrue(analysis.lookupSimpleName(name.substring("demo.".length())).isEmpty());
+            assertTrue(analysis.lookupMembers(name).isEmpty());
+            assertTrue(analysis.lookupMember(name, "binaryOnly").isEmpty());
+        }
+        assertFalse(analysis.typeNames().contains("Removed"));
+        assertFalse(analysis.typeNames().contains("Deep"));
+        assertEquals(List.of("demo.Outer$Dollar"), analysis.lookupSimpleName("binaryOnly").stream()
+            .map(symbol -> symbol.ownerQualifiedName()).toList());
+        assertNotNull(analysis.lookupClassStub("demo.Outer$Dollar"));
+        assertFalse(analysis.lookupMember("demo.Outer$Dollar", "binaryOnly").isEmpty());
+    }
+
+    @Test
+    public void binaryNestedAliasesPreserveDollarCharactersInPackageAndTypeIdentifiers() {
+        DefaultDocumentStore store = store();
+        store.publishBacking(source("Money$Box.java",
+            "package demo$; public class Money$Box { public static class Node$Leaf { public int value; } }"));
+        JavaWorkspaceAnalysis analysis = new JavaWorkspaceAnalysisProvider().capture(store.capture());
+        String sourceName = "demo$.Money$Box.Node$Leaf";
+        String binaryName = "demo$.Money$Box$Node$Leaf";
+        assertEquals(sourceName, analysis.canonicalTypeName(binaryName));
+        assertEquals(analysis.lookupMembers(sourceName), analysis.lookupMembers(binaryName));
+        assertEquals(analysis.lookupMember(sourceName, "value"), analysis.lookupMember(binaryName, "value"));
+        assertFalse(analysis.lookupMember(binaryName, "value").isEmpty());
+        assertEquals(analysis.lookupQualifiedName(sourceName + "#value"),
+            analysis.lookupQualifiedName(binaryName + "#value"));
+        assertTrue(analysis.lookupQualifiedName("demo.Money.Box.Node.Leaf").isEmpty());
+    }
+
+    @Test
+    public void binaryReturnAndSuperclassTypesResolveCapturedNestedMembersAndInheritance() throws Exception {
+        Path binaries = directory.resolve("binary-callers");
+        writeClass(binaries, "demo/Outer", null, null, "java/lang/Object", null);
+        writeClass(binaries, "demo/Outer$Inner", "demo/Outer", null, "java/lang/Object", null);
+        writeClass(binaries, "demo/Derived", null, "Ldemo/Outer$Inner<Ljava/lang/String;>;",
+            "demo/Outer$Inner", null);
+        writeClass(binaries, "demo/Factory", null, null, "java/lang/Object",
+            writer -> writer.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_NATIVE, "value",
+                "()Ldemo/Outer$Inner;", "()Ldemo/Outer$Inner<Ljava/lang/String;>;", null).visitEnd());
+        DefaultDocumentStore store = store();
+        store.publishConfiguration(configuration(1, binaries));
+        store.publishBacking(source("Outer.java", """
+            package demo;
+            public class Outer {
+                public static class Inner<T> extends Base<T> {
+                    public int sourceOnly;
+                    public T convert(T value) { return value; }
+                }
+            }
+            class Base<T> {
+                public int inheritedField;
+                public T inherited(T value) { return value; }
+            }
+            """));
+        TextDocumentSnapshot use = source("Use.java", """
+            package demo;
+            class Use {
+                void run(Derived derived) {
+                    String a = Factory.value().convert("a");
+                    String b = Factory.value().inherited("b");
+                    String c = derived.convert("c");
+                    String d = derived.inherited("d");
+                    int sum = Factory.value().sourceOnly + derived.inheritedField;
+                }
+            }
+            """);
+        store.publishBacking(use);
+        var diagnostics = new JavaDiagnosticsProvider().compute(store.capture(), use.id());
+        assertTrue(diagnostics.stream().noneMatch(diagnostic -> diagnostic.kind() == Diagnostic.Kind.ERROR),
+            diagnostics::toString);
+        JavaWorkspaceAnalysis analysis = new JavaWorkspaceAnalysisProvider().capture(store.capture());
+        for (String receiver : List.of("Factory.value()", "derived")) {
+            String text = "package demo; class Complete { void run(Derived derived) { " + receiver + ". } }";
+            CompletionResult completion = JavaSemanticCompletionEngine.compute(text,
+                text.lastIndexOf(". }"), analysis);
+            assertNotNull(completion);
+            Set<String> names = new HashSet<>(completion.items().stream().map(item -> item.insertText()).toList());
+            assertTrue(names.containsAll(Set.of("sourceOnly", "inheritedField")), names::toString);
+            assertFalse(names.contains("binaryOnly"));
+        }
+    }
+
+    private void writeClass(
+        Path root,
+        String name,
+        String enclosing,
+        String signature,
+        String parent,
+        Consumer<ClassWriter> members
+    ) throws Exception {
+        var writer = new ClassWriter(0);
+        writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, name, signature, parent, null);
+        if (enclosing != null) {
+            writer.visitInnerClass(name, enclosing, name.substring(enclosing.length() + 1),
+                Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
+        }
+        if (name.startsWith("demo/Outer")) {
+            writer.visitField(Opcodes.ACC_PUBLIC, "binaryOnly", "I", null, null).visitEnd();
+        }
+        if (members != null) {
+            members.accept(writer);
+        }
+        writer.visitEnd();
+        Path file = root.resolve(name + ".class");
+        Files.createDirectories(file.getParent());
+        Files.write(file, writer.toByteArray());
     }
 
     @Test

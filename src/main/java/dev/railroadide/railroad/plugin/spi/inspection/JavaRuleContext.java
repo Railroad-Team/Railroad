@@ -2347,6 +2347,9 @@ public final class JavaRuleContext implements LanguageRuleContext {
     }
 
     private List<String> typeParameterNamesForType(String qualifiedTypeName) {
+        if (symbolIndex != null) {
+            qualifiedTypeName = symbolIndex.canonicalTypeName(qualifiedTypeName);
+        }
         Map<String, List<String>> cached = cachedTypeParameterNamesByQualifiedName;
         if (cached != null && cached.containsKey(qualifiedTypeName))
             return cached.get(qualifiedTypeName);
@@ -3331,6 +3334,9 @@ public final class JavaRuleContext implements LanguageRuleContext {
     }
 
     private List<DeclaredType> indexedSourceDirectSuperTypes(String qualifiedTypeName) {
+        if (symbolIndex != null) {
+            qualifiedTypeName = symbolIndex.canonicalTypeName(qualifiedTypeName);
+        }
         Map<String, List<DeclaredType>> cached = cachedIndexedSourceDirectSuperTypesByQualifiedName;
         if (cached != null && cached.containsKey(qualifiedTypeName))
             return cached.getOrDefault(qualifiedTypeName, List.of());
@@ -3579,6 +3585,9 @@ public final class JavaRuleContext implements LanguageRuleContext {
     }
 
     private List<MethodDescriptor> indexedSourceMethodDescriptors(String ownerQualifiedTypeName) {
+        if (symbolIndex != null) {
+            ownerQualifiedTypeName = symbolIndex.canonicalTypeName(ownerQualifiedTypeName);
+        }
         Map<String, List<MethodDescriptor>> cached = cachedIndexedSourceMethodsByOwner;
         if (cached != null && cached.containsKey(ownerQualifiedTypeName))
             return cached.getOrDefault(ownerQualifiedTypeName, List.of());
@@ -3589,6 +3598,9 @@ public final class JavaRuleContext implements LanguageRuleContext {
     }
 
     private List<FieldDescriptor> indexedSourceFieldDescriptors(String ownerQualifiedTypeName) {
+        if (symbolIndex != null) {
+            ownerQualifiedTypeName = symbolIndex.canonicalTypeName(ownerQualifiedTypeName);
+        }
         Map<String, List<FieldDescriptor>> cached = cachedIndexedSourceFieldsByOwner;
         if (cached != null && cached.containsKey(ownerQualifiedTypeName))
             return cached.getOrDefault(ownerQualifiedTypeName, List.of());

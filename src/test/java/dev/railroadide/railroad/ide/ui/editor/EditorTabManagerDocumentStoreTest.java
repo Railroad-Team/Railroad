@@ -479,7 +479,6 @@ public class EditorTabManagerDocumentStoreTest {
                 if (tab != null) {
                     var editor = tab.view().activeEditor();
                     editor.discardChangesOnClose();
-                    // Cleanup discards even missing files without prompting to retry a failed save.
                     tab.tab().getTabPane().getTabs().remove(tab.tab());
                     Event.fireEvent(tab.tab(), new Event(tab.tab(), tab.tab(), Tab.CLOSED_EVENT));
                     editor.close();
@@ -1069,7 +1068,6 @@ public class EditorTabManagerDocumentStoreTest {
             var pane = new TextEditorPane(identity.id(), file, "java") {
                 @Override
                 protected void showExternalChangeDialog(String disk) {
-                    // Record the conflict presentation without opening an interactive dialog.
                     dialogText.set(disk);
                 }
             };
@@ -1752,7 +1750,6 @@ public class EditorTabManagerDocumentStoreTest {
             assertSame(originalState.overlay(), store.state(tab.documentId()).orElseThrow().overlay());
             assertEquals(originalWorkspace, store.capture());
 
-            // The previous saved baseline must still allow an ordinary save to the original file.
             assertTrue(editor.saveNow());
             assertEquals(editedText, Files.readString(source));
             assertEquals(DocumentUri.fromPath(source), store.state(tab.documentId()).orElseThrow().backing().uri());
@@ -1776,7 +1773,6 @@ public class EditorTabManagerDocumentStoreTest {
             disableDebouncedAutosave(editor);
             editor.replaceText(editedText);
             var identity = tab.identity();
-            // Register the other document without opening an editor for it.
             var destinationIdentity = Services.IDE_STATE.identifyDocument(new FileSystemDocument(destination, "java"));
             assertNotEquals(identity.id(), destinationIdentity.id());
             var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
@@ -2046,7 +2042,6 @@ public class EditorTabManagerDocumentStoreTest {
                 assertEquals(reloadedWorkspace, Services.IDE_STATE.getDocumentStore().orElseThrow().capture());
                 assertEquals(updatedText, Files.readString(file));
 
-                // The reload guard must be reset so subsequent user edits publish ordinary overlays.
                 var editor = tab.view().activeEditor();
                 editor.replaceText(userText);
                 var store = Services.IDE_STATE.getDocumentStore().orElseThrow();

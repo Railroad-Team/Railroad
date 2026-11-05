@@ -650,7 +650,6 @@ public class DefaultDocumentStoreTest {
         store.publishBacking(backing);
         store.publishOverlay(savedRevision);
 
-        // Further edits arrive while the save of v6 is in progress.
         store.publishOverlay(newerOverlay);
 
         var beforeAcknowledgement = store.capture();

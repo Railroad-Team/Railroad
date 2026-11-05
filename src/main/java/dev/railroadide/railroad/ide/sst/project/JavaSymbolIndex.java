@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 
 /**
  * Lookup contract for Java types, packages, members, and available binary class stubs.
@@ -75,6 +76,23 @@ public interface JavaSymbolIndex {
      * @return the matching symbol descriptors, or an empty list
      */
     List<JavaProjectSemanticIndex.SymbolDescriptor> lookupQualifiedName(String qualifiedName);
+
+    /**
+     * Resolves a binary or source type alias to the declaration's qualified name.
+     *
+     * @param qualifiedName name used by a source reference or binary signature
+     * @return declaration name, or the original name when no type is indexed
+     */
+    default String canonicalTypeName(String qualifiedName) {
+        return lookupQualifiedName(qualifiedName).stream()
+            .filter(symbol -> switch (symbol.kind()) {
+                case CLASS, INTERFACE, ENUM, RECORD, ANNOTATION -> true;
+                default -> false;
+            })
+            .map(JavaProjectSemanticIndex.SymbolDescriptor::qualifiedName)
+            .filter(Objects::nonNull)
+            .findFirst().orElse(qualifiedName);
+    }
 
     /**
      * Finds all indexed members declared by a type.

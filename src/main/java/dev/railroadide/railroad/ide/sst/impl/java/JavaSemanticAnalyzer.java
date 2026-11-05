@@ -2278,7 +2278,7 @@ public final class JavaSemanticAnalyzer {
                     owner.sourceFile(), source, model, projectIndex);
                 return findProjectSourceTypeParameterInfo(
                     model.syntaxTree().root(), model, sourceContext,
-                    ownerQualifiedName, variableName);
+                    owner.qualifiedName(), variableName);
             } catch (Exception _) {
                 return null;
             }
@@ -3240,7 +3240,7 @@ public final class JavaSemanticAnalyzer {
                 collectDirectSuperTypesFromSourceFile(sourceContext, model.syntaxTree().root(), collected);
                 collected
                     .forEach((name, supers) -> directSuperTypesByQualifiedName.putIfAbsent(name, List.copyOf(supers)));
-                return directSuperTypesByQualifiedName.getOrDefault(qualifiedTypeName, List.of());
+                return directSuperTypesByQualifiedName.getOrDefault(sourceType.qualifiedName(), List.of());
             } catch (Exception _) {
                 return List.of();
             }
@@ -3439,7 +3439,7 @@ public final class JavaSemanticAnalyzer {
                     ownerType.sourceFile(), source, model, projectIndex);
                 Map<String, Type> accessorTypes = new LinkedHashMap<>();
                 collectProjectRecordAccessorTypes(
-                    model.syntaxTree().root(), model, sourceContext, ownerQualifiedName, accessorTypes);
+                    model.syntaxTree().root(), model, sourceContext, ownerType.qualifiedName(), accessorTypes);
                 Map<String, Type> copy = Collections.unmodifiableMap(new LinkedHashMap<>(accessorTypes));
                 projectRecordAccessorTypesByOwner.put(ownerQualifiedName, copy);
                 return copy;
@@ -3570,7 +3570,7 @@ public final class JavaSemanticAnalyzer {
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 var sourceContext = new JavaRuleContext(
                     owner.sourceFile(), source, model, projectIndex);
-                return List.copyOf(sourceContext.declaredMethodDescriptors(ownerQualifiedName));
+                return List.copyOf(sourceContext.declaredMethodDescriptors(owner.qualifiedName()));
             } catch (Exception _) {
                 return List.of();
             }
@@ -5833,7 +5833,7 @@ public final class JavaSemanticAnalyzer {
                 var sourceContext = new JavaRuleContext(
                     descriptor.sourceFile(), source, model, projectIndex);
                 return findIndexedDirectSuperTypes(
-                    model.syntaxTree().root(), model, sourceContext, ownerQualifiedName);
+                    model.syntaxTree().root(), model, sourceContext, descriptor.qualifiedName());
             } catch (Exception _) {
                 return List.of();
             }
@@ -5999,7 +5999,7 @@ public final class JavaSemanticAnalyzer {
                 String source = JavaSourceSnapshotIndex.readSource(projectIndex, descriptor.sourceFile());
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 return findDeclaredTypeParameterNames(
-                    model.syntaxTree().root(), model, ownerQualifiedName);
+                    model.syntaxTree().root(), model, descriptor.qualifiedName());
             } catch (Exception _) {
                 return List.of();
             }

@@ -442,6 +442,9 @@ public final class JavaSemanticCompletionEngine {
         SemanticModel model,
         @Nullable JavaSymbolIndex projectIndex
     ) {
+        if (projectIndex != null) {
+            ownerQualifiedName = projectIndex.canonicalTypeName(ownerQualifiedName);
+        }
         TypeDeclarationInfo inCurrentModel = typeDeclarationInfoInModel(ownerQualifiedName, model, projectIndex);
         if (inCurrentModel != null)
             return inCurrentModel;

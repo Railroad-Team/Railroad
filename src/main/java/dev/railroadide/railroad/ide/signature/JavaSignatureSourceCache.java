@@ -145,7 +145,7 @@ public final class JavaSignatureSourceCache implements AutoCloseable {
         try {
             Runtime.getRuntime().removeShutdownHook(shutdownHook);
         } catch (IllegalStateException _) {
-            /* Already shutting down. */ }
+        }
     }
 
     /** Keeps a shared source tree alive until JDT has finished reading it. */

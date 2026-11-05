@@ -13,6 +13,7 @@ import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroadplugin.dto.RailroadModule;
 import javafx.scene.image.WritableImage;
+import javafx.application.Platform;
 import org.gradle.tooling.model.DomainObjectSet;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,8 +26,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.*;
+import dev.railroadide.railroad.ide.language.impl.index.JavaLanguageIndexContext;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import org.objectweb.asm.ClassWriter;
@@ -236,7 +237,91 @@ public class ProjectWorkspaceConfigurationTest {
         Path first = libraryJar("dependencies/z.jar", "fromFirst");
         Path second = libraryJar("dependencies/a.jar", "fromSecond");
         Files.writeString(directory.resolve("pom.xml"), mavenPom(first, second));
-        RailroadProject project = new RailroadProject(directory, "Maven", new WritableImage(1, 1)) {
+        writeStaleClass("target/classes", "Removed");
+        writeStaleClass("target/test-classes", "RemovedTest");
+        RailroadProject project = mavenProject();
+        var store = new DefaultDocumentStore(project.getId(), ProjectWorkspaceConfiguration.initial(project));
+        TextDocumentSnapshot request = libraryRequest(store);
+        try (ProjectWorkspaceConfiguration tracker = new ProjectWorkspaceConfiguration(project, store)) {
+            tracker.ready().get(30, TimeUnit.SECONDS);
+            WorkspaceSnapshot captured = store.capture();
+            String sources = captured.configuration().settings().get("module.:.sources");
+            assertTrue(sources.contains(sourceRoot + ":generated=false"));
+            assertTrue(sources.contains(generatedRoot + ":generated=true"));
+            assertLibraryFeatures(project, captured, request, "fromFirst", List.of(first, second));
+            JavaWorkspaceAnalysis analysis = new JavaWorkspaceAnalysisProvider().capture(captured);
+            assertTrue(analysis.lookupQualifiedName("deps.Removed").isEmpty());
+            assertTrue(analysis.lookupQualifiedName("deps.RemovedTest").isEmpty());
+            Files.writeString(directory.resolve("pom.xml"), mavenPom(second, first));
+            Railroad.EVENT_BUS.publish(new ProjectConfigurationChangedEvent(project));
+            tracker.ready().get(30, TimeUnit.SECONDS);
+            assertLibraryFeatures(project, store.capture(), request, "fromSecond", List.of(second, first));
+            assertLibraryFeatures(project, captured, request, "fromFirst", List.of(first, second));
+        }
+    }
+
+    @Test
+    public void mavenResolutionLeavesFxResponsiveAndDiscardsSupersededAndClosedRequests() throws Exception {
+        var started = new CountDownLatch(1);
+        try {
+            Platform.startup(started::countDown);
+        } catch (IllegalStateException _) {
+            Platform.runLater(started::countDown);
+        }
+        assertTrue(started.await(10, TimeUnit.SECONDS));
+        Files.writeString(directory.resolve("pom.xml"),
+            "<project><modelVersion>4.0.0</modelVersion><groupId>test</groupId>"
+                + "<artifactId>app</artifactId><version>1</version></project>");
+        RailroadProject project = mavenProject();
+        DefaultDocumentStore store = onFx(() -> new DefaultDocumentStore(project.getId(),
+            ProjectWorkspaceConfiguration.initial(project)));
+        var requests = new LinkedBlockingQueue<PendingResolution>();
+        try (ProjectWorkspaceConfiguration tracker = onFx(() -> new ProjectWorkspaceConfiguration(project, store,
+            _ -> {
+                assertFalse(Platform.isFxApplicationThread());
+                var pending = new PendingResolution(Thread.currentThread(), new CompletableFuture<>());
+                requests.add(pending);
+                return pending.result().join();
+            }))) {
+            PendingResolution first = awaitRequest(requests);
+            WorkspaceSnapshot initial = store.capture();
+            onFx(() -> {
+                project.getDataStore().writeString("maven/settings.json", "{\"revision\":2}");
+                return null;
+            });
+            PendingResolution second = awaitRequest(requests);
+            assertEquals(initial, store.capture());
+            second.result().complete(dependencyContext("new.jar"));
+            tracker.ready().get(10, TimeUnit.SECONDS);
+            WorkspaceSnapshot resolved = store.capture();
+            assertEquals(directory.resolve("new.jar").toString(),
+                resolved.configuration().settings().get("module.:.classpath"));
+            first.result().complete(dependencyContext("old.jar"));
+            first.awaitFinished();
+            assertEquals(resolved, store.capture());
+
+            project.getDataStore().writeString("maven/settings.json", "{\"revision\":3}");
+            PendingResolution failed = awaitRequest(requests);
+            assertEquals(resolved, store.capture());
+            failed.result().completeExceptionally(new IllegalStateException("Dependency repository unavailable"));
+            assertThrows(ExecutionException.class, () -> tracker.ready().get(10, TimeUnit.SECONDS));
+            assertEquals(resolved, store.capture());
+
+            Railroad.EVENT_BUS.publish(new ProjectConfigurationChangedEvent(project));
+            PendingResolution closing = awaitRequest(requests);
+            tracker.close();
+            closing.result().complete(dependencyContext("closed.jar"));
+            closing.awaitFinished();
+            assertEquals(resolved, store.capture());
+        } finally {
+            for (PendingResolution pending : requests) {
+                pending.result().cancel(false);
+            }
+        }
+    }
+
+    private RailroadProject mavenProject() {
+        return new RailroadProject(directory, "Maven", new WritableImage(1, 1)) {
             @Override
             public boolean hasFacet(FacetType<?> type) {
                 return type.equals(FacetManager.MAVEN);
@@ -247,19 +332,40 @@ public class ProjectWorkspaceConfigurationTest {
                 return List.of(new Facet<>(FacetManager.MAVEN));
             }
         };
-        var store = new DefaultDocumentStore(project.getId(), ProjectWorkspaceConfiguration.initial(project));
-        TextDocumentSnapshot request = libraryRequest(store);
-        try (ProjectWorkspaceConfiguration tracker = new ProjectWorkspaceConfiguration(project, store)) {
-            WorkspaceSnapshot captured = store.capture();
-            String sources = captured.configuration().settings().get("module.:.sources");
-            assertTrue(sources.contains(sourceRoot + ":generated=false"));
-            assertTrue(sources.contains(generatedRoot + ":generated=true"));
-            assertLibraryFeatures(project, captured, request, "fromFirst", List.of(first, second));
-            Files.writeString(directory.resolve("pom.xml"), mavenPom(second, first));
-            Railroad.EVENT_BUS.publish(new ProjectConfigurationChangedEvent(project));
-            assertLibraryFeatures(project, store.capture(), request, "fromSecond", List.of(second, first));
-            assertLibraryFeatures(project, captured, request, "fromFirst", List.of(first, second));
+    }
+
+    private JavaLanguageIndexContext dependencyContext(String jar) {
+        List<Path> dependencies = List.of(directory.resolve(jar));
+        return new JavaLanguageIndexContext(List.of(directory.resolve("src/main/java")), List.of(),
+            dependencies, dependencies, List.of(), Path.of(System.getProperty("java.home")));
+    }
+
+    private static PendingResolution awaitRequest(BlockingQueue<PendingResolution> requests) throws Exception {
+        PendingResolution pending = requests.poll(10, TimeUnit.SECONDS);
+        assertNotNull(pending);
+        return pending;
+    }
+
+    private static <T> T onFx(Callable<T> action) throws Exception {
+        var task = new FutureTask<>(action);
+        Platform.runLater(task);
+        return task.get(10, TimeUnit.SECONDS);
+    }
+
+    private record PendingResolution(Thread worker, CompletableFuture<JavaLanguageIndexContext> result) {
+        private void awaitFinished() throws Exception {
+            worker.join(10_000);
+            assertFalse(worker.isAlive());
         }
+    }
+
+    private void writeStaleClass(String output, String name) throws Exception {
+        var writer = new ClassWriter(0);
+        writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, "deps/" + name, null, "java/lang/Object", null);
+        writer.visitEnd();
+        Path file = directory.resolve(output).resolve("deps/" + name + ".class");
+        Files.createDirectories(file.getParent());
+        Files.write(file, writer.toByteArray());
     }
 
     private TextDocumentSnapshot libraryRequest(DefaultDocumentStore store) {
