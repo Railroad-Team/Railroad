@@ -44,7 +44,7 @@ public record JavaDiagnosticsProvider(
         WorkspaceSnapshot workspace,
         DocumentId id
     ) {
-        return new JavaDiagnosticsProvider(null, JavaLanguageSupport.analysisContextProvider().index(workspace))
+        return new JavaDiagnosticsProvider(null, JavaLanguageSupport.analysisContextProvider().index(workspace, id))
             .compute(workspace.document(id).orElseThrow());
     }
     /**

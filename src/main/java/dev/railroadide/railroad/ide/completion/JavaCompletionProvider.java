@@ -31,7 +31,7 @@ public record JavaCompletionProvider(Project project, @Nullable Path filePath) i
             || !JavaLanguageSupport.LANGUAGE_ID.equals(text.languageId()))
             return null;
         return JavaSemanticCompletionEngine.compute(text.text(), triggerAt,
-            JavaLanguageSupport.analysisContextProvider().index(workspace));
+            JavaLanguageSupport.analysisContextProvider().index(workspace, id));
     }
     /**
      * Creates a completion provider whose document location is supplied by each snapshot.

@@ -6,6 +6,8 @@ import dev.railroadide.railroad.gradle.model.GradleModelListener;
 import dev.railroadide.railroad.gradle.service.GradleModelService;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentStore;
 import dev.railroadide.railroad.ide.sst.document.api.WorkspaceConfigurationSnapshot;
+import dev.railroadide.railroad.ide.language.impl.index.JavaLanguageIndexContext;
+import dev.railroadide.railroad.ide.language.impl.index.JavaLanguageIndexContextContributor;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.event.EventListener;
 import dev.railroadide.railroad.plugin.spi.events.ProjectConfigurationChangedEvent;
@@ -111,6 +113,9 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         WorkspaceConfigurationSnapshot current = store.capture().configuration();
         Map<String, String> values = new TreeMap<>(current.settings());
         values.keySet().removeIf(key -> key.startsWith("project."));
+        if (modelService == null) {
+            values.keySet().removeIf(key -> key.startsWith("module.") || key.startsWith("gradle."));
+        }
         values.putAll(settings(project));
         publish(modelService == null ? moduleIds(values) : current.moduleIds(), values);
     }
@@ -198,6 +203,9 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         values.put("project.facets", project.getFacets().stream().map(facet -> facet.getType().id())
             .sorted().collect(Collectors.joining("\n")));
         captureMavenModules(project.getPath(), project.getPath(), values, new HashSet<>());
+        if (!project.hasFacet(FacetManager.GRADLE)) {
+            captureJavaConfiguration(project, values);
+        }
         for (String name : List.of("pom.xml", "build.gradle", "build.gradle.kts", "settings.gradle",
             "settings.gradle.kts", "gradle.properties")) {
             Path file = project.getPath().resolve(name);
@@ -223,6 +231,23 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             }
         }
         return values;
+    }
+
+    private static void captureJavaConfiguration(Project project, Map<String, String> values) {
+        JavaLanguageIndexContext context = (JavaLanguageIndexContext) new JavaLanguageIndexContextContributor()
+            .resolve(project);
+        String prefix = "module.:.";
+        values.put(prefix + "directory", project.getPath().toAbsolutePath().normalize().toString());
+        values.put(prefix + "classpath", paths(context.classpathRoots().stream().map(Path::toFile).toList()));
+        values.put(prefix + "modulePath", paths(context.modulePathRoots().stream().map(Path::toFile).toList()));
+        values.put(prefix + "dependencies", paths(context.dependencyRoots().stream().map(Path::toFile).toList()));
+        values.put(prefix + "sources", Stream.concat(
+            context.sourceRoots().stream().map(path -> path + ":generated=false"),
+            context.generatedRoots().stream().map(path -> path + ":generated=true"))
+            .collect(Collectors.joining("\n")));
+        if (context.jdkHome() != null) {
+            values.put(prefix + "jdkHome", context.jdkHome().toString());
+        }
     }
 
     private static Set<String> moduleIds(Map<String, String> settings) {

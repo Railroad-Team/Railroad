@@ -104,6 +104,27 @@ public class JavaSignatureSourcesTest {
             List.of(), Path.of(System.getProperty("java.home")));
     }
 
+    @Test
+    public void shutdownRemovesCachedAndEvictedTreesEvenAfterCloseWithActiveReaders() throws Exception {
+        var request = new TextDocumentSnapshot(DocumentId.create(),
+            DocumentUri.fromPath(directory.resolve("Use.java")), DocumentVersion.initial(), "java",
+            "package demo; class Use {}", StandardCharsets.UTF_8);
+        var cache = new JavaSignatureSourceCache(1);
+        try (JavaSignatureSourceCache.Lease evicted = cache.acquire(withRequest(request, "first"), request);
+            JavaSignatureSourceCache.Lease cached = cache.acquire(withRequest(request, "second"), request)) {
+            cache.close();
+            assertTrue(Files.exists(evicted.directory()));
+            assertTrue(Files.exists(cached.directory()));
+            cache.shutdown();
+            assertFalse(Files.exists(evicted.directory()));
+            assertFalse(Files.exists(cached.directory()));
+            assertThrows(CancellationException.class, () -> cache.acquire(withRequest(request, "third"), request));
+            cache.shutdown();
+        } finally {
+            cache.shutdown();
+        }
+    }
+
     private void assertEmpty() throws Exception {
         try (var files = Files.list(directory)) {
             assertEquals(0, files.count());

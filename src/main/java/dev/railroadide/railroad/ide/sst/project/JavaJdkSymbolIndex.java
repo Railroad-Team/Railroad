@@ -33,7 +33,10 @@ public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
             return fromCurrentRuntime();
 
         List<Path> roots = new ArrayList<>();
-        Path rtJar = jdkHome.resolve("lib").resolve("rt.jar");
+        Path rtJar = jdkHome.resolve("jre/lib/rt.jar");
+        if (!Files.isRegularFile(rtJar)) {
+            rtJar = jdkHome.resolve("lib/rt.jar");
+        }
         if (Files.isRegularFile(rtJar)) {
             roots.add(rtJar);
         } else {

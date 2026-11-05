@@ -16,6 +16,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticCompletionEngine;
+import dev.railroadide.railroad.ide.sst.project.JavaSourceSnapshotIndex;
+import javax.tools.Diagnostic;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaWorkspaceAnalysisTest {
@@ -26,8 +29,7 @@ public class JavaWorkspaceAnalysisTest {
     public void capturedSourceShadowsAnOlderBinaryOfTheSameType() throws Exception {
         DefaultDocumentStore store = store();
         Path binary = library("old-classes", "binaryOnly");
-        store.publishConfiguration(new WorkspaceConfigurationSnapshot(1, Set.of(":"),
-            Map.of("module.:.classpath", binary.toString())));
+        store.publishConfiguration(configuration(1, binary));
         TextDocumentSnapshot dependency = source("Library.java",
             "package demo; public class Library { public int sourceOnly; }");
         TextDocumentSnapshot use = source("Use.java", "package demo; class Use { void run(Library l) { l. } }");
@@ -49,8 +51,7 @@ public class JavaWorkspaceAnalysisTest {
     public void signatureHelpUsesCapturedSourceInsteadOfItsOlderClassFile() throws Exception {
         DefaultDocumentStore store = store();
         Path binary = library("old-signature-classes", "binaryOnly");
-        store.publishConfiguration(new WorkspaceConfigurationSnapshot(1, Set.of(":"),
-            Map.of("module.:.classpath", binary.toString())));
+        store.publishConfiguration(configuration(1, binary));
         TextDocumentSnapshot dependency = source("Library.java",
             "package demo; public class Library { public int captured(int count) { return count; } }");
         TextDocumentSnapshot use = source("Use.java",
@@ -163,13 +164,120 @@ public class JavaWorkspaceAnalysisTest {
         return root;
     }
 
-    private WorkspaceConfigurationSnapshot configuration(long revision, Path first, Path second) {
+    @Test
+    public void diagnosticsAndChainedCompletionUseCapturedSignaturesDespiteConflictingDiskText() throws Exception {
+        assertCapturedDependencyBodies(true);
+    }
+
+    @Test
+    public void diagnosticsAndChainedCompletionUseDependenciesThatOnlyExistInTheCapture() throws Exception {
+        assertCapturedDependencyBodies(false);
+    }
+
+    private void assertCapturedDependencyBodies(boolean writeDisk) throws Exception {
+        DefaultDocumentStore store = store();
+        TextDocumentSnapshot dependency = source("Dep.java",
+            "package demo; public class Dep { public Result convert(int count) { return null; } } "
+                + "class Result { public int capturedField; public void capturedMethod() {} }");
+        TextDocumentSnapshot use = source("Use.java",
+            "package demo; class Use { void run(Dep d) { d.convert(1).capturedMethod(); } }");
+        store.publishBacking(dependency);
+        store.publishBacking(use);
+        if (writeDisk) {
+            Files.writeString(dependency.uri().filePath().orElseThrow(),
+                "package demo; public class Dep { public DiskResult convert(String count) { return null; } } "
+                    + "class DiskResult { public int diskField; }");
+        }
+        WorkspaceSnapshot captured = store.capture();
+        store.publishOverlay(next(dependency, "package demo; public class Dep {}"));
+        var diagnostics = new JavaDiagnosticsProvider().compute(captured, use.id());
+        assertTrue(diagnostics.stream().noneMatch(diagnostic -> diagnostic.kind() == Diagnostic.Kind.ERROR),
+            diagnostics::toString);
+
+        TextDocumentSnapshot completion = source("Complete.java",
+            "package demo; class Complete { void run(Dep d) { d.convert(1). } }");
+        Map<DocumentId, DocumentSnapshot> documents = new HashMap<>(captured.documents());
+        documents.put(completion.id(), completion);
+        var request = new WorkspaceSnapshot(captured.projectId(), documents,
+            captured.configuration(), captured.revision());
+        Project project = (Project) Proxy.newProxyInstance(Project.class.getClassLoader(),
+            new Class<?>[]{Project.class}, (_, method, _) -> {
+                throw new AssertionError("Live project access: " + method.getName());
+            });
+        CompletionResult result = new JavaCompletionProvider(project).compute(request, completion.id(),
+            completion.text().indexOf(").") + 1);
+        assertNotNull(result);
+        assertTrue(result.items().stream().anyMatch(item -> item.insertText().equals("capturedField")),
+            () -> result.items().toString());
+        assertFalse(result.items().stream().anyMatch(item -> item.insertText().equals("diskField")));
+    }
+
+    @Test
+    public void sourceRootsExcludeConflictingFixturesAndKeepGeneratedSourcesAndRequestingBuffers() throws Exception {
+        DefaultDocumentStore store = store();
+        Path sources = directory.resolve("src/main/java");
+        Path generated = directory.resolve("generated");
+        store.publishConfiguration(new WorkspaceConfigurationSnapshot(1, Set.of(":"),
+            Map.of("module.:.sources", sources + ":generated=false\n" + generated + ":test:generated=true")));
+        TextDocumentSnapshot dependency = source("src/main/java/Dep.java",
+            "package demo; public class Dep { public int call(int count) { return count; } }");
+        TextDocumentSnapshot fixture = source("fixtures/Dep.java",
+            "package demo; public class Dep { public int call(boolean enabled) { return 0; } }");
+        TextDocumentSnapshot generatedType = source("generated/Generated.java",
+            "package demo; public class Generated { public int inherited; }");
+        TextDocumentSnapshot use = source("scratch/Use.java",
+            "package demo; class Use extends Generated { void run(Use u, Dep d) { d.call(1); u. } }");
+        for (TextDocumentSnapshot document : List.of(dependency, fixture, generatedType, use)) {
+            store.publishBacking(document);
+        }
+        WorkspaceSnapshot workspace = store.capture();
+        var provider = new JavaWorkspaceAnalysisProvider();
+        JavaWorkspaceAnalysis analysis = provider.capture(workspace, use.id());
+        assertEquals(Set.of(dependency.uri().filePath().orElseThrow(), generatedType.uri().filePath().orElseThrow(),
+            use.uri().filePath().orElseThrow()), analysis.sourceTexts().keySet());
+        assertFalse(provider.capture(workspace).sourceTexts().containsKey(use.uri().filePath().orElseThrow()));
+        assertSame(analysis, provider.capture(workspace, use.id()));
+        SignatureHelp signature = new JdtJavaSignatureHelpProvider(new String[0]).compute(workspace, use.id(),
+            use.text().indexOf("1)") + 1);
+        assertNotNull(signature);
+        assertEquals("int", signature.parameters().getFirst().type());
+        CompletionResult completion = JavaSemanticCompletionEngine.compute(
+            use.text(), use.text().indexOf("u.") + 1, analysis);
+        assertNotNull(completion);
+        assertTrue(completion.items().stream().anyMatch(item -> item.insertText().equals("inherited")));
+
+        var virtual = new TextDocumentSnapshot(DocumentId.create(),
+            DocumentUri.virtual("generated", "/demo/Virtual.java"), DocumentVersion.initial(), "java",
+            "package demo; class Virtual { void run(Dep d) { d.call(1); } }", StandardCharsets.UTF_8);
+        store.publishBacking(virtual);
+        assertNotNull(new JdtJavaSignatureHelpProvider(new String[0]).compute(store.capture(), virtual.id(),
+            virtual.text().indexOf("1)") + 1));
+    }
+
+    @Test
+    public void missingCapturedSourceDoesNotFallBackToDisk() throws Exception {
+        TextDocumentSnapshot dependency = source("Dep.java", "package demo; class Dep {}");
+        DefaultDocumentStore store = store();
+        store.publishBacking(dependency);
+        JavaWorkspaceAnalysis captured = new JavaWorkspaceAnalysisProvider().capture(store.capture());
+        var missing = new JavaWorkspaceAnalysis(captured.sourceIndex(), captured.symbols(),
+            Map.of(), captured.classpath(), captured.jdkHome());
+        Path path = dependency.uri().filePath().orElseThrow();
+        Files.writeString(path, "package demo; class Dep { int diskOnly; }");
+        assertThrows(NoSuchFileException.class,
+            () -> JavaSourceSnapshotIndex.readSource(missing, path));
+        assertEquals(Files.readString(path),
+            JavaSourceSnapshotIndex.readSource(captured.sourceIndex(), path));
+    }
+
+    private WorkspaceConfigurationSnapshot configuration(long revision, Path... classpath) {
         return new WorkspaceConfigurationSnapshot(revision, Set.of(":"),
-            Map.of("module.:.classpath", first + "\n" + second));
+            Map.of("module.:.classpath", String.join("\n", Arrays.stream(classpath).map(Path::toString).toList()),
+                "module.:.sources", directory + ":generated=false"));
     }
 
     private DefaultDocumentStore store() {
-        return new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()));
+        return new DefaultDocumentStore("test", configuration(0));
     }
 
     private TextDocumentSnapshot source(String name, String text) {

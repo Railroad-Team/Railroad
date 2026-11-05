@@ -13,8 +13,9 @@ import java.util.concurrent.locks.ReentrantLock;
 public final class JavaSignatureSourceCache implements AutoCloseable {
     private final int capacity;
     private final LinkedHashMap<Map<Path, String>, Entry> entries = new LinkedHashMap<>(4, 0.75f, true);
+    private final Set<Entry> liveEntries = new HashSet<>();
     private final ReentrantLock lock = new ReentrantLock();
-    private final Thread shutdownHook = new Thread(this::close, "railroad-signature-source-cleanup");
+    private final Thread shutdownHook = new Thread(this::shutdown, "railroad-signature-source-cleanup");
     private boolean closed;
 
     /**
@@ -72,12 +73,13 @@ public final class JavaSignatureSourceCache implements AutoCloseable {
             Entry entry = entries.get(key);
             if (entry == null) {
                 entry = new Entry(JavaSignatureSources.create(analysis, null, excluded));
+                liveEntries.add(entry);
                 entries.put(key, entry);
                 if (entries.size() > capacity) {
                     Entry oldest = entries.pollFirstEntry().getValue();
                     oldest.retired = true;
                     if (oldest.readers == 0) {
-                        oldest.sources.close();
+                        dispose(oldest);
                     }
                 }
             }
@@ -98,17 +100,52 @@ public final class JavaSignatureSourceCache implements AutoCloseable {
             entries.values().forEach(entry -> {
                 entry.retired = true;
                 if (entry.readers == 0) {
-                    entry.sources.close();
+                    dispose(entry);
                 }
             });
             entries.clear();
-            try {
-                Runtime.getRuntime().removeShutdownHook(shutdownHook);
-            } catch (IllegalStateException _) {
-                /* Already shutting down. */ }
+            if (liveEntries.isEmpty()) {
+                removeShutdownHook();
+            }
         } finally {
             lock.unlock();
         }
+    }
+
+    /**
+     * Removes all staged trees during process shutdown, including evicted trees with active readers.
+     * Unlike ordinary closure, shutdown invalidates outstanding leases because their workers may
+     * never finish before the JVM exits. Closing those leases afterwards remains safe.
+     */
+    public void shutdown() {
+        lock.lock();
+        try {
+            closed = true;
+            for (Entry entry : new ArrayList<>(liveEntries)) {
+                entry.retired = true;
+                dispose(entry);
+            }
+            entries.clear();
+            removeShutdownHook();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private void dispose(Entry entry) {
+        if (liveEntries.remove(entry)) {
+            entry.sources.close();
+        }
+        if (closed && liveEntries.isEmpty()) {
+            removeShutdownHook();
+        }
+    }
+
+    private void removeShutdownHook() {
+        try {
+            Runtime.getRuntime().removeShutdownHook(shutdownHook);
+        } catch (IllegalStateException _) {
+            /* Already shutting down. */ }
     }
 
     /** Keeps a shared source tree alive until JDT has finished reading it. */
@@ -134,7 +171,7 @@ public final class JavaSignatureSourceCache implements AutoCloseable {
                 if (entry == null)
                     return;
                 if (--entry.readers == 0 && entry.retired) {
-                    entry.sources.close();
+                    dispose(entry);
                 }
                 entry = null;
             } finally {

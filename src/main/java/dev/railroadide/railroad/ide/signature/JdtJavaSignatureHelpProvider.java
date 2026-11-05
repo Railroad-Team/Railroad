@@ -52,14 +52,23 @@ public record JdtJavaSignatureHelpProvider(@Nullable Path filePath, String[] sys
         if (!(snapshot instanceof TextDocumentSnapshot text) || !"java".equals(text.languageId()))
             return null;
         JavaSignatureSources.checkCancelled();
-        JavaWorkspaceAnalysis analysis = JavaLanguageSupport.analysisContextProvider().index(workspace);
+        JavaWorkspaceAnalysis analysis = JavaLanguageSupport.analysisContextProvider().index(workspace, id);
         JavaSignatureSources.checkCancelled();
         try (JavaSignatureSourceCache.Lease sources = SOURCES.acquire(analysis, text)) {
             List<String> classpath = new ArrayList<>(analysis.classpath().stream().map(Path::toString).toList());
             Path jmods = analysis.jdkHome().resolve("jmods");
             if (Files.isDirectory(jmods)) {
                 try (Stream<Path> modules = Files.list(jmods)) {
-                    modules.sorted().map(Path::toString).forEach(classpath::add);
+                    modules.filter(path -> path.getFileName().toString().endsWith(".jmod"))
+                        .sorted().map(Path::toString).forEach(classpath::add);
+                }
+            } else {
+                for (String runtime : List.of("jre/lib/rt.jar", "lib/rt.jar")) {
+                    Path archive = analysis.jdkHome().resolve(runtime);
+                    if (Files.isRegularFile(archive)) {
+                        classpath.add(archive.toString());
+                        break;
+                    }
                 }
             }
             return compute(snapshot, caretPosition, classpath.toArray(String[]::new),

@@ -16,6 +16,7 @@ import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaSourceSnapshotIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.*;
 import dev.railroadide.railroad.ide.sst.semantic.api.Type.*;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
@@ -24,7 +25,6 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Modifier;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
@@ -2371,7 +2371,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         Path sourceFile = indexedSourceFile(qualifiedTypeName);
         if (sourceFile != null) {
             try {
-                String source = Files.readString(sourceFile);
+                String source = JavaSourceSnapshotIndex.readSource(symbolIndex, sourceFile);
                 SemanticModel sourceModel = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 var sourceContext = new JavaRuleContext(sourceFile, source, sourceModel, symbolIndex);
                 List<String> names = sourceContext.typeParameterNamesForType(qualifiedTypeName);
@@ -3347,7 +3347,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 .getOrDefault(qualifiedTypeName, List.of());
 
         try {
-            String source = Files.readString(sourceType.sourceFile());
+            String source = JavaSourceSnapshotIndex.readSource(symbolIndex, sourceType.sourceFile());
             SemanticModel sourceModel = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
             var sourceContext = new JavaRuleContext(sourceType.sourceFile(), source, sourceModel, symbolIndex);
             Map<String, List<DeclaredType>> directSupers = new LinkedHashMap<>(
@@ -3611,7 +3611,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         Map<String, List<MethodDescriptor>> methods = new LinkedHashMap<>();
         Map<String, List<FieldDescriptor>> fields = new LinkedHashMap<>();
         try {
-            String source = Files.readString(sourceFile);
+            String source = JavaSourceSnapshotIndex.readSource(symbolIndex, sourceFile);
             SemanticModel sourceModel = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
             var sourceContext = new JavaRuleContext(sourceFile, source, sourceModel, symbolIndex);
             sourceContext.declaredMethodsByOwner().forEach(

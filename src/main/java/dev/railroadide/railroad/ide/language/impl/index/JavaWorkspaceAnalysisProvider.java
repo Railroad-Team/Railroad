@@ -9,7 +9,7 @@ import java.util.concurrent.CancellationException;
 /** Builds reusable Java analysis inputs exclusively from captured documents and configuration. */
 public final class JavaWorkspaceAnalysisProvider {
     private static final Path RUNNING_JDK = Path.of(System.getProperty("java.home")).toAbsolutePath().normalize();
-    private final Map<WorkspaceSnapshot, JavaWorkspaceAnalysis> workspaces = new WeakHashMap<>();
+    private final Map<WorkspaceSnapshot, Map<DocumentId, JavaWorkspaceAnalysis>> workspaces = new WeakHashMap<>();
     private final Map<TextDocumentSnapshot, JavaProjectSemanticIndex.SourceFileIndex> files = new WeakHashMap<>();
     private final Map<WorkspaceConfigurationSnapshot, JavaSymbolIndex> binaries = new WeakHashMap<>();
     private final Map<Path, JavaJdkSymbolIndex> jdks = new HashMap<>();
@@ -27,14 +27,29 @@ public final class JavaWorkspaceAnalysisProvider {
      * @param workspace immutable workspace captured for the feature request
      * @return immutable analysis inputs shared by requests using that capture
      */
-    public synchronized JavaWorkspaceAnalysis capture(WorkspaceSnapshot workspace) {
+    public JavaWorkspaceAnalysis capture(WorkspaceSnapshot workspace) {
+        return capture(workspace, null);
+    }
+
+    /**
+     * Captures configured source dependencies and includes the requesting buffer even outside source roots.
+     *
+     * @param workspace immutable workspace captured for the feature request
+     * @param request requesting document identity, or null for configured dependencies only
+     * @return analysis inputs containing the request and its captured dependencies
+     */
+    public synchronized JavaWorkspaceAnalysis capture(WorkspaceSnapshot workspace, DocumentId request) {
         Objects.requireNonNull(workspace);
         if (Thread.currentThread().isInterrupted())
             throw new CancellationException("Java analysis cancelled");
-        return workspaces.computeIfAbsent(workspace, this::build);
+        Set<Path> roots = sourceRoots(workspace.configuration());
+        DocumentSnapshot document = request == null ? null : workspace.document(request).orElseThrow();
+        DocumentId extra = document != null && !includedSource(document, roots) ? request : null;
+        return workspaces.computeIfAbsent(workspace, _ -> new HashMap<>())
+            .computeIfAbsent(extra, _ -> build(workspace, extra, roots));
     }
 
-    private JavaWorkspaceAnalysis build(WorkspaceSnapshot workspace) {
+    private JavaWorkspaceAnalysis build(WorkspaceSnapshot workspace, DocumentId request, Set<Path> roots) {
         JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
         Map<Path, String> texts = new HashMap<>();
         var indexer = new JavaProjectSemanticIndexer();
@@ -42,6 +57,8 @@ public final class JavaWorkspaceAnalysisProvider {
             if (Thread.currentThread().isInterrupted())
                 throw new CancellationException("Java analysis cancelled");
             if (!(document instanceof TextDocumentSnapshot text) || !"java".equals(text.languageId()))
+                continue;
+            if (!text.id().equals(request) && !includedSource(text, roots))
                 continue;
             Path path = text.uri().filePath().orElseGet(() -> Path.of(".railroad", "virtual", text.id().toString(),
                 text.uri().fileName().orElse("Snapshot.java")).toAbsolutePath().normalize());
@@ -58,6 +75,24 @@ public final class JavaWorkspaceAnalysisProvider {
             JavaLibrarySymbolIndex.build(classpath), jdks.computeIfAbsent(jdk, JavaJdkSymbolIndex::build))));
         return new JavaWorkspaceAnalysis(sources, new JavaSourcePrecedenceIndex(sources, binary), texts,
             classpath, jdk);
+    }
+
+    private static boolean includedSource(DocumentSnapshot document, Set<Path> roots) {
+        return document.uri().filePath().map(path -> roots.stream()
+            .anyMatch(path.toAbsolutePath().normalize()::startsWith)).orElse(true);
+    }
+
+    private static Set<Path> sourceRoots(WorkspaceConfigurationSnapshot configuration) {
+        Set<Path> roots = new HashSet<>();
+        for (String module : configuration.moduleIds()) {
+            String sources = configuration.settings().get("module." + module + ".sources");
+            if (sources != null) {
+                sources.lines().filter(line -> !line.isBlank())
+                    .map(line -> line.replaceFirst(":(?:test:)?generated=(?:true|false)$", ""))
+                    .map(Path::of).map(path -> path.toAbsolutePath().normalize()).forEach(roots::add);
+            }
+        }
+        return Set.copyOf(roots);
     }
 
     private static List<Path> classpath(WorkspaceConfigurationSnapshot configuration) {

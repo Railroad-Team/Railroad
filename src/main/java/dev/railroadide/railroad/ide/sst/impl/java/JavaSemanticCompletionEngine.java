@@ -17,7 +17,6 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.lang.reflect.Modifier;
@@ -452,11 +451,7 @@ public final class JavaSemanticCompletionEngine {
             return null;
 
         try {
-            String source = projectIndex instanceof JavaSourceSnapshotIndex captured
-                ? captured.sourceText(sourceFile).orElse(null)
-                : Files.readString(sourceFile);
-            if (source == null)
-                return null;
+            String source = JavaSourceSnapshotIndex.readSource(projectIndex, sourceFile);
             SemanticModel declarationModel = JavaSemanticAnalyzer
                 .analyzeDeclarationsFacts(source);
             return typeDeclarationInfoInModel(ownerQualifiedName, declarationModel, projectIndex);

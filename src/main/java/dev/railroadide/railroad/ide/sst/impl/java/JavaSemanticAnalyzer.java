@@ -6,6 +6,7 @@ import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRuleEngine;
 import dev.railroadide.railroad.ide.indexing.Indexes;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaSourceSnapshotIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.*;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
@@ -13,7 +14,6 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import org.jetbrains.annotations.Nullable;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -2272,7 +2272,7 @@ public final class JavaSemanticAnalyzer {
             if (owner == null)
                 return null;
             try {
-                String source = Files.readString(owner.sourceFile());
+                String source = JavaSourceSnapshotIndex.readSource(projectIndex, owner.sourceFile());
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 var sourceContext = new JavaRuleContext(
                     owner.sourceFile(), source, model, projectIndex);
@@ -3233,7 +3233,7 @@ public final class JavaSemanticAnalyzer {
                 return List.of();
 
             try {
-                String source = Files.readString(sourceType.sourceFile());
+                String source = JavaSourceSnapshotIndex.readSource(projectIndex, sourceType.sourceFile());
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 var sourceContext = new JavaRuleContext(sourceType.sourceFile(), source, model, projectIndex);
                 Map<String, List<String>> collected = new LinkedHashMap<>();
@@ -3433,7 +3433,7 @@ public final class JavaSemanticAnalyzer {
             }
 
             try {
-                String source = Files.readString(ownerType.sourceFile());
+                String source = JavaSourceSnapshotIndex.readSource(projectIndex, ownerType.sourceFile());
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 var sourceContext = new JavaRuleContext(
                     ownerType.sourceFile(), source, model, projectIndex);
@@ -3539,7 +3539,7 @@ public final class JavaSemanticAnalyzer {
             if (symbol.kind() != SymbolKind.METHOD)
                 return List.of();
             try {
-                String source = Files.readString(symbol.sourceFile());
+                String source = JavaSourceSnapshotIndex.readSource(projectIndex, symbol.sourceFile());
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 var sourceContext = new JavaRuleContext(symbol.sourceFile(), source, model, projectIndex);
                 List<Type> match = findProjectMethodParameterTypes(
@@ -3566,7 +3566,7 @@ public final class JavaSemanticAnalyzer {
             if (owner == null)
                 return List.of();
             try {
-                String source = Files.readString(owner.sourceFile());
+                String source = JavaSourceSnapshotIndex.readSource(projectIndex, owner.sourceFile());
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 var sourceContext = new JavaRuleContext(
                     owner.sourceFile(), source, model, projectIndex);
@@ -3698,7 +3698,7 @@ public final class JavaSemanticAnalyzer {
                 return new Type.UnknownType("<unknown>");
 
             try {
-                String source = Files.readString(symbol.sourceFile());
+                String source = JavaSourceSnapshotIndex.readSource(projectIndex, symbol.sourceFile());
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 var sourceContext = new JavaRuleContext(
                     symbol.sourceFile(),
@@ -5828,7 +5828,7 @@ public final class JavaSemanticAnalyzer {
             if (descriptor == null)
                 return List.of();
             try {
-                String source = Files.readString(descriptor.sourceFile());
+                String source = JavaSourceSnapshotIndex.readSource(projectIndex, descriptor.sourceFile());
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 var sourceContext = new JavaRuleContext(
                     descriptor.sourceFile(), source, model, projectIndex);
@@ -5996,7 +5996,7 @@ public final class JavaSemanticAnalyzer {
                 return List.of();
 
             try {
-                String source = Files.readString(descriptor.sourceFile());
+                String source = JavaSourceSnapshotIndex.readSource(projectIndex, descriptor.sourceFile());
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
                 return findDeclaredTypeParameterNames(
                     model.syntaxTree().root(), model, ownerQualifiedName);
