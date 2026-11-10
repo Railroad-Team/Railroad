@@ -4,6 +4,7 @@ import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxKind;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
@@ -40,8 +41,27 @@ public final class SyntaxInternalFactory {
      * @return the new green node
      */
     public static GreenNode greenNode(SyntaxKind kind, List<? extends GreenElement> children) {
+        return greenNode(kind, children, () -> {
+        });
+    }
+
+    /**
+     * Creates an immutable green node with cooperative activity checks.
+     * The callback's work budget is polled before construction, including for an empty
+     * node, and during width calculation. The callback is not retained by the
+     * completed node. Callback failures propagate without returning a partial node.
+     *
+     * @param kind the new node's syntax kind
+     * @param children child elements in source order, copied by the node
+     * @param activityCheck cooperative activity check, invoked on the constructing thread
+     * @return the completed immutable green node
+     * @throws NullPointerException if the kind, children, callback, or any child is {@code null}
+     */
+    public static GreenNode greenNode(SyntaxKind kind, List<? extends GreenElement> children, Runnable activityCheck) {
         Objects.requireNonNull(children, "children");
-        return new GreenNode(kind, children);
+        Objects.requireNonNull(activityCheck, "activityCheck");
+        ActivityCheckpoint.poll(activityCheck);
+        return new GreenNode(kind, children, activityCheck);
     }
 
     /**
@@ -193,11 +213,36 @@ public final class SyntaxInternalFactory {
      * @return the validated syntax tree
      */
     public static SyntaxTree treeFromGreenRoot(TextDocumentSnapshot documentSnapshot, GreenNode root) {
+        return treeFromGreenRoot(documentSnapshot, root, () -> {
+        });
+    }
+
+    /**
+     * Creates a tree around the exact captured document and validates it cooperatively.
+     * Checks run before construction, during validation and internal child construction,
+     * and before returning. Callback failures propagate without returning a partial tree.
+     * Neither the completed tree nor its child caches retain the callback.
+     *
+     * @param documentSnapshot exact document snapshot represented by the tree
+     * @param root immutable green root to wrap
+     * @param activityCheck request activity check, invoked on the constructing thread
+     * @return completed and validated syntax tree
+     * @throws NullPointerException if any argument is {@code null}
+     * @throws IllegalStateException if the tree's ranges or parent links are inconsistent
+     */
+    public static SyntaxTree treeFromGreenRoot(
+        TextDocumentSnapshot documentSnapshot,
+        GreenNode root,
+        Runnable activityCheck
+    ) {
         Objects.requireNonNull(documentSnapshot, "documentSnapshot");
+        Objects.requireNonNull(activityCheck, "activityCheck");
+        activityCheck.run();
         var tree = new SyntaxTree(
             documentSnapshot,
             RedFactory.root(Objects.requireNonNull(root, "root")));
-        SyntaxTreeValidator.validate(tree.root());
+        SyntaxTreeValidator.validate(tree.root(), activityCheck);
+        activityCheck.run();
         return tree;
     }
 

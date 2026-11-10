@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.sst.syntax.internal;
 
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxKind;
+import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.List;
@@ -20,7 +21,23 @@ public final class GreenNode extends GreenElement {
      * @param children the nonnull child elements in source order
      */
     public GreenNode(SyntaxKind kind, List<? extends GreenElement> children) {
-        super(kind, sumWidths(children));
+        this(kind, children, () -> {
+        });
+    }
+
+    /**
+     * Creates an immutable node with cooperative checks while summing child widths.
+     * The callback's work budget is polled before each child; callback failures propagate
+     * without producing a completed node. The supplied children are copied, and the
+     * callback is never retained by the completed node.
+     *
+     * @param kind the node's syntax kind
+     * @param children nonnull child elements in source order
+     * @param activityCheck cooperative activity check, invoked on the constructing thread
+     * @throws NullPointerException if the kind, children, callback, or any child is {@code null}
+     */
+    public GreenNode(SyntaxKind kind, List<? extends GreenElement> children, Runnable activityCheck) {
+        super(kind, sumWidths(children, Objects.requireNonNull(activityCheck, "activityCheck")));
         Objects.requireNonNull(children, "children");
         this.children = List.copyOf(children);
     }
@@ -34,10 +51,11 @@ public final class GreenNode extends GreenElement {
         return children;
     }
 
-    private static int sumWidths(List<? extends GreenElement> children) {
+    private static int sumWidths(List<? extends GreenElement> children, Runnable activityCheck) {
         Objects.requireNonNull(children, "children");
         int sum = 0;
         for (GreenElement child : children) {
+            ActivityCheckpoint.poll(activityCheck);
             Objects.requireNonNull(child, "children cannot contain nulls");
             sum += child.width();
         }

@@ -4,6 +4,7 @@ import dev.railroadide.railroad.ide.sst.lexer.Lexer;
 import dev.railroadide.railroad.ide.sst.lexer.Token;
 import dev.railroadide.railroad.ide.sst.lexer.TokenChannel;
 import dev.railroadide.railroad.ide.sst.lexer.TokenFlag;
+import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxKind;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 import dev.railroadide.railroad.ide.sst.syntax.internal.GreenElement;
@@ -139,6 +140,7 @@ public final class JavaGreenParser {
 
     private final Lexer<JavaTokenType> lexer;
     private final List<Token<JavaTokenType>> tokens = new ArrayList<>();
+    private final Runnable activityCheck;
 
     private int position;
     private int pendingTypeArgumentClosers;
@@ -149,7 +151,28 @@ public final class JavaGreenParser {
      * @param lexer Java token source to consume, including its EOF token
      */
     public JavaGreenParser(Lexer<JavaTokenType> lexer) {
+        this(lexer, () -> {
+            // Default activity check does nothing
+        });
+    }
+
+    /**
+     * Creates a parser using the parse owner's cooperative activity check.
+     * Hot loops poll the callback's work budget when it is an {@link ActivityCheckpoint};
+     * ordinary callbacks run immediately. Request-aware parsing shares one budget across
+     * lexing, tree construction, and validation. Phase boundaries always check immediately.
+     * The supplied lexer should also check activity within expensive token production;
+     * parser checks cannot interrupt an individual call to an uncooperative lexer.
+     * Callback exceptions propagate without returning a partial root. Discard this parser
+     * after cancellation; partially consumed state is not rolled back.
+     *
+     * @param lexer Java token source, retained and left open for its owner
+     * @param activityCheck request activity check, invoked on the parsing thread
+     * @throws NullPointerException if either argument is {@code null}
+     */
+    public JavaGreenParser(Lexer<JavaTokenType> lexer, Runnable activityCheck) {
         this.lexer = Objects.requireNonNull(lexer, "lexer");
+        this.activityCheck = Objects.requireNonNull(activityCheck, "activityCheck");
     }
 
     /**
@@ -167,10 +190,14 @@ public final class JavaGreenParser {
      * @return immutable compilation-unit root, including any syntax recovery nodes
      */
     public GreenNode parseGreenTree() {
+        activityCheck.run();
         readAllTokens();
+        activityCheck.run();
         position = 0;
         pendingTypeArgumentClosers = 0;
-        return parseCompilationUnit();
+        GreenNode compilationUnit = parseCompilationUnit();
+        activityCheck.run();
+        return compilationUnit;
     }
 
     private GreenNode parseCompilationUnit() {
@@ -688,7 +715,7 @@ public final class JavaGreenParser {
         if (tokenType == JavaTokenType.AT || isIdentifierLike(tokenType))
             return parseClassOrInterfaceTypeReference(children);
 
-        if (!isTypeReferenceFollowToken(tokenType) && tokenType != null && tokenType != JavaTokenType.EOF) {
+        if (!isTypeReferenceFollowToken(tokenType) && tokenType != JavaTokenType.EOF) {
             children.add(consumeToken());
         } else {
             children.add(missingToken(JavaTokenType.IDENTIFIER));
@@ -2351,11 +2378,14 @@ public final class JavaGreenParser {
         boolean consumed = position > marker;
         int significantTokens = 0;
         for (int index = marker; index < position; index++) {
+            ActivityCheckpoint.poll(activityCheck);
+
             Token<JavaTokenType> token = tokens.get(index);
             if (!isTrivia(token) && !isEof(token)) {
                 significantTokens++;
             }
         }
+
         JavaTokenType terminator = peekSignificantType();
         boolean looksLikePattern = consumed && significantTokens > 1 &&
             (terminator == JavaTokenType.WHEN_KEYWORD ||
@@ -2366,12 +2396,16 @@ public final class JavaGreenParser {
             JavaTokenType previous = null;
             JavaTokenType last = null;
             for (int index = marker; index < position; index++) {
+                ActivityCheckpoint.poll(activityCheck);
+
                 Token<JavaTokenType> token = tokens.get(index);
                 if (isTrivia(token) || isEof(token))
                     continue;
+
                 previous = last;
                 last = token.type();
             }
+
             // A qualified constant such as ColorSpace.TYPE_RGB is a case
             // expression. parseTypeReference can consume the whole qualified
             // name while probing, but there is no binding identifier after it.
@@ -2379,6 +2413,7 @@ public final class JavaGreenParser {
                 looksLikePattern = false;
             }
         }
+
         position = marker;
         return looksLikePattern;
     }
@@ -2440,12 +2475,15 @@ public final class JavaGreenParser {
     private boolean isLambdaHeader() {
         if (isIdentifierLike(peekSignificantType()) && peekSignificantTypeAfter(1) == JavaTokenType.ARROW)
             return true;
+
         if (peekSignificantType() != JavaTokenType.OPEN_PAREN)
             return false;
 
         int index = nextSignificantIndex(position);
         int depth = 0;
         while (index >= 0 && index < tokens.size()) {
+            ActivityCheckpoint.poll(activityCheck);
+
             Token<JavaTokenType> token = tokens.get(index);
             if (isEof(token))
                 return false;
@@ -2586,7 +2624,7 @@ public final class JavaGreenParser {
 
         // Prevent expression starters (e.g. 'new') from being misclassified as
         // local variable declarations.
-        if (!(tokenType == JavaTokenType.AT || isPrimitiveTypeToken(tokenType) || isIdentifierLike(tokenType)))
+        if (!(isPrimitiveTypeToken(tokenType) || isIdentifierLike(tokenType)))
             return false;
 
         ParserCheckpoint checkpoint = mark();
@@ -2843,9 +2881,12 @@ public final class JavaGreenParser {
         int braceDepth = 0;
         int angleDepth = 0;
         while (index < tokens.size()) {
+            ActivityCheckpoint.poll(activityCheck);
+
             Token<JavaTokenType> token = tokens.get(index++);
             if (isTrivia(token))
                 continue;
+
             if (isEof(token))
                 break;
 
@@ -3165,6 +3206,8 @@ public final class JavaGreenParser {
     }
 
     private GreenElement consumeToken() {
+        ActivityCheckpoint.poll(activityCheck);
+
         Token<JavaTokenType> token = tokens.get(position++);
         return greenToken(kindForToken(token), token.lexeme());
     }
@@ -3283,7 +3326,7 @@ public final class JavaGreenParser {
                 matchSignificant(JavaTokenType.SEMICOLON, children);
             } else if (isHardStatementBoundaryToken(tokenType)) {
                 children.add(missingToken(JavaTokenType.SEMICOLON));
-            } else if (tokenType != null && tokenType != JavaTokenType.EOF) {
+            } else if (tokenType != JavaTokenType.EOF) {
                 children.add(consumeToken());
             } else {
                 children.add(missingToken(JavaTokenType.SEMICOLON));
@@ -3407,6 +3450,8 @@ public final class JavaGreenParser {
 
     private int nextSignificantIndex(int start) {
         for (int index = start; index < tokens.size(); index++) {
+            ActivityCheckpoint.poll(activityCheck);
+
             if (!isTrivia(tokens.get(index)))
                 return index;
         }
@@ -3416,6 +3461,8 @@ public final class JavaGreenParser {
 
     private int previousSignificantIndex(int start) {
         for (int index = Math.min(start, tokens.size() - 1); index >= 0; index--) {
+            ActivityCheckpoint.poll(activityCheck);
+
             if (!isTrivia(tokens.get(index)))
                 return index;
         }
@@ -3434,6 +3481,8 @@ public final class JavaGreenParser {
     private void readAllTokens() {
         tokens.clear();
         while (true) {
+            ActivityCheckpoint.poll(activityCheck);
+
             Token<JavaTokenType> token = lexer.nextToken();
             if (token instanceof Token.IgnoreToken<?> || token.type() == null)
                 continue;
@@ -3493,8 +3542,8 @@ public final class JavaGreenParser {
         return token.type() == JavaTokenType.EOF || token.flags().contains(TokenFlag.EOF);
     }
 
-    private static GreenNode greenNode(SyntaxKind kind, List<GreenElement> children) {
-        return SyntaxInternalFactory.greenNode(kind, children);
+    private GreenNode greenNode(SyntaxKind kind, List<GreenElement> children) {
+        return SyntaxInternalFactory.greenNode(kind, children, activityCheck);
     }
 
     private static GreenElement greenToken(SyntaxKind kind, String text) {
