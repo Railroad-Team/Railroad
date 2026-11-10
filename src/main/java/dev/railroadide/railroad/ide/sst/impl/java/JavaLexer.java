@@ -4,20 +4,21 @@ import dev.railroadide.railroad.ide.sst.lexer.Lexer;
 import dev.railroadide.railroad.ide.sst.lexer.Token;
 import dev.railroadide.railroad.ide.sst.lexer.TokenChannel;
 import dev.railroadide.railroad.ide.sst.lexer.TokenFlag;
+import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 
 import java.util.*;
 import java.util.function.Predicate;
 
 /**
- * Tokenizes Java source while retaining whitespace and comments on the trivia channel.
+ * Tokenises Java source while retaining whitespace and comments on the trivia channel.
  * Tracks source positions, buffers lookahead tokens, and collects lexical diagnostics.
  * String and text-block opening delimiters switch lexer modes and emit an ignore token
  * before the literal is read on the next call.
  */
 public class JavaLexer implements Lexer<JavaTokenType> {
     private static final int MODE_DEFAULT = 0;
-    private static final int MODE_STRING = 1; // Mode for when "..ggf.fgjgfjfgkgf"
-    private static final int MODE_TEXTBLOCK = 2; // Mode for when """..ggf.fgjgfjfgkgf"""
+    private static final int MODE_STRING = 1; // Mode for when ".ggf.fgjgfjfgkgf"
+    private static final int MODE_TEXTBLOCK = 2; // Mode for when """.ggf.fgjgfjfgkgf"""
 
     private final CharSequence input;
     private final int length;
@@ -32,14 +33,36 @@ public class JavaLexer implements Lexer<JavaTokenType> {
     private final List<LexError> diagnostics = new ArrayList<>();
     private final Deque<Token<JavaTokenType>> lookaheadBuffer = new ArrayDeque<>();
 
+    private final Runnable activityCheck;
+
     /**
      * Creates a lexer positioned at the beginning of the supplied source.
      *
-     * @param input the source characters to tokenize; must not be null
+     * @param input the source characters to tokenise; must not be null
      * @param sourceId an optional source identifier, or null when unspecified
      * @throws NullPointerException if input is null
      */
     public JavaLexer(CharSequence input, String sourceId) {
+        this(input, sourceId, () -> {
+            // Default activity check does nothing
+        });
+    }
+
+    /**
+     * Creates a lexer with a cooperative activity check supplied by the parse owner.
+     * Token access, including buffered tokens and EOF, polls the callback's work budget.
+     * Ordinary callbacks still run immediately. Checks also run periodically
+     * within character consumption so large individual tokens remain cancellable.
+     * The callback can throw cancellation or deadline exceptions; they propagate directly
+     * rather than becoming lexical diagnostics. Discard the lexer after such a failure:
+     * its partially consumed state is not rolled back.
+     *
+     * @param input source characters to tokenize
+     * @param sourceId optional source identifier, or {@code null} when unspecified
+     * @param activityCheck request activity check, invoked on the lexing thread
+     * @throws NullPointerException if the input or activity check is {@code null}
+     */
+    public JavaLexer(CharSequence input, String sourceId, Runnable activityCheck) {
         this.input = Objects.requireNonNull(input, "Input cannot be null");
         this.length = input.length();
         this.sourceId = sourceId;
@@ -47,12 +70,13 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         this.line = 1;
         this.column = 1;
         this.modes.push(MODE_DEFAULT);
+        this.activityCheck = Objects.requireNonNull(activityCheck, "Activity check cannot be null");
     }
 
     /**
      * Creates a lexer without a source identifier.
      *
-     * @param input the source characters to tokenize; must not be null
+     * @param input the source characters to tokenise; must not be null
      * @throws NullPointerException if input is null
      */
     public JavaLexer(CharSequence input) {
@@ -61,11 +85,16 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
     @Override
     public Token<JavaTokenType> nextToken() {
+        ActivityCheckpoint.poll(activityCheck);
+
         if (!lookaheadBuffer.isEmpty())
             return lookaheadBuffer.pollFirst();
 
         Token<JavaTokenType> token = produceNext();
-        // TODO: Possibly null check
+        if (token == null) {
+            token = createEofToken();
+        }
+
         return token;
     }
 
@@ -73,6 +102,8 @@ public class JavaLexer implements Lexer<JavaTokenType> {
     public Token<JavaTokenType> lookahead(int k) {
         if (k <= 0)
             throw new IllegalArgumentException("Lookahead must be greater than 0");
+
+        ActivityCheckpoint.poll(activityCheck);
 
         while (lookaheadBuffer.size() < k) {
             lookaheadBuffer.addLast(produceNext());
@@ -124,7 +155,11 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
     @Override
     public int mode() {
-        return modes.peek(); // TODO: Null handling?
+        Integer peeked = modes.peek();
+        if (peeked == null)
+            throw new IllegalStateException("Mode stack is empty");
+
+        return peeked;
     }
 
     @Override
@@ -160,6 +195,8 @@ public class JavaLexer implements Lexer<JavaTokenType> {
     }
 
     private Token<JavaTokenType> produceNext() {
+        ActivityCheckpoint.poll(activityCheck);
+
         if (pos >= length)
             return createEofToken();
 
@@ -778,6 +815,10 @@ public class JavaLexer implements Lexer<JavaTokenType> {
     }
 
     private char consume() {
+        if (this.pos % 256 == 0) {
+            activityCheck.run();
+        }
+
         char c = charAt(this.pos++);
         if (c == '\n') {
             newline();
@@ -791,6 +832,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
     private char consume(int n) {
         if (n <= 0)
             throw new IllegalArgumentException("n must be greater than 0");
+
         char c = '\0';
         for (int i = 0; i < n; i++) {
             c = consume();

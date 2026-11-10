@@ -10,6 +10,7 @@ import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.RailroadProject;
 import javafx.application.Platform;
 import javafx.scene.image.WritableImage;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -44,12 +45,12 @@ public class CodeEditorWorkspaceTest {
         BlockingQueue<WorkspaceSnapshot> requests = new LinkedBlockingQueue<>();
         DiagnosticsProvider<TextEditorDiagnostic> provider = new DiagnosticsProvider<>() {
             @Override
-            public List<TextEditorDiagnostic> compute(DocumentSnapshot snapshot) {
+            public @NonNull List<TextEditorDiagnostic> compute(DocumentSnapshot snapshot) {
                 throw new AssertionError("Expected a captured workspace");
             }
 
             @Override
-            public List<TextEditorDiagnostic> compute(WorkspaceSnapshot workspace, DocumentId documentId) {
+            public @NonNull List<TextEditorDiagnostic> compute(WorkspaceSnapshot workspace, DocumentId documentId) {
                 requests.add(workspace);
                 return List.of();
             }
@@ -139,12 +140,12 @@ public class CodeEditorWorkspaceTest {
         var calls = new AtomicInteger();
         DiagnosticsProvider<TextEditorDiagnostic> provider = new DiagnosticsProvider<>() {
             @Override
-            public List<TextEditorDiagnostic> compute(DocumentSnapshot snapshot) {
+            public @NonNull List<TextEditorDiagnostic> compute(DocumentSnapshot snapshot) {
                 throw new AssertionError("Expected a workspace request");
             }
 
             @Override
-            public List<TextEditorDiagnostic> compute(WorkspaceSnapshot workspace, DocumentId documentId) {
+            public @NonNull List<TextEditorDiagnostic> compute(WorkspaceSnapshot workspace, DocumentId documentId) {
                 int call = calls.incrementAndGet();
                 requests.add(workspace);
                 if (call == 1) {
@@ -333,12 +334,12 @@ public class CodeEditorWorkspaceTest {
         };
         DiagnosticsProvider<TextEditorDiagnostic> diagnostics = new DiagnosticsProvider<>() {
             @Override
-            public List<TextEditorDiagnostic> compute(DocumentSnapshot snapshot) {
+            public @NonNull List<TextEditorDiagnostic> compute(DocumentSnapshot snapshot) {
                 throw new AssertionError("Editor must pass the captured workspace");
             }
 
             @Override
-            public List<TextEditorDiagnostic> compute(WorkspaceSnapshot workspace, DocumentId id) {
+            public @NonNull List<TextEditorDiagnostic> compute(WorkspaceSnapshot workspace, DocumentId id) {
                 block(workspace, entered, release);
                 if (workspace != entered.getNow(null))
                     return List.of();

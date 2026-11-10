@@ -10,14 +10,17 @@ import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagn
 import dev.railroadide.railroad.ide.signature.SignatureHelp;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.sst.request.api.CancellationTokenSource;
+import dev.railroadide.railroad.ide.sst.request.api.Deadline;
+import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
 import dev.railroadide.railroad.ide.ui.DiagnosticPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRListView;
 import dev.railroadide.railroad.utility.ShutdownHooks;
 import io.github.palexdev.mfxresources.fonts.MFXFontIcon;
 import io.github.palexdev.mfxresources.fonts.fontawesome.FontAwesomeSolid;
-import javafx.application.Platform;
 import javafx.animation.PauseTransition;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
@@ -45,14 +48,11 @@ import javax.tools.Diagnostic;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Provides a text editor with configurable highlighting, completion, diagnostics, and signature help.
@@ -85,6 +85,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     protected volatile List<TextEditorDiagnostic> visibleDiagnostics = List.of();
     protected final Popup diagnosticPopup = new Popup();
+
+    private @Nullable CancellationTokenSource activeDiagnosticsCancellation;
+    private @Nullable FeatureRequestContext activeDiagnosticsContext;
     // endregion
 
     // region Syntax Highlighting state
@@ -92,6 +95,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
     protected final AtomicInteger highlightGeneration = new AtomicInteger();
 
     protected volatile StyleSpans<Collection<String>> lastHighlight = StyleSpans.singleton(Collections.emptyList(), 0);
+
+    private @Nullable CancellationTokenSource activeHighlightCancellation;
+    private @Nullable FeatureRequestContext activeHighlightContext;
     // endregion
 
     // region Completion state
@@ -101,6 +107,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
     protected final AtomicReference<Popup> activeCompletionPopup = new AtomicReference<>(null);
     protected final AtomicReference<RRListView<CompletionItem>> activeCompletionList = new AtomicReference<>(null);
     protected volatile ChangeListener<String> completionFilterListener = null;
+
+    private @Nullable CancellationTokenSource activeCompletionCancellation;
+    private @Nullable FeatureRequestContext activeCompletionContext;
     // endregion
 
     // region Signature Help state
@@ -108,6 +117,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
     protected final TextFlow signatureTextFlow = new TextFlow();
     protected final AtomicInteger signatureGeneration = new AtomicInteger();
     protected final AtomicReference<SignatureHelp> activeSignatureHelp = new AtomicReference<>(null);
+
+    private @Nullable CancellationTokenSource activeSignatureCancellation;
+    private @Nullable FeatureRequestContext activeSignatureContext;
     // endregion
 
     // region Bracket Highlighting state
@@ -134,7 +146,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         super(documentId, filePath, config.languageId());
         this.project = Objects.requireNonNull(project, "project");
         Objects.requireNonNull(filePath, "filePath");
-        config = Objects.requireNonNull(config, "config");
+        Objects.requireNonNull(config, "config");
         this.completionProvider = config.completionProvider();
         this.diagnosticsProvider = config.diagnosticsProvider();
         this.signatureHelpProvider = config.signatureHelpProvider();
@@ -157,9 +169,13 @@ public abstract class CodeEditorPane extends TextEditorPane {
         workspaceDiagnosticsDelay.setOnFinished(_ -> requestDiagnostics());
 
         subscriptions.add(plainTextChanges().subscribe(_ -> {
+            highlightGeneration.incrementAndGet();
             diagnosticsGeneration.incrementAndGet();
             completionGeneration.incrementAndGet();
             signatureGeneration.incrementAndGet();
+            invalidateHighlightRequest();
+            invalidateDiagnosticsRequest();
+            invalidateCompletionRequest();
             visibleDiagnostics = List.of();
             recomputeLineDecorations();
             diagnosticPopup.hide();
@@ -199,13 +215,17 @@ public abstract class CodeEditorPane extends TextEditorPane {
         }
         subscriptions.forEach(Subscription::unsubscribe);
         subscriptions.clear();
+        highlightGeneration.incrementAndGet();
         diagnosticsGeneration.incrementAndGet();
         completionGeneration.incrementAndGet();
         signatureGeneration.incrementAndGet();
+        invalidateHighlightRequest();
+        invalidateDiagnosticsRequest();
+        hideAutoComplete();
+        hideSignatureHelp();
         workerShutdownRegistration.close();
         worker.shutdownNow();
         diagnosticPopup.hide();
-        signaturePopup.hide();
         Popup completionPopup = activeCompletionPopup.getAndSet(null);
         if (completionPopup != null) {
             completionPopup.hide();
@@ -218,6 +238,10 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (workspaceSubscription != null) {
             workspaceSubscription.close();
         }
+        invalidateHighlightRequest();
+        invalidateDiagnosticsRequest();
+        hideAutoComplete();
+        hideSignatureHelp();
         DocumentStore store = getDocumentStore();
         workspaceSubscription = store.onChange(() -> {
             if (workspaceRefreshQueued.compareAndSet(false, true)) {
@@ -225,6 +249,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             }
         });
         observedWorkspace = store.capture();
+        requestHighlight();
         if (diagnosticsProvider != null) {
             requestDiagnostics();
         }
@@ -255,11 +280,14 @@ public abstract class CodeEditorPane extends TextEditorPane {
         diagnosticsGeneration.incrementAndGet();
         completionGeneration.incrementAndGet();
         signatureGeneration.incrementAndGet();
+        invalidateDiagnosticsRequest();
+        invalidateCompletionRequest();
         visibleDiagnostics = List.of();
         recomputeLineDecorations();
         diagnosticPopup.hide();
         hideAutoComplete();
         hideSignatureHelp();
+        requestHighlight();
         workspaceDiagnosticsDelay.playFromStart();
     }
 
@@ -318,22 +346,70 @@ public abstract class CodeEditorPane extends TextEditorPane {
     // endregion
 
     // region Syntax Highlighting
-    private void installSyntaxHighlighting() {
-        requestHighlight(getText());
-        subscriptions.add(multiPlainChanges()
-            .successionEnds(HIGHLIGHT_DEBOUNCE)
-            .subscribe(changes -> requestHighlight(getText())));
+
+    /**
+     * Cancels the JavaFX-thread-owned highlighting request and releases its captured inputs.
+     */
+    private void invalidateHighlightRequest() {
+        if (activeHighlightCancellation != null) {
+            activeHighlightCancellation.cancel();
+            activeHighlightCancellation = null;
+        }
+
+        activeHighlightContext = null;
     }
 
-    private void requestHighlight(String snapshot) {
+    private void installSyntaxHighlighting() {
+        requestHighlight();
+        subscriptions.add(multiPlainChanges()
+            .successionEnds(HIGHLIGHT_DEBOUNCE)
+            .subscribe(_ -> requestHighlight()));
+    }
+
+    /**
+     * Captures highlighting inputs once the document store is attached and supersedes
+     * previous work. The JavaFX callback rechecks identity, activity, generation, and
+     * workspace state before applying styles. Workspace changes schedule a replacement
+     * even when the document text is unchanged.
+     */
+    private void requestHighlight() {
+        invalidateHighlightRequest();
         if (codeEditorClosed || !supportsHighlighting())
             return;
 
         int generation = highlightGeneration.incrementAndGet();
-        CompletableFuture.supplyAsync(() -> this.highlightingProvider.compute(snapshot), worker)
-            .thenAccept(spans -> Platform.runLater(() -> applyHighlightIfLatest(generation, spans)))
+        WorkspaceSnapshot workspace = captureFeatureWorkspace();
+        if (workspace == null
+            || !(workspace.document(documentId).orElse(null) instanceof TextDocumentSnapshot snapshot))
+            return;
+
+        activeHighlightCancellation = new CancellationTokenSource();
+        var context = new FeatureRequestContext(workspace, snapshot, activeHighlightCancellation.token(),
+            Deadline.none());
+        activeHighlightContext = context;
+
+        CompletableFuture.supplyAsync(() -> highlightingProvider.compute(context), worker)
+            .thenAccept(result -> Platform.runLater(() -> {
+                if (highlightGeneration.get() != generation
+                    || activeHighlightContext != context
+                    || !result.belongsTo(context)
+                    || context.cancellationToken().isCancellationRequested()
+                    || context.deadline().isExpired()
+                    || !isCurrent(context.workspaceSnapshot()))
+                    return;
+
+                applyHighlightIfLatest(generation, result.value());
+            }))
             .exceptionally(throwable -> {
-                Railroad.LOGGER.error("Failed to compute Syntax highlighting", throwable);
+                Throwable cause = throwable;
+                while ((cause instanceof CompletionException || cause instanceof ExecutionException)
+                    && cause.getCause() != null) {
+                    cause = cause.getCause();
+                }
+
+                if (!(cause instanceof CancellationException)) {
+                    Railroad.LOGGER.error("Failed to compute syntax highlighting", cause);
+                }
                 return null;
             });
     }
@@ -349,6 +425,21 @@ public abstract class CodeEditorPane extends TextEditorPane {
     // endregion
 
     // region Diagnostics
+
+    /**
+     * Cancels the previous diagnostics request and releases its owned controls and inputs.
+     * Called on the JavaFX thread immediately on invalidation, including during debounce.
+     * Generation advancement remains with the calling lifecycle transition.
+     */
+    private void invalidateDiagnosticsRequest() {
+        if (activeDiagnosticsCancellation != null) {
+            activeDiagnosticsCancellation.cancel();
+            activeDiagnosticsCancellation = null;
+        }
+
+        activeDiagnosticsContext = null;
+    }
+
     private void installDiagnostics() {
         if (!supportsDiagnostics())
             return;
@@ -359,7 +450,16 @@ public abstract class CodeEditorPane extends TextEditorPane {
             .subscribe(changes -> requestDiagnostics()));
     }
 
+    /**
+     * Captures and dispatches one diagnostics request, cancelling its predecessor first.
+     * Request state is owned by the JavaFX thread. Workers use the captured context;
+     * the queued JavaFX publication rechecks request identity, activity, and workspace
+     * current-ness before applying the wrapped diagnostics. Expected cancellation is
+     * excluded from error reporting while genuine provider failures retain their cause.
+     */
     private void requestDiagnostics() {
+        invalidateDiagnosticsRequest();
+
         workspaceDiagnosticsDelay.stop();
         if (codeEditorClosed || !supportsDiagnostics())
             return;
@@ -371,14 +471,33 @@ public abstract class CodeEditorPane extends TextEditorPane {
             || !(workspace.document(documentId).orElse(null) instanceof TextDocumentSnapshot snapshot))
             return;
 
-        CompletableFuture.supplyAsync(() -> diagnosticsProvider.compute(workspace, documentId), worker)
+        activeDiagnosticsCancellation = new CancellationTokenSource();
+        var context = new FeatureRequestContext(workspace, snapshot, activeDiagnosticsCancellation.token(),
+            Deadline.none());
+        activeDiagnosticsContext = context;
+
+        CompletableFuture.supplyAsync(() -> diagnosticsProvider.compute(context), worker)
             .thenAccept(result -> Platform.runLater(() -> {
-                if (isCurrent(workspace)) {
-                    applyDiagnosticsIfLatest(generation, result, snapshot);
-                }
+                if (activeDiagnosticsContext != context
+                    || !result.belongsTo(context)
+                    || context.cancellationToken().isCancellationRequested()
+                    || context.deadline().isExpired()
+                    || !isCurrent(context.workspaceSnapshot()))
+                    return;
+
+                applyDiagnosticsIfLatest(generation, result.value(), snapshot);
             }))
             .exceptionally(throwable -> {
-                Railroad.LOGGER.error("Failed to analyse diagnostics", throwable);
+                Throwable cause = throwable;
+                while ((cause instanceof CompletionException || cause instanceof ExecutionException)
+                    && cause.getCause() != null) {
+                    cause = cause.getCause();
+                }
+
+                if (!(cause instanceof CancellationException)) {
+                    Railroad.LOGGER.error("Failed to analyse diagnostics", cause);
+                }
+
                 return null;
             });
     }
@@ -432,11 +551,11 @@ public abstract class CodeEditorPane extends TextEditorPane {
         addEventHandler(MouseEvent.MOUSE_MOVED, this::handleMouseMoved);
     }
 
-    private EditorDiagnostic findDiagnosticAt(int index) {
+    private EditorDiagnostic<?> findDiagnosticAt(int index) {
         if (index < 0)
             return null;
 
-        for (EditorDiagnostic diagnostic : visibleDiagnostics) {
+        for (EditorDiagnostic<?> diagnostic : visibleDiagnostics) {
             if (diagnostic.location().range().contains(index))
                 return diagnostic;
         }
@@ -444,7 +563,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         return null;
     }
 
-    private void showDiagnosticPopup(EditorDiagnostic diagnostic, double screenX, double screenY) {
+    private void showDiagnosticPopup(EditorDiagnostic<?> diagnostic, double screenX, double screenY) {
         diagnosticPopup.getContent().clear();
         diagnosticPopup.getContent().add(new DiagnosticPane(diagnostic, filePath));
         diagnosticPopup.show(this, screenX, screenY);
@@ -452,7 +571,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     private void handleMouseOverText(MouseOverTextEvent event) {
         int index = event.getCharacterIndex();
-        EditorDiagnostic diagnostic = findDiagnosticAt(index);
+        EditorDiagnostic<?> diagnostic = findDiagnosticAt(index);
         if (diagnostic == null)
             return;
 
@@ -474,6 +593,19 @@ public abstract class CodeEditorPane extends TextEditorPane {
     // endregion
 
     // region Completion
+
+    /**
+     * Cancels the JavaFX-thread-owned completion request and releases its captured inputs.
+     */
+    private void invalidateCompletionRequest() {
+        if (activeCompletionCancellation != null) {
+            activeCompletionCancellation.cancel();
+            activeCompletionCancellation = null;
+        }
+
+        activeCompletionContext = null;
+    }
+
     private void installCompletion() {
         if (!supportsCompletion())
             return;
@@ -500,27 +632,57 @@ public abstract class CodeEditorPane extends TextEditorPane {
         });
     }
 
+    /**
+     * Dispatches completion for a captured request after invalidating its predecessor.
+     * Publication on the JavaFX thread must validate request identity, activity, generation,
+     * and current workspace state before interpreting the possibly unsupported payload.
+     *
+     * @param dotIndex zero-based UTF-16 completion trigger offset in the captured document
+     */
     private void triggerCompletion(int dotIndex) {
+        invalidateCompletionRequest();
+
         if (codeEditorClosed || !supportsCompletion())
             return;
 
         WorkspaceSnapshot workspace = captureFeatureWorkspace();
         if (workspace == null || workspace.document(documentId).isEmpty())
             return;
+
+        activeCompletionCancellation = new CancellationTokenSource();
+        var context = new FeatureRequestContext(workspace, workspace.document(documentId).get(),
+            activeCompletionCancellation.token(), Deadline.none());
+        activeCompletionContext = context;
+
         int generation = completionGeneration.incrementAndGet();
-        CompletableFuture.supplyAsync(() -> completionProvider.compute(workspace, documentId, dotIndex), worker)
+        CompletableFuture.supplyAsync(() -> completionProvider.compute(context, dotIndex), worker)
             .thenAccept(result -> Platform.runLater(() -> {
-                if (completionGeneration.get() != generation || !isCurrent(workspace))
+                if (completionGeneration.get() != generation
+                    || activeCompletionContext != context
+                    || !result.belongsTo(context)
+                    || context.cancellationToken().isCancellationRequested()
+                    || context.deadline().isExpired()
+                    || !isCurrent(context.workspaceSnapshot()))
                     return;
 
-                if (result == null || result.items().isEmpty()) {
+                CompletionResult value = result.value();
+                if (value == null || value.items().isEmpty()) {
                     hideAutoComplete();
                 } else {
-                    handleCompletionResult(result);
+                    handleCompletionResult(value);
                 }
             }))
             .exceptionally(throwable -> {
-                Railroad.LOGGER.error("Failed to compute code completion", throwable);
+                Throwable cause = throwable;
+                while ((cause instanceof CompletionException || cause instanceof ExecutionException)
+                    && cause.getCause() != null) {
+                    cause = cause.getCause();
+                }
+
+                if (!(cause instanceof CancellationException)) {
+                    Railroad.LOGGER.error("Failed to compute completion", cause);
+                }
+
                 return null;
             });
     }
@@ -613,6 +775,12 @@ public abstract class CodeEditorPane extends TextEditorPane {
         hideAutoComplete(true);
     }
 
+    /**
+     * Releases popup controls and optionally dismisses the request and its completion state.
+     * The non-clearing path is used while rebuilding a popup for an accepted result.
+     *
+     * @param clearState whether to cancel the request and clear its candidates and trigger
+     */
     private void hideAutoComplete(boolean clearState) {
         Popup popup = activeCompletionPopup.getAndSet(null);
         if (popup != null) {
@@ -627,6 +795,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         }
 
         if (clearState) {
+            invalidateCompletionRequest();
             completionCandidates.clear();
             completionDotIndex = -1;
         }
@@ -645,6 +814,19 @@ public abstract class CodeEditorPane extends TextEditorPane {
     // endregion
 
     // region Signature Help
+
+    /**
+     * Cancels the JavaFX-thread-owned signature request and releases its captured inputs.
+     */
+    private void invalidateSignatureRequest() {
+        if (activeSignatureCancellation != null) {
+            activeSignatureCancellation.cancel();
+            activeSignatureCancellation = null;
+        }
+
+        activeSignatureContext = null;
+    }
+
     private void installSignatureHelp() {
         if (!supportsSignatureHelp())
             return;
@@ -662,7 +844,16 @@ public abstract class CodeEditorPane extends TextEditorPane {
         });
     }
 
+    /**
+     * Supersedes the previous signature request and captures inputs for the current caret.
+     * The JavaFX publication validates identity, activity, generation, and workspace state
+     * before applying the possibly unsupported payload. Cancellation is an expected outcome.
+     *
+     * @param textChanged whether a text edit, rather than caret movement, triggered the request
+     */
     private void requestSignatureHelp(boolean textChanged) {
+        invalidateSignatureRequest();
+
         if (codeEditorClosed || !supportsSignatureHelp()) {
             hideSignatureHelp();
             return;
@@ -677,17 +868,38 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
         int generation = signatureGeneration.incrementAndGet();
         WorkspaceSnapshot workspace = captureFeatureWorkspace();
-        if (workspace == null || workspace.document(documentId).isEmpty())
+        if (workspace == null
+            || !(workspace.document(documentId).orElse(null) instanceof TextDocumentSnapshot snapshot))
             return;
 
-        CompletableFuture.supplyAsync(() -> signatureHelpProvider.compute(workspace, documentId, caret), worker)
-            .thenAccept(help -> Platform.runLater(() -> {
-                if (isCurrent(workspace)) {
-                    applySignatureHelp(generation, help);
-                }
+        activeSignatureCancellation = new CancellationTokenSource();
+        var context = new FeatureRequestContext(workspace, snapshot, activeSignatureCancellation.token(),
+            Deadline.none());
+        activeSignatureContext = context;
+
+        CompletableFuture.supplyAsync(() -> signatureHelpProvider.compute(context, caret), worker)
+            .thenAccept(result -> Platform.runLater(() -> {
+                if (signatureGeneration.get() != generation
+                    || activeSignatureContext != context
+                    || !result.belongsTo(context)
+                    || context.cancellationToken().isCancellationRequested()
+                    || context.deadline().isExpired()
+                    || !isCurrent(context.workspaceSnapshot()))
+                    return;
+
+                applySignatureHelp(generation, result.value());
             }))
             .exceptionally(throwable -> {
-                Railroad.LOGGER.error("Failed to compute signature help", throwable);
+                Throwable cause = throwable;
+                while ((cause instanceof CompletionException || cause instanceof ExecutionException)
+                    && cause.getCause() != null) {
+                    cause = cause.getCause();
+                }
+
+                if (!(cause instanceof CancellationException)) {
+                    Railroad.LOGGER.error("Failed to compute signature help", cause);
+                }
+
                 return null;
             });
     }
@@ -791,7 +1003,11 @@ public abstract class CodeEditorPane extends TextEditorPane {
         }
     }
 
+    /**
+     * Cancels pending signature work and releases the displayed help on the JavaFX thread.
+     */
     private void hideSignatureHelp() {
+        invalidateSignatureRequest();
         activeSignatureHelp.set(null);
         if (signaturePopup.isShowing()) {
             signaturePopup.hide();
