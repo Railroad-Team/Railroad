@@ -258,8 +258,9 @@ public final class JavaDeclarationAnalysis {
                     ? scope
                     : visitCondition(condition, scope, currentTypeQualifiedName).whenTrue();
                 for (SyntaxNode child : node.children()) {
-                    if (child != condition)
+                    if (child != condition) {
                         visitNode(child, bodyScope, currentTypeQualifiedName);
+                    }
                 }
                 return;
             }
@@ -280,8 +281,9 @@ public final class JavaDeclarationAnalysis {
             }
             if (JavaSyntaxKinds.SWITCH_RULE.id().equals(kindId)) {
                 Scope ruleScope = scope.child();
-                for (SyntaxNode child : node.children())
+                for (SyntaxNode child : node.children()) {
                     visitNode(child, ruleScope, currentTypeQualifiedName);
+                }
                 return;
             }
             if (JavaSyntaxKinds.FOR_STATEMENT.id().equals(kindId)) {
@@ -390,8 +392,9 @@ public final class JavaDeclarationAnalysis {
             if (branches.isEmpty())
                 return scope;
             visitNode(branches.getFirst(), flows.whenTrue(), owner);
-            if (branches.size() > 1)
+            if (branches.size() > 1) {
                 visitNode(branches.get(1), flows.whenFalse(), owner);
+            }
             if (!canCompleteNormally(branches.getFirst()))
                 return flows.whenFalse();
             if (branches.size() > 1 && !canCompleteNormally(branches.get(1)))
@@ -426,8 +429,9 @@ public final class JavaDeclarationAnalysis {
                 }
                 return new ConditionScopes(matched, scope);
             }
-            for (SyntaxNode child : node.children())
+            for (SyntaxNode child : node.children()) {
                 visitNode(child, scope, owner);
+            }
             return new ConditionScopes(scope, scope);
         }
 
@@ -442,8 +446,9 @@ public final class JavaDeclarationAnalysis {
                     visitNode(child, scope, owner);
                     initialized = true;
                 } else if (JavaSyntaxKinds.tokenKind(JavaTokenType.SEMICOLON).id().equals(child.kind().id())) {
-                    if (initialized)
+                    if (initialized) {
                         conditionEnded = true;
+                    }
                     initialized = true;
                 } else if (initialized && !conditionEnded && isExpressionNode(child)) {
                     matched = visitCondition(child, scope, owner).whenTrue();
@@ -466,8 +471,9 @@ public final class JavaDeclarationAnalysis {
 
         private static Scope commonScope(Scope left, Scope right) {
             Set<Scope> ancestors = new HashSet<>();
-            for (Scope current = left; current != null; current = current.parent().orElse(null))
+            for (Scope current = left; current != null; current = current.parent().orElse(null)) {
                 ancestors.add(current);
+            }
             for (Scope current = right; current != null; current = current.parent().orElse(null)) {
                 if (ancestors.contains(current))
                     return current;

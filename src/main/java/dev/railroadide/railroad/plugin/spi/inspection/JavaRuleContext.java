@@ -30,6 +30,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.objectweb.asm.Opcodes;
 
 /**
  * Stable rule evaluation context with semantic model access and Java-specific helpers.
@@ -3310,7 +3311,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             SyntaxNode parameters = directChild(declaration, JAVA_PARAMETER_LIST);
             return parameters != null && hasTokenKind(parameters, JavaTokenType.ELLIPSIS);
         }
-        return (method.modifiers() & org.objectweb.asm.Opcodes.ACC_VARARGS) != 0;
+        return (method.modifiers() & Opcodes.ACC_VARARGS) != 0;
     }
 
     private boolean isApplicableMethod(MethodDescriptor method, List<Type> argumentTypes) {

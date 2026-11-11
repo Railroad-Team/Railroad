@@ -45,7 +45,7 @@ public class RailroadProjectDiagnosticsRegressionTest {
         }
     };
 
-    record CompilationContext(
+    private record CompilationContext(
         String name,
         List<String> sourceRoots,
         List<String> sources,
@@ -57,7 +57,7 @@ public class RailroadProjectDiagnosticsRegressionTest {
     ) {
     }
 
-    record ErrorRecord(String sourceSet, String path, int start_offset, String code, String message) {
+    private record ErrorRecord(String sourceSet, String path, int start_offset, String code, String message) {
     }
 
     @Test

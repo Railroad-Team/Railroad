@@ -11,12 +11,13 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import org.junit.jupiter.api.Assertions;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaSemanticCorrectnessRegressionTest {
     @TempDir
-    Path tempDir;
+    public Path tempDir;
 
     @Test
     public void inheritedBinaryMemberTypeUsesNearestNestedSubclass() {
@@ -134,7 +135,7 @@ public class JavaSemanticCorrectnessRegressionTest {
     @Test
     public void staticImportedBinaryVarargsAcceptZeroOneAndMultipleLambdas() throws Exception {
         var junit = Path
-            .of(org.junit.jupiter.api.Assertions.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            .of(Assertions.class.getProtectionDomain().getCodeSource().getLocation().toURI());
         var index = new CompositeJavaSymbolIndex(List.of(JavaLibrarySymbolIndex.build(List.of(junit)),
             JavaJdkSymbolIndex.fromCurrentRuntime()));
         for (String imported : List.of("assertAll", "*")) {

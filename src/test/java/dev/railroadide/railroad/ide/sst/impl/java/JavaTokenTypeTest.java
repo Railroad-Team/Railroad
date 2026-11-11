@@ -16,9 +16,9 @@ import java.util.concurrent.Future;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JavaTokenTypeTest {
+public class JavaTokenTypeTest {
     @Test
-    void concurrentFirstAccessReturnsCompleteImmutableKeywords() throws Exception {
+    public void concurrentFirstAccessReturnsCompleteImmutableKeywords() throws Exception {
         Map<String, String> expected = new HashMap<>();
         String spellings = "abstract assert boolean break byte case catch char class const continue default do double "
             + "else enum extends final finally float for goto if implements import instanceof int interface long "
