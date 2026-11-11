@@ -10,12 +10,12 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JavaArtifactFingerprintTest {
+public class JavaArtifactFingerprintTest {
     @TempDir
-    Path root;
+    public Path root;
 
     @Test
-    void samePathArchiveMetadataReplacementChangesIdentity() throws Exception {
+    public void samePathArchiveMetadataReplacementChangesIdentity() throws Exception {
         Path jar = write("dependency.jar", "v1");
         Path jdk = jdk("jdk");
         String first = JavaArtifactFingerprint.capture(List.of(jar), jdk);
@@ -27,7 +27,7 @@ class JavaArtifactFingerprintTest {
     }
 
     @Test
-    void dependencyOrderContributesToIdentity() throws Exception {
+    public void dependencyOrderContributesToIdentity() throws Exception {
         Path first = write("first.jar", "one");
         Path second = write("second.jar", "two");
         Path jdk = jdk("jdk");
@@ -37,7 +37,7 @@ class JavaArtifactFingerprintTest {
     }
 
     @Test
-    void classDirectoryManifestDetectsNestedFileChangeWithoutDirectoryTimestampChange() throws Exception {
+    public void classDirectoryManifestDetectsNestedFileChangeWithoutDirectoryTimestampChange() throws Exception {
         Path file = write("classes/demo/A.class", "one");
         Path directory = root.resolve("classes");
         Path jdk = jdk("jdk");
@@ -53,7 +53,7 @@ class JavaArtifactFingerprintTest {
     }
 
     @Test
-    void missingRootBecomingPresentChangesIdentity() throws Exception {
+    public void missingRootBecomingPresentChangesIdentity() throws Exception {
         Path dependency = root.resolve("missing.jar");
         Path jdk = jdk("jdk");
         String first = JavaArtifactFingerprint.capture(List.of(dependency), jdk);
@@ -64,7 +64,7 @@ class JavaArtifactFingerprintTest {
     }
 
     @Test
-    void selectedJdkAndSameHomeModuleReplacementChangeIdentity() throws Exception {
+    public void selectedJdkAndSameHomeModuleReplacementChangeIdentity() throws Exception {
         Path firstJdk = jdk("firstJdk");
         Path secondJdk = jdk("secondJdk");
         String first = JavaArtifactFingerprint.capture(List.of(), firstJdk);
@@ -76,7 +76,7 @@ class JavaArtifactFingerprintTest {
     }
 
     @Test
-    void jdkReleaseAndLegacyArchiveContributeToIdentity() throws Exception {
+    public void jdkReleaseAndLegacyArchiveContributeToIdentity() throws Exception {
         Path jdk = root.resolve("legacyJdk");
         write("legacyJdk/release", "release one");
         write("legacyJdk/jre/lib/rt.jar", "runtime one");

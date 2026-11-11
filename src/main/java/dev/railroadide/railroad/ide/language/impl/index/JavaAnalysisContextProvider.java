@@ -1,5 +1,12 @@
 package dev.railroadide.railroad.ide.language.impl.index;
 
+import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService.Session;
+import dev.railroadide.railroad.ide.sst.document.api.WorkspaceConfigurationSnapshot;
+import java.util.concurrent.CancellationException;
+import java.util.function.BooleanSupplier;
+import java.util.HashMap;
+import java.util.UUID;
+
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
@@ -31,6 +38,94 @@ import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
  */
 public final class JavaAnalysisContextProvider {
     private final JavaWorkspaceAnalysisProvider workspaceAnalysis = new JavaWorkspaceAnalysisProvider();
+    private final ConcurrentMap<String, Cache> sessions = new ConcurrentHashMap<>();
+    private static final String SESSION = "index.session";
+    private static final String EPOCH = "index.binary.epoch";
+
+    private static final class Cache {
+        private final Session session;
+        private final String epoch;
+        private final long generation;
+        private final ConcurrentMap<LibraryIndexKey, JavaLibrarySymbolIndex> libraries = new ConcurrentHashMap<>();
+        private final ConcurrentMap<Path, JavaJdkSymbolIndex> jdks = new ConcurrentHashMap<>();
+        private final JavaWorkspaceAnalysisProvider workspace;
+        private Cache(
+            Session session,
+            String epoch,
+            BooleanSupplier active
+        ) {
+            this.session = session;
+            this.epoch = epoch;
+            this.generation = session.configurationGeneration();
+            workspace = new JavaWorkspaceAnalysisProvider(active);
+        }
+    }
+
+    /** Prepares artifact identity on a configuration worker, never on a feature request. */
+    public WorkspaceConfigurationSnapshot prepareConfiguration(
+        Session session,
+        WorkspaceConfigurationSnapshot configuration
+    ) {
+        if (session.isClosed())
+            throw new CancellationException("Project closed");
+        var values = new HashMap<>(configuration.settings());
+        values.put(SESSION, session.id());
+        values.put(EPOCH, UUID.randomUUID().toString());
+        values.put("index.binary.fingerprint", JavaArtifactFingerprint.capture(
+            JavaWorkspaceAnalysisProvider.classpath(configuration),
+            JavaWorkspaceAnalysisProvider.jdkHome(configuration)));
+        if (session.isClosed())
+            throw new CancellationException("Project closed");
+        return new WorkspaceConfigurationSnapshot(
+            configuration.revision(), configuration.moduleIds(), values);
+    }
+
+    /** Adopts a prepared configuration without waiting for older scans. */
+    public void adoptConfiguration(
+        Session session,
+        WorkspaceConfigurationSnapshot configuration
+    ) {
+        if (session.isClosed())
+            throw new CancellationException("Project closed");
+        String epoch = configuration.settings().get(EPOCH);
+        var cache = new Cache(session, epoch, () -> {
+            Cache current = sessions.get(session.id());
+            return !session.isClosed() && current != null && current.epoch.equals(epoch);
+        });
+        sessions.put(session.id(), cache);
+        if (session.isClosed()) {
+            sessions.remove(session.id(), cache);
+        }
+    }
+
+    /** Releases strong project cache ownership without acquiring a scanner's monitor. */
+    public void closeSession(Session session) {
+        if (session != null) {
+            sessions.remove(session.id());
+        }
+    }
+
+    public int cachedSessions() {
+        return sessions.size();
+    }
+
+    private Cache cache(Session session) {
+        Cache cache = session == null ? null : sessions.get(session.id());
+        if (cache == null || session.isClosed())
+            throw new CancellationException("Java configuration not active");
+        return cache;
+    }
+
+    private JavaWorkspaceAnalysisProvider workspace(WorkspaceSnapshot workspace) {
+        String id = workspace.configuration().settings().get(SESSION);
+        if (id == null)
+            return workspaceAnalysis; // Standalone/headless captures have no live project ownership.
+        Cache cache = sessions.get(id);
+        if (cache == null || cache.session.isClosed()
+            || !cache.epoch.equals(workspace.configuration().settings().get(EPOCH)))
+            throw new CancellationException("Captured Java configuration was superseded");
+        return cache.workspace;
+    }
 
     /**
      * Returns Java analysis inputs pinned to captured source documents and configuration.
@@ -39,7 +134,7 @@ public final class JavaAnalysisContextProvider {
      * @return captured Java source and dependency context
      */
     public JavaWorkspaceAnalysis index(WorkspaceSnapshot workspace) {
-        return workspaceAnalysis.capture(workspace);
+        return workspace(workspace).capture(workspace);
     }
 
     /**
@@ -50,11 +145,10 @@ public final class JavaAnalysisContextProvider {
      * @return captured Java source and dependency context
      */
     public JavaWorkspaceAnalysis index(WorkspaceSnapshot workspace, DocumentId request) {
-        return workspaceAnalysis.capture(workspace, request);
+        return workspace(workspace).capture(workspace, request);
     }
-    private final DefaultProjectIndexContextResolver resolver = new DefaultProjectIndexContextResolver(project -> Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project));
-    private final ConcurrentMap<LibraryIndexKey, JavaLibrarySymbolIndex> libraryIndexes = new ConcurrentHashMap<>();
-    private final ConcurrentMap<Path, JavaJdkSymbolIndex> jdkIndexes = new ConcurrentHashMap<>();
+    private final DefaultProjectIndexContextResolver resolver = new DefaultProjectIndexContextResolver(
+        project -> Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project));
 
     /**
      * Combines the available project, library, and JDK symbol indexes for Java analysis.
@@ -80,18 +174,21 @@ public final class JavaAnalysisContextProvider {
         JavaLanguageIndexContext javaContext = context.language(JavaLanguageSupport.LANGUAGE_ID,
             JavaLanguageIndexContext.class);
 
+        Cache cache = cache(context.session());
+        if (context.configurationGeneration() != cache.generation)
+            throw new CancellationException("Live Java configuration was superseded");
         List<JavaSymbolIndex> delegates = new ArrayList<>();
         if (projectIndex != null) {
             delegates.add(projectIndex);
         }
 
         if (javaContext != null) {
-            JavaLibrarySymbolIndex libraryIndex = libraryIndex(javaContext);
+            JavaLibrarySymbolIndex libraryIndex = libraryIndex(javaContext, cache);
             if (!libraryIndex.declaredQualifiedNames().isEmpty()) {
                 delegates.add(libraryIndex);
             }
 
-            JavaJdkSymbolIndex jdkIndex = jdkIndex(javaContext);
+            JavaJdkSymbolIndex jdkIndex = jdkIndex(javaContext, cache);
             if (!jdkIndex.declaredQualifiedNames().isEmpty()) {
                 delegates.add(jdkIndex);
             }
@@ -99,6 +196,8 @@ public final class JavaAnalysisContextProvider {
             logIndexSummary(javaContext, projectIndex, libraryIndex, jdkIndex);
         }
 
+        if (cache != cache(context.session()))
+            throw new CancellationException("Java configuration changed during scan");
         if (delegates.isEmpty())
             return null;
         if (delegates.size() == 1)
@@ -106,7 +205,7 @@ public final class JavaAnalysisContextProvider {
         return new CompositeJavaSymbolIndex(delegates);
     }
 
-    private JavaLibrarySymbolIndex libraryIndex(JavaLanguageIndexContext context) {
+    private JavaLibrarySymbolIndex libraryIndex(JavaLanguageIndexContext context, Cache cache) {
         Set<Path> roots = new LinkedHashSet<>();
         roots.addAll(context.dependencyRoots());
         roots.addAll(context.classpathRoots());
@@ -114,7 +213,7 @@ public final class JavaAnalysisContextProvider {
 
         List<Path> normalizedRoots = FileUtils.normalizePaths(List.copyOf(roots));
         var key = new LibraryIndexKey(normalizedRoots);
-        return libraryIndexes.computeIfAbsent(key, _ -> {
+        return cache.libraries.computeIfAbsent(key, _ -> {
             Railroad.LOGGER.warn(
                 "Building Java library index: roots={}, javafxBaseRoots={}, javafxGraphicsRoots={}, sampleRoots={}",
                 normalizedRoots.size(),
@@ -133,12 +232,12 @@ public final class JavaAnalysisContextProvider {
         });
     }
 
-    private JavaJdkSymbolIndex jdkIndex(JavaLanguageIndexContext context) {
+    private JavaJdkSymbolIndex jdkIndex(JavaLanguageIndexContext context, Cache cache) {
         Path jdkHome = context.jdkHome();
         Path cacheKey = jdkHome == null
             ? Path.of(System.getProperty("java.home")).toAbsolutePath().normalize()
             : FileUtils.normalizePath(jdkHome);
-        return jdkIndexes.computeIfAbsent(cacheKey, _ -> {
+        return cache.jdks.computeIfAbsent(cacheKey, _ -> {
             Railroad.LOGGER.warn("Building Java JDK index: jdkHome={}, cacheKey={}", jdkHome, cacheKey);
             JavaJdkSymbolIndex index = JavaJdkSymbolIndex.build(jdkHome);
             Railroad.LOGGER.warn(

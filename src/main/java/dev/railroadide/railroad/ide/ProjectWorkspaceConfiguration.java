@@ -1,5 +1,9 @@
 package dev.railroadide.railroad.ide;
 
+import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService.Session;
+import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
+
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.gradle.model.GradleModelListener;
@@ -31,6 +35,11 @@ import java.util.stream.Stream;
 
 /** Publishes immutable project configuration when facets, project settings, or imported modules change. */
 public final class ProjectWorkspaceConfiguration implements AutoCloseable {
+    private final Session indexSession;
+    private long binaryGeneration;
+    private boolean forceBinaryRefresh;
+    private Future<?> binaryTask;
+    private CompletableFuture<Void> binaryResolution = CompletableFuture.completedFuture(null);
     private final Project project;
     private final DocumentStore store;
     private final EventListener<FacetDetectedEvent> facetListener;
@@ -53,7 +62,8 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
      * @param store store receiving immutable configuration revisions
      */
     public ProjectWorkspaceConfiguration(Project project, DocumentStore store) {
-        this(project, store, new JavaLanguageIndexContextContributor()::resolveWorkspace);
+        this(project, store, new JavaLanguageIndexContextContributor()::resolveWorkspace,
+            Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project));
     }
 
     /**
@@ -68,6 +78,16 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         DocumentStore store,
         Function<Project, JavaLanguageIndexContext> dependencyResolver
     ) {
+        this(project, store, dependencyResolver, null);
+    }
+
+    private ProjectWorkspaceConfiguration(
+        Project project,
+        DocumentStore store,
+        Function<Project, JavaLanguageIndexContext> dependencyResolver,
+        Session indexSession
+    ) {
+        this.indexSession = indexSession;
         this.project = project;
         this.store = store;
         this.dependencyResolver = Objects.requireNonNull(dependencyResolver);
@@ -80,7 +100,11 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         settingsListener = (_, _) -> refreshSettings();
         configurationListener = event -> {
             if (event.project() == project) {
-                refreshSettings();
+                if (indexSession == null) {
+                    refreshSettings();
+                } else {
+                    refresh();
+                }
             }
         };
         modelListener = new GradleModelListener() {
@@ -109,6 +133,8 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         attachModelService();
         if (isMavenProject()) {
             refreshSettings();
+        } else if (indexSession != null && binaryTask == null) {
+            refreshSettings();
         }
     }
 
@@ -118,7 +144,14 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
      * @return completion for the current request; superseded or closed requests are cancelled
      */
     public synchronized CompletableFuture<Void> ready() {
-        return resolution.copy();
+        return resolution.thenCompose(_ -> binaryResolution.copy());
+    }
+
+    /** Explicitly refreshes binary inputs even when build settings and artifact metadata are unchanged. */
+    public synchronized void refresh() {
+        forceBinaryRefresh = true;
+        requestedSettings = null;
+        refreshSettings();
     }
 
     /**
@@ -224,6 +257,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             return;
 
         cancelResolution();
+        forceBinaryRefresh = true;
         Map<String, String> values = new TreeMap<>(store.capture().configuration().settings());
         values.keySet().removeIf(key -> key.startsWith("module.") || key.startsWith("gradle."));
         values.put("gradle.version", model.gradleVersion());
@@ -268,6 +302,46 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
 
     private void publish(Set<String> ids, Map<String, String> values) {
         WorkspaceConfigurationSnapshot current = store.capture().configuration();
+        if (indexSession != null) {
+            Map<String, String> previousInputs = new TreeMap<>(current.settings());
+            previousInputs.keySet().removeIf(key -> key.startsWith("index."));
+            Map<String, String> nextInputs = new TreeMap<>(values);
+            nextInputs.keySet().removeIf(key -> key.startsWith("index."));
+            if (!forceBinaryRefresh && current.settings().containsKey("index.binary.fingerprint")
+                && current.moduleIds().equals(ids) && previousInputs.equals(nextInputs))
+                return;
+            forceBinaryRefresh = false;
+            long generation = ++binaryGeneration;
+            if (binaryTask != null) {
+                binaryTask.cancel(true);
+            }
+            binaryResolution.cancel(false);
+            CompletableFuture<Void> completed = new CompletableFuture<>();
+            binaryResolution = completed;
+            var candidate = new WorkspaceConfigurationSnapshot(current.revision() + 1, ids, values);
+            binaryTask = dependencyWorkers.submit(() -> {
+                try {
+                    var provider = JavaLanguageSupport.analysisContextProvider();
+                    var prepared = provider.prepareConfiguration(indexSession, candidate);
+                    synchronized (this) {
+                        if (closed || indexSession.isClosed() || generation != binaryGeneration) {
+                            completed.cancel(false);
+                            return;
+                        }
+                        Services.PROJECT_LANGUAGE_INDEX_SERVICE.refreshProject(indexSession);
+                        provider.adoptConfiguration(indexSession, prepared);
+                        store.publishConfiguration(prepared);
+                    }
+                    completed.complete(null);
+                } catch (Exception exception) {
+                    if (!indexSession.isClosed()) {
+                        Railroad.LOGGER.warn("Cannot refresh Java binary inputs for {}", project.getPath(), exception);
+                    }
+                    completed.completeExceptionally(exception);
+                }
+            });
+            return;
+        }
         if (!current.moduleIds().equals(ids) || !current.settings().equals(values)) {
             store.publishConfiguration(new WorkspaceConfigurationSnapshot(current.revision() + 1, ids, values));
         }
@@ -390,6 +464,11 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
     @Override
     public synchronized void close() {
         closed = true;
+        binaryGeneration++;
+        if (binaryTask != null) {
+            binaryTask.cancel(true);
+        }
+        binaryResolution.cancel(false);
         cancelResolution();
         dependencyWorkers.shutdownNow();
         Railroad.EVENT_BUS.unsubscribe(FacetDetectedEvent.class, facetListener);

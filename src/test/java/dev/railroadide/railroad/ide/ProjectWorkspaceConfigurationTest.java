@@ -39,12 +39,39 @@ import dev.railroadide.railroad.ide.completion.JavaCompletionProvider;
 import dev.railroadide.railroad.ide.completion.CompletionResult;
 import dev.railroadide.railroad.ide.diagnostics.JavaDiagnosticsProvider;
 import dev.railroadide.railroad.ide.signature.SignatureHelpArchiveProbe;
+import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ProjectWorkspaceConfigurationTest {
     @TempDir
     public Path directory;
+
+    @Test
+    public void liveSessionRefreshPublishesANewEpochWithUnchangedSettings() throws Exception {
+        var project = new RailroadProject(directory, "Refresh", new WritableImage(1, 1));
+        var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
+        var session = service.openProject(project);
+        var store = new DefaultDocumentStore(project.getId(), ProjectWorkspaceConfiguration.initial(project));
+        try (var tracker = new ProjectWorkspaceConfiguration(project, store)) {
+            tracker.ready().get(10, TimeUnit.SECONDS);
+            var first = store.capture().configuration();
+            assertEquals(session.id(), first.settings().get("index.session"));
+            assertNotNull(first.settings().get("index.binary.fingerprint"));
+            long generation = session.configurationGeneration();
+            tracker.refresh();
+            tracker.ready().get(10, TimeUnit.SECONDS);
+            var refreshed = store.capture().configuration();
+            assertNotEquals(first.settings().get("index.binary.epoch"), refreshed.settings().get("index.binary.epoch"));
+            assertEquals(first.settings().get("index.binary.fingerprint"),
+                refreshed.settings().get("index.binary.fingerprint"));
+            assertTrue(session.configurationGeneration() > generation);
+        } finally {
+            service.closeProject(session);
+            JavaLanguageSupport.analysisContextProvider().closeSession(session);
+        }
+    }
 
     @BeforeAll
     public static void initialize() {

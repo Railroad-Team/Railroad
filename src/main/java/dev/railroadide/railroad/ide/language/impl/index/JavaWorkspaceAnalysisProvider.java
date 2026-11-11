@@ -1,5 +1,8 @@
 package dev.railroadide.railroad.ide.language.impl.index;
 
+import java.util.function.BooleanSupplier;
+import java.util.function.BiFunction;
+
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.project.*;
 import java.nio.file.Path;
@@ -16,6 +19,28 @@ public final class JavaWorkspaceAnalysisProvider {
 
     /** Creates a cache whose weak keys allow released workspace and document captures to be reclaimed. */
     public JavaWorkspaceAnalysisProvider() {
+        this(() -> true);
+    }
+
+    private final BooleanSupplier active;
+    private final BiFunction<List<Path>, Path, JavaSymbolIndex> binaryLoader;
+    public JavaWorkspaceAnalysisProvider(BooleanSupplier active) {
+        this.active = active;
+        this.binaryLoader = (classpath, jdk) -> new CompositeJavaSymbolIndex(List.of(
+            JavaLibrarySymbolIndex.build(classpath), jdks.computeIfAbsent(jdk, JavaJdkSymbolIndex::build)));
+    }
+
+    public JavaWorkspaceAnalysisProvider(
+        BooleanSupplier active,
+        BiFunction<List<Path>, Path, JavaSymbolIndex> binaryLoader
+    ) {
+        this.active = active;
+        this.binaryLoader = binaryLoader;
+    }
+
+    private void checkActive() {
+        if (!active.getAsBoolean() || Thread.currentThread().isInterrupted())
+            throw new CancellationException("Java analysis configuration is no longer active");
     }
 
     /**
@@ -40,13 +65,14 @@ public final class JavaWorkspaceAnalysisProvider {
      */
     public synchronized JavaWorkspaceAnalysis capture(WorkspaceSnapshot workspace, DocumentId request) {
         Objects.requireNonNull(workspace);
-        if (Thread.currentThread().isInterrupted())
-            throw new CancellationException("Java analysis cancelled");
+        checkActive();
         Set<Path> roots = sourceRoots(workspace.configuration());
         DocumentSnapshot document = request == null ? null : workspace.document(request).orElseThrow();
         DocumentId extra = document != null && !includedSource(document, roots) ? request : null;
-        return workspaces.computeIfAbsent(workspace, _ -> new HashMap<>())
+        JavaWorkspaceAnalysis analysis = workspaces.computeIfAbsent(workspace, _ -> new HashMap<>())
             .computeIfAbsent(extra, _ -> build(workspace, extra, roots));
+        checkActive();
+        return analysis;
     }
 
     private JavaWorkspaceAnalysis build(WorkspaceSnapshot workspace, DocumentId request, Set<Path> roots) {
@@ -71,8 +97,7 @@ public final class JavaWorkspaceAnalysisProvider {
         WorkspaceConfigurationSnapshot configuration = workspace.configuration();
         List<Path> classpath = classpath(configuration);
         Path jdk = jdkHome(configuration);
-        JavaSymbolIndex binary = binaries.computeIfAbsent(configuration, _ -> new CompositeJavaSymbolIndex(List.of(
-            JavaLibrarySymbolIndex.build(classpath), jdks.computeIfAbsent(jdk, JavaJdkSymbolIndex::build))));
+        JavaSymbolIndex binary = binaries.computeIfAbsent(configuration, _ -> binaryLoader.apply(classpath, jdk));
         return new JavaWorkspaceAnalysis(sources, new JavaSourcePrecedenceIndex(sources, binary), texts,
             classpath, jdk);
     }
@@ -95,7 +120,7 @@ public final class JavaWorkspaceAnalysisProvider {
         return Set.copyOf(roots);
     }
 
-    private static List<Path> classpath(WorkspaceConfigurationSnapshot configuration) {
+    public static List<Path> classpath(WorkspaceConfigurationSnapshot configuration) {
         LinkedHashSet<Path> roots = new LinkedHashSet<>();
         Set<Path> outputs = new HashSet<>();
         for (String module : configuration.moduleIds()) {
@@ -119,7 +144,7 @@ public final class JavaWorkspaceAnalysisProvider {
         return List.copyOf(roots);
     }
 
-    private static Path jdkHome(WorkspaceConfigurationSnapshot configuration) {
+    public static Path jdkHome(WorkspaceConfigurationSnapshot configuration) {
         return configuration.moduleIds().stream().sorted()
             .map(module -> configuration.settings().get("module." + module + ".jdkHome"))
             .filter(Objects::nonNull).filter(home -> !home.isBlank()).findFirst()

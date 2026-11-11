@@ -14,11 +14,11 @@ import java.util.HexFormat;
 import java.util.List;
 
 /** Metadata change detection for explicit Java configuration refreshes. */
-final class JavaArtifactFingerprint {
+public final class JavaArtifactFingerprint {
     private JavaArtifactFingerprint() {
     }
 
-    static String capture(List<Path> orderedRoots, Path jdkHome) {
+    public static String capture(List<Path> orderedRoots, Path jdkHome) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             try (var output = new DataOutputStream(new DigestOutputStream(OutputStream.nullOutputStream(), digest))) {
@@ -32,7 +32,9 @@ final class JavaArtifactFingerprint {
                                 .filter(path -> path.getFileName().toString().endsWith(".class"))
                                 .sorted().toList();
                             output.writeInt(classes.size());
-                            for (Path file : classes) metadata(output, file);
+                            for (Path file : classes) {
+                                metadata(output, file);
+                            }
                         }
                     }
                 }
@@ -48,7 +50,9 @@ final class JavaArtifactFingerprint {
                     archives = List.of(running.resolve("lib/modules"));
                 }
                 output.writeInt(archives.size());
-                for (Path archive : archives) metadata(output, archive);
+                for (Path archive : archives) {
+                    metadata(output, archive);
+                }
             }
             return HexFormat.of().formatHex(digest.digest());
         } catch (IOException exception) {
@@ -61,7 +65,8 @@ final class JavaArtifactFingerprint {
     private static List<Path> jdkArchives(Path home) throws IOException {
         for (String candidate : List.of("jre/lib/rt.jar", "lib/rt.jar")) {
             Path archive = home.resolve(candidate);
-            if (Files.isRegularFile(archive)) return List.of(archive);
+            if (Files.isRegularFile(archive))
+                return List.of(archive);
         }
         Path jmods = home.resolve("jmods");
         if (Files.isDirectory(jmods)) {
