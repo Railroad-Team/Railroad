@@ -7,10 +7,12 @@ import java.lang.reflect.Array;
 import java.util.*;
 
 /** Copies the small ASM stub model at the binary index publication boundary. */
-final class BinaryStubPublication {
-    private BinaryStubPublication() {}
+public final class BinaryStubPublication {
+    private BinaryStubPublication() {
+    }
 
-    static ClassStub copy(ClassStub stub) {
+    /** Returns an alias-free immutable stub for binary cache publication. */
+    public static ClassStub copy(ClassStub stub) {
         return new ClassStub(stub.packageName(), stub.name(), parameters(stub.typeParameters()),
             type(stub.superClass()), types(stub.interfaces()),
             stub.fields().stream().map(f -> new FieldStub(f.name(), type(f.type()), f.modifiers(),
@@ -63,8 +65,9 @@ final class BinaryStubPublication {
             return list.stream().map(BinaryStubPublication::annotationValue).toList();
         if (value != null && value.getClass().isArray()) {
             List<Object> elements = new ArrayList<>(Array.getLength(value));
-            for (int i = 0; i < Array.getLength(value); i++)
+            for (int i = 0; i < Array.getLength(value); i++) {
                 elements.add(annotationValue(Array.get(value, i)));
+            }
             return List.copyOf(elements);
         }
         if (value instanceof String || value instanceof Boolean || value instanceof Character

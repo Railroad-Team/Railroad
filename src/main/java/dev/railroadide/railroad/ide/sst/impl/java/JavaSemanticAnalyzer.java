@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import java.lang.reflect.Modifier;
 import java.util.function.Function;
 import org.objectweb.asm.Opcodes;
+import dev.railroadide.railroad.ide.sst.project.BinaryStubPublication;
 
 /**
  * Java semantic analysis entry point.
@@ -3953,8 +3954,9 @@ public final class JavaSemanticAnalyzer {
 
                 String text = canonicalTypeText(typeRef);
                 if (text != null && !text.isBlank()) {
-                    if (hasTokenKind(child, JavaTokenType.ELLIPSIS))
+                    if (hasTokenKind(child, JavaTokenType.ELLIPSIS)) {
                         text += "[]";
+                    }
                     parameterTypes.add(text);
                 }
             }
@@ -6908,7 +6910,8 @@ public final class JavaSemanticAnalyzer {
                 String fullName = stub.getFullName();
                 if (fullName == null || fullName.isBlank())
                     continue;
-                byQualifiedName.put(fullName, stub);
+                byQualifiedName.put(fullName,
+                    BinaryStubPublication.copy(stub));
             }
 
             cachedJdkClassStubsByQualifiedName = Map.copyOf(byQualifiedName);
