@@ -31,8 +31,10 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         Map<String, ClassStub> classStubsByQualifiedName,
         Map<String, Path> sourceByQualifiedName
     ) {
-        this.classStubsByQualifiedName = Map
-            .copyOf(Objects.requireNonNull(classStubsByQualifiedName, "classStubsByQualifiedName"));
+        Map<String, ClassStub> published = new LinkedHashMap<>();
+        Objects.requireNonNull(classStubsByQualifiedName, "classStubsByQualifiedName")
+            .forEach((name, stub) -> published.put(name, BinaryStubPublication.copy(stub)));
+        this.classStubsByQualifiedName = Map.copyOf(published);
 
         Set<String> declaredQualifiedNames = new LinkedHashSet<>();
         Set<String> typeNames = new LinkedHashSet<>();
