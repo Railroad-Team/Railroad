@@ -219,6 +219,15 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         if (settings.equals(requestedSettings) && !resolution.isCompletedExceptionally())
             return;
         cancelResolution();
+        // A new dependency request supersedes every stage of the preceding request.
+        // Keep the published configuration until this request's binary inputs are ready.
+        binaryGeneration++;
+        if (binaryTask != null) {
+            binaryTask.cancel(true);
+            binaryTask = null;
+        }
+        binaryResolution.cancel(false);
+        binaryResolution = CompletableFuture.completedFuture(null);
         requestedSettings = Map.copyOf(settings);
         long generation = resolutionGeneration;
         WorkspaceConfigurationSnapshot expected = store.capture().configuration();
