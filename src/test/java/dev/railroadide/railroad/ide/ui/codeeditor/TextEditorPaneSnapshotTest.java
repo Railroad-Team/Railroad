@@ -4,6 +4,10 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
+import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.plugin.spi.editor.*;
+import dev.railroadide.railroad.plugin.spi.events.DocumentModifiedEvent;
+import org.fxmisc.richtext.model.PlainTextChange;
 import dev.railroadide.railroad.ide.ui.editor.EditorSaveState;
 import dev.railroadide.railroad.ide.ui.editor.EditorTab;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
@@ -17,6 +21,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
@@ -223,5 +229,90 @@ public class TextEditorPaneSnapshotTest {
         var task = new FutureTask<Void>(action, null);
         Platform.runLater(task);
         task.get(10, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void legacyChangeRangeKeepsLinesAndColumnsInTheirDeclaredOrder() throws Exception {
+        var buildChange = TextEditorPane.class.getDeclaredMethod("buildChange", String.class, PlainTextChange.class);
+        buildChange.setAccessible(true);
+        var change = (DocumentModifiedEvent.Change) buildChange.invoke(null, "abc\nxy",
+            new PlainTextChange(4, "", "xy"));
+        assertEquals(new DocumentModifiedEvent.Range(1, 1, 0, 2), change.range());
+    }
+
+    @Test
+    public void javaCloseVetoKeepsBreakpointTrackingUntilAcceptedClose() throws Exception {
+        Path file = tempDirectory.resolve("Veto.java");
+        Files.writeString(file, "class Veto {\n int field;\n}\n");
+        var open = new FutureTask<>(() -> {
+            var project = new RailroadProject(tempDirectory, "Veto test", new WritableImage(1, 1));
+            var editor = new JavaLanguageSupport().open(project, DocumentId.create(), file).activeEditor();
+            Services.BREAKPOINT_SERVICE.add(file, 2);
+            editor.appendText("// draft");
+            return editor;
+        });
+        Platform.runLater(open);
+        TextEditorPane editor = open.get(10, TimeUnit.SECONDS);
+        try {
+            Files.delete(file);
+            onFxThread(() -> {
+                editor.close();
+                assertFalse(editor.isEditorClosed());
+                editor.insertText(0, "// inserted\n");
+                assertTrue(Services.BREAKPOINT_SERVICE.has(file, 3));
+                assertFalse(Services.BREAKPOINT_SERVICE.has(file, 2));
+            });
+        } finally {
+            onFxThread(() -> {
+                editor.discardChangesOnClose();
+                editor.close();
+                editor.dispose();
+                Services.BREAKPOINT_SERVICE.remove(file, 3);
+                Services.BREAKPOINT_SERVICE.remove(file, 2);
+            });
+        }
+    }
+
+    @Test
+    public void checkedBatchUsesOriginalOffsetsAndIsolatesUndoFromSurroundingTyping() throws Exception {
+        Path file = tempDirectory.resolve("replace.txt");
+        Files.writeString(file, "one two one");
+        onFxThread(() -> {
+            var editor = new TextEditorPane(DocumentId.create(), file, "plaintext");
+            try {
+                var store = new DefaultDocumentStore("replacement-test",
+                    new WorkspaceConfigurationSnapshot(0, Set.of()));
+                store.publishBacking(editor.captureSnapshot());
+                editor.setDocumentStore(store);
+                TextEditorAccess access = editor.textEditorAccess();
+                editor.getUndoManager().forgetHistory();
+                editor.appendText("!");
+                var before = access.snapshot();
+                assertSame(store.current(before.id()).orElseThrow(), before);
+                assertEquals(EditResult.APPLIED, access.replace(before, List.of(
+                    new TextReplacement(new TextRange(8, 11), "three"),
+                    new TextReplacement(new TextRange(0, 3), "1"))));
+                assertEquals("1 two three!", editor.getText());
+                assertEquals(EditResult.STALE, access.replace(before, List.of(
+                    new TextReplacement(new TextRange(0, 3), "stale"))));
+                editor.appendText("?");
+                editor.undo();
+                assertEquals("1 two three!", editor.getText());
+                editor.undo();
+                assertEquals("one two one!", editor.getText());
+                editor.undo();
+                assertEquals("one two one", editor.getText());
+                editor.redo();
+                assertEquals("one two one!", editor.getText());
+                editor.redo();
+                assertEquals("1 two three!", editor.getText());
+                editor.redo();
+                assertEquals("1 two three!?", access.snapshot().text());
+            } finally {
+                editor.discardChangesOnClose();
+                editor.close();
+                editor.dispose();
+            }
+        });
     }
 }

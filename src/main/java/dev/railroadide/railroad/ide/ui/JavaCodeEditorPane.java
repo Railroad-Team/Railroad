@@ -46,8 +46,10 @@ public class JavaCodeEditorPane extends CodeEditorPane {
 
     @Override
     public void close() {
-        breakpointBinding.close();
         super.close();
+        if (isEditorClosed()) {
+            breakpointBinding.close();
+        }
     }
 
     /**

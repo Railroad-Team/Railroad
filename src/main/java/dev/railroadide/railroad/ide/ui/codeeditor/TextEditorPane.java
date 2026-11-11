@@ -5,6 +5,7 @@ import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.ui.editor.EditorSaveState;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
+import dev.railroadide.railroad.plugin.spi.editor.*;
 import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
 import dev.railroadide.railroad.plugin.spi.events.DocumentModifiedEvent;
 import dev.railroadide.railroad.settings.IndentMode;
@@ -34,12 +35,16 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Comparator;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import javafx.beans.InvalidationListener;
+import org.fxmisc.richtext.model.TwoDimensional;
 
 /**
  * Edits a file with observable save state, autosaving, and external-file change handling.
@@ -104,8 +109,10 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     private volatile boolean backingFileMissing;
     private volatile boolean discardChangesOnClose;
     private boolean applyingExternalReload;
-    private boolean closed;
+    private volatile boolean closed;
     private final Object saveLock = new Object();
+    private final TextEditorAccess textEditorAccess = new PublishedTextAccess();
+    private final List<EditorSubscription> editorSubscriptions = new CopyOnWriteArrayList<>();
     private String pendingExternalText;
     private String displayedExternalText;
     private ExternalChangeDialog externalChangeDialog;
@@ -181,9 +188,11 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         subscribeToChanges();
         startExternalWatcher();
 
+        moveTo(0);
         Platform.runLater(() -> {
-            moveTo(0);
-            scrollToPixel(0, 0);
+            if (!closed && getAnchor() == 0 && getCaretPosition() == 0) {
+                scrollToPixel(0, 0);
+            }
         });
 
         shutdownRegistration = ShutdownHooks.registerHook(this::close);
@@ -200,6 +209,259 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         DocumentUri uri = DocumentUri.fromPath(filePath);
         return new TextDocumentSnapshot(documentId, uri, new DocumentVersion(editVersion.get()), languageId,
             DocumentOrigin.original(uri), getText(), StandardCharsets.UTF_8);
+    }
+
+    /** Returns the stable plugin-facing source operations for this editor's lifetime. */
+    public final TextEditorAccess textEditorAccess() {
+        return textEditorAccess;
+    }
+
+    private static void requireEditorThread() {
+        if (!Platform.isFxApplicationThread())
+            throw new IllegalStateException("Text editor operations require the editor UI thread");
+    }
+
+    private TextDocumentSnapshot publishedSnapshot() {
+        DocumentStore store = documentStore;
+        if (closed || store == null)
+            return null;
+        var current = store.current(documentId).orElse(null);
+        return current instanceof TextDocumentSnapshot snapshot && snapshot.text().equals(getText())
+            && snapshot.uri().equals(DocumentUri.fromPath(filePath)) ? snapshot : null;
+    }
+
+    private static boolean sameSnapshot(TextDocumentSnapshot first, TextDocumentSnapshot second) {
+        return first != null && second != null && first.id().equals(second.id())
+            && first.version().equals(second.version()) && first.uri().equals(second.uri())
+            && first.languageId().equals(second.languageId()) && first.origin().equals(second.origin())
+            && first.encoding().equals(second.encoding()) && first.text().equals(second.text());
+    }
+
+    private EditResult validateExpected(TextDocumentSnapshot expected) {
+        if (closed)
+            return EditResult.CLOSED;
+        if (expected == null)
+            return EditResult.INVALID;
+        TextDocumentSnapshot current = publishedSnapshot();
+        if (current == null)
+            return EditResult.UNAVAILABLE;
+        return sameSnapshot(expected, current) ? EditResult.APPLIED : EditResult.STALE;
+    }
+
+    private boolean effectivelyEditable() {
+        return !closed && isEditable() && (!Files.exists(filePath) || Files.isWritable(filePath));
+    }
+
+    private EditResult applyReplacements(TextDocumentSnapshot expected, List<TextReplacement> replacements) {
+        requireEditorThread();
+        synchronized (saveLock) {
+            EditResult validation = validateExpected(expected);
+            if (validation != EditResult.APPLIED)
+                return validation;
+            if (!effectivelyEditable())
+                return EditResult.READ_ONLY;
+            if (replacements == null || replacements.stream().anyMatch(Objects::isNull))
+                return EditResult.INVALID;
+            var ordered = new ArrayList<>(replacements);
+            ordered.sort(Comparator.comparingInt(edit -> edit.range().start));
+            int previousStart = -1;
+            int previousEnd = -1;
+            for (TextReplacement edit : ordered) {
+                TextRange range = edit.range();
+                if (range.end > expected.text().length() || range.start < previousEnd
+                    || range.start == previousStart)
+                    return EditResult.INVALID;
+                previousStart = range.start;
+                previousEnd = range.end;
+            }
+            if (ordered.isEmpty())
+                return EditResult.APPLIED;
+
+            int start = ordered.getFirst().range().start;
+            int end = ordered.getLast().range().end;
+            var replacement = new StringBuilder();
+            int offset = start;
+            for (TextReplacement edit : ordered) {
+                replacement.append(expected.text(), offset, edit.range().start).append(edit.text());
+                offset = edit.range().end;
+            }
+            replacement.append(expected.text(), offset, end);
+            String text = replacement.toString();
+            if (text.equals(expected.text().substring(start, end)))
+                return EditResult.APPLIED;
+
+            getUndoManager().preventMerge();
+            try {
+                replaceText(start, end, text);
+            } finally {
+                getUndoManager().preventMerge();
+            }
+            return EditResult.APPLIED;
+        }
+    }
+
+    private final class PublishedTextAccess implements TextEditorAccess {
+        @Override
+        public void reveal() {
+            requireEditorThread();
+            if (closed)
+                throw new IllegalStateException("Text editor is closed");
+            requestFollowCaret();
+            requestFocus();
+        }
+
+        @Override
+        public TextDocumentSnapshot snapshot() {
+            requireEditorThread();
+            synchronized (saveLock) {
+                TextDocumentSnapshot snapshot = publishedSnapshot();
+                if (snapshot == null)
+                    throw new IllegalStateException("No reconciled published text is available");
+                return snapshot;
+            }
+        }
+
+        @Override
+        public TextSelection selection() {
+            requireEditorThread();
+            if (closed)
+                throw new IllegalStateException("Text editor is closed");
+            return new TextSelection(getAnchor(), getCaretPosition());
+        }
+
+        @Override
+        public EditResult selectAndReveal(TextDocumentSnapshot expected, TextSelection selection) {
+            requireEditorThread();
+            synchronized (saveLock) {
+                EditResult validation = validateExpected(expected);
+                if (validation != EditResult.APPLIED)
+                    return validation;
+                if (selection == null || selection.anchor() > getLength() || selection.caret() > getLength())
+                    return EditResult.INVALID;
+                int lastParagraph = offsetToPosition(Math.max(selection.anchor(), selection.caret()),
+                    TwoDimensional.Bias.Forward).getMajor();
+                for (int paragraph = 0; paragraph <= lastParagraph; paragraph++) {
+                    if (isFolded(paragraph)) {
+                        unfoldParagraphs(Math.max(0, paragraph - 1));
+                    }
+                }
+                selectRange(selection.anchor(), selection.caret());
+                reveal();
+                return EditResult.APPLIED;
+            }
+        }
+
+        @Override
+        public boolean isEditable() {
+            requireEditorThread();
+            return effectivelyEditable();
+        }
+
+        @Override
+        public EditResult replace(TextDocumentSnapshot expected, List<TextReplacement> replacements) {
+            return applyReplacements(expected, replacements);
+        }
+
+        @Override
+        public EditorSubscription observe(Consumer<TextDocumentSnapshot> listener) {
+            requireEditorThread();
+            Objects.requireNonNull(listener, "listener");
+            synchronized (saveLock) {
+                if (closed || documentStore == null)
+                    throw new IllegalStateException("Text editor is closed or not initialized");
+                SettledObservation<TextDocumentSnapshot> observation = new SettledObservation<>(listener) {
+                    @Override
+                    protected TextDocumentSnapshot current() {
+                        return publishedSnapshot();
+                    }
+
+                    @Override
+                    protected boolean unchanged(TextDocumentSnapshot first, TextDocumentSnapshot second) {
+                        return sameSnapshot(first, second);
+                    }
+                };
+                observation.detach = documentStore.onChange(observation::schedule)::close;
+                editorSubscriptions.add(observation);
+                observation.schedule();
+                return observation;
+            }
+        }
+
+        @Override
+        public EditorSubscription observeSelection(Consumer<TextSelection> listener) {
+            requireEditorThread();
+            Objects.requireNonNull(listener, "listener");
+            synchronized (saveLock) {
+                if (closed)
+                    throw new IllegalStateException("Text editor is closed");
+                SettledObservation<TextSelection> observation = new SettledObservation<>(listener) {
+                    @Override
+                    protected TextSelection current() {
+                        return selection();
+                    }
+                };
+                InvalidationListener invalidated = _ -> observation.schedule();
+                anchorProperty().addListener(invalidated);
+                caretPositionProperty().addListener(invalidated);
+                observation.detach = () -> JavaFXUtils.runOnApplicationThread(() -> {
+                    anchorProperty().removeListener(invalidated);
+                    caretPositionProperty().removeListener(invalidated);
+                });
+                editorSubscriptions.add(observation);
+                observation.schedule();
+                return observation;
+            }
+        }
+    }
+
+    private abstract class SettledObservation<T> implements EditorSubscription {
+        private final Consumer<T> listener;
+        private final AtomicBoolean active = new AtomicBoolean(true);
+        private final AtomicBoolean queued = new AtomicBoolean();
+        private EditorSubscription detach = () -> {
+        };
+        private T last;
+
+        private SettledObservation(Consumer<T> listener) {
+            this.listener = listener;
+        }
+
+        protected abstract T current();
+
+        protected boolean unchanged(T first, T second) {
+            return Objects.equals(first, second);
+        }
+
+        private void schedule() {
+            if (!active.get() || !queued.compareAndSet(false, true))
+                return;
+            Platform.runLater(() -> {
+                synchronized (saveLock) {
+                    queued.set(false);
+                    if (!active.get() || closed)
+                        return;
+                    T value = current();
+                    if (value != null && !unchanged(last, value)) {
+                        last = value;
+                        try {
+                            listener.accept(value);
+                        } catch (RuntimeException exception) {
+                            log.warn("Text editor observer failed", exception);
+                        }
+                    }
+                }
+            });
+        }
+
+        @Override
+        public void close() {
+            synchronized (saveLock) {
+                if (active.getAndSet(false)) {
+                    detach.close();
+                    editorSubscriptions.remove(this);
+                }
+            }
+        }
     }
 
     /**
@@ -331,6 +593,8 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             }
             closed = true;
         }
+
+        editorSubscriptions.forEach(EditorSubscription::close);
 
         JavaFXUtils.runOnApplicationThread(this::closeExternalChangeDialog);
         shutdownRegistration.close();
@@ -1410,7 +1674,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             detectChangeType(inserted, removed),
             removed,
             inserted,
-            new DocumentModifiedEvent.Range(start.getKey(), start.getValue(), end.getKey(), end.getValue()));
+            new DocumentModifiedEvent.Range(start.getKey(), end.getKey(), start.getValue(), end.getValue()));
     }
 
     private static DocumentModifiedEvent.Change.Type detectChangeType(String inserted, String removed) {
