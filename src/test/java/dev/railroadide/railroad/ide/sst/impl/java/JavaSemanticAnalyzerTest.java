@@ -340,7 +340,7 @@ public class JavaSemanticAnalyzerTest {
         SyntaxNode stringLiteral = findLiteralExpression(model.syntaxTree().root(), "\"ok\"");
 
         assertEquals("int", model.inferredType(intLiteral).orElseThrow().displayName());
-        assertEquals("String", model.inferredType(stringLiteral).orElseThrow().displayName());
+        assertEquals("java.lang.String", model.inferredType(stringLiteral).orElseThrow().displayName());
 
         long incompatibleDiagnostics = model.diagnostics().stream()
             .filter(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code()))

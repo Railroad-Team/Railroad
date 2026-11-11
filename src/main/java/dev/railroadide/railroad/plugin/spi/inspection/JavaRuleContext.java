@@ -3881,6 +3881,9 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 clazz.typeArguments().stream().map(JavaRuleContext::toSemanticType).toList());
             case TypeVariable variable -> new TypeVariableType(variable.name());
             case WildcardType wildcard -> {
+                // Keep binary unbounded wildcards consistent with source '?' parsing.
+                if (wildcard.bound() == null && wildcard.isUpperBound())
+                    yield new Type.WildcardType(new DeclaredType("java.lang.Object", List.of()), null);
                 Type bound = wildcard.bound() == null ? new UnknownType("<unknown>") : toSemanticType(wildcard.bound());
                 yield wildcard.isUpperBound()
                     ? new Type.WildcardType(bound, null)

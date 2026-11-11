@@ -4997,7 +4997,7 @@ public final class JavaSemanticAnalyzer {
                     return new Type.PrimitiveType("char");
                 if (JavaSyntaxKinds.tokenKind(JavaTokenType.STRING_LITERAL).id().equals(kindId)
                     || JavaSyntaxKinds.tokenKind(JavaTokenType.TEXT_BLOCK_LITERAL).id().equals(kindId))
-                    return new Type.DeclaredType("String", List.of());
+                    return new Type.DeclaredType("java.lang.String", List.of());
                 if (JavaSyntaxKinds.tokenKind(JavaTokenType.NULL_LITERAL).id().equals(kindId))
                     return UNKNOWN_TYPE;
             }
@@ -6836,6 +6836,9 @@ public final class JavaSemanticAnalyzer {
             case dev.railroadide.railroad.ide.classparser.Type.TypeVariable variable ->
                 new Type.TypeVariableType(variable.name());
             case dev.railroadide.railroad.ide.classparser.Type.WildcardType wildcard -> {
+                // JVM signature '*' is the same unbounded wildcard as source '?'.
+                if (wildcard.bound() == null && wildcard.isUpperBound())
+                    yield new Type.WildcardType(new Type.DeclaredType("java.lang.Object", List.of()), null);
                 Type bound = wildcard.bound() == null
                     ? new Type.UnknownType("<unknown>")
                     : toSemanticType(wildcard.bound());
