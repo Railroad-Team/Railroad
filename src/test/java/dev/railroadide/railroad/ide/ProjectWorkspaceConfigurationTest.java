@@ -41,12 +41,69 @@ import dev.railroadide.railroad.ide.diagnostics.JavaDiagnosticsProvider;
 import dev.railroadide.railroad.ide.signature.SignatureHelpArchiveProbe;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
+import dev.railroadide.railroad.project.FacetDetectedEvent;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ProjectWorkspaceConfigurationTest {
     @TempDir
     public Path directory;
+
+    @Test
+    public void revertingToPublishedConfigurationSupersedesPendingPreparation() throws Exception {
+        Path settings = directory.resolve("gradle.properties");
+        Files.writeString(settings, "A");
+        var project = new RailroadProject(directory, "Revert", new WritableImage(1, 1));
+        var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
+        var session = service.openProject(project);
+        var store = new DefaultDocumentStore(project.getId(), ProjectWorkspaceConfiguration.initial(project));
+        var entered = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        var finished = new CountDownLatch(1);
+        var indexes = JavaLanguageSupport.analysisContextProvider();
+        try (var tracker = new ProjectWorkspaceConfiguration(project, store, _ -> null, session,
+            (owner, configuration) -> {
+                if ("B".equals(configuration.settings().get("project.build.gradle.properties"))) {
+                    entered.countDown();
+                    boolean interrupted = false;
+                    while (true) {
+                        try {
+                            release.await();
+                            break;
+                        } catch (InterruptedException exception) {
+                            interrupted = true;
+                        }
+                    }
+                    if (interrupted) {
+                        Thread.currentThread().interrupt();
+                    }
+                    finished.countDown();
+                }
+                return indexes.prepareConfiguration(owner, configuration);
+            })) {
+            tracker.ready().get(10, TimeUnit.SECONDS);
+            var original = store.capture();
+            Files.writeString(settings, "B");
+            Railroad.EVENT_BUS.publish(new FacetDetectedEvent(project, null));
+            assertTrue(entered.await(5, TimeUnit.SECONDS));
+            var pending = tracker.ready();
+            try {
+                Files.writeString(settings, "A");
+                Railroad.EVENT_BUS.publish(new FacetDetectedEvent(project, null));
+                assertTrue(pending.isDone(), "Reversion must supersede pending preparation before it can publish");
+                assertTrue(pending.isCompletedExceptionally());
+                tracker.ready().get(5, TimeUnit.SECONDS);
+                assertEquals(original, store.capture());
+            } finally {
+                release.countDown();
+                assertTrue(finished.await(5, TimeUnit.SECONDS));
+            }
+        } finally {
+            release.countDown();
+            service.closeProject(session);
+            indexes.closeSession(session);
+        }
+    }
 
     @Test
     public void liveSessionRefreshPublishesANewEpochWithUnchangedSettings() throws Exception {

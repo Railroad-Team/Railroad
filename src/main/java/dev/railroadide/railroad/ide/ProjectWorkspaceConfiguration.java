@@ -32,6 +32,7 @@ import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.function.BiFunction;
 
 /** Publishes immutable project configuration when facets, project settings, or imported modules change. */
 public final class ProjectWorkspaceConfiguration implements AutoCloseable {
@@ -47,6 +48,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
     private final GradleModelListener modelListener;
     private final EventListener<ProjectConfigurationChangedEvent> configurationListener;
     private final Function<Project, JavaLanguageIndexContext> dependencyResolver;
+    private final BiFunction<Session, WorkspaceConfigurationSnapshot, WorkspaceConfigurationSnapshot> binaryPreparer;
     private final ExecutorService dependencyWorkers = Executors.newVirtualThreadPerTaskExecutor();
     private Future<?> dependencyTask;
     private CompletableFuture<Void> resolution = CompletableFuture.completedFuture(null);
@@ -87,7 +89,21 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         Function<Project, JavaLanguageIndexContext> dependencyResolver,
         Session indexSession
     ) {
+        this(project, store, dependencyResolver, indexSession,
+            (session, configuration) -> JavaLanguageSupport.analysisContextProvider().prepareConfiguration(session,
+                configuration));
+    }
+
+    /** Creates configuration ownership with controlled dependency and artifact preparation. */
+    public ProjectWorkspaceConfiguration(
+        Project project,
+        DocumentStore store,
+        Function<Project, JavaLanguageIndexContext> dependencyResolver,
+        Session indexSession,
+        BiFunction<Session, WorkspaceConfigurationSnapshot, WorkspaceConfigurationSnapshot> binaryPreparer
+    ) {
         this.indexSession = indexSession;
+        this.binaryPreparer = Objects.requireNonNull(binaryPreparer);
         this.project = project;
         this.store = store;
         this.dependencyResolver = Objects.requireNonNull(dependencyResolver);
@@ -308,8 +324,17 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             Map<String, String> nextInputs = new TreeMap<>(values);
             nextInputs.keySet().removeIf(key -> key.startsWith("index."));
             if (!forceBinaryRefresh && current.settings().containsKey("index.binary.fingerprint")
-                && current.moduleIds().equals(ids) && previousInputs.equals(nextInputs))
+                && current.moduleIds().equals(ids) && previousInputs.equals(nextInputs)) {
+                // A revert to the published inputs also supersedes a different preparation in flight.
+                binaryGeneration++;
+                if (binaryTask != null) {
+                    binaryTask.cancel(true);
+                }
+                binaryTask = null;
+                binaryResolution.cancel(false);
+                binaryResolution = CompletableFuture.completedFuture(null);
                 return;
+            }
             forceBinaryRefresh = false;
             long generation = ++binaryGeneration;
             if (binaryTask != null) {
@@ -322,7 +347,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             binaryTask = dependencyWorkers.submit(() -> {
                 try {
                     var provider = JavaLanguageSupport.analysisContextProvider();
-                    var prepared = provider.prepareConfiguration(indexSession, candidate);
+                    var prepared = binaryPreparer.apply(indexSession, candidate);
                     synchronized (this) {
                         if (closed || indexSession.isClosed() || generation != binaryGeneration) {
                             completed.cancel(false);
