@@ -22,6 +22,21 @@ public class JavaCacheLifecycleTest {
     public Path root;
 
     @Test
+    public void standaloneProviderDoesNotReuseAPathOnlyJdkAcrossConfigurations() throws Exception {
+        Path jar = root.resolve("library.jar"), jdk = root.resolve("jdk");
+        archive(jar, "demo/Library", "library");
+        archive(jdk.resolve("lib/rt.jar"), "demo/Runtime", "oldRuntime");
+        var provider = new JavaWorkspaceAnalysisProvider();
+        var first = configuration(jar, jdk);
+        var retained = provider.capture(new DefaultDocumentStore("test", first).capture());
+        archive(jdk.resolve("lib/rt.jar"), "demo/Runtime", "newRuntime");
+        var refreshed = new WorkspaceConfigurationSnapshot(2, first.moduleIds(), first.settings());
+        var current = provider.capture(new DefaultDocumentStore("test", refreshed).capture());
+        assertEquals("newRuntime", current.classStubsByQualifiedName().get("demo.Runtime").fields().getFirst().name());
+        assertEquals("oldRuntime", retained.classStubsByQualifiedName().get("demo.Runtime").fields().getFirst().name());
+    }
+
+    @Test
     public void blockedBinaryConstructionCannotReturnAfterSessionClosure() throws Exception {
         var service = new ProjectLanguageIndexService();
         var session = service.openProject(project());

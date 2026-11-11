@@ -15,7 +15,6 @@ public final class JavaWorkspaceAnalysisProvider {
     private final Map<WorkspaceSnapshot, Map<DocumentId, JavaWorkspaceAnalysis>> workspaces = new WeakHashMap<>();
     private final Map<TextDocumentSnapshot, JavaProjectSemanticIndex.SourceFileIndex> files = new WeakHashMap<>();
     private final Map<WorkspaceConfigurationSnapshot, JavaSymbolIndex> binaries = new WeakHashMap<>();
-    private final Map<Path, JavaJdkSymbolIndex> jdks = new HashMap<>();
 
     /** Creates a cache whose weak keys allow released workspace and document captures to be reclaimed. */
     public JavaWorkspaceAnalysisProvider() {
@@ -27,7 +26,7 @@ public final class JavaWorkspaceAnalysisProvider {
     public JavaWorkspaceAnalysisProvider(BooleanSupplier active) {
         this.active = active;
         this.binaryLoader = (classpath, jdk) -> new CompositeJavaSymbolIndex(List.of(
-            JavaLibrarySymbolIndex.build(classpath), jdks.computeIfAbsent(jdk, JavaJdkSymbolIndex::build)));
+            JavaLibrarySymbolIndex.build(classpath), JavaJdkSymbolIndex.build(jdk)));
     }
 
     public JavaWorkspaceAnalysisProvider(
