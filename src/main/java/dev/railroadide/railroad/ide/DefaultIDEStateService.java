@@ -35,6 +35,16 @@ public class DefaultIDEStateService implements IDEStateService {
     private long openedProjectAtMillis = -1L;
     private Document activeDocument;
 
+    /**
+     * Reports project watcher coverage for editor presentation ownership. Call on the editor UI thread.
+     *
+     * @param path physical document location
+     * @return whether the current project synchronizer covers the path
+     */
+    public boolean isDocumentWatched(Path path) {
+        return documentSynchronizer != null && documentSynchronizer.covers(path);
+    }
+
     private DefaultIDEStateService() {
         Railroad.EVENT_BUS.subscribe(ProjectEvent.class, event -> {
             if (event.isOpened()) {

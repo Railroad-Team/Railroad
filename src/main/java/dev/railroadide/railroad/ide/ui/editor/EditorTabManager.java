@@ -489,8 +489,14 @@ public class EditorTabManager {
         }
 
         initializeEditor(editorOpenView.activeEditor(), identity);
-        editorOpenView.activeEditorProperty().addListener((_, _, current) -> initializeEditor(current,
-            Services.IDE_STATE.findDocumentIdentity(document.getUri()).orElse(identity)));
+        editorOpenView.observeSourceEditor(current -> {
+            initializeEditor(current, Services.IDE_STATE.findDocumentIdentity(document.getUri()).orElse(identity));
+            if (Services.IDE_STATE.getActiveDocument() == document) {
+                Services.DOCUMENT_EDITOR_STATE.setActiveEditor(editorOpenView.textEditor().orElse(null),
+                    editorOpenView.languageId());
+            }
+        });
+        Services.IDE_STATE.getDocumentStore().ifPresent(editorOpenView::setDocumentStore);
 
         boolean preview = request.preview()
             && !request.pinned()
@@ -1122,7 +1128,7 @@ public class EditorTabManager {
         markRecentlyUsed(editorTab);
         Services.IDE_STATE.setActiveDocument(editorTab.document());
         Services.DOCUMENT_EDITOR_STATE.setActiveEditor(
-            editorTab.view().activeEditor(),
+            editorTab.view().textEditor().orElse(null),
             editorTab.view().languageId());
         if (Boolean.TRUE.equals(Settings.SYNCHRONIZE_PROJECT_EXPLORER_WITH_ACTIVE_TAB.getValue())) {
             revealInProjectExplorer(editorTab);
@@ -1644,9 +1650,7 @@ public class EditorTabManager {
         if (editor != null) {
             closeRemovedEditor(editor);
         }
-        if (editorTab.view().content() instanceof MarkdownPreviewPane markdown) {
-            markdown.close();
-        }
+        editorTab.dispose();
         if (openTabs.remove(editorTab.documentId()) == null)
             return;
 
@@ -1883,8 +1887,13 @@ public class EditorTabManager {
     }
 
     private void resetTracking() {
-        openTabs.values().stream().map(EditorTab::view).map(EditorOpenView::activeEditor)
-            .filter(Objects::nonNull).forEach(this::closeRemovedEditor);
+        for (EditorTab tab : List.copyOf(openTabs.values())) {
+            TextEditorPane editor = tab.view().activeEditor();
+            if (editor != null) {
+                closeRemovedEditor(editor);
+            }
+            tab.dispose();
+        }
         selectionGeneration++;
         selectionUpdateScheduled = false;
         replacingPreview = false;

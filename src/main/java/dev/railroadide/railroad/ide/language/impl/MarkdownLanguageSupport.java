@@ -23,6 +23,7 @@ public final class MarkdownLanguageSupport extends BaseLanguageSupport {
     @Override
     public EditorOpenView open(Project project, DocumentId documentId, Path file) {
         var editorPane = new MarkdownPreviewPane(documentId, file, project);
-        return new EditorOpenView(editorPane, null, languageId());
+        return new EditorOpenView(editorPane, editorPane.editorProperty(), editorPane.textEditorAccess(), languageId(),
+            editorPane::setDocumentStore, editorPane::rebind, editorPane::close);
     }
 }
