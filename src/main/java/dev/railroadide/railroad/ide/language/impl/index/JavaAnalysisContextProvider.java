@@ -52,7 +52,7 @@ public final class JavaAnalysisContextProvider {
     public JavaWorkspaceAnalysis index(WorkspaceSnapshot workspace, DocumentId request) {
         return workspaceAnalysis.capture(workspace, request);
     }
-    private final DefaultProjectIndexContextResolver resolver = new DefaultProjectIndexContextResolver();
+    private final DefaultProjectIndexContextResolver resolver = new DefaultProjectIndexContextResolver(project -> Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project));
     private final ConcurrentMap<LibraryIndexKey, JavaLibrarySymbolIndex> libraryIndexes = new ConcurrentHashMap<>();
     private final ConcurrentMap<Path, JavaJdkSymbolIndex> jdkIndexes = new ConcurrentHashMap<>();
 

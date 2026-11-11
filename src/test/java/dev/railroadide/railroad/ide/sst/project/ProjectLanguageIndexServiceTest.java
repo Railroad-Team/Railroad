@@ -308,11 +308,19 @@ public class ProjectLanguageIndexServiceTest {
         }
 
         private Project project(Path projectRoot) {
-            return new TestProject(normalize(projectRoot));
+            return projects.computeIfAbsent(normalize(projectRoot), root -> {
+                Project project = new TestProject(root);
+                indexService.openProject(project);
+                return project;
+            });
         }
 
+        private final java.util.Map<Path, Project> projects = new java.util.HashMap<>();
+
         private ProjectIndexContext context(Path projectRoot) {
-            return contextResolver.resolve(project(projectRoot));
+            Project project = project(projectRoot);
+            ProjectIndexContext context = contextResolver.resolve(project);
+            return new ProjectIndexContext(project, context.projectRoot(), context.languages(), indexService.session(project));
         }
 
         private record TestProject(Path path) implements Project {

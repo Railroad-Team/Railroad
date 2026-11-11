@@ -58,6 +58,9 @@ public class DefaultIDEStateService implements IDEStateService {
 
     private void setCurrentProject_internal(Project project) {
         if (project != currentProject) {
+            Services.PROJECT_LANGUAGE_INDEX_SERVICE.closeProject(
+                Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(currentProject));
+            if (project != null) Services.PROJECT_LANGUAGE_INDEX_SERVICE.openProject(project);
             if (documentSynchronizer != null) {
                 documentSynchronizer.close();
                 documentSynchronizer = null;

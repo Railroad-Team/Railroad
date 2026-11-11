@@ -29,7 +29,7 @@ public final class ProjectLanguageIndexCoordinator {
      * @param project the project whose files and configuration are used
      */
     public ProjectLanguageIndexCoordinator(Project project) {
-        this(new DefaultProjectIndexContextResolver().resolve(project), Services.PROJECT_LANGUAGE_INDEX_SERVICE,
+        this(new DefaultProjectIndexContextResolver(Services.PROJECT_LANGUAGE_INDEX_SERVICE::session).resolve(project), Services.PROJECT_LANGUAGE_INDEX_SERVICE,
             LanguageSupportRegistry.all());
     }
 

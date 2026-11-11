@@ -45,7 +45,7 @@ public record ProjectDiagnosticsContext(
     public static ProjectDiagnosticsContext create(Project project) {
         Objects.requireNonNull(project, "project");
 
-        ProjectIndexContext indexContext = new DefaultProjectIndexContextResolver().resolve(project);
+        ProjectIndexContext indexContext = new DefaultProjectIndexContextResolver(Services.PROJECT_LANGUAGE_INDEX_SERVICE::session).resolve(project);
         Railroad.LOGGER.info("Loading Java project index for diagnostics export from {}", indexContext.projectRoot());
         Services.PROJECT_LANGUAGE_INDEX_SERVICE.index(indexContext, JavaLanguageSupport.LANGUAGE_ID);
         JavaAnalysisContextProvider analysisContextProvider = JavaLanguageSupport.analysisContextProvider();

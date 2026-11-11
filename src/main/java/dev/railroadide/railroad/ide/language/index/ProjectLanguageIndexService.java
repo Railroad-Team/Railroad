@@ -9,8 +9,12 @@ import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.Collection;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 
 /**
@@ -18,8 +22,114 @@ import java.util.stream.Stream;
  */
 public final class ProjectLanguageIndexService {
     private final Map<String, ProjectLanguageIndexer<?, ?>> indexersByLanguageId = new ConcurrentHashMap<>();
-    private final Map<ProjectLanguageKey, ProjectLanguageIndex<?>> indexesByProjectAndLanguage = new ConcurrentHashMap<>();
+    private final Object ownership = new Object();
+    private final Map<Project, Session> sessions = new IdentityHashMap<>();
+    private final Map<Path, Session> roots = new HashMap<>();
     private final Map<String, ProjectLanguageIndexPersistence<?>> persistenceByLanguageId = new ConcurrentHashMap<>();
+
+    /** Identity of one open project, distinct from its reusable filesystem path. */
+    public static final class Session {
+        private final String id = java.util.UUID.randomUUID().toString();
+        private final Path root;
+        private final Map<String, Entry> entries = new HashMap<>();
+        private volatile boolean closed;
+        private volatile long configurationGeneration;
+        private Session(Path root) { this.root = root; }
+        /** Whether this session has permanently stopped accepting work. */
+        public boolean isClosed() { return closed; }
+        /** Revision of the live project configuration accepted for indexing. */
+        public long configurationGeneration() { return configurationGeneration; }
+        /** Opaque token carried by captured configurations, unrelated to the project path. */
+        public String id() { return id; }
+    }
+
+    private static final class Entry {
+        final ReentrantLock operation = new ReentrantLock();
+        long generation;
+        ProjectLanguageIndex<?> current;
+    }
+
+    /** Opens index ownership explicitly; repeated opens of the same active project reuse it. */
+    public Session openProject(Project project) {
+        synchronized (ownership) {
+            Session existing = sessions.get(project);
+            if (existing != null && !existing.closed) return existing;
+            Path root = normalize(project.getPath());
+            Session old = roots.get(root);
+            if (old != null) closeProject(old);
+            Session session = new Session(root);
+            sessions.put(project, session);
+            roots.put(root, session);
+            return session;
+        }
+    }
+
+    /** Returns existing ownership without opening a closed project. */
+    public @Nullable Session session(Project project) {
+        synchronized (ownership) { return sessions.get(project); }
+    }
+
+    /** Rejects old live contexts when the project adopts refreshed configuration. */
+    public void refreshProject(Session session) {
+        synchronized (ownership) {
+            if (session == null || session.closed || roots.get(session.root) != session) return;
+            session.configurationGeneration++;
+            session.entries.values().forEach(entry -> { entry.generation++; entry.current = null; });
+        }
+    }
+
+    /** Rejects late work and releases caches without waiting for an operation lock. */
+    public void closeProject(Session session) {
+        if (session == null) return;
+        synchronized (ownership) {
+            session.closed = true;
+            session.entries.values().forEach(entry -> { entry.generation++; entry.current = null; });
+            session.entries.clear();
+            roots.remove(session.root, session);
+            sessions.values().removeIf(value -> value == session);
+        }
+    }
+
+    private ProjectIndexContext resolve(Project project) {
+        Session session = session(project);
+        long configuration = session == null ? 0 : session.configurationGeneration();
+        ProjectIndexContext context = new DefaultProjectIndexContextResolver().resolve(project);
+        return new ProjectIndexContext(project, context.projectRoot(), context.languages(), session, configuration);
+    }
+
+    private Entry entry(ProjectIndexContext context, String language) {
+        synchronized (ownership) {
+            check(context);
+            return context.session().entries.computeIfAbsent(language, _ -> new Entry());
+        }
+    }
+
+    private void check(ProjectIndexContext context) {
+        Session session = context.session();
+        if (session == null || session.closed || roots.get(context.projectRoot()) != session
+            || session.configurationGeneration != context.configurationGeneration())
+            throw new CancellationException("Project index session is no longer active");
+    }
+
+    private long generation(ProjectIndexContext context, Entry entry) {
+        synchronized (ownership) { check(context); return entry.generation; }
+    }
+
+    private void publish(ProjectIndexContext context, Entry entry, long generation, ProjectLanguageIndex<?> index) {
+        synchronized (ownership) {
+            check(context);
+            if (entry.generation != generation) throw new CancellationException("Index invalidated");
+            entry.current = index;
+        }
+    }
+
+    private static void lock(Entry entry) {
+        try { entry.operation.lockInterruptibly(); }
+        catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new CancellationException("Interrupted waiting for index");
+        }
+    }
 
     /**
      * Registers an indexer for its language, rejecting duplicate registrations.
@@ -103,7 +213,11 @@ public final class ProjectLanguageIndexService {
      */
     public @Nullable ProjectLanguageIndex<?> current(Project project, String languageId) {
         Objects.requireNonNull(project, "project");
-        return current(new DefaultProjectIndexContextResolver().resolve(project), languageId);
+        synchronized (ownership) {
+            Session session = sessions.get(project);
+            Entry entry = session == null ? null : session.entries.get(languageId);
+            return entry == null ? null : entry.current;
+        }
     }
 
     /**
@@ -118,7 +232,11 @@ public final class ProjectLanguageIndexService {
         if (context.language(languageId) == null)
             return null;
 
-        return indexesByProjectAndLanguage.get(key(context.projectRoot(), languageId));
+        synchronized (ownership) {
+            check(context);
+            Entry entry = context.session().entries.get(languageId);
+            return entry == null ? null : entry.current;
+        }
     }
 
     /**
@@ -166,7 +284,7 @@ public final class ProjectLanguageIndexService {
      */
     public @Nullable ProjectLanguageIndex<?> index(Project project, String languageId) {
         Objects.requireNonNull(project, "project");
-        return index(new DefaultProjectIndexContextResolver().resolve(project), languageId);
+        return index(resolve(project), languageId);
     }
 
     /**
@@ -186,28 +304,23 @@ public final class ProjectLanguageIndexService {
         if (languageContext == null)
             return null;
 
-        ProjectLanguageKey key = key(projectRoot, languageId);
-        ProjectLanguageIndex<?> current = indexesByProjectAndLanguage.get(key);
-        if (current != null)
-            return current;
-
-        ProjectLanguageIndexer<?, ?> rawIndexer = indexersByLanguageId.get(languageId);
-        if (rawIndexer == null)
-            return null;
-
-        Collection<Path> sourceFiles = collectFiles(languageContext).stream()
-            .filter(rawIndexer::supports)
-            .toList();
-        ProjectLanguageIndex<?> persisted = loadPersisted(key, sourceFiles);
-        if (persisted != null) {
-            indexesByProjectAndLanguage.put(key, persisted);
-            return persisted;
-        }
-
-        ProjectLanguageIndex<?> built = buildUnchecked(rawIndexer, context, sourceFiles);
-        savePersisted(key, built);
-        indexesByProjectAndLanguage.put(key, built);
-        return built;
+        Entry entry = entry(context, languageId);
+        lock(entry);
+        try {
+            long generation = generation(context, entry);
+            ProjectLanguageIndex<?> current = current(context, languageId);
+            if (current != null) return current;
+            ProjectLanguageIndexer<?, ?> indexer = indexersByLanguageId.get(languageId);
+            if (indexer == null) return null;
+            Collection<Path> files = collectFiles(languageContext).stream().filter(indexer::supports).toList();
+            ProjectLanguageKey key = key(projectRoot, languageId);
+            ProjectLanguageIndex<?> result = loadPersisted(key, files);
+            boolean built = result == null;
+            if (built) result = buildUnchecked(indexer, context, files);
+            publish(context, entry, generation, result);
+            if (built) savePersisted(context, entry, generation, key, result);
+            return result;
+        } finally { entry.operation.unlock(); }
     }
 
     /**
@@ -255,7 +368,7 @@ public final class ProjectLanguageIndexService {
      */
     public @Nullable ProjectLanguageIndex<?> rebuild(Project project, String languageId) {
         Objects.requireNonNull(project, "project");
-        return rebuild(new DefaultProjectIndexContextResolver().resolve(project), languageId);
+        return rebuild(resolve(project), languageId);
     }
 
     /**
@@ -283,11 +396,21 @@ public final class ProjectLanguageIndexService {
         if (rawIndexer == null)
             return null;
 
-        var key = new ProjectLanguageKey(projectRoot, languageId);
-        ProjectLanguageIndex<?> rebuilt = buildUnchecked(rawIndexer, context, collectFiles(languageContext));
-        savePersisted(key, rebuilt);
-        indexesByProjectAndLanguage.put(key, rebuilt);
-        return rebuilt;
+        synchronized (ownership) {
+            check(context);
+            Entry existing = context.session().entries.get(languageId);
+            if (existing != null) { existing.generation++; existing.current = null; }
+        }
+        Entry entry = entry(context, languageId);
+        lock(entry);
+        try {
+            long generation = generation(context, entry);
+            ProjectLanguageIndex<?> rebuilt = buildUnchecked(rawIndexer, context,
+                collectFiles(languageContext).stream().filter(rawIndexer::supports).toList());
+            publish(context, entry, generation, rebuilt);
+            savePersisted(context, entry, generation, key(projectRoot, languageId), rebuilt);
+            return rebuilt;
+        } finally { entry.operation.unlock(); }
     }
 
     /**
@@ -352,16 +475,18 @@ public final class ProjectLanguageIndexService {
         if (indexer == null)
             return null;
 
-        I current = indexTyped(context, languageId);
-        if (current == null)
-            return null;
-
-        F indexedFile = indexer.indexFile(context, normalizedFile, readSource(normalizedFile));
-        I updated = indexer.withUpdatedFile(current, normalizedFile, indexedFile);
-        var key = new ProjectLanguageKey(normalizedRoot, languageId);
-        updatePersistedFile(key, updated, normalizedFile);
-        indexesByProjectAndLanguage.put(key, updated);
-        return indexedFile;
+        Entry entry = entry(context, languageId);
+        lock(entry);
+        try {
+            long generation = generation(context, entry);
+            I current = indexTyped(context, languageId);
+            if (current == null) return null;
+            F indexedFile = indexer.indexFile(context, normalizedFile, readSource(normalizedFile));
+            I updated = indexer.withUpdatedFile(current, normalizedFile, indexedFile);
+            publish(context, entry, generation, updated);
+            savePersisted(context, entry, generation, key(normalizedRoot, languageId), updated);
+            return indexedFile;
+        } finally { entry.operation.unlock(); }
     }
 
     /**
@@ -389,14 +514,16 @@ public final class ProjectLanguageIndexService {
         if (indexer == null)
             return;
 
-        I current = indexTyped(context, languageId);
-        if (current == null)
-            return;
-
-        I updated = indexer.withRemovedFile(current, normalizedFile);
-        var key = new ProjectLanguageKey(normalizedRoot, languageId);
-        removePersistedFile(key, updated, normalizedFile);
-        indexesByProjectAndLanguage.put(key, updated);
+        Entry entry = entry(context, languageId);
+        lock(entry);
+        try {
+            long generation = generation(context, entry);
+            I current = indexTyped(context, languageId);
+            if (current == null) return;
+            I updated = indexer.withRemovedFile(current, normalizedFile);
+            publish(context, entry, generation, updated);
+            savePersisted(context, entry, generation, key(normalizedRoot, languageId), updated);
+        } finally { entry.operation.unlock(); }
     }
 
     /**
@@ -407,7 +534,12 @@ public final class ProjectLanguageIndexService {
      */
     public void invalidate(Project project, String languageId) {
         Objects.requireNonNull(project, "project");
-        indexesByProjectAndLanguage.remove(key(project.getPath(), languageId));
+        synchronized (ownership) {
+            Session session = sessions.get(project);
+            if (session == null) return;
+            Entry entry = session.entries.get(languageId);
+            if (entry != null) { entry.generation++; entry.current = null; }
+        }
     }
 
     /**
@@ -417,11 +549,23 @@ public final class ProjectLanguageIndexService {
      * @param languageId the stable language identifier
      */
     public void deletePersisted(Project project, String languageId) {
-        ProjectLanguageKey key = key(project.getPath(), languageId);
-        ProjectLanguageIndexPersistence<?> persistence = persistenceByLanguageId.get(key.languageId());
-        if (persistence != null) {
-            persistence.delete(key.projectRoot());
+        Session session;
+        Entry entry;
+        long generation;
+        synchronized (ownership) {
+            session = sessions.get(project);
+            if (session == null) return;
+            entry = session.entries.computeIfAbsent(languageId, _ -> new Entry());
+            generation = ++entry.generation;
+            entry.current = null;
         }
+        ProjectLanguageIndexPersistence<?> persistence = persistenceByLanguageId.get(languageId);
+        if (persistence != null) persistence.delete(session.root, replacement -> {
+            synchronized (ownership) {
+                if (!session.closed && roots.get(session.root) == session
+                    && entry.generation == generation && entry.current == null) replacement.run();
+            }
+        });
     }
 
     /**
@@ -430,8 +574,13 @@ public final class ProjectLanguageIndexService {
      * @param project the project whose files and configuration are used
      */
     public void invalidateProject(Project project) {
-        Path normalizedRoot = normalize(project.getPath());
-        indexesByProjectAndLanguage.keySet().removeIf(key -> key.projectRoot().equals(normalizedRoot));
+        synchronized (ownership) {
+            Session session = sessions.get(project);
+            if (session != null) session.entries.values().forEach(entry -> {
+                entry.generation++;
+                entry.current = null;
+            });
+        }
     }
 
     private ProjectLanguageKey key(Path projectRoot, String languageId) {
@@ -508,29 +657,24 @@ public final class ProjectLanguageIndexService {
     }
 
     @SuppressWarnings("unchecked")
-    private void savePersisted(ProjectLanguageKey key, ProjectLanguageIndex<?> index) {
-        ProjectLanguageIndexPersistence<ProjectLanguageIndex<?>> persistence = (ProjectLanguageIndexPersistence<ProjectLanguageIndex<?>>) persistenceByLanguageId
-            .get(key.languageId());
-        if (persistence != null) {
-            persistence.save(key.projectRoot(), index);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void updatePersistedFile(ProjectLanguageKey key, ProjectLanguageIndex<?> index, Path file) {
-        ProjectLanguageIndexPersistence<ProjectLanguageIndex<?>> persistence = (ProjectLanguageIndexPersistence<ProjectLanguageIndex<?>>) persistenceByLanguageId
-            .get(key.languageId());
-        if (persistence != null) {
-            persistence.updateFile(key.projectRoot(), index, file);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void removePersistedFile(ProjectLanguageKey key, ProjectLanguageIndex<?> index, Path file) {
-        ProjectLanguageIndexPersistence<ProjectLanguageIndex<?>> persistence = (ProjectLanguageIndexPersistence<ProjectLanguageIndex<?>>) persistenceByLanguageId
-            .get(key.languageId());
-        if (persistence != null) {
-            persistence.removeFile(key.projectRoot(), index, file);
+    private void savePersisted(ProjectIndexContext context, Entry entry, long generation,
+                               ProjectLanguageKey key, ProjectLanguageIndex<?> index) {
+        var persistence = (ProjectLanguageIndexPersistence<ProjectLanguageIndex<?>>) persistenceByLanguageId.get(key.languageId());
+        if (persistence == null) return;
+        try {
+            persistence.save(key.projectRoot(), index, replacement -> {
+                synchronized (ownership) {
+                    check(context);
+                    if (entry.generation != generation || entry.current != index)
+                        throw new CancellationException("Index invalidated before persistence commit");
+                    replacement.run();
+                }
+            });
+        } catch (CancellationException exception) {
+            throw exception;
+        } catch (RuntimeException exception) {
+            org.slf4j.LoggerFactory.getLogger(ProjectLanguageIndexService.class)
+                .warn("Failed to persist index cache for {}", key.projectRoot(), exception);
         }
     }
 
