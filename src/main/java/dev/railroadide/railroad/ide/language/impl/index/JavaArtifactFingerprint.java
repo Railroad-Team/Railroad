@@ -18,6 +18,16 @@ public final class JavaArtifactFingerprint {
     private JavaArtifactFingerprint() {
     }
 
+    /**
+     * Fingerprints ordered binary roots and JDK artifact metadata for explicit refresh detection.
+     * Directory roots include metadata for their class files; file contents are not hashed.
+     *
+     * @param orderedRoots binary roots in classpath precedence order
+     * @param jdkHome selected JDK home, or {@code null} for the running JDK; unavailable JDK archives
+     *            fall back to the running JDK's module image
+     * @return hexadecimal SHA-256 digest of artifact paths and metadata
+     * @throws UncheckedIOException if artifact metadata cannot be read
+     */
     public static String capture(List<Path> orderedRoots, Path jdkHome) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

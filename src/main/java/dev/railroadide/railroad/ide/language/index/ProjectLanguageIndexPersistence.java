@@ -89,7 +89,12 @@ public interface ProjectLanguageIndexPersistence<I extends ProjectLanguageIndex<
      */
     void delete(Path projectRoot);
 
-    /** Deletes only through a short ownership-checked final commit; unsupported adapters skip deletion. */
+    /**
+     * Deletes only through a short ownership-checked final commit; unsupported adapters skip deletion.
+     *
+     * @param projectRoot the project root directory
+     * @param commit invokes deletion only while its session and generation remain current
+     */
     default void delete(Path projectRoot, Consumer<Runnable> commit) {
     }
 }

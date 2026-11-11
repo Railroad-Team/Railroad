@@ -39,15 +39,27 @@ public final class ProjectLanguageIndexService {
         private Session(Path root) {
             this.root = root;
         }
-        /** Whether this session has permanently stopped accepting work. */
+        /**
+         * Reports whether this session has permanently stopped accepting work.
+         *
+         * @return {@code true} once this session has closed
+         */
         public boolean isClosed() {
             return closed;
         }
-        /** Revision of the live project configuration accepted for indexing. */
+        /**
+         * Returns the revision of the live project configuration accepted for indexing.
+         *
+         * @return current configuration generation, initially zero
+         */
         public long configurationGeneration() {
             return configurationGeneration;
         }
-        /** Opaque token carried by captured configurations, unrelated to the project path. */
+        /**
+         * Returns an opaque token carried by captured configurations, unrelated to the project path.
+         *
+         * @return stable identifier unique to this open session
+         */
         public String id() {
             return id;
         }
@@ -59,7 +71,13 @@ public final class ProjectLanguageIndexService {
         private ProjectLanguageIndex<?> current;
     }
 
-    /** Opens index ownership explicitly; repeated opens of the same active project reuse it. */
+    /**
+     * Opens index ownership explicitly; repeated opens of the same active project reuse it.
+     * Closes any previous session belonging to another project with the same normalized root.
+     *
+     * @param project project acquiring index ownership
+     * @return existing active session for this project, or a newly opened session
+     */
     public Session openProject(Project project) {
         synchronized (ownership) {
             Session existing = sessions.get(project);
@@ -77,14 +95,24 @@ public final class ProjectLanguageIndexService {
         }
     }
 
-    /** Returns existing ownership without opening a closed project. */
+    /**
+     * Returns existing ownership without opening a closed project.
+     *
+     * @param project project whose index ownership is requested
+     * @return active session, or {@code null} if this project has no open session
+     */
     public @Nullable Session session(Project project) {
         synchronized (ownership) {
             return sessions.get(project);
         }
     }
 
-    /** Rejects old live contexts when the project adopts refreshed configuration. */
+    /**
+     * Rejects old live contexts when the project adopts refreshed configuration.
+     *
+     * @param session session whose configuration generation advances; {@code null}, closed or superseded
+     *            sessions are ignored
+     */
     public void refreshProject(Session session) {
         synchronized (ownership) {
             if (session == null || session.closed || roots.get(session.root) != session)
@@ -97,7 +125,11 @@ public final class ProjectLanguageIndexService {
         }
     }
 
-    /** Rejects late work and releases caches without waiting for an operation lock. */
+    /**
+     * Rejects late work and releases caches without waiting for an operation lock.
+     *
+     * @param session session to close, or {@code null} to do nothing; repeated closure is safe
+     */
     public void closeProject(Session session) {
         if (session == null)
             return;

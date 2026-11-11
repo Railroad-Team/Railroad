@@ -73,22 +73,38 @@ public final class EditorOpenView {
         this.closeResources = Objects.requireNonNull(closeResources);
     }
 
-    /** @return displayed content */
+    /**
+     * Returns the presentation node owned by this view.
+     *
+     * @return displayed content
+     */
     public Node content() {
         return content;
     }
 
-    /** @return stable language identifier */
+    /**
+     * Returns the language associated with this view.
+     *
+     * @return stable language identifier
+     */
     public String languageId() {
         return languageId;
     }
 
-    /** @return optional text capability; discovery does not materialize a lazy source */
+    /**
+     * Discovers text operations without materializing a lazy source editor.
+     *
+     * @return text capability, or empty when unsupported or the view is closed
+     */
     public Optional<TextEditorAccess> textEditor() {
         return closed ? Optional.empty() : Optional.ofNullable(textEditor);
     }
 
-    /** @return internal source control for save, layout and lifecycle ownership */
+    /**
+     * Returns the current source control for internal save, layout and lifecycle ownership.
+     *
+     * @return source control, or {@code null} when no source editor is materialized
+     */
     public @Nullable TextEditorPane activeEditor() {
         return source.getValue();
     }
@@ -106,12 +122,20 @@ public final class EditorOpenView {
         sourceSubscriptions.add(() -> source.removeListener(change));
     }
 
-    /** @param store project store already attached to any materialized source */
+    /**
+     * Initializes wrapper observation using the project's document store.
+     *
+     * @param store project store already attached to any materialized source
+     */
     public void setDocumentStore(DocumentStore store) {
         attachStore.accept(store);
     }
 
-    /** @param path new location of this view */
+    /**
+     * Updates the wrapper's location after its source has been rebound.
+     *
+     * @param path new location of this view
+     */
     public void rebind(Path path) {
         rebind.accept(path);
     }

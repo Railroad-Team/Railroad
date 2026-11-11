@@ -11,7 +11,13 @@ public final class BinaryStubPublication {
     private BinaryStubPublication() {
     }
 
-    /** Returns an alias-free immutable stub for binary cache publication. */
+    /**
+     * Returns an alias-free immutable stub for binary cache publication.
+     *
+     * @param stub binary class stub to copy
+     * @return copied stub with immutable collections and recursively copied type and annotation values
+     * @throws IllegalArgumentException if an annotation contains an unsupported value type
+     */
     public static ClassStub copy(ClassStub stub) {
         return new ClassStub(stub.packageName(), stub.name(), parameters(stub.typeParameters()),
             type(stub.superClass()), types(stub.interfaces()),

@@ -14,6 +14,8 @@ import java.util.Objects;
  * @param project the project whose files and configuration are used
  * @param projectRoot the project root directory
  * @param languages the language contexts keyed by language identifier
+ * @param session live index ownership, or {@code null} for a standalone context
+ * @param configurationGeneration captured session configuration revision, or zero for a standalone context
  */
 public record ProjectIndexContext(
     Project project,
@@ -37,7 +39,14 @@ public record ProjectIndexContext(
         this(project, projectRoot, languages, null, 0);
     }
 
-    /** Captures the session's current configuration generation. */
+    /**
+     * Captures the session's current configuration generation.
+     *
+     * @param project the project whose files and configuration are used
+     * @param projectRoot the project root directory
+     * @param languages the language contexts keyed by language identifier
+     * @param session live index ownership, or {@code null} for a standalone context
+     */
     public ProjectIndexContext(
         Project project,
         Path projectRoot,
@@ -47,7 +56,15 @@ public record ProjectIndexContext(
         this(project, projectRoot, languages, session, session == null ? 0 : session.configurationGeneration());
     }
 
-    /** Creates a context bound to an explicitly opened index session. */
+    /**
+     * Creates a context with an explicit configuration generation, normalizing its root and copying its language map.
+     *
+     * @param project the project whose files and configuration are used
+     * @param projectRoot the project root directory
+     * @param languages the language contexts keyed by language identifier
+     * @param session live index ownership, or {@code null} for a standalone context
+     * @param configurationGeneration captured session configuration revision, or zero for a standalone context
+     */
     public ProjectIndexContext {
         project = Objects.requireNonNull(project, "project");
         projectRoot = normalize(projectRoot);

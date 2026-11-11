@@ -61,7 +61,14 @@ public final class JavaAnalysisContextProvider {
         }
     }
 
-    /** Prepares artifact identity on a configuration worker, never on a feature request. */
+    /**
+     * Prepares artifact identity on a configuration worker, never on a feature request.
+     *
+     * @param session session that will own the prepared configuration
+     * @param configuration captured module settings to fingerprint
+     * @return configuration with the session token, a new binary epoch and artifact fingerprint
+     * @throws CancellationException if the session closes before preparation completes
+     */
     public WorkspaceConfigurationSnapshot prepareConfiguration(
         Session session,
         WorkspaceConfigurationSnapshot configuration
@@ -80,7 +87,13 @@ public final class JavaAnalysisContextProvider {
             configuration.revision(), configuration.moduleIds(), values);
     }
 
-    /** Adopts a prepared configuration without waiting for older scans. */
+    /**
+     * Adopts a prepared configuration without waiting for older scans.
+     *
+     * @param session session owning the replacement analysis caches
+     * @param configuration configuration returned by {@link #prepareConfiguration}
+     * @throws CancellationException if the session is already closed
+     */
     public void adoptConfiguration(
         Session session,
         WorkspaceConfigurationSnapshot configuration
@@ -98,13 +111,22 @@ public final class JavaAnalysisContextProvider {
         }
     }
 
-    /** Releases strong project cache ownership without acquiring a scanner's monitor. */
+    /**
+     * Releases strong project cache ownership without acquiring a scanner's monitor.
+     *
+     * @param session session whose caches are released, or {@code null} to do nothing
+     */
     public void closeSession(Session session) {
         if (session != null) {
             sessions.remove(session.id());
         }
     }
 
+    /**
+     * Returns the number of sessions currently retaining analysis caches.
+     *
+     * @return current session cache count
+     */
     public int cachedSessions() {
         return sessions.size();
     }

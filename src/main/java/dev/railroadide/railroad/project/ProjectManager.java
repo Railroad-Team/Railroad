@@ -42,6 +42,12 @@ public final class ProjectManager {
         this(configSaver, event -> Railroad.EVENT_BUS.publish(event));
     }
 
+    /**
+     * Creates a project manager with custom configuration persistence and lifecycle event delivery.
+     *
+     * @param configSaver saves configuration after project changes
+     * @param eventPublisher publishes project open and close events
+     */
     public ProjectManager(Runnable configSaver, Consumer<ProjectEvent> eventPublisher) {
         this.configSaver = Objects.requireNonNull(configSaver, "configSaver");
         this.eventPublisher = Objects.requireNonNull(eventPublisher, "eventPublisher");

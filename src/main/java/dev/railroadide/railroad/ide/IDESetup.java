@@ -102,7 +102,16 @@ public class IDESetup {
         JavaFXUtils.runOnApplicationThread(switchAction);
     }
 
-    /** Constructs a project view at the accepted project transition boundary. */
+    /**
+     * Constructs a project view at the accepted project transition boundary.
+     * Clears newly opened project ownership if construction fails.
+     *
+     * @param <T> the constructed view type
+     * @param manager manager coordinating project ownership and lifecycle events
+     * @param project project to open before constructing the view
+     * @param factory constructs the view after the previous project accepts closure
+     * @return the constructed view, or {@code null} if the previous project remains open
+     */
     public static <T> T constructProjectView(
         ProjectManager manager,
         Project project,

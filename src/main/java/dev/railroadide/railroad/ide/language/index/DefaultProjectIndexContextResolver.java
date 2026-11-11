@@ -22,7 +22,11 @@ public final class DefaultProjectIndexContextResolver implements ProjectIndexCon
         this(_ -> null);
     }
 
-    /** Creates a resolver bound to an index service's active sessions. */
+    /**
+     * Creates a resolver bound to an index service's active sessions.
+     *
+     * @param sessions looks up existing project ownership, returning {@code null} for standalone contexts
+     */
     public DefaultProjectIndexContextResolver(Function<Project, ProjectLanguageIndexService.Session> sessions) {
         this.sessions = Objects.requireNonNull(sessions);
     }

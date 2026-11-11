@@ -19,17 +19,34 @@ public interface TextEditorAccess {
 
     /**
      * Returns the canonical published current snapshot, including an unsaved conflict overlay.
-     * Does not initialize lazy source. Throws IllegalStateException if closed or not reconciled.
+     * Does not initialize lazy source.
+     *
+     * @return immutable current source revision with its document identity and metadata
+     * @throws IllegalStateException if the editor is closed or its source is not reconciled with publication
      */
     TextDocumentSnapshot snapshot();
 
-    /** Returns the directed selection in UTF-16 offsets, or (0, 0) before lazy source exists. */
+    /**
+     * Returns the directed selection in UTF-16 offsets.
+     *
+     * @return current anchor and caret, or {@code (0, 0)} before lazy source exists
+     */
     TextSelection selection();
 
-    /** Validates the expected snapshot and bounds, then selects and reveals source. */
+    /**
+     * Validates the expected snapshot and bounds, then selects and reveals source.
+     *
+     * @param expected snapshot against which selection offsets were computed
+     * @param selection directed selection in the expected snapshot's UTF-16 offsets
+     * @return {@link EditResult#APPLIED} on success, or the reason navigation was rejected
+     */
     EditResult selectAndReveal(TextDocumentSnapshot expected, TextSelection selection);
 
-    /** Reports effective editability; replacement rechecks this advisory value. */
+    /**
+     * Reports effective editability; replacement rechecks this advisory value.
+     *
+     * @return {@code true} when the editor currently permits text replacement
+     */
     boolean isEditable();
 
     /**
@@ -38,6 +55,10 @@ public interface TextEditorAccess {
      * Successful nonempty changes form one undo step isolated from surrounding typing.
      * Empty batches and text-identical replacements succeed without changing history or revision.
      * This does not save or resolve external conflicts. No cross-document transaction is implied.
+     *
+     * @param expected snapshot against which all replacement ranges were computed
+     * @param replacements batch of replacements using the expected snapshot's UTF-16 offsets
+     * @return {@link EditResult#APPLIED} on success, or the reason the batch was rejected
      */
     EditResult replace(TextDocumentSnapshot expected, List<TextReplacement> replacements);
 
@@ -45,9 +66,17 @@ public interface TextEditorAccess {
      * Subscribes before scheduling initial delivery, then delivers changed canonical snapshots.
      * Hidden backing changes with an unchanged overlay and unrelated documents are filtered.
      * Observation alone must not create a lazy source. Close the subscription when no longer needed.
+     *
+     * @param listener receives initial and subsequent settled canonical snapshots on the editor UI thread
+     * @return subscription whose closure removes the listener and cancels queued delivery
      */
     EditorSubscription observe(Consumer<TextDocumentSnapshot> listener);
 
-    /** Observes the initial and subsequent settled selection without creating lazy source. */
+    /**
+     * Observes the initial and subsequent settled selection without creating lazy source.
+     *
+     * @param listener receives directed selections on the editor UI thread
+     * @return subscription whose closure removes the listener and cancels queued delivery
+     */
     EditorSubscription observeSelection(Consumer<TextSelection> listener);
 }

@@ -211,7 +211,11 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             DocumentOrigin.original(uri), getText(), StandardCharsets.UTF_8);
     }
 
-    /** Returns the stable plugin-facing source operations for this editor's lifetime. */
+    /**
+     * Returns the stable plugin-facing source operations for this editor's lifetime.
+     *
+     * @return this editor's source capability
+     */
     public final TextEditorAccess textEditorAccess() {
         return textEditorAccess;
     }

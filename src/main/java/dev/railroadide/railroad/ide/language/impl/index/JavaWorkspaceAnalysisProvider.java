@@ -23,12 +23,24 @@ public final class JavaWorkspaceAnalysisProvider {
 
     private final BooleanSupplier active;
     private final BiFunction<List<Path>, Path, JavaSymbolIndex> binaryLoader;
+
+    /**
+     * Creates a cache with default library and JDK scanning and a configuration ownership guard.
+     *
+     * @param active reports whether this provider's configuration still owns analysis work
+     */
     public JavaWorkspaceAnalysisProvider(BooleanSupplier active) {
         this.active = active;
         this.binaryLoader = (classpath, jdk) -> new CompositeJavaSymbolIndex(List.of(
             JavaLibrarySymbolIndex.build(classpath), JavaJdkSymbolIndex.build(jdk)));
     }
 
+    /**
+     * Creates a cache with controlled binary loading and configuration ownership checks.
+     *
+     * @param active reports whether this provider's configuration still owns analysis work
+     * @param binaryLoader loads binary symbols from ordered classpath roots and the selected JDK home
+     */
     public JavaWorkspaceAnalysisProvider(
         BooleanSupplier active,
         BiFunction<List<Path>, Path, JavaSymbolIndex> binaryLoader
@@ -119,6 +131,13 @@ public final class JavaWorkspaceAnalysisProvider {
         return Set.copyOf(roots);
     }
 
+    /**
+     * Collects normalized, distinct binary roots in sorted module order, excluding workspace output directories.
+     * Within each module, classpath, module path and dependency roots retain their configured order.
+     *
+     * @param configuration captured module settings
+     * @return immutable ordered binary roots
+     */
     public static List<Path> classpath(WorkspaceConfigurationSnapshot configuration) {
         LinkedHashSet<Path> roots = new LinkedHashSet<>();
         Set<Path> outputs = new HashSet<>();
@@ -143,6 +162,12 @@ public final class JavaWorkspaceAnalysisProvider {
         return List.copyOf(roots);
     }
 
+    /**
+     * Selects the first configured JDK home in sorted module order, falling back to the running JDK.
+     *
+     * @param configuration captured module settings
+     * @return absolute normalized JDK home
+     */
     public static Path jdkHome(WorkspaceConfigurationSnapshot configuration) {
         return configuration.moduleIds().stream().sorted()
             .map(module -> configuration.settings().get("module." + module + ".jdkHome"))

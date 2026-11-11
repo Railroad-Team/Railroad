@@ -33,7 +33,12 @@ public final class ProjectLanguageIndexCoordinator {
         this(project, Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project));
     }
 
-    /** Creates a coordinator retaining the session captured before its worker was submitted. */
+    /**
+     * Creates a coordinator retaining the session captured before its worker was submitted.
+     *
+     * @param project the project whose files and configuration are used
+     * @param session captured index ownership, or {@code null} when no live session exists
+     */
     public ProjectLanguageIndexCoordinator(Project project, ProjectLanguageIndexService.Session session) {
         this(new DefaultProjectIndexContextResolver(_ -> session).resolve(project),
             Services.PROJECT_LANGUAGE_INDEX_SERVICE,

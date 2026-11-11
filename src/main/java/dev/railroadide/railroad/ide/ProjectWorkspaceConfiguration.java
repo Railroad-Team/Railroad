@@ -94,7 +94,15 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
                 configuration));
     }
 
-    /** Creates configuration ownership with controlled dependency and artifact preparation. */
+    /**
+     * Creates configuration ownership with controlled dependency and artifact preparation.
+     *
+     * @param project configuration owner
+     * @param store store receiving immutable configuration revisions
+     * @param dependencyResolver resolver invoked on a background worker for Maven projects
+     * @param indexSession active index session, or {@code null} for standalone configuration
+     * @param binaryPreparer prepares artifact identity on a background worker when a session is present
+     */
     public ProjectWorkspaceConfiguration(
         Project project,
         DocumentStore store,

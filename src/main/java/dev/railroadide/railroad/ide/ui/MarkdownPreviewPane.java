@@ -195,7 +195,11 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         refreshPublishedContent();
     }
 
-    /** @return stable source capability, including when the source has not been materialized */
+    /**
+     * Returns source operations without materializing the Markdown source editor.
+     *
+     * @return stable source capability for this view's lifetime
+     */
     public TextEditorAccess textEditorAccess() {
         return textEditorAccess;
     }
