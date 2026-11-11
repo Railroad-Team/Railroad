@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,17 +28,29 @@ public class IndexConcurrencyTest {
         var indexer = new TestIndexer();
         service.registerIndexer(indexer);
         var context = context(service);
-        var waiting = new CountDownLatch(1);
         try (var workers = Executors.newFixedThreadPool(2)) {
             var owner = workers.submit(() -> service.index(context, "test"));
             assertTrue(indexer.entered.await(5, TimeUnit.SECONDS));
-            var waiter = workers.submit(() -> {
-                waiting.countDown();
-                return service.index(context, "test");
+            var outcome = new CompletableFuture<Boolean>();
+            var waiter = Thread.ofPlatform().unstarted(() -> {
+                try {
+                    service.index(context, "test");
+                    outcome.completeExceptionally(new AssertionError("Expected interrupted acquisition cancellation"));
+                } catch (CancellationException expected) {
+                    outcome.complete(Thread.currentThread().isInterrupted());
+                } catch (Throwable failure) {
+                    outcome.completeExceptionally(failure);
+                }
             });
-            assertTrue(waiting.await(5, TimeUnit.SECONDS));
-            waiter.cancel(true);
-            indexer.release.countDown();
+            try {
+                waiter.start();
+                awaitQueued(context, waiter);
+                waiter.interrupt();
+                assertTrue(outcome.get(5, TimeUnit.SECONDS), "Interrupted acquisition restores the interrupt flag");
+            } finally {
+                indexer.release.countDown();
+                waiter.join(5000);
+            }
             assertNotNull(owner.get(5, TimeUnit.SECONDS));
             assertEquals(1, indexer.builds.get());
         } finally {
@@ -204,8 +217,14 @@ public class IndexConcurrencyTest {
         try (var workers = Executors.newFixedThreadPool(2)) {
             var first = workers.submit(() -> service.index(context, "test"));
             assertTrue(indexer.entered.await(5, TimeUnit.SECONDS));
-            var second = workers.submit(() -> service.index(context, "test"));
-            indexer.release.countDown();
+            var second = new FutureTask<>(() -> service.index(context, "test"));
+            var waiter = Thread.ofPlatform().unstarted(second);
+            try {
+                waiter.start();
+                awaitQueued(context, waiter);
+            } finally {
+                indexer.release.countDown();
+            }
             assertSame(first.get(5, TimeUnit.SECONDS), second.get(5, TimeUnit.SECONDS));
             assertEquals(1, indexer.builds.get());
         }
@@ -272,14 +291,39 @@ public class IndexConcurrencyTest {
         try (var workers = Executors.newFixedThreadPool(2)) {
             var first = workers.submit(() -> service.updateFile(context, "test", a));
             assertTrue(indexer.fileEntered.await(5, TimeUnit.SECONDS));
-            var second = workers.submit(() -> service.updateFile(context, "test", b));
-            indexer.fileRelease.countDown();
+            var second = new FutureTask<>(() -> service.updateFile(context, "test", b));
+            var waiter = Thread.ofPlatform().unstarted(second);
+            try {
+                waiter.start();
+                awaitQueued(context, waiter);
+            } finally {
+                indexer.fileRelease.countDown();
+            }
             first.get(5, TimeUnit.SECONDS);
             second.get(5, TimeUnit.SECONDS);
             assertNotNull(service.current(context, "test").getFileIndex(a));
             assertNotNull(service.current(context, "test").getFileIndex(b));
+            assertNotNull(indexer.predecessors.get(b).getFileIndex(a), "B must derive from A's publication");
         } finally {
             indexer.fileRelease.countDown();
+        }
+    }
+
+    // Inspect the existing lock's queue rather than adding a production scheduling hook.
+    private static void awaitQueued(ProjectIndexContext context, Thread waiter) throws Exception {
+        var entriesField = context.session().getClass().getDeclaredField("entries");
+        entriesField.setAccessible(true);
+        var entries = (Map<?, ?>) entriesField.get(context.session());
+        Object entry = entries.get("test");
+        var operationField = entry.getClass().getDeclaredField("operation");
+        operationField.setAccessible(true);
+        var lock = (ReentrantLock) operationField.get(entry);
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (!lock.hasQueuedThread(waiter)) {
+            if (!waiter.isAlive() || System.nanoTime() >= deadline) {
+                fail("Caller did not reach the blocked operation lock");
+            }
+            Thread.onSpinWait();
         }
     }
 
@@ -309,6 +353,7 @@ public class IndexConcurrencyTest {
         protected final CountDownLatch fileEntered = new CountDownLatch(1), fileRelease = new CountDownLatch(1);
         protected final AtomicInteger builds = new AtomicInteger();
         protected volatile Path blockFile;
+        protected final Map<Path, Index> predecessors = new ConcurrentHashMap<>();
         public String languageId() {
             return "test";
         }
@@ -329,6 +374,7 @@ public class IndexConcurrencyTest {
             return new FileEntry(file);
         }
         public Index withUpdatedFile(Index index, Path file, FileEntry entry) {
+            predecessors.put(file, index);
             var files = new HashMap<>(index.files());
             files.put(file, entry);
             return new Index(Map.copyOf(files));
