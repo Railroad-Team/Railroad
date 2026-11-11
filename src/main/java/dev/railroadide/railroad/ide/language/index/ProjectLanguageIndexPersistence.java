@@ -48,6 +48,18 @@ public interface ProjectLanguageIndexPersistence<I extends ProjectLanguageIndex<
     void save(Path projectRoot, I index);
 
     /**
+     * Prepares a disposable snapshot, then submits only its final atomic replacement to the ownership guard.
+     * Adapters without guarded replacement skip caching rather than commit stale data or block project close.
+     *
+     * @param projectRoot project root
+     * @param index published index
+     * @param commit invokes the replacement only while its session and generation remain current
+     */
+    default void save(Path projectRoot, I index, java.util.function.Consumer<Runnable> commit) {
+        // Persistence is optional. Legacy adapters can opt into guarded replacement independently.
+    }
+
+    /**
      * Persists an index after one file changed. The default implementation saves the complete index.
      *
      * @param projectRoot the project root directory
@@ -75,4 +87,8 @@ public interface ProjectLanguageIndexPersistence<I extends ProjectLanguageIndex<
      * @param projectRoot the project root directory
      */
     void delete(Path projectRoot);
+
+    /** Deletes only through a short ownership-checked final commit; unsupported adapters skip deletion. */
+    default void delete(Path projectRoot, java.util.function.Consumer<Runnable> commit) {
+    }
 }
