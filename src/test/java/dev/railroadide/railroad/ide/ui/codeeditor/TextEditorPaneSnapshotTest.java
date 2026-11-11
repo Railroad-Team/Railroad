@@ -27,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import dev.railroadide.railroad.debug.breakpoint.BreakpointService;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -271,6 +272,66 @@ public class TextEditorPaneSnapshotTest {
                 Services.BREAKPOINT_SERVICE.remove(file, 2);
             });
         }
+    }
+
+    @Test
+    public void disjointBatchPreservesInterveningStylesFoldsAndBreakpointThroughUndoRedo() throws Exception {
+        Path file = tempDirectory.resolve("granular.txt");
+        String original = "head\nfind\nuntouched\nfind\ntail";
+        String replaced = "head\nfind\nextra\nuntouched\nfound\ntail!";
+        Files.writeString(file, original);
+        onFxThread(() -> {
+            var editor = new TextEditorPane(DocumentId.create(), file, "plaintext");
+            var service = new BreakpointService();
+            var binding = new BreakpointGutterBinding(editor.getGutter(), editor, editor::getFilePath, service);
+            try {
+                var store = new DefaultDocumentStore("granular-test",
+                    new WorkspaceConfigurationSnapshot(0, Set.of()));
+                store.publishBacking(editor.captureSnapshot());
+                editor.setDocumentStore(store);
+                service.add(file, 3);
+                editor.setParagraphStyle(2, List.of("debug-execution-line"));
+                editor.setStyle(10, 19, List.of("custom-style"));
+                editor.foldParagraphs(1, 2);
+                var untouched = editor.getParagraph(2);
+                editor.getUndoManager().forgetHistory();
+                editor.appendText("!");
+                var access = editor.textEditorAccess();
+                assertEquals(EditResult.APPLIED, access.replace(access.snapshot(), List.of(
+                    new TextReplacement(new TextRange(20, 24), "found"),
+                    new TextReplacement(new TextRange(5, 9), "find\nextra"))));
+                assertEquals(replaced, access.snapshot().text());
+                assertEquals(untouched, editor.getParagraph(3));
+                assertTrue(editor.isFolded(3));
+                assertTrue(service.has(file, 4));
+                assertFalse(service.has(file, 3));
+                editor.appendText("?");
+                editor.undo();
+                assertEquals(replaced, editor.getText());
+                editor.undo();
+                assertEquals(original + "!", editor.getText());
+                assertEquals(untouched, editor.getParagraph(2));
+                assertTrue(editor.isFolded(2));
+                assertTrue(service.has(file, 3));
+                assertFalse(service.has(file, 4));
+                editor.undo();
+                assertEquals(original, editor.getText());
+                editor.redo();
+                editor.redo();
+                assertEquals(replaced, editor.getText());
+                assertEquals(untouched, editor.getParagraph(3));
+                assertTrue(editor.isFolded(3));
+                assertTrue(service.has(file, 4));
+                assertFalse(service.has(file, 3));
+                editor.redo();
+                assertEquals(replaced + "?", access.snapshot().text());
+            } finally {
+                binding.close();
+                editor.discardChangesOnClose();
+                editor.close();
+                editor.dispose();
+            }
+        });
     }
 
     @Test

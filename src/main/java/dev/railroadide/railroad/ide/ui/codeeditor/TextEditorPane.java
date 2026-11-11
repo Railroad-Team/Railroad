@@ -277,22 +277,19 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             if (ordered.isEmpty())
                 return EditResult.APPLIED;
 
-            int start = ordered.getFirst().range().start;
-            int end = ordered.getLast().range().end;
-            var replacement = new StringBuilder();
-            int offset = start;
+            var changes = createMultiChange(ordered.size());
             for (TextReplacement edit : ordered) {
-                replacement.append(expected.text(), offset, edit.range().start).append(edit.text());
-                offset = edit.range().end;
+                TextRange range = edit.range();
+                if (!edit.text().equals(expected.text().substring(range.start, range.end))) {
+                    changes.replaceText(range.start, range.end, edit.text());
+                }
             }
-            replacement.append(expected.text(), offset, end);
-            String text = replacement.toString();
-            if (text.equals(expected.text().substring(start, end)))
+            if (!changes.hasChanges())
                 return EditResult.APPLIED;
 
             getUndoManager().preventMerge();
             try {
-                replaceText(start, end, text);
+                changes.commit();
             } finally {
                 getUndoManager().preventMerge();
             }
