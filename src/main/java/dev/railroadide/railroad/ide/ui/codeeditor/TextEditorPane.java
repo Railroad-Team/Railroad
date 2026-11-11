@@ -1626,7 +1626,14 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             }
             moveTo(Math.min(caret, getLength()));
         }
-        if (restoredBacking != null) {
+        if (restoredBacking != null && !restoredBacking.text().equals(getText())) {
+            // RichTextFX normalizes line endings; that content requires its own canonical revision.
+            editVersion.set(new DocumentVersion(latestDocumentVersion()).next().value());
+            restoredBacking = captureSnapshot();
+            if (store != null) {
+                store.publishBacking(restoredBacking);
+            }
+        } else if (restoredBacking != null) {
             editVersion.set(restoredBacking.version().value());
         }
         TextDocumentSnapshot snapshot = restoredBacking != null ? restoredBacking : captureSnapshot();

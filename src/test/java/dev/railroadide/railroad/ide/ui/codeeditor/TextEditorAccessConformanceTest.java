@@ -470,6 +470,99 @@ public class TextEditorAccessConformanceTest {
     }
 
     @Test
+    public void acceptedDirtyCrlfReloadReconcilesCanonicalSource() throws Exception {
+        assertAcceptedDirtyCrlfReload(false);
+    }
+
+    @Test
+    public void acceptedDirtyCrlfReloadReconcilesMarkdownSourceAndPreview() throws Exception {
+        assertAcceptedDirtyCrlfReload(true);
+    }
+
+    private void assertAcceptedDirtyCrlfReload(boolean markdown) throws Exception {
+        String disk = "external\r\nsecond";
+        String visible = "external\nsecond";
+        var wrapper = new AtomicReference<MarkdownPreviewPane>();
+        TextEditorPane editor;
+        TextEditorAccess access;
+        if (markdown) {
+            Path file = tempDirectory.resolve("reload.md");
+            Files.writeString(file, "initial");
+            EditorTab tab = onFxThread(() -> {
+                Platform.setImplicitExit(false);
+                ThemeManager.init();
+                project.getDataStore().writeJson("markdown.json",
+                    new MarkdownPreviewPane.MarkdownLayout(MarkdownPreviewPane.MarkdownLayoutType.PREVIEW));
+                EditorTab opened = openInTabPane(file);
+                wrapper.set((MarkdownPreviewPane) opened.view().content());
+                opened.view().textEditor().orElseThrow().reveal();
+                disableDebouncedAutosave(opened.view().activeEditor());
+                return opened;
+            });
+            editor = tab.view().activeEditor();
+            access = tab.view().textEditor().orElseThrow();
+        } else {
+            editor = createStandalone("initial");
+            access = editor.textEditorAccess();
+        }
+        var received = new ArrayList<TextDocumentSnapshot>();
+        EditorSubscription subscription = onFxThread(() -> access.observe(received::add));
+        try {
+            TextDocumentSnapshot draft = onFxThread(() -> {
+                editor.replaceText("draft");
+                var snapshot = access.snapshot();
+                Files.writeString(editor.getFilePath(), disk);
+                invokeExternalChange(editor);
+                var process = TextEditorPane.class.getDeclaredMethod("processExternalChange", Path.class);
+                process.setAccessible(true);
+                process.invoke(editor, editor.getFilePath());
+                assertTrue(editor.hasPendingExternalChange());
+                assertTrue(store().state(snapshot.id()).orElseThrow().isStale());
+                received.clear();
+                editor.resolveExternalChange(true);
+                var current = access.snapshot();
+                assertEquals(visible, current.text());
+                assertSame(store().current(current.id()).orElseThrow(), current);
+                assertTrue(current.version().isAfter(snapshot.version()));
+                assertSame(current, editor.textEditorAccess().snapshot());
+                assertEquals(current.version(), editor.captureSnapshot().version());
+                assertNull(store().state(current.id()).orElseThrow().overlay());
+                assertFalse(store().state(current.id()).orElseThrow().isStale());
+                assertFalse(editor.dirty());
+                assertTrue(editor.saved());
+                assertFalse(editor.hasPendingExternalChange());
+                assertEquals(disk, Files.readString(editor.getFilePath()));
+                return snapshot;
+            });
+            onFxThread(() -> null);
+            onFxThread(() -> {
+                assertEquals(1, received.size());
+                assertSame(access.snapshot(), received.getFirst());
+                assertEquals(visible, received.getFirst().text());
+                if (markdown) {
+                    var rendered = MarkdownPreviewPane.class.getDeclaredField("renderedText");
+                    rendered.setAccessible(true);
+                    assertEquals(visible, rendered.get(wrapper.get()));
+                }
+                assertEquals(EditResult.STALE, access.replace(draft, List.of(edit(0, 1, "stale"))));
+                assertEquals(EditResult.APPLIED,
+                    access.replace(access.snapshot(), List.of(edit(0, 8, "changed"))));
+                assertTrue(editor.dirty());
+                assertTrue(editor.saveNow(), "The raw CRLF disk baseline must still match at save");
+                assertFalse(editor.hasPendingExternalChange());
+                assertFalse(editor.dirty());
+                assertEquals("changed\nsecond", Files.readString(editor.getFilePath()));
+                return null;
+            });
+        } finally {
+            onFxThread(() -> {
+                subscription.close();
+                return null;
+            });
+        }
+    }
+
+    @Test
     public void replacesCanonicalDirtyOverlayWithoutResolvingExternalConflict() throws Exception {
         TextEditorPane editor = createStandalone("disk");
         TextDocumentSnapshot overlay = onFxThread(() -> {
