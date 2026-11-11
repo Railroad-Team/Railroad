@@ -13,6 +13,8 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import dev.railroadide.railroad.project.ProjectManager;
+import java.util.function.Supplier;
 
 /**
  * Creates IDE scenes and coordinates workspace and run-configuration windows.
@@ -27,7 +29,7 @@ public class IDESetup {
      * @return The created IDE window
      */
     public static Scene createIDEScene(Project project) {
-        return new Scene(new IDEPane(project));
+        return constructProjectView(Railroad.PROJECT_MANAGER, project, () -> new Scene(new IDEPane(project)));
     }
 
     /**
@@ -70,7 +72,9 @@ public class IDESetup {
             try {
                 Stage ideStage = stage == null ? Railroad.WINDOW_MANAGER.getPrimaryStage() : stage;
                 Scene previousScene = ideStage.getScene();
-                var idePane = new IDEPane(project);
+                var idePane = constructProjectView(Railroad.PROJECT_MANAGER, project, () -> new IDEPane(project));
+                if (idePane == null)
+                    return;
 
                 disposePreviousScene(previousScene);
                 var ideScene = new Scene(idePane);
@@ -90,19 +94,41 @@ public class IDESetup {
                     Railroad.WINDOW_MANAGER.showPrimary(stage, ideScene, stage.getTitle());
                 }
                 ThemeManager.release(previousScene);
-
-                try {
-                    Railroad.PROJECT_MANAGER.setCurrentProject(project);
-                } finally {
-                    isSwitchingToIDE = false;
-                }
-            } catch (Exception exception) {
+            } finally {
                 isSwitchingToIDE = false;
-                throw exception;
             }
         };
 
         JavaFXUtils.runOnApplicationThread(switchAction);
+    }
+
+    /** Constructs a project view at the accepted project transition boundary. */
+    public static <T> T constructProjectView(
+        ProjectManager manager,
+        Project project,
+        Supplier<T> factory
+    ) {
+        Project previous = manager.getOpenProject();
+        if (previous != null && previous != project) {
+            previous.close();
+            if (manager.getOpenProject() != null)
+                return null;
+        }
+        boolean opening = manager.getOpenProject() != project;
+        try {
+            manager.setCurrentProject(project);
+            return factory.get();
+        } catch (RuntimeException | Error failure) {
+            if (opening && manager.getOpenProject() == project) {
+                try {
+                    manager.setCurrentProject(null);
+                } catch (RuntimeException | Error cleanup) {
+                    Throwable cause = failure;
+                    cause.addSuppressed(cleanup);
+                }
+            }
+            throw failure;
+        }
     }
 
     private static void disposePreviousScene(@Nullable Scene previousScene) {

@@ -87,9 +87,11 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
      */
     public ProjectExplorerPane(Project project) {
         this.project = project;
+        shutdownRegistration = ShutdownHooks.registerHook(this.executorService::shutdownNow);
+        var indexSession = Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project);
         this.projectLanguageIndexCoordinator = executorService.submit(() -> {
             try {
-                var coordinator = new ProjectLanguageIndexCoordinator(project);
+                var coordinator = new ProjectLanguageIndexCoordinator(project, indexSession);
                 coordinator.warmIndexes();
                 return coordinator;
             } catch (RuntimeException exception) {
@@ -97,49 +99,59 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 throw exception;
             }
         });
-        Path rootPath = project.getPath();
-        getStyleClass().add("rr-project-explorer");
+        try {
+            Path rootPath = project.getPath();
+            getStyleClass().add("rr-project-explorer");
 
-        this.searchField = new RRTextField("railroad.ide.project_explorer.search_field");
-        this.searchField.getStyleClass().add("rr-search-field");
+            this.searchField = new RRTextField("railroad.ide.project_explorer.search_field");
+            this.searchField.getStyleClass().add("rr-search-field");
 
-        var header = createModernHeader(project);
+            var header = createModernHeader(project);
 
-        this.treeView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-        this.treeView.setRoot(new PathTreeItem(new PathItem(rootPath), Settings.COMPACT_MIDDLE_PACKAGES.getValue()));
-        this.treeView.setEditable(true);
-        this.treeView.getStyleClass().add("rr-tree-view");
-        this.treeView.setCellFactory(_ -> {
-            var cell = new PathTreeCell(messageProperty);
-            handleDragDrop(cell);
-            return cell;
-        });
-        this.treeView.getSelectionModel().selectedItemProperty().addListener((_, _, selectedItem) -> {
-            if (selectedItem == null)
-                return;
+            this.treeView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+            this.treeView
+                .setRoot(new PathTreeItem(new PathItem(rootPath), Settings.COMPACT_MIDDLE_PACKAGES.getValue()));
+            this.treeView.setEditable(true);
+            this.treeView.getStyleClass().add("rr-tree-view");
+            this.treeView.setCellFactory(_ -> {
+                var cell = new PathTreeCell(messageProperty);
+                handleDragDrop(cell);
+                return cell;
+            });
+            this.treeView.getSelectionModel().selectedItemProperty().addListener((_, _, selectedItem) -> {
+                if (selectedItem == null)
+                    return;
 
-            Path selectedPath = selectedItem.getValue().getPath();
-            if (Files.isRegularFile(selectedPath)) {
-                Services.EDITOR_TAB_MANAGER.openPreview(selectedPath);
+                Path selectedPath = selectedItem.getValue().getPath();
+                if (Files.isRegularFile(selectedPath)) {
+                    Services.EDITOR_TAB_MANAGER.openPreview(selectedPath);
+                }
+            });
+            this.treeView.getRoot().setExpanded(true);
+            this.treeView.setMinHeight(0);
+            VBox.setVgrow(this.treeView, Priority.ALWAYS);
+            sortTreeItems(this.treeView.getRoot());
+
+            handleSearchEvents(rootPath);
+
+            var watchTask = new WatchTask(rootPath, this);
+            this.executorService.submit(watchTask);
+
+            getChildren().addAll(header, this.treeView);
+
+            KeybindHandler.registerCapture(KeybindContexts.of("railroad:project_explorer"), this.treeView);
+
+            Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.PROJECT_EXPLORER, this);
+            Settings.COMPACT_MIDDLE_PACKAGES.addListener(compactPackagesListener);
+        } catch (RuntimeException | Error failure) {
+            try {
+                close();
+            } catch (RuntimeException cleanup) {
+                Throwable cause = failure;
+                cause.addSuppressed(cleanup);
             }
-        });
-        this.treeView.getRoot().setExpanded(true);
-        this.treeView.setMinHeight(0);
-        VBox.setVgrow(this.treeView, Priority.ALWAYS);
-        sortTreeItems(this.treeView.getRoot());
-
-        handleSearchEvents(rootPath);
-
-        var watchTask = new WatchTask(rootPath, this);
-        this.executorService.submit(watchTask);
-
-        getChildren().addAll(header, this.treeView);
-
-        KeybindHandler.registerCapture(KeybindContexts.of("railroad:project_explorer"), this.treeView);
-
-        shutdownRegistration = ShutdownHooks.registerHook(this.executorService::shutdownNow);
-        Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.PROJECT_EXPLORER, this);
-        Settings.COMPACT_MIDDLE_PACKAGES.addListener(compactPackagesListener);
+            throw failure;
+        }
     }
 
     @Override

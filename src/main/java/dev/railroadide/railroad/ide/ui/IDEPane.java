@@ -78,55 +78,65 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         getStyleClass().add("ide-workspace");
         this.project = Objects.requireNonNull(project, "Project cannot be null");
         this.lifecycle = new IDEPaneLifecycle(this);
-        var windowCloseGuard = new IDEWindowCloseGuard(this);
-        this.lifecycle.onDispose(windowCloseGuard::close);
-        this.viewModeController = Services.WORKSPACE.createModeController(
-            mode -> mode.isAvailable(project));
-        this.lifecycle.onDispose(viewModeController::close);
-        this.viewModeController.requestViewMode(WorkspaceMode.defaultMode());
+        this.lifecycle.onDispose(this::disposeOwnedContent);
+        try {
+            var windowCloseGuard = new IDEWindowCloseGuard(this);
+            this.lifecycle.onDispose(windowCloseGuard::close);
+            this.viewModeController = Services.WORKSPACE.createModeController(
+                mode -> mode.isAvailable(project));
+            this.lifecycle.onDispose(viewModeController::close);
+            this.viewModeController.requestViewMode(WorkspaceMode.defaultMode());
 
-        setTop(new IDETopBarPane(project, viewModeController, this::requestViewMode, this));
+            setTop(new IDETopBarPane(project, viewModeController, this::requestViewMode, this));
 
-        this.leftPane = createLeftPane();
-        this.rightPane = new DetachableTabPane();
-        rightPane.getStyleClass().add("ide-tool-dock");
-        rightPane.setScope(toolDockScope(IDEDockItem.DockPosition.RIGHT));
-        trackOwnedTabs(rightPane);
-        assignWhileAttached(UIIds.IDE.IDE_RIGHT_DOCK, rightPane);
-        var codeEditorPane = getOrCreateEditorPane(editorPanesByMode, WorkspaceModes.CODE);
-        var codeEditorHost = getOrCreateEditorHost(WorkspaceModes.CODE, codeEditorPane);
-        this.contentRouter = new IDEContentRouter(this);
-        this.bottomPane = createBottomPane();
+            this.leftPane = createLeftPane();
+            this.rightPane = new DetachableTabPane();
+            rightPane.getStyleClass().add("ide-tool-dock");
+            rightPane.setScope(toolDockScope(IDEDockItem.DockPosition.RIGHT));
+            trackOwnedTabs(rightPane);
+            assignWhileAttached(UIIds.IDE.IDE_RIGHT_DOCK, rightPane);
+            var codeEditorPane = getOrCreateEditorPane(editorPanesByMode, WorkspaceModes.CODE);
+            var codeEditorHost = getOrCreateEditorHost(WorkspaceModes.CODE, codeEditorPane);
+            this.contentRouter = new IDEContentRouter(this);
+            this.bottomPane = createBottomPane();
 
-        this.centerBottomSplit = new SplitPane(codeEditorHost, bottomPane);
-        centerBottomSplit.getStyleClass().add("ide-dock-split");
-        centerBottomSplit.setOrientation(Orientation.VERTICAL);
-        centerBottomSplit.setDividerPositions(0.75);
+            this.centerBottomSplit = new SplitPane(codeEditorHost, bottomPane);
+            centerBottomSplit.getStyleClass().add("ide-dock-split");
+            centerBottomSplit.setOrientation(Orientation.VERTICAL);
+            centerBottomSplit.setDividerPositions(0.75);
 
-        this.mainSplit = new SplitPane(leftPane, centerBottomSplit);
-        mainSplit.getStyleClass().add("ide-dock-split");
-        mainSplit.setOrientation(Orientation.HORIZONTAL);
-        mainSplit.setDividerPositions(0.15);
-        setCenter(mainSplit);
+            this.mainSplit = new SplitPane(leftPane, centerBottomSplit);
+            mainSplit.getStyleClass().add("ide-dock-split");
+            mainSplit.setOrientation(Orientation.HORIZONTAL);
+            mainSplit.setDividerPositions(0.15);
+            setCenter(mainSplit);
 
-        configureGradlePane(rightPane, mainSplit);
-        setLeft(createLeftIconBar(leftPane, mainSplit));
-        setBottom(createBottomBar(bottomPane, centerBottomSplit));
-        installLayoutTracking();
-        installFocusTracking();
-        installModeAvailabilityTracking();
+            configureGradlePane(rightPane, mainSplit);
+            setLeft(createLeftIconBar(leftPane, mainSplit));
+            setBottom(createBottomBar(bottomPane, centerBottomSplit));
+            installLayoutTracking();
+            installFocusTracking();
+            installModeAvailabilityTracking();
 
-        viewModeController.onViewModeChanged(this::activateViewMode);
+            viewModeController.onViewModeChanged(this::activateViewMode);
 
-        var workspaceRegistration = Services.WORKSPACE.attachWorkspace(
-            this::requestViewMode,
-            mode -> mode.isAvailable(project));
-        lifecycle.onDispose(workspaceRegistration::close);
+            var workspaceRegistration = Services.WORKSPACE.attachWorkspace(
+                this::requestViewMode,
+                mode -> mode.isAvailable(project));
+            lifecycle.onDispose(workspaceRegistration::close);
 
-        KeybindHandler.registerCapture(KeybindContexts.of("railroad:ide"), this);
+            KeybindHandler.registerCapture(KeybindContexts.of("railroad:ide"), this);
 
-        assignWhileAttached(UIIds.IDE.IDE, this);
-        lifecycle.onDispose(this::disposeOwnedContent);
+            assignWhileAttached(UIIds.IDE.IDE, this);
+        } catch (RuntimeException | Error failure) {
+            try {
+                lifecycle.close();
+            } catch (RuntimeException cleanup) {
+                Throwable cause = failure;
+                cause.addSuppressed(cleanup);
+            }
+            throw failure;
+        }
     }
 
     private DetachableTabPane createLeftPane() {
@@ -1271,9 +1281,15 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         Set<Tab> tabsToDispose = new LinkedHashSet<>(ownedTabs);
         dockTabsByMode.values().forEach(tabsToDispose::addAll);
         editorPanesByMode.values().forEach(pane -> tabsToDispose.addAll(pane.getTabs()));
-        tabsToDispose.addAll(leftPane.getTabs());
-        tabsToDispose.addAll(rightPane.getTabs());
-        tabsToDispose.addAll(bottomPane.getTabs());
+        if (leftPane != null) {
+            tabsToDispose.addAll(leftPane.getTabs());
+        }
+        if (rightPane != null) {
+            tabsToDispose.addAll(rightPane.getTabs());
+        }
+        if (bottomPane != null) {
+            tabsToDispose.addAll(bottomPane.getTabs());
+        }
 
         Set<Object> disposed = Collections.newSetFromMap(new IdentityHashMap<>());
         tabsToDispose.forEach(tab -> IDEContentDisposer.dispose(tab, disposed));

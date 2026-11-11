@@ -30,7 +30,12 @@ public final class ProjectLanguageIndexCoordinator {
      * @param project the project whose files and configuration are used
      */
     public ProjectLanguageIndexCoordinator(Project project) {
-        this(new DefaultProjectIndexContextResolver(Services.PROJECT_LANGUAGE_INDEX_SERVICE::session).resolve(project),
+        this(project, Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project));
+    }
+
+    /** Creates a coordinator retaining the session captured before its worker was submitted. */
+    public ProjectLanguageIndexCoordinator(Project project, ProjectLanguageIndexService.Session session) {
+        this(new DefaultProjectIndexContextResolver(_ -> session).resolve(project),
             Services.PROJECT_LANGUAGE_INDEX_SERVICE,
             LanguageSupportRegistry.all());
     }
