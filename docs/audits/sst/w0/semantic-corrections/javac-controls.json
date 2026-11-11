@@ -1,0 +1,56 @@
+[
+  {
+    "case": 0,
+    "source": "            class Example {\n                void run(Object input) {\n                    if (input instanceof String text) { text.strip(); }\n                    if (input instanceof StringBuilder text) { text.append(\"value\"); }\n                }\n            }",
+    "exit_code": 0,
+    "stderr": "Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=D:/Users/turtywurty/JavaSockets\n"
+  },
+  {
+    "case": 1,
+    "source": "            class Example {\n                void run(Object input) {\n                    if (input instanceof String text && !text.isEmpty()) { text.strip(); }\n                    if (!(input instanceof String other) || other.isEmpty()) {} else { other.strip(); }\n                    if (!(input instanceof String guard)) { return; }\n                    guard.strip();\n                }\n            }",
+    "exit_code": 0,
+    "stderr": "Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=D:/Users/turtywurty/JavaSockets\n"
+  },
+  {
+    "case": 2,
+    "source": "            class Example {\n                void run(Object input) {\n                    while (input instanceof String text && !text.isEmpty()) { text.strip(); break; }\n                    if (input instanceof StringBuilder text) { text.append(\"value\"); }\n                }\n            }",
+    "exit_code": 0,
+    "stderr": "Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=D:/Users/turtywurty/JavaSockets\n"
+  },
+  {
+    "case": 3,
+    "source": "            class Example<T extends Number> {\n                void member(T value) { Number number = value; Object object = value; }\n                <T extends CharSequence> void method(T value) { CharSequence text = value; }\n                <U extends V, V extends Number> void chain(U value) { Number number = value; }\n                <X extends Number & Runnable> void intersection(X value) {\n                    Number number = value; Runnable action = value;\n                }\n                <U> void unbounded(U value) { Object object = value; }\n            }",
+    "exit_code": 0,
+    "stderr": "Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=D:/Users/turtywurty/JavaSockets\n"
+  },
+  {
+    "case": 4,
+    "source": "            class Example {\n                static Integer choose(String... values) { return 1; }\n                static String choose(Object value) { return \"fixed\"; }\n                void run() {\n                    String fixed = choose(\"one\");\n                    Integer array = choose(new String[] {\"one\"});\n                    Integer expanded = choose(\"one\", \"two\");\n                }\n            }",
+    "exit_code": 0,
+    "stderr": "Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=D:/Users/turtywurty/JavaSockets\n"
+  },
+  {
+    "case": 5,
+    "source": "            class Example {\n                void run(Object input) {\n                    for (int i = 0; input instanceof String text && text.length() > i; i += text.length()) {\n                        text.strip(); break;\n                    }\n                    for (; input instanceof StringBuilder text; text.append(\"value\")) { text.length(); break; }\n                    String selected = input instanceof String text ? text.strip() : \"\";\n                }\n            }",
+    "exit_code": 0,
+    "stderr": "Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=D:/Users/turtywurty/JavaSockets\n"
+  },
+  {
+    "case": 6,
+    "source": "            class Example {\n                void run(Object input, boolean flag) {\n                    if (!(input instanceof String text)) {\n                        if (flag) return; else throw new IllegalArgumentException();\n                    }\n                    text.strip();\n                }\n            }",
+    "exit_code": 0,
+    "stderr": "Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=D:/Users/turtywurty/JavaSockets\n"
+  },
+  {
+    "case": 7,
+    "source": "            class Example {\n                record Box(Object value) {}\n                int run(Object input) {\n                    return switch (0) {\n                        default -> {\n                            if (!(input instanceof Box(String text))) yield 0;\n                            yield text.length();\n                        }\n                    };\n                }\n            }",
+    "exit_code": 0,
+    "stderr": "Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=D:/Users/turtywurty/JavaSockets\n"
+  },
+  {
+    "case": 8,
+    "source": "            class Example {\n                String run(Object input) {\n                    return switch (input) {\n                        case String text -> text.strip();\n                        case StringBuilder text -> text.append(\"value\").toString();\n                        default -> \"\";\n                    };\n                }\n            }",
+    "exit_code": 0,
+    "stderr": "Picked up JAVA_TOOL_OPTIONS: -Djdk.net.unixdomain.tmpdir=D:/Users/turtywurty/JavaSockets\n"
+  }
+]

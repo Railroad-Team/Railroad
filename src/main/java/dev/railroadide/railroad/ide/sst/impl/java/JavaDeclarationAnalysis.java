@@ -3,6 +3,7 @@ package dev.railroadide.railroad.ide.sst.impl.java;
 import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.*;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -239,14 +240,58 @@ public final class JavaDeclarationAnalysis {
             if (JavaSyntaxKinds.BLOCK.id().equals(kindId)) {
                 Scope blockScope = scope.child();
                 for (SyntaxNode child : node.children()) {
-                    visitNode(child, blockScope, currentTypeQualifiedName);
+                    if (JavaSyntaxKinds.IF_STATEMENT.id().equals(child.kind().id())) {
+                        blockScope = visitIfStatement(child, blockScope, currentTypeQualifiedName);
+                    } else {
+                        visitNode(child, blockScope, currentTypeQualifiedName);
+                    }
                 }
+                return;
+            }
+            if (JavaSyntaxKinds.IF_STATEMENT.id().equals(kindId)) {
+                visitIfStatement(node, scope, currentTypeQualifiedName);
+                return;
+            }
+            if (JavaSyntaxKinds.WHILE_STATEMENT.id().equals(kindId)) {
+                SyntaxNode condition = directChild(node, JavaSyntaxKinds.PARENTHESIZED_EXPRESSION.id());
+                Scope bodyScope = condition == null
+                    ? scope
+                    : visitCondition(condition, scope, currentTypeQualifiedName).whenTrue();
+                for (SyntaxNode child : node.children()) {
+                    if (child != condition)
+                        visitNode(child, bodyScope, currentTypeQualifiedName);
+                }
+                return;
+            }
+            if (JavaSyntaxKinds.INSTANCEOF_EXPRESSION.id().equals(kindId)
+                || isShortCircuitExpression(node)) {
+                visitCondition(node, scope, currentTypeQualifiedName);
+                return;
+            }
+            if (JavaSyntaxKinds.CONDITIONAL_EXPRESSION.id().equals(kindId)) {
+                List<SyntaxNode> expressions = node.children().stream().filter(JavaSemanticAnalyzer::isExpressionNode)
+                    .toList();
+                if (expressions.size() == 3) {
+                    var flows = visitCondition(expressions.getFirst(), scope, currentTypeQualifiedName);
+                    visitNode(expressions.get(1), flows.whenTrue(), currentTypeQualifiedName);
+                    visitNode(expressions.get(2), flows.whenFalse(), currentTypeQualifiedName);
+                    return;
+                }
+            }
+            if (JavaSyntaxKinds.SWITCH_RULE.id().equals(kindId)) {
+                Scope ruleScope = scope.child();
+                for (SyntaxNode child : node.children())
+                    visitNode(child, ruleScope, currentTypeQualifiedName);
                 return;
             }
             if (JavaSyntaxKinds.FOR_STATEMENT.id().equals(kindId)) {
                 Scope loopScope = scope.child();
                 for (SyntaxNode child : node.children()) {
-                    visitNode(child, loopScope, currentTypeQualifiedName);
+                    if (JavaSyntaxKinds.BASIC_FOR_STATEMENT.id().equals(child.kind().id())) {
+                        loopScope = visitBasicForHeader(child, loopScope, currentTypeQualifiedName);
+                    } else {
+                        visitNode(child, loopScope, currentTypeQualifiedName);
+                    }
                 }
                 return;
             }
@@ -329,6 +374,122 @@ public final class JavaDeclarationAnalysis {
             for (SyntaxNode child : node.children()) {
                 visitNode(child, scope, currentTypeQualifiedName);
             }
+        }
+
+        private record ConditionScopes(Scope whenTrue, Scope whenFalse) {
+        }
+
+        private Scope visitIfStatement(SyntaxNode node, Scope scope, @Nullable String owner) {
+            context.attachScope(node, scope);
+            SyntaxNode condition = directChild(node, JavaSyntaxKinds.PARENTHESIZED_EXPRESSION.id());
+            if (condition == null)
+                return scope;
+            var flows = visitCondition(condition, scope, owner);
+            List<SyntaxNode> branches = node.children().stream()
+                .filter(child -> !(child instanceof SyntaxToken) && child != condition).toList();
+            if (branches.isEmpty())
+                return scope;
+            visitNode(branches.getFirst(), flows.whenTrue(), owner);
+            if (branches.size() > 1)
+                visitNode(branches.get(1), flows.whenFalse(), owner);
+            if (!canCompleteNormally(branches.getFirst()))
+                return flows.whenFalse();
+            if (branches.size() > 1 && !canCompleteNormally(branches.get(1)))
+                return flows.whenTrue();
+            return scope;
+        }
+
+        private ConditionScopes visitCondition(SyntaxNode node, Scope scope, @Nullable String owner) {
+            context.attachScope(node, scope);
+            List<SyntaxNode> expressions = node.children().stream().filter(JavaSemanticAnalyzer::isExpressionNode)
+                .toList();
+            String kind = node.kind().id();
+            if (JavaSyntaxKinds.PARENTHESIZED_EXPRESSION.id().equals(kind) && expressions.size() == 1)
+                return visitCondition(expressions.getFirst(), scope, owner);
+            if (JavaSyntaxKinds.UNARY_EXPRESSION.id().equals(kind)
+                && hasDirectToken(node, JavaTokenType.EXCLAMATION_MARK) && expressions.size() == 1) {
+                var flows = visitCondition(expressions.getFirst(), scope, owner);
+                return new ConditionScopes(flows.whenFalse(), flows.whenTrue());
+            }
+            if (isShortCircuitExpression(node) && expressions.size() == 2) {
+                var left = visitCondition(expressions.getFirst(), scope, owner);
+                boolean and = hasDirectToken(node, JavaTokenType.AND);
+                var right = visitCondition(expressions.get(1), and ? left.whenTrue() : left.whenFalse(), owner);
+                return and
+                    ? new ConditionScopes(right.whenTrue(), commonScope(left.whenFalse(), right.whenFalse()))
+                    : new ConditionScopes(commonScope(left.whenTrue(), right.whenTrue()), right.whenFalse());
+            }
+            if (JavaSyntaxKinds.INSTANCEOF_EXPRESSION.id().equals(kind)) {
+                Scope matched = scope.child();
+                for (SyntaxNode child : node.children()) {
+                    visitNode(child, JavaSyntaxKinds.PATTERN.id().equals(child.kind().id()) ? matched : scope, owner);
+                }
+                return new ConditionScopes(matched, scope);
+            }
+            for (SyntaxNode child : node.children())
+                visitNode(child, scope, owner);
+            return new ConditionScopes(scope, scope);
+        }
+
+        private Scope visitBasicForHeader(SyntaxNode node, Scope scope, @Nullable String owner) {
+            context.attachScope(node, scope);
+            boolean initialized = false;
+            boolean conditionEnded = false;
+            Scope matched = scope;
+            for (SyntaxNode child : node.children()) {
+                if (hasDirectToken(child, JavaTokenType.SEMICOLON)
+                    && JavaSyntaxKinds.LOCAL_VARIABLE_DECLARATION_STATEMENT.id().equals(child.kind().id())) {
+                    visitNode(child, scope, owner);
+                    initialized = true;
+                } else if (JavaSyntaxKinds.tokenKind(JavaTokenType.SEMICOLON).id().equals(child.kind().id())) {
+                    if (initialized)
+                        conditionEnded = true;
+                    initialized = true;
+                } else if (initialized && !conditionEnded && isExpressionNode(child)) {
+                    matched = visitCondition(child, scope, owner).whenTrue();
+                } else {
+                    visitNode(child, conditionEnded ? matched : scope, owner);
+                }
+            }
+            return matched;
+        }
+
+        private static boolean isShortCircuitExpression(SyntaxNode node) {
+            return JavaSyntaxKinds.BINARY_EXPRESSION.id().equals(node.kind().id())
+                && (hasDirectToken(node, JavaTokenType.AND) || hasDirectToken(node, JavaTokenType.OR));
+        }
+
+        private static boolean hasDirectToken(SyntaxNode node, JavaTokenType type) {
+            return node.children().stream()
+                .anyMatch(child -> JavaSyntaxKinds.tokenKind(type).id().equals(child.kind().id()));
+        }
+
+        private static Scope commonScope(Scope left, Scope right) {
+            Set<Scope> ancestors = new HashSet<>();
+            for (Scope current = left; current != null; current = current.parent().orElse(null))
+                ancestors.add(current);
+            for (Scope current = right; current != null; current = current.parent().orElse(null)) {
+                if (ancestors.contains(current))
+                    return current;
+            }
+            throw new IllegalStateException("Pattern flows have no common lexical scope");
+        }
+
+        private static boolean canCompleteNormally(SyntaxNode node) {
+            String kind = node.kind().id();
+            if (JavaSyntaxKinds.RETURN_STATEMENT.id().equals(kind)
+                || JavaSyntaxKinds.THROW_STATEMENT.id().equals(kind)
+                || JavaSyntaxKinds.YIELD_STATEMENT.id().equals(kind)
+                || JavaSyntaxKinds.BREAK_STATEMENT.id().equals(kind)
+                || JavaSyntaxKinds.CONTINUE_STATEMENT.id().equals(kind))
+                return false;
+            List<SyntaxNode> children = node.children().stream().filter(child -> !(child instanceof SyntaxToken))
+                .toList();
+            if (JavaSyntaxKinds.BLOCK.id().equals(kind))
+                return children.isEmpty() || canCompleteNormally(children.getLast());
+            if (JavaSyntaxKinds.IF_STATEMENT.id().equals(kind) && children.size() == 3)
+                return canCompleteNormally(children.get(1)) || canCompleteNormally(children.get(2));
+            return true;
         }
 
         private void visitTypeDeclaration(

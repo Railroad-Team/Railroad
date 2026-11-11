@@ -1,0 +1,95 @@
+{
+  "before": 95,
+  "after": 84,
+  "removed_by_root_cause": {
+    "PATTERN_VARIABLE_FLOW_SCOPE": 3,
+    "INHERITED_NESTED_TYPE_LOOKUP": 2,
+    "TYPE_VARIABLE_ASSIGNABILITY": 1,
+    "FIXED_VERSUS_VARIABLE_ARITY": 1,
+    "STATIC_IMPORT_VARARGS_FILTER": 4
+  },
+  "after_by_source_set": {
+    "main": 58,
+    "test": 26
+  },
+  "removed": [
+    {
+      "sourceSet": "formatter",
+      "path": "formatter/java/dev/railroadide/railroad/formatter/RailroadJavaStyle.java",
+      "start_offset": 19140,
+      "code": "SEM_UNRESOLVED_CALL",
+      "message": "Cannot resolve call 'getVariable'"
+    },
+    {
+      "sourceSet": "formatter",
+      "path": "formatter/java/dev/railroadide/railroad/formatter/RailroadJavaStyle.java",
+      "start_offset": 14931,
+      "code": "SEM_UNRESOLVED_MEMBER",
+      "message": "Cannot resolve member 'SOURCE'"
+    },
+    {
+      "sourceSet": "formatter",
+      "path": "formatter/java/dev/railroadide/railroad/formatter/RailroadJavaStyle.java",
+      "start_offset": 14926,
+      "code": "SEM_UNRESOLVED_NAME",
+      "message": "Cannot resolve name 'Kind'"
+    },
+    {
+      "sourceSet": "main",
+      "path": "main/java/dev/railroadide/railroad/command/EditCommands.java",
+      "start_offset": 3341,
+      "code": "SEM_UNRESOLVED_CALL",
+      "message": "Cannot resolve call 'isUndoAvailable'"
+    },
+    {
+      "sourceSet": "main",
+      "path": "main/java/dev/railroadide/railroad/command/EditCommands.java",
+      "start_offset": 3417,
+      "code": "SEM_UNRESOLVED_CALL",
+      "message": "Cannot resolve call 'isRedoAvailable'"
+    },
+    {
+      "sourceSet": "main",
+      "path": "main/java/dev/railroadide/railroad/settings/keybinds/KeybindHandler.java",
+      "start_offset": 1748,
+      "code": "SEM_INCOMPATIBLE_ASSIGNMENT",
+      "message": "Cannot assign 'T' to 'javafx.scene.Node'"
+    },
+    {
+      "sourceSet": "test",
+      "path": "test/java/dev/railroadide/railroad/ide/runconfig/defaults/JavaApplicationDebugIntegrationTest.java",
+      "start_offset": 9162,
+      "code": "SEM_INCOMPATIBLE_ASSIGNMENT",
+      "message": "Cannot assign 'java.lang.ProcessBuilder' to 'java.util.List'"
+    },
+    {
+      "sourceSet": "test",
+      "path": "test/java/dev/railroadide/railroad/ide/sst/document/api/DefaultDocumentStoreTest.java",
+      "start_offset": 30950,
+      "code": "SEM_UNRESOLVED_CALL",
+      "message": "Cannot resolve call 'assertAll'"
+    },
+    {
+      "sourceSet": "test",
+      "path": "test/java/dev/railroadide/railroad/ide/ui/editor/EditorTabManagerDocumentStoreTest.java",
+      "start_offset": 58389,
+      "code": "SEM_UNRESOLVED_CALL",
+      "message": "Cannot resolve call 'assertAll'"
+    },
+    {
+      "sourceSet": "test",
+      "path": "test/java/dev/railroadide/railroad/ide/ui/editor/EditorTabManagerDocumentStoreTest.java",
+      "start_offset": 72824,
+      "code": "SEM_UNRESOLVED_CALL",
+      "message": "Cannot resolve call 'assertAll'"
+    },
+    {
+      "sourceSet": "test",
+      "path": "test/java/dev/railroadide/railroad/ide/ui/editor/EditorTabManagerDocumentStoreTest.java",
+      "start_offset": 107297,
+      "code": "SEM_UNRESOLVED_CALL",
+      "message": "Cannot resolve call 'assertAll'"
+    }
+  ],
+  "added": []
+}

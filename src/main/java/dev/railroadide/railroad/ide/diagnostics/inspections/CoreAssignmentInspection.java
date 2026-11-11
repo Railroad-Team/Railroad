@@ -71,7 +71,7 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
             }
             return;
         }
-        if (!context.isAssignable(declaredType, sourceType)) {
+        if (!context.isAssignable(declaredType, sourceType, node)) {
             reporter.report(node, sourceType.displayName(), declaredType.displayName());
         }
     }
@@ -95,7 +95,7 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
             }
             return;
         }
-        if (!context.isAssignable(leftType, rightType)) {
+        if (!context.isAssignable(leftType, rightType, node)) {
             reporter.report(node, rightType.displayName(), leftType.displayName());
         }
     }

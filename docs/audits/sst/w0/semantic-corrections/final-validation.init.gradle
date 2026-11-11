@@ -1,0 +1,7 @@
+allprojects {
+    tasks.withType(Test).configureEach {
+        reports.junitXml.outputLocation = layout.buildDirectory.dir("semantic-correctness/final-results/${name}/xml")
+        reports.html.outputLocation = layout.buildDirectory.dir("semantic-correctness/final-results/${name}/html")
+        binaryResultsDirectory = layout.buildDirectory.dir("semantic-correctness/final-results/${name}/binary")
+    }
+}
