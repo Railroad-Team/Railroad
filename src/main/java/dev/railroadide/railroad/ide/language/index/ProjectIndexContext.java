@@ -38,8 +38,12 @@ public record ProjectIndexContext(
     }
 
     /** Captures the session's current configuration generation. */
-    public ProjectIndexContext(Project project, Path projectRoot, Map<String, LanguageIndexContext> languages,
-                               ProjectLanguageIndexService.Session session) {
+    public ProjectIndexContext(
+        Project project,
+        Path projectRoot,
+        Map<String, LanguageIndexContext> languages,
+        ProjectLanguageIndexService.Session session
+    ) {
         this(project, projectRoot, languages, session, session == null ? 0 : session.configurationGeneration());
     }
 

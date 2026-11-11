@@ -18,7 +18,9 @@ public final class DefaultProjectIndexContextResolver implements ProjectIndexCon
     private final Function<Project, ProjectLanguageIndexService.Session> sessions;
 
     /** Creates a resolver for standalone contexts without live index ownership. */
-    public DefaultProjectIndexContextResolver() { this(_ -> null); }
+    public DefaultProjectIndexContextResolver() {
+        this(_ -> null);
+    }
 
     /** Creates a resolver bound to an index service's active sessions. */
     public DefaultProjectIndexContextResolver(Function<Project, ProjectLanguageIndexService.Session> sessions) {

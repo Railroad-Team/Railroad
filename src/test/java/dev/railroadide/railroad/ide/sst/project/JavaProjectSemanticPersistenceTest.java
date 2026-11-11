@@ -13,11 +13,12 @@ import static org.junit.jupiter.api.Assertions.*;
 public class JavaProjectSemanticPersistenceTest {
 
     @Test
-    void rejectedCommitLeavesNoSnapshotOrTemporaryFile() throws Exception {
+    public void rejectedCommitLeavesNoSnapshotOrTemporaryFile() throws Exception {
         Path file = tempDir.resolve("A.java");
         Files.writeString(file, "class A {}");
         var index = new JavaProjectSemanticIndexer().build(tempDir);
-        new JavaProjectSemanticPersistence().save(tempDir, index, replacement -> {});
+        new JavaProjectSemanticPersistence().save(tempDir, index, replacement -> {
+        });
         assertNull(new JavaProjectSemanticPersistence().loadIfCurrent(tempDir));
         try (var files = Files.walk(tempDir)) {
             assertTrue(files.noneMatch(path -> path.toString().endsWith(".tmp")));

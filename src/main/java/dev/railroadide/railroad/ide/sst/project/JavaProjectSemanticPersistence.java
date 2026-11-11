@@ -11,6 +11,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.function.Consumer;
 
 /** Persists the complete Java project semantic index as one atomic binary snapshot. */
 public final class JavaProjectSemanticPersistence implements ProjectLanguageIndexPersistence<JavaProjectSemanticIndex> {
@@ -66,7 +67,7 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
     }
 
     @Override
-    public void save(Path projectRoot, JavaProjectSemanticIndex index, java.util.function.Consumer<Runnable> commit) {
+    public void save(Path projectRoot, JavaProjectSemanticIndex index, Consumer<Runnable> commit) {
         writeSnapshot(normalizeRoot(projectRoot), index, commit);
     }
 
@@ -86,16 +87,22 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
     }
 
     @Override
-    public void delete(Path projectRoot, java.util.function.Consumer<Runnable> commit) {
+    public void delete(Path projectRoot, Consumer<Runnable> commit) {
         Path snapshot = snapshotPath(normalizeRoot(projectRoot));
         commit.accept(() -> {
-            try { Files.deleteIfExists(snapshot); }
-            catch (IOException exception) { throw new UncheckedIOException(exception); }
+            try {
+                Files.deleteIfExists(snapshot);
+            } catch (IOException exception) {
+                throw new UncheckedIOException(exception);
+            }
         });
     }
 
-    private static void writeSnapshot(Path projectRoot, JavaProjectSemanticIndex index,
-                                      java.util.function.Consumer<Runnable> commit) {
+    private static void writeSnapshot(
+        Path projectRoot,
+        JavaProjectSemanticIndex index,
+        Consumer<Runnable> commit
+    ) {
         if (index.files().values().stream()
             .anyMatch(file -> file.sourceHash() == null || !Files.isRegularFile(file.path())))
             return;
@@ -122,8 +129,11 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
                     }
                 }
                 commit.accept(() -> {
-                    try { moveIntoPlace(tempFile, snapshot); }
-                    catch (IOException exception) { throw new UncheckedIOException(exception); }
+                    try {
+                        moveIntoPlace(tempFile, snapshot);
+                    } catch (IOException exception) {
+                        throw new UncheckedIOException(exception);
+                    }
                 });
             } finally {
                 Files.deleteIfExists(tempFile);

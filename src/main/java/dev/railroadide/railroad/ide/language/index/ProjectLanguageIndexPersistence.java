@@ -4,6 +4,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.function.Consumer;
 
 /**
  * Loads, stores, and invalidates persisted language-specific project indexes.
@@ -55,7 +56,7 @@ public interface ProjectLanguageIndexPersistence<I extends ProjectLanguageIndex<
      * @param index published index
      * @param commit invokes the replacement only while its session and generation remain current
      */
-    default void save(Path projectRoot, I index, java.util.function.Consumer<Runnable> commit) {
+    default void save(Path projectRoot, I index, Consumer<Runnable> commit) {
         // Persistence is optional. Legacy adapters can opt into guarded replacement independently.
     }
 
@@ -89,6 +90,6 @@ public interface ProjectLanguageIndexPersistence<I extends ProjectLanguageIndex<
     void delete(Path projectRoot);
 
     /** Deletes only through a short ownership-checked final commit; unsupported adapters skip deletion. */
-    default void delete(Path projectRoot, java.util.function.Consumer<Runnable> commit) {
+    default void delete(Path projectRoot, Consumer<Runnable> commit) {
     }
 }
