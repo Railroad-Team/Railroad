@@ -16,10 +16,20 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService;
+import java.util.ArrayList;
+import org.junit.jupiter.api.AfterEach;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class CompletionProviderTest {
+    private final List<ProjectLanguageIndexService.Session> sessions = new ArrayList<>();
+
+    @AfterEach
+    public void closeIndexSessions() {
+        sessions.forEach(Services.PROJECT_LANGUAGE_INDEX_SERVICE::closeProject);
+    }
     private static final String SOURCE = "/* 😀 */ class Example { int marker; void run() { this.marker = 1; } }";
 
     @TempDir
@@ -132,6 +142,7 @@ public class CompletionProviderTest {
                 case "toString" -> "CompletionTestProject[" + projectRoot + "]";
                 default -> throw new UnsupportedOperationException(method.getName());
             });
+        sessions.add(Services.PROJECT_LANGUAGE_INDEX_SERVICE.openProject(project));
         return List.of(new JavaCompletionProvider(project), new JdtCompletionProvider(new String[0]));
     }
 

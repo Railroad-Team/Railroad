@@ -470,7 +470,11 @@ public class EditorTabManagerDocumentStoreTest {
             Services.IDE_STATE.setCurrentProject(project);
             return null;
         });
+        Services.IDE_STATE.getWorkspaceConfiguration().ready().get(10, TimeUnit.SECONDS);
+        initialWorkspaceRevision = Services.IDE_STATE.getDocumentStore().orElseThrow().capture().revision();
     }
+
+    private long initialWorkspaceRevision;
 
     @AfterEach
     public void closeProject() throws Exception {
@@ -512,7 +516,7 @@ public class EditorTabManagerDocumentStoreTest {
             assertSame(backing, store.state(tab.documentId()).orElseThrow().backing());
             assertNull(store.state(tab.documentId()).orElseThrow().overlay());
             assertSame(backing, store.capture().document(tab.documentId()).orElseThrow());
-            assertEquals(1, store.capture().revision());
+            assertEquals(initialWorkspaceRevision + 1, store.capture().revision());
             return null;
         });
     }
@@ -1830,7 +1834,7 @@ public class EditorTabManagerDocumentStoreTest {
             var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
             assertTrue(store.current(tab.documentId()).isEmpty());
             assertTrue(store.capture().documents().isEmpty());
-            assertEquals(0, store.capture().revision());
+            assertEquals(initialWorkspaceRevision, store.capture().revision());
             return null;
         });
         assertArrayEquals(invalidUtf8, Files.readAllBytes(file));

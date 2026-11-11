@@ -12,6 +12,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
 import java.util.List;
+import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
+import dev.railroadide.railroad.ide.language.LanguageSupports;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -80,8 +82,7 @@ public class ProjectLanguageIndexCoordinatorTest {
 
     private ProjectLanguageIndexService createIndexService() {
         LanguageSupport support = new JavaLanguageSupport();
-        if (!dev.railroadide.railroad.ide.language.LanguageSupportRegistry.contains("java"))
-            dev.railroadide.railroad.ide.language.LanguageSupportRegistry.register(support);
+        LanguageSupports.initialize();
         var indexService = new ProjectLanguageIndexService();
         indexService.registerIndexer(support.createIndexer());
         indexService.registerPersistence(support.createPersistence());
@@ -93,7 +94,8 @@ public class ProjectLanguageIndexCoordinatorTest {
         var java = new JavaLanguageSupport();
         return (LanguageSupport) Proxy.newProxyInstance(getClass().getClassLoader(),
             new Class<?>[]{LanguageSupport.class}, (proxy, method, args) -> {
-                if (method.getName().equals("warmAdditionalIndexes")) return null;
+                if (method.getName().equals("warmAdditionalIndexes"))
+                    return null;
                 return method.invoke(java, args);
             });
     }

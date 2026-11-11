@@ -27,6 +27,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.HashMap;
+import java.util.Map;
+import dev.railroadide.railroad.ide.language.LanguageSupports;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -247,9 +250,7 @@ public class ProjectLanguageIndexServiceTest {
         private final DefaultProjectIndexContextResolver contextResolver = new DefaultProjectIndexContextResolver();
 
         private TestJavaProjectIndexAccess() {
-            if (!LanguageSupportRegistry.contains(JavaLanguageSupport.LANGUAGE_ID)) {
-                LanguageSupportRegistry.register(new JavaLanguageSupport());
-            }
+            LanguageSupports.initialize();
 
             indexService.registerIndexer(new JavaProjectLanguageIndexer());
             indexService.registerPersistence(new JavaProjectSemanticPersistence());
@@ -315,12 +316,13 @@ public class ProjectLanguageIndexServiceTest {
             });
         }
 
-        private final java.util.Map<Path, Project> projects = new java.util.HashMap<>();
+        private final Map<Path, Project> projects = new HashMap<>();
 
         private ProjectIndexContext context(Path projectRoot) {
             Project project = project(projectRoot);
             ProjectIndexContext context = contextResolver.resolve(project);
-            return new ProjectIndexContext(project, context.projectRoot(), context.languages(), indexService.session(project));
+            return new ProjectIndexContext(project, context.projectRoot(), context.languages(),
+                indexService.session(project));
         }
 
         private record TestProject(Path path) implements Project {

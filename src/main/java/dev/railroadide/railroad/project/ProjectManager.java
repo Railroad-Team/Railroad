@@ -42,7 +42,7 @@ public final class ProjectManager {
         this(configSaver, event -> Railroad.EVENT_BUS.publish(event));
     }
 
-    ProjectManager(Runnable configSaver, Consumer<ProjectEvent> eventPublisher) {
+    public ProjectManager(Runnable configSaver, Consumer<ProjectEvent> eventPublisher) {
         this.configSaver = Objects.requireNonNull(configSaver, "configSaver");
         this.eventPublisher = Objects.requireNonNull(eventPublisher, "eventPublisher");
     }

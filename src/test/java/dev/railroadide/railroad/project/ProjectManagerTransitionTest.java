@@ -11,12 +11,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ProjectManagerTransitionTest {
+public class ProjectManagerTransitionTest {
     @Test
-    void replacementEventIdentifiesNewProjectAndCloseIdentifiesPreviousProject() {
+    public void replacementEventIdentifiesNewProjectAndCloseIdentifiesPreviousProject() {
         List<ProjectEvent> events = new ArrayList<>();
         AtomicReference<ProjectManager> owner = new AtomicReference<>();
-        ProjectManager manager = new ProjectManager(() -> {}, event -> {
+        var manager = new ProjectManager(() -> {
+        }, event -> {
             events.add(event);
             assertSame(event.isClosed() ? null : event.project(), owner.get().getOpenProject());
         });
@@ -38,9 +39,10 @@ class ProjectManagerTransitionTest {
     }
 
     @Test
-    void repeatingCurrentIdentityDoesNotPublishAnotherTransition() {
+    public void repeatingCurrentIdentityDoesNotPublishAnotherTransition() {
         List<ProjectEvent> events = new ArrayList<>();
-        ProjectManager manager = new ProjectManager(() -> {}, events::add);
+        var manager = new ProjectManager(() -> {
+        }, events::add);
         Project project = project();
 
         manager.setCurrentProject(null);
