@@ -30,6 +30,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.objectweb.asm.Opcodes;
 
 /**
  * Stable rule evaluation context with semantic model access and Java-specific helpers.
@@ -786,7 +787,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             methods.addAll(inheritedMethodDescriptors(owner.qualifiedTypeName()));
             boolean matched = methods.stream().anyMatch(method -> method.name().equals(methodName)
                 && (!owner.staticAccess() || Modifier.isStatic(method.modifiers()))
-                && isApplicableMethod(method.parameterTypes(), argumentTypes));
+                && isApplicableMethod(method, argumentTypes));
             if (matched)
                 return true;
 
@@ -795,7 +796,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
             if (owner.staticAccess())
                 return methods.stream().anyMatch(method -> method.name().equals(methodName)
-                    && isApplicableMethod(method.parameterTypes(), argumentTypes));
+                    && isApplicableMethod(method, argumentTypes));
             return false;
         }
 
@@ -811,7 +812,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         methods.addAll(inheritedMethodDescriptors(ownerQualifiedTypeName));
         return methods.stream().anyMatch(method -> method.name().equals(methodName)
             && !Modifier.isStatic(method.modifiers())
-            && isApplicableMethod(method.parameterTypes(), argumentTypes))
+            && isApplicableMethod(method, argumentTypes))
             || canResolveIndexedSourceMethod(new MethodOwner(ownerQualifiedTypeName, false), methodName, argumentTypes);
     }
 
@@ -934,7 +935,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return true;
 
         List<MethodDescriptor> constructors = constructorDescriptorsForType(ownerQualifiedTypeName);
-        if (constructors.stream().anyMatch(ctor -> isApplicableMethod(ctor.parameterTypes(), argumentTypes)))
+        if (constructors.stream().anyMatch(ctor -> isApplicableMethod(ctor, argumentTypes)))
             return true;
 
         return hasComplexArgumentShape(argumentList)
@@ -1149,6 +1150,22 @@ public final class JavaRuleContext implements LanguageRuleContext {
      * @return {@code true} if the source is considered assignable to the target
      */
     public boolean isAssignable(Type target, Type source) {
+        return isAssignable(target, source, null);
+    }
+
+    /**
+     * Checks assignment compatibility at a usage site, including lexically declared type-variable upper bounds.
+     *
+     * @param target the destination type
+     * @param source the value's source type
+     * @param usageSite the assignment site, or {@code null} when lexical bounds are unavailable
+     * @return whether the source is assignable to the target
+     */
+    public boolean isAssignable(Type target, Type source, @Nullable SyntaxNode usageSite) {
+        return isAssignable(target, source, usageSite, new HashSet<>());
+    }
+
+    private boolean isAssignable(Type target, Type source, @Nullable SyntaxNode usageSite, Set<SyntaxNode> visited) {
         Objects.requireNonNull(target, "target");
         Objects.requireNonNull(source, "source");
 
@@ -1156,6 +1173,21 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return true;
         if (target.displayName().equals(source.displayName()))
             return true;
+
+        if (source.kind() == Kind.TYPE_VARIABLE && usageSite != null) {
+            SyntaxNode parameter = lexicalTypeParameter(source.displayName(), usageSite);
+            if (parameter == null || !visited.add(parameter))
+                return false;
+            SyntaxNode bound = directChild(parameter, "JAVA_TYPE_BOUND");
+            if (bound == null)
+                return isAssignable(target, new DeclaredType("java.lang.Object", List.of()), parameter, visited);
+            for (SyntaxNode typeRef : bound.children()) {
+                if (JAVA_TYPE_REFERENCE.equals(typeRef.kind().id())
+                    && isAssignable(target, semanticTypeFromTypeReference(typeRef), parameter, new HashSet<>(visited)))
+                    return true;
+            }
+            return false;
+        }
 
         if (target.kind() == Kind.PRIMITIVE && source.kind() == Kind.DECLARED) {
             String unboxedSource = unboxedPrimitiveName(source.displayName());
@@ -1169,7 +1201,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (target.kind() == Kind.DECLARED && source.kind() == Kind.PRIMITIVE) {
             String boxedSource = boxedPrimitiveName(source.displayName());
             if (boxedSource != null)
-                return isAssignable(target, new DeclaredType(boxedSource, List.of()));
+                return isAssignable(target, new DeclaredType(boxedSource, List.of()), usageSite, visited);
         }
 
         if (isNumericType(target) && isNumericType(source))
@@ -1178,7 +1210,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (target.kind() == Kind.ARRAY && source.kind() == Kind.ARRAY) {
             Type.ArrayType targetArray = (Type.ArrayType) target;
             Type.ArrayType sourceArray = (Type.ArrayType) source;
-            return isAssignable(targetArray.componentType(), sourceArray.componentType());
+            return isAssignable(targetArray.componentType(), sourceArray.componentType(), usageSite, visited);
         }
 
         if (target.kind() == Kind.DECLARED && source.kind() == Kind.ARRAY) {
@@ -1197,6 +1229,20 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 || isSubtype(sourceQualifiedName, targetQualifiedName);
         }
         return false;
+    }
+
+    private @Nullable SyntaxNode lexicalTypeParameter(String name, SyntaxNode usageSite) {
+        for (SyntaxNode current = usageSite; current != null; current = current.parent().orElse(null)) {
+            SyntaxNode parameters = directChild(current, JAVA_TYPE_PARAMETERS);
+            if (parameters == null)
+                continue;
+            for (SyntaxNode parameter : parameters.children()) {
+                if (JAVA_TYPE_PARAMETER.equals(parameter.kind().id())
+                    && name.equals(JavaSemanticAnalyzer.firstIdentifierLikeTokenText(parameter)))
+                    return parameter;
+            }
+        }
+        return null;
     }
 
     /**
@@ -3179,13 +3225,16 @@ public final class JavaRuleContext implements LanguageRuleContext {
     ) {
         List<MethodDescriptor> methods = new ArrayList<>(declaredMethodDescriptors(owner.qualifiedTypeName()));
         methods.addAll(inheritedMethodDescriptors(owner.qualifiedTypeName()));
-        for (MethodDescriptor method : methods) {
-            if (!method.name().equals(methodName))
-                continue;
-            if (owner.staticAccess() && !Modifier.isStatic(method.modifiers()))
-                continue;
-            if (isApplicableMethod(method.parameterTypes(), argumentTypes))
-                return method;
+        for (boolean expanded : List.of(false, true)) {
+            for (MethodDescriptor method : methods) {
+                if (!method.name().equals(methodName))
+                    continue;
+                if (owner.staticAccess() && !Modifier.isStatic(method.modifiers()))
+                    continue;
+                if ((!expanded || isVariableArityMethod(method))
+                    && isApplicableMethod(method.parameterTypes(), argumentTypes, expanded))
+                    return method;
+            }
         }
         return null;
     }
@@ -3256,8 +3305,21 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return null;
     }
 
-    private boolean isApplicableMethod(List<Type> parameterTypes, List<Type> argumentTypes) {
-        boolean varargs = !parameterTypes.isEmpty() && parameterTypes.getLast().kind() == Kind.ARRAY;
+    private boolean isVariableArityMethod(MethodDescriptor method) {
+        SyntaxNode declaration = method.declaration();
+        if (declaration != null) {
+            SyntaxNode parameters = directChild(declaration, JAVA_PARAMETER_LIST);
+            return parameters != null && hasTokenKind(parameters, JavaTokenType.ELLIPSIS);
+        }
+        return (method.modifiers() & Opcodes.ACC_VARARGS) != 0;
+    }
+
+    private boolean isApplicableMethod(MethodDescriptor method, List<Type> argumentTypes) {
+        return isApplicableMethod(method.parameterTypes(), argumentTypes, false)
+            || isVariableArityMethod(method) && isApplicableMethod(method.parameterTypes(), argumentTypes, true);
+    }
+
+    private boolean isApplicableMethod(List<Type> parameterTypes, List<Type> argumentTypes, boolean varargs) {
         if (!varargs && parameterTypes.size() != argumentTypes.size())
             return false;
         if (varargs && argumentTypes.size() < parameterTypes.size() - 1)
@@ -3296,7 +3358,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 continue;
 
             List<Type> parameterTypes = parameterTypesFromIndexedSignature(symbol.signature());
-            if (isApplicableMethod(parameterTypes, argumentTypes))
+            if (isApplicableMethod(parameterTypes, argumentTypes, false))
                 return true;
             if (parameterTypes.size() == argumentTypes.size())
                 return true;
@@ -3820,6 +3882,9 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 clazz.typeArguments().stream().map(JavaRuleContext::toSemanticType).toList());
             case TypeVariable variable -> new TypeVariableType(variable.name());
             case WildcardType wildcard -> {
+                // Keep binary unbounded wildcards consistent with source '?' parsing.
+                if (wildcard.bound() == null && wildcard.isUpperBound())
+                    yield new Type.WildcardType(new DeclaredType("java.lang.Object", List.of()), null);
                 Type bound = wildcard.bound() == null ? new UnknownType("<unknown>") : toSemanticType(wildcard.bound());
                 yield wildcard.isUpperBound()
                     ? new Type.WildcardType(bound, null)

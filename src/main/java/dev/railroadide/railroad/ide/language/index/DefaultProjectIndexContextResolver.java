@@ -15,9 +15,26 @@ import java.util.stream.Collectors;
  * Combines contexts from registered language contributors and normalizes the project root.
  */
 public final class DefaultProjectIndexContextResolver implements ProjectIndexContextResolver {
+    private final Function<Project, ProjectLanguageIndexService.Session> sessions;
+
+    /** Creates a resolver for standalone contexts without live index ownership. */
+    public DefaultProjectIndexContextResolver() {
+        this(_ -> null);
+    }
+
+    /**
+     * Creates a resolver bound to an index service's active sessions.
+     *
+     * @param sessions looks up existing project ownership, returning {@code null} for standalone contexts
+     */
+    public DefaultProjectIndexContextResolver(Function<Project, ProjectLanguageIndexService.Session> sessions) {
+        this.sessions = Objects.requireNonNull(sessions);
+    }
     @Override
     public ProjectIndexContext resolve(Project project) {
         Objects.requireNonNull(project, "project");
+        var session = sessions.apply(project);
+        long generation = session == null ? 0 : session.configurationGeneration();
         if (project instanceof RailroadProject railroadProject) {
             railroadProject.awaitFacetDiscovery();
         }
@@ -32,6 +49,6 @@ public final class DefaultProjectIndexContextResolver implements ProjectIndexCon
         return new ProjectIndexContext(
             project,
             FileUtils.normalizePath(project.getPath()),
-            contexts);
+            contexts, session, generation);
     }
 }

@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.ide;
 
+import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
+
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.sst.document.api.*;
@@ -33,6 +35,16 @@ public class DefaultIDEStateService implements IDEStateService {
     private long openedProjectAtMillis = -1L;
     private Document activeDocument;
 
+    /**
+     * Reports project watcher coverage for editor presentation ownership. Call on the editor UI thread.
+     *
+     * @param path physical document location
+     * @return whether the current project synchronizer covers the path
+     */
+    public boolean isDocumentWatched(Path path) {
+        return documentSynchronizer != null && documentSynchronizer.covers(path);
+    }
+
     private DefaultIDEStateService() {
         Railroad.EVENT_BUS.subscribe(ProjectEvent.class, event -> {
             if (event.isOpened()) {
@@ -58,6 +70,13 @@ public class DefaultIDEStateService implements IDEStateService {
 
     private void setCurrentProject_internal(Project project) {
         if (project != currentProject) {
+            var previousSession = Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(currentProject);
+            Services.PROJECT_LANGUAGE_INDEX_SERVICE.closeProject(previousSession);
+            JavaLanguageSupport.analysisContextProvider()
+                .closeSession(previousSession);
+            if (project != null) {
+                Services.PROJECT_LANGUAGE_INDEX_SERVICE.openProject(project);
+            }
             if (documentSynchronizer != null) {
                 documentSynchronizer.close();
                 documentSynchronizer = null;
@@ -65,6 +84,12 @@ public class DefaultIDEStateService implements IDEStateService {
             WorkspaceConfigurationSnapshot initialConfiguration = project == null
                 ? null
                 : ProjectWorkspaceConfiguration.initial(project);
+            if (initialConfiguration != null) {
+                var values = new HashMap<>(initialConfiguration.settings());
+                values.put("index.session", Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project).id());
+                values.put("index.binary.epoch", "pending");
+                initialConfiguration = new WorkspaceConfigurationSnapshot(0, initialConfiguration.moduleIds(), values);
+            }
             if (workspaceConfiguration != null) {
                 workspaceConfiguration.close();
                 workspaceConfiguration = null;

@@ -1,50 +1,72 @@
 package dev.railroadide.railroad.ide;
 
-import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
+import dev.railroadide.railroad.ide.sst.document.api.TextPosition;
+import dev.railroadide.railroad.plugin.spi.editor.EditorSubscription;
+import dev.railroadide.railroad.plugin.spi.editor.TextEditorAccess;
 import dev.railroadide.railroad.plugin.spi.services.DocumentEditorStateService;
 import dev.railroadide.railroad.plugin.spi.state.Cursor;
 import dev.railroadide.railroad.plugin.spi.state.Selection;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Consumer;
 
-/**
- * Exposes cursor, selection, and language state from the active text editor.
- */
+/** Exposes the active managed text target and its cursor, selection, and language state. */
+@Slf4j
 public class DefaultDocumentEditorStateService implements DocumentEditorStateService {
-    private TextEditorPane activeEditorPane;
+    private TextEditorAccess activeEditor;
     private String activeLanguageId = "";
+    private final List<ActiveSubscription> subscriptions = new ArrayList<>();
+    private long generation;
 
     @Override
-    public void setActiveEditor(@Nullable TextEditorPane editor, @Nullable String languageId) {
-        this.activeEditorPane = editor;
-        this.activeLanguageId = editor != null && languageId != null ? languageId : "";
+    public void setActiveEditor(@Nullable TextEditorAccess editor, @Nullable String languageId) {
+        activeLanguageId = editor != null && languageId != null ? languageId : "";
+        if (activeEditor == editor)
+            return;
+        activeEditor = editor;
+
+        long currentGeneration = ++generation;
+        var current = getActiveTextEditor();
+        for (ActiveSubscription subscription : List.copyOf(subscriptions)) {
+            if (currentGeneration != generation)
+                break;
+            if (!subscription.closed) {
+                try {
+                    subscription.listener.accept(current);
+                } catch (RuntimeException exception) {
+                    log.warn("Active text editor listener failed", exception);
+                }
+            }
+        }
     }
 
     @Override
     public List<Cursor> getCursors() {
-        if (activeEditorPane != null) {
-            int caretPosition = activeEditorPane.getCaretPosition();
-            return List.of(getCursorFromPosition(activeEditorPane.getText(), caretPosition));
-        }
+        if (activeEditor == null)
+            return List.of();
 
-        return List.of();
+        var snapshot = activeEditor.snapshot();
+        return List.of(cursor(snapshot.lineMap().positionAt(activeEditor.selection().caret())));
     }
 
     @Override
     public List<Selection> getSelections() {
-        if (activeEditorPane != null) {
-            int start = activeEditorPane.getSelection().getStart();
-            int end = activeEditorPane.getSelection().getEnd();
+        if (activeEditor == null)
+            return List.of();
 
-            if (start != end) {
-                Cursor startCursor = getCursorFromPosition(activeEditorPane.getText(), start);
-                Cursor endCursor = getCursorFromPosition(activeEditorPane.getText(), end);
-                return List.of(new Selection(startCursor, endCursor));
-            }
-        }
+        var selection = activeEditor.selection();
+        int start = Math.min(selection.anchor(), selection.caret());
+        int end = Math.max(selection.anchor(), selection.caret());
+        if (start == end)
+            return List.of();
 
-        return List.of();
+        var map = activeEditor.snapshot().lineMap();
+        return List.of(new Selection(cursor(map.positionAt(start)), cursor(map.positionAt(end))));
     }
 
     @Override
@@ -53,23 +75,41 @@ public class DefaultDocumentEditorStateService implements DocumentEditorStateSer
     }
 
     @Override
-    public TextEditorPane getActiveEditorPane() {
-        return activeEditorPane;
+    public Optional<TextEditorAccess> getActiveTextEditor() {
+        return Optional.ofNullable(activeEditor);
     }
 
-    private Cursor getCursorFromPosition(String text, int position) {
-        int line = 0;
-        int column = 0;
+    @Override
+    public EditorSubscription observeActiveTextEditor(Consumer<Optional<TextEditorAccess>> listener) {
+        var subscription = new ActiveSubscription(Objects.requireNonNull(listener, "listener"));
+        subscriptions.add(subscription);
+        try {
+            listener.accept(getActiveTextEditor());
+        } catch (RuntimeException exception) {
+            subscription.close();
+            throw exception;
+        }
+        return subscription;
+    }
 
-        for (int i = 0; i < position && i < text.length(); i++) {
-            if (text.charAt(i) == '\n') {
-                line++;
-                column = 0;
-            } else {
-                column++;
-            }
+    private static Cursor cursor(TextPosition position) {
+        return new Cursor(position.line(), position.column());
+    }
+
+    private final class ActiveSubscription implements EditorSubscription {
+        private final Consumer<Optional<TextEditorAccess>> listener;
+        private boolean closed;
+
+        private ActiveSubscription(Consumer<Optional<TextEditorAccess>> listener) {
+            this.listener = listener;
         }
 
-        return new Cursor(line, column);
+        @Override
+        public void close() {
+            if (closed)
+                return;
+            closed = true;
+            subscriptions.remove(this);
+        }
     }
 }

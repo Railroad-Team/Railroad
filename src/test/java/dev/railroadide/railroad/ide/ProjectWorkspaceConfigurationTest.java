@@ -39,12 +39,171 @@ import dev.railroadide.railroad.ide.completion.JavaCompletionProvider;
 import dev.railroadide.railroad.ide.completion.CompletionResult;
 import dev.railroadide.railroad.ide.diagnostics.JavaDiagnosticsProvider;
 import dev.railroadide.railroad.ide.signature.SignatureHelpArchiveProbe;
+import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
+import dev.railroadide.railroad.project.FacetDetectedEvent;
+import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ProjectWorkspaceConfigurationTest {
     @TempDir
     public Path directory;
+
+    @Test
+    public void newerMavenRequestSupersedesOlderBinaryPreparationAcrossBothStages() throws Exception {
+        Files.writeString(directory.resolve("pom.xml"), "<project/>");
+        var project = mavenProject();
+        var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
+        var session = service.openProject(project);
+        var provider = JavaLanguageSupport.analysisContextProvider();
+        var store = new DefaultDocumentStore(project.getId(), ProjectWorkspaceConfiguration.initial(project));
+        var dependencies = new LinkedBlockingQueue<PendingResolution>();
+        var binaries = new LinkedBlockingQueue<PendingBinary>();
+        var releases = new ArrayList<CompletableFuture<?>>();
+        try (var tracker = new ProjectWorkspaceConfiguration(project, store, _ -> {
+            var pending = new PendingResolution(Thread.currentThread(), new CompletableFuture<>());
+            dependencies.add(pending);
+            return pending.result().join();
+        }, session, (owner, candidate) -> {
+            var pending = new PendingBinary(Thread.currentThread(), candidate, new CompletableFuture<>());
+            binaries.add(pending);
+            // join deliberately ignores task interruption: publication must check ownership itself.
+            pending.release().join();
+            return provider.prepareConfiguration(owner, candidate);
+        })) {
+            var a = awaitRequest(dependencies);
+            a.result().complete(dependencyContext("A.jar"));
+            var binaryA = binaries.poll(10, TimeUnit.SECONDS);
+            assertNotNull(binaryA);
+            binaryA.release().complete(null);
+            tracker.ready().get(10, TimeUnit.SECONDS);
+            var publishedA = store.capture().configuration();
+
+            Files.writeString(directory.resolve("pom.xml"), "<project><name>B</name></project>");
+            Railroad.EVENT_BUS.publish(new ProjectConfigurationChangedEvent(project));
+            var b = awaitRequest(dependencies);
+            b.result().complete(dependencyContext("B.jar"));
+            var binaryB = binaries.poll(10, TimeUnit.SECONDS);
+            assertNotNull(binaryB);
+            releases.add(binaryB.release());
+            assertSame(publishedA, store.capture().configuration());
+
+            Files.writeString(directory.resolve("pom.xml"), "<project><name>C</name></project>");
+            Railroad.EVENT_BUS.publish(new ProjectConfigurationChangedEvent(project));
+            var c = awaitRequest(dependencies);
+            releases.add(c.result());
+            var readyC = tracker.ready();
+            binaryB.release().complete(null);
+            binaryB.worker().join(10_000);
+            assertFalse(binaryB.worker().isAlive(), "Wait through B's actual publication attempt");
+            assertSame(publishedA, store.capture().configuration(), "B cannot publish after C is requested");
+
+            c.result().complete(dependencyContext("C.jar"));
+            var binaryC = binaries.poll(10, TimeUnit.SECONDS);
+            assertNotNull(binaryC);
+            releases.add(binaryC.release());
+            assertSame(publishedA, store.capture().configuration(), "Retain A through C's binary stage");
+            binaryC.release().complete(null);
+            readyC.get(10, TimeUnit.SECONDS);
+            assertEquals(directory.resolve("C.jar").toString(),
+                store.capture().configuration().settings().get("module.:.classpath"));
+        } finally {
+            releases.forEach(future -> future.cancel(false));
+            dependencies.forEach(pending -> pending.result().cancel(false));
+            binaries.forEach(pending -> pending.release().cancel(false));
+            service.closeProject(session);
+            provider.closeSession(session);
+        }
+    }
+
+    private record PendingBinary(
+        Thread worker,
+        WorkspaceConfigurationSnapshot candidate,
+        CompletableFuture<Void> release
+    ) {
+    }
+
+    @Test
+    public void revertingToPublishedConfigurationSupersedesPendingPreparation() throws Exception {
+        Path settings = directory.resolve("gradle.properties");
+        Files.writeString(settings, "A");
+        var project = new RailroadProject(directory, "Revert", new WritableImage(1, 1));
+        var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
+        var session = service.openProject(project);
+        var store = new DefaultDocumentStore(project.getId(), ProjectWorkspaceConfiguration.initial(project));
+        var entered = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        var finished = new CountDownLatch(1);
+        var indexes = JavaLanguageSupport.analysisContextProvider();
+        try (var tracker = new ProjectWorkspaceConfiguration(project, store, _ -> null, session,
+            (owner, configuration) -> {
+                if ("B".equals(configuration.settings().get("project.build.gradle.properties"))) {
+                    entered.countDown();
+                    boolean interrupted = false;
+                    while (true) {
+                        try {
+                            release.await();
+                            break;
+                        } catch (InterruptedException exception) {
+                            interrupted = true;
+                        }
+                    }
+                    if (interrupted) {
+                        Thread.currentThread().interrupt();
+                    }
+                    finished.countDown();
+                }
+                return indexes.prepareConfiguration(owner, configuration);
+            })) {
+            tracker.ready().get(10, TimeUnit.SECONDS);
+            var original = store.capture();
+            Files.writeString(settings, "B");
+            Railroad.EVENT_BUS.publish(new FacetDetectedEvent(project, null));
+            assertTrue(entered.await(5, TimeUnit.SECONDS));
+            var pending = tracker.ready();
+            try {
+                Files.writeString(settings, "A");
+                Railroad.EVENT_BUS.publish(new FacetDetectedEvent(project, null));
+                assertTrue(pending.isDone(), "Reversion must supersede pending preparation before it can publish");
+                assertTrue(pending.isCompletedExceptionally());
+                tracker.ready().get(5, TimeUnit.SECONDS);
+                assertEquals(original, store.capture());
+            } finally {
+                release.countDown();
+                assertTrue(finished.await(5, TimeUnit.SECONDS));
+            }
+        } finally {
+            release.countDown();
+            service.closeProject(session);
+            indexes.closeSession(session);
+        }
+    }
+
+    @Test
+    public void liveSessionRefreshPublishesANewEpochWithUnchangedSettings() throws Exception {
+        var project = new RailroadProject(directory, "Refresh", new WritableImage(1, 1));
+        var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
+        var session = service.openProject(project);
+        var store = new DefaultDocumentStore(project.getId(), ProjectWorkspaceConfiguration.initial(project));
+        try (var tracker = new ProjectWorkspaceConfiguration(project, store)) {
+            tracker.ready().get(10, TimeUnit.SECONDS);
+            var first = store.capture().configuration();
+            assertEquals(session.id(), first.settings().get("index.session"));
+            assertNotNull(first.settings().get("index.binary.fingerprint"));
+            long generation = session.configurationGeneration();
+            tracker.refresh();
+            tracker.ready().get(10, TimeUnit.SECONDS);
+            var refreshed = store.capture().configuration();
+            assertNotEquals(first.settings().get("index.binary.epoch"), refreshed.settings().get("index.binary.epoch"));
+            assertEquals(first.settings().get("index.binary.fingerprint"),
+                refreshed.settings().get("index.binary.fingerprint"));
+            assertTrue(session.configurationGeneration() > generation);
+        } finally {
+            service.closeProject(session);
+            JavaLanguageSupport.analysisContextProvider().closeSession(session);
+        }
+    }
 
     @BeforeAll
     public static void initialize() {

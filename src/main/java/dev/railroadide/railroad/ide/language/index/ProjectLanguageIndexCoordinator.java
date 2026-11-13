@@ -14,12 +14,13 @@ import java.nio.file.WatchEvent;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 
 /**
  * Applies project-wide language index lifecycle updates in response to file system events.
  */
 public final class ProjectLanguageIndexCoordinator {
-    private final ProjectIndexContext context;
+    private volatile ProjectIndexContext context;
     private final ProjectLanguageIndexService indexService;
     private final List<LanguageSupport> supports;
 
@@ -29,7 +30,18 @@ public final class ProjectLanguageIndexCoordinator {
      * @param project the project whose files and configuration are used
      */
     public ProjectLanguageIndexCoordinator(Project project) {
-        this(new DefaultProjectIndexContextResolver().resolve(project), Services.PROJECT_LANGUAGE_INDEX_SERVICE,
+        this(project, Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project));
+    }
+
+    /**
+     * Creates a coordinator retaining the session captured before its worker was submitted.
+     *
+     * @param project the project whose files and configuration are used
+     * @param session captured index ownership, or {@code null} when no live session exists
+     */
+    public ProjectLanguageIndexCoordinator(Project project, ProjectLanguageIndexService.Session session) {
+        this(new DefaultProjectIndexContextResolver(_ -> session).resolve(project),
+            Services.PROJECT_LANGUAGE_INDEX_SERVICE,
             LanguageSupportRegistry.all());
     }
 
@@ -60,6 +72,8 @@ public final class ProjectLanguageIndexCoordinator {
 
             try {
                 indexService.index(context, support.languageId());
+            } catch (CancellationException exception) {
+                return;
             } catch (RuntimeException exception) {
                 Railroad.LOGGER.warn(
                     "Failed to warm project index for language {} in {}",
@@ -70,6 +84,8 @@ public final class ProjectLanguageIndexCoordinator {
 
             try {
                 support.warmAdditionalIndexes(context);
+            } catch (CancellationException exception) {
+                return;
             } catch (RuntimeException exception) {
                 Railroad.LOGGER.warn(
                     "Failed to warm additional indexes for language {} in {}",
@@ -87,6 +103,12 @@ public final class ProjectLanguageIndexCoordinator {
      * @param kind the file watcher event kind
      */
     public void handleFileChange(Path path, WatchEvent.Kind<?> kind) {
+        ProjectIndexContext previous = context;
+        if (previous.session() == null || previous.session().isClosed())
+            return;
+        if (previous.configurationGeneration() != previous.session().configurationGeneration()) {
+            context = new DefaultProjectIndexContextResolver(_ -> previous.session()).resolve(previous.project());
+        }
         Objects.requireNonNull(path, "path");
         Objects.requireNonNull(kind, "kind");
         if (List
@@ -112,6 +134,8 @@ public final class ProjectLanguageIndexCoordinator {
 
                 indexService.updateFile(context, support.languageId(), path);
             }
+        } catch (CancellationException exception) {
+            return;
         } catch (RuntimeException exception) {
             Railroad.LOGGER.warn(
                 "Failed to update project index for language {} and path {}",

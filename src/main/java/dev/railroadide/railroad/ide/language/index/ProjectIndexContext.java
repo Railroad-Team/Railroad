@@ -14,11 +14,15 @@ import java.util.Objects;
  * @param project the project whose files and configuration are used
  * @param projectRoot the project root directory
  * @param languages the language contexts keyed by language identifier
+ * @param session live index ownership, or {@code null} for a standalone context
+ * @param configurationGeneration captured session configuration revision, or zero for a standalone context
  */
 public record ProjectIndexContext(
     Project project,
     Path projectRoot,
-    Map<String, LanguageIndexContext> languages
+    Map<String, LanguageIndexContext> languages,
+    ProjectLanguageIndexService.Session session,
+    long configurationGeneration
 ) {
     /**
      * Creates a project context, normalizing its root and copying the language context map.
@@ -32,9 +36,39 @@ public record ProjectIndexContext(
         Path projectRoot,
         Map<String, LanguageIndexContext> languages
     ) {
-        this.project = Objects.requireNonNull(project, "project");
-        this.projectRoot = normalize(projectRoot);
-        this.languages = Map.copyOf(Objects.requireNonNull(languages, "languages"));
+        this(project, projectRoot, languages, null, 0);
+    }
+
+    /**
+     * Captures the session's current configuration generation.
+     *
+     * @param project the project whose files and configuration are used
+     * @param projectRoot the project root directory
+     * @param languages the language contexts keyed by language identifier
+     * @param session live index ownership, or {@code null} for a standalone context
+     */
+    public ProjectIndexContext(
+        Project project,
+        Path projectRoot,
+        Map<String, LanguageIndexContext> languages,
+        ProjectLanguageIndexService.Session session
+    ) {
+        this(project, projectRoot, languages, session, session == null ? 0 : session.configurationGeneration());
+    }
+
+    /**
+     * Creates a context with an explicit configuration generation, normalizing its root and copying its language map.
+     *
+     * @param project the project whose files and configuration are used
+     * @param projectRoot the project root directory
+     * @param languages the language contexts keyed by language identifier
+     * @param session live index ownership, or {@code null} for a standalone context
+     * @param configurationGeneration captured session configuration revision, or zero for a standalone context
+     */
+    public ProjectIndexContext {
+        project = Objects.requireNonNull(project, "project");
+        projectRoot = normalize(projectRoot);
+        languages = Map.copyOf(Objects.requireNonNull(languages, "languages"));
     }
 
     /**

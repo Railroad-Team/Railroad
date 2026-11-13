@@ -163,6 +163,8 @@ test {
     dependsOn tasks.named('formatterClasses')
 }
 
+apply from: 'gradle/sst-self-analysis.gradle'
+
 spotless {
     if (!providers.gradleProperty('formatAll').isPresent())
         ratchetFrom providers.gradleProperty('formatRatchetFrom').getOrElse('HEAD')

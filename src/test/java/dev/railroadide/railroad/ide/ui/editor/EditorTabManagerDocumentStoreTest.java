@@ -4,6 +4,7 @@ import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.WorkspaceModes;
+import dev.railroadide.railroad.ide.ProjectDocumentSynchronizer;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.ui.MarkdownPreviewPane;
@@ -11,6 +12,9 @@ import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.plugin.spi.editor.EditResult;
+import dev.railroadide.railroad.plugin.spi.editor.TextEditorAccess;
+import dev.railroadide.railroad.plugin.spi.editor.TextSelection;
 import dev.railroadide.railroad.plugin.spi.event.EventListener;
 import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
 import dev.railroadide.railroad.plugin.spi.events.DocumentModifiedEvent;
@@ -40,6 +44,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -112,10 +118,13 @@ public class EditorTabManagerDocumentStoreTest {
                 MarkdownPreviewPane.MarkdownLayoutType.PREVIEW));
             tab = openInTabPane(file);
             assertNull(tab.view().activeEditor());
+            TextEditorAccess access = tab.view().textEditor().orElseThrow();
+            assertSame(access, Services.DOCUMENT_EDITOR_STATE.getActiveTextEditor().orElseThrow());
             MarkdownPreviewPane markdown = (MarkdownPreviewPane) tab.view().content();
             markdown.applyLayout(MarkdownPreviewPane.MarkdownLayoutType.CODE);
             TextEditorPane editor = tab.view().activeEditor();
             assertNotNull(editor);
+            assertSame(access, Services.DOCUMENT_EDITOR_STATE.getActiveTextEditor().orElseThrow());
             disableDebouncedAutosave(editor);
             editor.replaceText("# Lazy draft");
             assertTrue(tab.dirty());
@@ -125,6 +134,298 @@ public class EditorTabManagerDocumentStoreTest {
             assertTrue(Services.EDITOR_TAB_MANAGER.saveActive().failedTabs().isEmpty());
             assertFalse(tab.dirty());
             assertEquals("# Lazy draft", Files.readString(file));
+            return null;
+        });
+    }
+
+    @Test
+    public void previewFirstReopenOwnsRetainedDraftWithoutRevealingSource() throws Exception {
+        Path file = tempDirectory.resolve("retained.md");
+        Files.writeString(file, "# Disk");
+        onFxThread(() -> {
+            project.getDataStore().writeJson("markdown.json", new MarkdownPreviewPane.MarkdownLayout(
+                MarkdownPreviewPane.MarkdownLayoutType.CODE));
+            tab = openInTabPane(file);
+            TextEditorPane source = tab.view().activeEditor();
+            disableDebouncedAutosave(source);
+            source.replaceText("# Retained draft");
+            TextDocumentSnapshot draft = source.textEditorAccess().snapshot();
+            source.closeRetainingDraft();
+            tab.tab().getTabPane().getTabs().remove(tab.tab());
+            Event.fireEvent(tab.tab(), new Event(tab.tab(), tab.tab(), Tab.CLOSED_EVENT));
+            project.getDataStore().writeJson("markdown.json", new MarkdownPreviewPane.MarkdownLayout(
+                MarkdownPreviewPane.MarkdownLayoutType.PREVIEW));
+            tab = openInTabPane(file);
+            MarkdownPreviewPane markdown = (MarkdownPreviewPane) tab.view().content();
+            TextEditorAccess access = tab.view().textEditor().orElseThrow();
+            assertNotNull(tab.view().activeEditor());
+            assertTrue(tab.dirty());
+            assertEquals(MarkdownPreviewPane.MarkdownLayoutType.PREVIEW, markdownField(markdown, "currentLayout"));
+            assertSame(draft, access.snapshot());
+            assertEquals(draft.text(), markdownField(markdown, "renderedText"));
+            assertEquals("# Disk", Files.readString(file));
+            assertTrue(Services.EDITOR_TAB_MANAGER.saveActive().successful());
+            assertFalse(tab.dirty());
+            assertEquals(draft.text(), Files.readString(file));
+            assertEquals(EditResult.APPLIED, access.selectAndReveal(draft, new TextSelection(2, 10)));
+            assertEquals(draft.text(), tab.view().activeEditor().getText());
+            assertEquals(draft.text(), markdownField(markdown, "renderedText"));
+            assertEquals(MarkdownPreviewPane.MarkdownLayoutType.SPLIT, markdownField(markdown, "currentLayout"));
+            assertEquals(new TextSelection(2, 10), access.selection());
+            assertSame(access, Services.DOCUMENT_EDITOR_STATE.getActiveTextEditor().orElseThrow());
+            markdown.applyLayout(MarkdownPreviewPane.MarkdownLayoutType.PREVIEW);
+            tab.view().activeEditor().replaceText("# Saved on project close");
+            DocumentId id = tab.documentId();
+            assertTrue(Services.EDITOR_TAB_MANAGER.prepareProjectClose());
+            assertEquals("# Saved on project close", Files.readString(file));
+            assertNull(Services.IDE_STATE.getDocumentStore().orElseThrow().state(id).orElseThrow().overlay());
+            tab = null;
+            return null;
+        });
+    }
+
+    @Test
+    public void previewOnlyFollowsExternalBackingAndStopsQueuedObserversOnClose() throws Exception {
+        Path file = tempDirectory.resolve("external-preview.md");
+        Files.writeString(file, "# Before");
+        var observed = new AtomicReference<TextDocumentSnapshot>();
+        var callbacks = new AtomicInteger();
+        var access = new AtomicReference<TextEditorAccess>();
+        var markdown = new AtomicReference<MarkdownPreviewPane>();
+        ProjectDocumentSynchronizer synchronizer = onFxThread(() -> {
+            project.getDataStore().writeJson("markdown.json", new MarkdownPreviewPane.MarkdownLayout(
+                MarkdownPreviewPane.MarkdownLayoutType.PREVIEW));
+            tab = openInTabPane(file);
+            access.set(tab.view().textEditor().orElseThrow());
+            markdown.set((MarkdownPreviewPane) tab.view().content());
+            access.get().observe(snapshot -> {
+                observed.set(snapshot);
+                callbacks.incrementAndGet();
+            });
+            access.get().observeSelection(_ -> {
+            });
+            assertNull(tab.view().activeEditor());
+            Field field = Services.IDE_STATE.getClass().getDeclaredField("documentSynchronizer");
+            field.setAccessible(true);
+            return (ProjectDocumentSynchronizer) field.get(Services.IDE_STATE);
+        });
+        Files.writeString(file, "# External");
+        synchronizer.refresh(file.toRealPath()).get(10, TimeUnit.SECONDS);
+        onFxThread(() -> {
+            assertEquals("# External", observed.get().text());
+            assertEquals("# External", markdownField(markdown.get(), "renderedText"));
+            assertNull(tab.view().activeEditor());
+            int before = callbacks.get();
+            TextDocumentSnapshot expected = access.get().snapshot();
+            access.get().observe(_ -> callbacks.incrementAndGet());
+            Services.EDITOR_TAB_MANAGER.close(tab);
+            tab = null;
+            assertEquals(EditResult.CLOSED, access.get().replace(expected, List.of()));
+            assertNull(markdownField(markdown.get(), "storeSubscription"));
+            assertTrue(((List<?>) markdownField(markdown.get(), "snapshotObservers")).isEmpty());
+            assertTrue(((List<?>) markdownField(markdown.get(), "selectionObservers")).isEmpty());
+            assertEquals(before, callbacks.get());
+            return null;
+        });
+        int closedCallbacks = callbacks.get();
+        onFxThread(() -> {
+            assertEquals(closedCallbacks, callbacks.get());
+            return null;
+        });
+    }
+
+    @Test
+    public void markdownVetoedCloseKeepsObservationUntilForcedReset() throws Exception {
+        Path file = tempDirectory.resolve("veto.md");
+        Files.writeString(file, "# Saved");
+        var callbacks = new AtomicInteger();
+        var markdown = new AtomicReference<MarkdownPreviewPane>();
+        onFxThread(() -> {
+            project.getDataStore().writeJson("markdown.json", new MarkdownPreviewPane.MarkdownLayout(
+                MarkdownPreviewPane.MarkdownLayoutType.SPLIT));
+            tab = openInTabPane(file);
+            markdown.set((MarkdownPreviewPane) tab.view().content());
+            TextEditorPane source = tab.view().activeEditor();
+            disableDebouncedAutosave(source);
+            source.replaceText("# Local");
+            tab.view().textEditor().orElseThrow().observe(_ -> callbacks.incrementAndGet());
+            Files.delete(file);
+            Files.createDirectory(file);
+            markdown.get().close();
+            assertFalse(source.isEditorClosed());
+            assertEquals(false, markdownField(markdown.get(), "closed"));
+            assertNotNull(markdownField(markdown.get(), "storeSubscription"));
+            source.replaceText("# Continuing local");
+            return null;
+        });
+        onFxThread(() -> {
+            assertTrue(callbacks.get() > 0);
+            assertEquals("# Continuing local", markdownField(markdown.get(), "renderedText"));
+            var reset = EditorTabManager.class.getDeclaredMethod("resetTracking");
+            reset.setAccessible(true);
+            reset.invoke(Services.EDITOR_TAB_MANAGER);
+            assertEquals(true, markdownField(markdown.get(), "closed"));
+            assertNull(markdownField(markdown.get(), "storeSubscription"));
+            assertTrue(tab.view().textEditor().isEmpty());
+            assertTrue(Services.DOCUMENT_EDITOR_STATE.getActiveTextEditor().isEmpty());
+            assertEquals("# Continuing local", ((TextDocumentSnapshot) Services.IDE_STATE.getDocumentStore()
+                .orElseThrow().current(tab.documentId()).orElseThrow()).text());
+            tab = null;
+            return null;
+        });
+    }
+
+    private static Object markdownField(MarkdownPreviewPane markdown, String name) throws ReflectiveOperationException {
+        Field field = MarkdownPreviewPane.class.getDeclaredField(name);
+        field.setAccessible(true);
+        return field.get(markdown);
+    }
+
+    @Test
+    public void newerPublishedBackingWinsOverPreviewConstructionRead() throws Exception {
+        Path file = tempDirectory.resolve("construction.md");
+        Files.writeString(file, "# Earlier disk read");
+        onFxThread(() -> {
+            project.getDataStore().writeJson("markdown.json", new MarkdownPreviewPane.MarkdownLayout(
+                MarkdownPreviewPane.MarkdownLayoutType.PREVIEW));
+            DocumentId id = DocumentId.create();
+            var markdown = new MarkdownPreviewPane(id, file, project);
+            try {
+                DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+                DocumentUri uri = DocumentUri.fromPath(file);
+                var newer = new TextDocumentSnapshot(id, uri, new DocumentVersion(1), "markdown",
+                    DocumentOrigin.original(uri), "# New authoritative content", StandardCharsets.UTF_8);
+                store.publishBacking(newer);
+                markdown.setDocumentStore(store);
+                assertSame(newer, markdown.textEditorAccess().snapshot());
+                assertSame(newer, store.current(id).orElseThrow());
+                assertEquals(newer.text(), markdownField(markdown, "renderedText"));
+                assertNull(markdown.getMarkdownEditorPane());
+                var stale = new TextDocumentSnapshot(id, uri, DocumentVersion.initial(), "markdown",
+                    DocumentOrigin.original(uri), "# Earlier disk read", StandardCharsets.UTF_8);
+                assertEquals(EditResult.STALE,
+                    markdown.textEditorAccess().selectAndReveal(stale, new TextSelection(0, 1)));
+                assertNull(markdown.getMarkdownEditorPane());
+            } finally {
+                markdown.close();
+            }
+            return null;
+        });
+    }
+
+    @Test
+    public void hiddenMarkdownSourcePreviewFollowsReloadAndRetainsConflictOverlay() throws Exception {
+        Path file = tempDirectory.resolve("hidden.md");
+        Files.writeString(file, "# Original");
+        var markdown = new AtomicReference<MarkdownPreviewPane>();
+        var draft = new AtomicReference<TextDocumentSnapshot>();
+        onFxThread(() -> {
+            project.getDataStore().writeJson("markdown.json", new MarkdownPreviewPane.MarkdownLayout(
+                MarkdownPreviewPane.MarkdownLayoutType.CODE));
+            tab = openInTabPane(file);
+            TextEditorPane source = tab.view().activeEditor();
+            disableDebouncedAutosave(source);
+            markdown.set((MarkdownPreviewPane) tab.view().content());
+            markdown.get().applyLayout(MarkdownPreviewPane.MarkdownLayoutType.PREVIEW);
+            Files.writeString(file, "# Clean external reload");
+            var handleExternal = TextEditorPane.class.getDeclaredMethod("handleExternalChange", Path.class);
+            handleExternal.setAccessible(true);
+            handleExternal.invoke(source, file);
+            return null;
+        });
+        onFxThread(() -> null);
+        onFxThread(() -> {
+            assertEquals("# Clean external reload", markdownField(markdown.get(), "renderedText"));
+            TextEditorPane source = tab.view().activeEditor();
+            source.replaceText("# Unsaved source");
+            draft.set(tab.view().textEditor().orElseThrow().snapshot());
+            var publishExternal = TextEditorPane.class.getDeclaredMethod("publishExternalBacking", String.class);
+            publishExternal.setAccessible(true);
+            publishExternal.invoke(source, "# Different external backing");
+            assertTrue(source.captureSnapshot().version().isAfter(draft.get().version()));
+            assertSame(draft.get(), tab.view().textEditor().orElseThrow().snapshot());
+            return null;
+        });
+        onFxThread(() -> {
+            assertEquals(draft.get().text(), markdownField(markdown.get(), "renderedText"));
+            assertEquals(MarkdownPreviewPane.MarkdownLayoutType.PREVIEW,
+                markdownField(markdown.get(), "currentLayout"));
+            return null;
+        });
+    }
+
+    @Test
+    public void ignoredAndExternalMarkdownPreviewsRetainExistingSourceWatcher(@TempDir Path externalDirectory)
+        throws Exception {
+        Path ignored = Files.createDirectories(tempDirectory.resolve(".gradle")).resolve("ignored.md");
+        for (Path file : List.of(ignored, externalDirectory.resolve("outside.md"))) {
+            Files.writeString(file, "# Initial unwatched source");
+            var changed = new CompletableFuture<TextDocumentSnapshot>();
+            onFxThread(() -> {
+                project.getDataStore().writeJson("markdown.json", new MarkdownPreviewPane.MarkdownLayout(
+                    MarkdownPreviewPane.MarkdownLayoutType.PREVIEW));
+                assertFalse(Services.IDE_STATE.isDocumentWatched(file));
+                tab = openInTabPane(file);
+                assertNotNull(tab.view().activeEditor());
+                assertEquals(MarkdownPreviewPane.MarkdownLayoutType.PREVIEW,
+                    markdownField((MarkdownPreviewPane) tab.view().content(), "currentLayout"));
+                tab.view().textEditor().orElseThrow().observe(snapshot -> {
+                    if (snapshot.text().equals("# External watcher update")) {
+                        changed.complete(snapshot);
+                    }
+                });
+                return null;
+            });
+            Files.writeString(file, "# External watcher update");
+            assertEquals("# External watcher update", changed.get(10, TimeUnit.SECONDS).text());
+            onFxThread(() -> {
+                MarkdownPreviewPane markdown = (MarkdownPreviewPane) tab.view().content();
+                assertEquals("# External watcher update", markdownField(markdown, "renderedText"));
+                assertEquals(MarkdownPreviewPane.MarkdownLayoutType.PREVIEW, markdownField(markdown, "currentLayout"));
+                assertFalse(tab.dirty());
+                closeManagedTab(false);
+                return null;
+            });
+        }
+    }
+
+    @Test
+    public void movingLazyMarkdownPreviewOutsideWatcherCoverageAcquiresSourceWatcher() throws Exception {
+        Path source = tempDirectory.resolve("watched.md");
+        Path moved = Files.createDirectories(tempDirectory.resolve(".gradle")).resolve("moved.md");
+        Files.writeString(source, "# Before move");
+        var changed = new CompletableFuture<TextDocumentSnapshot>();
+        onFxThread(() -> {
+            project.getDataStore().writeJson("markdown.json", new MarkdownPreviewPane.MarkdownLayout(
+                MarkdownPreviewPane.MarkdownLayoutType.PREVIEW));
+            assertTrue(Services.IDE_STATE.isDocumentWatched(source));
+            assertFalse(Services.IDE_STATE.isDocumentWatched(moved));
+            tab = openInTabPane(source);
+            assertNull(tab.view().activeEditor());
+            TextEditorAccess access = tab.view().textEditor().orElseThrow();
+            TextDocumentSnapshot original = access.snapshot();
+            Files.move(source, moved);
+            Railroad.EVENT_BUS.publish(new DocumentRenamedEvent(new FileSystemDocument(moved, "markdown"),
+                source.getFileName().toString(), moved.getFileName().toString(), DocumentUri.fromPath(source)));
+            assertEquals(original.id(), tab.documentId());
+            assertNotNull(tab.view().activeEditor());
+            assertEquals(DocumentUri.fromPath(moved), access.snapshot().uri());
+            assertEquals(EditResult.STALE, access.selectAndReveal(original, new TextSelection(0, 1)));
+            assertEquals(MarkdownPreviewPane.MarkdownLayoutType.PREVIEW,
+                markdownField((MarkdownPreviewPane) tab.view().content(), "currentLayout"));
+            access.observe(snapshot -> {
+                if (snapshot.text().equals("# External after move")) {
+                    changed.complete(snapshot);
+                }
+            });
+            return null;
+        });
+        Files.writeString(moved, "# External after move");
+        assertEquals("# External after move", changed.get(10, TimeUnit.SECONDS).text());
+        onFxThread(() -> {
+            assertEquals("# External after move",
+                markdownField((MarkdownPreviewPane) tab.view().content(), "renderedText"));
+            assertFalse(tab.dirty());
             return null;
         });
     }
@@ -470,7 +771,11 @@ public class EditorTabManagerDocumentStoreTest {
             Services.IDE_STATE.setCurrentProject(project);
             return null;
         });
+        Services.IDE_STATE.getWorkspaceConfiguration().ready().get(10, TimeUnit.SECONDS);
+        initialWorkspaceRevision = Services.IDE_STATE.getDocumentStore().orElseThrow().capture().revision();
     }
+
+    private long initialWorkspaceRevision;
 
     @AfterEach
     public void closeProject() throws Exception {
@@ -478,11 +783,17 @@ public class EditorTabManagerDocumentStoreTest {
             try {
                 if (tab != null) {
                     var editor = tab.view().activeEditor();
-                    editor.discardChangesOnClose();
-                    tab.tab().getTabPane().getTabs().remove(tab.tab());
+                    if (editor != null) {
+                        editor.discardChangesOnClose();
+                    }
+                    if (tab.tab().getTabPane() != null) {
+                        tab.tab().getTabPane().getTabs().remove(tab.tab());
+                    }
                     Event.fireEvent(tab.tab(), new Event(tab.tab(), tab.tab(), Tab.CLOSED_EVENT));
-                    editor.close();
-                    editor.dispose();
+                    if (editor != null) {
+                        editor.close();
+                        editor.dispose();
+                    }
                 }
             } finally {
                 Railroad.EVENT_BUS.publish(new ProjectEvent(project, ProjectEvent.EventType.CLOSED));
@@ -512,7 +823,7 @@ public class EditorTabManagerDocumentStoreTest {
             assertSame(backing, store.state(tab.documentId()).orElseThrow().backing());
             assertNull(store.state(tab.documentId()).orElseThrow().overlay());
             assertSame(backing, store.capture().document(tab.documentId()).orElseThrow());
-            assertEquals(1, store.capture().revision());
+            assertEquals(initialWorkspaceRevision + 1, store.capture().revision());
             return null;
         });
     }
@@ -1062,17 +1373,17 @@ public class EditorTabManagerDocumentStoreTest {
         String externalText = "class Example { int externalValue; }";
         Files.writeString(file, originalText);
         var dialogText = new AtomicReference<String>();
+        var store = new DefaultDocumentStore("dirty-external-test",
+            new WorkspaceConfigurationSnapshot(0, Set.of()));
 
         TextEditorPane editor = onFxThread(() -> {
-            var identity = Services.IDE_STATE.identifyDocument(new FileSystemDocument(file, "java"));
-            var pane = new TextEditorPane(identity.id(), file, "java") {
+            var pane = new TextEditorPane(DocumentId.create(), file, "java") {
                 @Override
                 protected void showExternalChangeDialog(String disk) {
                     dialogText.set(disk);
                 }
             };
             disableDebouncedAutosave(pane);
-            var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
             store.publishBacking(pane.captureSnapshot());
             pane.setDocumentStore(store);
             return pane;
@@ -1081,7 +1392,6 @@ public class EditorTabManagerDocumentStoreTest {
         try {
             var before = onFxThread(() -> {
                 editor.replaceText(unsavedText);
-                var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
                 var state = store.state(editor.captureSnapshot().id()).orElseThrow();
                 var overlay = assertInstanceOf(TextDocumentSnapshot.class, state.overlay());
                 assertEquals(unsavedText, overlay.text());
@@ -1098,7 +1408,6 @@ public class EditorTabManagerDocumentStoreTest {
 
             // Inspect after the handler's queued FX processing, without waiting for a watcher notification.
             onFxThread(() -> {
-                var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
                 var id = before.overlay().id();
                 var state = store.state(id).orElseThrow();
                 var backing = assertInstanceOf(TextDocumentSnapshot.class, state.backing());
@@ -1830,7 +2139,7 @@ public class EditorTabManagerDocumentStoreTest {
             var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
             assertTrue(store.current(tab.documentId()).isEmpty());
             assertTrue(store.capture().documents().isEmpty());
-            assertEquals(0, store.capture().revision());
+            assertEquals(initialWorkspaceRevision, store.capture().revision());
             return null;
         });
         assertArrayEquals(invalidUtf8, Files.readAllBytes(file));

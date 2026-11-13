@@ -42,6 +42,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import dev.railroadide.railroad.ide.sst.document.api.WorkspaceConfigurationSnapshot;
+import java.util.Set;
+import dev.railroadide.railroad.ide.language.LanguageSupports;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -187,34 +190,42 @@ public class JavaDiagnosticsProviderTest {
         ensureJavaLanguageSupportRegistered();
         Path projectRoot = Path.of(".").toAbsolutePath().normalize();
         Path file = projectRoot.resolve("src/main/java/dev/railroadide/railroad/vcs/git/GitCommands.java");
-        ProjectDiagnosticsContext context = ProjectDiagnosticsContext.create(new TestProject(projectRoot));
-        var provider = new JavaDiagnosticsProvider(context);
-        var snapshot = new TextDocumentSnapshot(
-            DocumentId.create(),
-            DocumentUri.fromPath(file),
-            DocumentVersion.initial(),
-            JavaLanguageSupport.LANGUAGE_ID,
-            Files.readString(file),
-            StandardCharsets.UTF_8);
+        Project project = new TestProject(projectRoot);
+        var session = Services.PROJECT_LANGUAGE_INDEX_SERVICE.openProject(project);
+        var indexes = JavaLanguageSupport.analysisContextProvider();
+        var configuration = new WorkspaceConfigurationSnapshot(0, Set.of());
+        indexes.adoptConfiguration(session, indexes.prepareConfiguration(session, configuration));
+        try {
+            ProjectDiagnosticsContext context = ProjectDiagnosticsContext.create(project);
+            var provider = new JavaDiagnosticsProvider(context);
+            var snapshot = new TextDocumentSnapshot(
+                DocumentId.create(),
+                DocumentUri.fromPath(file),
+                DocumentVersion.initial(),
+                JavaLanguageSupport.LANGUAGE_ID,
+                Files.readString(file),
+                StandardCharsets.UTF_8);
 
-        List<String> unresolved = provider.compute(snapshot).stream()
-            .filter(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code()))
-            .filter(diagnostic -> diagnostic.message(null).contains("'addArgs'")
-                || diagnostic.message(null).contains("'build'"))
-            .map(diagnostic -> "line " + diagnostic.location().line()
-                + ", column " + diagnostic.location().column()
-                + ": " + diagnostic.message(null))
-            .toList();
+            List<String> unresolved = provider.compute(snapshot).stream()
+                .filter(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code()))
+                .filter(diagnostic -> diagnostic.message(null).contains("'addArgs'")
+                    || diagnostic.message(null).contains("'build'"))
+                .map(diagnostic -> "line " + diagnostic.location().line()
+                    + ", column " + diagnostic.location().column()
+                    + ": " + diagnostic.message(null))
+                .toList();
 
-        assertTrue(unresolved.isEmpty(), () -> String.join(System.lineSeparator(), unresolved));
+            assertTrue(unresolved.isEmpty(), () -> String.join(System.lineSeparator(), unresolved));
+        } finally {
+            Services.PROJECT_LANGUAGE_INDEX_SERVICE.closeProject(session);
+            indexes.closeSession(session);
+        }
     }
 
     private static void ensureJavaLanguageSupportRegistered() {
         WorkspaceModes.initialize();
 
-        if (!LanguageSupportRegistry.contains(JavaLanguageSupport.LANGUAGE_ID)) {
-            LanguageSupportRegistry.register(new JavaLanguageSupport());
-        }
+        LanguageSupports.initialize();
 
         if (!Services.PROJECT_LANGUAGE_INDEX_SERVICE.hasIndexer(JavaLanguageSupport.LANGUAGE_ID)) {
             Services.PROJECT_LANGUAGE_INDEX_SERVICE.registerIndexer(new JavaLanguageSupport().createIndexer());

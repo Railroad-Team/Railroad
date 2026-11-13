@@ -12,6 +12,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
 import java.util.List;
+import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
+import dev.railroadide.railroad.ide.language.LanguageSupports;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -30,9 +32,9 @@ public class ProjectLanguageIndexCoordinatorTest {
             """);
 
         ProjectLanguageIndexService indexService = createIndexService();
-        ProjectIndexContext context = createContext(root);
+        ProjectIndexContext context = createContext(root, indexService);
         var coordinator = new ProjectLanguageIndexCoordinator(
-            context, indexService, List.of(new JavaLanguageSupport()));
+            context, indexService, List.of(sourceSupport()));
 
         coordinator.warmIndexes();
 
@@ -52,9 +54,9 @@ public class ProjectLanguageIndexCoordinatorTest {
         Path aFile = root.resolve("src/main/java/demo/A.java");
 
         ProjectLanguageIndexService indexService = createIndexService();
-        ProjectIndexContext context = createContext(root);
+        ProjectIndexContext context = createContext(root, indexService);
         var coordinator = new ProjectLanguageIndexCoordinator(
-            context, indexService, List.of(new JavaLanguageSupport()));
+            context, indexService, List.of(sourceSupport()));
         coordinator.warmIndexes();
 
         Files.writeString(aFile, """
@@ -80,13 +82,25 @@ public class ProjectLanguageIndexCoordinatorTest {
 
     private ProjectLanguageIndexService createIndexService() {
         LanguageSupport support = new JavaLanguageSupport();
+        LanguageSupports.initialize();
         var indexService = new ProjectLanguageIndexService();
         indexService.registerIndexer(support.createIndexer());
         indexService.registerPersistence(support.createPersistence());
         return indexService;
     }
 
-    private ProjectIndexContext createContext(Path root) {
+    // This fixture tests coordinator source updates without bootstrapping global UI/binary services.
+    private LanguageSupport sourceSupport() {
+        var java = new JavaLanguageSupport();
+        return (LanguageSupport) Proxy.newProxyInstance(getClass().getClassLoader(),
+            new Class<?>[]{LanguageSupport.class}, (proxy, method, args) -> {
+                if (method.getName().equals("warmAdditionalIndexes"))
+                    return null;
+                return method.invoke(java, args);
+            });
+    }
+
+    private ProjectIndexContext createContext(Path root, ProjectLanguageIndexService service) {
         Project project = (Project) Proxy.newProxyInstance(
             getClass().getClassLoader(),
             new Class<?>[]{Project.class},
@@ -99,7 +113,8 @@ public class ProjectLanguageIndexCoordinatorTest {
                 case "toString" -> "TestProject[" + root + "]";
                 default -> throw new UnsupportedOperationException(method.getName());
             });
-        return new DefaultProjectIndexContextResolver().resolve(project);
+        var context = new DefaultProjectIndexContextResolver().resolve(project);
+        return new ProjectIndexContext(project, root, context.languages(), service.openProject(project));
     }
 
     private Path createProject(String source) throws Exception {

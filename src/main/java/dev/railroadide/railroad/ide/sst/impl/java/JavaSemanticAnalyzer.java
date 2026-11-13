@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import java.lang.reflect.Modifier;
 import java.util.function.Function;
 import org.objectweb.asm.Opcodes;
+import dev.railroadide.railroad.ide.sst.project.BinaryStubPublication;
 
 /**
  * Java semantic analysis entry point.
@@ -299,6 +300,7 @@ public final class JavaSemanticAnalyzer {
         private final Set<String> directSuperTypesInProgress = new HashSet<>();
         private final Map<String, Type> projectMemberValueTypesByKey = new LinkedHashMap<>();
         private final Map<String, List<Type>> projectMethodParameterTypesByKey = new LinkedHashMap<>();
+        private final Map<String, Boolean> projectVariableArityByKey = new LinkedHashMap<>();
         private final Map<String, List<JavaRuleContext.MethodDescriptor>> projectSourceMethodsByOwner = new LinkedHashMap<>();
         private final Map<String, Map<String, Type>> projectRecordAccessorTypesByOwner = new LinkedHashMap<>();
         private final Set<SyntaxNode> contextualInferenceInProgress = Collections
@@ -845,7 +847,7 @@ public final class JavaSemanticAnalyzer {
             if (chosen == null && argumentList != null && hasComplexArgumentShape(argumentList)) {
                 List<MemberCandidate> arityMatches = new ArrayList<>();
                 for (MemberCandidate candidate : constructorCandidates) {
-                    if (isArityCompatible(candidate.parameterTypes(), argumentTypes.size())) {
+                    if (isArityCompatible(candidate, argumentTypes.size())) {
                         arityMatches.add(candidate);
                     }
                 }
@@ -939,7 +941,7 @@ public final class JavaSemanticAnalyzer {
         private @Nullable MemberCandidate uniqueArityCandidate(List<MemberCandidate> candidates, int argumentCount) {
             List<MemberCandidate> matches = new ArrayList<>();
             for (MemberCandidate candidate : candidates) {
-                if (isArityCompatible(candidate.parameterTypes(), argumentCount)) {
+                if (isArityCompatible(candidate, argumentCount)) {
                     matches.add(candidate);
                 }
             }
@@ -960,7 +962,7 @@ public final class JavaSemanticAnalyzer {
                 false, CallableKind.METHOD);
             List<MemberCandidate> matches = new ArrayList<>();
             for (MemberCandidate candidate : allCandidates) {
-                if (isArityCompatible(candidate.parameterTypes(), argumentTypes.size())) {
+                if (isArityCompatible(candidate, argumentTypes.size())) {
                     matches.add(candidate);
                 }
             }
@@ -1323,7 +1325,7 @@ public final class JavaSemanticAnalyzer {
             if (declaration == null)
                 return null;
             return new MemberCandidate(symbol, ownerQualifiedName, isStaticMemberSymbol(symbol),
-                typeOfMethodDeclaration(symbol), parameterTypes(declaration));
+                typeOfMethodDeclaration(symbol), parameterTypes(declaration), hasVariableArityParameters(declaration));
         }
 
         private @Nullable MemberCandidate localConstructorCandidate(Symbol symbol, String ownerQualifiedName) {
@@ -1331,7 +1333,8 @@ public final class JavaSemanticAnalyzer {
             if (declaration == null)
                 return null;
             return new MemberCandidate(symbol, ownerQualifiedName, false,
-                new Type.DeclaredType(ownerQualifiedName, List.of()), parameterTypes(declaration));
+                new Type.DeclaredType(ownerQualifiedName, List.of()), parameterTypes(declaration),
+                hasVariableArityParameters(declaration));
         }
 
         private @Nullable String ownerQualifiedName(Symbol symbol) {
@@ -1342,6 +1345,13 @@ public final class JavaSemanticAnalyzer {
             if (separator <= 0)
                 return null;
             return qualifiedName.substring(0, separator);
+        }
+
+        private static boolean hasVariableArityParameters(@Nullable SyntaxNode declaration) {
+            if (declaration == null)
+                return false;
+            SyntaxNode parameters = directChild(declaration, JavaSyntaxKinds.PARAMETER_LIST.id());
+            return parameters != null && hasTokenKind(parameters, JavaTokenType.ELLIPSIS);
         }
 
         private List<Type> parameterTypes(SyntaxNode declarationNode) {
@@ -2573,7 +2583,7 @@ public final class JavaSemanticAnalyzer {
                         ownerQualifiedName,
                         false,
                         constructedType,
-                        parameterTypes));
+                        parameterTypes, (constructor.modifiers() & Opcodes.ACC_VARARGS) != 0));
                 }
             }
 
@@ -2693,7 +2703,7 @@ public final class JavaSemanticAnalyzer {
                         ownerQualifiedName,
                         methodStatic,
                         method.returnType(),
-                        parameterTypes));
+                        parameterTypes, hasVariableArityParameters(method.declaration())));
                 }
                 return;
             }
@@ -2711,7 +2721,7 @@ public final class JavaSemanticAnalyzer {
                     ownerQualifiedName,
                     staticAccess,
                     valueType,
-                    parameterTypes));
+                    parameterTypes, projectVariableArityByKey.getOrDefault(projectMemberValueKey(symbol), false)));
             }
 
             if (!staticAccess) {
@@ -2732,14 +2742,14 @@ public final class JavaSemanticAnalyzer {
                     continue;
                 hasExplicitConstructors = true;
 
-                List<Type> parameterTypes = parameterTypesFromProjectSignature(symbol.signature());
+                List<Type> parameterTypes = projectMethodParameterTypes(symbol);
                 Type constructedType = new Type.DeclaredType(ownerQualifiedName, List.of());
                 out.add(new MemberCandidate(
                     syntheticProjectMemberSymbol(symbol, constructedType, parameterTypes),
                     ownerQualifiedName,
                     false,
                     constructedType,
-                    parameterTypes));
+                    parameterTypes, projectVariableArityByKey.getOrDefault(projectMemberValueKey(symbol), false)));
             }
 
             JavaProjectSemanticIndex.SymbolDescriptor ownerType = projectIndex.lookupQualifiedName(ownerQualifiedName)
@@ -2840,7 +2850,7 @@ public final class JavaSemanticAnalyzer {
                     ownerQualifiedName,
                     staticAccess,
                     valueType,
-                    parameterTypes));
+                    parameterTypes, (method.modifiers() & Opcodes.ACC_VARARGS) != 0));
             }
 
         }
@@ -2861,31 +2871,37 @@ public final class JavaSemanticAnalyzer {
             List<Type> argumentTypes,
             Type contextualReturnType
         ) {
-            MemberCandidate best = null;
-            List<Integer> bestCost = null;
-            int bestReturnCost = Integer.MAX_VALUE;
+            for (boolean expanded : List.of(false, true)) {
+                MemberCandidate best = null;
+                List<Integer> bestCost = null;
+                int bestReturnCost = Integer.MAX_VALUE;
 
-            for (MemberCandidate candidate : candidates) {
-                List<Integer> cost = applicabilityCost(candidate.parameterTypes(), argumentTypes);
-                if (cost == null)
-                    continue;
-                int returnCost = contextualReturnCost(contextualReturnType, candidate.valueType());
-                if (best == null) {
-                    best = candidate;
-                    bestCost = cost;
-                    bestReturnCost = returnCost;
-                    continue;
+                for (MemberCandidate candidate : candidates) {
+                    if (expanded && !candidate.variableArity())
+                        continue;
+                    List<Integer> cost = applicabilityCost(candidate.parameterTypes(), argumentTypes, expanded);
+                    if (cost == null)
+                        continue;
+                    int returnCost = contextualReturnCost(contextualReturnType, candidate.valueType());
+                    if (best == null) {
+                        best = candidate;
+                        bestCost = cost;
+                        bestReturnCost = returnCost;
+                        continue;
+                    }
+
+                    int comparison = compareCost(cost, bestCost);
+                    if (comparison < 0 || comparison == 0 && returnCost < bestReturnCost) {
+                        best = candidate;
+                        bestCost = cost;
+                        bestReturnCost = returnCost;
+                    }
                 }
 
-                int comparison = compareCost(cost, bestCost);
-                if (comparison < 0 || comparison == 0 && returnCost < bestReturnCost) {
-                    best = candidate;
-                    bestCost = cost;
-                    bestReturnCost = returnCost;
-                }
+                if (best != null)
+                    return best;
             }
-
-            return best;
+            return null;
         }
 
         private int contextualReturnCost(Type targetType, Type returnType) {
@@ -2913,7 +2929,7 @@ public final class JavaSemanticAnalyzer {
             int argumentCount
         ) {
             for (MemberCandidate candidate : candidates) {
-                if (isArityCompatible(candidate.parameterTypes(), argumentCount))
+                if (isArityCompatible(candidate, argumentCount))
                     return candidate;
             }
             return candidates.isEmpty() ? null : candidates.getFirst();
@@ -2942,8 +2958,9 @@ public final class JavaSemanticAnalyzer {
             return false;
         }
 
-        private boolean isArityCompatible(List<Type> parameterTypes, int argumentCount) {
-            boolean varargs = !parameterTypes.isEmpty() && parameterTypes.getLast().kind() == Type.Kind.ARRAY;
+        private boolean isArityCompatible(MemberCandidate candidate, int argumentCount) {
+            List<Type> parameterTypes = candidate.parameterTypes();
+            boolean varargs = candidate.variableArity();
             if (!varargs)
                 return parameterTypes.size() == argumentCount;
             return argumentCount >= parameterTypes.size() - 1;
@@ -2958,8 +2975,11 @@ public final class JavaSemanticAnalyzer {
             return List.copyOf(deduped.values());
         }
 
-        private @Nullable List<Integer> applicabilityCost(List<Type> parameterTypes, List<Type> argumentTypes) {
-            boolean varargs = !parameterTypes.isEmpty() && parameterTypes.getLast().kind() == Type.Kind.ARRAY;
+        private @Nullable List<Integer> applicabilityCost(
+            List<Type> parameterTypes,
+            List<Type> argumentTypes,
+            boolean varargs
+        ) {
             if (!varargs && parameterTypes.size() != argumentTypes.size())
                 return null;
             if (varargs && argumentTypes.size() < parameterTypes.size() - 1)
@@ -3536,7 +3556,7 @@ public final class JavaSemanticAnalyzer {
         }
 
         private List<Type> computeProjectMethodParameterTypes(JavaProjectSemanticIndex.SymbolDescriptor symbol) {
-            if (symbol.kind() != SymbolKind.METHOD)
+            if (symbol.kind() != SymbolKind.METHOD && symbol.kind() != SymbolKind.CONSTRUCTOR)
                 return List.of();
             try {
                 String source = JavaSourceSnapshotIndex.readSource(projectIndex, symbol.sourceFile());
@@ -3584,6 +3604,7 @@ public final class JavaSemanticAnalyzer {
         ) {
             Symbol declared = model.declaredSymbol(node).orElse(null);
             if (declared != null && matchesProjectMemberSymbol(target, declared, node)) {
+                projectVariableArityByKey.put(projectMemberValueKey(target), hasVariableArityParameters(node));
                 SyntaxNode parameterList = directChild(node, JavaSyntaxKinds.PARAMETER_LIST.id());
                 if (parameterList == null)
                     return List.of();
@@ -3911,7 +3932,7 @@ public final class JavaSemanticAnalyzer {
             if (!Objects.equals(ownerQualifiedName, target.ownerQualifiedName()))
                 return false;
 
-            if (target.kind() == SymbolKind.METHOD)
+            if (target.kind() == SymbolKind.METHOD || target.kind() == SymbolKind.CONSTRUCTOR)
                 return Objects.equals(target.signature(), signatureFromCallableDeclaration(node));
             return true;
         }
@@ -3933,6 +3954,9 @@ public final class JavaSemanticAnalyzer {
 
                 String text = canonicalTypeText(typeRef);
                 if (text != null && !text.isBlank()) {
+                    if (hasTokenKind(child, JavaTokenType.ELLIPSIS)) {
+                        text += "[]";
+                    }
                     parameterTypes.add(text);
                 }
             }
@@ -3993,7 +4017,7 @@ public final class JavaSemanticAnalyzer {
             if (singleStaticImports != null) {
                 for (ImportSpec importSpec : singleStaticImports) {
                     for (MemberCandidate candidate : findMethodCandidates(importSpec.ownerName(), methodName, true)) {
-                        if (candidate.parameterTypes().size() == argumentCount) {
+                        if (isArityCompatible(candidate, argumentCount)) {
                             candidates.add(candidate);
                         }
                     }
@@ -4002,7 +4026,7 @@ public final class JavaSemanticAnalyzer {
 
             for (ImportSpec onDemandImport : onDemandStaticImports) {
                 for (MemberCandidate candidate : findMethodCandidates(onDemandImport.ownerName(), methodName, true)) {
-                    if (candidate.parameterTypes().size() == argumentCount) {
+                    if (isArityCompatible(candidate, argumentCount)) {
                         candidates.add(candidate);
                     }
                 }
@@ -4318,18 +4342,18 @@ public final class JavaSemanticAnalyzer {
         }
 
         private @Nullable String resolveInheritedMemberType(String simpleName, SyntaxNode usageSite) {
-            Symbol enclosingType = context.topLevelEnclosingTypeSymbol(usageSite);
-            if (enclosingType == null) {
-                enclosingType = context.enclosingTypeSymbol(usageSite);
-            }
-            String ownerQualifiedName = enclosingType == null ? null : enclosingType.qualifiedName().orElse(null);
-            if (ownerQualifiedName == null || ownerQualifiedName.isBlank())
-                return null;
-
-            for (String directSuper : directSuperTypeNames(ownerQualifiedName)) {
-                String resolved = resolveMemberTypeInHierarchy(directSuper, simpleName, new HashSet<>());
-                if (resolved != null)
-                    return resolved;
+            Symbol enclosingType = context.enclosingTypeSymbol(usageSite);
+            while (enclosingType != null) {
+                String owner = enclosingType.qualifiedName().orElse(null);
+                if (owner != null) {
+                    for (String directSuper : directSuperTypeNames(owner)) {
+                        String resolved = resolveMemberTypeInHierarchy(directSuper, simpleName, new HashSet<>());
+                        if (resolved != null)
+                            return resolved;
+                    }
+                }
+                SyntaxNode declaration = enclosingType.declaration().orElse(null);
+                enclosingType = declaration == null ? null : context.enclosingTypeSymbol(declaration);
             }
             return null;
         }
@@ -4849,8 +4873,19 @@ public final class JavaSemanticAnalyzer {
             String ownerQualifiedName,
             boolean staticMember,
             Type valueType,
-            List<Type> parameterTypes
+            List<Type> parameterTypes,
+            boolean variableArity
         ) {
+            private MemberCandidate(
+                Symbol symbol,
+                String ownerQualifiedName,
+                boolean staticMember,
+                Type valueType,
+                List<Type> parameterTypes
+            ) {
+                this(symbol, ownerQualifiedName, staticMember, valueType, parameterTypes, false);
+            }
+
         }
     }
 
@@ -4964,7 +4999,7 @@ public final class JavaSemanticAnalyzer {
                     return new Type.PrimitiveType("char");
                 if (JavaSyntaxKinds.tokenKind(JavaTokenType.STRING_LITERAL).id().equals(kindId)
                     || JavaSyntaxKinds.tokenKind(JavaTokenType.TEXT_BLOCK_LITERAL).id().equals(kindId))
-                    return new Type.DeclaredType("String", List.of());
+                    return new Type.DeclaredType("java.lang.String", List.of());
                 if (JavaSyntaxKinds.tokenKind(JavaTokenType.NULL_LITERAL).id().equals(kindId))
                     return UNKNOWN_TYPE;
             }
@@ -6803,6 +6838,9 @@ public final class JavaSemanticAnalyzer {
             case dev.railroadide.railroad.ide.classparser.Type.TypeVariable variable ->
                 new Type.TypeVariableType(variable.name());
             case dev.railroadide.railroad.ide.classparser.Type.WildcardType wildcard -> {
+                // JVM signature '*' is the same unbounded wildcard as source '?'.
+                if (wildcard.bound() == null && wildcard.isUpperBound())
+                    yield new Type.WildcardType(new Type.DeclaredType("java.lang.Object", List.of()), null);
                 Type bound = wildcard.bound() == null
                     ? new Type.UnknownType("<unknown>")
                     : toSemanticType(wildcard.bound());
@@ -6872,7 +6910,8 @@ public final class JavaSemanticAnalyzer {
                 String fullName = stub.getFullName();
                 if (fullName == null || fullName.isBlank())
                     continue;
-                byQualifiedName.put(fullName, stub);
+                byQualifiedName.put(fullName,
+                    BinaryStubPublication.copy(stub));
             }
 
             cachedJdkClassStubsByQualifiedName = Map.copyOf(byQualifiedName);

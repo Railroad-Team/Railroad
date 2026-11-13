@@ -4,6 +4,7 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.language.LanguageSupport;
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.utility.ProjectPathIdentityUtils;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -157,6 +158,20 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
     }
 
     private boolean ignored(Path path) {
+        return ignored(path, root);
+    }
+
+    /**
+     * Reports whether this live synchronizer covers a file's physical location.
+     *
+     * @param path document location, including aliases to the project directory
+     * @return whether project discovery and watching cover the path
+     */
+    public boolean covers(Path path) {
+        return !closed && !ignored(ProjectPathIdentityUtils.normalize(path), ProjectPathIdentityUtils.normalize(root));
+    }
+
+    private static boolean ignored(Path path, Path root) {
         if (!path.startsWith(root))
             return true;
         for (Path segment : root.relativize(path)) {

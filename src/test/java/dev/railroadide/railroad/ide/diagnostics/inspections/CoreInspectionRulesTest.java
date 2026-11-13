@@ -1129,6 +1129,59 @@ public class CoreInspectionRulesTest {
     }
 
     @Test
+    public void coreModifierRuleAllowsExplicitFinalRecords() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreModifierInspection(), """
+            final record TopLevel(int value) {
+            }
+
+            class Host {
+                private static final record Nested(String value) {
+                }
+            }
+
+            interface Contract {
+                final record Member(int value) {
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.isEmpty(), () -> diagnostics.toString());
+    }
+
+    @Test
+    public void coreModifierRuleStillRejectsExplicitFinalEnumsInterfacesAndAnnotations() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreModifierInspection(), """
+            final enum Mode { ON }
+            final interface Contract {}
+            final @interface Flag {}
+            """);
+
+        assertEquals(3, diagnostics.size());
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'final' is not allowed on enum declarations")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("'final' is not allowed on interface declarations")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("'final' is not allowed on annotation type declarations")));
+    }
+
+    @Test
+    public void coreModifierRuleStillRejectsIllegalRecordModifiers() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreModifierInspection(), """
+            abstract record AbstractRecord(int value) {}
+            sealed record SealedRecord(int value) {}
+            final final record DuplicateFinalRecord(int value) {}
+            """);
+
+        assertEquals(3, diagnostics.size());
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("'abstract' is not allowed on record declarations")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("'sealed' is not allowed on record declarations")));
+        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("duplicate modifier 'final'")));
+    }
+
+    @Test
     public void coreModifierRuleEmitsIllegalTypeAndFieldModifierDiagnostics() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreModifierInspection(), """
             private static class Example {

@@ -43,7 +43,8 @@ public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
             Path jmods = jdkHome.resolve("jmods");
             if (Files.isDirectory(jmods)) {
                 try (var paths = Files.list(jmods)) {
-                    roots.addAll(paths.filter(path -> path.getFileName().toString().endsWith(".jmod")).toList());
+                    roots.addAll(
+                        paths.filter(path -> path.getFileName().toString().endsWith(".jmod")).sorted().toList());
                 } catch (IOException _) {
                     return fromCurrentRuntime();
                 }

@@ -11,13 +11,14 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.function.Consumer;
 
 /** Persists the complete Java project semantic index as one atomic binary snapshot. */
 public final class JavaProjectSemanticPersistence implements ProjectLanguageIndexPersistence<JavaProjectSemanticIndex> {
     private static final String CACHE_DIRECTORY = ".railroad/index/semantic";
     private static final String SNAPSHOT_FILE = "project-semantic-index.bin";
     private static final String SNAPSHOT_MAGIC = "RSSTIDX1";
-    private static final int FORMAT_VERSION = 3;
+    private static final int FORMAT_VERSION = 4;
 
     @Override
     public String languageId() {
@@ -52,7 +53,7 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
 
             JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
             for (int index = 0; index < fileCount; index++) {
-                builder.putFile(readFileIndex(input, normalizedRoot));
+                builder.putFile(readFileIndex(input, normalizedRoot, entries.get(index).contentHash()));
             }
             return builder.build();
         } catch (IOException | RuntimeException exception) {
@@ -62,17 +63,22 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
 
     @Override
     public void save(Path projectRoot, JavaProjectSemanticIndex index) {
-        writeSnapshot(normalizeRoot(projectRoot), index, null);
+        save(projectRoot, index, Runnable::run);
+    }
+
+    @Override
+    public void save(Path projectRoot, JavaProjectSemanticIndex index, Consumer<Runnable> commit) {
+        writeSnapshot(normalizeRoot(projectRoot), index, commit);
     }
 
     @Override
     public void updateFile(Path projectRoot, JavaProjectSemanticIndex index, Path file) {
-        writeSnapshot(normalizeRoot(projectRoot), index, FileUtils.normalizePath(file));
+        save(projectRoot, index);
     }
 
     @Override
     public void removeFile(Path projectRoot, JavaProjectSemanticIndex index, Path file) {
-        writeSnapshot(normalizeRoot(projectRoot), index, null);
+        save(projectRoot, index);
     }
 
     @Override
@@ -80,17 +86,34 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
         FileUtils.deleteFolder(cacheDirectory(normalizeRoot(projectRoot)));
     }
 
-    private static void writeSnapshot(Path projectRoot, JavaProjectSemanticIndex index, @Nullable Path changedFile) {
+    @Override
+    public void delete(Path projectRoot, Consumer<Runnable> commit) {
+        Path snapshot = snapshotPath(normalizeRoot(projectRoot));
+        commit.accept(() -> {
+            try {
+                Files.deleteIfExists(snapshot);
+            } catch (IOException exception) {
+                throw new UncheckedIOException(exception);
+            }
+        });
+    }
+
+    private static void writeSnapshot(
+        Path projectRoot,
+        JavaProjectSemanticIndex index,
+        Consumer<Runnable> commit
+    ) {
+        if (index.files().values().stream()
+            .anyMatch(file -> file.sourceHash() == null || !Files.isRegularFile(file.path())))
+            return;
+
         Path snapshot = snapshotPath(projectRoot);
         try {
             Files.createDirectories(snapshot.getParent());
-            Map<String, ManifestEntry> previousEntries = readManifest(snapshot).stream()
-                .collect(Collectors.toMap(ManifestEntry::relativePath, entry -> entry, (left, right) -> left));
             List<PersistedFile> files = new ArrayList<>();
             index.files().values().stream()
-                .filter(file -> Files.exists(file.path()))
                 .sorted(Comparator.comparing(file -> file.path().toString()))
-                .forEach(file -> files.add(persistedFile(projectRoot, file, previousEntries, changedFile)));
+                .forEach(file -> files.add(persistedFile(projectRoot, file)));
 
             Path tempFile = Files.createTempFile(snapshot.getParent(), "semantic-index", ".tmp");
             try {
@@ -105,7 +128,13 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
                         writeFileIndex(output, projectRoot, file.fileIndex());
                     }
                 }
-                moveIntoPlace(tempFile, snapshot);
+                commit.accept(() -> {
+                    try {
+                        moveIntoPlace(tempFile, snapshot);
+                    } catch (IOException exception) {
+                        throw new UncheckedIOException(exception);
+                    }
+                });
             } finally {
                 Files.deleteIfExists(tempFile);
             }
@@ -121,32 +150,14 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
 
     private static PersistedFile persistedFile(
         Path projectRoot,
-        JavaProjectSemanticIndex.SourceFileIndex file,
-        Map<String, ManifestEntry> previousEntries,
-        @Nullable Path changedFile
+        JavaProjectSemanticIndex.SourceFileIndex file
     ) {
         try {
             String relativePath = projectRoot.relativize(file.path()).toString();
             long lastModified = Files.getLastModifiedTime(file.path()).toMillis();
-            ManifestEntry previous = previousEntries.get(relativePath);
-            boolean canReuseHash = !file.path().equals(changedFile)
-                && previous != null
-                && previous.lastModified() == lastModified;
-            String hash = canReuseHash ? previous.contentHash() : contentHash(file.path());
-            return new PersistedFile(new ManifestEntry(relativePath, lastModified, hash), file);
+            return new PersistedFile(new ManifestEntry(relativePath, lastModified, file.sourceHash()), file);
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
-        }
-    }
-
-    private static List<ManifestEntry> readManifest(Path snapshot) {
-        if (Files.notExists(snapshot))
-            return List.of();
-        try (DataInputStream input = new DataInputStream(new BufferedInputStream(Files.newInputStream(snapshot)))) {
-            verifyHeader(input);
-            return readManifestEntries(input, input.readInt());
-        } catch (IOException exception) {
-            return List.of();
         }
     }
 
@@ -179,7 +190,8 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
 
     private static JavaProjectSemanticIndex.SourceFileIndex readFileIndex(
         DataInputStream input,
-        Path projectRoot
+        Path projectRoot,
+        String sourceHash
     ) throws IOException {
         Path sourcePath = projectRoot.resolve(input.readUTF()).normalize();
         String packageName = readNullableString(input);
@@ -202,7 +214,7 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
                 input.readBoolean(),
                 input.readBoolean()));
         }
-        return new JavaProjectSemanticIndex.SourceFileIndex(sourcePath, packageName, imports, symbols);
+        return new JavaProjectSemanticIndex.SourceFileIndex(sourcePath, packageName, imports, symbols, sourceHash);
     }
 
     private static void writeFileIndex(

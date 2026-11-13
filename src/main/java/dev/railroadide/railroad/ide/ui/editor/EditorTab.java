@@ -8,7 +8,6 @@ import dev.railroadide.railroad.ide.language.EditorOpenView;
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
-import dev.railroadide.railroad.ide.ui.MarkdownPreviewPane;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
@@ -105,7 +104,7 @@ public final class EditorTab {
         if (editor != null) {
             this.saveState.bind(editor.saveStateProperty());
         }
-        view.activeEditorProperty().addListener((_, _, current) -> {
+        view.observeSourceEditor(current -> {
             this.saveState.unbind();
             if (current != null) {
                 this.saveState.bind(current.saveStateProperty());
@@ -418,10 +417,19 @@ public final class EditorTab {
         this.identity.set(Objects.requireNonNull(identity));
         Path normalizedPath = Objects.requireNonNull(path).toAbsolutePath().normalize();
         this.path.set(normalizedPath);
-        if (view.content() instanceof MarkdownPreviewPane markdown) {
-            markdown.rebind(normalizedPath);
-        }
+        view.rebind(normalizedPath);
         this.tab.setId(normalizedPath.toString());
+    }
+
+    /** Releases bindings and wrapper resources after the source has accepted closure. */
+    public void dispose() {
+        saveState.unbind();
+        dirty.unbind();
+        saving.unbind();
+        saved.unbind();
+        saveFailed.unbind();
+        L18n.currentLanguageProperty().removeListener(weakLocalizationListener);
+        view.closeResources();
     }
 
     /**

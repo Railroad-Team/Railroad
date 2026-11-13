@@ -12,6 +12,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * Manages the list of projects and the currently open project.
@@ -20,6 +21,8 @@ import java.util.*;
 public final class ProjectManager {
     private final ObservableList<Project> projects = FXCollections.observableArrayList();
     private final Runnable configSaver;
+    @Getter(lombok.AccessLevel.NONE)
+    private final Consumer<ProjectEvent> eventPublisher;
     @Getter
     private Project openProject;
 
@@ -36,7 +39,18 @@ public final class ProjectManager {
      * @param configSaver the Runnable to save the configuration
      */
     public ProjectManager(Runnable configSaver) {
+        this(configSaver, event -> Railroad.EVENT_BUS.publish(event));
+    }
+
+    /**
+     * Creates a project manager with custom configuration persistence and lifecycle event delivery.
+     *
+     * @param configSaver saves configuration after project changes
+     * @param eventPublisher publishes project open and close events
+     */
+    public ProjectManager(Runnable configSaver, Consumer<ProjectEvent> eventPublisher) {
         this.configSaver = Objects.requireNonNull(configSaver, "configSaver");
+        this.eventPublisher = Objects.requireNonNull(eventPublisher, "eventPublisher");
     }
 
     /**
@@ -132,10 +146,12 @@ public final class ProjectManager {
      */
     public void setCurrentProject(@Nullable Project project) {
         Project beingClosed = this.openProject;
+        if (beingClosed == project)
+            return;
         this.openProject = project;
 
-        Railroad.EVENT_BUS.publish(new ProjectEvent(
-            beingClosed == null ? project : beingClosed,
+        eventPublisher.accept(new ProjectEvent(
+            project == null ? beingClosed : project,
             project == null ? ProjectEvent.EventType.CLOSED : ProjectEvent.EventType.OPENED));
     }
 }

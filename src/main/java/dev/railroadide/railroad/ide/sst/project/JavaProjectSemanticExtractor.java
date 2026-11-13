@@ -11,7 +11,11 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 
 // TODO: Improve signature extraction to handle generics, varargs, and other complex parameter types.
@@ -28,8 +32,17 @@ public final class JavaProjectSemanticExtractor {
      * @return the source file's immutable index entry
      */
     public JavaProjectSemanticIndex.SourceFileIndex extract(Path path, CharSequence source) {
-        SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
-        return extract(path, model);
+        String parsedSource = source.toString();
+        SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(parsedSource);
+        JavaProjectSemanticIndex.SourceFileIndex indexed = extract(path, model);
+        try {
+            String hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                .digest(parsedSource.getBytes(StandardCharsets.UTF_8)));
+            return new JavaProjectSemanticIndex.SourceFileIndex(indexed.path(), indexed.packageName(),
+                indexed.imports(), indexed.declaredSymbols(), hash);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 not available", exception);
+        }
     }
 
     /**

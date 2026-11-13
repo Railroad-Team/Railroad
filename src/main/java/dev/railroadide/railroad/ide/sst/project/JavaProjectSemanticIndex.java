@@ -327,12 +327,14 @@ public final class JavaProjectSemanticIndex
      * @param packageName the declared package name, or {@code null} for the unnamed package
      * @param imports the source file's import descriptors
      * @param declaredSymbols the source file's indexed type and member descriptors
+     * @param sourceHash SHA-256 of the parsed UTF-8 input, or null when provenance is unavailable
      */
     public record SourceFileIndex(
         Path path,
         @Nullable String packageName,
         List<ImportDescriptor> imports,
-        List<SymbolDescriptor> declaredSymbols
+        List<SymbolDescriptor> declaredSymbols,
+        @Nullable String sourceHash
     ) implements LanguageFileIndex {
         /**
          * Normalizes the source path and optional package name and copies the import and declaration lists.
@@ -341,12 +343,30 @@ public final class JavaProjectSemanticIndex
          * @param packageName the declared package name, or {@code null} for the unnamed package
          * @param imports the source file's import descriptors
          * @param declaredSymbols the source file's indexed type and member descriptors
+         * @param sourceHash SHA-256 of the parsed UTF-8 input, or null when provenance is unavailable
          */
         public SourceFileIndex {
             path = FileUtils.normalizePath(path);
             packageName = normalizeOptionalName(packageName);
             imports = List.copyOf(Objects.requireNonNull(imports, "imports"));
             declaredSymbols = List.copyOf(Objects.requireNonNull(declaredSymbols, "declaredSymbols"));
+        }
+
+        /**
+         * Creates a declaration entry without persistence provenance.
+         *
+         * @param path the source file path
+         * @param packageName the declared package name
+         * @param imports the file's import descriptors
+         * @param declaredSymbols the indexed declaration descriptors
+         */
+        public SourceFileIndex(
+            Path path,
+            @Nullable String packageName,
+            List<ImportDescriptor> imports,
+            List<SymbolDescriptor> declaredSymbols
+        ) {
+            this(path, packageName, imports, declaredSymbols, null);
         }
 
         /**
