@@ -3,6 +3,8 @@ package dev.railroadide.railroad.ide.language.impl.index;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxParser;
 import dev.railroadide.railroad.ide.sst.project.*;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
 import dev.railroadide.railroad.ide.sst.request.api.RequestContext;
@@ -171,7 +173,8 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     ) {
         JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
         Map<Path, String> texts = new HashMap<>();
-        var indexer = new JavaProjectSemanticIndexer();
+        Map<Path, TextDocumentSnapshot> snapshots = new HashMap<>();
+        var extractor = new JavaProjectSemanticExtractor();
         for (DocumentSnapshot document : workspace.documents().values()) {
             check.run();
             if (!(document instanceof TextDocumentSnapshot text) || !"java".equals(text.languageId()))
@@ -182,11 +185,12 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
                 text.uri().fileName().orElse("Snapshot.java")).toAbsolutePath().normalize());
             JavaProjectSemanticIndex.SourceFileIndex indexed = files.getIfPresent(text);
             if (indexed == null) {
-                indexed = indexer.indexFile(path, text.text(), check);
+                indexed = extractor.extract(path, text, check);
                 publish(files, text, indexed, check);
             }
             builder.putFile(indexed);
             texts.put(indexed.path(), text.text());
+            snapshots.put(indexed.path(), text);
         }
         JavaProjectSemanticIndex sources = builder.build();
         WorkspaceConfigurationSnapshot configuration = workspace.configuration();
@@ -200,6 +204,19 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
                 : binaryLoader.apply(classpath, jdk);
             publish(binaries, configuration, binary, check);
         }
+        check.run();
+        JavaSymbolIndex discovered = new JavaSourcePrecedenceIndex(sources, binary);
+        JavaProjectSemanticIndex.Builder canonical = JavaProjectSemanticIndex.builder();
+        for (var entry : snapshots.entrySet()) {
+            check.run();
+            var tree = JavaSyntaxParser.parse(entry.getValue(), check);
+            var model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(tree, discovered, check);
+            var indexed = extractor.extract(entry.getKey(), model, discovered, check);
+            canonical.putFile(new JavaProjectSemanticIndex.SourceFileIndex(indexed.path(), indexed.packageName(),
+                indexed.imports(), indexed.declaredSymbols(), sources.getFileIndex(entry.getKey()).sourceHash(),
+                indexed.semanticShard()));
+        }
+        sources = canonical.build();
         check.run();
         return new JavaWorkspaceAnalysis(sources, new JavaSourcePrecedenceIndex(sources, binary), texts,
             classpath, jdk);

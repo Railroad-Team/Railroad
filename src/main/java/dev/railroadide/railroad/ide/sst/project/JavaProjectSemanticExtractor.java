@@ -2,6 +2,9 @@ package dev.railroadide.railroad.ide.sst.project;
 
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
+import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxParser;
 
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
@@ -21,13 +24,12 @@ import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 
-// TODO: Improve signature extraction to handle generics, varargs, and other complex parameter types.
-// TODO: Improve signature extraction to include return type for methods.
 /**
  * Extracts package, import, type, and member descriptors from Java declaration facts.
  */
 public final class JavaProjectSemanticExtractor {
     private final Runnable activityCheck;
+    private final JavaSymbolIndex symbolIndex;
 
     /** Creates a source extractor that observes worker interruption. */
     public JavaProjectSemanticExtractor() {
@@ -35,7 +37,12 @@ public final class JavaProjectSemanticExtractor {
     }
 
     private JavaProjectSemanticExtractor(Runnable activityCheck) {
+        this(activityCheck, null);
+    }
+
+    private JavaProjectSemanticExtractor(Runnable activityCheck, JavaSymbolIndex symbolIndex) {
         this.activityCheck = activityCheck;
+        this.symbolIndex = symbolIndex;
     }
 
     /**
@@ -58,16 +65,28 @@ public final class JavaProjectSemanticExtractor {
      * @return the source file's immutable index entry
      */
     public JavaProjectSemanticIndex.SourceFileIndex extract(Path path, CharSequence source) {
+        DocumentUri uri = DocumentUri.fromPath(path);
+        return extract(path, new TextDocumentSnapshot(DocumentId.create(), uri, DocumentVersion.initial(), "java",
+            DocumentOrigin.original(uri), source, StandardCharsets.UTF_8), activityCheck);
+    }
+
+    /** Extracts declarations retaining the exact document identity, version, URI and origin. */
+    public JavaProjectSemanticIndex.SourceFileIndex extract(Path path, TextDocumentSnapshot snapshot, Runnable check) {
+        return new JavaProjectSemanticExtractor(new ActivityCheckpoint(check)).extractSnapshot(path, snapshot);
+    }
+
+    private JavaProjectSemanticIndex.SourceFileIndex extractSnapshot(Path path, TextDocumentSnapshot snapshot) {
         activityCheck.run();
-        String parsedSource = source.toString();
-        SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(parsedSource, activityCheck);
+        String parsedSource = snapshot.text();
+        SemanticModel model = JavaSemanticAnalyzer
+            .analyzeDeclarationsFacts(JavaSyntaxParser.parse(snapshot, activityCheck), activityCheck);
         JavaProjectSemanticIndex.SourceFileIndex indexed = extract(path, model);
         try {
             String hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
                 .digest(parsedSource.getBytes(StandardCharsets.UTF_8)));
             activityCheck.run();
             return new JavaProjectSemanticIndex.SourceFileIndex(indexed.path(), indexed.packageName(),
-                indexed.imports(), indexed.declaredSymbols(), hash);
+                indexed.imports(), indexed.declaredSymbols(), hash, indexed.semanticShard());
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 not available", exception);
         }
@@ -86,19 +105,36 @@ public final class JavaProjectSemanticExtractor {
 
         String packageName = extractPackageName(root);
         List<JavaProjectSemanticIndex.ImportDescriptor> imports = extractImports(root);
-        List<JavaProjectSemanticIndex.SymbolDescriptor> symbols = extractSymbols(path, root, model);
+        SemanticIndexShard shard = JavaSemanticGraphExtractor.extract(model, symbolIndex, activityCheck);
+        List<JavaProjectSemanticIndex.SymbolDescriptor> symbols = extractSymbols(path, root, model, shard);
         activityCheck.run();
 
-        return new JavaProjectSemanticIndex.SourceFileIndex(path, packageName, imports, symbols);
+        return new JavaProjectSemanticIndex.SourceFileIndex(path, packageName, imports, symbols, null, shard);
+    }
+
+    /** Copies an already resolved semantic model with invocation-local cancellation. */
+    public JavaProjectSemanticIndex.SourceFileIndex extract(Path path, SemanticModel model, Runnable check) {
+        return new JavaProjectSemanticExtractor(new ActivityCheckpoint(check)).extract(path, model);
+    }
+
+    /** Extracts resolved facts and documentation links using the model's captured external symbols. */
+    public JavaProjectSemanticIndex.SourceFileIndex extract(
+        Path path,
+        SemanticModel model,
+        JavaSymbolIndex index,
+        Runnable check
+    ) {
+        return new JavaProjectSemanticExtractor(new ActivityCheckpoint(check), index).extract(path, model);
     }
 
     private List<JavaProjectSemanticIndex.SymbolDescriptor> extractSymbols(
         Path path,
         SyntaxNode root,
-        SemanticModel model
+        SemanticModel model,
+        SemanticIndexShard shard
     ) {
         List<JavaProjectSemanticIndex.SymbolDescriptor> symbols = new ArrayList<>();
-        collectSymbols(path, root, model, symbols);
+        collectSymbols(path, root, model, symbols, shard);
         return List.copyOf(symbols);
     }
 
@@ -106,15 +142,16 @@ public final class JavaProjectSemanticExtractor {
         Path path,
         SyntaxNode node,
         SemanticModel model,
-        List<JavaProjectSemanticIndex.SymbolDescriptor> symbols
+        List<JavaProjectSemanticIndex.SymbolDescriptor> symbols,
+        SemanticIndexShard shard
     ) {
         model.declaredSymbol(node)
-            .filter(symbol -> isIndexedKind(symbol.kind()))
-            .ifPresent(symbol -> symbols.add(toDescriptor(path, node, symbol)));
+            .filter(symbol -> isIndexedKind(symbol.kind()) && isProjectDeclaration(node))
+            .ifPresent(symbol -> symbols.add(toDescriptor(path, node, symbol, shard)));
 
         for (SyntaxNode child : node.children()) {
             ActivityCheckpoint.poll(activityCheck);
-            collectSymbols(path, child, model, symbols);
+            collectSymbols(path, child, model, symbols, shard);
         }
     }
 
@@ -126,19 +163,41 @@ public final class JavaProjectSemanticExtractor {
         };
     }
 
-    private JavaProjectSemanticIndex.SymbolDescriptor toDescriptor(Path path, SyntaxNode node, Symbol symbol) {
+    private static boolean isProjectDeclaration(SyntaxNode node) {
+        if (node.kind().id().equals("JAVA_ANONYMOUS_CLASS_BODY"))
+            return false;
+        for (SyntaxNode owner = node.parent().orElse(null); owner != null; owner = owner.parent().orElse(null)) {
+            if (switch (owner.kind().id()) {
+                case "JAVA_METHOD_DECLARATION", "JAVA_CONSTRUCTOR_DECLARATION", "JAVA_RECORD_COMPACT_CONSTRUCTOR",
+                    "JAVA_ANONYMOUS_CLASS_BODY" -> true;
+                default -> false;
+            })
+                return false;
+        }
+        return true;
+    }
+
+    private JavaProjectSemanticIndex.SymbolDescriptor toDescriptor(
+        Path path,
+        SyntaxNode node,
+        Symbol symbol,
+        SemanticIndexShard shard
+    ) {
         SyntaxNode container = declarationContainer(node);
         String qualifiedName = symbol.qualifiedName().orElse(null);
+        var descriptor = JavaSourceSymbolIds.deriveSymbolId(symbol).flatMap(id -> shard.declarations().stream()
+            .filter(candidate -> candidate.id().equals(id)).findFirst()).orElse(null);
 
         return new JavaProjectSemanticIndex.SymbolDescriptor(
             symbol.kind(),
             symbol.simpleName(),
             qualifiedName,
             ownerQualifiedName(symbol.kind(), qualifiedName),
-            extractSignature(container, symbol.kind()),
+            descriptor == null ? extractSignature(container, symbol.kind()) : null,
             path,
-            isStaticDeclaration(container),
-            isTopLevelType(container, symbol.kind()));
+            descriptor == null && isStaticDeclaration(container),
+            isTopLevelType(container, symbol.kind()),
+            descriptor);
     }
 
     private @Nullable String extractSignature(SyntaxNode node, SymbolKind kind) {

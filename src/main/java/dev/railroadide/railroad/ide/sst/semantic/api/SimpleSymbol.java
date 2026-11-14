@@ -10,6 +10,7 @@ import java.util.Optional;
  * Basic immutable symbol implementation used by semantic passes.
  */
 public final class SimpleSymbol implements Symbol {
+    private final @Nullable SymbolId id;
     private final SymbolKind kind;
     private final String simpleName;
     private final @Nullable String qualifiedName;
@@ -29,12 +30,37 @@ public final class SimpleSymbol implements Symbol {
         @Nullable String qualifiedName,
         @Nullable SyntaxNode declaration
     ) {
+        this(null, kind, simpleName, qualifiedName, declaration);
+    }
+
+    /**
+     * Creates an identified symbol with an optional snapshot-local syntax attachment.
+     *
+     * @param id stable identity, or null for a snapshot-local symbol
+     * @param kind symbol category
+     * @param simpleName unqualified name
+     * @param qualifiedName optional qualified name
+     * @param declaration optional declaration from the current semantic snapshot
+     */
+    public SimpleSymbol(
+        @Nullable SymbolId id,
+        SymbolKind kind,
+        String simpleName,
+        @Nullable String qualifiedName,
+        @Nullable SyntaxNode declaration
+    ) {
+        this.id = id;
         this.kind = Objects.requireNonNull(kind, "kind");
         this.simpleName = Objects.requireNonNull(simpleName, "simpleName");
         if (simpleName.isBlank())
             throw new IllegalArgumentException("simpleName cannot be blank");
         this.qualifiedName = qualifiedName;
         this.declaration = declaration;
+    }
+
+    @Override
+    public Optional<SymbolId> id() {
+        return Optional.ofNullable(id);
     }
 
     @Override

@@ -11,9 +11,20 @@ import java.util.Optional;
  * Source syntax is optional, so binary and synthetic symbols need no placeholder tree.
  * Implementations supplied to published semantic models or scopes must be deeply
  * immutable and safe for concurrent reads, including any attached syntax node.
- * Models retain symbol identity; they do not clone provider-defined implementations.
+ * Models retain provider instances and snapshot-local syntax attachments. Cross-document consumers
+ * use {@link #id()} rather than Java object identity; a model does not clone provider implementations.
  */
 public interface Symbol {
+    /**
+     * Returns the durable identity supplied by the language provider. Symbols without an ID are
+     * snapshot-local and must not be used as cross-document graph keys.
+     *
+     * @return stable identity when this declaration has been identified
+     */
+    default Optional<SymbolId> id() {
+        return Optional.empty();
+    }
+
     /**
      * Returns the broad symbol category.
      *

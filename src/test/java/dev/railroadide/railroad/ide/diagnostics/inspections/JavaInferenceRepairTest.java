@@ -24,6 +24,102 @@ public class JavaInferenceRepairTest {
     public Path directory;
 
     @Test
+    public void diamondConstructorsInferValuesAndFunctionalResults() throws Exception {
+        check("""
+            import java.util.*;
+            import java.util.concurrent.*;
+            class Example {
+                void run(List<String> source) throws Exception {
+                    var copied = new ArrayList<>(source);
+                    copied.sort(Comparator.comparingInt(value -> value.length()));
+                    var task = new FutureTask<>(() -> { var value = "text"; return value; });
+                    task.run();
+                    task.get().strip();
+                }
+            }
+            """, true);
+    }
+
+    @Test
+    public void arrayArgumentsPreferArrayOverUnconstrainedGenericOverloads() throws Exception {
+        check("""
+            import java.util.*;
+            import java.nio.file.*;
+            class Example {
+                void run(String[] values) {
+                    var items = List.of(values);
+                    items.stream().map(Path::of).sorted().toList();
+                }
+            }
+            """, true);
+    }
+
+    @Test
+    public void nestedLambdasUseReturnTargetsAndMapValueTargets() throws Exception {
+        check("""
+            import java.util.*;
+            import java.util.function.*;
+            class Example {
+                static <T> Supplier<T> supply(Function<T, String> formatter) { return null; }
+                static void install(Function<Integer, Supplier<String>> factory) {}
+                static void installMap(Map<String, Function<String, String>> functions) {}
+                void run() {
+                    install(index -> supply(value -> value.strip()));
+                    installMap(Map.of("first", value -> value.strip(), "second", value -> value.trim()));
+                }
+            }
+            """, true);
+    }
+
+    @Test
+    public void genericArgumentsFollowInheritedCollectionAndCompletionStageTypes() throws Exception {
+        check("""
+            import java.util.*;
+            import java.util.concurrent.*;
+            class Example {
+                void run(List<String> values, CompletableFuture<List<String>> future) {
+                    List.copyOf(values).stream().filter(value -> value.isEmpty()).toList();
+                    future.thenCompose(result -> CompletableFuture.completedFuture(result))
+                        .whenComplete((result, error) -> result.stream().filter(String::isEmpty).toList());
+                }
+            }
+            """, true);
+    }
+
+    @Test
+    public void blockLambdaResultsExcludeReturnsFromNestedScopes() throws Exception {
+        check("""
+            import java.util.concurrent.*;
+            class Example {
+                static <T> T onThread(Callable<T> action) throws Exception { return action.call(); }
+                void run(boolean condition) throws Exception {
+                    var text = onThread(() -> {
+                        class Local { int value() { return 1; } }
+                        Callable<Integer> nested = () -> { return 2; };
+                        Object anonymous = new Object() { int value() { return 3; } };
+                        if (condition) { return "first"; }
+                        var fallback = "second";
+                        return fallback;
+                    });
+                    text.strip().isEmpty();
+                }
+            }
+            """, true);
+    }
+
+    @Test
+    public void inferredGenericResultsStillRejectMissingMembers() throws Exception {
+        check("""
+            import java.util.*;
+            class Example {
+                void run(List<String> values) {
+                    List.copyOf(values).forEach(value -> value.missing());
+                }
+            }
+            """, false);
+    }
+
+    @Test
     public void conditionalStringMapper() throws Exception {
         check("import java.util.*; class Example { void f(List<String> xs) { "
             + "xs.stream().map(x -> x == null ? \"\" : x.strip()).filter(x -> !x.isBlank()).toList(); }}", true);

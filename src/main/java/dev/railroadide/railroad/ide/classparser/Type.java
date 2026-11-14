@@ -27,7 +27,10 @@ public sealed interface Type
             case org.objectweb.asm.Type.DOUBLE -> new PrimitiveType("double");
             case org.objectweb.asm.Type.ARRAY -> {
                 Type componentType = fromAsmType(asmType.getElementType());
-                yield new ArrayType(componentType);
+                for (int dimension = 0; dimension < asmType.getDimensions(); dimension++) {
+                    componentType = new ArrayType(componentType);
+                }
+                yield componentType;
             }
             case org.objectweb.asm.Type.OBJECT -> {
                 String className = asmType.getClassName();

@@ -1844,10 +1844,21 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (Modifier.isProtected(modifiers)) {
             if (Objects.equals(currentPackage, declaringPackage))
                 return true;
-            String currentType = enclosingTypeSymbol(usageSite)
-                .flatMap(Symbol::qualifiedName)
-                .orElse(null);
-            return currentType != null && isSubtype(currentType, ownerQualifiedName);
+            SyntaxNode receiver = unwrapTransparentExpression(explicitReceiver(usageSite));
+            for (SyntaxNode current = usageSite; current != null; current = current.parent().orElse(null)) {
+                Symbol enclosing = declaredSymbol(current).filter(candidate -> isTypeSymbol(candidate.kind()))
+                    .orElse(null);
+                String currentType = enclosing == null ? null : enclosing.qualifiedName().orElse(null);
+                if (currentType == null || !isSubtype(currentType, ownerQualifiedName))
+                    continue;
+                if (Modifier.isStatic(modifiers) || receiver == null
+                    || JavaSyntaxKinds.SUPER_EXPRESSION.id().equals(receiver.kind().id()))
+                    return true;
+                MethodOwner receiverOwner = methodOwner(receiver);
+                if (receiverOwner != null && isSubtype(receiverOwner.qualifiedTypeName(), currentType))
+                    return true;
+            }
+            return false;
         }
 
         return Objects.equals(currentPackage, declaringPackage);
@@ -2517,6 +2528,17 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 List<DeclaredType> directSupers = new ArrayList<>();
                 collectDirectSuperTypes(node, JAVA_EXTENDS_CLAUSE, directSupers);
                 collectDirectSuperTypes(node, JAVA_IMPLEMENTS_CLAUSE, directSupers);
+                if (JavaSyntaxKinds.ANONYMOUS_CLASS_BODY.id().equals(node.kind().id())) {
+                    SyntaxNode creation = node.parent().orElse(null);
+                    SyntaxNode base = creation == null ? null : directChild(creation, JAVA_TYPE_REFERENCE);
+                    Type inherited = creation == null ? null : inferredType(creation).orElse(null);
+                    if (!(inherited instanceof DeclaredType) && base != null) {
+                        inherited = semanticTypeFromTypeReference(base);
+                    }
+                    if (inherited instanceof DeclaredType declared && !declared.displayName().equals(qualifiedName)) {
+                        directSupers.add(declared);
+                    }
+                }
                 collected.put(qualifiedName, List.copyOf(directSupers));
             }));
         } finally {
@@ -2975,6 +2997,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return false;
 
         SyntaxNode declaration = localType.declaration().orElse(null);
+        if (declaration != null && JavaSyntaxKinds.ANONYMOUS_CLASS_BODY.id().equals(declaration.kind().id()))
+            return directSupers.isEmpty();
         return declaration != null && directChild(declaration, JAVA_EXTENDS_CLAUSE) == null;
     }
 
@@ -3397,8 +3421,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (owner.staticAccess() && !symbol.isStatic())
                 continue;
 
-            List<Type> parameterTypes = parameterTypesFromIndexedSignature(symbol.signature());
-            if (isApplicableMethod(parameterTypes, argumentTypes, false))
+            List<Type> parameterTypes = parameterTypesFromIndexedSignature(symbol);
+            SymbolSignature structured = symbol.structuredSignature();
+            boolean varargs = structured != null && !structured.parameters().isEmpty()
+                && structured.parameters().getLast().varargs();
+            if (isApplicableMethod(parameterTypes, argumentTypes, varargs))
                 return true;
             if (parameterTypes.size() == argumentTypes.size())
                 return true;
@@ -3406,7 +3433,14 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return false;
     }
 
-    private List<Type> parameterTypesFromIndexedSignature(@Nullable String signature) {
+    private List<Type> parameterTypesFromIndexedSignature(JavaProjectSemanticIndex.SymbolDescriptor symbol) {
+        SymbolSignature structured = symbol.structuredSignature();
+        if (structured != null)
+            return structured.parameters().stream().map(parameter -> {
+                Type type = semanticTypeFromText(parameter.type().displayName().replaceAll("\\s+", ""), null);
+                return parameter.varargs() ? new JavaTypes.ArrayType(type) : type;
+            }).toList();
+        String signature = symbol.signature();
         if (signature == null || signature.length() < 2 || signature.charAt(0) != '('
             || signature.charAt(signature.length() - 1) != ')')
             return List.of();

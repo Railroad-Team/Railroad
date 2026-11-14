@@ -81,6 +81,6 @@ public record ClassStub(
      * @return the package name followed by a dot and the class name
      */
     public String getFullName() {
-        return packageName + "." + name;
+        return packageName == null || packageName.isEmpty() ? name : packageName + "." + name;
     }
 }

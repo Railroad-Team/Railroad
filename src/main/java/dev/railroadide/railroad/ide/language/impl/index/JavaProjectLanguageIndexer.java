@@ -54,26 +54,11 @@ public final class JavaProjectLanguageIndexer
         Path sourceFile,
         JavaProjectSemanticIndex.SourceFileIndex indexedFile
     ) {
-        JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
-        index.files().forEach((path, fileIndex) -> {
-            if (!path.equals(sourceFile)) {
-                builder.putFile(fileIndex);
-            }
-        });
-
-        builder.putFile(indexedFile);
-        return builder.build();
+        return index.withFile(indexedFile);
     }
 
     @Override
     public JavaProjectSemanticIndex withRemovedFile(JavaProjectSemanticIndex index, Path sourceFile) {
-        JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
-        index.files().forEach((path, fileIndex) -> {
-            if (!path.equals(sourceFile)) {
-                builder.putFile(fileIndex);
-            }
-        });
-
-        return builder.build();
+        return index.withoutFile(sourceFile);
     }
 }

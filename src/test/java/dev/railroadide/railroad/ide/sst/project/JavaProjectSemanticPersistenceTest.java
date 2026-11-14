@@ -96,6 +96,15 @@ public class JavaProjectSemanticPersistenceTest {
         assertEquals(1, loaded.files().size());
         assertEquals(1, loaded.lookupQualifiedName("demo.A").size());
         assertEquals(1, loaded.lookupMember("demo.A", "VALUE").size());
+        var originalShard = index.getFile(aFile).orElseThrow().semanticShard();
+        var loadedShard = loaded.getFile(aFile).orElseThrow().semanticShard();
+        assertNotNull(loadedShard);
+        assertEquals(originalShard.documentId(), loadedShard.documentId());
+        assertEquals(originalShard.declarations().stream().map(symbol -> symbol.id()).toList(),
+            loadedShard.declarations().stream().map(symbol -> symbol.id()).toList());
+        for (var descriptor : loadedShard.declarations()) {
+            assertFalse(loaded.graph().symbols(descriptor.id()).isEmpty());
+        }
     }
 
     @Test

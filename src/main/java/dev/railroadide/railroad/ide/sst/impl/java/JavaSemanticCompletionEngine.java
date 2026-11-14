@@ -276,7 +276,7 @@ public final class JavaSemanticCompletionEngine {
                         addMethodItem(
                             out,
                             symbol.simpleName(),
-                            parameterDisplaysFromSignature(symbol.signature()),
+                            parameterDisplaysFromSignature(symbol),
                             "?",
                             symbol.isStatic());
                     }
@@ -384,7 +384,11 @@ public final class JavaSemanticCompletionEngine {
         return List.copyOf(result);
     }
 
-    private List<String> parameterDisplaysFromSignature(@Nullable String signature) {
+    private List<String> parameterDisplaysFromSignature(JavaProjectSemanticIndex.SymbolDescriptor symbol) {
+        if (symbol.structuredSignature() != null)
+            return symbol.structuredSignature().parameters().stream()
+                .map(parameter -> parameter.type().displayName() + (parameter.varargs() ? "..." : "")).toList();
+        String signature = symbol.signature();
         if (signature == null || signature.isBlank() || "()".equals(signature))
             return List.of();
         int open = signature.indexOf('(');

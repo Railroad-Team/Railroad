@@ -5,6 +5,8 @@ import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexPersisten
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import java.util.concurrent.CancellationException;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
+import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
+import dev.railroadide.railroad.ide.sst.graph.internal.SemanticGraphCodec;
 import dev.railroadide.railroad.utility.FileUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -15,13 +17,14 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.function.Consumer;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolDescriptor;
 
 /** Persists the complete Java project semantic index as one atomic binary snapshot. */
 public final class JavaProjectSemanticPersistence implements ProjectLanguageIndexPersistence<JavaProjectSemanticIndex> {
     private static final String CACHE_DIRECTORY = ".railroad/index/semantic";
     private static final String SNAPSHOT_FILE = "project-semantic-index.bin";
     private static final String SNAPSHOT_MAGIC = "RSSTIDX1";
-    private static final int FORMAT_VERSION = 5;
+    private static final int FORMAT_VERSION = 6;
 
     @Override
     public String languageId() {
@@ -256,9 +259,12 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
                 readNullableString(input),
                 sourcePath,
                 input.readBoolean(),
-                input.readBoolean()));
+                input.readBoolean(),
+                SemanticGraphCodec.read(input, SymbolDescriptor.class)));
         }
-        return new JavaProjectSemanticIndex.SourceFileIndex(sourcePath, packageName, imports, symbols, sourceHash);
+        var shard = SemanticGraphCodec.read(input, SemanticIndexShard.class);
+        return new JavaProjectSemanticIndex.SourceFileIndex(sourcePath, packageName, imports, symbols, sourceHash,
+            shard);
     }
 
     private static void writeFileIndex(
@@ -286,7 +292,9 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
             writeNullableString(output, symbol.signature());
             output.writeBoolean(symbol.isStatic());
             output.writeBoolean(symbol.isTopLevel());
+            SemanticGraphCodec.write(output, symbol.descriptor());
         }
+        SemanticGraphCodec.write(output, file.semanticShard());
     }
 
     private static void writeManifestEntry(DataOutputStream output, ManifestEntry entry) throws IOException {

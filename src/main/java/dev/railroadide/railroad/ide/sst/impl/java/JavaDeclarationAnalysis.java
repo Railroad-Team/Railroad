@@ -3,6 +3,7 @@ package dev.railroadide.railroad.ide.sst.impl.java;
 import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaSourceSymbolIds;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import dev.railroadide.railroad.ide.sst.semantic.api.*;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
@@ -10,6 +11,7 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.nio.charset.StandardCharsets;
 
 import static dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer.*;
 
@@ -370,6 +372,24 @@ public final class JavaDeclarationAnalysis {
                 return;
             }
 
+            if (JavaSyntaxKinds.ANONYMOUS_CLASS_BODY.id().equals(kindId)) {
+                Scope anonymousScope = scope.child();
+                context.attachScope(node, anonymousScope);
+                String qualifiedName = qualifyTypeName("$anonymous$" + lexicalQualifier(node),
+                    currentTypeQualifiedName);
+                SyntaxNode creation = node.parent().orElseThrow();
+                Symbol temporary = new SimpleSymbol(JavaSymbolKind.CLASS, "<anonymous>", qualifiedName, creation);
+                Symbol anonymous = new SimpleSymbol(
+                    JavaSourceSymbolIds.deriveSymbolId(temporary, context.projectIndex).orElse(null),
+                    JavaSymbolKind.CLASS, "<anonymous>", qualifiedName, node);
+                context.declare(node, anonymous);
+                for (SyntaxNode child : node.children()) {
+                    context.poll();
+                    visitNode(child, anonymousScope, qualifiedName);
+                }
+                return;
+            }
+
             if (JavaSyntaxKinds.PACKAGE_DECLARATION.id().equals(kindId)) {
                 declarePackage(node, scope);
             } else if (JavaSyntaxKinds.IMPORT_DECLARATION.id().equals(kindId)) {
@@ -409,7 +429,8 @@ public final class JavaDeclarationAnalysis {
                     visitNode(child, methodScope, currentTypeQualifiedName);
                 }
                 return;
-            } else if (JavaSyntaxKinds.CONSTRUCTOR_DECLARATION.id().equals(kindId)) {
+            } else if (JavaSyntaxKinds.CONSTRUCTOR_DECLARATION.id().equals(kindId)
+                || JavaSyntaxKinds.RECORD_COMPACT_CONSTRUCTOR.id().equals(kindId)) {
                 Scope constructorScope = declareConstructor(node, scope, currentTypeQualifiedName);
                 for (SyntaxNode child : node.children()) {
                     context.poll();
@@ -572,6 +593,13 @@ public final class JavaDeclarationAnalysis {
             }
 
             String qualifiedName = qualifyTypeName(simpleName, enclosingTypeQualifiedName);
+            SyntaxNode enclosing = JavaSourceSymbolIds.enclosingDeclaration(declarationNode);
+            if (enclosing != null && (enclosing.kind().equals(JavaSyntaxKinds.METHOD_DECLARATION)
+                || enclosing.kind().equals(JavaSyntaxKinds.CONSTRUCTOR_DECLARATION)
+                || enclosing.kind().equals(JavaSyntaxKinds.RECORD_COMPACT_CONSTRUCTOR))) {
+                qualifiedName = qualifyTypeName("$local$" + lexicalQualifier(declarationNode) + "$" + simpleName,
+                    enclosingTypeQualifiedName);
+            }
             declareSymbol(scope, declarationNode, symbolKind, simpleName, qualifiedName);
 
             Scope typeScope = scope.child();
@@ -679,6 +707,9 @@ public final class JavaDeclarationAnalysis {
         ) {
             String constructorName = identifierBeforeChildKind(constructorDeclaration,
                 JavaSyntaxKinds.PARAMETER_LIST.id());
+            if (JavaSyntaxKinds.RECORD_COMPACT_CONSTRUCTOR.id().equals(constructorDeclaration.kind().id())) {
+                constructorName = firstIdentifierLikeTokenText(constructorDeclaration);
+            }
             if (constructorName == null || constructorName.isBlank()) {
                 constructorName = "<init>";
             }
@@ -736,7 +767,10 @@ public final class JavaDeclarationAnalysis {
             String simpleName,
             @Nullable String qualifiedName
         ) {
-            Symbol symbol = new SimpleSymbol(kind, simpleName, qualifiedName, declarationNode);
+            Symbol temporary = new SimpleSymbol(kind, simpleName, qualifiedName, declarationNode);
+            Symbol symbol = new SimpleSymbol(
+                JavaSourceSymbolIds.deriveSymbolId(temporary, context.projectIndex).orElse(null), kind,
+                simpleName, qualifiedName, declarationNode);
             scope.declare(symbol);
             context.declare(declarationNode, symbol);
         }
@@ -747,6 +781,11 @@ public final class JavaDeclarationAnalysis {
             if (context.currentPackageName != null && !context.currentPackageName.isBlank())
                 return context.currentPackageName + "." + simpleName;
             return simpleName;
+        }
+
+        private String lexicalQualifier(SyntaxNode node) {
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(
+                JavaSourceSymbolIds.lexicalPath(node, context.syntaxRoot).getBytes(StandardCharsets.UTF_8));
         }
 
         private static @Nullable String qualifyMemberName(@Nullable String ownerQualifiedName, String simpleName) {

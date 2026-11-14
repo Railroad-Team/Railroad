@@ -19,6 +19,18 @@ public class JavaBinaryWildcardInferenceTest {
     private static final JavaSymbolIndex JDK = JavaJdkSymbolIndex.fromCurrentRuntime();
 
     @Test
+    public void assignedListenerPreservesWildcardArgumentsInNestedCallbacks() throws Exception {
+        check("void f() { Api.Listener<String> listener = change -> "
+            + "change.removed().forEach(value -> value.strip()); }", true);
+    }
+
+    @Test
+    public void assignedListenerStillRejectsMissingMembersInNestedCallbacks() throws Exception {
+        check("void f() { Api.Listener<String> listener = change -> "
+            + "change.removed().forEach(value -> value.missing()); }", false);
+    }
+
+    @Test
     public void unboundedWildcardUsesDeclarationBound() throws Exception {
         check("int f() { return Api.bounded().get().intValue(); }", true);
     }
@@ -63,6 +75,8 @@ public class JavaBinaryWildcardInferenceTest {
         Files.writeString(api, """
             package api;
             public class Api {
+                public interface Listener<T> { void changed(Change<? extends T> change); }
+                public static class Change<E> { public java.util.List<? extends E> removed() { return null; } }
                 public static class Box<T> { public T get() { return null; } }
                 public static class Bounded<T extends Number> { public T get() { return null; } }
                 public static class Range<S> { public int start; }
