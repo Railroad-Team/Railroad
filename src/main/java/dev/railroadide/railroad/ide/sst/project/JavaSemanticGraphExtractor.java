@@ -35,12 +35,25 @@ public final class JavaSemanticGraphExtractor {
         this.index = index;
     }
 
-    /** Extracts precisely the facts present in a model; unresolved references are omitted, never guessed. */
+    /**
+     * Extracts precisely the facts present in a model; unresolved references are omitted, never guessed.
+     *
+     * @param model semantic facts for the captured source revision
+     * @param check callback invoked to check cancellation or interruption; may throw to abort
+     * @return immutable document shard containing the available declarations, references and relations
+     */
     public static SemanticIndexShard extract(SemanticModel model, Runnable check) {
         return extract(model, null, check);
     }
 
-    /** Extracts facts and resolves documentation/import links against the same captured symbol inputs. */
+    /**
+     * Extracts facts and resolves documentation/import links against the same captured symbol inputs.
+     *
+     * @param model semantic facts for the captured source revision
+     * @param index captured external symbols used for name resolution, or {@code null} for local resolution
+     * @param check callback invoked to check cancellation or interruption; may throw to abort
+     * @return immutable document shard containing the available declarations, references and relations
+     */
     public static SemanticIndexShard extract(SemanticModel model, JavaSymbolIndex index, Runnable check) {
         var extractor = new JavaSemanticGraphExtractor(model, index, check);
         extractor.collectDeclarations(model.syntaxTree().root());
@@ -499,7 +512,12 @@ public final class JavaSemanticGraphExtractor {
         return new TypeReference(parsed.name(), parsed.arguments(), parsed.arrayDimensions(), target);
     }
 
-    /** Parses a Java type spelling into generic arguments, wildcard bounds and array rank. */
+    /**
+     * Parses a Java type spelling into generic arguments, wildcard bounds and array rank.
+     *
+     * @param text Java type spelling to split into structured components
+     * @return structured type spelling without a resolved symbol target
+     */
     public static TypeReference parseType(String text) {
         text = text.trim();
         if (text.isEmpty())

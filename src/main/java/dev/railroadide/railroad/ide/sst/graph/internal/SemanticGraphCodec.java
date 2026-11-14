@@ -18,6 +18,13 @@ public final class SemanticGraphCodec {
     private SemanticGraphCodec() {
     }
 
+    /**
+     * Writes a nullable value as length-prefixed UTF-8 JSON for the disposable index cache.
+     *
+     * @param output destination for the length-prefixed record
+     * @param value value to serialize, or {@code null}
+     * @throws IOException if the record cannot be written or exceeds the cache size limit
+     */
     public static void write(DataOutput output, Object value) throws IOException {
         if (value == null) {
             output.writeInt(-1);
@@ -30,6 +37,15 @@ public final class SemanticGraphCodec {
         output.write(bytes);
     }
 
+    /**
+     * Reads and validates a length-prefixed JSON value from the disposable index cache.
+     *
+     * @param <T> type of the decoded value
+     * @param input binary input positioned at a length-prefixed record
+     * @param type runtime class of the value to decode
+     * @return decoded value, or {@code null} for a null record
+     * @throws IOException if the record cannot be read or decoded, or its length is invalid
+     */
     public static <T> T read(DataInput input, Class<T> type) throws IOException {
         int length = input.readInt();
         if (length == -1)

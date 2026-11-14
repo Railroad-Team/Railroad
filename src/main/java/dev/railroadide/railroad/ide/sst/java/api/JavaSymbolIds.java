@@ -30,26 +30,67 @@ public final class JavaSymbolIds {
     private JavaSymbolIds() {
     }
 
+    /**
+     * Creates the identity of a named or unnamed Java module.
+     *
+     * @param name module name, or the empty string for the unnamed compilation context
+     * @return canonical Java declaration identity
+     */
     public static SymbolId module(String name) {
         return new SymbolId("java:module/" + part(Objects.requireNonNull(name, "name")));
     }
 
+    /**
+     * Creates a package identity within a module.
+     *
+     * @param moduleName module name, or the empty string for the unnamed compilation context
+     * @param name package name, or the empty string for the unnamed package
+     * @return canonical Java declaration identity
+     */
     public static SymbolId packageId(String moduleName, String name) {
         return new SymbolId(module(moduleName).value() + "/package/" + part(Objects.requireNonNull(name, "name")));
     }
 
+    /**
+     * Creates a type identity using its JVM binary name.
+     *
+     * @param qualifiedName nonblank JVM binary type name, using dollars for nested types
+     * @return canonical Java declaration identity
+     */
     public static SymbolId type(String qualifiedName) {
         return type("", qualifiedName);
     }
 
+    /**
+     * Creates a type identity using its JVM binary name.
+     *
+     * @param moduleName module name, or the empty string for the unnamed compilation context
+     * @param qualifiedName nonblank JVM binary type name, using dollars for nested types
+     * @return canonical Java declaration identity
+     */
     public static SymbolId type(String moduleName, String qualifiedName) {
         return new SymbolId(module(moduleName).value() + "/type/" + part(requireName(qualifiedName).replace('/', '.')));
     }
 
+    /**
+     * Creates a field identity within its declaring type.
+     *
+     * @param owner identity of the containing declaration
+     * @param name declaration name
+     * @return canonical Java declaration identity
+     */
     public static SymbolId field(SymbolId owner, String name) {
         return child(owner, "field", requireName(name));
     }
 
+    /**
+     * Creates a method identity from its name and erased parameter types.
+     *
+     * @param owner identity of the containing declaration
+     * @param name declaration name
+     * @param erasedParameterTypes resolved erased parameter types in declaration order
+     * @return canonical Java declaration identity
+     */
     public static SymbolId method(SymbolId owner, String name, List<String> erasedParameterTypes) {
         return callable(owner, "method", requireName(name), erasedParameterTypes);
     }
@@ -58,6 +99,12 @@ public final class JavaSymbolIds {
      * Identifies a JVM-only return-type overload. Providers use this only when multiple non-bridge
      * methods in the same class share a Java signature but have different erased return types.
      * Ordinary Java methods retain {@link #method(SymbolId, String, List)} identity.
+     *
+     * @param owner identity of the containing declaration
+     * @param name declaration name
+     * @param erasedParameterTypes resolved erased parameter types in declaration order
+     * @param erasedReturnType resolved erased result type, including {@code void}
+     * @return canonical Java declaration identity
      */
     public static SymbolId binaryMethod(
         SymbolId owner,
@@ -69,26 +116,70 @@ public final class JavaSymbolIds {
         return child(method(owner, name, erasedParameterTypes), "return", result);
     }
 
+    /**
+     * Creates a constructor identity from its erased parameter types.
+     *
+     * @param owner identity of the containing declaration
+     * @param erasedParameterTypes resolved erased parameter types in declaration order
+     * @return canonical Java declaration identity
+     */
     public static SymbolId constructor(SymbolId owner, List<String> erasedParameterTypes) {
         return callable(owner, "constructor", "<init>", erasedParameterTypes);
     }
 
+    /**
+     * Creates a value-parameter identity from its declaration ordinal.
+     *
+     * @param callable identity of the containing callable
+     * @param index zero-based declaration ordinal
+     * @return canonical Java declaration identity
+     */
     public static SymbolId parameter(SymbolId callable, int index) {
         return child(callable, "parameter", ordinal(index));
     }
 
+    /**
+     * Creates a type-parameter identity from its declaration ordinal.
+     *
+     * @param owner identity of the containing declaration
+     * @param index zero-based declaration ordinal
+     * @return canonical Java declaration identity
+     */
     public static SymbolId typeParameter(SymbolId owner, int index) {
         return child(owner, "typeParameter", ordinal(index));
     }
 
+    /**
+     * Creates a local-variable identity from its structural path and name.
+     *
+     * @param owner identity of the containing declaration
+     * @param lexicalPath trivia-independent structural path relative to the owner
+     * @param name declaration name
+     * @return canonical Java declaration identity
+     */
     public static SymbolId local(SymbolId owner, String lexicalPath, String name) {
         return child(child(owner, "local", requireName(lexicalPath)), "name", requireName(name));
     }
 
+    /**
+     * Creates a local-type identity from its structural path and name.
+     *
+     * @param owner identity of the containing declaration
+     * @param lexicalPath trivia-independent structural path relative to the owner
+     * @param name declaration name
+     * @return canonical Java declaration identity
+     */
     public static SymbolId localType(SymbolId owner, String lexicalPath, String name) {
         return child(child(owner, "localType", requireName(lexicalPath)), "name", requireName(name));
     }
 
+    /**
+     * Creates an anonymous-type identity from its structural path.
+     *
+     * @param owner identity of the containing declaration
+     * @param lexicalPath trivia-independent structural path relative to the owner
+     * @return canonical Java declaration identity
+     */
     public static SymbolId anonymous(SymbolId owner, String lexicalPath) {
         return child(owner, "anonymous", requireName(lexicalPath));
     }
@@ -96,6 +187,9 @@ public final class JavaSymbolIds {
     /**
      * Normalizes already resolved type spelling for overload identity. Generic arguments are erased,
      * varargs become arrays, and whitespace is ignored. This does not resolve simple names or bounds.
+     *
+     * @param spelling resolved Java type spelling to erase and normalize
+     * @return normalized erased type spelling with array rank preserved
      */
     public static String normalizeParameterType(String spelling) {
         String value = requireName(spelling).replace("...", "[]");
@@ -121,7 +215,13 @@ public final class JavaSymbolIds {
         return normalized;
     }
 
-    /** Computes a local anchor without using source offsets or trivia token positions. */
+    /**
+     * Computes a local anchor without using source offsets or trivia token positions.
+     *
+     * @param declaration declaration node whose structural path is computed
+     * @param owner ancestor declaration used as the structural anchor
+     * @return structural path relative to the containing declaration
+     */
     public static String lexicalPath(SyntaxNode declaration, SyntaxNode owner) {
         Objects.requireNonNull(declaration, "declaration");
         Objects.requireNonNull(owner, "owner");

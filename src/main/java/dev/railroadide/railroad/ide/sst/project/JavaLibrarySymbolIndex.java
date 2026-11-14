@@ -175,7 +175,13 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         locations.putIfAbsent(qualifiedName, location);
     }
 
-    /** Creates an archive address retaining the exact entry, including a JMOD classes/ prefix. */
+    /**
+     * Creates an archive address retaining the exact entry, including a JMOD classes/ prefix.
+     *
+     * @param archive path to the archive containing the class
+     * @param entry archive-relative entry name
+     * @return URI retaining the archive and entry identity
+     */
     public static DocumentUri archiveEntry(Path archive, String entry) {
         try {
             String encoded = new URI(null, null, "/" + entry, null).getRawPath().substring(1);

@@ -50,18 +50,43 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         this.jdkHome = Objects.requireNonNull(jdkHome);
     }
 
+    /**
+     * Returns the source declarations pinned by this capture.
+     *
+     * @return captured source declaration index
+     */
     public JavaProjectSemanticIndex sourceIndex() {
         return sourceIndex;
     }
+    /**
+     * Returns the combined symbols pinned by this capture.
+     *
+     * @return captured combined source and binary symbol index
+     */
     public JavaSymbolIndex symbols() {
         return symbols;
     }
+    /**
+     * Returns source text copied when this analysis was captured.
+     *
+     * @return immutable captured source text keyed by path
+     */
     public Map<Path, String> sourceTexts() {
         return sourceTexts;
     }
+    /**
+     * Returns the dependency roots pinned by this workspace capture.
+     *
+     * @return immutable ordered dependency roots captured for this analysis
+     */
     public List<Path> classpath() {
         return classpath;
     }
+    /**
+     * Returns the JDK home pinned by this workspace capture.
+     *
+     * @return captured JDK home path
+     */
     public Path jdkHome() {
         return jdkHome;
     }
@@ -79,6 +104,8 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
     /**
      * Captures declaration and binary graph facts. Source references require {@link #resolvedGraph(Runnable)};
      * constructing completion inputs never triggers whole-workspace body resolution.
+     *
+     * @return immutable declaration graph for this capture
      */
     public WorkspaceSymbolGraph graph() {
         ActivityCheckpoint.checkInterrupted();
@@ -104,6 +131,9 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
      * The returned immutable graph has complete available facts, including partial-program omissions;
      * cancellation throws without publishing or retaining a partially enriched graph. Successful
      * construction is single-flight and retained by this captured analysis until its owner releases it.
+     *
+     * @param activityCheck callback invoked to check cancellation or interruption; may throw to abort
+     * @return cached immutable graph including resolved source references and override relations
      */
     public WorkspaceSymbolGraph resolvedGraph(Runnable activityCheck) {
         Objects.requireNonNull(activityCheck).run();
@@ -168,6 +198,11 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         return result;
     }
 
+    /**
+     * Resolves captured source bodies with thread-interruption checks.
+     *
+     * @return cached immutable graph including resolved source references and override relations
+     */
     public WorkspaceSymbolGraph resolvedGraph() {
         return resolvedGraph(ActivityCheckpoint::checkInterrupted);
     }

@@ -70,7 +70,14 @@ public final class JavaProjectSemanticExtractor {
             DocumentOrigin.original(uri), source, StandardCharsets.UTF_8), activityCheck);
     }
 
-    /** Extracts declarations retaining the exact document identity, version, URI and origin. */
+    /**
+     * Extracts declarations retaining the exact document identity, version, URI and origin.
+     *
+     * @param path source file path, normalized by the index
+     * @param snapshot exact source document revision to parse and index
+     * @param check callback invoked to check cancellation or interruption; may throw to abort
+     * @return immutable source entry retaining the captured semantic facts
+     */
     public JavaProjectSemanticIndex.SourceFileIndex extract(Path path, TextDocumentSnapshot snapshot, Runnable check) {
         return new JavaProjectSemanticExtractor(new ActivityCheckpoint(check)).extractSnapshot(path, snapshot);
     }
@@ -112,12 +119,27 @@ public final class JavaProjectSemanticExtractor {
         return new JavaProjectSemanticIndex.SourceFileIndex(path, packageName, imports, symbols, null, shard);
     }
 
-    /** Copies an already resolved semantic model with invocation-local cancellation. */
+    /**
+     * Copies an already resolved semantic model with invocation-local cancellation.
+     *
+     * @param path source file path, normalized by the index
+     * @param model semantic facts for the captured source revision
+     * @param check callback invoked to check cancellation or interruption; may throw to abort
+     * @return immutable source entry retaining the captured semantic facts
+     */
     public JavaProjectSemanticIndex.SourceFileIndex extract(Path path, SemanticModel model, Runnable check) {
         return new JavaProjectSemanticExtractor(new ActivityCheckpoint(check)).extract(path, model);
     }
 
-    /** Extracts resolved facts and documentation links using the model's captured external symbols. */
+    /**
+     * Extracts resolved facts and documentation links using the model's captured external symbols.
+     *
+     * @param path source file path, normalized by the index
+     * @param model semantic facts for the captured source revision
+     * @param index captured external symbols used for name resolution, or {@code null} for local resolution
+     * @param check callback invoked to check cancellation or interruption; may throw to abort
+     * @return immutable source entry retaining the captured semantic facts
+     */
     public JavaProjectSemanticIndex.SourceFileIndex extract(
         Path path,
         SemanticModel model,

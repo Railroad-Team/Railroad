@@ -22,6 +22,14 @@ public record TypeReference(
     int arrayDimensions,
     @Nullable SymbolId target
 ) {
+    /**
+     * Creates a structured type reference with copied arguments and a nonnegative array rank.
+     *
+     * @param name nonblank language-owned type spelling
+     * @param arguments ordered generic arguments or wildcard bounds to copy
+     * @param arrayDimensions nonnegative array rank
+     * @param target resolved declaration identity, or {@code null} for unresolved or intrinsic types
+     */
     public TypeReference {
         Objects.requireNonNull(name, "name");
         if (name.isBlank())
@@ -31,11 +39,20 @@ public record TypeReference(
             throw new IllegalArgumentException("Array rank cannot be negative");
     }
 
+    /**
+     * Creates an unresolved, nonarray type reference without generic arguments.
+     *
+     * @param name nonblank language-owned type spelling
+     */
     public TypeReference(String name) {
         this(name, List.of(), 0, null);
     }
 
-    /** Returns a deterministic spelling for presentation, not symbol identity. */
+    /**
+     * Returns a deterministic spelling for presentation, not symbol identity.
+     *
+     * @return deterministic type spelling including arguments, bounds and array dimensions
+     */
     public String displayName() {
         String suffix = arguments.isEmpty()
             ? ""

@@ -14,7 +14,12 @@ public final class JavaSourceSymbolIds {
     private JavaSourceSymbolIds() {
     }
 
-    /** Returns an identity when the symbol carries enough declaration information to identify it uniquely. */
+    /**
+     * Returns an identity when the symbol carries enough declaration information to identify it uniquely.
+     *
+     * @param symbol symbol whose declaration is queried
+     * @return canonical identity, or an empty optional if insufficient declaration facts are available
+     */
     public static Optional<SymbolId> deriveSymbolId(Symbol symbol) {
         try {
             return deriveValidSymbolId(symbol, null);
@@ -23,7 +28,13 @@ public final class JavaSourceSymbolIds {
         }
     }
 
-    /** Resolves source signature aliases against a captured project index. */
+    /**
+     * Resolves source signature aliases against a captured project index.
+     *
+     * @param symbol symbol whose declaration is queried
+     * @param index captured external symbols used for name resolution, or {@code null} for local resolution
+     * @return canonical identity, or an empty optional if insufficient declaration facts are available
+     */
     public static Optional<SymbolId> deriveSymbolId(Symbol symbol, JavaSymbolIndex index) {
         try {
             return deriveValidSymbolId(symbol, index);
@@ -70,7 +81,12 @@ public final class JavaSourceSymbolIds {
         };
     }
 
-    /** Returns the nearest containing type or callable declaration. */
+    /**
+     * Returns the nearest containing type or callable declaration.
+     *
+     * @param node syntax node to inspect
+     * @return nearest containing type or callable, or {@code null}
+     */
     public static SyntaxNode enclosingDeclaration(SyntaxNode node) {
         for (SyntaxNode current = node.parent().orElse(null); current != null; current = current.parent()
             .orElse(null)) {
@@ -80,11 +96,23 @@ public final class JavaSourceSymbolIds {
         return null;
     }
 
-    /** Returns the structural declaration identity, including local and anonymous types. */
+    /**
+     * Returns the structural declaration identity, including local and anonymous types.
+     *
+     * @param node syntax node to inspect
+     * @return canonical identity of the source declaration
+     */
     public static SymbolId declarationId(SyntaxNode node) {
         return declarationId(node, null);
     }
 
+    /**
+     * Resolves a source declaration identity using captured external type names.
+     *
+     * @param node syntax node to inspect
+     * @param index captured external symbols used for name resolution, or {@code null} for local resolution
+     * @return canonical identity of the source declaration
+     */
     public static SymbolId declarationId(SyntaxNode node, JavaSymbolIndex index) {
         if (isTypeNode(node))
             return typeId(node, index);
@@ -118,7 +146,12 @@ public final class JavaSourceSymbolIds {
             : prefix + (owner != null && isTypeNode(owner) ? "$" : ".") + declarationName(node);
     }
 
-    /** Returns canonical erased parameter types, preserving array rank and normalizing varargs. */
+    /**
+     * Returns canonical erased parameter types, preserving array rank and normalizing varargs.
+     *
+     * @param callable callable declaration or record node whose parameters are inspected
+     * @return canonical erased parameter types in declaration order
+     */
     public static List<String> parameterTypes(SyntaxNode callable) {
         return parameterTypes(callable, null);
     }
@@ -156,7 +189,12 @@ public final class JavaSourceSymbolIds {
         return List.copyOf(result);
     }
 
-    /** Returns explicit parameters or the record header supplying a compact constructor's parameters. */
+    /**
+     * Returns explicit parameters or the record header supplying a compact constructor's parameters.
+     *
+     * @param callable callable declaration or record node whose parameters are inspected
+     * @return parameter or record-component list, or {@code null} when absent
+     */
     public static SyntaxNode parameterList(SyntaxNode callable) {
         SyntaxNode list = child(callable, "JAVA_PARAMETER_LIST");
         if (list != null || !callable.kind().id().equals("JAVA_RECORD_COMPACT_CONSTRUCTOR"))
@@ -165,12 +203,25 @@ public final class JavaSourceSymbolIds {
         return owner == null ? null : child(owner, "JAVA_RECORD_HEADER");
     }
 
-    /** Resolves explicitly imported, local package and java.lang names without consulting live files. */
+    /**
+     * Resolves explicitly imported, local package and java.lang names without consulting live files.
+     *
+     * @param name declaration name
+     * @param context syntax context used to resolve visible declarations and imports
+     * @return qualified type spelling where resolvable, otherwise the available spelling
+     */
     public static String qualify(String name, SyntaxNode context) {
         return qualify(name, context, null);
     }
 
-    /** Resolves aliases against immutable project declarations when available. */
+    /**
+     * Resolves aliases against immutable project declarations when available.
+     *
+     * @param name declaration name
+     * @param context syntax context used to resolve visible declarations and imports
+     * @param index captured external symbols used for name resolution, or {@code null} for local resolution
+     * @return qualified type spelling where resolvable, otherwise the available spelling
+     */
     public static String qualify(String name, SyntaxNode context, JavaSymbolIndex index) {
         if (name.isBlank()
             || Set.of("void", "boolean", "byte", "short", "int", "long", "float", "double", "char", "var", "?")
@@ -256,7 +307,13 @@ public final class JavaSourceSymbolIds {
         return name;
     }
 
-    /** Returns a type-variable's first bound, or null when the name is not a visible type variable. */
+    /**
+     * Returns a type-variable's first bound, or null when the name is not a visible type variable.
+     *
+     * @param name declaration name
+     * @param context syntax context used to resolve visible declarations and imports
+     * @return first visible type-variable bound, or {@code null} when the name is not a visible type variable
+     */
     public static String typeVariableBound(String name, SyntaxNode context) {
         for (SyntaxNode current = context; current != null; current = current.parent().orElse(null)) {
             SyntaxNode parameters = child(current, "JAVA_TYPE_PARAMETERS");
@@ -274,7 +331,12 @@ public final class JavaSourceSymbolIds {
         return null;
     }
 
-    /** Returns the declaration's identifier using only its header. */
+    /**
+     * Returns the declaration's identifier using only its header.
+     *
+     * @param node syntax node to inspect
+     * @return declaration name extracted from its syntax
+     */
     public static String declarationName(SyntaxNode node) {
         String last = null;
         for (SyntaxNode child : node.children()) {
@@ -289,7 +351,13 @@ public final class JavaSourceSymbolIds {
         return last == null ? "<anonymous>" : last;
     }
 
-    /** Returns a structural path that is unchanged by whitespace and comment edits. */
+    /**
+     * Returns a structural path that is unchanged by whitespace and comment edits.
+     *
+     * @param node syntax node to inspect
+     * @param ancestor containing declaration, or {@code null} to use the syntax root
+     * @return structural path relative to the containing declaration
+     */
     public static String lexicalPath(SyntaxNode node, SyntaxNode ancestor) {
         List<String> segments = new ArrayList<>();
         for (SyntaxNode current = node; current != null
@@ -315,7 +383,13 @@ public final class JavaSourceSymbolIds {
         return index;
     }
 
-    /** Returns a direct child of the requested syntax kind. */
+    /**
+     * Returns a direct child of the requested syntax kind.
+     *
+     * @param node syntax node to inspect
+     * @param kind syntax kind identifier to match
+     * @return first direct child with the requested kind, or {@code null}
+     */
     public static SyntaxNode child(SyntaxNode node, String kind) {
         return node.children().stream().filter(part -> part.kind().id().equals(kind)).findFirst().orElse(null);
     }
@@ -331,7 +405,12 @@ public final class JavaSourceSymbolIds {
         return null;
     }
 
-    /** Returns source tokens with trivia omitted. */
+    /**
+     * Returns source tokens with trivia omitted.
+     *
+     * @param node syntax node to inspect
+     * @return concatenated nontrivia token text
+     */
     public static String compactText(SyntaxNode node) {
         if (node instanceof SyntaxToken token)
             return trivia(token) ? "" : token.text();

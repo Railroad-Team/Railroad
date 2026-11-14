@@ -22,6 +22,14 @@ public record SymbolSignature(
     @Nullable TypeReference returnType,
     List<TypeReference> thrownTypes
 ) {
+    /**
+     * Copies signature components and validates that only the final parameter is variadic.
+     *
+     * @param typeParameters declared type parameters and ordered bounds to copy
+     * @param parameters value parameters in declaration order to copy
+     * @param returnType declared result type, or {@code null} for constructors or unknown results
+     * @param thrownTypes declared exception or effect types to copy
+     */
     public SymbolSignature {
         typeParameters = List.copyOf(typeParameters);
         parameters = List.copyOf(parameters);
@@ -32,8 +40,19 @@ public record SymbolSignature(
         }
     }
 
-    /** A declared generic parameter with ordered bounds. */
+    /**
+     * A declared generic parameter with ordered bounds.
+     *
+     * @param name parameter name
+     * @param bounds ordered generic bounds to copy
+     */
     public record TypeParameter(String name, List<TypeReference> bounds) {
+        /**
+         * Creates a named generic parameter with copied bounds.
+         *
+         * @param name parameter name
+         * @param bounds ordered generic bounds to copy
+         */
         public TypeParameter {
             Objects.requireNonNull(name, "name");
             if (name.isBlank())
@@ -42,8 +61,21 @@ public record SymbolSignature(
         }
     }
 
-    /** A callable parameter; a variadic parameter stores its element type. */
+    /**
+     * A callable parameter; a variadic parameter stores its element type.
+     *
+     * @param name parameter name
+     * @param type declared parameter type; the element type for a variadic parameter
+     * @param varargs whether this final callable parameter is variadic
+     */
     public record Parameter(String name, TypeReference type, boolean varargs) {
+        /**
+         * Creates a callable parameter with its declared type.
+         *
+         * @param name parameter name
+         * @param type declared parameter type; the element type for a variadic parameter
+         * @param varargs whether this final callable parameter is variadic
+         */
         public Parameter {
             Objects.requireNonNull(name, "name");
             Objects.requireNonNull(type, "type");

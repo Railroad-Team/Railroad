@@ -38,14 +38,32 @@ public final class WorkspaceSymbolGraph {
         this.incoming = Map.copyOf(incoming);
     }
 
+    /**
+     * Creates an immutable graph with no document facts.
+     *
+     * @return immutable graph with no document facts
+     */
     public static WorkspaceSymbolGraph empty() {
         return new WorkspaceSymbolGraph(Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
     }
 
+    /**
+     * Indexes captured disk shards without installing overlays.
+     *
+     * @param shards captured document shards with unique document identities
+     * @return immutable graph indexing the supplied disk shards
+     */
     public static WorkspaceSymbolGraph of(Collection<SemanticIndexShard> shards) {
         return of(shards, ActivityCheckpoint::checkInterrupted);
     }
 
+    /**
+     * Indexes captured disk shards without installing overlays.
+     *
+     * @param shards captured document shards with unique document identities
+     * @param activityCheck callback invoked to check cancellation or interruption; may throw to abort
+     * @return immutable graph indexing the supplied disk shards
+     */
     public static WorkspaceSymbolGraph of(Collection<SemanticIndexShard> shards, Runnable activityCheck) {
         Objects.requireNonNull(activityCheck).run();
         Map<DocumentId, SemanticIndexShard> documents = new LinkedHashMap<>();
@@ -82,29 +100,63 @@ public final class WorkspaceSymbolGraph {
         return result;
     }
 
+    /**
+     * Returns the visible document facts after applying overlays.
+     *
+     * @return immutable visible shards, with overlays taking precedence over disk facts
+     */
     public Map<DocumentId, SemanticIndexShard> shards() {
         var result = new HashMap<>(disk);
         result.putAll(overlays);
         return Map.copyOf(result);
     }
 
+    /**
+     * Returns every visible declaration view sharing a canonical identity.
+     *
+     * @param id declaration identity to query
+     * @return all visible declaration views for the identity, or an empty list
+     */
     public List<SymbolDescriptor> symbols(SymbolId id) {
         return symbols.getOrDefault(Objects.requireNonNull(id), List.of());
     }
 
+    /**
+     * Looks up resolved occurrences of a declaration across visible shards.
+     *
+     * @param id declaration identity to query
+     * @return resolved occurrences targeting the identity, or an empty list
+     */
     public List<ReferenceOccurrence> referencesTo(SymbolId id) {
         return reverse.getOrDefault(Objects.requireNonNull(id), List.of());
     }
 
+    /**
+     * Looks up relations whose source is the supplied identity.
+     *
+     * @param id declaration identity to query
+     * @return relations starting at the identity, or an empty list
+     */
     public List<SymbolEdge> outgoingEdges(SymbolId id) {
         return outgoing.getOrDefault(Objects.requireNonNull(id), List.of());
     }
 
+    /**
+     * Looks up relations whose target is the supplied identity.
+     *
+     * @param id declaration identity to query
+     * @return relations ending at the identity, or an empty list
+     */
     public List<SymbolEdge> incomingEdges(SymbolId id) {
         return incoming.getOrDefault(Objects.requireNonNull(id), List.of());
     }
 
-    /** Replaces disk facts atomically while retaining a visible overlay, if any. */
+    /**
+     * Replaces disk facts atomically while retaining a visible overlay, if any.
+     *
+     * @param shard document facts to publish
+     * @return new graph retaining any visible overlay for the replaced document
+     */
     public WorkspaceSymbolGraph replaceShard(SemanticIndexShard shard) {
         Objects.requireNonNull(shard);
         rejectOlder(disk.get(shard.documentId()), shard);
@@ -113,7 +165,12 @@ public final class WorkspaceSymbolGraph {
         return change(updated, overlays, shard.documentId());
     }
 
-    /** Deletes both layers and all postings owned by this document, including reverse edges. */
+    /**
+     * Deletes both layers and all postings owned by this document, including reverse edges.
+     *
+     * @param id document identity to update
+     * @return new graph with both layers and postings for the document removed
+     */
     public WorkspaceSymbolGraph removeShard(DocumentId id) {
         var updated = new HashMap<>(disk);
         var updatedOverlays = new HashMap<>(overlays);
@@ -122,7 +179,12 @@ public final class WorkspaceSymbolGraph {
         return change(updated, updatedOverlays, id);
     }
 
-    /** Replaces the visible document facts without destroying its persisted baseline. */
+    /**
+     * Replaces the visible document facts without destroying its persisted baseline.
+     *
+     * @param shard document facts to publish
+     * @return new graph exposing the overlay while retaining disk facts
+     */
     public WorkspaceSymbolGraph withOverlay(SemanticIndexShard shard) {
         Objects.requireNonNull(shard);
         rejectOlder(disk.get(shard.documentId()), shard);
@@ -132,7 +194,12 @@ public final class WorkspaceSymbolGraph {
         return change(disk, updated, shard.documentId());
     }
 
-    /** Closes an overlay, revealing the latest disk shard. Saving must first replace that disk shard. */
+    /**
+     * Closes an overlay, revealing the latest disk shard. Saving must first replace that disk shard.
+     *
+     * @param id document identity to update
+     * @return new graph exposing disk facts for the document, if present
+     */
     public WorkspaceSymbolGraph withoutOverlay(DocumentId id) {
         var updated = new HashMap<>(overlays);
         updated.remove(Objects.requireNonNull(id));

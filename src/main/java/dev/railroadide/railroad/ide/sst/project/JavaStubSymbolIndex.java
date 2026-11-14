@@ -75,7 +75,15 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         this(classStubsByQualifiedName, sourceByQualifiedName, Map.of(), Map.of(), activityCheck);
     }
 
-    /** Publishes binary declarations with exact entry addresses and owner-supplied alternate locations. */
+    /**
+     * Publishes binary declarations with exact entry addresses and owner-supplied alternate locations.
+     *
+     * @param classStubsByQualifiedName class metadata keyed by qualified type name
+     * @param sourceByQualifiedName source paths keyed by qualified type name
+     * @param binaryLocations exact binary entry addresses keyed by qualified type name
+     * @param alternateLocations alternate locations keyed by symbol identity
+     * @param activityCheck callback invoked to check cancellation or interruption; may throw to abort
+     */
     public JavaStubSymbolIndex(
         Map<String, ClassStub> classStubsByQualifiedName,
         Map<String, Path> sourceByQualifiedName,
@@ -205,7 +213,11 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         }
     }
 
-    /** Returns exact class-entry addresses retained by the scanner. */
+    /**
+     * Returns exact class-entry addresses retained by the scanner.
+     *
+     * @return immutable mapping of qualified class names to exact binary entry addresses
+     */
     public Map<String, DocumentUri> binaryLocations() {
         return binaryLocations;
     }

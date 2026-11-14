@@ -40,6 +40,13 @@ public final class JavaOverrideGraphExtractor {
         }
     }
 
+    /**
+     * Derives confirmed override relations from captured declarations and subtype edges.
+     *
+     * @param shards captured document shards with unique document identities
+     * @param check callback invoked to check cancellation or interruption; may throw to abort
+     * @return shards enriched with confirmed override relations
+     */
     public static List<SemanticIndexShard> extract(Collection<SemanticIndexShard> shards, Runnable check) {
         return new JavaOverrideGraphExtractor(shards, check).extract(shards);
     }

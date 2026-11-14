@@ -59,7 +59,11 @@ public final class JavaProjectSemanticIndex
         this.graph = graph == null ? WorkspaceSymbolGraph.of(semanticShards()) : graph;
     }
 
-    /** Returns immutable graph facts belonging to this source index capture. */
+    /**
+     * Returns immutable graph facts belonging to this source index capture.
+     *
+     * @return immutable declaration graph for this capture
+     */
     public WorkspaceSymbolGraph graph() {
         return graph;
     }
@@ -69,7 +73,12 @@ public final class JavaProjectSemanticIndex
         return filesByPath.values().stream().map(SourceFileIndex::semanticShard).filter(Objects::nonNull).toList();
     }
 
-    /** Replaces a file and its graph postings together; unrelated immutable shards remain shared. */
+    /**
+     * Replaces a file and its graph postings together; unrelated immutable shards remain shared.
+     *
+     * @param file replacement source entry and its graph facts
+     * @return new index containing the replacement file and updated graph postings
+     */
     public JavaProjectSemanticIndex withFile(SourceFileIndex file) {
         Map<Path, SourceFileIndex> updated = new HashMap<>(filesByPath);
         if (file.semanticShard() != null) {
@@ -90,7 +99,12 @@ public final class JavaProjectSemanticIndex
         return new JavaProjectSemanticIndex(updated, updatedGraph);
     }
 
-    /** Removes a file and every graph posting established by it in one immutable transaction. */
+    /**
+     * Removes a file and every graph posting established by it in one immutable transaction.
+     *
+     * @param path source file path, normalized by the index
+     * @return new index without the file or its graph postings
+     */
     public JavaProjectSemanticIndex withoutFile(Path path) {
         Map<Path, SourceFileIndex> updated = new HashMap<>(filesByPath);
         var previous = updated.remove(FileUtils.normalizePath(path));
@@ -380,6 +394,8 @@ public final class JavaProjectSemanticIndex
      * @param imports the source file's import descriptors
      * @param declaredSymbols the source file's indexed type and member descriptors
      * @param sourceHash SHA-256 of the parsed UTF-8 input, or null when provenance is unavailable
+     *
+     * @param semanticShard document graph facts, or {@code null} when unavailable
      */
     public record SourceFileIndex(
         Path path,
@@ -397,6 +413,8 @@ public final class JavaProjectSemanticIndex
          * @param imports the source file's import descriptors
          * @param declaredSymbols the source file's indexed type and member descriptors
          * @param sourceHash SHA-256 of the parsed UTF-8 input, or null when provenance is unavailable
+         *
+         * @param semanticShard document graph facts, or {@code null} when unavailable
          */
         public SourceFileIndex {
             path = FileUtils.normalizePath(path);
@@ -405,6 +423,15 @@ public final class JavaProjectSemanticIndex
             declaredSymbols = List.copyOf(Objects.requireNonNull(declaredSymbols, "declaredSymbols"));
         }
 
+        /**
+         * Creates a source entry without document graph facts.
+         *
+         * @param path source file path, normalized by the index
+         * @param packageName declared package, or {@code null} for the unnamed package
+         * @param imports import descriptors to copy
+         * @param declaredSymbols indexed type and member declarations to copy
+         * @param sourceHash SHA-256 of the parsed UTF-8 source, or {@code null} when unavailable
+         */
         public SourceFileIndex(
             Path path,
             @Nullable String packageName,
@@ -484,6 +511,8 @@ public final class JavaProjectSemanticIndex
      * @param sourceFile the symbol's originating source path
      * @param isStatic whether the declaration has the {@code static} modifier
      * @param isTopLevel whether the symbol is a top-level type declaration
+     *
+     * @param descriptor authoritative structured declaration facts, or {@code null} when unavailable
      */
     public record SymbolDescriptor(
         @NotNull SymbolKind kind,
@@ -507,6 +536,8 @@ public final class JavaProjectSemanticIndex
          * @param sourceFile the symbol's originating source path
          * @param isStatic whether the declaration has the {@code static} modifier
          * @param isTopLevel whether the symbol is a top-level type declaration
+         *
+         * @param descriptor authoritative structured declaration facts, or {@code null} when unavailable
          */
         public SymbolDescriptor {
             if (descriptor != null) {
@@ -529,6 +560,18 @@ public final class JavaProjectSemanticIndex
             sourceFile = FileUtils.normalizePath(Objects.requireNonNull(sourceFile, "sourceFile"));
         }
 
+        /**
+         * Creates a source symbol entry without authoritative structured declaration facts.
+         *
+         * @param kind semantic category of the declaration or relation
+         * @param simpleName nonblank unqualified declaration name
+         * @param qualifiedName qualified declaration name, or {@code null} when unavailable
+         * @param ownerQualifiedName qualified owning type name, or {@code null} for a nonmember
+         * @param signature callable signature, or {@code null} when unavailable
+         * @param sourceFile originating source path
+         * @param isStatic whether the declaration has the {@code static} modifier
+         * @param isTopLevel whether this is a top-level type declaration
+         */
         public SymbolDescriptor(
             SymbolKind kind,
             String simpleName,
@@ -543,7 +586,11 @@ public final class JavaProjectSemanticIndex
                 null);
         }
 
-        /** The authoritative structured signature when semantic extraction has completed. */
+        /**
+         * The authoritative structured signature when semantic extraction has completed.
+         *
+         * @return structured signature, or {@code null} when no descriptor or signature is available
+         */
         public SymbolSignature structuredSignature() {
             return descriptor == null ? null : descriptor.signature();
         }

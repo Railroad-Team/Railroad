@@ -12,6 +12,12 @@ import java.util.Objects;
  * The URI retains archive entry identity. Ranges are optional for binaries with no offset mapping;
  * a URI alone may still be navigable. Locations carry document revisions and must be validated
  * against the destination snapshot before selecting text or bytes.
+ *
+ * @param uri exact document address, including any archive entry
+ * @param origin provenance of this source, binary or generated view
+ * @param declaration full declaration range, or {@code null} when no offset mapping is available
+ * @param selection optional name range within the declaration, or {@code null}
+ * @param navigable whether the provider can navigate to this view
  */
 public record SymbolLocation(
     DocumentUri uri,
@@ -20,6 +26,15 @@ public record SymbolLocation(
     @Nullable Location<?> selection,
     boolean navigable
 ) {
+    /**
+     * Creates a declaration view, validating that any selection lies within its declaration range.
+     *
+     * @param uri exact document address, including any archive entry
+     * @param origin provenance of this source, binary or generated view
+     * @param declaration full declaration range, or {@code null} when no offset mapping is available
+     * @param selection optional name range within the declaration, or {@code null}
+     * @param navigable whether the provider can navigate to this view
+     */
     public SymbolLocation {
         Objects.requireNonNull(uri, "uri");
         Objects.requireNonNull(origin, "origin");

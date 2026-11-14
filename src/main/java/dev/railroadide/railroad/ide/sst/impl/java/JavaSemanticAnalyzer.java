@@ -307,12 +307,25 @@ public final class JavaSemanticAnalyzer {
         return performAnalysis(syntaxTree, false);
     }
 
-    /** Collects declarations from an exact captured tree with cooperative cancellation. */
+    /**
+     * Collects declarations from an exact captured tree with cooperative cancellation.
+     *
+     * @param syntaxTree captured Java syntax tree whose declarations are collected
+     * @param activityCheck callback invoked to check cancellation or interruption; may throw to abort
+     * @return semantic declaration facts without resolving method bodies
+     */
     public static SemanticModel analyzeDeclarationsFacts(SyntaxTree syntaxTree, Runnable activityCheck) {
         return performAnalysis(Objects.requireNonNull(syntaxTree), false, null, activityCheck);
     }
 
-    /** Collects declarations with canonical signatures using captured external type names. */
+    /**
+     * Collects declarations with canonical signatures using captured external type names.
+     *
+     * @param syntaxTree captured Java syntax tree whose declarations are collected
+     * @param index captured external symbols used for name resolution, or {@code null} for local resolution
+     * @param activityCheck callback invoked to check cancellation or interruption; may throw to abort
+     * @return semantic declaration facts without resolving method bodies
+     */
     public static SemanticModel analyzeDeclarationsFacts(
         SyntaxTree syntaxTree,
         JavaSymbolIndex index,

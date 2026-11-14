@@ -11,6 +11,11 @@ import java.util.Objects;
  * @param value nonblank namespaced canonical identity
  */
 public record SymbolId(String value) implements Comparable<SymbolId> {
+    /**
+     * Creates a whitespace-free, namespaced declaration identity.
+     *
+     * @param value nonblank namespaced canonical identity without whitespace
+     */
     public SymbolId {
         Objects.requireNonNull(value, "value");
         int separator = value.indexOf(':');

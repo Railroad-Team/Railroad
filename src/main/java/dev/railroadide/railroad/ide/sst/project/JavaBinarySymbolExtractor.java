@@ -18,7 +18,13 @@ public final class JavaBinarySymbolExtractor {
     private JavaBinarySymbolExtractor() {
     }
 
-    /** Returns the declaration ID before generic receiver or invocation substitutions are applied. */
+    /**
+     * Returns the declaration ID before generic receiver or invocation substitutions are applied.
+     *
+     * @param owner declaring class metadata
+     * @param method method metadata whose declaration identity is required
+     * @return canonical binary method identity before invocation substitutions
+     */
     public static SymbolId methodId(ClassStub owner, MethodStub method) {
         Map<String, Type> inherited = bounds(owner.typeParameters(), Map.of());
         Map<String, Type> methodBounds = bounds(method.typeParameters(), inherited);
@@ -36,7 +42,13 @@ public final class JavaBinarySymbolExtractor {
         return JavaSymbolIds.method(JavaSymbolIds.type(owner.getFullName()), method.name(), parameters);
     }
 
-    /** Returns a binary constructor ID using declaration bounds rather than inferred argument types. */
+    /**
+     * Returns a binary constructor ID using declaration bounds rather than inferred argument types.
+     *
+     * @param owner declaring class metadata
+     * @param constructor constructor metadata whose declaration identity is required
+     * @return canonical constructor identity based on erased declaration bounds
+     */
     public static SymbolId constructorId(ClassStub owner, ConstructorStub constructor) {
         return JavaSymbolIds.constructor(JavaSymbolIds.type(owner.getFullName()), erased(constructor.parameters(),
             bounds(constructor.typeParameters(), bounds(owner.typeParameters(), Map.of()))));
@@ -45,6 +57,12 @@ public final class JavaBinarySymbolExtractor {
     /**
      * Extracts one binary entry. Alternate source/decompiler locations must be supplied by their owner;
      * no source offsets or decompiled buffers are invented. Binary revisions are pinned by configuration.
+     *
+     * @param stub immutable class metadata to project
+     * @param uri exact document address, including any archive entry
+     * @param alternates additional source or decompiled locations keyed by declaration identity
+     * @param check callback invoked to check cancellation or interruption; may throw to abort
+     * @return binary shard including type, member and parameter declarations
      */
     public static SemanticIndexShard extract(
         ClassStub stub,
@@ -55,7 +73,15 @@ public final class JavaBinarySymbolExtractor {
         return withParameters(extractDeclarations(stub, uri, alternates, check), alternates, check);
     }
 
-    /** Extracts authoritative type/member facts without allocating graph-only parameter declarations. */
+    /**
+     * Extracts authoritative type/member facts without allocating graph-only parameter declarations.
+     *
+     * @param stub immutable class metadata to project
+     * @param uri exact document address, including any archive entry
+     * @param alternates additional source or decompiled locations keyed by declaration identity
+     * @param check callback invoked to check cancellation or interruption; may throw to abort
+     * @return binary shard containing type and member declarations without parameter declarations
+     */
     public static SemanticIndexShard extractDeclarations(
         ClassStub stub,
         DocumentUri uri,
@@ -140,7 +166,14 @@ public final class JavaBinarySymbolExtractor {
             DocumentVersion.initial(), uri, declarations, List.of(), edges);
     }
 
-    /** Enriches a binary declaration shard while retaining the exact published type/member descriptor objects. */
+    /**
+     * Enriches a binary declaration shard while retaining the exact published type/member descriptor objects.
+     *
+     * @param shard document facts to publish
+     * @param alternates additional source or decompiled locations keyed by declaration identity
+     * @param check callback invoked to check cancellation or interruption; may throw to abort
+     * @return shard enriched with parameter declarations while retaining existing type and member descriptors
+     */
     public static SemanticIndexShard withParameters(
         SemanticIndexShard shard,
         Map<SymbolId, List<SymbolLocation>> alternates,
