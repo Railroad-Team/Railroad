@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.ui.codeeditor;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.completion.CompletionItem;
 import dev.railroadide.railroad.ide.completion.CompletionProvider;
 import dev.railroadide.railroad.ide.completion.CompletionResult;
@@ -389,7 +390,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
                     && isCurrent(workspace);
                 invalidateNavigationRequest();
                 if (current) {
-                    applyDefinition(result.value(), snapshot);
+                    applyDefinition(result.value(), workspace);
                 }
             }))
             .exceptionally(throwable -> {
@@ -410,15 +411,18 @@ public abstract class CodeEditorPane extends TextEditorPane {
             });
     }
 
-    private void applyDefinition(@Nullable List<Location<?>> targets, TextDocumentSnapshot snapshot) {
+    private void applyDefinition(@Nullable List<Location<?>> targets, WorkspaceSnapshot workspace) {
         if (targets == null || targets.isEmpty())
             return;
-        if (!(targets.getFirst() instanceof Location.TextLocation target)
-            || !target.documentId().equals(documentId))
+
+        if (!(targets.getFirst() instanceof Location.TextLocation target))
+            return;
+
+        if (!(workspace.document(target.documentId()).orElse(null) instanceof TextDocumentSnapshot destination))
             return;
 
         try {
-            target.validateAgainst(snapshot);
+            target.validateAgainst(destination);
         } catch (IllegalArgumentException | IndexOutOfBoundsException exception) {
             Railroad.LOGGER.warn("Navigation provider returned an invalid location", exception);
             return;
@@ -426,8 +430,13 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
         hideAutoComplete();
         hideSignatureHelp();
-        moveTo(target.range().start);
-        requestFollowCaret();
+
+        if (target.documentId().equals(documentId)) {
+            moveTo(target.range().start);
+            requestFollowCaret();
+        } else {
+            Services.EDITOR_TAB_MANAGER.openDefinition(destination, target);
+        }
     }
 
     // region Gutter

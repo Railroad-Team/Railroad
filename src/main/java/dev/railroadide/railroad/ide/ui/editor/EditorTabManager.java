@@ -14,6 +14,8 @@ import dev.railroadide.railroad.ide.ui.*;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.plugin.spi.editor.TextEditorAccess;
+import dev.railroadide.railroad.plugin.spi.editor.TextSelection;
 import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
 import dev.railroadide.railroad.plugin.spi.events.DocumentRenamedEvent;
 import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
@@ -321,6 +323,58 @@ public class EditorTabManager {
                 restoreEmptyEditorState();
             }
         }
+    }
+
+    /**
+     * Opens or selects the destination and reveals its definition only while the captured revision still matches.
+     *
+     * @param destination captured source revision containing the definition
+     * @param target definition range in that revision
+     */
+    public void openDefinition(TextDocumentSnapshot destination, Location.TextLocation target) {
+        if (!Platform.isFxApplicationThread())
+            throw new IllegalStateException("Navigation must run on the FX thread");
+
+        Path path = destination.uri().filePath().orElse(null);
+        if (path == null)
+            return;
+
+        Project project = Services.IDE_STATE.getCurrentProject();
+        if (project == null)
+            return;
+
+        IDEContentRouter.routeActive(WorkspaceContentTargets.CODE_EDITOR, tabPane -> {
+            EditorTab tab = openInTabPane(project, path, tabPane, TabOpenRequest.normal());
+            if (tab == null || !tab.documentId().equals(destination.id()))
+                return;
+
+            TextEditorAccess editor = tab.view().textEditor().orElse(null);
+            if (editor == null)
+                return;
+
+            TextDocumentSnapshot current;
+            try {
+                editor.reveal();
+                current = editor.snapshot();
+            } catch (IllegalStateException exception) {
+                return;
+            }
+
+            if (!current.id().equals(destination.id())
+                || !current.version().equals(destination.version())
+                || !current.uri().equals(destination.uri())
+                || !current.text().equals(destination.text()))
+                return;
+
+            try {
+                target.validateAgainst(current);
+            } catch (IllegalArgumentException | IndexOutOfBoundsException exception) {
+                Railroad.LOGGER.warn("Definition destination changed before navigation", exception);
+                return;
+            }
+
+            editor.selectAndReveal(current, new TextSelection(target.range().start, target.range().end));
+        });
     }
 
     private DetachableTabPane activeEditorPane(DetachableTabPane fallbackPane) {

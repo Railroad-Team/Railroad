@@ -5,11 +5,14 @@ import dev.railroadide.railroad.ide.language.impl.index.JavaWorkspaceAnalysisPro
 import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
 import dev.railroadide.railroad.ide.sst.document.api.Location;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot;
+import dev.railroadide.railroad.ide.sst.graph.api.WorkspaceSymbolGraph;
 import dev.railroadide.railroad.ide.sst.provider.api.*;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureResult;
 import dev.railroadide.railroad.ide.sst.request.api.RequestContext;
 import dev.railroadide.railroad.ide.sst.request.api.WorkspaceRequestContext;
+import dev.railroadide.railroad.ide.sst.semantic.api.DefinitionTarget;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticModel;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticNavigationResolver;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
@@ -81,11 +84,23 @@ public final class JavaSstServices
 
     @Override
     public FeatureResult<List<Location<?>>> definitions(FeatureRequestContext context, int offset) {
-        SemanticModel model = analyze(context).value();
-        Optional<Location.TextLocation> definition = SemanticNavigationResolver.definitionAt(model, offset);
-        List<Location<?>> targets = definition.<List<Location<?>>>map(List::of).orElseGet(List::of);
         context.checkActive();
-        return new FeatureResult<>(context, targets);
+
+        WorkspaceSnapshot workspace = context.workspaceSnapshot();
+        DocumentSnapshot source = context.documentSnapshot();
+        if (!(source instanceof TextDocumentSnapshot textSource))
+            return new FeatureResult<>(context, List.of());
+
+        JavaWorkspaceAnalysis analysis = capture(context);
+        WorkspaceSymbolGraph graph = analysis.resolvedGraph(context::checkActive);
+        Optional<DefinitionTarget> target = SemanticNavigationResolver.definitionAt(graph, workspace, textSource,
+            offset);
+
+        List<Location<?>> locations = target.<List<Location<?>>>map(
+            definitionTarget -> List.of(definitionTarget.location()))
+            .orElseGet(List::of);
+        context.checkActive();
+        return new FeatureResult<>(context, locations);
     }
 
     @Override
