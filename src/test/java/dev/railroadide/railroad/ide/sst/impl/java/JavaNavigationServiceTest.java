@@ -2,8 +2,11 @@ package dev.railroadide.railroad.ide.sst.impl.java;
 
 import dev.railroadide.railroad.ide.language.impl.index.JavaWorkspaceAnalysisProvider;
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.sst.provider.api.UsageQuery;
+import dev.railroadide.railroad.ide.sst.provider.api.UsageSink;
 import dev.railroadide.railroad.ide.sst.request.api.*;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticNavigationResolver;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -119,7 +122,7 @@ public class JavaNavigationServiceTest {
     }
 
     @Test
-    public void storeConvenienceOverloadUsesCurrentOverlayAndRequestOutsideSourceRoots() {
+    public void capturedOverlayResolvesForRequestsOutsideSourceRoots() {
         var source = document("Scratch.java", "class Scratch { int value; int read() { return value; } }");
         var store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()));
         store.publishBacking(source);
@@ -128,13 +131,99 @@ public class JavaNavigationServiceTest {
         store.publishOverlay(changed);
         try (var provider = new JavaWorkspaceAnalysisProvider()) {
             int offset = changed.text().lastIndexOf("value");
-            var id = SemanticNavigationResolver.symbolAt(store, provider, source.id(), offset).orElseThrow();
             var workspace = store.capture();
             var graph = provider.capture(workspace, source.id()).resolvedGraph();
-            var target = SemanticNavigationResolver.definitionOf(graph, workspace, id).orElseThrow();
+            var id = SemanticNavigationResolver.symbolAt(graph, changed, offset).orElseThrow();
+            var targets = SemanticNavigationResolver.definitionsOf(graph, workspace, id);
+            assertEquals(1, targets.size());
+            var target = targets.getFirst();
             assertSame(changed, target.snapshot());
             assertEquals(changed.text().indexOf("value"), target.location().range().start);
         }
+    }
+
+    @Test
+    public void implementationsOfATypeListEveryTransitiveSubtypeInRankOrder() {
+        var shape = document("Shape.java", "interface Shape { double area(); }");
+        var circle = document("Circle.java", "class Circle implements Shape { public double area() { return 1; } }");
+        var square = document("Square.java", "class Square extends Circle { public double area() { return 2; } }");
+        var store = store(shape, circle, square);
+        try (var services = new JavaSstServices()) {
+            var context = context(store.capture(), shape);
+            var types = services.implementations(context, shape.text().indexOf("Shape")).value();
+            assertEquals(List.of(circle.id(), square.id()), types.stream().map(Location::documentId).toList());
+            assertEquals(circle.text().indexOf("Circle"), types.getFirst().range().start);
+
+            var methods = services.implementations(context, shape.text().indexOf("area")).value();
+            assertEquals(List.of(circle.id(), square.id()), methods.stream().map(Location::documentId).toList());
+            assertEquals(circle.text().indexOf("area"), methods.getFirst().range().start);
+            assertTrue(services.implementations(context(store.capture(), square), square.text().indexOf("Square"))
+                .value().isEmpty());
+        }
+    }
+
+    @Test
+    public void usagesStreamPerDocumentAndIncludeUnsavedOverlays() {
+        var helper = document("Helper.java", "class Helper { static void run() {} }");
+        var main = document("Main.java", "class Main { void a() { Helper.run(); Helper.run(); } }");
+        var other = document("Other.java", "class Other { }");
+        var store = store(helper, main, other);
+        var edited = new TextDocumentSnapshot(other.id(), other.uri(), other.version().next(), "java",
+            other.origin(), "class Other { void b() { Helper.run(); } }", StandardCharsets.UTF_8);
+        store.publishOverlay(edited);
+        var batches = new ArrayList<List<Location<?>>>();
+        var progress = new ArrayList<Integer>();
+        try (var services = new JavaSstServices()) {
+            var context = context(store.capture(), helper);
+            var result = services.usages(context, new UsageQuery.AtOffset(helper.text().indexOf("run")),
+                (batch, searched, total) -> {
+                    batches.add(batch);
+                    progress.add(searched);
+                    assertEquals(2, total);
+                });
+            assertTrue(result.belongsTo(context));
+            var search = result.value();
+            assertEquals(3, search.usages().size());
+            assertEquals(List.of(main.id(), main.id(), other.id()),
+                search.usages().stream().map(Location::documentId).toList());
+            assertEquals(edited.version(), search.usages().getLast().documentVersion());
+            assertEquals(List.of(0, 1, 2), progress);
+            assertEquals(List.of(0, 2, 1), batches.stream().map(List::size).toList());
+            assertTrue(search.displayName().contains("run"));
+
+            var refreshed = services.usages(context(store.capture(), main), new UsageQuery.OfSymbol(search.symbol()),
+                UsageSink.NONE).value();
+            assertEquals(search.usages(), refreshed.usages());
+        }
+    }
+
+    @Test
+    public void usagesOfAnUnresolvedPositionOrUnknownSymbolAreUnsupported() {
+        var source = document("Main.java", "class Main { void test() { missing(); } }");
+        try (var services = new JavaSstServices()) {
+            var context = context(store(source).capture(), source);
+            assertNull(services.usages(context, new UsageQuery.AtOffset(source.text().indexOf("missing")),
+                UsageSink.NONE).value());
+            assertNull(services.usages(context, new UsageQuery.OfSymbol(new SymbolId("java:Unknown")),
+                UsageSink.NONE).value());
+        }
+    }
+
+    @Test
+    public void cancelledUsageSearchesPublishNothing() {
+        var source = document("Main.java", "class Main { int value; int read() { return value; } }");
+        var cancellation = new CancellationTokenSource();
+        cancellation.cancel();
+        var cancelled = new FeatureRequestContext(store(source).capture(), source, cancellation.token(),
+            Deadline.none());
+        var batches = new ArrayList<List<Location<?>>>();
+        try (var services = new JavaSstServices()) {
+            assertThrows(CancellationException.class, () -> services.usages(cancelled,
+                new UsageQuery.AtOffset(source.text().lastIndexOf("value")), (batch, _, _) -> batches.add(batch)));
+            assertThrows(CancellationException.class,
+                () -> services.implementations(cancelled, source.text().indexOf("Main")));
+        }
+        assertTrue(batches.isEmpty());
     }
 
     private TextDocumentSnapshot document(String name, String text) {

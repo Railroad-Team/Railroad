@@ -59,4 +59,26 @@ public abstract sealed class Range<S extends DocumentSnapshot>
     public final int length() {
         return end - start;
     }
+
+    /**
+     * Compares ranges by kind and bounds, so locations and occurrences embedding ranges have value equality.
+     *
+     * @param other object to compare
+     * @return whether the other object is a range of the same kind with equal bounds
+     */
+    @Override
+    public final boolean equals(Object other) {
+        return other instanceof Range<?> range && range.getClass() == getClass() && range.start == start
+            && range.end == end;
+    }
+
+    @Override
+    public final int hashCode() {
+        return 31 * (31 * getClass().hashCode() + start) + end;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + start + ", " + end + ")";
+    }
 }

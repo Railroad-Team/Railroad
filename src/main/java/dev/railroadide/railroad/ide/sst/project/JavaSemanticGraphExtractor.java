@@ -660,6 +660,13 @@ public final class JavaSemanticGraphExtractor {
                 .reduce((left, right) -> right).orElse(null);
             if (selector != null)
                 return nameNode(selector, name);
+            SyntaxNode keyword = node.children().stream()
+                .filter(part -> part.kind().id().equals("JAVA_THIS_EXPRESSION")
+                    || part.kind().id().equals("JAVA_SUPER_EXPRESSION"))
+                .findFirst().orElse(null);
+            // Explicit constructor invocations have no name token; the keyword is the reference.
+            if (keyword != null && node.children().getFirst() == keyword)
+                return keyword;
         }
         if (node.kind().id().equals("JAVA_FIELD_ACCESS_EXPRESSION")) {
             SyntaxToken selected = lastIdentifier(node);

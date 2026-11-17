@@ -93,7 +93,9 @@ public class WorkspaceNavigationResolverTest {
     public void definitionPrefersSelectionAndRetainsCapturedDestination() {
         var selection = Location.TextLocation.from(destination, 6, 10);
         var graph = definitions(location(destination, selection, true));
-        var target = SemanticNavigationResolver.definitionOf(graph, workspace(destination), TYPE).orElseThrow();
+        var targets = SemanticNavigationResolver.definitionsOf(graph, workspace(destination), TYPE);
+        assertEquals(1, targets.size());
+        var target = targets.getFirst();
         assertSame(destination, target.snapshot());
         assertEquals(selection, target.location());
     }
@@ -101,26 +103,27 @@ public class WorkspaceNavigationResolverTest {
     @Test
     public void definitionFallsBackToDeclarationWhenSelectionIsAbsent() {
         var location = location(destination, null, true);
-        var target = SemanticNavigationResolver.definitionOf(definitions(location), workspace(destination), TYPE)
-            .orElseThrow();
+        var target = SemanticNavigationResolver.definitionsOf(definitions(location), workspace(destination), TYPE)
+            .getFirst();
         assertEquals(location.declaration(), target.location());
     }
 
     @Test
-    public void duplicateLocationsAreOneTargetButDistinctLocationsAreAmbiguous() {
+    public void duplicateLocationsAreOneTargetAndDistinctLocationsAreAllReturnedInRankOrder() {
         var first = location(destination, Location.TextLocation.from(destination, 6, 10), true);
-        assertTrue(SemanticNavigationResolver.definitionOf(definitions(first, first), workspace(destination), TYPE)
-            .isPresent());
+        assertEquals(1, SemanticNavigationResolver.definitionsOf(definitions(first, first), workspace(destination),
+            TYPE).size());
         var second = location(destination, Location.TextLocation.from(destination, 0, 5), true);
-        assertTrue(SemanticNavigationResolver.definitionOf(definitions(first, second), workspace(destination), TYPE)
-            .isEmpty());
+        var targets = SemanticNavigationResolver.definitionsOf(definitions(first, second), workspace(destination),
+            TYPE);
+        assertEquals(List.of(0, 6), targets.stream().map(target -> target.location().range().start).toList());
     }
 
     @Test
     public void missingSymbolAndMissingDestinationReturnEmpty() {
         var graph = definitions(location(destination, null, true));
-        assertTrue(SemanticNavigationResolver.definitionOf(graph, workspace(destination), CALL).isEmpty());
-        assertTrue(SemanticNavigationResolver.definitionOf(graph, workspace(source), TYPE).isEmpty());
+        assertTrue(SemanticNavigationResolver.definitionsOf(graph, workspace(destination), CALL).isEmpty());
+        assertTrue(SemanticNavigationResolver.definitionsOf(graph, workspace(source), TYPE).isEmpty());
     }
 
     @TestFactory
@@ -150,15 +153,16 @@ public class WorkspaceNavigationResolverTest {
                 source.origin(), snapshot.text(), StandardCharsets.UTF_8);
             default -> snapshot;
         };
-        assertTrue(SemanticNavigationResolver.definitionOf(definitions(location), workspace(captured), TYPE).isEmpty());
+        assertTrue(SemanticNavigationResolver.definitionsOf(definitions(location), workspace(captured), TYPE)
+            .isEmpty());
     }
 
     @Test
     public void invalidAlternativeDoesNotHideAValidDefinition() {
         var valid = location(destination, null, true);
         var ignored = location(destination, Location.TextLocation.from(destination, 6, 10), false);
-        assertEquals(valid.declaration(), SemanticNavigationResolver.definitionOf(definitions(ignored, valid),
-            workspace(destination), TYPE).orElseThrow().location());
+        assertEquals(List.of(valid.declaration()), SemanticNavigationResolver.definitionsOf(definitions(ignored, valid),
+            workspace(destination), TYPE).stream().map(DefinitionTarget::location).toList());
     }
 
     @Test
@@ -168,7 +172,7 @@ public class WorkspaceNavigationResolverTest {
         shards.addAll(references(ref(TYPE, ReferenceKindId.TYPE_USE, 4, 8)).shards().values());
         var graph = WorkspaceSymbolGraph.of(shards);
         var target = SemanticNavigationResolver.definitionAt(graph, workspace(source, destination), source, 5)
-            .orElseThrow();
+            .getFirst();
         assertEquals(destination.id(), target.location().documentId());
         assertEquals(6, target.location().range().start);
         assertTrue(SemanticNavigationResolver.definitionAt(graph, workspace(source, destination), source, 8).isEmpty());
@@ -185,7 +189,7 @@ public class WorkspaceNavigationResolverTest {
             new byte[20]);
         var store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()));
         store.publishBacking(binary);
-        assertTrue(SemanticNavigationResolver.definitionOf(graph, store.capture(), TYPE).isEmpty());
+        assertTrue(SemanticNavigationResolver.definitionsOf(graph, store.capture(), TYPE).isEmpty());
     }
 
     @Test
