@@ -6,8 +6,10 @@ import dev.railroadide.railroad.command.*;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.ui.IDEDockItem;
 import dev.railroadide.railroad.ide.ui.IDEWorkspaceActions;
+import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
 import dev.railroadide.railroad.ide.ui.editor.EditorTab;
 import dev.railroadide.railroad.ui.id.UIIds;
+import javafx.scene.Node;
 import javafx.scene.input.KeyEvent;
 
 import java.util.Map;
@@ -207,6 +209,26 @@ public class Keybinds {
             Services.UI_MANAGER.lookupOrThrow(UIIds.IDE.IDE)));
 
     /**
+     * Context used while a code editor owns keyboard focus.
+     */
+    public static final KeybindContexts.KeybindContext CODE_EDITOR = KeybindContexts.of(CodeEditorPane.KEYBIND_CONTEXT);
+
+    /**
+     * Navigates to the declaration of the symbol at the caret.
+     */
+    public static final Keybind GO_TO_DEFINITION = registerCodeEditorCommand(Commands.GO_TO_DEFINITION);
+
+    /**
+     * Navigates to an implementation of the type or method at the caret.
+     */
+    public static final Keybind GO_TO_IMPLEMENTATION = registerCodeEditorCommand(Commands.GO_TO_IMPLEMENTATION);
+
+    /**
+     * Searches usages of the symbol at the caret.
+     */
+    public static final Keybind FIND_USAGES = registerCodeEditorCommand(Commands.FIND_USAGES);
+
+    /**
      * Closes the active or targeted editor tab.
      */
     public static final Keybind CLOSE_EDITOR_TAB = registerEditorTabCommand(Commands.CLOSE_EDITOR_TAB);
@@ -277,6 +299,9 @@ public class Keybinds {
     public static void initialize() {
         NAVIGATE_BACK.resetKeys();
         NAVIGATE_FORWARD.resetKeys();
+        GO_TO_DEFINITION.resetKeys();
+        GO_TO_IMPLEMENTATION.resetKeys();
+        FIND_USAGES.resetKeys();
         CLOSE_EDITOR_TAB.resetKeys();
         REOPEN_CLOSED_EDITOR_TAB.resetKeys();
         SELECT_EDITOR_TAB_BY_NUMBER.resetKeys();
@@ -345,6 +370,25 @@ public class Keybinds {
                     Railroad.PROJECT_MANAGER.getOpenProject(),
                     action.target(),
                     Services.EDITOR_TAB_MANAGER.getTabAt(action.target()))));
+    }
+
+    private static Keybind registerCodeEditorCommand(Command<CodeEditorPane> command) {
+        return KeybindHandler.registerCommand(
+            command,
+            GENERAL,
+            CODE_EDITOR,
+            action -> CommandContext.withArgument(
+                Railroad.PROJECT_MANAGER.getOpenProject(),
+                action.target(),
+                codeEditor(action.target())));
+    }
+
+    private static CodeEditorPane codeEditor(Node target) {
+        for (Node node = target; node != null; node = node.getParent()) {
+            if (node instanceof CodeEditorPane editor)
+                return editor;
+        }
+        return Commands.activeCodeEditor();
     }
 
     private static ProjectExplorerPane projectExplorer() {

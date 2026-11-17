@@ -5,6 +5,7 @@ import com.panemu.tiwulfx.control.dock.DetachableTabPaneFactory;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.*;
+import dev.railroadide.railroad.ide.ui.navigation.UsagesPane;
 import dev.railroadide.railroad.ide.ui.setup.PaneIconBarFactory;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.event.EventListener;
@@ -36,6 +37,7 @@ import javafx.util.Subscription;
 
 import java.lang.ref.WeakReference;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -693,10 +695,71 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         if (viewMode == null)
             return;
 
+        if (viewMode == WorkspaceModes.CODE) {
+            Services.EDITOR_TAB_MANAGER.activeTab().map(editorTab -> editorTab.tab()).ifPresent(
+                current -> Services.EDITOR_TAB_MANAGER.caretPosition(current).ifPresent(
+                    position -> editorNavigationHistory.updateCurrent(viewMode.getId(), tabIdentity(current),
+                        position)));
+        }
+
+        Predicate<String> available = tabId -> findEditorTab(viewMode, tabId) != null;
         var destination = forward
-            ? editorNavigationHistory.forward(viewMode.getId(), tabId -> findEditorTab(viewMode, tabId) != null)
-            : editorNavigationHistory.back(viewMode.getId(), tabId -> findEditorTab(viewMode, tabId) != null);
-        destination.map(tabId -> findEditorTab(viewMode, tabId)).ifPresent(this::selectNavigatedTab);
+            ? editorNavigationHistory.forwardDestination(viewMode.getId(), available)
+            : editorNavigationHistory.backDestination(viewMode.getId(), available);
+        destination.ifPresent(entry -> {
+            Tab tab = findEditorTab(viewMode, entry.tabId());
+            selectNavigatedTab(tab);
+            if (entry.position() != null) {
+                Services.EDITOR_TAB_MANAGER.restorePosition(tab, entry.position());
+            }
+        });
+    }
+
+    /**
+     * Records the caret an explicit navigation starts from on the current history entry of the tab's mode.
+     * Call on the JavaFX thread before the destination is selected.
+     *
+     * @param tab editor tab the navigation starts from
+     * @param position caret position in the tab's current revision
+     */
+    public void markNavigationOrigin(Tab tab, WorkspaceTabNavigationHistory.Position position) {
+        WorkspaceMode viewMode = tab.getTabPane() instanceof DetachableTabPane pane ? editorMode(pane) : null;
+        if (viewMode != null && !editorNavigationHistory.updateCurrent(viewMode.getId(), tabIdentity(tab), position)) {
+            editorNavigationHistory.visit(viewMode.getId(), tabIdentity(tab), position);
+        }
+    }
+
+    /**
+     * Records the destination of an explicit navigation as a history entry of the tab's mode.
+     * Call on the JavaFX thread after the destination is revealed.
+     *
+     * @param tab editor tab containing the destination
+     * @param position revealed position in the tab's current revision
+     */
+    public void recordNavigationDestination(Tab tab, WorkspaceTabNavigationHistory.Position position) {
+        WorkspaceMode viewMode = tab.getTabPane() instanceof DetachableTabPane pane ? editorMode(pane) : null;
+        if (viewMode != null) {
+            editorNavigationHistory.visit(viewMode.getId(), tabIdentity(tab), position);
+        }
+    }
+
+    /**
+     * Shows the Find Usages tool and starts a search there, superseding any search it is running.
+     *
+     * @param request captured search inputs
+     */
+    public void showUsages(UsagesPane.Request request) {
+        Objects.requireNonNull(request, "request");
+        JavaFXUtils.runOnApplicationThread(() -> {
+            IDEDockTab dockTab = dockTabs.get(IDEDockItem.USAGES);
+            if (dockTab == null || !(dockTab.getContent() instanceof UsagesPane usages))
+                return;
+
+            if (!isDockItemActive(IDEDockItem.USAGES)) {
+                toggleDockItem(IDEDockItem.USAGES);
+            }
+            usages.search(request);
+        });
     }
 
     private void selectNavigatedTab(Tab tab) {
@@ -1319,7 +1382,8 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         pane.getTabs().addAll(
             createDockTab(IDEDockItem.CONSOLE, IDEDockItem.DockPosition.BOTTOM),
             createDockTab(IDEDockItem.TERMINAL, IDEDockItem.DockPosition.BOTTOM),
-            createDockTab(IDEDockItem.DEBUGGER, IDEDockItem.DockPosition.BOTTOM));
+            createDockTab(IDEDockItem.DEBUGGER, IDEDockItem.DockPosition.BOTTOM),
+            createDockTab(IDEDockItem.USAGES, IDEDockItem.DockPosition.BOTTOM));
         debuggerDockSubscription = project.getDebuggingManager().pausedProperty().subscribe((_, paused) -> {
             if (paused && Services.IDE_STATE.getCurrentProject() == project
                 && !isDockItemActive(IDEDockItem.DEBUGGER)) {

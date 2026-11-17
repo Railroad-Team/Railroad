@@ -6,11 +6,16 @@ import dev.railroadide.railroad.ide.sst.provider.api.NavigationProvider;
 import dev.railroadide.railroad.ide.sst.request.api.*;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.settings.keybinds.Keybinds;
 import javafx.application.Platform;
+import javafx.geometry.Bounds;
+import javafx.geometry.Point2D;
 import javafx.scene.Scene;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
@@ -41,8 +46,46 @@ public class CodeEditorNavigationRequestTest {
         startFx();
         onFx(() -> {
             Platform.setImplicitExit(false);
+            Keybinds.initialize();
             return null;
         });
+    }
+
+    @Test
+    public void shortcutClickNavigatesFromTheClickedCharacter() throws Exception {
+        try (Fixture fixture = open((context, offset) -> target(context, 0))) {
+            onFx(() -> {
+                fixture.editor.moveTo(0);
+                fixture.editor.layout();
+                Bounds bounds = fixture.editor.getCharacterBoundsOnScreen(REFERENCE, REFERENCE + 1).orElseThrow();
+                double screenX = bounds.getMinX() + bounds.getWidth() / 2;
+                double screenY = bounds.getMinY() + bounds.getHeight() / 2;
+                Point2D local = fixture.editor.screenToLocal(screenX, screenY);
+                fixture.editor.fireEvent(new MouseEvent(MouseEvent.MOUSE_CLICKED, local.getX(), local.getY(),
+                    screenX, screenY, MouseButton.PRIMARY, 1, false, true, false, true, false, false, false, false,
+                    false, true, null));
+                return null;
+            });
+            fixture.nextRequest();
+            awaitRequests(fixture.editor.featureRequests);
+            onFx(() -> {
+                assertEquals(0, fixture.editor.getCaretPosition());
+                return null;
+            });
+        }
+    }
+
+    @Test
+    public void plainClickDoesNotRequestNavigation() throws Exception {
+        try (Fixture fixture = open((context, offset) -> target(context, 0))) {
+            onFx(() -> {
+                fixture.editor.fireEvent(new MouseEvent(MouseEvent.MOUSE_CLICKED, 5, 5, 5, 5, MouseButton.PRIMARY, 1,
+                    false, false, false, false, false, false, false, false, false, true, null));
+                return null;
+            });
+            awaitRequests(fixture.editor.featureRequests);
+            assertTrue(fixture.requests.isEmpty());
+        }
     }
 
     @Test

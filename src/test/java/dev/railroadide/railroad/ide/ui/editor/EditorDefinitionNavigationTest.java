@@ -2,14 +2,23 @@ package dev.railroadide.railroad.ide.ui.editor;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.Commands;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.ui.IDEDockItem;
 import dev.railroadide.railroad.ide.ui.IDEPane;
 import dev.railroadide.railroad.ide.ui.MarkdownPreviewPane;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorConfig;
 import dev.railroadide.railroad.ide.sst.provider.api.NavigationProvider;
+import dev.railroadide.railroad.ide.sst.provider.api.UsageQuery;
+import dev.railroadide.railroad.ide.sst.provider.api.UsageSearch;
+import dev.railroadide.railroad.ide.sst.provider.api.UsageSink;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
+import dev.railroadide.railroad.ide.ui.navigation.UsagesPane;
+import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureResult;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
@@ -20,8 +29,6 @@ import dev.railroadide.railroad.theme.ThemeManager;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.image.WritableImage;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -105,7 +112,8 @@ public class EditorDefinitionNavigationTest {
     public void opensUnopenedDestinationAndSelectsItsDefinition() throws Exception {
         onFx(() -> {
             var expected = publish("destination.txt", "prefix definition suffix");
-            Services.EDITOR_TAB_MANAGER.openDefinition(expected, Location.TextLocation.from(expected, 7, 17));
+            assertTrue(Services.EDITOR_TAB_MANAGER.navigateTo(null, expected,
+                Location.TextLocation.from(expected, 7, 17)));
             var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
             assertEquals(expected.id(), tab.documentId());
             assertEquals(new TextSelection(7, 17), tab.view().textEditor().orElseThrow().selection());
@@ -124,7 +132,8 @@ public class EditorDefinitionNavigationTest {
             var source = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
             source.view().activeEditor().moveTo(2);
             int count = existing.tab().getTabPane().getTabs().size();
-            Services.EDITOR_TAB_MANAGER.openDefinition(destination, Location.TextLocation.from(destination, 7, 17));
+            assertTrue(Services.EDITOR_TAB_MANAGER.navigateTo(null, destination,
+                Location.TextLocation.from(destination, 7, 17)));
             assertSame(existing, Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow());
             assertEquals(count, existing.tab().getTabPane().getTabs().size());
             assertEquals(2, source.view().activeEditor().getCaretPosition());
@@ -154,7 +163,7 @@ public class EditorDefinitionNavigationTest {
             var location = new Location.TextLocation(expected.id(),
                 kind.equals("locationVersion") ? expected.version().next() : expected.version(),
                 new TextRange(7, kind.equals("bounds") ? 100 : 17), kind.equals("coordinates") ? 1 : 0, 7);
-            Services.EDITOR_TAB_MANAGER.openDefinition(expected, location);
+            assertFalse(Services.EDITOR_TAB_MANAGER.navigateTo(null, expected, location));
             assertEquals(new TextSelection(2, 2), editor.selection());
             return null;
         });
@@ -169,7 +178,8 @@ public class EditorDefinitionNavigationTest {
             Services.EDITOR_TAB_MANAGER.open(expected.uri().filePath().orElseThrow());
             var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
             assertNull(tab.view().activeEditor());
-            Services.EDITOR_TAB_MANAGER.openDefinition(expected, Location.TextLocation.from(expected, 10, 20));
+            assertTrue(Services.EDITOR_TAB_MANAGER.navigateTo(null, expected,
+                Location.TextLocation.from(expected, 10, 20)));
             assertNotNull(tab.view().activeEditor());
             assertEquals(new TextSelection(10, 20), tab.view().textEditor().orElseThrow().selection());
             return null;
@@ -179,17 +189,18 @@ public class EditorDefinitionNavigationTest {
     @Test
     public void rejectsNavigationOffTheFxThread() throws Exception {
         var expected = onFx(() -> publish("destination.txt", "definition"));
-        assertThrows(IllegalStateException.class, () -> Services.EDITOR_TAB_MANAGER.openDefinition(expected,
+        assertThrows(IllegalStateException.class, () -> Services.EDITOR_TAB_MANAGER.navigateTo(null, expected,
             Location.TextLocation.from(expected, 0, 10)));
     }
 
     @Test
-    public void f12OpensCrossFileTargetThroughTheEditorRequestPipeline() throws Exception {
+    public void goToDefinitionCommandOpensCrossFileTargetThroughTheEditorRequestPipeline() throws Exception {
         onFx(() -> {
             var destination = publish("destination.txt", "prefix definition suffix");
             openSource((context, offset) -> new FeatureResult<>(context,
                 List.of(Location.TextLocation.from(destination, 7, 17))));
-            sourceEditor.fireF12();
+            assertTrue(Commands.GO_TO_DEFINITION.execute(
+                CommandContext.withArgument(project, sourceEditor, sourceEditor)));
             return null;
         });
         sourceEditor.completion().get(10, TimeUnit.SECONDS);
@@ -219,7 +230,7 @@ public class EditorDefinitionNavigationTest {
                     }
                     return new FeatureResult<>(context, List.of(Location.TextLocation.from(destination, 7, 17)));
                 });
-                sourceEditor.fireF12();
+                sourceEditor.goToDefinition();
                 return null;
             });
             assertTrue(entered.await(10, TimeUnit.SECONDS));
@@ -242,6 +253,203 @@ public class EditorDefinitionNavigationTest {
         });
     }
 
+    @Test
+    public void ambiguousDefinitionsOfferAChooserAndOnlyNavigateToThePickedTarget() throws Exception {
+        var destination = onFx(() -> publish("destination.txt", "first second third"));
+        onFx(() -> {
+            openSource((context, offset) -> new FeatureResult<>(context, List.of(
+                Location.TextLocation.from(destination, 0, 5), Location.TextLocation.from(destination, 6, 12))));
+            sourceEditor.goToDefinition();
+            return null;
+        });
+        sourceEditor.completion().get(10, TimeUnit.SECONDS);
+        onFx(() -> {
+            assertTrue(Services.EDITOR_TAB_MANAGER.activeTab().isEmpty());
+            assertEquals(List.of(0, 6), sourceEditor.choices().stream().map(choice -> choice.range().start).toList());
+            sourceEditor.choose(1);
+            var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            assertEquals(destination.id(), tab.documentId());
+            assertEquals(new TextSelection(6, 12), tab.view().textEditor().orElseThrow().selection());
+            assertTrue(sourceEditor.choices().isEmpty());
+            return null;
+        });
+    }
+
+    @Test
+    public void chooserIsDiscardedWhenTheSourceChanges() throws Exception {
+        var destination = onFx(() -> publish("destination.txt", "first second third"));
+        onFx(() -> {
+            openSource((context, offset) -> new FeatureResult<>(context, List.of(
+                Location.TextLocation.from(destination, 0, 5), Location.TextLocation.from(destination, 6, 12))));
+            sourceEditor.goToDefinition();
+            return null;
+        });
+        sourceEditor.completion().get(10, TimeUnit.SECONDS);
+        onFx(() -> {
+            assertEquals(2, sourceEditor.choices().size());
+            sourceEditor.replaceText(0, 0, "x");
+            assertTrue(sourceEditor.choices().isEmpty());
+            sourceEditor.choose(0);
+            assertTrue(Services.EDITOR_TAB_MANAGER.activeTab().isEmpty());
+            return null;
+        });
+    }
+
+    @Test
+    public void unresolvedDefinitionShowsAMessageWithoutNavigating() throws Exception {
+        onFx(() -> {
+            openSource((context, offset) -> new FeatureResult<>(context, List.of()));
+            sourceEditor.goToDefinition();
+            return null;
+        });
+        sourceEditor.completion().get(10, TimeUnit.SECONDS);
+        onFx(() -> {
+            assertNotNull(sourceEditor.message());
+            assertTrue(Services.EDITOR_TAB_MANAGER.activeTab().isEmpty());
+            assertEquals(1, sourceEditor.getCaretPosition());
+            return null;
+        });
+    }
+
+    @Test
+    public void goToImplementationUsesTheImplementationQuery() throws Exception {
+        var destination = onFx(() -> publish("destination.txt", "prefix implementation suffix"));
+        onFx(() -> {
+            openSource(new NavigationProvider() {
+                @Override
+                public FeatureResult<List<Location<?>>> definitions(FeatureRequestContext context, int offset) {
+                    throw new AssertionError("Definitions must not be queried");
+                }
+
+                @Override
+                public FeatureResult<List<Location<?>>> implementations(FeatureRequestContext context, int offset) {
+                    return new FeatureResult<>(context, List.of(Location.TextLocation.from(destination, 7, 21)));
+                }
+            });
+            sourceEditor.goToImplementation();
+            return null;
+        });
+        sourceEditor.completion().get(10, TimeUnit.SECONDS);
+        onFx(() -> {
+            var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            assertEquals(new TextSelection(7, 21), tab.view().textEditor().orElseThrow().selection());
+            return null;
+        });
+    }
+
+    @Test
+    public void navigateBackRestoresTheOriginCaretAndForwardReturnsToTheDestination() throws Exception {
+        onFx(() -> {
+            var origin = publish("origin.txt", "origin text here");
+            var destination = publish("destination.txt", "prefix definition suffix");
+            Services.EDITOR_TAB_MANAGER.open(origin.uri().filePath().orElseThrow());
+            var originTab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            originTab.view().activeEditor().moveTo(3);
+            assertTrue(Services.EDITOR_TAB_MANAGER.navigateTo(null, destination,
+                Location.TextLocation.from(destination, 7, 17)));
+            var destinationTab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            assertNotSame(originTab, destinationTab);
+
+            originTab.view().activeEditor().moveTo(0);
+            pane.navigateBack();
+            assertTrue(originTab.tab().isSelected());
+            assertEquals(3, originTab.view().activeEditor().getCaretPosition());
+
+            pane.navigateForward();
+            assertTrue(destinationTab.tab().isSelected());
+            assertEquals(17, destinationTab.view().activeEditor().getCaretPosition());
+            return null;
+        });
+    }
+
+    @Test
+    public void navigateBackWithinOneFileReturnsToTheOriginCaret() throws Exception {
+        onFx(() -> {
+            var document = publish("document.txt", "use here and definition there");
+            Services.EDITOR_TAB_MANAGER.open(document.uri().filePath().orElseThrow());
+            var editor = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow().view().activeEditor();
+            editor.moveTo(4);
+            var current = editor.textEditorAccess().snapshot();
+            assertTrue(Services.EDITOR_TAB_MANAGER.navigateTo(null, current,
+                Location.TextLocation.from(current, 13, 23)));
+            assertEquals(13, editor.getCaretPosition());
+            pane.navigateBack();
+            assertEquals(4, editor.getCaretPosition());
+            pane.navigateForward();
+            assertEquals(13, editor.getCaretPosition());
+            return null;
+        });
+    }
+
+    @Test
+    public void navigateBackIgnoresAPositionFromAnEditedRevision() throws Exception {
+        onFx(() -> {
+            var origin = publish("origin.txt", "origin text here");
+            var destination = publish("destination.txt", "prefix definition suffix");
+            Services.EDITOR_TAB_MANAGER.open(origin.uri().filePath().orElseThrow());
+            var originTab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            var originEditor = originTab.view().activeEditor();
+            originEditor.moveTo(10);
+            assertTrue(Services.EDITOR_TAB_MANAGER.navigateTo(null, destination,
+                Location.TextLocation.from(destination, 7, 17)));
+
+            originEditor.replaceText(0, 0, "edited ");
+            originEditor.moveTo(1);
+            pane.navigateBack();
+            assertTrue(originTab.tab().isSelected());
+            assertEquals(1, originEditor.getCaretPosition());
+            return null;
+        });
+    }
+
+    @Test
+    public void findUsagesShowsResultsInTheWorkspaceToolAndOpensThem() throws Exception {
+        var destination = onFx(() -> publish("destination.txt", "one usage here"));
+        var usage = Location.TextLocation.from(destination, 4, 9);
+        onFx(() -> {
+            openSource(new NavigationProvider() {
+                @Override
+                public FeatureResult<List<Location<?>>> definitions(FeatureRequestContext context, int offset) {
+                    return new FeatureResult<>(context, List.of());
+                }
+
+                @Override
+                public FeatureResult<UsageSearch> usages(
+                    FeatureRequestContext context,
+                    UsageQuery query,
+                    UsageSink sink
+                ) {
+                    assertEquals(new UsageQuery.AtOffset(1), query);
+                    sink.accept(List.of(usage), 1, 1);
+                    return new FeatureResult<>(context, new UsageSearch(new SymbolId("test:usage"), "usage",
+                        List.of(usage)));
+                }
+            });
+            sourceEditor.findUsages();
+            return null;
+        });
+        UsagesPane usages = onFx(() -> {
+            pane.applyCss();
+            pane.layout();
+            return pane.lookupAll(".usages-pane").stream()
+                .map(UsagesPane.class::cast)
+                .findFirst()
+                .orElseThrow();
+        });
+        usages.completion().get(10, TimeUnit.SECONDS);
+        onFx(() -> null);
+        onFx(() -> {
+            assertTrue(pane.isDockItemActive(IDEDockItem.USAGES));
+            assertEquals(UsagesPane.State.COMPLETE, usages.state());
+            assertEquals(List.of(usage), usages.usages());
+            assertTrue(usages.open(usage));
+            var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            assertEquals(destination.id(), tab.documentId());
+            assertEquals(new TextSelection(4, 9), tab.view().textEditor().orElseThrow().selection());
+            return null;
+        });
+    }
+
     private void openSource(NavigationProvider provider) throws Exception {
         var source = publish("source.txt", "reference");
         sourceEditor = new NavigationEditor(project, source.id(), source.uri().filePath().orElseThrow(),
@@ -255,8 +463,16 @@ public class EditorDefinitionNavigationTest {
             super(project, id, path, config);
         }
 
-        private void fireF12() {
-            fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.F12, false, false, false, false));
+        private List<Location.TextLocation> choices() {
+            return navigationChoices();
+        }
+
+        private void choose(int index) {
+            chooseNavigationTarget(index);
+        }
+
+        private String message() {
+            return navigationMessage();
         }
 
         private CompletableFuture<Void> completion() {

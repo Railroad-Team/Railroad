@@ -10,6 +10,7 @@ import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
 import dev.railroadide.railroad.ide.ui.IDEDockItem;
 import dev.railroadide.railroad.ide.ui.IDEWorkspaceActions;
+import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
 import dev.railroadide.railroad.ide.ui.editor.EditorTab;
 import dev.railroadide.railroad.ide.ui.editor.EditorTabManager;
 import dev.railroadide.railroad.localization.L18n;
@@ -31,6 +32,7 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
+import org.jspecify.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -337,6 +339,61 @@ public final class Commands {
                 MouseButton.FORWARD,
                 new KeyCombination.Modifier[0])),
         IDEWorkspaceActions.class));
+
+    /**
+     * Navigates from the caret of the supplied code editor to its symbol's declaration.
+     */
+    public static final Command<CodeEditorPane> GO_TO_DEFINITION = registerCodeEditorCommand(
+        "railroad:go_to_definition",
+        "railroad.menu.navigate.go_to_definition",
+        CodeEditorPane::goToDefinition,
+        new KeybindData(KeyCode.F12, new KeyCombination.Modifier[0]));
+
+    /**
+     * Navigates from the caret of the supplied code editor to an implementation of its type or method.
+     */
+    public static final Command<CodeEditorPane> GO_TO_IMPLEMENTATION = registerCodeEditorCommand(
+        "railroad:go_to_implementation",
+        "railroad.menu.navigate.go_to_implementation",
+        CodeEditorPane::goToImplementation,
+        new KeybindData(KeyCode.F12, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN}));
+
+    /**
+     * Searches usages of the symbol at the caret of the supplied code editor.
+     */
+    public static final Command<CodeEditorPane> FIND_USAGES = registerCodeEditorCommand(
+        "railroad:find_usages",
+        "railroad.menu.navigate.find_usages",
+        CodeEditorPane::findUsages,
+        new KeybindData(KeyCode.F12, new KeyCombination.Modifier[]{KeyCombination.SHIFT_DOWN}));
+
+    /**
+     * Resolves the code editor shown by the active editor tab.
+     *
+     * @return active code editor, or {@code null} when the active tab is not a code editor
+     */
+    public static @Nullable CodeEditorPane activeCodeEditor() {
+        return Services.EDITOR_TAB_MANAGER.activeTab()
+            .map(tab -> tab.view().activeEditor())
+            .filter(CodeEditorPane.class::isInstance)
+            .map(CodeEditorPane.class::cast)
+            .orElse(null);
+    }
+
+    private static Command<CodeEditorPane> registerCodeEditorCommand(
+        String id,
+        String displayNameKey,
+        Consumer<CodeEditorPane> handler,
+        KeybindData defaultShortcut
+    ) {
+        return CommandRegistry.register(new Command<>(
+            id,
+            displayNameKey,
+            context -> context.argument() != null && context.argument().supportsNavigation(),
+            context -> handler.accept(context.argument()),
+            List.of(defaultShortcut),
+            CodeEditorPane.class));
+    }
 
     /**
      * Invokes the close editor tab action on the supplied target.

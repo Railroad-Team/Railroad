@@ -127,6 +127,14 @@ public final class IDEMenuBarFactory {
             () -> CommandContext.withArgument(project, menuBar, workspaceActions));
         navigateForwardItem.setGraphic(new FontIcon(FontAwesomeSolid.ARROW_RIGHT));
 
+        var goToDefinitionItem = CommandMenuItems.create(Commands.GO_TO_DEFINITION,
+            () -> CommandContext.withArgument(project, menuBar, Commands.activeCodeEditor()));
+        var goToImplementationItem = CommandMenuItems.create(Commands.GO_TO_IMPLEMENTATION,
+            () -> CommandContext.withArgument(project, menuBar, Commands.activeCodeEditor()));
+        var findUsagesItem = CommandMenuItems.create(Commands.FIND_USAGES,
+            () -> CommandContext.withArgument(project, menuBar, Commands.activeCodeEditor()));
+        findUsagesItem.setGraphic(new FontIcon(FontAwesomeSolid.SEARCH));
+
         var resetCurrentLayoutItem = CommandMenuItems.create(Commands.RESET_CURRENT_LAYOUT,
             () -> CommandContext.withArgument(project, menuBar, workspaceActions));
         resetCurrentLayoutItem.setGraphic(new FontIcon(FontAwesomeSolid.UNDO));
@@ -234,6 +242,9 @@ public final class IDEMenuBarFactory {
         viewMenu.getItems().addAll(
             navigateBackItem,
             navigateForwardItem,
+            goToDefinitionItem,
+            goToImplementationItem,
+            findUsagesItem,
             new SeparatorMenuItem(),
             viewModeMenu,
             new SeparatorMenuItem(),

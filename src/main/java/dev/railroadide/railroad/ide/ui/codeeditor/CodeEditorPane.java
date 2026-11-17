@@ -12,6 +12,7 @@ import dev.railroadide.railroad.ide.signature.SignatureHelp;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.provider.api.NavigationProvider;
+import dev.railroadide.railroad.ide.sst.provider.api.UsageQuery;
 import dev.railroadide.railroad.ide.sst.request.api.CancellationTokenSource;
 import dev.railroadide.railroad.ide.sst.request.api.CancellationToken;
 import dev.railroadide.railroad.ide.sst.request.api.Deadline;
@@ -20,8 +21,13 @@ import dev.railroadide.railroad.ide.sst.request.api.RequestPriority;
 import dev.railroadide.railroad.ide.sst.request.api.SstScheduler;
 import dev.railroadide.railroad.ide.sst.provider.api.ProviderExecutor;
 import dev.railroadide.railroad.ide.ui.DiagnosticPane;
+import dev.railroadide.railroad.ide.ui.navigation.UsagesPane;
+import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
+import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.ui.RRListView;
+import dev.railroadide.railroad.ui.id.UIIds;
 import io.github.palexdev.mfxresources.fonts.MFXFontIcon;
 import io.github.palexdev.mfxresources.fonts.fontawesome.FontAwesomeSolid;
 import javafx.animation.PauseTransition;
@@ -35,6 +41,7 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
@@ -129,8 +136,16 @@ public abstract class CodeEditorPane extends TextEditorPane {
     private @Nullable FeatureRequestContext activeSignatureContext;
     // endregion
 
+    /**
+     * Keybind context of code editors, in which navigation shortcuts are dispatched before workspace shortcuts.
+     */
+    public static final String KEYBIND_CONTEXT = "railroad:code_editor";
+
     private @Nullable CancellationTokenSource activeNavigationCancellation;
     private @Nullable FeatureRequestContext activeNavigationContext;
+    private final Popup navigationPopup = new Popup();
+    private @Nullable PendingNavigation activeNavigationChoices;
+    private @Nullable String activeNavigationMessage;
 
     // region Bracket Highlighting state
     protected static final Map<Character, Character> OPENING_BRACKETS = Map.of('(', ')', '{', '}', '[', ']');
@@ -168,6 +183,12 @@ public abstract class CodeEditorPane extends TextEditorPane {
             : text -> StyleSpans.singleton(Collections.emptyList(), text.length());
 
         diagnosticPopup.setAutoHide(true);
+        navigationPopup.setAutoHide(true);
+        navigationPopup.setHideOnEscape(true);
+        navigationPopup.setOnHidden(_ -> {
+            activeNavigationChoices = null;
+            activeNavigationMessage = null;
+        });
 
         signaturePopup.setAutoHide(false);
         signaturePopup.setAutoFix(true);
@@ -329,6 +350,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             && latest.configuration().equals(workspace.configuration());
     }
 
+    // region Navigation
     private void invalidateNavigationRequest() {
         featureRequests.cancel("navigation");
         if (activeNavigationCancellation != null) {
@@ -336,31 +358,91 @@ public abstract class CodeEditorPane extends TextEditorPane {
             activeNavigationCancellation = null;
         }
         activeNavigationContext = null;
+        hideNavigationPopup();
     }
 
     private void installNavigation() {
         if (navigationProvider == null)
             return;
 
+        KeybindHandler.registerCapture(KeybindContexts.of(KEYBIND_CONTEXT), this);
         caretPositionProperty().addListener(
             (observable, previous, current) -> invalidateNavigationRequest());
-        addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            if (event.getCode() == KeyCode.F12
-                && !event.isShiftDown()
-                && !event.isControlDown()
-                && !event.isAltDown()
-                && !event.isMetaDown()) {
-                requestDefinition();
-                event.consume();
-            }
+        addEventFilter(MouseEvent.MOUSE_CLICKED, event -> {
+            if (event.getButton() != MouseButton.PRIMARY || !event.isShortcutDown() || event.isShiftDown()
+                || event.isAltDown() || !event.isStillSincePress())
+                return;
+
+            int index = hit(event.getX(), event.getY()).getCharacterIndex().orElse(-1);
+            if (index < 0)
+                return;
+
+            event.consume();
+            moveTo(index);
+            goToDefinition();
         });
     }
 
-    private void requestDefinition() {
+    /**
+     * Reports whether this editor's language provides navigation queries.
+     *
+     * @return whether definition, implementation and usage commands can run
+     */
+    public boolean supportsNavigation() {
+        return navigationProvider != null && !codeEditorClosed && !providerLifetime.isCancellationRequested();
+    }
+
+    /**
+     * Navigates to the declaration of the symbol at the caret, offering a choice when it has several.
+     * Call on the JavaFX thread.
+     */
+    public void goToDefinition() {
+        requestNavigation(NavigationKind.DEFINITION);
+    }
+
+    /**
+     * Navigates to an implementation of the type or method at the caret, offering a choice when there are
+     * several. Call on the JavaFX thread.
+     */
+    public void goToImplementation() {
+        requestNavigation(NavigationKind.IMPLEMENTATION);
+    }
+
+    /**
+     * Searches usages of the symbol at the caret and shows them in the workspace's Find Usages tool.
+     * Call on the JavaFX thread.
+     */
+    public void findUsages() {
+        usageSearchAtCaret().ifPresent(request -> Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
+            .ifPresent(ide -> ide.showUsages(request)));
+    }
+
+    /**
+     * Captures the inputs of a usage search at the caret from the editor's current document store state,
+     * including unsaved changes.
+     *
+     * @return captured search, or an empty optional when navigation is unsupported or the editor is detached
+     */
+    public Optional<UsagesPane.Request> usageSearchAtCaret() {
+        NavigationProvider provider = navigationProvider;
+        DocumentStore store = getDocumentStore();
+        if (!supportsNavigation() || provider == null || store == null)
+            return Optional.empty();
+
+        WorkspaceSnapshot workspace = store.capture();
+        if (!(workspace.document(documentId).orElse(null) instanceof TextDocumentSnapshot snapshot)
+            || !snapshot.text().equals(getText()))
+            return Optional.empty();
+
+        return Optional.of(new UsagesPane.Request(provider, providerLifetime, store, workspace, snapshot,
+            new UsageQuery.AtOffset(getCaretPosition())));
+    }
+
+    private void requestNavigation(NavigationKind kind) {
         invalidateNavigationRequest();
 
         NavigationProvider provider = navigationProvider;
-        if (codeEditorClosed || providerLifetime.isCancellationRequested() || provider == null)
+        if (!supportsNavigation() || provider == null)
             return;
 
         WorkspaceSnapshot workspace = captureFeatureWorkspace();
@@ -378,7 +460,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
         featureRequests.submit("navigation", RequestPriority.NAVIGATION, context,
             cancellation, () -> ProviderExecutor.shared().execute(
                 snapshot.languageId() + ":navigation", context, INTERACTIVE_BUDGET,
-                () -> provider.definitions(context, offset)))
+                () -> kind == NavigationKind.DEFINITION
+                    ? provider.definitions(context, offset)
+                    : provider.implementations(context, offset)))
             .thenAccept(result -> Platform.runLater(() -> {
                 if (activeNavigationContext != context)
                     return;
@@ -390,7 +474,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
                     && isCurrent(workspace);
                 invalidateNavigationRequest();
                 if (current) {
-                    applyDefinition(result.value(), workspace);
+                    applyNavigationTargets(kind, result.value(), workspace);
                 }
             }))
             .exceptionally(throwable -> {
@@ -405,39 +489,176 @@ public abstract class CodeEditorPane extends TextEditorPane {
                     cause = cause.getCause();
                 }
                 if (!(cause instanceof CancellationException)) {
-                    Railroad.LOGGER.error("Failed to resolve definition", cause);
+                    Railroad.LOGGER.error("Failed to resolve {}", kind.name().toLowerCase(Locale.ROOT), cause);
                 }
                 return null;
             });
     }
 
-    private void applyDefinition(@Nullable List<Location<?>> targets, WorkspaceSnapshot workspace) {
-        if (targets == null || targets.isEmpty())
-            return;
+    private void applyNavigationTargets(
+        NavigationKind kind,
+        @Nullable List<Location<?>> targets,
+        WorkspaceSnapshot workspace
+    ) {
+        List<NavigationChoice> choices = new ArrayList<>();
+        for (Location<?> target : targets == null ? List.<Location<?>>of() : targets) {
+            if (!(target instanceof Location.TextLocation location)
+                || !(workspace.document(location.documentId())
+                    .orElse(null) instanceof TextDocumentSnapshot destination))
+                continue;
 
-        if (!(targets.getFirst() instanceof Location.TextLocation target))
-            return;
+            try {
+                location.validateAgainst(destination);
+            } catch (IllegalArgumentException | IndexOutOfBoundsException exception) {
+                Railroad.LOGGER.warn("Navigation provider returned an invalid location", exception);
+                continue;
+            }
 
-        if (!(workspace.document(target.documentId()).orElse(null) instanceof TextDocumentSnapshot destination))
-            return;
-
-        try {
-            target.validateAgainst(destination);
-        } catch (IllegalArgumentException | IndexOutOfBoundsException exception) {
-            Railroad.LOGGER.warn("Navigation provider returned an invalid location", exception);
-            return;
+            var choice = new NavigationChoice(destination, location);
+            if (!choices.contains(choice)) {
+                choices.add(choice);
+            }
         }
 
         hideAutoComplete();
         hideSignatureHelp();
-
-        if (target.documentId().equals(documentId)) {
-            moveTo(target.range().start);
-            requestFollowCaret();
+        if (choices.isEmpty()) {
+            showNavigationMessage(L18n.localize(kind == NavigationKind.DEFINITION
+                ? "railroad.editor.navigation.no_definition"
+                : "railroad.editor.navigation.no_implementation"));
+        } else if (choices.size() == 1) {
+            navigate(choices.getFirst(), workspace);
         } else {
-            Services.EDITOR_TAB_MANAGER.openDefinition(destination, target);
+            showNavigationChooser(choices, workspace);
         }
     }
+
+    private void navigate(NavigationChoice choice, WorkspaceSnapshot workspace) {
+        hideNavigationPopup();
+        if (!isCurrent(workspace))
+            return;
+
+        Services.EDITOR_TAB_MANAGER.navigateTo(this, choice.snapshot(), choice.location());
+    }
+
+    private void showNavigationChooser(List<NavigationChoice> choices, WorkspaceSnapshot workspace) {
+        var list = new RRListView<NavigationChoice>();
+        list.getStyleClass().add("navigation-chooser");
+        list.setCellFactory(_ -> new NavigationChoiceCell());
+        list.getItems().setAll(choices);
+        list.getSelectionModel().selectFirst();
+        list.setPrefHeight(Math.min(choices.size(), 10) * 26 + 4);
+        list.setOnMouseClicked(_ -> {
+            NavigationChoice selected = list.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                navigate(selected, workspace);
+            }
+        });
+        list.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                NavigationChoice selected = list.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    navigate(selected, workspace);
+                }
+                event.consume();
+            } else if (event.getCode() == KeyCode.ESCAPE) {
+                hideNavigationPopup();
+                event.consume();
+            }
+        });
+
+        showNavigationPopup(list);
+        activeNavigationChoices = new PendingNavigation(List.copyOf(choices), workspace);
+        list.requestFocus();
+    }
+
+    private void showNavigationMessage(String message) {
+        var label = new Label(message);
+        label.getStyleClass().add("navigation-message");
+        showNavigationPopup(label);
+        activeNavigationMessage = message;
+    }
+
+    private void showNavigationPopup(Node content) {
+        hideNavigationPopup();
+        navigationPopup.getContent().setAll(content);
+        if (getScene() == null || getScene().getWindow() == null || !getScene().getWindow().isShowing())
+            return;
+
+        Point2D anchor = getCaretBounds()
+            .map(bounds -> new Point2D(bounds.getMinX(), bounds.getMaxY()))
+            .orElseGet(() -> localToScreen(0, 0));
+        if (anchor != null) {
+            navigationPopup.show(this, anchor.getX(), anchor.getY());
+        }
+    }
+
+    private void hideNavigationPopup() {
+        activeNavigationChoices = null;
+        activeNavigationMessage = null;
+        navigationPopup.hide();
+        navigationPopup.getContent().clear();
+    }
+
+    /**
+     * Returns the targets offered by an open ambiguity chooser.
+     *
+     * @return offered targets in rank order, or an empty list when no chooser is open
+     */
+    protected final List<Location.TextLocation> navigationChoices() {
+        PendingNavigation pending = activeNavigationChoices;
+        return pending == null
+            ? List.of()
+            : pending.choices().stream().map(NavigationChoice::location).toList();
+    }
+
+    /**
+     * Navigates to one target of the open ambiguity chooser, as if the user had picked it.
+     *
+     * @param index zero-based index into {@link #navigationChoices()}
+     */
+    protected final void chooseNavigationTarget(int index) {
+        PendingNavigation pending = activeNavigationChoices;
+        if (pending != null && index >= 0 && index < pending.choices().size()) {
+            navigate(pending.choices().get(index), pending.workspace());
+        }
+    }
+
+    /**
+     * Returns the message shown after a navigation request found no target.
+     *
+     * @return visible message, or {@code null} when none is shown
+     */
+    protected final @Nullable String navigationMessage() {
+        return activeNavigationMessage;
+    }
+
+    private enum NavigationKind {
+        DEFINITION,
+        IMPLEMENTATION
+    }
+
+    private record NavigationChoice(TextDocumentSnapshot snapshot, Location.TextLocation location) {
+        private String label() {
+            LineMap lines = snapshot.lineMap();
+            int line = location.line();
+            String name = snapshot.uri().fileName().orElse(snapshot.uri().toString());
+            return name + ":" + (line + 1) + "  "
+                + snapshot.text().substring(lines.lineStart(line), lines.lineEnd(line)).strip();
+        }
+    }
+
+    private record PendingNavigation(List<NavigationChoice> choices, WorkspaceSnapshot workspace) {
+    }
+
+    private static final class NavigationChoiceCell extends ListCell<NavigationChoice> {
+        @Override
+        protected void updateItem(NavigationChoice item, boolean empty) {
+            super.updateItem(item, empty);
+            setText(empty || item == null ? null : item.label());
+        }
+    }
+    // endregion
 
     // region Gutter
     private void configureGutter() {

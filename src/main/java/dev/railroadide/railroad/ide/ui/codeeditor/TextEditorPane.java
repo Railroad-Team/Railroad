@@ -212,6 +212,15 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     }
 
     /**
+     * Returns the logical document identity shared with this editor's tab and document store.
+     *
+     * @return stable document identity
+     */
+    public final DocumentId getDocumentId() {
+        return documentId;
+    }
+
+    /**
      * Returns the stable plugin-facing source operations for this editor's lifetime.
      *
      * @return this editor's source capability
