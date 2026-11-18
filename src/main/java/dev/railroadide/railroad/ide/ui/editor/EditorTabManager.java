@@ -76,8 +76,31 @@ public class EditorTabManager {
      * @return whether a live text editor owns this document
      */
     public boolean hasOpenTextEditor(DocumentId id) {
+        return openTextEditor(id).isPresent();
+    }
+
+    /**
+     * Reports whether a managed tab shows a document, whether or not its source editor has been created.
+     * Call on the JavaFX application thread.
+     *
+     * @param id document identity to inspect
+     * @return whether a tab is open for the document
+     */
+    public boolean hasOpenTab(DocumentId id) {
+        return openTabs.containsKey(id);
+    }
+
+    /**
+     * Returns the live source editor that owns a document's buffer, file watching and persistence.
+     * Call on the JavaFX application thread. Lazy editors that have not created their source are not returned.
+     *
+     * @param id document identity to inspect
+     * @return open, unclosed source editor
+     */
+    public Optional<TextEditorPane> openTextEditor(DocumentId id) {
         EditorTab tab = openTabs.get(id);
-        return tab != null && tab.view().activeEditor() != null && !tab.view().activeEditor().isEditorClosed();
+        TextEditorPane editor = tab == null ? null : tab.view().activeEditor();
+        return editor == null || editor.isEditorClosed() ? Optional.empty() : Optional.of(editor);
     }
     private final Map<DocumentId, EditorTab> openTabs = new LinkedHashMap<>();
     private final Deque<ClosedEditorTab> recentlyClosedTabs = new ArrayDeque<>();
@@ -1968,40 +1991,49 @@ public class EditorTabManager {
             return;
 
         Path normalizedNewPath = newPath.get().toAbsolutePath().normalize();
-        DocumentUri targetUri = DocumentUri.fromPath(normalizedNewPath);
-        Runnable update = () -> Services.IDE_STATE.findDocumentIdentity(event.previousUri()).ifPresent(identity -> {
-            DocumentIdentity reboundIdentity = Services.IDE_STATE.rebindDocument(
-                identity,
-                targetUri);
-            Services.IDE_STATE.getDocumentStore()
-                .ifPresent(store -> store.relocate(identity.id(), targetUri));
-            List<ClosedEditorTab> relocatedTabs = recentlyClosedTabs.stream()
-                .map(closed -> closed.documentId().equals(identity.id())
-                    ? new ClosedEditorTab(reboundIdentity, normalizedNewPath, closed.pinned(), closed.preview(),
-                        closed.editorGroupId(), closed.previousIndex(), closed.viewState())
-                    : closed)
-                .toList();
-            recentlyClosedTabs.clear();
-            recentlyClosedTabs.addAll(relocatedTabs);
-            EditorTab editorTab = openTabs.get(identity.id());
-            if (editorTab == null)
-                return;
-            if (editorTab.document() instanceof FileSystemDocument fileSystemDocument) {
-                fileSystemDocument.rebind(normalizedNewPath);
-            }
-
-            if (editorTab.view().activeEditor() != null) {
-                editorTab.view().activeEditor().rebind(normalizedNewPath);
-            }
-
-            editorTab.rebind(reboundIdentity, normalizedNewPath);
-            refreshTabPresentations();
-        });
+        Runnable update = () -> Services.IDE_STATE.findDocumentIdentity(event.previousUri())
+            .ifPresent(identity -> relocateDocument(identity, normalizedNewPath));
         if (Platform.isFxApplicationThread()) {
             update.run();
         } else {
             JavaFXUtils.runOnApplicationThread(update);
         }
+    }
+
+    /**
+     * Moves a document's identity, store location, recently closed tab and any open editor and tab to a file that
+     * has already been moved on disk. Call on the JavaFX application thread.
+     *
+     * @param identity identity at the document's previous location
+     * @param newPath existing destination file
+     * @throws IllegalStateException if the destination is associated with another document identity
+     */
+    public void relocateDocument(DocumentIdentity identity, Path newPath) {
+        Path normalizedNewPath = newPath.toAbsolutePath().normalize();
+        DocumentUri targetUri = DocumentUri.fromPath(normalizedNewPath);
+        DocumentIdentity reboundIdentity = Services.IDE_STATE.rebindDocument(identity, targetUri);
+        Services.IDE_STATE.getDocumentStore().ifPresent(store -> store.relocate(identity.id(), targetUri));
+        List<ClosedEditorTab> relocatedTabs = recentlyClosedTabs.stream()
+            .map(closed -> closed.documentId().equals(identity.id())
+                ? new ClosedEditorTab(reboundIdentity, normalizedNewPath, closed.pinned(), closed.preview(),
+                    closed.editorGroupId(), closed.previousIndex(), closed.viewState())
+                : closed)
+            .toList();
+        recentlyClosedTabs.clear();
+        recentlyClosedTabs.addAll(relocatedTabs);
+        EditorTab editorTab = openTabs.get(identity.id());
+        if (editorTab == null)
+            return;
+        if (editorTab.document() instanceof FileSystemDocument fileSystemDocument) {
+            fileSystemDocument.rebind(normalizedNewPath);
+        }
+
+        if (editorTab.view().activeEditor() != null) {
+            editorTab.view().activeEditor().rebind(normalizedNewPath);
+        }
+
+        editorTab.rebind(reboundIdentity, normalizedNewPath);
+        refreshTabPresentations();
     }
 
     private void refreshTabPresentations() {

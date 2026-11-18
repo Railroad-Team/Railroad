@@ -8,6 +8,7 @@ import dev.railroadide.railroad.utility.ProjectPathIdentityUtils;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -172,6 +173,59 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
         return !closed && !ignored(ProjectPathIdentityUtils.normalize(path), ProjectPathIdentityUtils.normalize(root));
     }
 
+    /**
+     * Reports whether project discovery manages a location, independently of whether a synchronizer is running.
+     *
+     * @param root project directory
+     * @param path location to classify
+     * @return whether the path is inside the root and outside directories Railroad does not manage
+     */
+    public static boolean isWorkspacePath(Path root, Path path) {
+        return !ignored(ProjectPathIdentityUtils.normalize(path), ProjectPathIdentityUtils.normalize(root));
+    }
+
+    /**
+     * Builds the backing snapshot that discovery would publish for a file's bytes.
+     *
+     * @param id logical document identity
+     * @param uri document location
+     * @param version backing revision
+     * @param path file location used to resolve the language
+     * @param bytes file content
+     * @return text snapshot decoded as UTF-8 for text languages, otherwise a binary snapshot
+     * @throws CharacterCodingException if a text language's content is not valid UTF-8
+     */
+    public static DocumentSnapshot backingSnapshot(
+        DocumentId id,
+        DocumentUri uri,
+        DocumentVersion version,
+        Path path,
+        byte[] bytes
+    ) throws CharacterCodingException {
+        String language = LanguageSupportRegistry.resolveLanguageId(path);
+        return snapshot(id, uri, version, language, decodeText(language, bytes), bytes);
+    }
+
+    private static String decodeText(String language, byte[] bytes) throws CharacterCodingException {
+        boolean textBased = LanguageSupportRegistry.get(language)
+            .map(support -> support.contentKind() == ContentKind.TEXT)
+            .orElse(!Set.of("image", "binary").contains(language));
+        return textBased ? StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).toString() : null;
+    }
+
+    private static DocumentSnapshot snapshot(
+        DocumentId id,
+        DocumentUri uri,
+        DocumentVersion version,
+        String language,
+        String text,
+        byte[] bytes
+    ) {
+        return text != null
+            ? new TextDocumentSnapshot(id, uri, version, language, text, StandardCharsets.UTF_8)
+            : new BinaryDocumentSnapshot(id, uri, version, language, bytes);
+    }
+
     private static boolean ignored(Path path, Path root) {
         if (!path.startsWith(root))
             return true;
@@ -199,10 +253,7 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
         }
         byte[] bytes = Files.readAllBytes(path);
         String language = LanguageSupportRegistry.resolveLanguageId(path);
-        boolean textBased = LanguageSupportRegistry.get(language)
-            .map(support -> support.contentKind() == ContentKind.TEXT)
-            .orElse(!Set.of("image", "binary").contains(language));
-        String text = textBased ? StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).toString() : null;
+        String text = decodeText(language, bytes);
         dispatch.accept(() -> {
             if (closed) {
                 result.cancel(false);
@@ -234,9 +285,7 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
                 }
                 DocumentVersion version = highest == null ? DocumentVersion.initial() : highest.next();
                 DocumentUri location = backing == null ? uri : backing.uri();
-                DocumentSnapshot snapshot = text != null
-                    ? new TextDocumentSnapshot(identity.id(), location, version, language, text, StandardCharsets.UTF_8)
-                    : new BinaryDocumentSnapshot(identity.id(), location, version, language, bytes);
+                DocumentSnapshot snapshot = snapshot(identity.id(), location, version, language, text, bytes);
                 try {
                     store.publishBacking(snapshot, expected);
                     result.complete(null);

@@ -323,6 +323,18 @@ public final class DocumentIdentityRegistry {
         releasedIds.add(documentId);
     }
 
+    /**
+     * Removes every location association of an owned identity while keeping it owned, so that it can later be
+     * associated again. Unlike {@link #release(DocumentId)}, this is reversible.
+     *
+     * @param documentId owned identity to detach from its locations
+     * @throws IllegalStateException if the identity is not owned by this registry
+     */
+    public synchronized void dissociate(DocumentId documentId) {
+        currentVersion(documentId);
+        removeAssociations(documentId);
+    }
+
     private void removeAssociations(DocumentId documentId) {
         idsByPath.values().removeIf(documentId::equals);
         idsByUri.values().removeIf(documentId::equals);

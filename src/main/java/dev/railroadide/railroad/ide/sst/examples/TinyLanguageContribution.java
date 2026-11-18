@@ -3,6 +3,7 @@ package dev.railroadide.railroad.ide.sst.examples;
 import dev.railroadide.railroad.ide.diagnostics.*;
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagnostic;
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceEdit;
 import dev.railroadide.railroad.ide.sst.provider.api.*;
 import dev.railroadide.railroad.ide.sst.request.api.*;
 import dev.railroadide.railroad.ide.sst.semantic.api.*;
@@ -146,8 +147,10 @@ public final class TinyLanguageContribution implements LanguageContribution {
                     DiagnosticOrigin.SYNTAX));
                 int leadingWhitespace = line.text().length() - line.text().stripLeading().length();
                 int insertion = line.start() + leadingWhitespace + declaration.end(1);
-                actions.add(new CodeAction("Insert '=' after " + name, snapshot,
-                    List.of(new TextReplacement(new TextRange(insertion, insertion), " ="))));
+                String title = "Insert '=' after " + name;
+                actions.add(new CodeAction(title, WorkspaceEdit.builder(title)
+                    .replace(snapshot, new TextReplacement(new TextRange(insertion, insertion), " ="))
+                    .build()));
             }
         }
         for (SyntaxNode child : root.children()) {

@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.provider.api;
 
+import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceChange;
 import dev.railroadide.railroad.ide.diagnostics.DiagnosticsProvider;
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic;
 import dev.railroadide.railroad.ide.sst.document.api.*;
@@ -54,19 +55,10 @@ public class IndependentLanguageProviderTest {
 
             var action = session.capability(SstCapabilities.CODE_ACTIONS).orElseThrow().actions(request)
                 .value().getFirst();
-            assertSame(document, action.expected());
-            var received = new AtomicReference<TextDocumentSnapshot>();
-            TextEditorAccess editor = (TextEditorAccess) Proxy.newProxyInstance(getClass().getClassLoader(),
-                new Class<?>[]{TextEditorAccess.class}, (proxy, method, args) -> {
-                    if (method.getName().equals("replace")) {
-                        received.set((TextDocumentSnapshot) args[0]);
-                        return EditResult.APPLIED;
-                    }
-                    throw new AssertionError(method);
-                });
-            assertEquals(EditResult.APPLIED, action.apply(editor));
-            assertSame(document, received.get());
-            TextReplacement replacement = action.replacements().getFirst();
+            var change = (WorkspaceChange.TextEdit) action.edit().changes().getFirst();
+            assertSame(document, change.expected());
+            assertEquals(action.title(), action.edit().label());
+            TextReplacement replacement = change.replacements().getFirst();
             String fixed = document.text().toString().substring(0, replacement.range().start)
                 + replacement.text() + document.text().toString().substring(replacement.range().end);
             assertTrue(fixed.startsWith("let answer = 42"));
@@ -118,7 +110,8 @@ public class IndependentLanguageProviderTest {
             assertThrows(IllegalArgumentException.class, () -> diagnostic.location().validateAgainst(newer));
             var action = session.capability(SstCapabilities.CODE_ACTIONS).orElseThrow()
                 .actions(request(document)).value().getFirst();
-            assertNotEquals(newer.version(), action.expected().version());
+            assertNotEquals(newer.version(),
+                ((WorkspaceChange.TextEdit) action.edit().changes().getFirst()).expected().version());
         }
     }
 
