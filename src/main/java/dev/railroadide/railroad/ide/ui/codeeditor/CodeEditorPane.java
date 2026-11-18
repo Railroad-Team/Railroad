@@ -16,6 +16,7 @@ import dev.railroadide.railroad.ide.sst.provider.api.UsageQuery;
 import dev.railroadide.railroad.ide.sst.request.api.CancellationTokenSource;
 import dev.railroadide.railroad.ide.sst.request.api.CancellationToken;
 import dev.railroadide.railroad.ide.sst.request.api.Deadline;
+import dev.railroadide.railroad.ide.sst.request.api.DeadlineExceededException;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
 import dev.railroadide.railroad.ide.sst.request.api.RequestPriority;
 import dev.railroadide.railroad.ide.sst.request.api.SstScheduler;
@@ -43,6 +44,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
@@ -79,6 +81,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     protected final SstScheduler.Scope featureRequests = SstScheduler.shared().newScope();
     private static final Duration INTERACTIVE_BUDGET = Duration.ofSeconds(2);
+    private static final Duration NAVIGATION_BUDGET = Duration.ofSeconds(15);
+    private static final double NAVIGATION_CHOICE_HEIGHT = 36;
     private static final Duration HIGHLIGHT_BUDGET = Duration.ofSeconds(5);
     private static final Duration DIAGNOSTICS_BUDGET = Duration.ofSeconds(30);
     private boolean codeEditorClosed;
@@ -453,13 +457,13 @@ public abstract class CodeEditorPane extends TextEditorPane {
         int offset = getCaretPosition();
         var cancellation = new CancellationTokenSource(providerLifetime);
         var context = new FeatureRequestContext(workspace, snapshot, cancellation.token(),
-            Deadline.after(INTERACTIVE_BUDGET));
+            Deadline.after(NAVIGATION_BUDGET));
         activeNavigationCancellation = cancellation;
         activeNavigationContext = context;
 
         featureRequests.submit("navigation", RequestPriority.NAVIGATION, context,
             cancellation, () -> ProviderExecutor.shared().execute(
-                snapshot.languageId() + ":navigation", context, INTERACTIVE_BUDGET,
+                snapshot.languageId() + ":navigation", context, NAVIGATION_BUDGET,
                 () -> kind == NavigationKind.DEFINITION
                     ? provider.definitions(context, offset)
                     : provider.implementations(context, offset)))
@@ -478,17 +482,23 @@ public abstract class CodeEditorPane extends TextEditorPane {
                 }
             }))
             .exceptionally(throwable -> {
-                Platform.runLater(() -> {
-                    if (activeNavigationContext == context) {
-                        invalidateNavigationRequest();
-                    }
-                });
                 Throwable cause = throwable;
                 while ((cause instanceof CompletionException || cause instanceof ExecutionException)
                     && cause.getCause() != null) {
                     cause = cause.getCause();
                 }
-                if (!(cause instanceof CancellationException)) {
+                boolean timedOut = DeadlineExceededException.class.isInstance(cause);
+                Platform.runLater(() -> {
+                    if (activeNavigationContext == context) {
+                        invalidateNavigationRequest();
+                        if (timedOut) {
+                            showNavigationMessage(L18n.localize("railroad.editor.navigation.timed_out"));
+                        }
+                    }
+                });
+                if (timedOut) {
+                    Railroad.LOGGER.warn("Timed out resolving {}", kind.name().toLowerCase(Locale.ROOT));
+                } else if (!(cause instanceof CancellationException)) {
                     Railroad.LOGGER.error("Failed to resolve {}", kind.name().toLowerCase(Locale.ROOT), cause);
                 }
                 return null;
@@ -547,7 +557,11 @@ public abstract class CodeEditorPane extends TextEditorPane {
         list.setCellFactory(_ -> new NavigationChoiceCell());
         list.getItems().setAll(choices);
         list.getSelectionModel().selectFirst();
-        list.setPrefHeight(Math.min(choices.size(), 10) * 26 + 4);
+        int longestLabel = choices.stream().mapToInt(choice -> choice.label().length()).max().orElse(0);
+        list.setFixedCellSize(NAVIGATION_CHOICE_HEIGHT);
+        list.setPrefSize(Math.clamp(longestLabel * 8.0 + 56, 320, 760),
+            Math.min(choices.size(), 10) * NAVIGATION_CHOICE_HEIGHT + 24);
+        list.setMinSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
         list.setOnMouseClicked(_ -> {
             NavigationChoice selected = list.getSelectionModel().getSelectedItem();
             if (selected != null) {

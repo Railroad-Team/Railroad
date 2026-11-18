@@ -203,6 +203,15 @@
     -fx-border-color: rgba(255, 255, 255, 0.25);
 }
 
+.navigation-message {
+    -fx-background-color: rgba(40, 40, 40, 0.95);
+    -fx-text-fill: white;
+    -fx-padding: 6px 10px;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-border-color: rgba(255, 255, 255, 0.25);
+}
+
 .signature-help-text {
     -fx-text-fill: white;
 }

@@ -233,7 +233,9 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
                     return;
 
                 releaseRequest();
-                state = cause instanceof CancellationException ? State.CANCELLED : State.FAILED;
+                state = cause instanceof CancellationException && !(cause instanceof DeadlineExceededException)
+                    ? State.CANCELLED
+                    : State.FAILED;
                 updateStatus();
             });
             if (!(cause instanceof CancellationException)) {

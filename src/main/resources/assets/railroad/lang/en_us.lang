@@ -1318,3 +1318,4 @@ railroad.ide.usages.outdated=Files changed since the search for %2$s; %1$d usage
 railroad.ide.usages.unresolved=No symbol to search for at the caret.
 railroad.ide.usages.failed=Find Usages failed. See the log for details.
 railroad.ide.usages.outdated_target=That file changed since the search. Refresh to update the results.
+railroad.editor.navigation.timed_out=Navigation timed out while analysing the workspace
