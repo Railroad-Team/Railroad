@@ -19,6 +19,7 @@ import dev.railroadide.railroad.ide.ui.codeaction.CodeActionController.Discovery
 import dev.railroadide.railroad.ide.ui.codeaction.CodeActionController.Resolution;
 import dev.railroadide.railroad.ide.ui.codeaction.CodeActionController.Status;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
+import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.editor.TextReplacement;
 import javafx.application.Platform;
 import org.junit.jupiter.api.AfterEach;
@@ -325,7 +326,7 @@ public class CodeActionControllerTest {
             return null;
         });
         assertFalse(onFx(menu::isClosed));
-        assertTrue(onFx(menu::statusText).contains("Enter again"), onFx(menu::statusText));
+        assertEquals(L18n.localize("railroad.code_actions.confirm", 2), onFx(menu::statusText));
         assertEquals("beta", Files.readString(root.resolve("B.txt")));
         onFx(() -> {
             menu.choose();
@@ -337,12 +338,10 @@ public class CodeActionControllerTest {
         assertEquals("Beta", Files.readString(root.resolve("B.txt")));
 
         TextDocumentSnapshot current = (TextDocumentSnapshot) store.current(document.id()).orElseThrow();
+        provider.actions = (context, request) -> List.of(CodeAction.resolved("Local", WorkspaceEdit.builder("Local")
+            .replace((TextDocumentSnapshot) context.documentSnapshot(), replacement(0, 1, "a!")).build()));
         Discovery later = discover(current, CodeActionRequest.at(0));
-        CodeActionMenu stale = onFx(() -> {
-            var opened = new CodeActionMenu(controller, later, applied::incrementAndGet);
-            opened.select(1);
-            return opened;
-        });
+        CodeActionMenu stale = onFx(() -> new CodeActionMenu(controller, later, applied::incrementAndGet));
         republish(current, "changed");
         for (int attempt = 0; attempt < 2; attempt++) {
             onFx(() -> {
@@ -350,7 +349,8 @@ public class CodeActionControllerTest {
                 return null;
             });
             assertFalse(onFx(stale::isClosed));
-            assertTrue(onFx(stale::statusText).contains("could not be applied"), onFx(stale::statusText));
+            assertTrue(onFx(stale::statusText).startsWith(
+                L18n.localize("railroad.code_actions.apply_failed", "").strip()), onFx(stale::statusText));
         }
         assertEquals(1, applied.get());
         assertEquals("changed", Files.readString(root.resolve("A.txt")));
@@ -424,8 +424,9 @@ public class CodeActionControllerTest {
 
     private static final class TestProvider implements CodeActionProvider {
         private final AtomicInteger resolutions = new AtomicInteger();
-        private volatile BiFunction<FeatureRequestContext, CodeActionRequest, List<CodeAction>> actions =
-            (context, request) -> List.of();
+        private volatile BiFunction<FeatureRequestContext, CodeActionRequest, List<CodeAction>> actions = (
+            context,
+            request) -> List.of();
         private volatile BiFunction<FeatureRequestContext, CodeAction, CodeAction> resolver;
 
         @Override

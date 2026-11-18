@@ -279,13 +279,13 @@ public class JavaCodeActionsTest {
         TextDocumentSnapshot saved = documents.get("p/A.java");
         int target = saved.text().indexOf("java.util.Map");
         var current = diagnostic(saved, target, target + "java.util.Map".length(), JavaCodeActions.UNUSED_IMPORT);
-        CodeActionRequest away = new CodeActionRequest(new TextRange(saved.text().length() - 2,
+        var away = new CodeActionRequest(new TextRange(saved.text().length() - 2,
             saved.text().length() - 2), List.of(current));
         CodeAction action = single(actions("p/A.java", away));
         assertEquals(List.of(current), action.diagnostics());
 
         TextDocumentSnapshot edited = overlay("p/A.java", saved.text() + "\n");
-        CodeActionRequest stale = new CodeActionRequest(new TextRange(edited.text().length() - 1,
+        var stale = new CodeActionRequest(new TextRange(edited.text().length() - 1,
             edited.text().length() - 1), List.of(current));
         assertEquals(List.of(), actions("p/A.java", stale));
     }

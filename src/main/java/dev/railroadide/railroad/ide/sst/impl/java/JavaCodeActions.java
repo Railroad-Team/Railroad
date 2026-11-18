@@ -344,9 +344,11 @@ public final class JavaCodeActions {
 
     private static int afterTrailingComment(String text, int end) {
         int newline = text.indexOf('\n', end);
-        int lineEnd = newline < 0 ? text.length() : newline > 0 && text.charAt(newline - 1) == '\r'
-            ? newline - 1
-            : newline;
+        int lineEnd = newline < 0
+            ? text.length()
+            : newline > 0 && text.charAt(newline - 1) == '\r'
+                ? newline - 1
+                : newline;
         String rest = text.substring(end, lineEnd).strip();
         return rest.isEmpty() || rest.startsWith("//") ? lineEnd : end;
     }

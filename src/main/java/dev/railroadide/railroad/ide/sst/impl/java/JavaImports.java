@@ -11,8 +11,8 @@ import java.util.regex.Pattern;
  * Syntax-only facts about the import declarations of one Java compilation unit.
  * <p>
  * Usage is decided conservatively from tokens: an import counts as used whenever its imported name appears as a
- * token outside the import declarations, including package annotations, or as a word in a Javadoc comment. An import reported as
- * unused can therefore be removed without changing what any name in the file refers to.
+ * token outside the import declarations, including package annotations, or as a word in a Javadoc comment. An import
+ * reported as unused can therefore be removed without changing what any name in the file refers to.
  */
 public final class JavaImports {
     private static final String IMPORT_DECLARATION = "JAVA_IMPORT_DECLARATION";
@@ -36,7 +36,7 @@ public final class JavaImports {
      * @param start offset of the {@code import} keyword
      * @param end offset just after the terminating semicolon
      * @param target imported name without whitespace or comments, such as {@code java.util.List} or
-     *        {@code java.util.*}
+     *            {@code java.util.*}
      * @param isStatic whether this is a static import
      */
     public record ImportDeclaration(SyntaxNode node, int start, int end, String target, boolean isStatic) {
