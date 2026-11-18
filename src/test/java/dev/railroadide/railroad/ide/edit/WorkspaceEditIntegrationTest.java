@@ -16,7 +16,17 @@ import dev.railroadide.railroad.plugin.spi.editor.TextReplacement;
 import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
 import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.theme.ThemeManager;
+import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
+import dev.railroadide.railroad.settings.keybinds.Keybinds;
 import javafx.application.Platform;
+import javafx.scene.Scene;
+import javafx.scene.Node;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TreeView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 import javafx.scene.image.WritableImage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -31,6 +41,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.Objects;
+import javafx.scene.control.Label;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -121,14 +133,111 @@ public class WorkspaceEditIntegrationTest {
             store.current(tab.documentId()).orElseThrow().uri());
     }
 
+    @Test
+    public void shiftF6RejectsUnsupportedTargetsAndPreviewsAppliesAndUndoesATypeRename() throws Exception {
+        Path original = projectDirectory.resolve("Original.java");
+        Path renamed = original.resolveSibling("Renamed.java");
+        String source = "class Original<T> { Original<T> self; }";
+        Files.writeString(original, source);
+        var tabs = onFx(DetachableTabPane::new);
+        var stage = onFx(() -> {
+            Platform.setImplicitExit(false);
+            ThemeManager.init();
+            Keybinds.initialize();
+            var window = new Stage();
+            window.setScene(new Scene(tabs, 640, 480));
+            window.show();
+            return window;
+        });
+        try {
+            EditorTab tab = onFx(() -> openInTabPane(original, tabs));
+            var editor = (CodeEditorPane) tab.view().activeEditor();
+            onFx(() -> {
+                editor.moveTo(source.indexOf("T"));
+                press(editor, KeyCode.F6, true);
+                return null;
+            });
+            awaitFx(() -> visibleNode(".navigation-message") != null);
+
+            onFx(() -> {
+                editor.moveTo(source.indexOf("Original") + 1);
+                press(editor, KeyCode.F6, true);
+                return null;
+            });
+            awaitFx(() -> visibleNode(".rename-dialog") != null);
+            TextField name = onFx(() -> (TextField) visibleNode(".rename-dialog").lookup(".text-field"));
+            onFx(() -> {
+                name.setText("class");
+                press(name, KeyCode.ENTER, false);
+                return null;
+            });
+            awaitFx(() -> visibleNode(".rename-error") != null);
+            assertEquals(source, onFx(editor::getText));
+
+            onFx(() -> {
+                name.setText("Renamed");
+                press(name, KeyCode.ENTER, false);
+                return null;
+            });
+            awaitFx(() -> !((TreeView<?>) visibleNode(".rename-preview")).getRoot().getChildren().isEmpty());
+            assertEquals(original, tab.path());
+            assertFalse(Files.exists(renamed));
+            onFx(() -> {
+                press(name, KeyCode.ENTER, false);
+                return null;
+            });
+            assertEquals(renamed, tab.path(), onFx(() -> {
+                var error = (Label) visibleNode(".rename-error");
+                return error == null ? "" : error.getText();
+            }));
+            assertEquals(source.replace("Original", "Renamed"), onFx(editor::getText));
+            assertTrue(Files.exists(renamed));
+            assertFalse(Files.exists(original));
+            onFx(() -> {
+                editor.undo();
+                return null;
+            });
+            assertEquals(original, tab.path());
+            assertEquals(source, onFx(editor::getText));
+            assertTrue(Files.exists(original));
+            assertFalse(Files.exists(renamed));
+        } finally {
+            onFx(() -> {
+                stage.close();
+                return null;
+            });
+        }
+    }
+
+    private static void press(Node node, KeyCode code, boolean shift) {
+        node.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", code, shift, false, false, false));
+    }
+
+    private static Node visibleNode(String selector) {
+        return Window.getWindows().stream().map(window -> window.getScene().lookup(selector))
+            .filter(Objects::nonNull).findFirst().orElse(null);
+    }
+
+    private static void awaitFx(Callable<Boolean> condition) throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+        while (!onFx(condition)) {
+            assertTrue(System.nanoTime() < deadline, "Timed out waiting for rename UI");
+            Thread.sleep(20);
+        }
+    }
+
     private EditorTab openInTabPane(Path file) throws ReflectiveOperationException {
+        return openInTabPane(file, new DetachableTabPane());
+    }
+
+    private EditorTab openInTabPane(Path file, DetachableTabPane tabs) throws ReflectiveOperationException {
         Class<?> requestType = Class.forName(EditorTabManager.class.getName() + "$TabOpenRequest");
         var normalRequest = requestType.getDeclaredMethod("normal");
         normalRequest.setAccessible(true);
         var open = EditorTabManager.class.getDeclaredMethod("openInTabPane", Project.class, Path.class,
             DetachableTabPane.class, requestType);
         open.setAccessible(true);
-        return (EditorTab) open.invoke(Services.EDITOR_TAB_MANAGER, project, file, new DetachableTabPane(),
+        return (EditorTab) open.invoke(Services.EDITOR_TAB_MANAGER, project, file, tabs,
             normalRequest.invoke(null));
     }
 

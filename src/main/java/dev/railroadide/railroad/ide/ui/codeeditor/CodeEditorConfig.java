@@ -8,6 +8,7 @@ import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.provider.api.NavigationProvider;
+import dev.railroadide.railroad.ide.sst.provider.api.RenameProvider;
 import dev.railroadide.railroad.ide.sst.provider.api.SstCapabilities;
 import dev.railroadide.railroad.ide.sst.request.api.CancellationToken;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -24,6 +25,7 @@ import java.util.Objects;
  * @param diagnosticsProvider diagnostics service, or null when unavailable
  * @param signatureHelpProvider signature help service, or null when unavailable
  * @param navigationProvider navigation service, or null when unavailable
+ * @param renameProvider rename service, or null when unavailable
  * @param highlightingProvider syntax style provider, or null when unavailable
  * @param providerLifetime cancellation token invalidating providers and their unpublished results on unload
  */
@@ -33,11 +35,12 @@ public record CodeEditorConfig(
     @Nullable DiagnosticsProvider<?> diagnosticsProvider,
     @Nullable SignatureHelpProvider signatureHelpProvider,
     @Nullable NavigationProvider navigationProvider,
+    @Nullable RenameProvider renameProvider,
     @Nullable SyntaxHighlightingProvider highlightingProvider,
     CancellationToken providerLifetime
 ) {
     /**
-     * Creates configuration for directly owned providers with no external unload lifetime.
+     * Creates configuration for directly owned providers with no external unload lifetime or rename service.
      *
      * @param languageId identifier of the document language
      * @param completionProvider completion service, or null to disable completion
@@ -54,8 +57,32 @@ public record CodeEditorConfig(
         @Nullable NavigationProvider navigationProvider,
         @Nullable SyntaxHighlightingProvider highlightingProvider
     ) {
-        this(languageId, completionProvider, diagnosticsProvider, signatureHelpProvider, navigationProvider,
+        this(languageId, completionProvider, diagnosticsProvider, signatureHelpProvider, navigationProvider, null,
             highlightingProvider, CancellationToken.none());
+    }
+
+    /**
+     * Creates configuration without a rename service.
+     *
+     * @param languageId identifier of the document language
+     * @param completionProvider completion service, or null to disable completion
+     * @param diagnosticsProvider diagnostics service, or null when unavailable
+     * @param signatureHelpProvider signature help service, or null when unavailable
+     * @param navigationProvider navigation service, or null when unavailable
+     * @param highlightingProvider syntax style provider, or null when unavailable
+     * @param providerLifetime external lifetime shared with captured requests
+     */
+    public CodeEditorConfig(
+        String languageId,
+        @Nullable CompletionProvider completionProvider,
+        @Nullable DiagnosticsProvider<?> diagnosticsProvider,
+        @Nullable SignatureHelpProvider signatureHelpProvider,
+        @Nullable NavigationProvider navigationProvider,
+        @Nullable SyntaxHighlightingProvider highlightingProvider,
+        CancellationToken providerLifetime
+    ) {
+        this(languageId, completionProvider, diagnosticsProvider, signatureHelpProvider, navigationProvider, null,
+            highlightingProvider, providerLifetime);
     }
 
     /**
@@ -66,6 +93,7 @@ public record CodeEditorConfig(
      * @param diagnosticsProvider diagnostics service, or null when unavailable
      * @param signatureHelpProvider signature help service, or null when unavailable
      * @param navigationProvider navigation service, or null when unavailable
+     * @param renameProvider rename service, or null when unavailable
      * @param highlightingProvider syntax style provider, or null when unavailable
      * @param providerLifetime external lifetime shared with captured requests
      */
@@ -119,6 +147,7 @@ public record CodeEditorConfig(
         DiagnosticsProvider<?> diagnosticsProvider = session.capability(SstCapabilities.DIAGNOSTICS).orElse(null);
         SignatureHelpProvider signatureHelpProvider = session.capability(SstCapabilities.SIGNATURE_HELP).orElse(null);
         NavigationProvider navigationProvider = session.capability(SstCapabilities.NAVIGATION).orElse(null);
+        RenameProvider renameProvider = session.capability(SstCapabilities.RENAME).orElse(null);
 
         if (highlightingProvider == null) {
             highlightingProvider = session.capability(LanguageCapabilities.HIGHLIGHTING).orElse(null);
@@ -130,6 +159,7 @@ public record CodeEditorConfig(
             diagnosticsProvider,
             signatureHelpProvider,
             navigationProvider,
+            renameProvider,
             highlightingProvider,
             session.cancellationToken());
     }

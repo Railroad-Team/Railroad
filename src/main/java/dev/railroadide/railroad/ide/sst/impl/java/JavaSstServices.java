@@ -22,14 +22,15 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import java.util.*;
 import java.util.function.BiFunction;
 
-/** Session-owned Java implementations of the neutral semantic and declaration query contracts. */
+/** Session-owned Java implementations of the neutral semantic, declaration, navigation and rename contracts. */
 public final class JavaSstServices
     implements
         SemanticProvider,
         IndexExtractionProvider,
         IndexQueryProvider,
         AutoCloseable,
-        NavigationProvider {
+        NavigationProvider,
+        RenameProvider {
     private final JavaWorkspaceAnalysisProvider workspaces = new JavaWorkspaceAnalysisProvider();
 
     /**
@@ -150,6 +151,23 @@ public final class JavaSstServices
         context.checkActive();
         return new FeatureResult<>(context, new UsageSearch(symbol.get(),
             SemanticNavigationResolver.displayName(graph, symbol.get()), List.<Location<?>>copyOf(usages)));
+    }
+
+    @Override
+    public FeatureResult<RenamePreparation> prepareRename(FeatureRequestContext context, int offset) {
+        context.checkActive();
+        RenamePreparation preparation = new JavaRenameEngine(context, this::capture).prepare(offset);
+        context.checkActive();
+        return new FeatureResult<>(context, preparation);
+    }
+
+    @Override
+    public FeatureResult<RenameProposal> rename(FeatureRequestContext context, int offset, String newName) {
+        Objects.requireNonNull(newName, "newName");
+        context.checkActive();
+        RenameProposal proposal = new JavaRenameEngine(context, this::capture).rename(offset, newName);
+        context.checkActive();
+        return new FeatureResult<>(context, proposal);
     }
 
     @Override

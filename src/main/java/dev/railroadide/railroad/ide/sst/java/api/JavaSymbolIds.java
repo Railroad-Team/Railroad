@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
  * All methods are pure, thread-safe and bounded by the supplied identifier/signature size.
  */
 public final class JavaSymbolIds {
+    private static final String NAMESPACE = "java:";
     private static final Pattern PARAMETER_TYPE = Pattern.compile(
         "[\\p{javaJavaIdentifierStart}][\\p{javaJavaIdentifierPart}.]*(\\[\\])*");
     private JavaSymbolIds() {
@@ -37,7 +38,7 @@ public final class JavaSymbolIds {
      * @return canonical Java declaration identity
      */
     public static SymbolId module(String name) {
-        return new SymbolId("java:module/" + part(Objects.requireNonNull(name, "name")));
+        return new SymbolId(NAMESPACE + "module/" + part(Objects.requireNonNull(name, "name")));
     }
 
     /**
@@ -250,12 +251,81 @@ public final class JavaSymbolIds {
         return path.isEmpty() ? "self" : String.join(".", path);
     }
 
-    private static boolean isTrivia(SyntaxNode node) {
+    /**
+     * Reports whether a syntax node is whitespace, a line terminator or a comment.
+     *
+     * @param node syntax node to inspect
+     * @return whether the node is trivia rather than code
+     */
+    public static boolean isTrivia(SyntaxNode node) {
         return switch (node.kind().id()) {
             case "JAVA_TOKEN_WHITESPACE", "JAVA_TOKEN_LINE_TERMINATOR", "JAVA_TOKEN_LINE_COMMENT",
                 "JAVA_TOKEN_BLOCK_COMMENT", "JAVA_TOKEN_JAVADOC_COMMENT" -> true;
             default -> false;
         };
+    }
+
+    /**
+     * Splits a Java identity into its decoded steps, outermost first, for example module, type, method and
+     * parameters.
+     *
+     * @param id identity created by this class
+     * @return decoded steps in identity order
+     * @throws IllegalArgumentException if the identity was not created by this class
+     */
+    public static List<Component> components(SymbolId id) {
+        String value = Objects.requireNonNull(id, "id").value();
+        if (!value.startsWith(NAMESPACE))
+            throw new IllegalArgumentException("Not a Java symbol identity: " + value);
+        String[] parts = value.substring(NAMESPACE.length()).split("/", -1);
+        if (parts.length % 2 != 0)
+            throw new IllegalArgumentException("Malformed Java symbol identity: " + value);
+        List<Component> components = new ArrayList<>();
+        for (int index = 0; index < parts.length; index += 2) {
+            components.add(new Component(parts[index],
+                new String(Base64.getUrlDecoder().decode(parts[index + 1]), StandardCharsets.UTF_8)));
+        }
+        return List.copyOf(components);
+    }
+
+    /**
+     * Joins decoded steps back into an identity; the inverse of {@link #components(SymbolId)}.
+     *
+     * @param components decoded steps, outermost first
+     * @return Java identity
+     */
+    public static SymbolId fromComponents(List<Component> components) {
+        if (components.isEmpty())
+            throw new IllegalArgumentException("A Java symbol identity needs at least one component");
+        var value = new StringBuilder(NAMESPACE);
+        for (Component component : components) {
+            if (value.length() > NAMESPACE.length()) {
+                value.append('/');
+            }
+            value.append(component.kind()).append('/').append(part(component.value()));
+        }
+        return new SymbolId(value.toString());
+    }
+
+    /**
+     * One decoded step of a Java identity.
+     *
+     * @param kind step category, such as {@code type}, {@code method} or {@code parameters}
+     * @param value decoded step value, such as a qualified type name or member name
+     */
+    public record Component(String kind, String value) {
+        /**
+         * Validates a decoded step.
+         *
+         * @param kind step category
+         * @param value decoded step value
+         */
+        public Component {
+            Objects.requireNonNull(kind, "kind");
+            Objects.requireNonNull(value, "value");
+            if (kind.isEmpty() || kind.contains("/"))
+                throw new IllegalArgumentException("Invalid identity component kind: " + kind);
+        }
     }
 
     private static SymbolId callable(SymbolId owner, String kind, String name, List<String> types) {

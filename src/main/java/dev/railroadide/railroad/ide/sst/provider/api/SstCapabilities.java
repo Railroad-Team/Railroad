@@ -47,6 +47,11 @@ public final class SstCapabilities {
     public static final CapabilityKey<NavigationProvider> NAVIGATION = new CapabilityKey<>("railroad:navigation",
         NavigationProvider.class);
     /**
+     * Prepares and computes semantic renames as snapshot-bound workspace edits.
+     */
+    public static final CapabilityKey<RenameProvider> RENAME = new CapabilityKey<>("railroad:rename",
+        RenameProvider.class);
+    /**
      * Proposes snapshot-bound document edits for host application.
      */
     public static final CapabilityKey<CodeActionProvider> CODE_ACTIONS = new CapabilityKey<>("railroad:code-actions",

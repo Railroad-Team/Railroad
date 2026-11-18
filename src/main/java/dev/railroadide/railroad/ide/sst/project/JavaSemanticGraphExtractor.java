@@ -149,6 +149,12 @@ public final class JavaSemanticGraphExtractor {
             && current != null) {
             addInheritance(node, current);
         }
+        if (node.kind().id().equals("JAVA_TYPE_REFERENCE")) {
+            addTypeUses(node, current);
+        }
+        if (node.kind().id().equals("JAVA_SWITCH_CASE_ITEM")) {
+            addEnumCaseLabel(node, current);
+        }
         if (node.kind().id().equals("JAVA_ANONYMOUS_CLASS_BODY") && declaration.isPresent()) {
             SyntaxNode creation = node.parent().orElseThrow();
             SyntaxNode base = JavaSourceSymbolIds.child(creation, "JAVA_TYPE_REFERENCE");
@@ -259,6 +265,116 @@ public final class JavaSemanticGraphExtractor {
             location(nameNode(base, simpleName)), owner));
     }
 
+    /**
+     * Records the type named by a type reference and every qualifying type segment, such as {@code Outer} in
+     * {@code Outer.Inner}. Segments are recorded only when they resolve to a type with exactly that simple name;
+     * package qualifiers and unresolved names are omitted. Inheritance bases are recorded as inheritance instead.
+     */
+    private void addTypeUses(SyntaxNode type, SymbolId enclosing) {
+        List<SyntaxToken> segments = type.children().stream()
+            .filter(part -> part instanceof SyntaxToken token && token.kind().id().endsWith("IDENTIFIER"))
+            .map(SyntaxToken.class::cast).toList();
+        if (segments.isEmpty())
+            return;
+
+        SyntaxNode parent = type.parent().orElse(null);
+        boolean inheritance = parent != null
+            && (Set.of("JAVA_EXTENDS_CLAUSE", "JAVA_IMPLEMENTS_CLAUSE").contains(parent.kind().id())
+                || parent.kind().id().equals("JAVA_CLASS_INSTANCE_CREATION_EXPRESSION")
+                    && JavaSourceSymbolIds.child(parent, "JAVA_ANONYMOUS_CLASS_BODY") != null);
+        SyntaxToken last = segments.getLast();
+        if (!inheritance) {
+            namedTypeId(type, last.text()).ifPresent(target -> addReference(
+                new ReferenceOccurrence(target, ReferenceKindId.TYPE_USE, location(last), enclosing)));
+        }
+
+        var prefix = new StringBuilder();
+        for (SyntaxToken segment : segments.subList(0, segments.size() - 1)) {
+            prefix.append(prefix.isEmpty() ? "" : ".").append(segment.text());
+            SymbolId target = resolvedTypeName(prefix.toString(), type);
+            if (target != null) {
+                addReference(new ReferenceOccurrence(target, ReferenceKindId.TYPE_USE, location(segment), enclosing));
+            }
+        }
+    }
+
+    /**
+     * Records an unqualified enum constant label, such as {@code case RED}, which Java resolves against the enum
+     * type of the switch selector rather than the enclosing scope.
+     */
+    private void addEnumCaseLabel(SyntaxNode item, SymbolId enclosing) {
+        List<SyntaxToken> tokens = new ArrayList<>();
+        Deque<SyntaxNode> pending = new ArrayDeque<>(List.of(item));
+        while (!pending.isEmpty()) {
+            SyntaxNode next = pending.removeFirst();
+            if (model.resolvedSymbol(next).isPresent())
+                return;
+            if (next instanceof SyntaxToken token) {
+                if (!JavaSymbolIds.isTrivia(token)) {
+                    tokens.add(token);
+                }
+            } else {
+                pending.addAll(next.children());
+            }
+        }
+        if (tokens.size() != 1 || !tokens.getFirst().kind().id().endsWith("IDENTIFIER"))
+            return;
+
+        SyntaxNode selector = null;
+        for (SyntaxNode current = item.parent().orElse(null); current != null; current = current.parent()
+            .orElse(null)) {
+            if (Set.of("JAVA_SWITCH_STATEMENT", "JAVA_SWITCH_EXPRESSION").contains(current.kind().id())) {
+                selector = JavaSourceSymbolIds.child(current, "JAVA_PARENTHESIZED_EXPRESSION");
+                break;
+            }
+        }
+        if (selector == null)
+            return;
+        Type type = model.inferredType(selector).orElse(null);
+        if (!(type instanceof JavaTypes.DeclaredType)) {
+            type = selector.children().stream().filter(part -> !(part instanceof SyntaxToken)).findFirst()
+                .flatMap(model::inferredType).orElse(null);
+        }
+        if (!(type instanceof JavaTypes.DeclaredType declared))
+            return;
+
+        String name = tokens.getFirst().text();
+        declaredTypeId(declared, item).ifPresent(enumType -> {
+            SymbolId constant = JavaSymbolIds.field(enumType, name);
+            boolean known = declarations.containsKey(constant) || index != null
+                && index.lookupMember(declared.displayName().replace('$', '.'), name).stream()
+                    .anyMatch(symbol -> symbol.descriptor() != null && symbol.descriptor().id().equals(constant));
+            if (known) {
+                addReference(new ReferenceOccurrence(constant, ReferenceKindId.READ, location(tokens.getFirst()),
+                    enclosing));
+            }
+        });
+    }
+
+    private Optional<SymbolId> namedTypeId(SyntaxNode type, String simpleName) {
+        Optional<SymbolId> resolved = model.resolvedSymbol(type)
+            .filter(symbol -> isTypeKind(symbol.kind()) && symbol.simpleName().equals(simpleName))
+            .flatMap(JavaSourceSymbolIds::deriveSymbolId);
+        if (resolved.isPresent())
+            return resolved;
+        if (!(model.inferredType(type).orElse(null) instanceof JavaTypes.DeclaredType declared))
+            return Optional.empty();
+        String name = declared.displayName();
+        if (!name.substring(Math.max(name.lastIndexOf('.'), name.lastIndexOf('$')) + 1).equals(simpleName))
+            return Optional.empty();
+        return declaredTypeId(declared, type);
+    }
+
+    private Optional<SymbolId> declaredTypeId(JavaTypes.DeclaredType declared, SyntaxNode node) {
+        List<SymbolDescriptor> candidates = declarations.values().stream()
+            .filter(symbol -> isTypeKind(symbol.kind()) && symbol.qualifiedName() != null
+                && symbol.qualifiedName().replace('$', '.').equals(declared.displayName().replace('$', '.')))
+            .toList();
+        if (candidates.size() == 1)
+            return Optional.of(candidates.getFirst().id());
+        return Optional.ofNullable(resolvedTypeName(declared.displayName(), node));
+    }
+
     private List<TypeReference> inheritanceArguments(SyntaxNode node) {
         SyntaxNode type = ancestor(node, "JAVA_TYPE_REFERENCE");
         if (type == null)
@@ -273,15 +389,9 @@ public final class JavaSemanticGraphExtractor {
             return resolved;
         Type inferred = model.inferredType(node).orElse(null);
         if (inferred instanceof JavaTypes.DeclaredType declared) {
-            List<SymbolDescriptor> candidates = declarations.values().stream()
-                .filter(symbol -> isTypeKind(symbol.kind()) && symbol.qualifiedName() != null
-                    && symbol.qualifiedName().replace('$', '.').equals(declared.displayName().replace('$', '.')))
-                .toList();
-            if (candidates.size() == 1)
-                return Optional.of(candidates.getFirst().id());
-            SymbolId indexed = resolvedTypeName(declared.displayName(), node);
-            if (indexed != null)
-                return Optional.of(indexed);
+            resolved = declaredTypeId(declared, node);
+            if (resolved.isPresent())
+                return resolved;
         }
         for (SyntaxNode child : node.children()) {
             if (!child.kind().id().equals("JAVA_TYPE_ARGUMENTS")) {

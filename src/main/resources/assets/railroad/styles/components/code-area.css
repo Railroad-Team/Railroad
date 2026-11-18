@@ -234,3 +234,20 @@
 .code-area .editor-breakpoint-marker:disabled {
     -fx-fill: transparent;
 }
+
+.rename-dialog .rename-heading {
+    -fx-font-size: 1.15em;
+    -fx-font-weight: bold;
+}
+
+.rename-conflicts .rename-error {
+    -fx-text-fill: -color-danger-fg;
+}
+
+.rename-conflicts .rename-warning {
+    -fx-text-fill: -color-warning-fg;
+}
+
+.rename-preview .rename-preview-file {
+    -fx-font-weight: bold;
+}

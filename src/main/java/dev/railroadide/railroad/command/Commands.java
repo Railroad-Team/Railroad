@@ -368,6 +368,16 @@ public final class Commands {
         new KeybindData(KeyCode.F12, new KeyCombination.Modifier[]{KeyCombination.SHIFT_DOWN}));
 
     /**
+     * Renames the symbol at the caret of the supplied code editor after previewing every change.
+     */
+    public static final Command<CodeEditorPane> RENAME = registerCodeEditorCommand(
+        "railroad:rename",
+        "railroad.menu.refactor.rename",
+        CodeEditorPane::supportsRename,
+        CodeEditorPane::rename,
+        new KeybindData(KeyCode.F6, new KeyCombination.Modifier[]{KeyCombination.SHIFT_DOWN}));
+
+    /**
      * Resolves the code editor shown by the active editor tab.
      *
      * @return active code editor, or {@code null} when the active tab is not a code editor
@@ -386,10 +396,21 @@ public final class Commands {
         Consumer<CodeEditorPane> handler,
         KeybindData defaultShortcut
     ) {
+        return registerCodeEditorCommand(id, displayNameKey, CodeEditorPane::supportsNavigation, handler,
+            defaultShortcut);
+    }
+
+    private static Command<CodeEditorPane> registerCodeEditorCommand(
+        String id,
+        String displayNameKey,
+        Predicate<CodeEditorPane> available,
+        Consumer<CodeEditorPane> handler,
+        KeybindData defaultShortcut
+    ) {
         return CommandRegistry.register(new Command<>(
             id,
             displayNameKey,
-            context -> context.argument() != null && context.argument().supportsNavigation(),
+            context -> context.argument() != null && available.test(context.argument()),
             context -> handler.accept(context.argument()),
             List.of(defaultShortcut),
             CodeEditorPane.class));

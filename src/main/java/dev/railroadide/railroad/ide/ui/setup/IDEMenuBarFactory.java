@@ -135,6 +135,10 @@ public final class IDEMenuBarFactory {
             () -> CommandContext.withArgument(project, menuBar, Commands.activeCodeEditor()));
         findUsagesItem.setGraphic(new FontIcon(FontAwesomeSolid.SEARCH));
 
+        var renameItem = CommandMenuItems.create(Commands.RENAME,
+            () -> CommandContext.withArgument(project, menuBar, Commands.activeCodeEditor()));
+        renameItem.setGraphic(new FontIcon(FontAwesomeSolid.PEN));
+
         var resetCurrentLayoutItem = CommandMenuItems.create(Commands.RESET_CURRENT_LAYOUT,
             () -> CommandContext.withArgument(project, menuBar, workspaceActions));
         resetCurrentLayoutItem.setGraphic(new FontIcon(FontAwesomeSolid.UNDO));
@@ -255,6 +259,10 @@ public final class IDEMenuBarFactory {
             fullScreenItem);
         viewMenu.getStyleClass().add("rr-menu");
 
+        var refactorMenu = new LocalizedMenu("railroad.menu.refactor");
+        refactorMenu.getItems().add(renameItem);
+        refactorMenu.getStyleClass().add("rr-menu");
+
         var runMenu = new LocalizedMenu("railroad.menu.run");
         runMenu.getItems().addAll(runItem, debugItem, stopItem);
         runMenu.getItems().add(new SeparatorMenuItem());
@@ -272,7 +280,7 @@ public final class IDEMenuBarFactory {
         toolsMenu.getItems().addAll(settingsItem, pluginsItem, terminalItem);
         toolsMenu.getStyleClass().add("rr-menu");
 
-        menuBar.getMenus().addAll(0, List.of(fileMenu, editMenu, viewMenu, runMenu, toolsMenu));
+        menuBar.getMenus().addAll(0, List.of(fileMenu, editMenu, viewMenu, refactorMenu, runMenu, toolsMenu));
         if (OperatingSystem.isMac()) {
             menuBar.useSystemMenuBarProperty().set(true);
         }

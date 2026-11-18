@@ -17,6 +17,8 @@ import dev.railroadide.railroad.ide.signature.SignatureHelp;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.provider.api.NavigationProvider;
+import dev.railroadide.railroad.ide.sst.provider.api.RenamePreparation;
+import dev.railroadide.railroad.ide.sst.provider.api.RenameProvider;
 import dev.railroadide.railroad.ide.sst.provider.api.UsageQuery;
 import dev.railroadide.railroad.ide.sst.request.api.CancellationTokenSource;
 import dev.railroadide.railroad.ide.sst.request.api.CancellationToken;
@@ -28,6 +30,7 @@ import dev.railroadide.railroad.ide.sst.request.api.SstScheduler;
 import dev.railroadide.railroad.ide.sst.provider.api.ProviderExecutor;
 import dev.railroadide.railroad.ide.ui.DiagnosticPane;
 import dev.railroadide.railroad.ide.ui.navigation.UsagesPane;
+import dev.railroadide.railroad.ide.ui.refactor.RenameDialog;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
@@ -89,6 +92,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     protected final @Nullable SignatureHelpProvider signatureHelpProvider;
     protected final @Nullable SyntaxHighlightingProvider highlightingProvider;
     protected final @Nullable NavigationProvider navigationProvider;
+    protected final @Nullable RenameProvider renameProvider;
 
     protected final SstScheduler.Scope featureRequests = SstScheduler.shared().newScope();
     private static final Duration INTERACTIVE_BUDGET = Duration.ofSeconds(2);
@@ -162,6 +166,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
     private @Nullable PendingNavigation activeNavigationChoices;
     private @Nullable String activeNavigationMessage;
     private @Nullable ContextMenu activeContextMenu;
+    private @Nullable CancellationTokenSource activeRenameCancellation;
+    private @Nullable FeatureRequestContext activeRenameContext;
+    private @Nullable RenameDialog activeRenameDialog;
 
     // region Bracket Highlighting state
     protected static final Map<Character, Character> OPENING_BRACKETS = Map.of('(', ')', '{', '}', '[', ']');
@@ -194,6 +201,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         this.diagnosticsProvider = (DiagnosticsProvider<TextEditorDiagnostic>) config.diagnosticsProvider();
         this.signatureHelpProvider = config.signatureHelpProvider();
         this.navigationProvider = config.navigationProvider();
+        this.renameProvider = config.renameProvider();
         this.highlightingProvider = config.highlightingProvider() != null
             ? config.highlightingProvider()
             : text -> StyleSpans.singleton(Collections.emptyList(), text.length());
@@ -227,6 +235,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             invalidateDiagnosticsRequest();
             invalidateCompletionRequest();
             invalidateNavigationRequest();
+            invalidateRenameRequest();
             visibleDiagnostics = List.of();
             recomputeLineDecorations();
             diagnosticPopup.hide();
@@ -244,6 +253,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             installSignatureHelp();
         }
         installNavigation();
+        installRename();
         installContextMenu();
         installBracketHighlighting();
         installDiagnosticPopupHandlers();
@@ -274,6 +284,11 @@ public abstract class CodeEditorPane extends TextEditorPane {
         invalidateHighlightRequest();
         invalidateDiagnosticsRequest();
         invalidateNavigationRequest();
+        invalidateRenameRequest();
+        if (activeRenameDialog != null) {
+            activeRenameDialog.close();
+            activeRenameDialog = null;
+        }
         hideAutoComplete();
         hideSignatureHelp();
         featureRequests.close();
@@ -688,6 +703,125 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
     // endregion
 
+    // region Rename
+    private void installRename() {
+        if (renameProvider == null)
+            return;
+
+        if (navigationProvider == null) {
+            KeybindHandler.registerCapture(KeybindContexts.of(KEYBIND_CONTEXT), this);
+        }
+        caretPositionProperty().addListener((observable, previous, current) -> invalidateRenameRequest());
+    }
+
+    private void invalidateRenameRequest() {
+        featureRequests.cancel("rename");
+        if (activeRenameCancellation != null) {
+            activeRenameCancellation.cancel();
+            activeRenameCancellation = null;
+        }
+        activeRenameContext = null;
+    }
+
+    /**
+     * Reports whether the symbol at the caret can be renamed from this editor.
+     *
+     * @return whether this editor is editable and its language provides semantic renames
+     */
+    public boolean supportsRename() {
+        return renameProvider != null && !codeEditorClosed && !providerLifetime.isCancellationRequested()
+            && isEditable();
+    }
+
+    /**
+     * Checks the symbol at the caret and, when it can be renamed, opens the rename dialog with a preview of every
+     * change; otherwise explains why it cannot be renamed. Call on the JavaFX thread.
+     */
+    public void rename() {
+        invalidateRenameRequest();
+        hideNavigationPopup();
+
+        RenameProvider provider = renameProvider;
+        DocumentStore store = getDocumentStore();
+        if (!supportsRename() || provider == null || store == null)
+            return;
+
+        WorkspaceSnapshot workspace = store.capture();
+        if (!(workspace.document(documentId).orElse(null) instanceof TextDocumentSnapshot snapshot)
+            || !snapshot.text().equals(getText()))
+            return;
+
+        int offset = getCaretPosition();
+        var cancellation = new CancellationTokenSource(providerLifetime);
+        var context = new FeatureRequestContext(workspace, snapshot, cancellation.token(),
+            Deadline.after(NAVIGATION_BUDGET));
+        activeRenameCancellation = cancellation;
+        activeRenameContext = context;
+
+        featureRequests.submit("rename", RequestPriority.NAVIGATION, context, cancellation,
+            () -> ProviderExecutor.shared().execute(snapshot.languageId() + ":rename", context, NAVIGATION_BUDGET,
+                () -> provider.prepareRename(context, offset)))
+            .thenAccept(result -> Platform.runLater(() -> {
+                if (activeRenameContext != context)
+                    return;
+
+                boolean current = result != null && result.belongsTo(context)
+                    && !context.cancellationToken().isCancellationRequested()
+                    && getCaretPosition() == offset
+                    && isCurrent(workspace);
+                invalidateRenameRequest();
+                if (!current)
+                    return;
+                switch (result.value()) {
+                    case RenamePreparation.Rejected rejected -> showNavigationMessage(
+                        L18n.localize("railroad.editor.rename.rejected", rejected.reason()));
+                    case RenamePreparation.Renameable symbol -> openRenameDialog(
+                        new RenameDialog.Request(provider, providerLifetime, store, snapshot, offset, symbol,
+                            Services.IDE_STATE::getWorkspaceEdits));
+                }
+            }))
+            .exceptionally(throwable -> {
+                Throwable cause = throwable;
+                while ((cause instanceof CompletionException || cause instanceof ExecutionException)
+                    && cause.getCause() != null) {
+                    cause = cause.getCause();
+                }
+                boolean timedOut = DeadlineExceededException.class.isInstance(cause);
+                Platform.runLater(() -> {
+                    if (activeRenameContext == context) {
+                        invalidateRenameRequest();
+                        if (timedOut) {
+                            showNavigationMessage(L18n.localize("railroad.editor.navigation.timed_out"));
+                        }
+                    }
+                });
+                if (!(cause instanceof CancellationException)) {
+                    Railroad.LOGGER.error("Failed to prepare rename", cause);
+                }
+                return null;
+            });
+    }
+
+    private void openRenameDialog(RenameDialog.Request request) {
+        if (activeRenameDialog != null) {
+            activeRenameDialog.close();
+        }
+        var dialog = new RenameDialog(request);
+        activeRenameDialog = dialog;
+        dialog.show(getScene() == null ? null : getScene().getWindow());
+    }
+
+    /**
+     * Returns the rename dialog opened by the last rename request, while it is open.
+     *
+     * @return open rename dialog, or {@code null}
+     */
+    protected final @Nullable RenameDialog activeRenameDialog() {
+        RenameDialog dialog = activeRenameDialog;
+        return dialog == null || dialog.isClosed() ? null : dialog;
+    }
+    // endregion
+
     // region Context Menu
     private void installContextMenu() {
         addEventHandler(ContextMenuEvent.CONTEXT_MENU_REQUESTED, event -> {
@@ -720,7 +854,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
 
     /**
-     * Builds the editor's context menu for the current caret: symbol navigation followed by clipboard editing.
+     * Builds the editor's context menu for the current caret: symbol navigation, rename and clipboard editing.
      * Items are enabled from their commands' current state.
      *
      * @return new context menu
@@ -733,6 +867,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
             menuItem(Commands.GO_TO_DEFINITION, navigation),
             menuItem(Commands.GO_TO_IMPLEMENTATION, navigation),
             menuItem(Commands.FIND_USAGES, navigation),
+            new SeparatorMenuItem(),
+            menuItem(Commands.RENAME, navigation),
             new SeparatorMenuItem(),
             menuItem(EditCommands.CUT, editing),
             menuItem(EditCommands.COPY, editing),

@@ -773,6 +773,9 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
         step.source = source;
         step.sourceUri = expected.uri();
         step.target = target;
+        step.sourceIdentity = identities.findIdentity(expected.uri())
+            .filter(identity -> identity.id().equals(expected.id()))
+            .orElse(new DocumentIdentity(expected.id(), expected.uri()));
         step.caseOnly = caseOnly;
         step.targetUri = rename.newUri();
         plan.resources.add(step);
@@ -986,9 +989,6 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
                 journal.push(new Compensation(targetUri, "restore identity at " + targetUri,
                     () -> identities.associate(other, targetUri)));
             });
-        DocumentIdentity source = identities.findIdentity(step.sourceUri)
-            .filter(identity -> identity.id().equals(step.id))
-            .orElse(new DocumentIdentity(step.id, step.sourceUri));
         // Journaled first and idempotent: relocation updates identity, store and editor in separate steps, and
         // an editor can only be rebound once its file is back at the source.
         journal.push(new Compensation(step.sourceUri, "move " + step.id + " back to " + step.sourceUri, () -> {
@@ -1001,7 +1001,7 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
                 store.relocate(step.id, step.sourceUri);
             }
         }));
-        host.relocate(source, step.target);
+        host.relocate(step.sourceIdentity, step.target);
     }
 
     private void moveBack(ResourceStep step) throws IOException {
@@ -1395,6 +1395,7 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
         private DocumentState state;
         private Path source;
         private DocumentUri sourceUri;
+        private DocumentIdentity sourceIdentity;
         private Path target;
         private DocumentUri targetUri;
         private byte[] content;

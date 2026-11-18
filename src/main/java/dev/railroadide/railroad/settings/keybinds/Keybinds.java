@@ -229,6 +229,11 @@ public class Keybinds {
     public static final Keybind FIND_USAGES = registerCodeEditorCommand(Commands.FIND_USAGES);
 
     /**
+     * Renames the symbol at the caret.
+     */
+    public static final Keybind RENAME = registerCodeEditorCommand(Commands.RENAME);
+
+    /**
      * Closes the active or targeted editor tab.
      */
     public static final Keybind CLOSE_EDITOR_TAB = registerEditorTabCommand(Commands.CLOSE_EDITOR_TAB);
@@ -302,6 +307,7 @@ public class Keybinds {
         GO_TO_DEFINITION.resetKeys();
         GO_TO_IMPLEMENTATION.resetKeys();
         FIND_USAGES.resetKeys();
+        RENAME.resetKeys();
         CLOSE_EDITOR_TAB.resetKeys();
         REOPEN_CLOSED_EDITOR_TAB.resetKeys();
         SELECT_EDITOR_TAB_BY_NUMBER.resetKeys();

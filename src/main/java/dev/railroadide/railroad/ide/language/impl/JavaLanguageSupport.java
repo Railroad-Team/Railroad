@@ -63,7 +63,7 @@ public final class JavaLanguageSupport extends BaseLanguageSupport {
             SstCapabilities.INDEX_QUERY, SstCapabilities.DIAGNOSTICS,
             SstCapabilities.COMPLETION, SstCapabilities.SIGNATURE_HELP, LanguageCapabilities.INDEXER,
             LanguageCapabilities.PERSISTENCE, LanguageCapabilities.INDEX_CONTEXT, LanguageCapabilities.INDEX_WARMUP,
-            LanguageCapabilities.HIGHLIGHTING, SstCapabilities.NAVIGATION);
+            LanguageCapabilities.HIGHLIGHTING, SstCapabilities.NAVIGATION, SstCapabilities.RENAME);
     }
 
     @Override
@@ -86,6 +86,7 @@ public final class JavaLanguageSupport extends BaseLanguageSupport {
             .add(LanguageCapabilities.INDEX_CONTEXT, new JavaLanguageIndexContextContributor())
             .add(LanguageCapabilities.INDEX_WARMUP, ANALYSIS_CONTEXT_PROVIDER::index)
             .add(SstCapabilities.NAVIGATION, semantics)
+            .add(SstCapabilities.RENAME, semantics)
             .build());
     }
 
