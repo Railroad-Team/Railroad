@@ -618,7 +618,9 @@ public final class JavaSemanticGraphExtractor {
     private TypeReference typeReference(SyntaxNode node) {
         String spelling = JavaSemanticAnalyzer.canonicalTypeText(node);
         TypeReference parsed = parseType(spelling == null || spelling.isBlank() ? "?" : spelling);
-        SymbolId target = model.resolvedSymbol(node).flatMap(JavaSourceSymbolIds::deriveSymbolId).orElse(null);
+        String simpleName = parsed.name().substring(parsed.name().lastIndexOf('.') + 1);
+        SymbolId target = model.resolvedSymbol(node).flatMap(JavaSourceSymbolIds::deriveSymbolId)
+            .or(() -> namedTypeId(node, simpleName)).orElse(null);
         return new TypeReference(parsed.name(), parsed.arguments(), parsed.arrayDimensions(), target);
     }
 

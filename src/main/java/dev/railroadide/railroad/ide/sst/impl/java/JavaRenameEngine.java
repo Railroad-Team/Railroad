@@ -22,6 +22,7 @@ import dev.railroadide.railroad.plugin.spi.editor.TextReplacement;
 import dev.railroadide.railroad.plugin.spi.editor.TextSelection;
 import org.jspecify.annotations.Nullable;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -475,7 +476,7 @@ public final class JavaRenameEngine {
             return;
         }
         DocumentUri uri = DocumentUri.fromPath(renamed);
-        boolean caseOnly = path.get().equals(renamed);
+        boolean caseOnly = path.get().equals(renamed) || sameExistingFile(path.get(), renamed);
         boolean occupied = workspace.documents().values().stream()
             .anyMatch(other -> !other.id().equals(document.id()) && sameFile(other.uri(), uri));
         if (occupied || !caseOnly && Files.exists(renamed)) {
@@ -483,6 +484,18 @@ public final class JavaRenameEngine {
             return;
         }
         plan.renameFile(document, uri);
+    }
+
+    /**
+     * Reports whether two spellings name one existing file, as a case-only rename does on a case-insensitive
+     * filesystem whose paths still compare case-sensitively.
+     */
+    private static boolean sameExistingFile(Path source, Path target) {
+        try {
+            return Files.exists(source) && Files.exists(target) && Files.isSameFile(source, target);
+        } catch (IOException exception) {
+            return false;
+        }
     }
 
     private static boolean sameFile(DocumentUri first, DocumentUri second) {

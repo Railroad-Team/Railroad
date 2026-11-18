@@ -430,6 +430,26 @@ public class JavaRenameServiceTest {
     }
 
     @Test
+    public void neverLeavesAGenericOverrideBehind() {
+        source("p/Box.java", """
+            package p;
+            public class Box<T> {
+                public void put(T value) {}
+            }
+            """);
+        source("p/Names.java", """
+            package p;
+            class Names extends Box<String> {
+                public void put(String value) {}
+            }
+            """);
+        RenameProposal proposal = proposal("p/Box.java", "put(T", 0, "store");
+        assertTrue(proposal.applicable(), () -> String.valueOf(proposal.conflicts()));
+        assertTrue(apply(proposal.edit()).get("p/Names.java").contains("public void store(String value)"),
+            "The overriding method must be renamed with the method it overrides");
+    }
+
+    @Test
     public void reportsAccidentalOverridesAndHierarchyClashes() {
         source("p/Base.java", """
             package p;
