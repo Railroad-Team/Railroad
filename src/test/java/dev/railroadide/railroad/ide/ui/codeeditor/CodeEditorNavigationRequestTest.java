@@ -11,7 +11,10 @@ import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Scene;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
 import javafx.scene.image.WritableImage;
+import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
@@ -26,6 +29,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -299,6 +303,69 @@ public class CodeEditorNavigationRequestTest {
                 return null;
             });
         }
+    }
+
+    @Test
+    public void rightClickMovesTheCaretToTheSymbolAndItsMenuNavigates() throws Exception {
+        try (Fixture fixture = open((context, offset) -> target(context, 0))) {
+            onFx(() -> {
+                fixture.editor.moveTo(0);
+                fireContextMenu(fixture.editor, REFERENCE + 1);
+                assertEquals(REFERENCE + 1, fixture.editor.getCaretPosition());
+                ContextMenu menu = fixture.editor.activeContextMenu();
+                assertNotNull(menu);
+                assertTrue(menu.isShowing());
+                assertEquals(List.of("railroad:go_to_definition", "railroad:go_to_implementation",
+                    "railroad:find_usages", "railroad:edit_cut", "railroad:edit_copy", "railroad:edit_paste"),
+                    menu.getItems().stream()
+                        .map(item -> item.getProperties().get("railroad:command-id"))
+                        .filter(Objects::nonNull)
+                        .toList());
+                MenuItem definition = menu.getItems().getFirst();
+                assertFalse(definition.isDisable());
+                assertTrue(menu.getItems().stream()
+                    .filter(item -> "railroad:edit_copy".equals(item.getProperties().get("railroad:command-id")))
+                    .allMatch(MenuItem::isDisable));
+                fixture.editor.moveTo(REFERENCE);
+                definition.fire();
+                return null;
+            });
+            fixture.nextRequest();
+            awaitRequests(fixture.editor.featureRequests);
+            onFx(() -> {
+                assertEquals(0, fixture.editor.getCaretPosition());
+                return null;
+            });
+        }
+    }
+
+    @Test
+    public void rightClickInsideASelectionKeepsTheSelection() throws Exception {
+        try (Fixture fixture = open((context, offset) -> target(context, 0))) {
+            onFx(() -> {
+                fixture.editor.selectRange(REFERENCE, REFERENCE + 5);
+                fireContextMenu(fixture.editor, REFERENCE + 2);
+                assertEquals(REFERENCE, fixture.editor.getSelection().getStart());
+                assertEquals(REFERENCE + 5, fixture.editor.getSelection().getEnd());
+                assertTrue(fixture.editor.activeContextMenu().getItems().stream()
+                    .filter(item -> "railroad:edit_copy".equals(item.getProperties().get("railroad:command-id")))
+                    .noneMatch(MenuItem::isDisable));
+                fixture.editor.discardChangesOnClose();
+                fixture.editor.close();
+                assertNull(fixture.editor.activeContextMenu());
+                return null;
+            });
+        }
+    }
+
+    private static void fireContextMenu(CodeEditorPane editor, int offset) {
+        editor.layout();
+        Bounds bounds = editor.getCharacterBoundsOnScreen(offset, offset + 1).orElseThrow();
+        double screenX = bounds.getMinX() + bounds.getWidth() / 2;
+        double screenY = bounds.getMinY() + bounds.getHeight() / 2;
+        Point2D local = editor.screenToLocal(screenX, screenY);
+        editor.fireEvent(new ContextMenuEvent(ContextMenuEvent.CONTEXT_MENU_REQUESTED, local.getX(), local.getY(),
+            screenX, screenY, false, null));
     }
 
     private Fixture open(NavigationProvider provider) throws Exception {

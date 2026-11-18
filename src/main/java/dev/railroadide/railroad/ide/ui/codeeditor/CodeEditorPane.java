@@ -2,6 +2,11 @@ package dev.railroadide.railroad.ide.ui.codeeditor;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.command.Command;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.CommandMenuItems;
+import dev.railroadide.railroad.command.Commands;
+import dev.railroadide.railroad.command.EditCommands;
 import dev.railroadide.railroad.ide.completion.CompletionItem;
 import dev.railroadide.railroad.ide.completion.CompletionProvider;
 import dev.railroadide.railroad.ide.completion.CompletionResult;
@@ -37,9 +42,14 @@ import javafx.beans.value.ChangeListener;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.IndexRange;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Tooltip;
+import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
@@ -66,6 +76,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -150,6 +161,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     private final Popup navigationPopup = new Popup();
     private @Nullable PendingNavigation activeNavigationChoices;
     private @Nullable String activeNavigationMessage;
+    private @Nullable ContextMenu activeContextMenu;
 
     // region Bracket Highlighting state
     protected static final Map<Character, Character> OPENING_BRACKETS = Map.of('(', ')', '{', '}', '[', ']');
@@ -232,6 +244,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             installSignatureHelp();
         }
         installNavigation();
+        installContextMenu();
         installBracketHighlighting();
         installDiagnosticPopupHandlers();
 
@@ -265,6 +278,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         hideSignatureHelp();
         featureRequests.close();
         diagnosticPopup.hide();
+        closeEditorContextMenu();
         Popup completionPopup = activeCompletionPopup.getAndSet(null);
         if (completionPopup != null) {
             completionPopup.hide();
@@ -670,6 +684,83 @@ public abstract class CodeEditorPane extends TextEditorPane {
         protected void updateItem(NavigationChoice item, boolean empty) {
             super.updateItem(item, empty);
             setText(empty || item == null ? null : item.label());
+        }
+    }
+    // endregion
+
+    // region Context Menu
+    private void installContextMenu() {
+        addEventHandler(ContextMenuEvent.CONTEXT_MENU_REQUESTED, event -> {
+            if (codeEditorClosed)
+                return;
+
+            if (!event.isKeyboardTrigger()) {
+                int index = hit(event.getX(), event.getY()).getCharacterIndex().orElse(-1);
+                IndexRange selection = getSelection();
+                if (index >= 0 && (selection.getLength() == 0 || index < selection.getStart()
+                    || index >= selection.getEnd())) {
+                    moveTo(index);
+                }
+            }
+
+            hideAutoComplete();
+            hideSignatureHelp();
+            closeEditorContextMenu();
+            ContextMenu menu = createEditorContextMenu();
+            activeContextMenu = menu;
+            if (getScene() != null && getScene().getWindow() != null && getScene().getWindow().isShowing()) {
+                Point2D anchor = event.isKeyboardTrigger()
+                    ? getCaretBounds().map(bounds -> new Point2D(bounds.getMinX(), bounds.getMaxY()))
+                        .orElseGet(() -> localToScreen(0, 0))
+                    : new Point2D(event.getScreenX(), event.getScreenY());
+                menu.show(this, anchor.getX(), anchor.getY());
+            }
+            event.consume();
+        });
+    }
+
+    /**
+     * Builds the editor's context menu for the current caret: symbol navigation followed by clipboard editing.
+     * Items are enabled from their commands' current state.
+     *
+     * @return new context menu
+     */
+    protected final ContextMenu createEditorContextMenu() {
+        Supplier<CommandContext<CodeEditorPane>> navigation = () -> CommandContext.withArgument(project, this,
+            this);
+        Supplier<CommandContext<Void>> editing = () -> CommandContext.forProject(project, this);
+        var menu = new ContextMenu(
+            menuItem(Commands.GO_TO_DEFINITION, navigation),
+            menuItem(Commands.GO_TO_IMPLEMENTATION, navigation),
+            menuItem(Commands.FIND_USAGES, navigation),
+            new SeparatorMenuItem(),
+            menuItem(EditCommands.CUT, editing),
+            menuItem(EditCommands.COPY, editing),
+            menuItem(EditCommands.PASTE, editing));
+        menu.getStyleClass().add("code-editor-context-menu");
+        return menu;
+    }
+
+    /**
+     * Returns the context menu opened by the last request, while it is open.
+     *
+     * @return open context menu, or {@code null}
+     */
+    protected final @Nullable ContextMenu activeContextMenu() {
+        return activeContextMenu;
+    }
+
+    private static <T> MenuItem menuItem(Command<T> command, Supplier<CommandContext<T>> context) {
+        MenuItem item = CommandMenuItems.create(command, context);
+        item.setDisable(!command.canExecute(context.get()));
+        return item;
+    }
+
+    private void closeEditorContextMenu() {
+        ContextMenu menu = activeContextMenu;
+        activeContextMenu = null;
+        if (menu != null) {
+            menu.hide();
         }
     }
     // endregion
