@@ -190,8 +190,8 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
      * @param id logical document identity
      * @param uri document location
      * @param version backing revision
-     * @param path file location used to resolve the language
-     * @param bytes file content
+     * @param path file location used to resolve the language; it need not exist
+     * @param bytes file content, which classifies files that no language recognizes
      * @return text snapshot decoded as UTF-8 for text languages, otherwise a binary snapshot
      * @throws CharacterCodingException if a text language's content is not valid UTF-8
      */
@@ -202,7 +202,7 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
         Path path,
         byte[] bytes
     ) throws CharacterCodingException {
-        String language = LanguageSupportRegistry.resolveLanguageId(path);
+        String language = LanguageSupportRegistry.resolveLanguageId(path, bytes);
         return snapshot(id, uri, version, language, decodeText(language, bytes), bytes);
     }
 
@@ -252,7 +252,7 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
             return;
         }
         byte[] bytes = Files.readAllBytes(path);
-        String language = LanguageSupportRegistry.resolveLanguageId(path);
+        String language = LanguageSupportRegistry.resolveLanguageId(path, bytes);
         String text = decodeText(language, bytes);
         dispatch.accept(() -> {
             if (closed) {
@@ -318,6 +318,15 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
                     continue;
                 if (openTextDocument.test(current.id()))
                     continue;
+                Path location = state.backing().uri().filePath().orElse(path);
+                Optional<Path> surviving = identities.forgetDeletedAlias(current.id(),
+                    current.id().equals(deletedId) ? path : location);
+                if (surviving.isPresent()) {
+                    if (Files.notExists(location)) {
+                        store.relocate(current.id(), DocumentUri.fromPath(surviving.get()));
+                    }
+                    continue;
+                }
                 store.removeBacking(current.id(), state.backing().version());
             }
             result.complete(null);

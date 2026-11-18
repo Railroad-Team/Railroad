@@ -106,6 +106,23 @@ public final class LanguageSupportRegistry {
     }
 
     /**
+     * Resolves the storage language identifier for known content, which need not exist on disk, falling back to binary
+     * or plain text from that content when no contribution matches.
+     *
+     * @param path file location to recognize
+     * @param content file content used for the fallback
+     * @return the selected or fallback host language identifier
+     */
+    public static String resolveLanguageId(Path path, byte[] content) {
+        Objects.requireNonNull(path, "path");
+        Objects.requireNonNull(content, "content");
+        return find(path).map(LanguageSupport::languageId)
+            .orElseGet(() -> FileUtils.isBinaryContent(content, content.length)
+                ? "binary"
+                : PlainTextLanguageSupport.INSTANCE.languageId());
+    }
+
+    /**
      * Returns host presentations for all registered contributions.
      *
      * @return an immutable list ordered by contribution ID

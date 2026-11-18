@@ -974,6 +974,12 @@ public class WorkspaceEditAdversarialTest {
         }
 
         @Override
+        public void createLink(Path link, Path existing) throws IOException {
+            check("link", link);
+            NIO.createLink(link, existing);
+        }
+
+        @Override
         public void createDirectory(Path path) throws IOException {
             check("mkdir", path);
             NIO.createDirectory(path);

@@ -179,6 +179,8 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         setMouseOverTextDelay(Duration.ofMillis(500));
 
         initialContentLoaded = loadInitialContent();
+        // Loading is not an edit; undoing it would empty the editor and, once saved, the file.
+        getUndoManager().forgetHistory();
         backingReadFailed = !initialContentLoaded;
         if (backingReadFailed) {
             setSaveState(EditorSaveState.ERROR);

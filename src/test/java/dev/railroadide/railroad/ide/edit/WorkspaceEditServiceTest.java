@@ -12,6 +12,7 @@ import dev.railroadide.railroad.plugin.spi.editor.TextReplacement;
 import dev.railroadide.railroad.plugin.spi.editor.TextSelection;
 import javafx.application.Platform;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -795,6 +796,203 @@ public class WorkspaceEditServiceTest {
         assertFalse(onFx(service::canUndo));
     }
 
+    @Test
+    public void undoSpansDocumentsAfterOpeningACrlfFileThatTheEditorNormalizes() throws Exception {
+        TextDocumentSnapshot windows = disk("Windows.txt", "first\r\nsecond\r\n");
+        TextDocumentSnapshot other = disk("Other.txt", "other");
+        WorkspaceEditResult applied = apply(WorkspaceEdit.builder("Edit")
+            .replace(windows, replacement(0, 5, "FIRST"))
+            .replace(other, replacement(0, 5, "OTHER"))
+            .build());
+        assertEquals(Status.APPLIED, applied.status(), applied.problems()::toString);
+        TextEditorPane editor = openDiscovered(root.resolve("Windows.txt"));
+        assertEquals("FIRST\nsecond\n", onFx(editor::getText));
+
+        WorkspaceEditResult undone = onFx(service::undo);
+
+        assertEquals(Status.APPLIED, undone.status(), undone.problems()::toString);
+        assertEquals("first\nsecond\n", onFx(editor::getText));
+        assertEquals("other", Files.readString(root.resolve("Other.txt")));
+        WorkspaceEditResult redone = onFx(service::redo);
+        assertEquals(Status.APPLIED, redone.status(), redone.problems()::toString);
+        assertEquals("FIRST\nsecond\n", onFx(editor::getText));
+        assertEquals("OTHER", Files.readString(root.resolve("Other.txt")));
+    }
+
+    @Test
+    public void undoRestoresADeletedBinaryFileWithAnUnrecognisedExtension() throws Exception {
+        byte[] bytes = {0, 1, 2, (byte) 0xff};
+        Path payload = root.resolve("payload.unrecognised");
+        Files.write(payload, bytes);
+        DocumentId id = identities.getOrCreate(payload);
+        DocumentSnapshot binary = ProjectDocumentSynchronizer.backingSnapshot(id, DocumentUri.fromPath(payload),
+            DocumentVersion.initial(), payload, bytes);
+        assertInstanceOf(BinaryDocumentSnapshot.class, binary);
+        store.publishBacking(binary);
+        assertEquals(Status.APPLIED, apply(WorkspaceEdit.builder("Delete").delete(binary).build()).status());
+        assertFalse(Files.exists(payload));
+
+        WorkspaceEditResult undone = onFx(service::undo);
+
+        assertEquals(Status.APPLIED, undone.status(), undone.problems()::toString);
+        assertArrayEquals(bytes, Files.readAllBytes(payload));
+        var restored = assertInstanceOf(BinaryDocumentSnapshot.class, store.current(id).orElseThrow());
+        assertArrayEquals(bytes, restored.copyBytes());
+        assertEquals(binary.languageId(), restored.languageId());
+        assertTrue(restored.version().isAfter(binary.version()));
+        assertEquals(Status.APPLIED, onFx(service::redo).status());
+        assertFalse(Files.exists(payload));
+    }
+
+    @Test
+    public void caseOnlyRenameLeftAtItsTemporaryNameIsNotReportedAsRolledBack() throws Exception {
+        TextDocumentSnapshot document = disk("Case.txt", "content");
+        Assumptions.assumeTrue(Files.exists(root.resolve("CASE.TXT")), "Requires a case-insensitive filesystem");
+        files.failure = (operation, path) -> operation.equals("move")
+            && path.getFileName().toString().contains(".railroad-rename-");
+
+        WorkspaceEditResult result = apply(WorkspaceEdit.builder("Case")
+            .rename(document, DocumentUri.fromPath(root.resolve("case.txt"))).build());
+
+        assertEquals(Status.INCONSISTENT, result.status(), result.problems()::toString);
+        assertTrue(result.problems().stream().anyMatch(problem -> problem.kind() == Kind.IO_FAILURE
+            && document.uri().equals(problem.uri())), result.problems()::toString);
+        assertFalse(Files.exists(root.resolve("Case.txt")));
+        assertFalse(onFx(service::canUndo));
+    }
+
+    @Test
+    public void caseOnlyRenameRollbackRestoresTheOriginalNameAfterATransientFailure() throws Exception {
+        TextDocumentSnapshot document = disk("Case.txt", "content");
+        Assumptions.assumeTrue(Files.exists(root.resolve("CASE.TXT")), "Requires a case-insensitive filesystem");
+        var failures = new AtomicInteger();
+        files.failure = (operation, path) -> operation.equals("move")
+            && path.getFileName().toString().contains(".railroad-rename-") && failures.getAndIncrement() == 0;
+
+        WorkspaceEditResult result = apply(WorkspaceEdit.builder("Case")
+            .rename(document, DocumentUri.fromPath(root.resolve("case.txt"))).build());
+
+        assertEquals(Status.ROLLED_BACK, result.status(), result.problems()::toString);
+        assertEquals("Case.txt", root.resolve("Case.txt").toRealPath().getFileName().toString());
+        assertEquals("content", Files.readString(root.resolve("Case.txt")));
+        assertSame(document, store.current(document.id()).orElseThrow());
+    }
+
+    @Test
+    public void caseOnlyRenameRollbackRecoversAFileLeftAtItsTemporaryName() throws Exception {
+        TextDocumentSnapshot document = disk("Case.txt", "content");
+        Assumptions.assumeTrue(Files.exists(root.resolve("CASE.TXT")), "Requires a case-insensitive filesystem");
+        var failures = new AtomicInteger();
+        files.failure = (operation, path) -> operation.equals("move")
+            && path.getFileName().toString().contains(".railroad-rename-") && failures.getAndIncrement() < 2;
+
+        WorkspaceEditResult result = apply(WorkspaceEdit.builder("Case")
+            .rename(document, DocumentUri.fromPath(root.resolve("case.txt"))).build());
+
+        assertEquals(Status.ROLLED_BACK, result.status(), result.problems()::toString);
+        assertEquals(3, failures.get());
+        assertEquals("Case.txt", root.resolve("Case.txt").toRealPath().getFileName().toString());
+        assertEquals("content", Files.readString(root.resolve("Case.txt")));
+        try (var listing = Files.list(root)) {
+            assertEquals(List.of("Case.txt"), listing.map(path -> path.getFileName().toString()).toList());
+        }
+    }
+
+    @Test
+    public void undoRestoresADeletedFileUnderItsOriginalIdentity() throws Exception {
+        TextDocumentSnapshot target = disk("Target.txt", "target");
+        TextDocumentSnapshot source = disk("Source.txt", "source");
+        assertEquals(Status.APPLIED, apply(WorkspaceEdit.builder("Edit")
+            .replace(target, replacement(0, 6, "TARGET")).build()).status());
+        DocumentSnapshot edited = store.current(target.id()).orElseThrow();
+        assertEquals(Status.APPLIED, apply(WorkspaceEdit.builder("Replace")
+            .delete(edited).rename(source, target.uri()).build()).status());
+        assertEquals(source.id(), identities.findIdentity(target.uri()).orElseThrow().id());
+
+        WorkspaceEditResult replaceUndone = onFx(service::undo);
+
+        assertEquals(Status.APPLIED, replaceUndone.status(), replaceUndone.problems()::toString);
+        assertEquals(target.id(), identities.findIdentity(target.uri()).orElseThrow().id());
+        assertEquals(source.id(), identities.findIdentity(source.uri()).orElseThrow().id());
+        DocumentSnapshot restored = store.current(target.id()).orElseThrow();
+        assertEquals(target.uri(), restored.uri());
+        assertEquals("TARGET", ((TextDocumentSnapshot) restored).text());
+        assertTrue(restored.version().isAfter(edited.version()));
+        WorkspaceEditResult editUndone = onFx(service::undo);
+        assertEquals(Status.APPLIED, editUndone.status(), editUndone.problems()::toString);
+        assertEquals("target", Files.readString(root.resolve("Target.txt")));
+        assertEquals("source", Files.readString(root.resolve("Source.txt")));
+        assertEquals(Status.APPLIED, onFx(service::redo).status());
+        assertEquals(Status.APPLIED, onFx(service::redo).status());
+        assertEquals(source.id(), identities.findIdentity(target.uri()).orElseThrow().id());
+        assertEquals("source", Files.readString(root.resolve("Target.txt")));
+        assertTrue(store.current(target.id()).isEmpty());
+    }
+
+    @Test
+    public void deletingAHardLinkKeepsTheSurvivingAliasPublished() throws Exception {
+        Path primary = root.resolve("Primary.txt");
+        Path alias = root.resolve("Alias.txt");
+        Files.writeString(primary, "shared");
+        try {
+            Files.createLink(alias, primary);
+        } catch (UnsupportedOperationException | IOException exception) {
+            Assumptions.abort("Hard links are unavailable on this filesystem");
+        }
+        TextDocumentSnapshot document = publish(primary, "shared");
+        assertEquals(document.id(), identities.getOrCreate(alias));
+
+        WorkspaceEditResult deleted = apply(WorkspaceEdit.builder("Delete").delete(document).build());
+
+        assertEquals(Status.APPLIED, deleted.status(), deleted.problems()::toString);
+        assertFalse(Files.exists(primary));
+        assertEquals("shared", Files.readString(alias));
+        DocumentSnapshot surviving = store.current(document.id()).orElseThrow();
+        assertEquals(DocumentUri.fromPath(alias), surviving.uri());
+        assertEquals("shared", ((TextDocumentSnapshot) surviving).text());
+        assertEquals(document.id(), identities.findIdentity(DocumentUri.fromPath(alias)).orElseThrow().id());
+        assertTrue(identities.findIdentity(document.uri()).isEmpty());
+
+        WorkspaceEditResult undone = onFx(service::undo);
+
+        assertEquals(Status.APPLIED, undone.status(), undone.problems()::toString);
+        assertEquals("shared", Files.readString(primary));
+        DocumentId recreated = identities.findIdentity(document.uri()).orElseThrow().id();
+        assertNotEquals(document.id(), recreated);
+        assertEquals(document.uri(), store.current(recreated).orElseThrow().uri());
+        assertEquals(DocumentUri.fromPath(alias), store.current(document.id()).orElseThrow().uri());
+        assertEquals(Status.APPLIED, onFx(service::redo).status());
+        assertFalse(Files.exists(primary));
+        assertTrue(store.current(recreated).isEmpty());
+        assertEquals(DocumentUri.fromPath(alias), store.current(document.id()).orElseThrow().uri());
+    }
+
+    @Test
+    public void rollbackOfAHardLinkDeletionRestoresItsLocation() throws Exception {
+        Path primary = root.resolve("Primary.txt");
+        Path alias = root.resolve("Alias.txt");
+        Files.writeString(primary, "shared");
+        try {
+            Files.createLink(alias, primary);
+        } catch (UnsupportedOperationException | IOException exception) {
+            Assumptions.abort("Hard links are unavailable on this filesystem");
+        }
+        TextDocumentSnapshot document = publish(primary, "shared");
+        identities.getOrCreate(alias);
+        TextDocumentSnapshot moved = disk("Moved.txt", "moved");
+        host.failRelocationAfter = 0;
+
+        WorkspaceEditResult result = apply(WorkspaceEdit.builder("Delete")
+            .delete(document).rename(moved, DocumentUri.fromPath(root.resolve("Elsewhere.txt"))).build());
+
+        assertEquals(Status.ROLLED_BACK, result.status(), result.problems()::toString);
+        assertEquals("shared", Files.readString(primary));
+        assertTrue(Files.isSameFile(primary, alias), "Rollback must restore the hard link, not a copy");
+        assertEquals(document.uri(), store.current(document.id()).orElseThrow().uri());
+        assertEquals(document.id(), identities.findIdentity(document.uri()).orElseThrow().id());
+        assertEquals(document.id(), identities.findIdentity(DocumentUri.fromPath(alias)).orElseThrow().id());
+    }
+
     private WorkspaceEditResult apply(WorkspaceEdit edit) throws Exception {
         return onFx(() -> service.apply(edit));
     }
@@ -837,19 +1035,42 @@ public class WorkspaceEditServiceTest {
         Files.writeString(path, text);
         DocumentId id = identities.getOrCreate(path);
         return onFx(() -> {
-            var editor = new TextEditorPane(id, path, "plaintext") {
-                @Override
-                protected void showExternalChangeDialog(String disk) {
-                }
-            };
-            var field = TextEditorPane.class.getDeclaredField("changeSubscription");
-            field.setAccessible(true);
-            ((Subscription) field.get(editor)).unsubscribe();
+            TextEditorPane editor = createEditor(id, path);
             store.publishBacking(editor.captureSnapshot());
             editor.setDocumentStore(store);
             host.editors.put(id, editor);
             return editor;
         });
+    }
+
+    /** Opens an editor over a published document the way the tab manager does, including line-ending reloads. */
+    private TextEditorPane openDiscovered(Path path) throws Exception {
+        DocumentId id = identities.getOrCreate(path);
+        return onFx(() -> {
+            TextEditorPane editor = createEditor(id, path);
+            var backing = (TextDocumentSnapshot) store.current(id).orElseThrow();
+            if (backing.text().equals(editor.getText())) {
+                editor.restoreSavedVersion(backing.version());
+            } else {
+                editor.restoreSavedVersion(store.latestVersion(id).orElseThrow().next());
+                store.publishBacking(editor.captureSnapshot());
+            }
+            editor.setDocumentStore(store);
+            host.editors.put(id, editor);
+            return editor;
+        });
+    }
+
+    private static TextEditorPane createEditor(DocumentId id, Path path) throws ReflectiveOperationException {
+        var editor = new TextEditorPane(id, path, "plaintext") {
+            @Override
+            protected void showExternalChangeDialog(String disk) {
+            }
+        };
+        var field = TextEditorPane.class.getDeclaredField("changeSubscription");
+        field.setAccessible(true);
+        ((Subscription) field.get(editor)).unsubscribe();
+        return editor;
     }
 
     private static TextReplacement replacement(int start, int end, String text) {
@@ -930,6 +1151,12 @@ public class WorkspaceEditServiceTest {
         public void createFile(Path path, byte[] content) throws IOException {
             check("create", path);
             NIO.createFile(path, content);
+        }
+
+        @Override
+        public void createLink(Path link, Path existing) throws IOException {
+            check("link", link);
+            NIO.createLink(link, existing);
         }
 
         @Override

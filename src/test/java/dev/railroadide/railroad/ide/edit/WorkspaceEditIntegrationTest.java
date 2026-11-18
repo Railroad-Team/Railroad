@@ -134,6 +134,40 @@ public class WorkspaceEditIntegrationTest {
     }
 
     @Test
+    public void undoSpansDocumentsAfterOpeningACrlfFileInATab() throws Exception {
+        Path windows = projectDirectory.resolve("Windows.txt");
+        Path other = projectDirectory.resolve("Other.txt");
+        Files.writeString(windows, "first\r\nsecond\r\n");
+        Files.writeString(other, "other");
+        awaitFx(() -> published(windows) != null && published(other) != null);
+        WorkspaceEditService service = Services.IDE_STATE.getWorkspaceEdits().orElseThrow();
+        WorkspaceEditResult applied = onFx(() -> service.apply(WorkspaceEdit.builder("Edit")
+            .replace(published(windows), new TextReplacement(new TextRange(0, 5), "FIRST"))
+            .replace(published(other), new TextReplacement(new TextRange(0, 5), "OTHER"))
+            .build()));
+        assertTrue(applied.applied(), applied.problems()::toString);
+        EditorTab tab = onFx(() -> openInTabPane(windows));
+        TextEditorPane editor = tab.view().activeEditor();
+        assertEquals("FIRST\nsecond\n", onFx(editor::getText));
+
+        WorkspaceEditResult undone = onFx(service::undo);
+
+        assertTrue(undone.applied(), undone.problems()::toString);
+        assertEquals("first\nsecond\n", onFx(editor::getText));
+        assertEquals("other", Files.readString(other));
+        assertEquals(tab.documentId(), published(windows).id());
+    }
+
+    private static TextDocumentSnapshot published(Path path) {
+        DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+        return Services.IDE_STATE.findDocumentIdentity(DocumentUri.fromPath(path))
+            .flatMap(identity -> store.current(identity.id()))
+            .filter(TextDocumentSnapshot.class::isInstance)
+            .map(TextDocumentSnapshot.class::cast)
+            .orElse(null);
+    }
+
+    @Test
     public void shiftF6RejectsUnsupportedTargetsAndPreviewsAppliesAndUndoesATypeRename() throws Exception {
         Path original = projectDirectory.resolve("Original.java");
         Path renamed = original.resolveSibling("Renamed.java");

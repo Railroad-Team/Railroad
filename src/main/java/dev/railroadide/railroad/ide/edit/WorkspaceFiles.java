@@ -43,6 +43,11 @@ public interface WorkspaceFiles {
         }
 
         @Override
+        public void createLink(Path link, Path existing) throws IOException {
+            Files.createLink(link, existing);
+        }
+
+        @Override
         public void createDirectory(Path path) throws IOException {
             Files.createDirectory(path);
         }
@@ -108,6 +113,15 @@ public interface WorkspaceFiles {
      * @throws IOException if the file exists or writing fails
      */
     void createFile(Path path, byte[] content) throws IOException;
+
+    /**
+     * Creates a hard link to an existing file at a location that must not already exist.
+     *
+     * @param link new link
+     * @param existing file the link refers to
+     * @throws IOException if the link exists, links are unsupported or creation fails
+     */
+    void createLink(Path link, Path existing) throws IOException;
 
     /**
      * Creates one directory whose parent exists.

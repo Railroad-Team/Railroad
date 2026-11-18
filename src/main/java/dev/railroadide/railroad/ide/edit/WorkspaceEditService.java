@@ -98,7 +98,7 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
      */
     public WorkspaceEditPreview preview(WorkspaceEdit edit) {
         requireUsable();
-        Plan plan = plan(Objects.requireNonNull(edit, "edit"), Map.of(), Map.of());
+        Plan plan = plan(Objects.requireNonNull(edit, "edit"), Replay.NONE);
         List<WorkspaceEditPreview.DocumentPreview> documents = new ArrayList<>();
         for (TextTarget target : plan.texts) {
             if (target.kind == null || target.after == null)
@@ -146,7 +146,7 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
         Objects.requireNonNull(edit, "edit");
         busy = true;
         try {
-            Plan plan = plan(edit, Map.of(), Map.of());
+            Plan plan = plan(edit, Replay.NONE);
             if (!plan.problems.isEmpty())
                 return new WorkspaceEditResult(WorkspaceEditResult.Status.REJECTED, plan.problems);
             WorkspaceEditResult result = execute(plan);
@@ -302,23 +302,25 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
             boolean undo = !entry.undone;
             List<WorkspaceEditProblem> problems = new ArrayList<>();
             WorkspaceEdit.Builder builder = WorkspaceEdit.builder(entry.label);
-            Map<DocumentId, NativeStep> natives = new HashMap<>();
-            Map<Integer, List<Path>> cleanup = new HashMap<>();
+            var replay = new Replay(new HashMap<>(), new HashMap<>(), new HashMap<>());
             int index = 0;
             for (TextRecord record : entry.texts) {
-                String expected = undo ? record.after : record.before;
                 DocumentSnapshot current = currentSnapshot(record.id);
-                if (!(current instanceof TextDocumentSnapshot text) || !text.text().equals(expected)) {
+                String target = current instanceof TextDocumentSnapshot text
+                    ? replayTarget(text.text(), undo ? record.after : record.before,
+                        undo ? record.before : record.after)
+                    : null;
+                if (target == null) {
                     problems.add(new WorkspaceEditProblem(WorkspaceEditProblem.Kind.STALE, -1,
                         current == null ? null : current.uri(), "Document changed after '" + entry.label + "'"));
                     continue;
                 }
-                builder.change(new WorkspaceChange.TextEdit(text,
-                    minimalReplacement(text.text(), undo ? record.before : record.after)));
+                var text = (TextDocumentSnapshot) current;
+                builder.change(new WorkspaceChange.TextEdit(text, minimalReplacement(text.text(), target)));
                 index++;
                 TextEditorPane editor = record.editor.get();
                 if (editor != null && record.token != null) {
-                    natives.put(record.id, new NativeStep(editor, record.token, record.tokenOnRedo));
+                    replay.natives.put(record.id, new NativeStep(editor, record.token, record.tokenOnRedo));
                 }
             }
             List<ResourceRecord> resources = new ArrayList<>(entry.resources);
@@ -332,14 +334,17 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
                 builder.change(change);
                 boolean removesCreation = undo && record.kind != WorkspaceEditPreview.ResourcePreview.Kind.DELETE;
                 if (removesCreation && !record.createdDirectories.isEmpty()) {
-                    cleanup.put(index, record.createdDirectories);
+                    replay.cleanup.put(index, record.createdDirectories);
+                }
+                if (change instanceof WorkspaceChange.CreateFile && record.id != null) {
+                    replay.identities.put(index, record.id);
                 }
                 index++;
             }
             if (!problems.isEmpty())
                 return new WorkspaceEditResult(WorkspaceEditResult.Status.REJECTED, problems);
 
-            Plan plan = plan(builder.build(), natives, cleanup);
+            Plan plan = plan(builder.build(), replay);
             if (!plan.problems.isEmpty())
                 return new WorkspaceEditResult(WorkspaceEditResult.Status.REJECTED, plan.problems);
             WorkspaceEditResult result = execute(plan);
@@ -414,7 +419,7 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
         return store.current(id).orElse(null);
     }
 
-    private Plan plan(WorkspaceEdit edit, Map<DocumentId, NativeStep> natives, Map<Integer, List<Path>> cleanup) {
+    private Plan plan(WorkspaceEdit edit, Replay replay) {
         var plan = new Plan(edit);
         Map<DocumentId, TextTarget> texts = new LinkedHashMap<>();
         Set<DocumentId> moved = new HashSet<>();
@@ -427,7 +432,8 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
                 case WorkspaceChange.TextEdit textEdit -> {
                     TextTarget target = texts.get(textEdit.expected().id());
                     if (target == null) {
-                        target = resolveText(plan, index, textEdit.expected(), natives.get(textEdit.expected().id()));
+                        target = resolveText(plan, index, textEdit.expected(),
+                            replay.natives.get(textEdit.expected().id()));
                         texts.put(target.id, target);
                     } else if (!sameSnapshot(target.expected, textEdit.expected())) {
                         plan.problem(WorkspaceEditProblem.Kind.CONFLICT, index, textEdit.expected().uri(),
@@ -439,16 +445,19 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
                             replacement.text(), textEdit.annotationId(), index));
                     }
                 }
-                case WorkspaceChange.CreateFile create -> planCreate(plan, index, create, moved, deleted, vacated,
-                    occupied);
+                case WorkspaceChange.CreateFile create -> {
+                    if (planCreate(plan, index, create, moved, deleted, vacated, occupied)) {
+                        plan.resources.getLast().restoreId = restorableIdentity(replay.identities.get(index));
+                    }
+                }
                 case WorkspaceChange.DeleteFile delete -> {
                     if (planDelete(plan, index, delete, moved, deleted, vacated, occupied)) {
-                        plan.resources.getLast().cleanup = cleanup.getOrDefault(index, List.of());
+                        plan.resources.getLast().cleanup = replay.cleanup.getOrDefault(index, List.of());
                     }
                 }
                 case WorkspaceChange.RenameFile rename -> {
                     if (planRename(plan, index, rename, moved, deleted, vacated, occupied)) {
-                        plan.resources.getLast().cleanup = cleanup.getOrDefault(index, List.of());
+                        plan.resources.getLast().cleanup = replay.cleanup.getOrDefault(index, List.of());
                     }
                 }
             }
@@ -585,7 +594,7 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
         }
     }
 
-    private void planCreate(
+    private boolean planCreate(
         Plan plan,
         int index,
         WorkspaceChange.CreateFile create,
@@ -596,10 +605,10 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
     ) {
         Path path = workspacePath(plan, index, create.uri());
         if (path == null)
-            return;
+            return false;
         if (willExist(path, vacated, occupied)) {
             plan.problem(WorkspaceEditProblem.Kind.ALREADY_EXISTS, index, create.uri(), "File already exists");
-            return;
+            return false;
         }
         Optional<DocumentIdentity> identity = identities.findIdentity(create.uri());
         DocumentId previous = identity.map(DocumentIdentity::id).orElse(null);
@@ -607,11 +616,11 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
             && store.state(previous).isPresent()) {
             plan.problem(WorkspaceEditProblem.Kind.CONFLICT, index, create.uri(),
                 "A document, such as an unsaved draft, is still published at this location");
-            return;
+            return false;
         }
         if (!parentWritable(path)) {
             plan.problem(WorkspaceEditProblem.Kind.READ_ONLY, index, create.uri(), "Directory is not writable");
-            return;
+            return false;
         }
         byte[] content = create.content();
         try {
@@ -619,7 +628,7 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
                 path, content);
         } catch (CharacterCodingException exception) {
             plan.problem(WorkspaceEditProblem.Kind.INVALID, index, create.uri(), "Text file content is not UTF-8");
-            return;
+            return false;
         }
         vacated.remove(path);
         occupied.add(path);
@@ -628,6 +637,7 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
         step.targetUri = create.uri();
         step.content = content;
         plan.resources.add(step);
+        return true;
     }
 
     private boolean planDelete(
@@ -801,16 +811,32 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
                         if (!Arrays.equals(before, step.content))
                             throw new StepFailure(WorkspaceEditProblem.Kind.STALE, step.sourceUri,
                                 "File changed on disk before it could be deleted");
+                        step.alias = identities.findAlias(step.id, step.source).orElse(null);
                         io(step.sourceUri, () -> files.delete(step.source));
-                        journal.push(new Compensation(step.sourceUri, "restore deleted " + step.source,
-                            () -> files.createFile(step.source, step.content)));
+                        journal.push(new Compensation(step.sourceUri, "restore deleted " + step.source, () -> {
+                            if (step.alias == null) {
+                                files.createFile(step.source, step.content);
+                            } else if (Arrays.equals(files.read(step.alias), step.content)) {
+                                files.createLink(step.source, step.alias);
+                            } else
+                                throw new IOException("Hard link " + step.alias + " changed after " + step.source
+                                    + " was deleted");
+                        }));
                         removeEmptyDirectories(step, journal);
                     }
                     case RENAME -> {
                         createParents(step, journal);
-                        io(step.targetUri, () -> move(step.source, step.target, step.caseOnly));
-                        journal.push(new Compensation(step.sourceUri, "move " + step.target + " back",
-                            () -> moveBack(step)));
+                        var moveBack = new Compensation(step.sourceUri, "move " + step.target + " back",
+                            () -> moveBack(step));
+                        // A case-only move can fail after leaving the file at a temporary name, so it is journaled
+                        // first. A failed plain move has not moved anything that could be restored.
+                        if (step.caseOnly) {
+                            journal.push(moveBack);
+                        }
+                        io(step.targetUri, () -> move(step.source, step.target, step));
+                        if (!step.caseOnly) {
+                            journal.push(moveBack);
+                        }
                         removeEmptyDirectories(step, journal);
                     }
                 }
@@ -831,11 +857,7 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
             for (ResourceStep step : plan.resources) {
                 switch (step.kind) {
                     case CREATE -> publishCreated(step, journal);
-                    case DELETE -> {
-                        store.removeBacking(step.id, step.state.backing().version());
-                        journal.push(new Compensation(step.sourceUri, "republish " + step.sourceUri,
-                            () -> store.publishBacking(withVersion(step.expected, nextVersion(step.id)), null)));
-                    }
+                    case DELETE -> unpublishDeleted(step, journal);
                     case RENAME -> relocate(step, journal);
                 }
             }
@@ -960,6 +982,19 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
 
     private void publishCreated(ResourceStep step, Deque<Compensation> journal) throws StepFailure {
         DocumentUri uri = DocumentUri.fromPath(step.target);
+        DocumentId occupant = identities.findIdentity(uri).map(DocumentIdentity::id).orElse(null);
+        DocumentId restored = step.restoreId;
+        if (restored != null && !restored.equals(occupant) && identities.find(restored).isEmpty()
+            && (occupant == null || !host.isOpen(occupant))) {
+            if (occupant != null) {
+                identities.dissociate(occupant);
+                journal.push(new Compensation(step.targetUri, "restore identity at " + step.targetUri,
+                    () -> identities.associate(occupant, uri)));
+            }
+            identities.associate(restored, uri);
+            journal.push(new Compensation(step.targetUri, "forget restored identity of " + step.targetUri,
+                () -> identities.dissociate(restored)));
+        }
         boolean allocated = identities.findIdentity(uri).isEmpty();
         DocumentIdentity identity = identities.identify(uri);
         if (allocated) {
@@ -978,6 +1013,26 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
         journal.push(new Compensation(step.targetUri, "unpublish " + step.targetUri,
             () -> store.state(identity.id()).map(DocumentState::backing)
                 .ifPresent(backing -> store.removeBacking(identity.id(), backing.version()))));
+    }
+
+    private void unpublishDeleted(ResourceStep step, Deque<Compensation> journal) {
+        // Another hard link to the deleted file still holds the document's content and identity.
+        if (step.alias != null) {
+            identities.forgetDeletedAlias(step.id, step.source);
+            journal.push(new Compensation(step.sourceUri, "restore identity at " + step.sourceUri,
+                () -> identities.associate(step.id, step.source)));
+            store.relocate(step.id, DocumentUri.fromPath(step.alias));
+            journal.push(new Compensation(step.sourceUri, "move " + step.id + " back to " + step.sourceUri,
+                () -> store.relocate(step.id, step.sourceUri)));
+            return;
+        }
+        store.removeBacking(step.id, step.state.backing().version());
+        journal.push(new Compensation(step.sourceUri, "republish " + step.sourceUri,
+            () -> store.publishBacking(withVersion(step.expected, nextVersion(step.id)), null)));
+    }
+
+    private DocumentId restorableIdentity(DocumentId id) {
+        return id != null && store.state(id).isEmpty() && !host.isOpen(id) ? id : null;
     }
 
     private void relocate(ResourceStep step, Deque<Compensation> journal) {
@@ -1005,13 +1060,22 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
     }
 
     private void moveBack(ResourceStep step) throws IOException {
+        if (step.temporary != null) {
+            files.move(step.temporary, step.source);
+            step.temporary = null;
+            return;
+        }
         if (step.caseOnly ? hasName(step.source) : files.exists(step.source) && !files.exists(step.target))
             return;
-        move(step.target, step.source, step.caseOnly);
+        move(step.target, step.source, step);
     }
 
-    private void move(Path source, Path target, boolean caseOnly) throws IOException {
-        if (!caseOnly) {
+    /**
+     * Moves a renamed file. A case-only move that fails part-way and cannot return the file to where it started
+     * records the temporary location in {@code step} so that {@link #moveBack} can still restore it.
+     */
+    private void move(Path source, Path target, ResourceStep step) throws IOException {
+        if (!step.caseOnly) {
             files.move(source, target);
             return;
         }
@@ -1021,7 +1085,14 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
         try {
             files.move(temporary, target);
         } catch (IOException exception) {
-            files.move(temporary, source);
+            try {
+                files.move(temporary, source);
+            } catch (IOException restoreFailure) {
+                step.temporary = temporary;
+                exception.addSuppressed(restoreFailure);
+                throw new IOException("Could not move " + temporary + " to " + target + " or back to " + source,
+                    exception);
+            }
             throw exception;
         }
     }
@@ -1275,6 +1346,21 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
         };
     }
 
+    /**
+     * Returns the text a recorded undo or redo should leave in a document, or {@code null} if the document changed
+     * since. Opening an editor normalizes line endings, so a document whose only change is that normalization is
+     * given the normalized target.
+     */
+    private static String replayTarget(String current, String expected, String target) {
+        if (current.equals(expected))
+            return target;
+        return current.equals(normalizeLineEndings(expected)) ? normalizeLineEndings(target) : null;
+    }
+
+    private static String normalizeLineEndings(String text) {
+        return text.replace("\r\n", "\n").replace('\r', '\n');
+    }
+
     private static List<TextReplacement> minimalReplacement(String from, String to) {
         if (from.equals(to))
             return List.of();
@@ -1330,6 +1416,18 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
     }
 
     private record NativeStep(TextEditorPane editor, Object token, boolean redo) {
+    }
+
+    /**
+     * State an undo or redo carries into planning: editor history steps to reuse, directories each change index
+     * should remove, and the identity each recreated file should get back.
+     */
+    private record Replay(
+        Map<DocumentId, NativeStep> natives,
+        Map<Integer, List<Path>> cleanup,
+        Map<Integer, DocumentId> identities
+    ) {
+        private static final Replay NONE = new Replay(Map.of(), Map.of(), Map.of());
     }
 
     private static final class StepFailure extends Exception {
@@ -1400,6 +1498,9 @@ public final class WorkspaceEditService implements TextEditorPane.SharedUndoHist
         private DocumentUri targetUri;
         private byte[] content;
         private boolean caseOnly;
+        private Path temporary;
+        private Path alias;
+        private DocumentId restoreId;
 
         private ResourceStep(WorkspaceEditPreview.ResourcePreview.Kind kind) {
             this.kind = kind;
