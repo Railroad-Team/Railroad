@@ -381,7 +381,7 @@ public final class Commands {
      * Shows the code actions, such as quick fixes, available at the caret of the supplied code editor.
      */
     public static final Command<CodeEditorPane> SHOW_CODE_ACTIONS = registerCodeEditorCommand(
-        "railroad:show-code-actions",
+        "railroad:show_code_actions",
         "railroad.menu.code.show_actions",
         CodeEditorPane::supportsCodeActions,
         CodeEditorPane::showCodeActions,

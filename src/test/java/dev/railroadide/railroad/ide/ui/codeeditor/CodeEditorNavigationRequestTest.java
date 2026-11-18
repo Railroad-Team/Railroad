@@ -316,8 +316,8 @@ public class CodeEditorNavigationRequestTest {
                 assertNotNull(menu);
                 assertTrue(menu.isShowing());
                 assertEquals(List.of("railroad:go_to_definition", "railroad:go_to_implementation",
-                    "railroad:find_usages", "railroad:rename", "railroad:edit_cut", "railroad:edit_copy",
-                    "railroad:edit_paste"),
+                    "railroad:find_usages", "railroad:show_code_actions", "railroad:rename", "railroad:edit_cut",
+                    "railroad:edit_copy", "railroad:edit_paste"),
                     menu.getItems().stream()
                         .map(item -> item.getProperties().get("railroad:command-id"))
                         .filter(Objects::nonNull)
@@ -327,6 +327,10 @@ public class CodeEditorNavigationRequestTest {
                 assertTrue(menu.getItems().stream()
                     .filter(item -> "railroad:rename".equals(item.getProperties().get("railroad:command-id")))
                     .allMatch(MenuItem::isDisable), "Editors without a rename provider cannot rename");
+                assertTrue(menu.getItems().stream()
+                    .filter(item -> "railroad:show_code_actions"
+                        .equals(item.getProperties().get("railroad:command-id")))
+                    .allMatch(MenuItem::isDisable), "Editors without a code action provider offer no actions");
                 assertTrue(menu.getItems().stream()
                     .filter(item -> "railroad:edit_copy".equals(item.getProperties().get("railroad:command-id")))
                     .allMatch(MenuItem::isDisable));
