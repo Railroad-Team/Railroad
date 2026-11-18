@@ -25,9 +25,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
-import javafx.scene.control.TreeCell;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.Priority;
 import javafx.stage.Modality;
@@ -60,7 +57,7 @@ public final class RenameDialog implements AutoCloseable {
     private final RRTextField nameField = new RRTextField();
     private final LocalizedLabel status = new LocalizedLabel("railroad.rename.status.enter_name");
     private final RRVBox conflictList = new RRVBox(4);
-    private final TreeView<PreviewItem> changes = new TreeView<>(new TreeItem<>());
+    private final WorkspaceEditPreviewView changes = new WorkspaceEditPreviewView();
     private final RRButton confirmButton = new RRButton("railroad.rename.preview");
     private final RRVBox content;
     private @Nullable Stage stage;
@@ -149,8 +146,6 @@ public final class RenameDialog implements AutoCloseable {
 
         status.setWrapText(true);
         conflictList.getStyleClass().add("rename-conflicts");
-        changes.setShowRoot(false);
-        changes.setCellFactory(_ -> new PreviewCell());
         changes.getStyleClass().add("rename-preview");
         changes.setPrefHeight(320);
         RRVBox.setVgrow(changes, Priority.ALWAYS);
@@ -324,12 +319,7 @@ public final class RenameDialog implements AutoCloseable {
      * @return preview lines in display order
      */
     public List<String> previewLines() {
-        List<String> lines = new ArrayList<>();
-        for (TreeItem<PreviewItem> file : changes.getRoot().getChildren()) {
-            lines.add(file.getValue().text());
-            file.getChildren().forEach(change -> lines.add("  " + change.getValue().text()));
-        }
-        return lines;
+        return changes.lines();
     }
 
     /**
@@ -393,26 +383,7 @@ public final class RenameDialog implements AutoCloseable {
             return;
         }
 
-        int count = 0;
-        for (WorkspaceEditPreview.DocumentPreview document : preview.documents()) {
-            var file = new TreeItem<>(new PreviewItem(L18n.localize("railroad.rename.preview.file",
-                document.uri().fileName().orElse(document.uri().toString()), document.changes().size(),
-                L18n.localize("railroad.rename.target." + document.target().name().toLowerCase(Locale.ROOT))),
-                true));
-            file.setExpanded(true);
-            for (WorkspaceEditPreview.ChangePreview change : document.changes()) {
-                file.getChildren().add(new TreeItem<>(new PreviewItem(describe(document, change), false)));
-                count++;
-            }
-            changes.getRoot().getChildren().add(file);
-        }
-        for (WorkspaceEditPreview.ResourcePreview resource : preview.resources()) {
-            if (resource.kind() == WorkspaceEditPreview.ResourcePreview.Kind.RENAME) {
-                changes.getRoot().getChildren().add(new TreeItem<>(new PreviewItem(L18n.localize(
-                    "railroad.rename.preview.rename_file", fileName(resource.source()), fileName(resource.target())),
-                    true)));
-            }
-        }
+        int count = changes.show(preview);
 
         state = State.PREVIEWED;
         status.setKey(result.conflicts().isEmpty()
@@ -421,15 +392,6 @@ public final class RenameDialog implements AutoCloseable {
         confirmButton
             .setLocalizedText(result.conflicts().isEmpty() ? "railroad.rename.apply" : "railroad.rename.apply_anyway");
         confirmButton.setDisable(false);
-    }
-
-    private static String describe(
-        WorkspaceEditPreview.DocumentPreview document,
-        WorkspaceEditPreview.ChangePreview change
-    ) {
-        return (lineNumber(document.before(), change.before().start) + 1) + ":  "
-            + lineText(document.before(), change.before().start).strip() + "  →  "
-            + lineText(document.after(), change.after().start).strip();
     }
 
     private static String describe(RenameConflict conflict) {
@@ -469,7 +431,7 @@ public final class RenameDialog implements AutoCloseable {
 
     private void clearPreview() {
         conflictList.getChildren().clear();
-        changes.getRoot().getChildren().clear();
+        changes.clear();
     }
 
     private void cancelComputation() {
@@ -479,22 +441,6 @@ public final class RenameDialog implements AutoCloseable {
             activeCancellation = null;
         }
         activeContext = null;
-    }
-
-    private static int lineNumber(String text, int offset) {
-        int line = 0;
-        for (int index = 0; index < offset && index < text.length(); index++) {
-            if (text.charAt(index) == '\n') {
-                line++;
-            }
-        }
-        return line;
-    }
-
-    private static String lineText(String text, int offset) {
-        int start = text.lastIndexOf('\n', offset - 1) + 1;
-        int end = text.indexOf('\n', offset);
-        return text.substring(start, end < 0 ? text.length() : end);
     }
 
     private static String fileName(@Nullable DocumentUri uri) {
@@ -508,20 +454,5 @@ public final class RenameDialog implements AutoCloseable {
             cause = cause.getCause();
         }
         return cause;
-    }
-
-    private record PreviewItem(String text, boolean file) {
-    }
-
-    private static final class PreviewCell extends TreeCell<PreviewItem> {
-        @Override
-        protected void updateItem(PreviewItem item, boolean empty) {
-            super.updateItem(item, empty);
-            getStyleClass().remove("rename-preview-file");
-            setText(empty || item == null ? null : item.text());
-            if (!empty && item != null && item.file()) {
-                getStyleClass().add("rename-preview-file");
-            }
-        }
     }
 }

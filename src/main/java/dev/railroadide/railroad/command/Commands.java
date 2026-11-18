@@ -378,6 +378,16 @@ public final class Commands {
         new KeybindData(KeyCode.F6, new KeyCombination.Modifier[]{KeyCombination.SHIFT_DOWN}));
 
     /**
+     * Shows the code actions, such as quick fixes, available at the caret of the supplied code editor.
+     */
+    public static final Command<CodeEditorPane> SHOW_CODE_ACTIONS = registerCodeEditorCommand(
+        "railroad:show-code-actions",
+        "railroad.menu.code.show_actions",
+        CodeEditorPane::supportsCodeActions,
+        CodeEditorPane::showCodeActions,
+        new KeybindData(KeyCode.ENTER, new KeyCombination.Modifier[]{KeyCombination.ALT_DOWN}));
+
+    /**
      * Resolves the code editor shown by the active editor tab.
      *
      * @return active code editor, or {@code null} when the active tab is not a code editor

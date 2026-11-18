@@ -16,6 +16,8 @@ import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagn
 import dev.railroadide.railroad.ide.signature.SignatureHelp;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.sst.provider.api.CodeActionProvider;
+import dev.railroadide.railroad.ide.sst.provider.api.CodeActionRequest;
 import dev.railroadide.railroad.ide.sst.provider.api.NavigationProvider;
 import dev.railroadide.railroad.ide.sst.provider.api.RenamePreparation;
 import dev.railroadide.railroad.ide.sst.provider.api.RenameProvider;
@@ -29,6 +31,8 @@ import dev.railroadide.railroad.ide.sst.request.api.RequestPriority;
 import dev.railroadide.railroad.ide.sst.request.api.SstScheduler;
 import dev.railroadide.railroad.ide.sst.provider.api.ProviderExecutor;
 import dev.railroadide.railroad.ide.ui.DiagnosticPane;
+import dev.railroadide.railroad.ide.ui.codeaction.CodeActionController;
+import dev.railroadide.railroad.ide.ui.codeaction.CodeActionMenu;
 import dev.railroadide.railroad.ide.ui.navigation.UsagesPane;
 import dev.railroadide.railroad.ide.ui.refactor.RenameDialog;
 import dev.railroadide.railroad.localization.L18n;
@@ -79,6 +83,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -93,6 +98,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     protected final @Nullable SyntaxHighlightingProvider highlightingProvider;
     protected final @Nullable NavigationProvider navigationProvider;
     protected final @Nullable RenameProvider renameProvider;
+    protected final @Nullable CodeActionProvider codeActionProvider;
 
     protected final SstScheduler.Scope featureRequests = SstScheduler.shared().newScope();
     private static final Duration INTERACTIVE_BUDGET = Duration.ofSeconds(2);
@@ -169,6 +175,13 @@ public abstract class CodeEditorPane extends TextEditorPane {
     private @Nullable CancellationTokenSource activeRenameCancellation;
     private @Nullable FeatureRequestContext activeRenameContext;
     private @Nullable RenameDialog activeRenameDialog;
+    private static final Duration CODE_ACTION_BULB_DELAY = Duration.ofMillis(250);
+    private final @Nullable CodeActionController codeActions;
+    private final PauseTransition codeActionBulbDelay = new PauseTransition(
+        javafx.util.Duration.millis(CODE_ACTION_BULB_DELAY.toMillis()));
+    private @Nullable CodeActionMenu activeCodeActionMenu;
+    private @Nullable Object pendingCodeActionMenu;
+    private int codeActionBulbLine = -1;
 
     // region Bracket Highlighting state
     protected static final Map<Character, Character> OPENING_BRACKETS = Map.of('(', ')', '{', '}', '[', ']');
@@ -202,6 +215,11 @@ public abstract class CodeEditorPane extends TextEditorPane {
         this.signatureHelpProvider = config.signatureHelpProvider();
         this.navigationProvider = config.navigationProvider();
         this.renameProvider = config.renameProvider();
+        this.codeActionProvider = config.codeActionProvider();
+        this.codeActions = codeActionProvider == null
+            ? null
+            : new CodeActionController(codeActionProvider, providerLifetime, this::getDocumentStore,
+                Services.IDE_STATE::getWorkspaceEdits);
         this.highlightingProvider = config.highlightingProvider() != null
             ? config.highlightingProvider()
             : text -> StyleSpans.singleton(Collections.emptyList(), text.length());
@@ -236,6 +254,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             invalidateCompletionRequest();
             invalidateNavigationRequest();
             invalidateRenameRequest();
+            invalidateCodeActions();
             visibleDiagnostics = List.of();
             recomputeLineDecorations();
             diagnosticPopup.hide();
@@ -254,6 +273,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         }
         installNavigation();
         installRename();
+        installCodeActions();
         installContextMenu();
         installBracketHighlighting();
         installDiagnosticPopupHandlers();
@@ -289,6 +309,10 @@ public abstract class CodeEditorPane extends TextEditorPane {
             activeRenameDialog.close();
             activeRenameDialog = null;
         }
+        invalidateCodeActions();
+        if (codeActions != null) {
+            codeActions.close();
+        }
         hideAutoComplete();
         hideSignatureHelp();
         featureRequests.close();
@@ -309,6 +333,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         invalidateHighlightRequest();
         invalidateDiagnosticsRequest();
         invalidateNavigationRequest();
+        invalidateCodeActions();
         hideAutoComplete();
         hideSignatureHelp();
         DocumentStore store = getDocumentStore();
@@ -352,6 +377,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         invalidateDiagnosticsRequest();
         invalidateCompletionRequest();
         invalidateNavigationRequest();
+        invalidateCodeActions();
         visibleDiagnostics = List.of();
         recomputeLineDecorations();
         diagnosticPopup.hide();
@@ -822,6 +848,181 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
     // endregion
 
+    // region Code Actions
+    private void installCodeActions() {
+        if (codeActions == null)
+            return;
+
+        if (navigationProvider == null && renameProvider == null) {
+            KeybindHandler.registerCapture(KeybindContexts.of(KEYBIND_CONTEXT), this);
+        }
+        codeActionBulbDelay.setOnFinished(_ -> refreshCodeActionBulb());
+        caretPositionProperty().addListener((observable, previous, current) -> {
+            closeCodeActionMenu();
+            scheduleCodeActionBulb();
+        });
+    }
+
+    private void invalidateCodeActions() {
+        codeActionBulbDelay.stop();
+        pendingCodeActionMenu = null;
+        if (codeActions != null) {
+            codeActions.cancel();
+        }
+        closeCodeActionMenu();
+        setCodeActionBulbLine(-1);
+    }
+
+    private void closeCodeActionMenu() {
+        CodeActionMenu menu = activeCodeActionMenu;
+        activeCodeActionMenu = null;
+        if (menu != null) {
+            menu.close();
+        }
+    }
+
+    private void scheduleCodeActionBulb() {
+        if (codeActions == null || codeEditorClosed)
+            return;
+        if (codeActionBulbLine >= 0 && codeActionBulbLine != getCurrentParagraph() + 1) {
+            setCodeActionBulbLine(-1);
+        }
+        codeActionBulbDelay.playFromStart();
+    }
+
+    private void setCodeActionBulbLine(int line) {
+        if (codeActionBulbLine != line) {
+            codeActionBulbLine = line;
+            getGutter().refresh();
+        }
+    }
+
+    private void refreshCodeActionBulb() {
+        if (!supportsCodeActions()) {
+            setCodeActionBulbLine(-1);
+            return;
+        }
+        if (activeCodeActionMenu() != null || pendingCodeActionMenu != null)
+            return;
+        discoverCodeActions(RequestPriority.OPEN_DOCUMENT_ANALYSIS, _ -> {
+        }, () -> {
+        });
+    }
+
+    /**
+     * Reports whether this editor can offer code actions for its language.
+     *
+     * @return whether the editor is open, editable and its language provides code actions
+     */
+    public boolean supportsCodeActions() {
+        return codeActions != null && !codeEditorClosed && !providerLifetime.isCancellationRequested()
+            && isEditable();
+    }
+
+    /**
+     * Discovers the code actions at the caret or selection and shows them in a keyboard-driven menu, or explains
+     * that none are available. Call on the JavaFX thread.
+     */
+    public void showCodeActions() {
+        hideNavigationPopup();
+        closeCodeActionMenu();
+        if (!supportsCodeActions())
+            return;
+        codeActionBulbDelay.stop();
+        var request = new Object();
+        pendingCodeActionMenu = request;
+        discoverCodeActions(RequestPriority.NAVIGATION, discovery -> {
+            if (discovery.actions().isEmpty()) {
+                showNavigationMessage(L18n.localize("railroad.code_actions.none"));
+                return;
+            }
+            hideAutoComplete();
+            hideSignatureHelp();
+            var menu = new CodeActionMenu(Objects.requireNonNull(codeActions), discovery, this::requestFocus);
+            activeCodeActionMenu = menu;
+            Point2D anchor = getCaretBounds()
+                .map(bounds -> new Point2D(bounds.getMinX(), bounds.getMaxY()))
+                .orElseGet(() -> localToScreen(0, 0));
+            menu.show(this, anchor == null ? 0 : anchor.getX(), anchor == null ? 0 : anchor.getY());
+        }, () -> {
+            if (pendingCodeActionMenu == request) {
+                pendingCodeActionMenu = null;
+            }
+        });
+    }
+
+    private void discoverCodeActions(
+        RequestPriority priority,
+        Consumer<CodeActionController.Discovery> shown,
+        Runnable finished
+    ) {
+        CodeActionController controller = codeActions;
+        WorkspaceSnapshot workspace = captureFeatureWorkspace();
+        if (controller == null || workspace == null
+            || !(workspace.document(documentId).orElse(null) instanceof TextDocumentSnapshot snapshot)
+            || !snapshot.text().equals(getText())) {
+            finished.run();
+            return;
+        }
+
+        IndexRange selection = getSelection();
+        int caret = getCaretPosition();
+        controller.discover(workspace, snapshot, codeActionRequest(snapshot, selection), priority)
+            .whenComplete((discovery, failure) -> {
+                finished.run();
+                if (failure != null) {
+                    Throwable cause = failure instanceof CompletionException && failure.getCause() != null
+                        ? failure.getCause()
+                        : failure;
+                    if (cause instanceof DeadlineExceededException) {
+                        if (priority == RequestPriority.NAVIGATION) {
+                            showNavigationMessage(L18n.localize("railroad.code_actions.timed_out"));
+                        }
+                    } else if (!(cause instanceof CancellationException)) {
+                        Railroad.LOGGER.error("Failed to discover code actions", cause);
+                    }
+                    return;
+                }
+                if (getCaretPosition() != caret || !getSelection().equals(selection) || !isCurrent(workspace))
+                    return;
+                setCodeActionBulbLine(discovery.hasAvailableActions()
+                    ? snapshot.lineMap().positionAt(caret).line() + 1
+                    : -1);
+                shown.accept(discovery);
+            });
+    }
+
+    private CodeActionRequest codeActionRequest(TextDocumentSnapshot snapshot, IndexRange selection) {
+        LineMap lines = snapshot.lineMap();
+        int start = lines.lineStart(lines.positionAt(selection.getStart()).line());
+        int end = lines.lineEnd(lines.positionAt(selection.getEnd()).line());
+        List<TextEditorDiagnostic> nearby = visibleDiagnostics.stream()
+            .filter(diagnostic -> diagnostic.location().range().start <= end
+                && diagnostic.location().range().end >= start)
+            .toList();
+        return new CodeActionRequest(new TextRange(selection.getStart(), selection.getEnd()), nearby);
+    }
+
+    /**
+     * Returns the code action menu opened by the last request, while it is open.
+     *
+     * @return open menu, or {@code null}
+     */
+    public final @Nullable CodeActionMenu activeCodeActionMenu() {
+        CodeActionMenu menu = activeCodeActionMenu;
+        return menu == null || menu.isClosed() ? null : menu;
+    }
+
+    /**
+     * Returns the one-based line showing the code action lightbulb.
+     *
+     * @return line with available actions at the caret, or {@code -1} when no lightbulb is shown
+     */
+    public final int codeActionBulbLine() {
+        return codeActionBulbLine;
+    }
+    // endregion
+
     // region Context Menu
     private void installContextMenu() {
         addEventHandler(ContextMenuEvent.CONTEXT_MENU_REQUESTED, event -> {
@@ -854,7 +1055,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
 
     /**
-     * Builds the editor's context menu for the current caret: symbol navigation, rename and clipboard editing.
+     * Builds the editor's context menu for the current caret: symbol navigation, code actions, rename and clipboard
+     * editing.
      * Items are enabled from their commands' current state.
      *
      * @return new context menu
@@ -868,6 +1070,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             menuItem(Commands.GO_TO_IMPLEMENTATION, navigation),
             menuItem(Commands.FIND_USAGES, navigation),
             new SeparatorMenuItem(),
+            menuItem(Commands.SHOW_CODE_ACTIONS, navigation),
             menuItem(Commands.RENAME, navigation),
             new SeparatorMenuItem(),
             menuItem(EditCommands.CUT, editing),
@@ -910,6 +1113,21 @@ public abstract class CodeEditorPane extends TextEditorPane {
             return label;
         });
         getGutter().addColumn(new GutterColumn("diagnostics", 12, this::createDiagnosticMarker));
+        getGutter().addColumn(new GutterColumn("code-actions", 14, this::createCodeActionBulb, (line, event) -> {
+            if (line == codeActionBulbLine) {
+                event.consume();
+                showCodeActions();
+            }
+        }));
+    }
+
+    private @Nullable Node createCodeActionBulb(int line) {
+        if (line != codeActionBulbLine)
+            return null;
+        var icon = new MFXFontIcon(FontAwesomeSolid.LIGHTBULB, 12);
+        icon.getStyleClass().add("editor-code-action-bulb");
+        Tooltip.install(icon, new Tooltip(L18n.localize("railroad.code_actions.bulb")));
+        return icon;
     }
 
     private @Nullable Node createDiagnosticMarker(int line) {
@@ -1115,6 +1333,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (lineDecorationsChanged) {
             getGutter().refresh();
         }
+        scheduleCodeActionBulb();
     }
 
     /**

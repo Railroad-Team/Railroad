@@ -57,8 +57,11 @@ public final class TinyLanguageContribution implements LanguageContribution {
                 request -> new FeatureResult<>(request, analyze(request).symbols()))
             .add(SstCapabilities.INDEX_QUERY, this::query)
             .add(SstCapabilities.NAVIGATION, this::definitions)
-            .add(SstCapabilities.CODE_ACTIONS,
-                request -> new FeatureResult<>(request, analyze(request).actions()))
+            .add(SstCapabilities.CODE_ACTIONS, (request, actions) -> new FeatureResult<>(request,
+                analyze(request).actions().stream()
+                    .filter(action -> actions.touches(action.start(), action.end()))
+                    .map(LineAction::action)
+                    .toList()))
             .add(SstCapabilities.DIAGNOSTICS, new DiagnosticsProvider<TextEditorDiagnostic>() {
                 @Override
                 public List<TextEditorDiagnostic> compute(DocumentSnapshot snapshot) {
@@ -124,7 +127,7 @@ public final class TinyLanguageContribution implements LanguageContribution {
         var semantic = SemanticModel.builder(tree, scope);
         var symbols = new ArrayList<SymbolOccurrence>();
         var diagnostics = new ArrayList<TextEditorDiagnostic>();
-        var actions = new ArrayList<CodeAction>();
+        var actions = new ArrayList<LineAction>();
         var names = new LinkedHashMap<String, Symbol>();
         for (SyntaxNode child : root.children()) {
             context.checkActive();
@@ -148,9 +151,10 @@ public final class TinyLanguageContribution implements LanguageContribution {
                 int leadingWhitespace = line.text().length() - line.text().stripLeading().length();
                 int insertion = line.start() + leadingWhitespace + declaration.end(1);
                 String title = "Insert '=' after " + name;
-                actions.add(new CodeAction(title, WorkspaceEdit.builder(title)
-                    .replace(snapshot, new TextReplacement(new TextRange(insertion, insertion), " ="))
-                    .build()));
+                actions.add(new LineAction(line.start(), line.end(), CodeAction.resolved(title,
+                    WorkspaceEdit.builder(title)
+                        .replace(snapshot, new TextReplacement(new TextRange(insertion, insertion), " ="))
+                        .build())));
             }
         }
         for (SyntaxNode child : root.children()) {
@@ -194,8 +198,11 @@ public final class TinyLanguageContribution implements LanguageContribution {
         SemanticModel semantics,
         List<SymbolOccurrence> symbols,
         List<TextEditorDiagnostic> diagnostics,
-        List<CodeAction> actions
+        List<LineAction> actions
     ) {
+    }
+
+    private record LineAction(int start, int end, CodeAction action) {
     }
 
     private static final class Root implements SyntaxNode {

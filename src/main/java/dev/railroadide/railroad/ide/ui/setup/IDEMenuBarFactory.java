@@ -139,6 +139,10 @@ public final class IDEMenuBarFactory {
             () -> CommandContext.withArgument(project, menuBar, Commands.activeCodeEditor()));
         renameItem.setGraphic(new FontIcon(FontAwesomeSolid.PEN));
 
+        var showCodeActionsItem = CommandMenuItems.create(Commands.SHOW_CODE_ACTIONS,
+            () -> CommandContext.withArgument(project, menuBar, Commands.activeCodeEditor()));
+        showCodeActionsItem.setGraphic(new FontIcon(FontAwesomeSolid.LIGHTBULB));
+
         var resetCurrentLayoutItem = CommandMenuItems.create(Commands.RESET_CURRENT_LAYOUT,
             () -> CommandContext.withArgument(project, menuBar, workspaceActions));
         resetCurrentLayoutItem.setGraphic(new FontIcon(FontAwesomeSolid.UNDO));
@@ -260,7 +264,7 @@ public final class IDEMenuBarFactory {
         viewMenu.getStyleClass().add("rr-menu");
 
         var refactorMenu = new LocalizedMenu("railroad.menu.refactor");
-        refactorMenu.getItems().add(renameItem);
+        refactorMenu.getItems().addAll(showCodeActionsItem, renameItem);
         refactorMenu.getStyleClass().add("rr-menu");
 
         var runMenu = new LocalizedMenu("railroad.menu.run");

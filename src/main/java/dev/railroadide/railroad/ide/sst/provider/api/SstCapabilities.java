@@ -52,7 +52,7 @@ public final class SstCapabilities {
     public static final CapabilityKey<RenameProvider> RENAME = new CapabilityKey<>("railroad:rename",
         RenameProvider.class);
     /**
-     * Proposes snapshot-bound document edits for host application.
+     * Discovers code actions and lazily resolves them into snapshot-bound workspace edits.
      */
     public static final CapabilityKey<CodeActionProvider> CODE_ACTIONS = new CapabilityKey<>("railroad:code-actions",
         CodeActionProvider.class);

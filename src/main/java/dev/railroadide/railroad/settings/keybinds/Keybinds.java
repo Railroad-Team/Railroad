@@ -234,6 +234,11 @@ public class Keybinds {
     public static final Keybind RENAME = registerCodeEditorCommand(Commands.RENAME);
 
     /**
+     * Shows the code actions available at the caret.
+     */
+    public static final Keybind SHOW_CODE_ACTIONS = registerCodeEditorCommand(Commands.SHOW_CODE_ACTIONS);
+
+    /**
      * Closes the active or targeted editor tab.
      */
     public static final Keybind CLOSE_EDITOR_TAB = registerEditorTabCommand(Commands.CLOSE_EDITOR_TAB);
@@ -308,6 +313,7 @@ public class Keybinds {
         GO_TO_IMPLEMENTATION.resetKeys();
         FIND_USAGES.resetKeys();
         RENAME.resetKeys();
+        SHOW_CODE_ACTIONS.resetKeys();
         CLOSE_EDITOR_TAB.resetKeys();
         REOPEN_CLOSED_EDITOR_TAB.resetKeys();
         SELECT_EDITOR_TAB_BY_NUMBER.resetKeys();

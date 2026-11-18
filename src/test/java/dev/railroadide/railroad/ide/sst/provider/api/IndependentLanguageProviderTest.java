@@ -53,8 +53,8 @@ public class IndependentLanguageProviderTest {
             assertEquals(1, query.value().size());
             assertTrue(session.capability(SstCapabilities.COMPLETION).isEmpty());
 
-            var action = session.capability(SstCapabilities.CODE_ACTIONS).orElseThrow().actions(request)
-                .value().getFirst();
+            var action = session.capability(SstCapabilities.CODE_ACTIONS).orElseThrow()
+                .actions(request, whole(document)).value().getFirst();
             var change = (WorkspaceChange.TextEdit) action.edit().changes().getFirst();
             assertSame(document, change.expected());
             assertEquals(action.title(), action.edit().label());
@@ -109,10 +109,14 @@ public class IndependentLanguageProviderTest {
                 document.languageId(), "let value = 10", StandardCharsets.UTF_8);
             assertThrows(IllegalArgumentException.class, () -> diagnostic.location().validateAgainst(newer));
             var action = session.capability(SstCapabilities.CODE_ACTIONS).orElseThrow()
-                .actions(request(document)).value().getFirst();
+                .actions(request(document), whole(document)).value().getFirst();
             assertNotEquals(newer.version(),
                 ((WorkspaceChange.TextEdit) action.edit().changes().getFirst()).expected().version());
         }
+    }
+
+    private static CodeActionRequest whole(TextDocumentSnapshot document) {
+        return new CodeActionRequest(new TextRange(0, document.text().length()), List.of());
     }
 
     private static LanguageSessionContext context() {

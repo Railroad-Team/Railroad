@@ -35,6 +35,13 @@ public final class JavaSemanticRules {
         SemanticDiagnostic.Severity.WARNING,
         "Duplicate import '%s'");
     /**
+     * Diagnostic rule with message template: {@code Unused import '%s'}.
+     */
+    public static final JavaSemanticRule UNUSED_IMPORT = new JavaSemanticRule(
+        "SEM_UNUSED_IMPORT",
+        SemanticDiagnostic.Severity.WARNING,
+        "Unused import '%s'");
+    /**
      * Diagnostic rule with message template: {@code Ambiguous import for '%s' between '%s' and '%s'}.
      */
     public static final JavaSemanticRule AMBIGUOUS_IMPORT = new JavaSemanticRule(

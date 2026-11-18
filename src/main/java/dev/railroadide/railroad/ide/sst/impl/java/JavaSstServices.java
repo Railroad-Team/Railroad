@@ -22,7 +22,10 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import java.util.*;
 import java.util.function.BiFunction;
 
-/** Session-owned Java implementations of the neutral semantic, declaration, navigation and rename contracts. */
+/**
+ * Session-owned Java implementations of the neutral semantic, declaration, navigation, rename and code action
+ * contracts.
+ */
 public final class JavaSstServices
     implements
         SemanticProvider,
@@ -30,7 +33,8 @@ public final class JavaSstServices
         IndexQueryProvider,
         AutoCloseable,
         NavigationProvider,
-        RenameProvider {
+        RenameProvider,
+        CodeActionProvider {
     private final JavaWorkspaceAnalysisProvider workspaces = new JavaWorkspaceAnalysisProvider();
 
     /**
@@ -168,6 +172,24 @@ public final class JavaSstServices
         RenameProposal proposal = new JavaRenameEngine(context, this::capture).rename(offset, newName);
         context.checkActive();
         return new FeatureResult<>(context, proposal);
+    }
+
+    @Override
+    public FeatureResult<List<CodeAction>> actions(FeatureRequestContext context, CodeActionRequest request) {
+        Objects.requireNonNull(request, "request");
+        context.checkActive();
+        List<CodeAction> actions = new JavaCodeActions(context, this::capture).discover(request);
+        context.checkActive();
+        return new FeatureResult<>(context, actions);
+    }
+
+    @Override
+    public FeatureResult<CodeAction> resolve(FeatureRequestContext context, CodeAction action) {
+        Objects.requireNonNull(action, "action");
+        context.checkActive();
+        CodeAction resolved = new JavaCodeActions(context, this::capture).resolve(action);
+        context.checkActive();
+        return new FeatureResult<>(context, resolved);
     }
 
     @Override

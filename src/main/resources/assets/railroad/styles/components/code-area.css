@@ -248,6 +248,35 @@
     -fx-text-fill: -color-warning-fg;
 }
 
-.rename-preview .rename-preview-file {
+.workspace-edit-preview .workspace-edit-preview-file {
     -fx-font-weight: bold;
+}
+
+.code-area .editor-code-action-bulb {
+    -mfx-color: -color-warning-emphasis;
+    -fx-cursor: hand;
+}
+
+.code-action-menu {
+    -fx-background-color: rgba(40, 40, 40, 0.95);
+    -fx-padding: 6px;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-border-color: rgba(255, 255, 255, 0.25);
+}
+
+.code-action-menu .code-action-status {
+    -fx-text-fill: white;
+}
+
+.code-action-list .code-action-preferred {
+    -fx-font-weight: bold;
+}
+
+.code-action-list .code-action-unavailable {
+    -fx-opacity: 0.6;
+}
+
+.code-action-menu .code-action-status.code-action-error {
+    -fx-text-fill: -color-danger-fg;
 }
