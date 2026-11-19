@@ -6,7 +6,7 @@ import coursierapi.Repository;
 import coursierapi.error.CoursierError;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.gradle.model.GradleBuildModel;
-import dev.railroadide.railroad.gradle.project.GradleManager;
+import dev.railroadide.railroad.gradle.service.GradleModelService;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.language.index.LanguageIndexContext;
 import dev.railroadide.railroad.ide.language.index.LanguageIndexContextContributor;
@@ -31,7 +31,6 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -455,25 +454,19 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         return MAVEN_MODELS.loadEffectiveModel(projectRoot);
     }
 
+    /**
+     * Returns the imported Gradle model without waiting for one. When none is cached an import is started, and the
+     * workspace configuration refreshes project indexes once it publishes the model.
+     */
     private static Optional<GradleBuildModel> loadGradleModel(Project project) {
         if (!project.hasFacet(FacetManager.GRADLE))
             return Optional.empty();
 
-        GradleManager gradleManager = project.getGradleManager();
-        Optional<GradleBuildModel> cachedModel = gradleManager.getGradleModelService().getCachedModel();
-        if (cachedModel.isPresent())
-            return cachedModel;
-
-        try {
-            return Optional.ofNullable(gradleManager.getGradleModelService()
-                .refreshModel(false)
-                .get(30, TimeUnit.SECONDS));
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            return Optional.empty();
-        } catch (Exception exception) {
-            Railroad.LOGGER.warn("Unable to load Gradle model for project {}", project.getAlias(), exception);
-            return Optional.empty();
+        GradleModelService models = project.getGradleManager().getGradleModelService();
+        Optional<GradleBuildModel> cachedModel = models.getCachedModel();
+        if (cachedModel.isEmpty()) {
+            models.refreshModel(false);
         }
+        return cachedModel;
     }
 }

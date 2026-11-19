@@ -45,6 +45,9 @@ import java.util.function.BiFunction;
 
 /** Publishes immutable project configuration when facets, project settings, or imported modules change. */
 public final class ProjectWorkspaceConfiguration implements AutoCloseable {
+    private static final String DEPENDENCIES_UNAVAILABLE = "dependencies.unavailable";
+    private static final List<String> BUILD_TOOL_FILES = List.of("pom.xml", "build.gradle", "build.gradle.kts",
+        "settings.gradle", "settings.gradle.kts");
     private final Session indexSession;
     private long binaryGeneration;
     private boolean forceBinaryRefresh;
@@ -153,6 +156,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             @Override
             public void modelReloadFailed(Throwable error) {
                 // Retain the last successful immutable configuration on import failure.
+                markDependenciesUnavailable();
             }
         };
         Railroad.EVENT_BUS.subscribe(FacetDetectedEvent.class, facetListener);
@@ -185,6 +189,32 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         forceBinaryRefresh = true;
         requestedSettings = null;
         refreshSettings();
+    }
+
+    /**
+     * Reports whether a configuration belongs to a Gradle or Maven project whose dependencies have not been imported
+     * yet, so references into libraries cannot be judged. An import that failed is not pending: its dependencies are
+     * unavailable rather than still loading.
+     *
+     * @param configuration captured workspace configuration
+     * @return {@code true} while build-tool dependencies are still being imported
+     */
+    public static boolean dependenciesPending(WorkspaceConfigurationSnapshot configuration) {
+        Map<String, String> settings = configuration.settings();
+        if (settings.containsKey(DEPENDENCIES_UNAVAILABLE))
+            return false;
+        boolean buildTool = BUILD_TOOL_FILES.stream().anyMatch(name -> settings.containsKey("project.build." + name));
+        return buildTool && settings.keySet().stream()
+            .noneMatch(key -> key.startsWith("module.") && key.endsWith(".classpath"));
+    }
+
+    private synchronized void markDependenciesUnavailable() {
+        WorkspaceConfigurationSnapshot current = store.capture().configuration();
+        if (closed || !dependenciesPending(current))
+            return;
+        Map<String, String> values = new TreeMap<>(current.settings());
+        values.put(DEPENDENCIES_UNAVAILABLE, "true");
+        publish(current.moduleIds(), values);
     }
 
     /**
@@ -280,6 +310,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
                 synchronized (this) {
                     if (!closed && generation == resolutionGeneration) {
                         Railroad.LOGGER.warn("Cannot resolve workspace dependencies for {}", root, exception);
+                        markDependenciesUnavailable();
                     }
                 }
                 completed.completeExceptionally(exception);
@@ -328,6 +359,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         forceBinaryRefresh = true;
         Map<String, String> values = new TreeMap<>(store.capture().configuration().settings());
         values.keySet().removeIf(key -> key.startsWith("module.") || key.startsWith("gradle."));
+        values.remove(DEPENDENCIES_UNAVAILABLE);
         values.put("gradle.version", model.gradleVersion());
         RailroadJavaLanguageSettings language = model.project().javaLanguageSettings();
         languageSettings(values, "gradle.", language);
@@ -366,6 +398,10 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             values.put(prefix + "sources", String.join("\n", sources));
         }
         publish(ids, values);
+        if (indexSession == null) {
+            Services.PROJECT_LANGUAGE_INDEX_SERVICE
+                .refreshProject(Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project));
+        }
     }
 
     private void publish(Set<String> ids, Map<String, String> values) {

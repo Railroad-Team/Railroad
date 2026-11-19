@@ -12,7 +12,12 @@ import dev.railroadide.railroad.ide.sst.request.api.RequestContext;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
@@ -20,9 +25,12 @@ import java.util.function.BooleanSupplier;
 /** Builds reusable Java analysis inputs exclusively from captured documents and configuration. */
 public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     private static final Path RUNNING_JDK = Path.of(System.getProperty("java.home")).toAbsolutePath().normalize();
+    private static final ExecutorService BINARY_LOADS = Executors.newThreadPerTaskExecutor(
+        Thread.ofVirtual().name("railroad-java-binaries-", 0).factory());
     private final Cache<WorkspaceKey, JavaWorkspaceAnalysis> workspaces;
     private final Cache<TextDocumentSnapshot, JavaProjectSemanticIndex.SourceFileIndex> files;
     private final Cache<WorkspaceConfigurationSnapshot, JavaSymbolIndex> binaries;
+    private final Map<WorkspaceConfigurationSnapshot, CompletableFuture<JavaSymbolIndex>> binaryLoads = new HashMap<>();
     private final ReentrantLock analysisLock = new ReentrantLock();
     private final Object publicationLock = new Object();
     private volatile boolean closed;
@@ -198,11 +206,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
         Path jdk = jdkHome(configuration);
         JavaSymbolIndex binary = binaries.getIfPresent(configuration);
         if (binary == null) {
-            binary = binaryLoader == null
-                ? new CompositeJavaSymbolIndex(List.of(JavaLibrarySymbolIndex.build(classpath, check),
-                    JavaJdkSymbolIndex.build(jdk, check)))
-                : binaryLoader.apply(classpath, jdk);
-            publish(binaries, configuration, binary, check);
+            binary = awaitBinaries(configuration, classpath, jdk, check);
         }
         check.run();
         JavaSymbolIndex discovered = new JavaSourcePrecedenceIndex(sources, binary);
@@ -222,6 +226,69 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
             classpath, jdk);
     }
 
+    /**
+     * Waits for the binary index of a configuration, starting its load if none is running. The load is shared by every
+     * request for the configuration and is not bound to any request's cancellation or deadline, so a large classpath
+     * that outlasts one request's budget still completes and is cached for the next.
+     */
+    private JavaSymbolIndex awaitBinaries(
+        WorkspaceConfigurationSnapshot configuration,
+        List<Path> classpath,
+        Path jdk,
+        Runnable check
+    ) {
+        CompletableFuture<JavaSymbolIndex> load;
+        synchronized (publicationLock) {
+            check.run();
+            JavaSymbolIndex cached = binaries.asMap().get(configuration);
+            if (cached != null)
+                return cached;
+            load = binaryLoads.computeIfAbsent(configuration, _ -> startBinaryLoad(configuration, classpath, jdk));
+        }
+        while (true) {
+            check.run();
+            try {
+                return load.get(25, TimeUnit.MILLISECONDS);
+            } catch (TimeoutException _) {
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new CancellationException("Java analysis cancelled while waiting for binary index");
+            } catch (ExecutionException exception) {
+                if (exception.getCause() instanceof RuntimeException runtime)
+                    throw runtime;
+                if (exception.getCause() instanceof Error error)
+                    throw error;
+                throw new IllegalStateException("Failed to load Java binary index", exception.getCause());
+            }
+        }
+    }
+
+    private CompletableFuture<JavaSymbolIndex> startBinaryLoad(
+        WorkspaceConfigurationSnapshot configuration,
+        List<Path> classpath,
+        Path jdk
+    ) {
+        long generation = cacheGeneration;
+        Runnable loadCheck = () -> {
+            checkActive();
+            if (generation != cacheGeneration)
+                throw new CancellationException("Java analysis caches were cleared");
+        };
+        CompletableFuture<JavaSymbolIndex> load = CompletableFuture.supplyAsync(() -> binaryLoader == null
+            ? new CompositeJavaSymbolIndex(List.of(JavaLibrarySymbolIndex.build(classpath, loadCheck),
+                JavaJdkSymbolIndex.build(jdk, loadCheck)))
+            : binaryLoader.apply(classpath, jdk), BINARY_LOADS);
+        load.whenComplete((index, failure) -> {
+            synchronized (publicationLock) {
+                binaryLoads.remove(configuration, load);
+                if (failure == null && !closed && active.getAsBoolean() && generation == cacheGeneration) {
+                    binaries.put(configuration, index);
+                }
+            }
+        });
+        return load;
+    }
+
     private <K, V> void publish(Cache<K, V> cache, K key, V value, Runnable check) {
         synchronized (publicationLock) {
             check.run();
@@ -236,6 +303,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
             workspaces.invalidateAll();
             files.invalidateAll();
             binaries.invalidateAll();
+            binaryLoads.clear();
         }
     }
 

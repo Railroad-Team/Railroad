@@ -127,6 +127,35 @@ public class JavaBoundedAnalysisCacheTest {
     }
 
     @Test
+    public void binaryLoadOutlivesACancelledRequestAndServesTheNext() throws Exception {
+        var entered = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        var loads = new AtomicInteger();
+        var cancellation = new CancellationTokenSource();
+        try (var provider = new JavaWorkspaceAnalysisProvider(() -> true, (_, _) -> {
+            loads.incrementAndGet();
+            entered.countDown();
+            await(release);
+            return emptyIndex();
+        }); var worker = Executors.newSingleThreadExecutor()) {
+            var capture = store().capture();
+            var context = new WorkspaceRequestContext(capture, cancellation.token(), Deadline.none());
+            var first = worker.submit(() -> provider.capture(context));
+            assertTrue(entered.await(5, TimeUnit.SECONDS));
+            cancellation.cancel();
+            assertInstanceOf(CancellationException.class,
+                assertThrows(ExecutionException.class, () -> first.get(5, TimeUnit.SECONDS)).getCause());
+            release.countDown();
+
+            assertNotNull(provider.capture(capture));
+            assertNotNull(provider.capture(capture));
+            assertEquals(1, loads.get());
+        } finally {
+            release.countDown();
+        }
+    }
+
+    @Test
     public void clearingDuringLoadRejectsPublicationButAllowsFreshRequests() throws Exception {
         var entered = new CountDownLatch(1);
         var release = new CountDownLatch(1);

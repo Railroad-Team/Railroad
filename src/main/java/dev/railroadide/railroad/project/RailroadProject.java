@@ -342,6 +342,7 @@ public class RailroadProject implements Project {
             dataStore.writeJson(PROJECT_CONFIG_LOCATION, projectConfig);
 
             Railroad.PROJECT_MANAGER.setCurrentProject(null);
+            gitManager.stop();
         }
     }
 

@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 /**
@@ -63,6 +64,7 @@ public class GitManager {
         FXCollections.observableHashMap());
 
     private volatile ScheduledFuture<?> autoRefreshFuture;
+    private final AtomicLong detectionGeneration = new AtomicLong();
 
     /**
      * Creates a manager with externally provided executor.
@@ -100,6 +102,7 @@ public class GitManager {
      */
     public void detectRepository() {
         Path projectPath = this.project.getPath();
+        long generation = detectionGeneration.incrementAndGet();
         JavaFXUtils.runOnApplicationThread(this::beginRepositoryDetection);
 
         try {
@@ -119,7 +122,7 @@ public class GitManager {
                 }
 
                 GitRepository repository = detectedRepository.orElseThrow();
-                JavaFXUtils.runOnApplicationThread(() -> completeRepositoryDetection(repository));
+                JavaFXUtils.runOnApplicationThread(() -> completeRepositoryDetection(repository, generation));
                 try {
                     refreshStatusInternal(repository);
                     loadIdentity();
@@ -144,11 +147,22 @@ public class GitManager {
         repositoryState.set(GitRepositoryState.DETECTING);
     }
 
-    private void completeRepositoryDetection(GitRepository repository) {
+    private void completeRepositoryDetection(GitRepository repository, long generation) {
         gitRepository.set(repository);
         active.set(true);
         repositoryState.set(GitRepositoryState.AVAILABLE);
-        startAutoRefresh();
+        if (generation == detectionGeneration.get()) {
+            startAutoRefresh();
+        }
+    }
+
+    /**
+     * Stops periodic status refreshes for a project that has been closed, including those a repository detection
+     * still in progress would start. The next {@link #detectRepository()} resumes them.
+     */
+    public void stop() {
+        detectionGeneration.incrementAndGet();
+        stopAutoRefresh();
     }
 
     private void clearRepositoryState(GitRepositoryState state) {

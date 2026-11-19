@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.diagnostics;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.ProjectWorkspaceConfiguration;
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagnostic;
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
@@ -71,6 +72,8 @@ public record JavaDiagnosticsProvider(
     }
 
     private static final Duration INSPECTION_BUDGET = Duration.ofSeconds(5);
+    private static final Set<String> RESOLUTION_CODES = Set.of("SEM_UNRESOLVED_CALL", "SEM_UNRESOLVED_IMPORT",
+        "SEM_UNRESOLVED_MEMBER", "SEM_UNRESOLVED_NAME", "SEM_UNRESOLVED_TYPE");
 
     @Override
     public @NotNull FeatureResult<List<TextEditorDiagnostic>> compute(FeatureRequestContext context) {
@@ -79,6 +82,10 @@ public record JavaDiagnosticsProvider(
             ? analysis.apply(context)
             : projectIndex;
         List<TextEditorDiagnostic> diagnostics = compute(context.documentSnapshot(), index, context);
+        if (ProjectWorkspaceConfiguration.dependenciesPending(context.workspaceSnapshot().configuration())) {
+            diagnostics = diagnostics.stream().filter(diagnostic -> !RESOLUTION_CODES.contains(diagnostic.code()))
+                .toList();
+        }
         context.checkActive();
         return new FeatureResult<>(context, diagnostics);
     }

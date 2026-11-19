@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.lang.reflect.Field;
+import java.time.Duration;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -319,7 +320,7 @@ public class ProjectWorkspaceConfigurationTest {
     }
 
     @Test
-    public void indexContextRequestsAnUnavailableGradleModelOnce() throws Exception {
+    public void indexContextStartsAnImportWithoutWaitingForIt() throws Exception {
         Files.writeString(directory.resolve("build.gradle"), "plugins { id 'java' }");
         RailroadProject project = new RailroadProject(directory, "Unavailable", new WritableImage(1, 1)) {
             @Override
@@ -337,18 +338,72 @@ public class ProjectWorkspaceConfigurationTest {
             @Override
             public CompletableFuture<GradleBuildModel> refreshModel(boolean force) {
                 requests.incrementAndGet();
-                return CompletableFuture.failedFuture(new IllegalStateException("import failed"));
+                return new CompletableFuture<>();
             }
         };
         Field service = GradleManager.class.getDeclaredField("modelService");
         service.setAccessible(true);
         service.set(project.getGradleManager(), models);
 
-        var context = (JavaLanguageIndexContext) new JavaLanguageIndexContextContributor().resolve(project);
+        var context = assertTimeoutPreemptively(Duration.ofSeconds(5),
+            () -> (JavaLanguageIndexContext) new JavaLanguageIndexContextContributor().resolve(project));
 
         assertEquals(1, requests.get());
         assertTrue(context.sourceRoots().isEmpty());
         assertTrue(context.classpathRoots().isEmpty());
+    }
+
+    @Test
+    public void gradleDependenciesArePendingUntilTheModelIsPublishedOrFails() throws Exception {
+        Files.writeString(directory.resolve("build.gradle"), "plugins { id 'java' }");
+        RailroadProject project = new RailroadProject(directory, "Pending", new WritableImage(1, 1)) {
+            @Override
+            public boolean hasFacet(FacetType<?> type) {
+                return type.equals(FacetManager.GRADLE);
+            }
+
+            @Override
+            public List<Facet<?>> getFacets() {
+                return List.of(new Facet<>(FacetManager.GRADLE));
+            }
+        };
+        var models = new FakeModels();
+        Field service = GradleManager.class.getDeclaredField("modelService");
+        service.setAccessible(true);
+        service.set(project.getGradleManager(), models);
+        var store = new DefaultDocumentStore(project.getId(), ProjectWorkspaceConfiguration.initial(project));
+        assertTrue(ProjectWorkspaceConfiguration.dependenciesPending(store.capture().configuration()));
+        try (ProjectWorkspaceConfiguration tracker = new ProjectWorkspaceConfiguration(project, store)) {
+            assertTrue(ProjectWorkspaceConfiguration.dependenciesPending(store.capture().configuration()));
+            models.listeners
+                .forEach(listener -> listener.modelReloadFailed(new IllegalStateException("import failed")));
+            assertFalse(ProjectWorkspaceConfiguration.dependenciesPending(store.capture().configuration()));
+            models.publish(model(":main", directory.resolve("a.jar")));
+            WorkspaceConfigurationSnapshot imported = store.capture().configuration();
+            assertFalse(ProjectWorkspaceConfiguration.dependenciesPending(imported));
+            assertFalse(imported.settings().containsKey("dependencies.unavailable"));
+        }
+        Files.delete(directory.resolve("build.gradle"));
+        assertFalse(ProjectWorkspaceConfiguration.dependenciesPending(ProjectWorkspaceConfiguration.initial(
+            new RailroadProject(directory, "Plain", new WritableImage(1, 1)))));
+    }
+
+    @Test
+    public void resolutionDiagnosticsWaitForPendingDependencies() {
+        String text = "class Example { Missing value; void run() { Missing.call(); } }";
+        DocumentId id = DocumentId.create();
+        var pending = new DefaultDocumentStore("pending",
+            new WorkspaceConfigurationSnapshot(0, Set.of(":"), Map.of("project.build.build.gradle", "")));
+        var plain = new DefaultDocumentStore("plain", new WorkspaceConfigurationSnapshot(0, Set.of(":")));
+        for (DocumentStore store : List.of(pending, plain)) {
+            store.publishBacking(new TextDocumentSnapshot(id, DocumentUri.inMemory(id), DocumentVersion.initial(),
+                "java", text, StandardCharsets.UTF_8));
+        }
+
+        assertTrue(new JavaDiagnosticsProvider().compute(pending.capture(), id).stream()
+            .noneMatch(diagnostic -> diagnostic.code().startsWith("SEM_UNRESOLVED_")));
+        assertTrue(new JavaDiagnosticsProvider().compute(plain.capture(), id).stream()
+            .anyMatch(diagnostic -> diagnostic.code().startsWith("SEM_UNRESOLVED_")));
     }
 
     @Test
