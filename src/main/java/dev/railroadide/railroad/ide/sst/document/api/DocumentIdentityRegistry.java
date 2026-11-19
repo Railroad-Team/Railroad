@@ -5,6 +5,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,9 +19,12 @@ import java.util.Set;
  * Workspace-owned allocator and location registry for document identities.
  * <p>
  * The registry separates logical identity from path spelling. Existing physical files
- * are resolved through their real path, and already registered files are compared with
+ * are resolved through their real path, and already registered files that share a file key
+ * (or, where the platform exposes none, a creation time) are compared with
  * {@link Files#isSameFile(Path, Path)} so aliases such as symbolic or hard links converge
- * on one ID. Missing paths use an absolute normalized spelling until a physical file is
+ * on one ID. Those keys are refreshed whenever a registered location is looked up, so a
+ * hard link to a file that was replaced since its last lookup may receive its own ID. Missing paths use an absolute
+ * normalized spelling until a physical file is
  * available or the owner explicitly rebinds the document.
  * <p>
  * Virtual, generated, in-memory, text, and binary documents may be resolved directly by
@@ -36,6 +40,8 @@ import java.util.Set;
  */
 public final class DocumentIdentityRegistry {
     private final Map<Path, DocumentId> idsByPath = new HashMap<>();
+    private final Map<Path, Object> fileKeysByPath = new HashMap<>();
+    private final Map<Object, Set<Path>> pathsByFileKey = new HashMap<>();
     private final Map<DocumentUri, DocumentId> idsByUri = new HashMap<>();
     private final Map<DocumentId, DocumentVersion> versionsById = new HashMap<>();
     private final Set<DocumentId> releasedIds = new HashSet<>();
@@ -144,6 +150,7 @@ public final class DocumentIdentityRegistry {
         DocumentId existing = findRegistered(normalized, resolved);
         if (existing != null) {
             ensureVersion(existing);
+            refreshFileKey(resolved);
             return existing;
         }
 
@@ -169,8 +176,10 @@ public final class DocumentIdentityRegistry {
         Path normalized = normalize(path);
         Path resolved = resolve(normalized);
         DocumentId existing = findRegistered(normalized, resolved);
-        if (existing != null)
+        if (existing != null) {
+            refreshFileKey(resolved);
             return Optional.of(existing);
+        }
 
         existing = findEquivalentPhysicalFile(resolved);
         if (existing != null) {
@@ -370,7 +379,7 @@ public final class DocumentIdentityRegistry {
             return Optional.empty();
 
         for (Path path : forgotten) {
-            idsByPath.remove(path);
+            removePath(path);
             idsByUri.remove(DocumentUri.fromPath(path), documentId);
         }
         return Optional.of(preferredSpelling(surviving));
@@ -416,7 +425,8 @@ public final class DocumentIdentityRegistry {
     }
 
     private void removeAssociations(DocumentId documentId) {
-        idsByPath.values().removeIf(documentId::equals);
+        idsByPath.entrySet().stream().filter(entry -> entry.getValue().equals(documentId)).map(Map.Entry::getKey)
+            .toList().forEach(this::removePath);
         idsByUri.values().removeIf(documentId::equals);
     }
 
@@ -431,17 +441,17 @@ public final class DocumentIdentityRegistry {
     }
 
     private DocumentId findEquivalentPhysicalFile(Path path) {
-        if (Files.notExists(path))
+        Object key = fileKey(path);
+        if (key == null)
             return null;
 
-        for (Map.Entry<Path, DocumentId> entry : idsByPath.entrySet()) {
-            Path registered = entry.getKey();
+        for (Path registered : List.copyOf(pathsByFileKey.getOrDefault(key, Set.of()))) {
             if (Files.notExists(registered))
                 continue;
 
             try {
                 if (Files.isSameFile(path, registered))
-                    return entry.getValue();
+                    return idsByPath.get(registered);
             } catch (IOException exception) {
                 throw new UncheckedIOException(
                     "Failed to compare document paths " + path + " and " + registered,
@@ -452,14 +462,61 @@ public final class DocumentIdentityRegistry {
         return null;
     }
 
+    private void putPath(Path path, DocumentId documentId) {
+        idsByPath.put(path, documentId);
+        refreshFileKey(path);
+    }
+
+    private void removePath(Path path) {
+        idsByPath.remove(path);
+        unindexFileKey(path);
+    }
+
+    private void refreshFileKey(Path path) {
+        if (!idsByPath.containsKey(path))
+            return;
+        unindexFileKey(path);
+        Object key = fileKey(path);
+        if (key != null) {
+            fileKeysByPath.put(path, key);
+            pathsByFileKey.computeIfAbsent(key, _ -> new HashSet<>()).add(path);
+        }
+    }
+
+    private void unindexFileKey(Path path) {
+        Object key = fileKeysByPath.remove(path);
+        if (key == null)
+            return;
+        Set<Path> paths = pathsByFileKey.get(key);
+        paths.remove(path);
+        if (paths.isEmpty()) {
+            pathsByFileKey.remove(key);
+        }
+    }
+
+    /**
+     * Returns a value that is equal for every directory entry of one physical file. Windows exposes no file key, so
+     * the creation time, which hard links share, narrows the candidates that {@link Files#isSameFile} confirms.
+     */
+    private static Object fileKey(Path path) {
+        try {
+            BasicFileAttributes attributes = Files.readAttributes(path, BasicFileAttributes.class);
+            return attributes.fileKey() != null ? attributes.fileKey() : attributes.creationTime();
+        } catch (NoSuchFileException exception) {
+            return null;
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Failed to read document attributes " + path, exception);
+        }
+    }
+
     private DocumentId findRegistered(Path normalized, Path resolved) {
         DocumentId existing = idsByPath.get(normalized);
         return existing != null ? existing : idsByPath.get(resolved);
     }
 
     private void registerSpellings(DocumentId documentId, Path normalized, Path resolved) {
-        idsByPath.put(normalized, documentId);
-        idsByPath.put(resolved, documentId);
+        putPath(normalized, documentId);
+        putPath(resolved, documentId);
         idsByUri.put(DocumentUri.fromPath(normalized), documentId);
         idsByUri.put(DocumentUri.fromPath(resolved), documentId);
     }

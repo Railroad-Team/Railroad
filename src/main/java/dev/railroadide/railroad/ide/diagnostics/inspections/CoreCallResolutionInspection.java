@@ -46,7 +46,7 @@ public final class CoreCallResolutionInspection implements JavaInspectionRulePro
             if ("JAVA_METHOD_INVOCATION_EXPRESSION".equals(kindId)) {
                 if (context.resolvedSymbol(node).isPresent())
                     return;
-                if (context.canResolveMethodInvocation(node))
+                if (context.canResolveMethodInvocation(node) || !context.hasKnownMethodOwner(node))
                     return;
 
                 SyntaxNode memberNode = context.selectorNameNode(node);
@@ -55,7 +55,7 @@ public final class CoreCallResolutionInspection implements JavaInspectionRulePro
                     : context.canonicalQualifiedName(memberNode);
                 if (callName == null || callName.isBlank())
                     return;
-                Railroad.LOGGER.warn(
+                Railroad.LOGGER.debug(
                     "Unresolved method invocation detail for {}: {}",
                     callName,
                     context.describeMethodInvocationResolution(node));

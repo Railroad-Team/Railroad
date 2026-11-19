@@ -23,6 +23,9 @@ import dev.railroadide.railroad.ide.sst.document.api.ContentKind;
  */
 public final class ProjectDocumentSynchronizer implements AutoCloseable {
     private static final Set<String> IGNORED_DIRECTORIES = Set.of(".git", ".gradle", ".railroad");
+    private static final Set<String> OUTPUT_DIRECTORIES = Set.of("build", "out", "target");
+    private static final Set<String> GENERATED_DIRECTORIES = Set.of("generated", "generated-sources",
+        "generated-test-sources");
     private final Path root;
     private final DocumentStore store;
     private final DocumentIdentityRegistry identities;
@@ -226,12 +229,24 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
             : new BinaryDocumentSnapshot(id, uri, version, language, bytes);
     }
 
+    /**
+     * Build output directories are skipped unless they sit inside a source tree, except for their generated
+     * source subtrees, which build models report as source roots.
+     */
     private static boolean ignored(Path path, Path root) {
         if (!path.startsWith(root))
             return true;
-        for (Path segment : root.relativize(path)) {
-            if (IGNORED_DIRECTORIES.contains(segment.toString()))
+        boolean insideSources = false;
+        Path relative = root.relativize(path);
+        for (int index = 0; index < relative.getNameCount(); index++) {
+            String segment = relative.getName(index).toString();
+            if (IGNORED_DIRECTORIES.contains(segment))
                 return true;
+            if (segment.equals("src")) {
+                insideSources = true;
+            } else if (!insideSources && OUTPUT_DIRECTORIES.contains(segment))
+                return index + 1 < relative.getNameCount()
+                    && !GENERATED_DIRECTORIES.contains(relative.getName(index + 1).toString());
         }
         return false;
     }

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -47,6 +48,52 @@ public class DocumentIdentityRegistryTest {
 
         var registry = new DocumentIdentityRegistry();
         assertEquals(registry.getOrCreate(file), registry.getOrCreate(hardLink));
+    }
+
+    @Test
+    public void hardLinkToReplacedFileJoinsItsIdentityAfterLookup() throws IOException {
+        var registry = new DocumentIdentityRegistry();
+        Path file = Files.writeString(tempDirectory.resolve("source.bin"), "content");
+        for (int index = 0; index < 20; index++) {
+            registry.getOrCreate(Files.writeString(tempDirectory.resolve("other" + index + ".bin"), "other"));
+        }
+        DocumentId id = registry.getOrCreate(file);
+        Path replacement = Files.writeString(tempDirectory.resolve("replacement.bin"), "replaced");
+        Files.move(replacement, file, StandardCopyOption.REPLACE_EXISTING);
+        Path hardLink = tempDirectory.resolve("alias.bin");
+        try {
+            Files.createLink(hardLink, file);
+        } catch (UnsupportedOperationException | SecurityException | IOException _) {
+            Assumptions.abort("Hard links are unavailable on this filesystem");
+        }
+
+        assertEquals(id, registry.getOrCreate(file));
+        assertEquals(id, registry.getOrCreate(hardLink));
+    }
+
+    @Test
+    public void distinctFilesSharingTimestampsKeepSeparateIdentities() throws IOException {
+        var registry = new DocumentIdentityRegistry();
+        Path file = Files.writeString(tempDirectory.resolve("source.bin"), "content");
+        Path copy = Files.copy(file, tempDirectory.resolve("copy.bin"), StandardCopyOption.COPY_ATTRIBUTES);
+
+        assertNotEquals(registry.getOrCreate(file), registry.getOrCreate(copy));
+    }
+
+    @Test
+    public void releasedPathIsNotMatchedByLaterHardLink() throws IOException {
+        var registry = new DocumentIdentityRegistry();
+        Path file = Files.writeString(tempDirectory.resolve("source.bin"), "content");
+        DocumentId released = registry.getOrCreate(file);
+        registry.release(released);
+        Path hardLink = tempDirectory.resolve("alias.bin");
+        try {
+            Files.createLink(hardLink, file);
+        } catch (UnsupportedOperationException | SecurityException | IOException _) {
+            Assumptions.abort("Hard links are unavailable on this filesystem");
+        }
+
+        assertNotEquals(released, registry.getOrCreate(hardLink));
     }
 
     @Test

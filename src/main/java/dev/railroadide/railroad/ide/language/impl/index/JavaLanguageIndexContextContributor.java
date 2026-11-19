@@ -47,13 +47,14 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
 
     @Override
     public LanguageIndexContext resolve(Project project) {
+        Optional<GradleBuildModel> gradleModel = loadGradleModel(project);
         return new JavaLanguageIndexContext(
-            resolveSourceRoots(project),
-            resolveGeneratedRoots(project),
-            resolveDependencyRoots(project),
-            resolveClasspathRoots(project),
-            resolveModuleRoots(project),
-            resolveJdkHome(project));
+            resolveSourceRoots(project, gradleModel),
+            resolveGeneratedRoots(project, gradleModel),
+            resolveDependencyRoots(project, gradleModel),
+            resolveClasspathRoots(project, gradleModel),
+            resolveModuleRoots(project, gradleModel),
+            resolveJdkHome(project, gradleModel));
     }
 
     /**
@@ -80,13 +81,13 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
             resolveProjectPath(project, build != null ? build.getTestSourceDirectory() : null, "src/test/java"))),
             normalizePaths(List.of(buildDirectory.resolve("generated-sources"),
                 buildDirectory.resolve("generated-test-sources"))),
-            roots, roots, List.of(), resolveJdkHome(project));
+            roots, roots, List.of(), resolveJdkHome(project, Optional.empty()));
     }
 
-    private static List<Path> resolveSourceRoots(Project project) {
+    private static List<Path> resolveSourceRoots(Project project, Optional<GradleBuildModel> gradleModel) {
         List<Path> sourceRoots = new ArrayList<>();
         if (project.hasFacet(FacetManager.GRADLE)) {
-            consumeGradleModel(project, model -> {
+            gradleModel.ifPresent(model -> {
                 for (RailroadModule module : model.project().getModules()) {
                     for (RailroadContentRoot sourceSet : module.getContentRoots()) {
                         for (RailroadSourceDirectory sourceDir : sourceSet.getSourceDirectories()) {
@@ -119,10 +120,10 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         return normalizePaths(sourceRoots);
     }
 
-    private static List<Path> resolveGeneratedRoots(Project project) {
+    private static List<Path> resolveGeneratedRoots(Project project, Optional<GradleBuildModel> gradleModel) {
         List<Path> generatedRoots = new ArrayList<>();
         if (project.hasFacet(FacetManager.GRADLE)) {
-            consumeGradleModel(project, model -> {
+            gradleModel.ifPresent(model -> {
                 for (RailroadModule module : model.project().getModules()) {
                     for (RailroadContentRoot sourceSet : module.getContentRoots()) {
                         for (RailroadSourceDirectory sourceDir : sourceSet.getSourceDirectories()) {
@@ -150,10 +151,10 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         return normalizePaths(generatedRoots);
     }
 
-    private static List<Path> resolveDependencyRoots(Project project) {
+    private static List<Path> resolveDependencyRoots(Project project, Optional<GradleBuildModel> gradleModel) {
         List<Path> dependencyRoots = new ArrayList<>();
         if (project.hasFacet(FacetManager.GRADLE)) {
-            consumeGradleModel(project, model -> {
+            gradleModel.ifPresent(model -> {
                 for (RailroadModule module : model.project().getModules()) {
                     module.getDependencyRoots().stream()
                         .map(File::toPath)
@@ -175,10 +176,10 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         return normalizePaths(dependencyRoots);
     }
 
-    private static List<Path> resolveClasspathRoots(Project project) {
+    private static List<Path> resolveClasspathRoots(Project project, Optional<GradleBuildModel> gradleModel) {
         List<Path> classpathRoots = new ArrayList<>();
         if (project.hasFacet(FacetManager.GRADLE)) {
-            consumeGradleModel(project, model -> {
+            gradleModel.ifPresent(model -> {
                 for (RailroadModule module : model.project().getModules()) {
                     module.getClasspathRoots().stream()
                         .map(File::toPath)
@@ -239,10 +240,10 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         }
     }
 
-    private static List<Path> resolveModuleRoots(Project project) {
+    private static List<Path> resolveModuleRoots(Project project, Optional<GradleBuildModel> gradleModel) {
         List<Path> moduleRoots = new ArrayList<>();
         if (project.hasFacet(FacetManager.GRADLE)) {
-            consumeGradleModel(project, model -> {
+            gradleModel.ifPresent(model -> {
                 model.project().getModules().stream()
                     .map(RailroadModule::getModulePathRoots)
                     .flatMap(List::stream)
@@ -256,9 +257,9 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         return normalizePaths(moduleRoots);
     }
 
-    private static Path resolveJdkHome(Project project) {
+    private static Path resolveJdkHome(Project project, Optional<GradleBuildModel> gradleModel) {
         if (project.hasFacet(FacetManager.GRADLE)) {
-            Optional<Path> gradleJdkHome = resolveGradleJdkHome(project);
+            Optional<Path> gradleJdkHome = resolveGradleJdkHome(project, gradleModel);
             if (gradleJdkHome.isPresent())
                 return gradleJdkHome.get();
         }
@@ -274,9 +275,9 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         return null;
     }
 
-    private static Optional<Path> resolveGradleJdkHome(Project project) {
+    private static Optional<Path> resolveGradleJdkHome(Project project, Optional<GradleBuildModel> gradleModel) {
         List<Path> paths = new ArrayList<>();
-        consumeGradleModel(project, model -> {
+        gradleModel.ifPresent(model -> {
             try {
                 if (model.project() == null || model.project().javaLanguageSettings() == null)
                     return;
@@ -454,25 +455,25 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         return MAVEN_MODELS.loadEffectiveModel(projectRoot);
     }
 
-    private static void consumeGradleModel(Project project, Consumer<GradleBuildModel> modelConsumer) {
-        if (project.hasFacet(FacetManager.GRADLE)) {
-            GradleManager gradleManager = project.getGradleManager();
-            Optional<GradleBuildModel> cachedModel = gradleManager.getGradleModelService().getCachedModel();
-            if (cachedModel.isPresent()) {
-                modelConsumer.accept(cachedModel.get());
-                return;
-            }
+    private static Optional<GradleBuildModel> loadGradleModel(Project project) {
+        if (!project.hasFacet(FacetManager.GRADLE))
+            return Optional.empty();
 
-            try {
-                GradleBuildModel model = gradleManager.getGradleModelService()
-                    .refreshModel(false)
-                    .get(30, TimeUnit.SECONDS);
-                if (model != null) {
-                    modelConsumer.accept(model);
-                }
-            } catch (Exception exception) {
-                Railroad.LOGGER.warn("Unable to load Gradle model for project {}", project.getAlias(), exception);
-            }
+        GradleManager gradleManager = project.getGradleManager();
+        Optional<GradleBuildModel> cachedModel = gradleManager.getGradleModelService().getCachedModel();
+        if (cachedModel.isPresent())
+            return cachedModel;
+
+        try {
+            return Optional.ofNullable(gradleManager.getGradleModelService()
+                .refreshModel(false)
+                .get(30, TimeUnit.SECONDS));
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            return Optional.empty();
+        } catch (Exception exception) {
+            Railroad.LOGGER.warn("Unable to load Gradle model for project {}", project.getAlias(), exception);
+            return Optional.empty();
         }
     }
 }

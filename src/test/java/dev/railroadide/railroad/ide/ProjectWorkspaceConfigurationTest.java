@@ -28,6 +28,8 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.*;
 import dev.railroadide.railroad.ide.language.impl.index.JavaLanguageIndexContext;
+import dev.railroadide.railroad.ide.language.impl.index.JavaLanguageIndexContextContributor;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import org.objectweb.asm.ClassWriter;
@@ -314,6 +316,39 @@ public class ProjectWorkspaceConfigurationTest {
             assertEquals(second, store.capture());
         }
         assertTrue(models.listeners.isEmpty());
+    }
+
+    @Test
+    public void indexContextRequestsAnUnavailableGradleModelOnce() throws Exception {
+        Files.writeString(directory.resolve("build.gradle"), "plugins { id 'java' }");
+        RailroadProject project = new RailroadProject(directory, "Unavailable", new WritableImage(1, 1)) {
+            @Override
+            public boolean hasFacet(FacetType<?> type) {
+                return type.equals(FacetManager.GRADLE);
+            }
+
+            @Override
+            public List<Facet<?>> getFacets() {
+                return List.of(new Facet<>(FacetManager.GRADLE));
+            }
+        };
+        var requests = new AtomicInteger();
+        var models = new FakeModels() {
+            @Override
+            public CompletableFuture<GradleBuildModel> refreshModel(boolean force) {
+                requests.incrementAndGet();
+                return CompletableFuture.failedFuture(new IllegalStateException("import failed"));
+            }
+        };
+        Field service = GradleManager.class.getDeclaredField("modelService");
+        service.setAccessible(true);
+        service.set(project.getGradleManager(), models);
+
+        var context = (JavaLanguageIndexContext) new JavaLanguageIndexContextContributor().resolve(project);
+
+        assertEquals(1, requests.get());
+        assertTrue(context.sourceRoots().isEmpty());
+        assertTrue(context.classpathRoots().isEmpty());
     }
 
     @Test
@@ -614,7 +649,7 @@ public class ProjectWorkspaceConfigurationTest {
         }
     }
 
-    private static final class FakeModels implements GradleModelService {
+    private static class FakeModels implements GradleModelService {
         private final List<GradleModelListener> listeners = new CopyOnWriteArrayList<>();
         private GradleBuildModel cached;
 

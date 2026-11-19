@@ -765,6 +765,30 @@ public class CoreInspectionRulesTest {
     }
 
     @Test
+    public void coreCallRuleReportsMissingMethodsOnlyOnKnownReceiverTypes() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreCallResolutionInspection(), """
+            import com.example.missing.Logger;
+            import com.example.missing.Block;
+
+            class Example extends Block {
+                private static final Logger LOGGER = null;
+
+                void run(String text) {
+                    LOGGER.info("loaded");
+                    Identifier.fromNamespaceAndPath("mod", "path");
+                    inheritedFromMissingSuper();
+                    text.missingOnString();
+                }
+            }
+            """);
+
+        List<String> unresolved = diagnostics.stream().filter(d -> "SEM_UNRESOLVED_CALL".equals(d.code()))
+            .map(SemanticDiagnostic::message).toList();
+        assertEquals(1, unresolved.size(), unresolved.toString());
+        assertTrue(unresolved.getFirst().contains("missingOnString"), unresolved.toString());
+    }
+
+    @Test
     public void coreMemberRuleEmitsUnresolvedMemberDiagnostic() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreMemberResolutionInspection(), """
             class Example {

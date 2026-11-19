@@ -17,6 +17,35 @@ public class ProjectDocumentSynchronizerTest {
     public Path directory;
 
     @Test
+    public void buildOutputsAreSkippedExceptGeneratedSourcesAndSourcePackages() throws Exception {
+        LanguageSupports.initialize();
+        Path output = Files.createDirectories(directory.resolve("common/build/version-audit")).resolve("Audit.java");
+        Path log = directory.resolve("build/compile-output.log");
+        Path generated = Files.createDirectories(directory.resolve("common/build/generated/sources"))
+            .resolve("Generated.java");
+        Path sourcePackage = Files.createDirectories(directory.resolve("common/src/main/java/example/build"))
+            .resolve("Builder.java");
+        Files.writeString(output, "class Audit {}");
+        Files.createDirectories(log.getParent());
+        Files.writeString(log, "BUILD SUCCESSFUL");
+        Files.writeString(generated, "class Generated {}");
+        Files.writeString(sourcePackage, "class Builder {}");
+        var identities = new DocumentIdentityRegistry();
+        DocumentStore store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()));
+        try (ProjectDocumentSynchronizer synchronizer = new ProjectDocumentSynchronizer(directory, store, identities,
+            _ -> false, Runnable::run)) {
+            synchronizer.initialScan().get(10, TimeUnit.SECONDS);
+            assertTrue(identities.findIdentity(DocumentUri.fromPath(output)).isEmpty());
+            assertTrue(identities.findIdentity(DocumentUri.fromPath(log)).isEmpty());
+            assertTrue(identities.findIdentity(DocumentUri.fromPath(generated)).isPresent());
+            assertTrue(identities.findIdentity(DocumentUri.fromPath(sourcePackage)).isPresent());
+            assertFalse(ProjectDocumentSynchronizer.isWorkspacePath(directory, output));
+            assertTrue(ProjectDocumentSynchronizer.isWorkspacePath(directory, generated));
+            assertTrue(ProjectDocumentSynchronizer.isWorkspacePath(directory, sourcePackage));
+        }
+    }
+
+    @Test
     public void unopenedAndClosedFilesTrackDiskWithoutDependingOnEditors() throws Exception {
         LanguageSupports.initialize();
         Path source = directory.resolve("Unopened.java");

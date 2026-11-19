@@ -8,6 +8,7 @@ import dev.railroadide.railroad.gradle.model.GradleModelListener;
 import dev.railroadide.railroad.gradle.service.GradleModelService;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.utility.function.ThrowingSupplier;
+import dev.railroadide.railroadplugin.action.RailroadProjectAction;
 import dev.railroadide.railroadplugin.dto.FabricDataModel;
 import dev.railroadide.railroadplugin.dto.RailroadProject;
 import org.gradle.tooling.GradleConnector;
@@ -82,8 +83,9 @@ public class ToolingGradleModelService implements GradleModelService {
             GradleBuild gradleBuild = configureJvm(connection.model(GradleBuild.class), environment)
                 .withArguments(initScriptArgs)
                 .get();
-            RailroadProject gradleProject = requestOptionalModel(
-                connection, RailroadProject.class, initScriptArgs, environment);
+            RailroadProject gradleProject = configureJvm(connection.action(new RailroadProjectAction()), environment)
+                .withArguments(initScriptArgs)
+                .run();
             FabricDataModel fabricDataModel = requestOptionalModel(
                 connection, FabricDataModel.class, initScriptArgs, environment);
 

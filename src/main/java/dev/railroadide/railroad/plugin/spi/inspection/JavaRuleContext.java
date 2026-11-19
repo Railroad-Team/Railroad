@@ -856,6 +856,45 @@ public final class JavaRuleContext implements LanguageRuleContext {
     }
 
     /**
+     * Reports whether the type that would declare an invocation's method, and every supertype it inherits from, is
+     * known to this context. When it is not, an unresolved call follows from that unresolved type rather than from
+     * the call itself.
+     *
+     * @param invocation the invocation node to inspect
+     * @return {@code true} if the receiver's type, or the enclosing type for an implicit receiver, is fully known
+     */
+    public boolean hasKnownMethodOwner(SyntaxNode invocation) {
+        Objects.requireNonNull(invocation, "invocation");
+        if (!JAVA_METHOD_INVOCATION_EXPRESSION.equals(invocation.kind().id()))
+            return false;
+
+        SyntaxNode receiver = unwrapTransparentExpression(invocationReceiver(invocation));
+        String owner = receiver == null
+            ? enclosingTypeSymbol(invocation).flatMap(Symbol::qualifiedName).orElse(null)
+            : Optional.ofNullable(methodOwner(receiver)).map(MethodOwner::qualifiedTypeName).orElse(null);
+        return owner != null && !owner.isBlank() && isTypeHierarchyKnown(owner, new HashSet<>());
+    }
+
+    private boolean isTypeHierarchyKnown(String qualifiedTypeName, Set<String> visited) {
+        if (!visited.add(qualifiedTypeName))
+            return true;
+        if (!isKnownType(qualifiedTypeName))
+            return false;
+
+        for (String superTypeName : directSuperTypeNamesInternal(qualifiedTypeName)) {
+            String resolved = isKnownType(superTypeName) ? superTypeName : resolveQualifiedTypeName(superTypeName);
+            if (resolved == null || !isTypeHierarchyKnown(resolved, visited))
+                return false;
+        }
+        return true;
+    }
+
+    private boolean isKnownType(String qualifiedTypeName) {
+        return availableQualifiedTypeNames().contains(qualifiedTypeName)
+            || localTypeSymbolsByQualifiedName().containsKey(qualifiedTypeName);
+    }
+
+    /**
      * Describes the receiver, argument types, owner, and known candidates used to investigate invocation resolution.
      *
      * @param invocation the invocation node to inspect
