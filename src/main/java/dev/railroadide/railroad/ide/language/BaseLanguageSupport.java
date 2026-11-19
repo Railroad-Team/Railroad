@@ -1,10 +1,5 @@
 package dev.railroadide.railroad.ide.language;
 
-import dev.railroadide.railroad.ide.completion.CompletionProvider;
-import dev.railroadide.railroad.ide.diagnostics.DiagnosticsProvider;
-import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
-import org.jspecify.annotations.Nullable;
-
 import java.util.Set;
 
 /**
@@ -36,18 +31,4 @@ public abstract class BaseLanguageSupport implements LanguageSupport {
         return extensions;
     }
 
-    @Override
-    public @Nullable LanguageFeatureFactory<DiagnosticsProvider> diagnosticsFactory() {
-        return null;
-    }
-
-    @Override
-    public @Nullable LanguageFeatureFactory<CompletionProvider> completionFactory() {
-        return null;
-    }
-
-    @Override
-    public @Nullable LanguageFeatureFactory<SignatureHelpProvider> signatureHelpFactory() {
-        return null;
-    }
 }

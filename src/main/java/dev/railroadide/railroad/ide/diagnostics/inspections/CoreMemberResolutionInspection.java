@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
+import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
@@ -77,11 +79,11 @@ public final class CoreMemberResolutionInspection implements JavaInspectionRuleP
     }
 
     private static boolean isTypeSymbol(SymbolKind kind) {
-        return kind == SymbolKind.CLASS
-            || kind == SymbolKind.INTERFACE
-            || kind == SymbolKind.ENUM
-            || kind == SymbolKind.ANNOTATION
-            || kind == SymbolKind.RECORD;
+        return kind == JavaSymbolKind.CLASS
+            || kind == JavaSymbolKind.INTERFACE
+            || kind == JavaSymbolKind.ENUM
+            || kind == JavaSymbolKind.ANNOTATION
+            || kind == JavaSymbolKind.RECORD;
     }
 
     private static boolean isArrayLengthAccess(JavaRuleContext context, SyntaxNode fieldAccess, String memberName) {
@@ -90,6 +92,6 @@ public final class CoreMemberResolutionInspection implements JavaInspectionRuleP
 
         SyntaxNode receiver = context.invocationReceiver(fieldAccess);
         return receiver != null
-            && context.inferredType(receiver).map(type -> type.kind() == Type.Kind.ARRAY).orElse(false);
+            && context.inferredType(receiver).map(type -> type.kind() == JavaTypes.Kind.ARRAY).orElse(false);
     }
 }

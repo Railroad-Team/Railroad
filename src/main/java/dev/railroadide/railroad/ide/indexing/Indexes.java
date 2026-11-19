@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.ide.indexing;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
+import java.util.concurrent.CancellationException;
 import dev.railroadide.railroad.ide.classparser.ClassStubParser;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 import dev.railroadide.railroad.java.JDK;
@@ -30,6 +32,17 @@ public class Indexes {
      * @return collected class stubs; logged scan failures may leave a partial or empty result
      */
     public static List<ClassStub> scanStandardLibrary() {
+        return scanStandardLibrary(ActivityCheckpoint::checkInterrupted);
+    }
+
+    /**
+     * Scans runtime classes with request checks between filesystem and archive entries.
+     *
+     * @param activityCheck cooperative request activity check
+     * @return complete scan results; cancellation propagates without returning partial results
+     */
+    public static List<ClassStub> scanStandardLibrary(Runnable activityCheck) {
+        activityCheck.run();
         List<ClassStub> stubs = new ArrayList<>();
 
         Path javaHome = resolveJavaHome();
@@ -40,22 +53,24 @@ public class Indexes {
 
         // check if its using java 9 modules
         if (Files.isRegularFile(javaHome.resolve("lib").resolve("rt.jar"))) {
-            scanRTJar(javaHome, stubs);
+            scanRTJar(javaHome, stubs, activityCheck);
         } else if (Files.isRegularFile(javaHome.resolve("jmods").resolve("java.base.jmod"))) {
-            scanJMods(javaHome, stubs);
+            scanJMods(javaHome, stubs, activityCheck);
         } else {
-            scanJrtRuntime(stubs);
+            scanJrtRuntime(stubs, activityCheck);
         }
 
+        activityCheck.run();
         return stubs;
     }
 
-    private static void scanRTJar(Path javaHome, List<ClassStub> stubs) {
+    private static void scanRTJar(Path javaHome, List<ClassStub> stubs, Runnable activityCheck) {
         // We are using java 8 or below so we need to scan the rt.jar
         Path rtJar = javaHome.resolve("lib").resolve("rt.jar");
         try (var jar = new JarFile(rtJar.toFile())) {
             Enumeration<JarEntry> entries = jar.entries();
             while (entries.hasMoreElements()) {
+                activityCheck.run();
                 JarEntry entry = entries.nextElement();
                 String className = entry.getName();
                 if (className.startsWith("java/") && className.endsWith(".class")) {
@@ -72,24 +87,26 @@ public class Indexes {
         }
     }
 
-    private static void scanJMods(Path javaHome, List<ClassStub> stubs) {
+    private static void scanJMods(Path javaHome, List<ClassStub> stubs, Runnable activityCheck) {
         Path jmods = javaHome.resolve("jmods");
         try (var paths = Files.list(jmods)) {
             for (Path jmodPath : paths
                 .filter(path -> path.getFileName().toString().endsWith(".jmod"))
                 .sorted()
                 .toList()) {
-                scanJMod(jmodPath, stubs);
+                activityCheck.run();
+                scanJMod(jmodPath, stubs, activityCheck);
             }
         } catch (IOException exception) {
             Railroad.LOGGER.error("Failed to scan standard library modules", exception);
         }
     }
 
-    private static void scanJMod(Path jmodPath, List<ClassStub> stubs) {
+    private static void scanJMod(Path jmodPath, List<ClassStub> stubs, Runnable activityCheck) {
         try (var jmod = new JarFile(jmodPath.toFile())) {
             Enumeration<JarEntry> entries = jmod.entries();
             while (entries.hasMoreElements()) {
+                activityCheck.run();
                 JarEntry entry = entries.nextElement();
                 String className = entry.getName();
                 if (className.startsWith("classes/") && className.endsWith(".class")) {
@@ -106,7 +123,7 @@ public class Indexes {
         }
     }
 
-    private static void scanJrtRuntime(List<ClassStub> stubs) {
+    private static void scanJrtRuntime(List<ClassStub> stubs, Runnable activityCheck) {
         try {
             FileSystem fileSystem;
             try {
@@ -117,22 +134,27 @@ public class Indexes {
 
             Path modules = fileSystem.getPath("/modules");
             try (var paths = Files.walk(modules)) {
-                paths.filter(Files::isRegularFile)
+                paths.peek(_ -> activityCheck.run()).filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().endsWith(".class"))
                     .filter(path -> {
                         String name = path.getFileName().toString();
                         return !name.equals("module-info.class") && !name.equals("package-info.class");
                     })
-                    .forEach(path -> parseRuntimeClass(path, stubs));
+                    .forEach(path -> parseRuntimeClass(path, stubs, activityCheck));
             }
+        } catch (CancellationException exception) {
+            throw exception;
         } catch (Exception exception) {
             Railroad.LOGGER.error("Failed to scan current runtime standard library", exception);
         }
     }
 
-    private static void parseRuntimeClass(Path classFile, List<ClassStub> stubs) {
+    private static void parseRuntimeClass(Path classFile, List<ClassStub> stubs, Runnable activityCheck) {
+        activityCheck.run();
         try (var input = Files.newInputStream(classFile)) {
             stubs.add(ClassStubParser.parse(new ClassReader(input)));
+        } catch (CancellationException exception) {
+            throw exception;
         } catch (Exception exception) {
             Railroad.LOGGER.warn("Ignoring unreadable runtime class {}", classFile, exception);
         }

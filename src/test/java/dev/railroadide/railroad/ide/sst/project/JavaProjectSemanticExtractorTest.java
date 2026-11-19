@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -97,11 +98,11 @@ public class JavaProjectSemanticExtractorTest {
                 """);
 
         JavaProjectSemanticIndex.SymbolDescriptor constructor = fileIndex.declaredSymbols().stream()
-            .filter(symbol -> symbol.kind() == SymbolKind.CONSTRUCTOR)
+            .filter(symbol -> symbol.kind() == JavaSymbolKind.CONSTRUCTOR)
             .findFirst()
             .orElseThrow();
         JavaProjectSemanticIndex.SymbolDescriptor method = fileIndex.declaredSymbols().stream()
-            .filter(symbol -> symbol.kind() == SymbolKind.METHOD)
+            .filter(symbol -> symbol.kind() == JavaSymbolKind.METHOD)
             .findFirst()
             .orElseThrow();
 

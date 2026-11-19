@@ -18,10 +18,22 @@ import java.util.concurrent.CancellationException;
 @FunctionalInterface
 public interface CompletionProvider {
     /**
+     * Selects automatic completion triggers. Called on the editor thread; this policy must be fast and side-effect
+     * free.
+     * The default supports prefix completion after any insertion. Languages may restrict punctuation or other triggers.
+     *
+     * @param insertedText newly inserted text, never null
+     * @return whether this edit should request completion
+     */
+    default boolean shouldTrigger(String insertedText) {
+        return !insertedText.isEmpty();
+    }
+
+    /**
      * Computes completion suggestions for the specified trigger location.
      *
      * @param snapshot the immutable physical or virtual document revision to inspect
-     * @param triggerAt zero-based UTF-16 offset of the trigger character in the snapshot text (e.g. '.')
+     * @param triggerAt zero-based UTF-16 offset of the last inserted character in the snapshot text
      * @return a {@link CompletionResult}, or {@code null} when the content, language, or trigger is unsupported
      */
     @Nullable

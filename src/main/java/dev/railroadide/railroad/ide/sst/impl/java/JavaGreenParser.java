@@ -2419,33 +2419,7 @@ public final class JavaGreenParser {
     }
 
     private GreenNode parseAnonymousClassBody() {
-        List<GreenElement> children = new ArrayList<>();
-        expectSignificant(JavaTokenType.OPEN_BRACE, children);
-        int depth = 1;
-        while (hasMoreTokens()) {
-            Token<JavaTokenType> token = peek();
-            if (isTrivia(token)) {
-                children.add(consumeToken());
-                continue;
-            }
-
-            if (isEof(token)) {
-                children.add(missingToken(JavaTokenType.CLOSE_BRACE));
-                break;
-            }
-
-            JavaTokenType tokenType = token.type();
-            children.add(consumeToken());
-            if (tokenType == JavaTokenType.OPEN_BRACE) {
-                depth++;
-            } else if (tokenType == JavaTokenType.CLOSE_BRACE) {
-                depth--;
-                if (depth == 0)
-                    break;
-            }
-        }
-
-        return greenNode(JavaSyntaxKinds.ANONYMOUS_CLASS_BODY, children);
+        return parseTypeBody(JavaSyntaxKinds.ANONYMOUS_CLASS_BODY, JavaSyntaxKinds.TYPE_MEMBER, null, false, true);
     }
 
     private boolean isCastExpressionStart() {
@@ -2571,6 +2545,15 @@ public final class JavaGreenParser {
         JavaTokenType tokenType = peekSignificantType();
         if (tokenType == null)
             return greenNode(JavaSyntaxKinds.STATEMENT, List.of());
+
+        if (tokenType == JavaTokenType.CLASS_KEYWORD || tokenType == JavaTokenType.INTERFACE_KEYWORD
+            || tokenType == JavaTokenType.ENUM_KEYWORD || tokenType == JavaTokenType.RECORD_KEYWORD
+            || tokenType == JavaTokenType.AT || tokenType == JavaTokenType.ABSTRACT_KEYWORD
+            || tokenType == JavaTokenType.FINAL_KEYWORD || tokenType == JavaTokenType.STRICTFP_KEYWORD) {
+            GreenNode localType = parseOptionalTopLevelTypeDeclaration();
+            if (localType != null)
+                return localType;
+        }
 
         return switch (tokenType) {
             case SEMICOLON -> parseEmptyStatement();

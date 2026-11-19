@@ -15,11 +15,12 @@ import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.document.api.Location.TextLocation;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 
-import javax.tools.Diagnostic;
+import dev.railroadide.railroad.ide.diagnostics.DiagnosticSeverity;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Diagnostics provider backed by Eclipse JDT's parser.
@@ -28,7 +29,7 @@ public record JdtDiagnosticsProvider() implements DiagnosticsProvider<TextEditor
     @Override
     public @NotNull List<TextEditorDiagnostic> compute(DocumentSnapshot snapshot) {
         Optional<String> snapshotText = TextDocumentSnapshot.unwrap(
-            snapshot, LanguageSupportRegistry.getExpected(JavaLanguageSupport.LANGUAGE_ID));
+            snapshot, JavaLanguageSupport.LANGUAGE_ID);
         if (snapshotText.isEmpty())
             return List.of();
 
@@ -71,10 +72,10 @@ public record JdtDiagnosticsProvider() implements DiagnosticsProvider<TextEditor
 
         List<TextEditorDiagnostic> diagnostics = new ArrayList<>(problems.length);
         for (IProblem problem : problems) {
-            Diagnostic.Kind kind = problem.isError()
-                ? Diagnostic.Kind.ERROR
-                : (problem.isWarning() ? Diagnostic.Kind.WARNING : Diagnostic.Kind.OTHER);
-            if (kind == Diagnostic.Kind.OTHER)
+            DiagnosticSeverity kind = problem.isError()
+                ? DiagnosticSeverity.ERROR
+                : (problem.isWarning() ? DiagnosticSeverity.WARNING : DiagnosticSeverity.INFORMATION);
+            if (kind == DiagnosticSeverity.INFORMATION)
                 continue;
 
             int start = Math.max(0, problem.getSourceStart());
@@ -87,9 +88,9 @@ public record JdtDiagnosticsProvider() implements DiagnosticsProvider<TextEditor
                     TextLocation.from((TextDocumentSnapshot) snapshot, start, end),
                     kind,
                     code,
-                    message));
+                    message, "railroad:jdt", DiagnosticOrigin.SYNTAX, Set.of(), List.of(), null));
         }
 
-        return diagnostics;
+        return List.copyOf(diagnostics);
     }
 }

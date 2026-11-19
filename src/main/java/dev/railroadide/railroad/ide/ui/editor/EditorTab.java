@@ -370,12 +370,7 @@ public final class EditorTab {
     public String languageDisplayName() {
         String displayName = LanguageSupportRegistry.get(languageId())
             .map(support -> support.displayName())
-            .orElseGet(() -> switch (languageId()) {
-                case "image" -> "Image";
-                case "plaintext" -> "Plain Text";
-                case "binary" -> "Binary";
-                default -> languageId();
-            });
+            .orElse(languageId());
         String localizationKey = "railroad.language.name." + languageId();
         return L18n.hasTranslation(localizationKey) ? L18n.localize(localizationKey) : displayName;
     }

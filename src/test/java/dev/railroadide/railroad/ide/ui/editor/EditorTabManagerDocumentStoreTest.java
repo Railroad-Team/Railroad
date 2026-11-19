@@ -6,7 +6,14 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.ProjectDocumentSynchronizer;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
+import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
+import dev.railroadide.railroad.ide.sst.provider.api.*;
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.sst.request.api.CancellationTokenSource;
+import dev.railroadide.railroad.ide.sst.request.api.Deadline;
+import dev.railroadide.railroad.ide.sst.request.api.RequestPriority;
+import dev.railroadide.railroad.ide.sst.request.api.SstScheduler;
+import dev.railroadide.railroad.ide.sst.request.api.WorkspaceRequestContext;
 import dev.railroadide.railroad.ide.ui.MarkdownPreviewPane;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
@@ -675,10 +682,16 @@ public class EditorTabManagerDocumentStoreTest {
             Field watcher = TextEditorPane.class.getDeclaredField("watcherExecutor");
             watcher.setAccessible(true);
             assertTrue(((ExecutorService) watcher.get(editor)).isShutdown());
-            Field worker = CodeEditorPane.class
-                .getDeclaredField("worker");
-            worker.setAccessible(true);
-            assertTrue(((ExecutorService) worker.get(editor)).isShutdown());
+            Field requests = CodeEditorPane.class.getDeclaredField("featureRequests");
+            requests.setAccessible(true);
+            var scope = (SstScheduler.Scope) requests.get(editor);
+            assertTrue(scope.completion().isDone());
+            var cancellation = new CancellationTokenSource();
+            var context = new WorkspaceRequestContext(store.capture(), cancellation.token(), Deadline.none());
+            var rejected = scope.submit("closed-editor", RequestPriority.COMPLETION, context, cancellation,
+                () -> fail("A closed editor must not dispatch additional work"));
+            assertInstanceOf(RejectedExecutionException.class,
+                assertThrows(CompletionException.class, rejected::join).getCause());
             DocumentId id = tab.documentId();
             Files.delete(file);
             Files.writeString(file, "class Forced {}");
@@ -776,6 +789,57 @@ public class EditorTabManagerDocumentStoreTest {
     }
 
     private long initialWorkspaceRevision;
+
+    @Test
+    public void projectStateTransitionDisposesLanguageSessionsEvenWhenProviderCleanupFails() throws Exception {
+        var disposed = new AtomicInteger();
+        var resource = new CapabilityKey<>("test:project-close-resource", AutoCloseable.class);
+        LanguageContribution contribution = new LanguageContribution() {
+            @Override
+            public LanguageId id() {
+                return new LanguageId("test:project-close");
+            }
+
+            @Override
+            public String displayName() {
+                return "Project close test";
+            }
+
+            @Override
+            public LanguageMatcher matcher() {
+                return LanguageMatcher.extension("project-close");
+            }
+
+            @Override
+            public Set<CapabilityKey<?>> supportedCapabilities() {
+                return Set.of(resource);
+            }
+
+            @Override
+            public LanguageSession openSession(LanguageSessionContext context) {
+                return new LanguageSession(CapabilityRegistry.builder().add(resource, () -> {
+                    disposed.incrementAndGet();
+                    throw new IllegalStateException("Provider cleanup failure");
+                }).build());
+            }
+        };
+        var runtime = LanguageSupportRegistry.runtime();
+        runtime.register("project-close-test", contribution);
+        try {
+            onFxThread(() -> {
+                var session = runtime.session(project, contribution.id(), "");
+                assertDoesNotThrow(() -> Services.IDE_STATE.setCurrentProject(null));
+                assertTrue(session.isClosed());
+                assertEquals(1, disposed.get());
+                assertNull(Services.IDE_STATE.getCurrentProject());
+                assertTrue(Services.IDE_STATE.getDocumentStore().isEmpty());
+                assertNull(Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project));
+                return null;
+            });
+        } finally {
+            runtime.unregisterOwner("project-close-test");
+        }
+    }
 
     @AfterEach
     public void closeProject() throws Exception {

@@ -9,6 +9,13 @@ import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.gradle.model.GradleModelListener;
 import dev.railroadide.railroad.gradle.service.GradleModelService;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentStore;
+import dev.railroadide.railroad.ide.sst.request.api.CancellationTokenSource;
+import dev.railroadide.railroad.ide.sst.request.api.Deadline;
+import dev.railroadide.railroad.ide.sst.request.api.RequestPriority;
+import dev.railroadide.railroad.ide.sst.request.api.SstScheduler;
+import dev.railroadide.railroad.ide.sst.request.api.WorkspaceRequestContext;
+import dev.railroadide.railroad.ide.sst.provider.api.ProviderExecutor;
+import java.time.Duration;
 import dev.railroadide.railroad.ide.sst.document.api.WorkspaceConfigurationSnapshot;
 import dev.railroadide.railroad.ide.language.impl.index.JavaLanguageIndexContext;
 import dev.railroadide.railroad.ide.language.impl.index.JavaLanguageIndexContextContributor;
@@ -30,6 +37,8 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
+import java.util.function.Consumer;
+import dev.railroadide.railroad.ide.sst.request.api.RequestContext;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.function.BiFunction;
@@ -49,7 +58,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
     private final EventListener<ProjectConfigurationChangedEvent> configurationListener;
     private final Function<Project, JavaLanguageIndexContext> dependencyResolver;
     private final BiFunction<Session, WorkspaceConfigurationSnapshot, WorkspaceConfigurationSnapshot> binaryPreparer;
-    private final ExecutorService dependencyWorkers = Executors.newVirtualThreadPerTaskExecutor();
+    private final SstScheduler.Scope backgroundRequests = SstScheduler.shared().newScope();
     private Future<?> dependencyTask;
     private CompletableFuture<Void> resolution = CompletableFuture.completedFuture(null);
     private Map<String, String> requestedSettings;
@@ -243,12 +252,14 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         Map<String, String> inputs = requestedSettings;
         CompletableFuture<Void> completed = new CompletableFuture<>();
         resolution = completed;
-        dependencyTask = dependencyWorkers.submit(() -> {
+        dependencyTask = submitBackground("dependencies", completed, request -> {
             try {
                 JavaLanguageIndexContext context = dependencyResolver.apply(project);
+                request.checkActive();
                 Map<String, String> values = new TreeMap<>(inputs);
                 captureJavaConfiguration(root, context, values);
                 synchronized (this) {
+                    request.checkActive();
                     if (closed || generation != resolutionGeneration || !root.equals(project.getPath())
                         || store.capture().configuration() != expected || !isMavenProject()) {
                         completed.cancel(false);
@@ -263,6 +274,8 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
                     publish(moduleIds(values), values);
                 }
                 completed.complete(null);
+            } catch (CancellationException exception) {
+                completed.cancel(false);
             } catch (Exception exception) {
                 synchronized (this) {
                     if (!closed && generation == resolutionGeneration) {
@@ -272,6 +285,28 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
                 completed.completeExceptionally(exception);
             }
         });
+    }
+
+    private CompletableFuture<Void> submitBackground(
+        String key,
+        CompletableFuture<Void> completed,
+        Consumer<RequestContext> operation
+    ) {
+        var cancellation = new CancellationTokenSource();
+        Duration budget = Duration.ofMinutes(2);
+        var context = new WorkspaceRequestContext(store.capture(), cancellation.token(), Deadline.after(budget));
+        CompletableFuture<Void> task = backgroundRequests.submit(key, RequestPriority.BACKGROUND_INDEXING, context,
+            cancellation, () -> ProviderExecutor.shared().executeWithContext("project-configuration:" + key,
+                context, budget, child -> {
+                    operation.accept(child);
+                    return null;
+                }));
+        task.whenComplete((_, failure) -> {
+            if (failure != null) {
+                completed.completeExceptionally(failure);
+            }
+        });
+        return task;
     }
 
     private void cancelResolution() {
@@ -361,11 +396,12 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             CompletableFuture<Void> completed = new CompletableFuture<>();
             binaryResolution = completed;
             var candidate = new WorkspaceConfigurationSnapshot(current.revision() + 1, ids, values);
-            binaryTask = dependencyWorkers.submit(() -> {
+            binaryTask = submitBackground("binary-inputs", completed, request -> {
                 try {
                     var provider = JavaLanguageSupport.analysisContextProvider();
                     var prepared = binaryPreparer.apply(indexSession, candidate);
                     synchronized (this) {
+                        request.checkActive();
                         if (closed || indexSession.isClosed() || generation != binaryGeneration) {
                             completed.cancel(false);
                             return;
@@ -375,6 +411,8 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
                         store.publishConfiguration(prepared);
                     }
                     completed.complete(null);
+                } catch (CancellationException exception) {
+                    completed.cancel(false);
                 } catch (Exception exception) {
                     if (!indexSession.isClosed()) {
                         Railroad.LOGGER.warn("Cannot refresh Java binary inputs for {}", project.getPath(), exception);
@@ -512,7 +550,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         }
         binaryResolution.cancel(false);
         cancelResolution();
-        dependencyWorkers.shutdownNow();
+        backgroundRequests.close();
         Railroad.EVENT_BUS.unsubscribe(FacetDetectedEvent.class, facetListener);
         Railroad.EVENT_BUS.unsubscribe(ProjectConfigurationChangedEvent.class, configurationListener);
         project.getDataStore().removeFileChangeListener(settingsListener);

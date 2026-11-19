@@ -295,13 +295,28 @@ public final class SyntaxInternalFactory {
      * @return the complete text of the green subtree
      */
     public static String sourceText(GreenElement element) {
+        return sourceText(element, () -> {
+        });
+    }
+
+    /**
+     * Reconstructs source with cooperative checks while traversing the green tree.
+     *
+     * @param element green subtree to render
+     * @param activityCheck parse owner's activity check
+     * @return complete subtree text
+     */
+    public static String sourceText(GreenElement element, Runnable activityCheck) {
         Objects.requireNonNull(element, "element");
+        Objects.requireNonNull(activityCheck, "activityCheck").run();
         var text = new StringBuilder(element.width());
-        appendSourceText(element, text);
+        appendSourceText(element, text, activityCheck);
+        activityCheck.run();
         return text.toString();
     }
 
-    private static void appendSourceText(GreenElement element, StringBuilder text) {
+    private static void appendSourceText(GreenElement element, StringBuilder text, Runnable activityCheck) {
+        ActivityCheckpoint.poll(activityCheck);
         if (element instanceof GreenToken token) {
             text.append(token.text());
             return;
@@ -309,7 +324,7 @@ public final class SyntaxInternalFactory {
 
         GreenNode node = (GreenNode) element;
         for (GreenElement child : node.children()) {
-            appendSourceText(child, text);
+            appendSourceText(child, text, activityCheck);
         }
     }
 }

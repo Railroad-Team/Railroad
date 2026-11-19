@@ -113,6 +113,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     private final Object saveLock = new Object();
     private final TextEditorAccess textEditorAccess = new PublishedTextAccess();
     private final List<EditorSubscription> editorSubscriptions = new CopyOnWriteArrayList<>();
+    private volatile SharedUndoHistory sharedUndoHistory;
     private String pendingExternalText;
     private String displayedExternalText;
     private ExternalChangeDialog externalChangeDialog;
@@ -178,6 +179,8 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         setMouseOverTextDelay(Duration.ofMillis(500));
 
         initialContentLoaded = loadInitialContent();
+        // Loading is not an edit; undoing it would empty the editor and, once saved, the file.
+        getUndoManager().forgetHistory();
         backingReadFailed = !initialContentLoaded;
         if (backingReadFailed) {
             setSaveState(EditorSaveState.ERROR);
@@ -212,12 +215,78 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     }
 
     /**
+     * Returns the logical document identity shared with this editor's tab and document store.
+     *
+     * @return stable document identity
+     */
+    public final DocumentId getDocumentId() {
+        return documentId;
+    }
+
+    /**
      * Returns the stable plugin-facing source operations for this editor's lifetime.
      *
      * @return this editor's source capability
      */
     public final TextEditorAccess textEditorAccess() {
         return textEditorAccess;
+    }
+
+    /**
+     * Coordinates undo and redo of editor changes that belong to an operation spanning several documents.
+     * Implementations perform the editor's own step through {@link #getUndoManager()} when they handle a request.
+     */
+    public interface SharedUndoHistory {
+        /**
+         * Undoes the operation owning this editor's next undoable change, if any.
+         *
+         * @param editor editor whose undo was requested
+         * @return {@code true} if the request was handled, even when the shared operation was refused
+         */
+        boolean undo(TextEditorPane editor);
+
+        /**
+         * Redoes the operation owning this editor's next redoable change, if any.
+         *
+         * @param editor editor whose redo was requested
+         * @return {@code true} if the request was handled, even when the shared operation was refused
+         */
+        boolean redo(TextEditorPane editor);
+    }
+
+    /**
+     * Routes this editor's undo and redo requests through a shared history before its local history.
+     * Call on the JavaFX thread.
+     *
+     * @param history shared history, or {@code null} to use only the local history
+     */
+    public final void setSharedUndoHistory(SharedUndoHistory history) {
+        sharedUndoHistory = history;
+    }
+
+    /**
+     * Returns the shared history consulted before local undo and redo.
+     *
+     * @return shared history, or {@code null}
+     */
+    public final SharedUndoHistory getSharedUndoHistory() {
+        return sharedUndoHistory;
+    }
+
+    @Override
+    public void undo() {
+        SharedUndoHistory history = sharedUndoHistory;
+        if (history == null || !history.undo(this)) {
+            super.undo();
+        }
+    }
+
+    @Override
+    public void redo() {
+        SharedUndoHistory history = sharedUndoHistory;
+        if (history == null || !history.redo(this)) {
+            super.redo();
+        }
     }
 
     private static void requireEditorThread() {

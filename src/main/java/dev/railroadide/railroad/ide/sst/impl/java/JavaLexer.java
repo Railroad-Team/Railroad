@@ -43,9 +43,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
      * @throws NullPointerException if input is null
      */
     public JavaLexer(CharSequence input, String sourceId) {
-        this(input, sourceId, () -> {
-            // Default activity check does nothing
-        });
+        this(input, sourceId, new ActivityCheckpoint(ActivityCheckpoint::checkInterrupted));
     }
 
     /**
@@ -374,12 +372,21 @@ public class JavaLexer implements Lexer<JavaTokenType> {
             return token(JavaTokenType.SINGLE_CHAR_TOKENS.get(current), startOffset, startLine, startCol);
         }
 
-        if (Character.isJavaIdentifierStart(current)) {
+        if (Character.isJavaIdentifierStart(translatedAt(pos))) {
+            StringBuilder translated = null;
             do {
-                consume();
-            } while (hasNext() && Character.isJavaIdentifierPart(charAt(pos)));
+                int escape = JavaUnicodeEscapes.escapeEnd(input, pos);
+                if (escape > 0 && translated == null) {
+                    translated = new StringBuilder(slice(startOffset, pos));
+                }
+                if (translated != null) {
+                    translated.append(translatedAt(pos));
+                }
+                consume(escape > 0 ? escape - pos : 1);
+            } while (hasNext() && Character.isJavaIdentifierPart(translatedAt(pos)));
 
-            String lexeme = slice(startOffset, pos);
+            // Escaped identifiers keep their raw text; only their keyword status depends on the translation.
+            String lexeme = translated == null ? slice(startOffset, pos) : translated.toString();
             JavaTokenType type = JavaTokenType.listKeywords().getOrDefault(lexeme, JavaTokenType.IDENTIFIER);
             if ("true".equals(lexeme) || "false".equals(lexeme)) {
                 type = JavaTokenType.BOOLEAN_LITERAL;
@@ -803,6 +810,11 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
     private char charAt(int pos) {
         return this.input.charAt(pos);
+    }
+
+    private char translatedAt(int pos) {
+        int escape = JavaUnicodeEscapes.escapeEnd(input, pos);
+        return escape > 0 ? JavaUnicodeEscapes.decoded(input, escape) : charAt(pos);
     }
 
     private char peek(int offset) {

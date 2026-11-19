@@ -1,14 +1,21 @@
 package dev.railroadide.railroad.ide;
 
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
+import org.jspecify.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 
 /**
- * Maintains bounded back and forward tab histories independently for each workspace mode.
+ * Maintains bounded back and forward editor histories independently for each workspace mode. Entries identify a
+ * tab and, for explicit navigation such as Go to Definition, the caret position in the exact document revision
+ * that was visible. Positions are transient and are not persisted with the layout.
  */
 public final class WorkspaceTabNavigationHistory {
     /**
@@ -19,30 +26,105 @@ public final class WorkspaceTabNavigationHistory {
     private final Map<String, Cursor> cursors = new LinkedHashMap<>();
 
     /**
+     * A caret offset in one document revision. Consumers must not apply it to a different revision.
+     *
+     * @param documentId document containing the offset
+     * @param version revision in which the offset was recorded
+     * @param offset zero-based UTF-16 caret offset
+     */
+    public record Position(DocumentId documentId, DocumentVersion version, int offset) {
+        /**
+         * Creates a revision-bound caret position.
+         *
+         * @param documentId document containing the offset
+         * @param version revision in which the offset was recorded
+         * @param offset zero-based UTF-16 caret offset
+         */
+        public Position {
+            Objects.requireNonNull(documentId, "documentId");
+            Objects.requireNonNull(version, "version");
+            if (offset < 0)
+                throw new IllegalArgumentException("Offset must be non-negative");
+        }
+    }
+
+    /**
+     * A history destination: a tab and, when recorded by explicit navigation, a caret position within it.
+     *
+     * @param tabId tab identifier
+     * @param position caret position, or {@code null} for a plain tab visit
+     */
+    public record Destination(String tabId, @Nullable Position position) {
+    }
+
+    /**
      * Records a tab visit, discarding forward history and bounding the history size.
      *
      * @param modeId workspace mode identifier
      * @param tabId visited tab identifier
      */
     public void visit(String modeId, String tabId) {
+        visit(modeId, tabId, null);
+    }
+
+    /**
+     * Records a visit to a position within a tab. A visit to the current tab only replaces its position when the
+     * current entry has none; a different position in the same tab becomes a new entry so that it can be
+     * returned to. Forward history is discarded whenever an entry is added.
+     *
+     * @param modeId workspace mode identifier
+     * @param tabId visited tab identifier
+     * @param position caret position within the tab, or {@code null} for a plain tab visit
+     */
+    public void visit(String modeId, String tabId, @Nullable Position position) {
         String normalizedModeId = normalize(modeId);
         String normalizedTabId = normalize(tabId);
         if (normalizedModeId == null || normalizedTabId == null)
             return;
 
         Cursor cursor = cursors.computeIfAbsent(normalizedModeId, _ -> new Cursor());
-        if (cursor.current().filter(normalizedTabId::equals).isPresent())
-            return;
+        Entry current = cursor.current().orElse(null);
+        if (current != null && current.tabId.equals(normalizedTabId)) {
+            if (position == null || position.equals(current.position))
+                return;
+
+            if (current.position == null) {
+                current.position = position;
+                return;
+            }
+        }
 
         if (cursor.index + 1 < cursor.entries.size()) {
             cursor.entries.subList(cursor.index + 1, cursor.entries.size()).clear();
         }
-        cursor.entries.add(normalizedTabId);
+        cursor.entries.add(new Entry(normalizedTabId, position));
         cursor.index = cursor.entries.size() - 1;
         while (cursor.entries.size() > MAX_ENTRIES_PER_MODE) {
             cursor.entries.removeFirst();
             cursor.index--;
         }
+    }
+
+    /**
+     * Replaces the position of the current entry when it belongs to the supplied tab, so that returning to it
+     * restores the latest caret rather than an earlier one. Other entries and forward history are unchanged.
+     *
+     * @param modeId workspace mode identifier
+     * @param tabId tab expected to be current
+     * @param position caret position within the tab
+     * @return whether the current entry belonged to the tab and was updated
+     */
+    public boolean updateCurrent(String modeId, String tabId, Position position) {
+        Objects.requireNonNull(position, "position");
+        String normalizedModeId = normalize(modeId);
+        String normalizedTabId = normalize(tabId);
+        Cursor cursor = normalizedModeId == null ? null : cursors.get(normalizedModeId);
+        Entry current = cursor == null ? null : cursor.current().orElse(null);
+        if (current == null || !current.tabId.equals(normalizedTabId))
+            return false;
+
+        current.position = position;
+        return true;
     }
 
     /**
@@ -53,7 +135,7 @@ public final class WorkspaceTabNavigationHistory {
      * @return tab identifier, or empty if no earlier available tab exists
      */
     public Optional<String> back(String modeId, Predicate<String> available) {
-        return move(modeId, -1, available);
+        return backDestination(modeId, available).map(Destination::tabId);
     }
 
     /**
@@ -64,6 +146,28 @@ public final class WorkspaceTabNavigationHistory {
      * @return tab identifier, or empty if no later available tab exists
      */
     public Optional<String> forward(String modeId, Predicate<String> available) {
+        return forwardDestination(modeId, available).map(Destination::tabId);
+    }
+
+    /**
+     * Moves to the nearest earlier available entry, including its recorded position.
+     *
+     * @param modeId workspace mode identifier
+     * @param available predicate identifying tabs that still exist
+     * @return destination, or empty if no earlier available entry exists
+     */
+    public Optional<Destination> backDestination(String modeId, Predicate<String> available) {
+        return move(modeId, -1, available);
+    }
+
+    /**
+     * Moves to the nearest later available entry, including its recorded position.
+     *
+     * @param modeId workspace mode identifier
+     * @param available predicate identifying tabs that still exist
+     * @return destination, or empty if no later available entry exists
+     */
+    public Optional<Destination> forwardDestination(String modeId, Predicate<String> available) {
         return move(modeId, 1, available);
     }
 
@@ -90,7 +194,7 @@ public final class WorkspaceTabNavigationHistory {
     }
 
     /**
-     * Removes unavailable entries and captures the remaining history for a mode.
+     * Removes unavailable entries and captures the remaining history for a mode. Positions are not captured.
      *
      * @param modeId workspace mode identifier
      * @param available predicate identifying tabs that still exist
@@ -110,7 +214,9 @@ public final class WorkspaceTabNavigationHistory {
             cursors.remove(normalizedModeId);
             return IDELayoutState.TabNavigationState.empty();
         }
-        return new IDELayoutState.TabNavigationState(cursor.entries, cursor.index);
+        return new IDELayoutState.TabNavigationState(
+            cursor.entries.stream().map(entry -> entry.tabId).toList(),
+            cursor.index);
     }
 
     /**
@@ -141,7 +247,7 @@ public final class WorkspaceTabNavigationHistory {
         cursors.clear();
     }
 
-    private Optional<String> move(String modeId, int direction, Predicate<String> available) {
+    private Optional<Destination> move(String modeId, int direction, Predicate<String> available) {
         String normalizedModeId = normalize(modeId);
         Cursor cursor = normalizedModeId == null ? null : cursors.get(normalizedModeId);
         if (cursor == null)
@@ -149,10 +255,10 @@ public final class WorkspaceTabNavigationHistory {
 
         int candidateIndex = cursor.index + direction;
         while (candidateIndex >= 0 && candidateIndex < cursor.entries.size()) {
-            String candidate = cursor.entries.get(candidateIndex);
-            if (available.test(candidate)) {
+            Entry candidate = cursor.entries.get(candidateIndex);
+            if (available.test(candidate.tabId)) {
                 cursor.index = candidateIndex;
-                return Optional.of(candidate);
+                return Optional.of(new Destination(candidate.tabId, candidate.position));
             }
             candidateIndex += direction;
         }
@@ -167,7 +273,7 @@ public final class WorkspaceTabNavigationHistory {
 
         int candidateIndex = cursor.index + direction;
         while (candidateIndex >= 0 && candidateIndex < cursor.entries.size()) {
-            if (available.test(cursor.entries.get(candidateIndex)))
+            if (available.test(cursor.entries.get(candidateIndex).tabId))
                 return true;
             candidateIndex += direction;
         }
@@ -178,8 +284,18 @@ public final class WorkspaceTabNavigationHistory {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
+    private static final class Entry {
+        private final String tabId;
+        private @Nullable Position position;
+
+        private Entry(String tabId, @Nullable Position position) {
+            this.tabId = tabId;
+            this.position = position;
+        }
+    }
+
     private static final class Cursor {
-        private final List<String> entries;
+        private final List<Entry> entries;
         private int index;
 
         private Cursor() {
@@ -188,20 +304,20 @@ public final class WorkspaceTabNavigationHistory {
         }
 
         private Cursor(List<String> entries, int index) {
-            this.entries = new ArrayList<>(entries);
+            this.entries = new ArrayList<>(entries.stream().map(tabId -> new Entry(tabId, null)).toList());
             this.index = Math.clamp(index, 0, entries.size() - 1);
         }
 
-        private Optional<String> current() {
+        private Optional<Entry> current() {
             return index < 0 || index >= entries.size() ? Optional.empty() : Optional.of(entries.get(index));
         }
 
         private void retain(Predicate<String> available) {
             int retainedThroughCurrent = 0;
-            var retained = new ArrayList<String>();
+            var retained = new ArrayList<Entry>();
             for (int entryIndex = 0; entryIndex < entries.size(); entryIndex++) {
-                String entry = entries.get(entryIndex);
-                if (!available.test(entry))
+                Entry entry = entries.get(entryIndex);
+                if (!available.test(entry.tabId))
                     continue;
 
                 retained.add(entry);

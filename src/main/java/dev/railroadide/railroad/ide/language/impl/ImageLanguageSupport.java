@@ -8,6 +8,7 @@ import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.utility.FileUtils;
 
 import java.nio.file.Path;
+import dev.railroadide.railroad.ide.sst.provider.api.LanguageMatcher;
 
 /**
  * Opens recognized image formats in an image viewer.
@@ -23,8 +24,8 @@ public class ImageLanguageSupport extends BaseBinaryLanguageSupport {
     }
 
     @Override
-    public boolean supports(Path path) {
-        return FileUtils.isImageFile(path);
+    public LanguageMatcher matcher() {
+        return LanguageMatcher.content(input -> FileUtils.isImageFile(input.path()));
     }
 
     @Override

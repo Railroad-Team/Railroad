@@ -316,16 +316,28 @@ public final class FileUtils {
     public static boolean isBinaryFile(Path path) throws RuntimeException {
         try (var stream = Files.newInputStream(path)) {
             byte[] buffer = new byte[1024];
-            int read = stream.read(buffer);
-            for (int i = 0; i < read; i++) {
-                if (buffer[i] == 0)
-                    return true;
-            }
-
-            return false;
+            return isBinaryContent(buffer, stream.read(buffer));
         } catch (IOException exception) {
             throw new RuntimeException("Failed to check if file is binary", exception);
         }
+    }
+
+    /**
+     * Checks whether file content is binary using the same rule as {@link #isBinaryFile(Path)}: a NUL byte within
+     * its first 1024 bytes.
+     *
+     * @param content file content
+     * @param length number of valid bytes at the start of {@code content}; negative for none
+     * @return true if the content is binary, false otherwise
+     */
+    public static boolean isBinaryContent(byte[] content, int length) {
+        int limit = Math.min(Math.min(length, content.length), 1024);
+        for (int i = 0; i < limit; i++) {
+            if (content[i] == 0)
+                return true;
+        }
+
+        return false;
     }
 
     /**

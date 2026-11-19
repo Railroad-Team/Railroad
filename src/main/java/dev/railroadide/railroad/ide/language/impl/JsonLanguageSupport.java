@@ -10,6 +10,8 @@ import dev.railroadide.railroad.plugin.spi.dto.Project;
 
 import java.nio.file.Path;
 import java.util.Set;
+import dev.railroadide.railroad.ide.sst.provider.api.*;
+import dev.railroadide.railroad.ide.language.LanguageCapabilities;
 
 /**
  * Provides JSON text editing with JSON syntax highlighting.
@@ -20,6 +22,17 @@ public final class JsonLanguageSupport extends BaseLanguageSupport {
      */
     public JsonLanguageSupport() {
         super("json", "JSON", Set.of("json"));
+    }
+
+    @Override
+    public Set<CapabilityKey<?>> supportedCapabilities() {
+        return Set.of(LanguageCapabilities.HIGHLIGHTING);
+    }
+
+    @Override
+    public LanguageSession openSession(LanguageSessionContext context) {
+        return new LanguageSession(CapabilityRegistry.builder()
+            .add(LanguageCapabilities.HIGHLIGHTING, JsonSyntaxHighlighting::computeHighlighting).build());
     }
 
     @Override

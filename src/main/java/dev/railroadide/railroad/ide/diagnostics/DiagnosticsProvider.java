@@ -49,9 +49,31 @@ public interface DiagnosticsProvider<D extends EditorDiagnostic<?>> {
         throws CancellationException, DeadlineExceededException {
         Objects.requireNonNull(context, "context");
         context.checkActive();
-        List<D> computed = compute(context.workspaceSnapshot(), context.documentSnapshot().id());
+        List<D> computed = validated(compute(context.workspaceSnapshot(), context.documentSnapshot().id()), context);
         context.checkActive();
         return new FeatureResult<>(context, computed);
+    }
+
+    /**
+     * Copies diagnostics and rejects reports targeting another document or revision.
+     * Consumers must apply this check even when a provider overrides the request method.
+     * Duplicate reports are retained, including their source and origin.
+     *
+     * @param diagnostics reports to publish
+     * @param context exact request whose selected document the reports must describe
+     * @param <D> diagnostic representation
+     * @return an immutable, validated list
+     */
+    static <D extends EditorDiagnostic<?>> List<D> validated(List<D> diagnostics, FeatureRequestContext context) {
+        List<D> copy = List.copyOf(diagnostics);
+        for (D diagnostic : copy) {
+            context.checkActive();
+            diagnostic.location().validateAgainst(context.documentSnapshot());
+            diagnostic.relatedInformation().forEach(related -> context.workspaceSnapshot()
+                .document(related.location().documentId()).ifPresent(related.location()::validateAgainst));
+        }
+        context.checkActive();
+        return copy;
     }
 
     /**

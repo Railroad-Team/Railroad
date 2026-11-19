@@ -18,7 +18,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticCompletionEngine;
 import dev.railroadide.railroad.ide.sst.project.JavaSourceSnapshotIndex;
-import javax.tools.Diagnostic;
+import dev.railroadide.railroad.ide.diagnostics.DiagnosticSeverity;
 import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -250,7 +250,7 @@ public class JavaWorkspaceAnalysisTest {
             """);
         store.publishBacking(use);
         var diagnostics = new JavaDiagnosticsProvider().compute(store.capture(), use.id());
-        assertTrue(diagnostics.stream().noneMatch(diagnostic -> diagnostic.kind() == Diagnostic.Kind.ERROR),
+        assertTrue(diagnostics.stream().noneMatch(diagnostic -> diagnostic.kind() == DiagnosticSeverity.ERROR),
             diagnostics::toString);
         JavaWorkspaceAnalysis analysis = new JavaWorkspaceAnalysisProvider().capture(store.capture());
         for (String receiver : List.of("Factory.value()", "derived")) {
@@ -317,7 +317,7 @@ public class JavaWorkspaceAnalysisTest {
         WorkspaceSnapshot captured = store.capture();
         store.publishOverlay(next(dependency, "package demo; public class Dep {}"));
         var diagnostics = new JavaDiagnosticsProvider().compute(captured, use.id());
-        assertTrue(diagnostics.stream().noneMatch(diagnostic -> diagnostic.kind() == Diagnostic.Kind.ERROR),
+        assertTrue(diagnostics.stream().noneMatch(diagnostic -> diagnostic.kind() == DiagnosticSeverity.ERROR),
             diagnostics::toString);
 
         TextDocumentSnapshot completion = source("Complete.java",

@@ -7,6 +7,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.List;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -24,6 +26,21 @@ public class JavaArtifactFingerprintTest {
         Files.writeString(jar, "version two");
 
         assertNotEquals(first, JavaArtifactFingerprint.capture(List.of(jar), jdk));
+    }
+
+    @Test
+    public void directoryTraversalObservesCancellationBeforeProducingAFingerprint() throws Exception {
+        write("classes/demo/A.class", "one");
+        write("classes/demo/B.class", "two");
+        Path jdk = jdk("jdk");
+        var checks = new AtomicInteger();
+        assertThrows(CancellationException.class, () -> JavaArtifactFingerprint.capture(
+            List.of(root.resolve("classes")), jdk, () -> {
+                if (checks.incrementAndGet() == 4)
+                    throw new CancellationException();
+            }));
+        assertEquals(4, checks.get());
+        assertNotNull(JavaArtifactFingerprint.capture(List.of(root.resolve("classes")), jdk));
     }
 
     @Test

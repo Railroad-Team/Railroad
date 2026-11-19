@@ -28,6 +28,11 @@ public record JdtCompletionProvider(@Nullable Path filePath, String[] systemModu
     }
 
     @Override
+    public boolean shouldTrigger(String insertedText) {
+        return insertedText.endsWith(".");
+    }
+
+    @Override
     public @Nullable CompletionResult compute(DocumentSnapshot snapshot, int triggerAt) {
         if (!(snapshot instanceof TextDocumentSnapshot textSnapshot)
             || !JavaLanguageSupport.LANGUAGE_ID.equals(textSnapshot.languageId()))
@@ -78,7 +83,7 @@ public record JdtCompletionProvider(@Nullable Path filePath, String[] systemModu
         if (suggestions.isEmpty())
             return null;
 
-        return new CompletionResult(triggerAt, suggestions);
+        return new CompletionResult(triggerAt + 1, suggestions);
     }
 
     private CompletionTarget resolveCompletionTarget(ASTNode node) {

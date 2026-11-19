@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.plugin.spi.inspection;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
@@ -92,7 +93,7 @@ public class JavaRuleContextTest {
         assertEquals(2, context.importEntries().size());
         assertTrue(context.isResolvableType("java.util.List"));
         assertTrue(context.hasResolvableStaticMember("java.lang.Math", "max"));
-        assertEquals(SymbolKind.METHOD,
+        assertEquals(JavaSymbolKind.METHOD,
             context.resolveStaticImportedMethods("max", maxInvocation, 2).getFirst().kind());
     }
 

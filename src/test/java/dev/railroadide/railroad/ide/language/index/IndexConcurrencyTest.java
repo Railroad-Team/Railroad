@@ -23,10 +23,79 @@ public class IndexConcurrencyTest {
     public Path root;
 
     @Test
-    public void interruptingAWaitingCallerDoesNotCancelTheInitializer() throws Exception {
-        var service = new ProjectLanguageIndexService();
+    public void invalidationCooperativelyStopsAnActiveProvider() throws Exception {
+        assertCooperativeStop("invalidate");
+    }
+
+    @Test
+    public void configurationRefreshCooperativelyStopsAnActiveProvider() throws Exception {
+        assertCooperativeStop("refresh");
+    }
+
+    @Test
+    public void projectClosureCooperativelyStopsAnActiveProvider() throws Exception {
+        assertCooperativeStop("close");
+    }
+
+    @Test
+    public void pluginUnloadCooperativelyStopsAnActiveProvider() throws Exception {
+        assertCooperativeStop("unload");
+    }
+
+    @Test
+    public void pluginUnloadReleasesPublishedIndex() throws Exception {
+        var service = IndexTestProviders.service();
         var indexer = new TestIndexer();
-        service.registerIndexer(indexer);
+        indexer.release.countDown();
+        IndexTestProviders.indexer(service, indexer);
+        var context = context(service);
+        assertNotNull(service.index(context, "test"));
+        IndexTestProviders.runtime(service).unregisterOwner("test");
+        assertNull(service.current(context.project(), "test"));
+        assertFalse(service.hasIndexer(context.project(), "test"));
+        assertNull(service.index(context, "test"));
+    }
+
+    private void assertCooperativeStop(String action) throws Exception {
+        var service = IndexTestProviders.service();
+        var indexer = new TestIndexer() {
+            @Override
+            public Index build(ProjectIndexContext context, Collection<Path> files) {
+                entered.countDown();
+                while (release.getCount() > 0) {
+                    context.checkActive();
+                    Thread.onSpinWait();
+                }
+                return new Index(Map.of());
+            }
+        };
+        IndexTestProviders.indexer(service, indexer);
+        var context = context(service);
+        try (var workers = Executors.newSingleThreadExecutor()) {
+            var task = workers.submit(() -> service.index(context, "test"));
+            try {
+                assertTrue(indexer.entered.await(5, TimeUnit.SECONDS));
+                switch (action) {
+                    case "invalidate" -> service.invalidate(context.project(), "test");
+                    case "refresh" -> service.refreshProject(context.session());
+                    case "close" -> service.closeProject(context.session());
+                    case "unload" -> IndexTestProviders.runtime(service).unregisterOwner("test");
+                    default -> throw new AssertionError(action);
+                }
+                var failure = assertThrows(ExecutionException.class, () -> task.get(5, TimeUnit.SECONDS));
+                assertInstanceOf(CancellationException.class, failure.getCause());
+                assertNull(service.current(context.project(), "test"));
+            } finally {
+                indexer.release.countDown();
+            }
+        }
+    }
+
+    @Test
+    public void interruptingAWaitingCallerDoesNotCancelTheInitializer() throws Exception {
+        var service = IndexTestProviders.service();
+        var indexer = new TestIndexer();
+        IndexTestProviders.indexer(service, indexer);
         var context = context(service);
         try (var workers = Executors.newFixedThreadPool(2)) {
             var owner = workers.submit(() -> service.index(context, "test"));
@@ -60,14 +129,14 @@ public class IndexConcurrencyTest {
 
     @Test
     public void invalidationDuringSavePreparationRejectsTheFinalReplacement() throws Exception {
-        var service = new ProjectLanguageIndexService();
+        var service = IndexTestProviders.service();
         var indexer = new TestIndexer();
         indexer.release.countDown();
-        service.registerIndexer(indexer);
+        IndexTestProviders.indexer(service, indexer);
         var entered = new CountDownLatch(1);
         var release = new CountDownLatch(1);
         var commits = new AtomicInteger();
-        service.registerPersistence(new ProjectLanguageIndexPersistence<Index>() {
+        IndexTestProviders.persistence(service, new ProjectLanguageIndexPersistence<Index>() {
             public String languageId() {
                 return "test";
             }
@@ -102,10 +171,10 @@ public class IndexConcurrencyTest {
 
     @Test
     public void refreshedContextRejectsOldRebuildBeforeItCanInvalidateTheNewIndex() {
-        var service = new ProjectLanguageIndexService();
+        var service = IndexTestProviders.service();
         var indexer = new TestIndexer();
         indexer.release.countDown();
-        service.registerIndexer(indexer);
+        IndexTestProviders.indexer(service, indexer);
         var old = context(service);
         service.index(old, "test");
         service.refreshProject(old.session());
@@ -117,7 +186,7 @@ public class IndexConcurrencyTest {
 
     @Test
     public void initializationFailureAllowsASubsequentRetry() {
-        var service = new ProjectLanguageIndexService();
+        var service = IndexTestProviders.service();
         var attempts = new AtomicInteger();
         var indexer = new TestIndexer() {
             public Index build(ProjectIndexContext context, Collection<Path> files) {
@@ -127,7 +196,7 @@ public class IndexConcurrencyTest {
             }
         };
         indexer.release.countDown();
-        service.registerIndexer(indexer);
+        IndexTestProviders.indexer(service, indexer);
         var context = context(service);
         assertThrows(IllegalStateException.class, () -> service.index(context, "test"));
         assertNull(service.current(context, "test"));
@@ -137,15 +206,15 @@ public class IndexConcurrencyTest {
 
     @Test
     public void synchronousPreparationCannotCommitAfterCloseAndReopen() throws Exception {
-        var service = new ProjectLanguageIndexService();
+        var service = IndexTestProviders.service();
         var indexer = new TestIndexer();
         indexer.release.countDown();
-        service.registerIndexer(indexer);
+        IndexTestProviders.indexer(service, indexer);
         var entered = new CountDownLatch(1);
         var release = new CountDownLatch(1);
         var writes = new AtomicInteger();
         var disk = new AtomicReference<Index>();
-        service.registerPersistence(new ProjectLanguageIndexPersistence<Index>() {
+        IndexTestProviders.persistence(service, new ProjectLanguageIndexPersistence<Index>() {
             public String languageId() {
                 return "test";
             }
@@ -185,11 +254,11 @@ public class IndexConcurrencyTest {
 
     @Test
     public void persistenceFailureDoesNotDiscardPublishedMemory() {
-        var service = new ProjectLanguageIndexService();
+        var service = IndexTestProviders.service();
         var indexer = new TestIndexer();
         indexer.release.countDown();
-        service.registerIndexer(indexer);
-        service.registerPersistence(new ProjectLanguageIndexPersistence<Index>() {
+        IndexTestProviders.indexer(service, indexer);
+        IndexTestProviders.persistence(service, new ProjectLanguageIndexPersistence<Index>() {
             public String languageId() {
                 return "test";
             }
@@ -210,9 +279,9 @@ public class IndexConcurrencyTest {
 
     @Test
     public void concurrentColdCallsShareOneConstruction() throws Exception {
-        var service = new ProjectLanguageIndexService();
+        var service = IndexTestProviders.service();
         var indexer = new TestIndexer();
-        service.registerIndexer(indexer);
+        IndexTestProviders.indexer(service, indexer);
         var context = context(service);
         try (var workers = Executors.newFixedThreadPool(2)) {
             var first = workers.submit(() -> service.index(context, "test"));
@@ -232,9 +301,9 @@ public class IndexConcurrencyTest {
 
     @Test
     public void invalidationDoesNotWaitForConstructionAndRejectsItsResult() throws Exception {
-        var service = new ProjectLanguageIndexService();
+        var service = IndexTestProviders.service();
         var indexer = new TestIndexer();
-        service.registerIndexer(indexer);
+        IndexTestProviders.indexer(service, indexer);
         var context = context(service);
         try (var workers = Executors.newFixedThreadPool(2)) {
             var old = workers.submit(() -> service.index(context, "test"));
@@ -253,9 +322,9 @@ public class IndexConcurrencyTest {
 
     @Test
     public void closedSessionCannotPublishIntoReopenedPath() throws Exception {
-        var service = new ProjectLanguageIndexService();
+        var service = IndexTestProviders.service();
         var indexer = new TestIndexer();
-        service.registerIndexer(indexer);
+        IndexTestProviders.indexer(service, indexer);
         var oldContext = context(service);
         try (var workers = Executors.newFixedThreadPool(2)) {
             var old = workers.submit(() -> service.index(oldContext, "test"));
@@ -278,10 +347,10 @@ public class IndexConcurrencyTest {
 
     @Test
     public void concurrentFileChangesApplyToLatestPredecessor() throws Exception {
-        var service = new ProjectLanguageIndexService();
+        var service = IndexTestProviders.service();
         var indexer = new TestIndexer();
         indexer.release.countDown();
-        service.registerIndexer(indexer);
+        IndexTestProviders.indexer(service, indexer);
         var context = context(service);
         service.index(context, "test");
         Path a = root.resolve("A.test"), b = root.resolve("B.test");

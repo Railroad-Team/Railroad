@@ -2,8 +2,10 @@ package dev.railroadide.railroad.ide;
 
 import dev.railroadide.railroad.ide.language.LanguageSupports;
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import java.io.IOException;
 import java.nio.file.*;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -79,6 +81,45 @@ public class ProjectDocumentSynchronizerTest {
             assertThrows(ExecutionException.class,
                 () -> synchronizer.refresh(file).get(10, TimeUnit.SECONDS));
             assertEquals(retained, store.capture());
+        }
+    }
+
+    @Test
+    public void deletingOneHardLinkKeepsTheDocumentPublishedAtTheSurvivingLink() throws Exception {
+        LanguageSupports.initialize();
+        Path first = directory.resolve("First.txt");
+        Path second = directory.resolve("Second.txt");
+        Files.writeString(first, "shared");
+        try {
+            Files.createLink(second, first);
+        } catch (UnsupportedOperationException | IOException exception) {
+            Assumptions.abort("Hard links are unavailable on this filesystem");
+        }
+        var identities = new DocumentIdentityRegistry();
+        DocumentStore store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()));
+        try (ProjectDocumentSynchronizer synchronizer = new ProjectDocumentSynchronizer(directory, store, identities,
+            _ -> false, Runnable::run)) {
+            synchronizer.initialScan().get(10, TimeUnit.SECONDS);
+            DocumentId id = identities.findIdentity(DocumentUri.fromPath(first)).orElseThrow().id();
+            assertEquals(id, identities.findIdentity(DocumentUri.fromPath(second)).orElseThrow().id());
+            Path deleted = store.current(id).orElseThrow().uri().filePath().orElseThrow();
+            Path surviving = deleted.equals(first) ? second : first;
+
+            Files.delete(deleted);
+            synchronizer.refresh(deleted).get(10, TimeUnit.SECONDS);
+
+            DocumentSnapshot current = store.current(id).orElseThrow();
+            assertTrue(Files.isSameFile(surviving, current.uri().filePath().orElseThrow()), current.uri()::toString);
+            assertEquals("shared", ((TextDocumentSnapshot) current).text());
+            assertEquals(id, identities.findIdentity(DocumentUri.fromPath(surviving)).orElseThrow().id());
+            assertTrue(identities.findIdentity(DocumentUri.fromPath(deleted)).isEmpty());
+
+            Files.writeString(deleted, "independent");
+            synchronizer.refresh(deleted).get(10, TimeUnit.SECONDS);
+            DocumentId recreated = identities.findIdentity(DocumentUri.fromPath(deleted)).orElseThrow().id();
+            assertNotEquals(id, recreated);
+            assertEquals("independent", ((TextDocumentSnapshot) store.current(recreated).orElseThrow()).text());
+            assertEquals("shared", ((TextDocumentSnapshot) store.current(id).orElseThrow()).text());
         }
     }
 }

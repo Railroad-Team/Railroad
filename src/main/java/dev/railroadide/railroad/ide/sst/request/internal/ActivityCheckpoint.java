@@ -3,6 +3,7 @@ package dev.railroadide.railroad.ide.sst.request.internal;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 
 /**
  * Shares one cooperative checking budget across the hot loops of a synchronous operation.
@@ -21,6 +22,17 @@ public final class ActivityCheckpoint implements Runnable {
     private final Runnable activityCheck;
     private final int interval;
     private int remaining;
+
+    /**
+     * Checks interruption for synchronous callers that do not supply a request context.
+     * The interrupted status is preserved.
+     *
+     * @throws CancellationException when the current worker has been interrupted
+     */
+    public static void checkInterrupted() {
+        if (Thread.currentThread().isInterrupted())
+            throw new CancellationException("SST work was interrupted");
+    }
 
     /**
      * Creates a checkpoint that checks at most every 256 polls between immediate checks.

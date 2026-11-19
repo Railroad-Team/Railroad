@@ -15,7 +15,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import javax.tools.Diagnostic;
+import dev.railroadide.railroad.ide.diagnostics.DiagnosticSeverity;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,7 +58,7 @@ public class CodeEditorWorkspaceTest {
         TestEditor editor = onFx(() -> {
             Project project = new RailroadProject(directory, "Debounced workspace", new WritableImage(1, 1));
             var pane = new TestEditor(project, id, file,
-                new CodeEditorConfig("java", null, provider, null, null));
+                new CodeEditorConfig("java", null, provider, null, null, null));
             store.publishBacking(pane.captureSnapshot());
             pane.setDocumentStore(store);
             return pane;
@@ -158,13 +158,13 @@ public class CodeEditorWorkspaceTest {
                 }
                 TextDocumentSnapshot document = (TextDocumentSnapshot) workspace.document(documentId).orElseThrow();
                 return List.of(new TextEditorDiagnostic(Location.TextLocation.from(document, 0, 1),
-                    Diagnostic.Kind.ERROR, call == 1 ? "OLD" : "NEW", "result"));
+                    DiagnosticSeverity.ERROR, call == 1 ? "OLD" : "NEW", "result"));
             }
         };
         TestEditor editor = onFx(() -> {
             Project project = new RailroadProject(directory, "Workspace retry", new WritableImage(1, 1));
             var pane = new TestEditor(project, id, file,
-                new CodeEditorConfig("java", null, provider, null, null));
+                new CodeEditorConfig("java", null, provider, null, null, null));
             store.publishBacking(pane.captureSnapshot());
             pane.setDocumentStore(store);
             return pane;
@@ -247,7 +247,7 @@ public class CodeEditorWorkspaceTest {
         };
         CodeEditorPane editor = onFx(() -> {
             Project project = new RailroadProject(directory, "Live completion", new WritableImage(1, 1));
-            var config = new CodeEditorConfig("java", completion, null, null, null);
+            var config = new CodeEditorConfig("java", completion, null, null, null, null);
             CodeEditorPane pane = new CodeEditorPane(project, id, file, config) {
                 @Override
                 protected boolean shouldRequestSignatureHelp(String text, int caret, boolean changed) {
@@ -318,8 +318,13 @@ public class CodeEditorWorkspaceTest {
         Files.writeString(file, "class Example {}");
         var release = new CountDownLatch(1);
         CompletableFuture<WorkspaceSnapshot> entered = new CompletableFuture<>();
-        AtomicReference<WorkspaceSnapshot> completedWith = new AtomicReference<>();
+        CompletableFuture<WorkspaceSnapshot> completedWith = new CompletableFuture<>();
         CompletionProvider completion = new CompletionProvider() {
+            @Override
+            public boolean shouldTrigger(String insertedText) {
+                return false;
+            }
+
             @Override
             public CompletionResult compute(DocumentSnapshot snapshot, int offset) {
                 throw new AssertionError("Editor must pass the captured workspace");
@@ -328,7 +333,7 @@ public class CodeEditorWorkspaceTest {
             @Override
             public CompletionResult compute(WorkspaceSnapshot workspace, DocumentId id, int offset) {
                 block(workspace, entered, release);
-                completedWith.set(workspace);
+                completedWith.complete(workspace);
                 return new CompletionResult(offset, List.of(new CompletionItem("old", "old")));
             }
         };
@@ -343,10 +348,10 @@ public class CodeEditorWorkspaceTest {
                 block(workspace, entered, release);
                 if (workspace != entered.getNow(null))
                     return List.of();
-                completedWith.set(workspace);
+                completedWith.complete(workspace);
                 TextDocumentSnapshot snapshot = (TextDocumentSnapshot) workspace.document(id).orElseThrow();
                 return List.of(new TextEditorDiagnostic(Location.TextLocation.from(snapshot, 0, 1),
-                    Diagnostic.Kind.ERROR, "OLD", "old result"));
+                    DiagnosticSeverity.ERROR, "OLD", "old result"));
             }
         };
         SignatureHelpProvider signature = new SignatureHelpProvider() {
@@ -358,7 +363,7 @@ public class CodeEditorWorkspaceTest {
             @Override
             public SignatureHelp compute(WorkspaceSnapshot workspace, DocumentId id, int caret) {
                 block(workspace, entered, release);
-                completedWith.set(workspace);
+                completedWith.complete(workspace);
                 return new SignatureHelp("Example", "Example", "old", List.of(), 0, false, "void", false);
             }
         };
@@ -372,7 +377,7 @@ public class CodeEditorWorkspaceTest {
             Project project = new RailroadProject(directory, "Workspace request", new WritableImage(1, 1));
             var config = new CodeEditorConfig("java", feature.equals("completion") ? completion : null,
                 feature.equals("diagnostics") ? diagnostics : null, feature.equals("signature") ? signature : null,
-                null);
+                null, null);
             var pane = new TestEditor(project, id, file, config);
             store.publishBacking(pane.captureSnapshot());
             pane.setDocumentStore(store);
@@ -401,6 +406,7 @@ public class CodeEditorWorkspaceTest {
             assertEquals("class Example {}", original.text());
             assertSame(other, captured.document(otherId).orElseThrow());
             release.countDown();
+            completedWith.get(10, TimeUnit.SECONDS);
             editor.awaitWorkerCompletion();
             onFx(() -> {
                 assertSame(captured, completedWith.get());
@@ -428,11 +434,17 @@ public class CodeEditorWorkspaceTest {
         CountDownLatch release
     ) {
         entered.complete(workspace);
-        try {
-            assertTrue(release.await(10, TimeUnit.SECONDS));
-        } catch (InterruptedException exception) {
+        boolean interrupted = false;
+        while (true) {
+            try {
+                assertTrue(release.await(10, TimeUnit.SECONDS));
+                break;
+            } catch (InterruptedException exception) {
+                interrupted = true;
+            }
+        }
+        if (interrupted) {
             Thread.currentThread().interrupt();
-            throw new AssertionError(exception);
         }
     }
 
@@ -476,13 +488,7 @@ public class CodeEditorWorkspaceTest {
         }
 
         private void awaitWorkerCompletion() throws Exception {
-            ThreadPoolExecutor executor = (ThreadPoolExecutor) worker;
-            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-            while ((executor.getActiveCount() != 0 || !executor.getQueue().isEmpty()) && System.nanoTime() < deadline) {
-                Thread.sleep(5);
-            }
-            assertEquals(0, executor.getActiveCount());
-            assertTrue(executor.getQueue().isEmpty());
+            featureRequests.completion().get(10, TimeUnit.SECONDS);
         }
     }
 }

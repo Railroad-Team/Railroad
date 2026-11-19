@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.ide.language.index.IndexTestProviders;
 import com.google.gson.JsonObject;
 import dev.railroadide.railroad.gradle.project.GradleManager;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
@@ -30,6 +31,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.HashMap;
 import java.util.Map;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
+import dev.railroadide.railroad.ide.language.impl.index.JavaLanguageIndexContextContributor;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -246,14 +248,16 @@ public class ProjectLanguageIndexServiceTest {
     private static final class TestJavaProjectIndexAccess {
         private static final String LANGUAGE_ID = "java";
 
-        private final ProjectLanguageIndexService indexService = new ProjectLanguageIndexService();
+        private final ProjectLanguageIndexService indexService = IndexTestProviders.service();
         private final DefaultProjectIndexContextResolver contextResolver = new DefaultProjectIndexContextResolver();
 
         private TestJavaProjectIndexAccess() {
             LanguageSupports.initialize();
 
-            indexService.registerIndexer(new JavaProjectLanguageIndexer());
-            indexService.registerPersistence(new JavaProjectSemanticPersistence());
+            IndexTestProviders.indexer(indexService, new JavaProjectLanguageIndexer());
+            IndexTestProviders.persistence(indexService, new JavaProjectSemanticPersistence());
+            IndexTestProviders.context(indexService,
+                new JavaLanguageIndexContextContributor());
         }
 
         private JavaProjectSemanticIndex index(Path projectRoot) {

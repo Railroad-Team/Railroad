@@ -4,11 +4,14 @@ import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagn
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import org.junit.jupiter.api.Test;
 
-import javax.tools.Diagnostic;
+import dev.railroadide.railroad.ide.diagnostics.DiagnosticSeverity;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Collection;
+import org.fxmisc.richtext.model.StyleSpans;
+import org.fxmisc.richtext.model.StyleSpansBuilder;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -31,7 +34,7 @@ public class CodeEditorDiagnosticsTest {
         var invalidStart = diagnostic(new Location.TextLocation(id, version, new TextRange(12, 12), 1, 6));
 
         var input = new ArrayList<>(Arrays.asList(otherDocument, stale, firstLine, future, wrongLine,
-            wrongColumn, invalidEnd, invalidStart, diagnostic(null), null, eof));
+            wrongColumn, invalidEnd, invalidStart, null, eof));
         List<TextEditorDiagnostic> accepted = CodeEditorPane.validatedDiagnostics(input, snapshot);
 
         assertEquals(List.of(firstLine, eof), accepted);
@@ -58,7 +61,23 @@ public class CodeEditorDiagnosticsTest {
         assertEquals(List.of(), CodeEditorPane.validatedDiagnostics(List.of(), snapshot));
     }
 
+    @Test
+    public void informationalDiagnosticsDoNotAppearAsWarningSquiggles() throws Exception {
+        var id = DocumentId.create();
+        var snapshot = new TextDocumentSnapshot(id, DocumentUri.inMemory(id), DocumentVersion.initial(),
+            "sample:text", "value", StandardCharsets.UTF_8);
+        var base = new StyleSpansBuilder<Collection<String>>().add(List.of("identifier"), 5).create();
+        var merge = CodeEditorPane.class.getDeclaredMethod("mergeDiagnosticStyles", StyleSpans.class, List.class);
+        merge.setAccessible(true);
+        for (var severity : List.of(DiagnosticSeverity.INFORMATION, DiagnosticSeverity.HINT)) {
+            var diagnostic = new TextEditorDiagnostic(Location.TextLocation.from(snapshot, 0, 5), severity,
+                "INFO", "Information");
+            var styled = (StyleSpans<?>) merge.invoke(null, base, List.of(diagnostic));
+            assertEquals(List.of("identifier"), styled.getStyleSpan(0).getStyle());
+        }
+    }
+
     private static TextEditorDiagnostic diagnostic(Location.TextLocation location) {
-        return new TextEditorDiagnostic(location, Diagnostic.Kind.ERROR, "TEST", "Test diagnostic");
+        return new TextEditorDiagnostic(location, DiagnosticSeverity.ERROR, "TEST", "Test diagnostic");
     }
 }

@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.ui.codeeditor;
 
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import javafx.application.Platform;
+import dev.railroadide.railroad.ide.sst.request.api.SstScheduler;
 
 import java.util.concurrent.*;
 
@@ -37,23 +38,11 @@ public final class CodeEditorRequestTestSupport {
         }
     }
 
-    public static void awaitWorkers(ExecutorService worker, int blockedRequests) throws InterruptedException {
-        var executor = (ThreadPoolExecutor) worker;
-        int available = executor.getCorePoolSize() - blockedRequests;
-        var ready = new CountDownLatch(available);
-        var release = new CountDownLatch(1);
+    public static void awaitRequests(SstScheduler.Scope scope) throws InterruptedException {
         try {
-            // Occupying the remaining workers proves earlier tasks and their synchronous
-            // future continuations have finished queuing their JavaFX callbacks.
-            for (int index = 0; index < available; index++) {
-                executor.execute(() -> {
-                    ready.countDown();
-                    await(release);
-                });
-            }
-            assertTrue(ready.await(10, TimeUnit.SECONDS), "Earlier worker tasks did not finish");
-        } finally {
-            release.countDown();
+            scope.completion().get(10, TimeUnit.SECONDS);
+        } catch (ExecutionException | TimeoutException exception) {
+            throw new AssertionError("Earlier requests did not finish", exception);
         }
     }
 

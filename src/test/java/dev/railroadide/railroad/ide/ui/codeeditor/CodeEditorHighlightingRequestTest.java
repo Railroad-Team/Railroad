@@ -41,7 +41,7 @@ public class CodeEditorHighlightingRequestTest {
     @Test
     public void initialHighlightingWaitsForStoreAttachmentAndUsesItsExactSnapshot() throws Exception {
         try (Fixture fixture = open(context -> styles(context, "INITIAL"), false, "class Example {}")) {
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             assertTrue(fixture.provider.requests.isEmpty(),
                 "No request has coherent workspace inputs before attachment");
             onFx(() -> {
@@ -51,7 +51,7 @@ public class CodeEditorHighlightingRequestTest {
             FeatureRequestContext context = fixture.nextRequest();
             assertSame(fixture.store.capture().document(context.documentSnapshot().id()).orElseThrow(),
                 context.documentSnapshot());
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertEquals(List.of("INITIAL"), fixture.editor.highlightLabels());
                 assertFalse(context.cancellationToken().isCancellationRequested());
@@ -97,14 +97,14 @@ public class CodeEditorHighlightingRequestTest {
                 FeatureRequestContext current = fixture.nextRequest();
                 assertNotSame(old, current);
                 assertSame(old.documentSnapshot(), current.documentSnapshot());
-                awaitWorkers(fixture.editor.worker, 1);
+                awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
                     assertEquals(List.of("NEW"), fixture.editor.highlightLabels());
                     return null;
                 });
 
                 releaseOld.countDown();
-                awaitWorkers(fixture.editor.worker, 0);
+                awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
                     assertEquals(List.of("NEW"), fixture.editor.highlightLabels());
                     return null;
@@ -141,7 +141,7 @@ public class CodeEditorHighlightingRequestTest {
                 if (alreadyQueued) {
                     try (FxBlocker blocker = FxBlocker.start(edit)) {
                         release.countDown();
-                        awaitWorkers(fixture.editor.worker, 0);
+                        awaitRequests(fixture.editor.featureRequests);
                         blocker.releaseAndAwait();
                     }
                 } else {
@@ -150,7 +150,7 @@ public class CodeEditorHighlightingRequestTest {
                         return null;
                     });
                     release.countDown();
-                    awaitWorkers(fixture.editor.worker, 0);
+                    awaitRequests(fixture.editor.featureRequests);
                 }
                 onFx(() -> {
                     assertTrue(fixture.editor.highlightLabels().isEmpty());
@@ -208,14 +208,14 @@ public class CodeEditorHighlightingRequestTest {
                 assertEquals(old.documentSnapshot().version(), current.documentSnapshot().version());
                 assertEquals(((TextDocumentSnapshot) old.documentSnapshot()).text(),
                     ((TextDocumentSnapshot) current.documentSnapshot()).text());
-                awaitWorkers(fixture.editor.worker, 1);
+                awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
                     assertEquals(List.of("NEW_WORKSPACE"), fixture.editor.highlightLabels());
                     return null;
                 });
 
                 releaseOld.countDown();
-                awaitWorkers(fixture.editor.worker, 0);
+                awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
                     assertEquals(List.of("NEW_WORKSPACE"), fixture.editor.highlightLabels());
                     return null;
@@ -236,7 +236,7 @@ public class CodeEditorHighlightingRequestTest {
             return styles(different, "WRONG_REQUEST");
         })) {
             fixture.nextRequest();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertTrue(fixture.editor.highlightLabels().isEmpty());
                 return null;
@@ -259,7 +259,7 @@ public class CodeEditorHighlightingRequestTest {
                     assertTrue(context.cancellationToken().isCancellationRequested());
                 })) {
                     release.countDown();
-                    awaitWorkers(fixture.editor.worker, 0);
+                    awaitRequests(fixture.editor.featureRequests);
                     blocker.releaseAndAwait();
                 }
                 onFx(() -> {
@@ -282,13 +282,13 @@ public class CodeEditorHighlightingRequestTest {
             return styles(context, "RECOVERED");
         })) {
             fixture.nextRequest();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 fixture.editor.request();
                 return null;
             });
             fixture.nextRequest();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertEquals(List.of("RECOVERED"), fixture.editor.highlightLabels());
                 return null;
@@ -300,7 +300,7 @@ public class CodeEditorHighlightingRequestTest {
     public void anEmptyDocumentCanReceiveItsInitialStyles() throws Exception {
         try (Fixture fixture = open(context -> styles(context, "EMPTY"), true, "")) {
             fixture.nextRequest();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertEquals(0, fixture.editor.lastHighlight.length());
                 assertEquals(List.of("EMPTY"), fixture.editor.highlightLabels());
@@ -333,7 +333,8 @@ public class CodeEditorHighlightingRequestTest {
             Thread.UncaughtExceptionHandler previousHandler = Thread.currentThread().getUncaughtExceptionHandler();
             Thread.currentThread().setUncaughtExceptionHandler((_, failure) -> failures.add(failure));
             Project project = new RailroadProject(directory, "Highlighting request", new WritableImage(1, 1));
-            var pane = new TestEditor(project, id, file, new CodeEditorConfig("java", null, null, null, provider));
+            var pane = new TestEditor(project, id, file,
+                new CodeEditorConfig("java", null, null, null, null, provider));
             store.publishBacking(pane.captureSnapshot());
             if (attach) {
                 pane.setDocumentStore(store);
@@ -375,7 +376,7 @@ public class CodeEditorHighlightingRequestTest {
                 }
                 return null;
             });
-            assertTrue(editor.worker.awaitTermination(10, TimeUnit.SECONDS));
+            CodeEditorRequestTestSupport.awaitRequests(editor.featureRequests);
             if (!fxFailures.isEmpty())
                 throw new AssertionError("Uncaught JavaFX publication failure", fxFailures.peek());
         }

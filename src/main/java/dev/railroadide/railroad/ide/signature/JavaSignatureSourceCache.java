@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 /** Bounded captured source trees; active parsers retain their tree until their lease closes. */
@@ -40,11 +41,26 @@ public final class JavaSignatureSourceCache implements AutoCloseable {
      * @throws IOException if a new tree cannot be staged
      */
     public Lease acquire(JavaWorkspaceAnalysis analysis, TextDocumentSnapshot request) throws IOException {
-        JavaSignatureSources.checkCancelled();
+        return acquire(analysis, request, JavaSignatureSources::checkCancelled);
+    }
+
+    /**
+     * Acquires a staged source tree, observing request cancellation during preparation and lock waits.
+     *
+     * @param analysis captured source inputs
+     * @param request current source buffer
+     * @param activityCheck cancellation/deadline check
+     * @return source lease that must be closed by the parser
+     * @throws IOException if source staging fails
+     */
+    public Lease acquire(JavaWorkspaceAnalysis analysis, TextDocumentSnapshot request, Runnable activityCheck)
+        throws IOException {
+        Objects.requireNonNull(activityCheck, "activityCheck").run();
         Set<Path> excluded = new HashSet<>();
         String name = request.uri().fileName().orElse("Snapshot.java");
         String unit = null;
         for (JavaProjectSemanticIndex.SourceFileIndex file : analysis.sourceIndex().files().values()) {
+            activityCheck.run();
             if (file.path().getFileName().toString().equals(name)
                 && request.text().equals(analysis.sourceTexts().get(file.path()))) {
                 unit = Objects.toString(file.packageName(), "") + "/" + name;
@@ -53,6 +69,7 @@ public final class JavaSignatureSourceCache implements AutoCloseable {
         }
         if (unit != null) {
             for (JavaProjectSemanticIndex.SourceFileIndex file : analysis.sourceIndex().files().values()) {
+                activityCheck.run();
                 if (unit.equals(Objects.toString(file.packageName(), "") + "/" + file.path().getFileName())) {
                     excluded.add(file.path());
                 }
@@ -62,17 +79,20 @@ public final class JavaSignatureSourceCache implements AutoCloseable {
         excluded.forEach(dependencies::remove);
         Map<Path, String> key = Map.copyOf(dependencies);
         try {
-            lock.lockInterruptibly();
+            while (!lock.tryLock(25, TimeUnit.MILLISECONDS)) {
+                activityCheck.run();
+            }
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new CancellationException("Signature request cancelled while waiting for sources");
         }
         try {
+            activityCheck.run();
             if (closed)
                 throw new CancellationException("Signature source cache is closed");
             Entry entry = entries.get(key);
             if (entry == null) {
-                entry = new Entry(JavaSignatureSources.create(analysis, null, excluded));
+                entry = new Entry(JavaSignatureSources.create(analysis, null, excluded, activityCheck));
                 liveEntries.add(entry);
                 entries.put(key, entry);
                 if (entries.size() > capacity) {

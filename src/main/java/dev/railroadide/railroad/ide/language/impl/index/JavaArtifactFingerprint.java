@@ -12,6 +12,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Objects;
+import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 
 /** Metadata change detection for explicit Java configuration refreshes. */
 public final class JavaArtifactFingerprint {
@@ -29,20 +31,35 @@ public final class JavaArtifactFingerprint {
      * @throws UncheckedIOException if artifact metadata cannot be read
      */
     public static String capture(List<Path> orderedRoots, Path jdkHome) {
+        return capture(orderedRoots, jdkHome, ActivityCheckpoint::checkInterrupted);
+    }
+
+    /**
+     * Captures artifact metadata with cooperative cancellation during directory and archive traversal.
+     *
+     * @param orderedRoots ordered binary roots
+     * @param jdkHome selected JDK, or null for the running runtime
+     * @param activityCheck immediate cancellation/deadline check
+     * @return complete fingerprint; interrupted scans produce no fingerprint
+     */
+    public static String capture(List<Path> orderedRoots, Path jdkHome, Runnable activityCheck) {
+        Objects.requireNonNull(activityCheck, "activityCheck").run();
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             try (var output = new DataOutputStream(new DigestOutputStream(OutputStream.nullOutputStream(), digest))) {
                 output.writeInt(orderedRoots.size());
                 for (Path root : orderedRoots) {
+                    activityCheck.run();
                     Path normalized = normalize(root);
                     metadata(output, normalized);
                     if (Files.isDirectory(normalized)) {
                         try (var paths = Files.walk(normalized)) {
-                            List<Path> classes = paths.filter(Files::isRegularFile)
+                            List<Path> classes = paths.peek(_ -> activityCheck.run()).filter(Files::isRegularFile)
                                 .filter(path -> path.getFileName().toString().endsWith(".class"))
                                 .sorted().toList();
                             output.writeInt(classes.size());
                             for (Path file : classes) {
+                                activityCheck.run();
                                 metadata(output, file);
                             }
                         }
@@ -51,7 +68,7 @@ public final class JavaArtifactFingerprint {
                 Path selected = normalize(jdkHome == null ? runningHome() : jdkHome);
                 metadata(output, selected);
                 metadata(output, selected.resolve("release"));
-                List<Path> archives = jdkArchives(selected);
+                List<Path> archives = jdkArchives(selected, activityCheck);
                 output.writeBoolean(!archives.isEmpty());
                 if (archives.isEmpty()) {
                     Path running = runningHome();
@@ -61,9 +78,11 @@ public final class JavaArtifactFingerprint {
                 }
                 output.writeInt(archives.size());
                 for (Path archive : archives) {
+                    activityCheck.run();
                     metadata(output, archive);
                 }
             }
+            activityCheck.run();
             return HexFormat.of().formatHex(digest.digest());
         } catch (IOException exception) {
             throw new UncheckedIOException("Failed to fingerprint Java artifacts", exception);
@@ -72,7 +91,7 @@ public final class JavaArtifactFingerprint {
         }
     }
 
-    private static List<Path> jdkArchives(Path home) throws IOException {
+    private static List<Path> jdkArchives(Path home, Runnable activityCheck) throws IOException {
         for (String candidate : List.of("jre/lib/rt.jar", "lib/rt.jar")) {
             Path archive = home.resolve(candidate);
             if (Files.isRegularFile(archive))
@@ -81,7 +100,7 @@ public final class JavaArtifactFingerprint {
         Path jmods = home.resolve("jmods");
         if (Files.isDirectory(jmods)) {
             try (var paths = Files.list(jmods)) {
-                return paths.filter(Files::isRegularFile)
+                return paths.peek(_ -> activityCheck.run()).filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().endsWith(".jmod"))
                     .sorted().toList();
             }

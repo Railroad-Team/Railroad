@@ -23,9 +23,7 @@ import java.util.ArrayList;
  * <li>semantic diagnostics produced during analysis</li>
  * </ul>
  * <p>
- * Inspection authors usually access these capabilities through
- * {@link dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext}, but the raw model
- * remains useful for tests and lower-level tooling.
+ * Providers expose language-specific conveniences separately from this neutral model.
  */
 public final class SemanticModel {
     private final SyntaxTree syntaxTree;

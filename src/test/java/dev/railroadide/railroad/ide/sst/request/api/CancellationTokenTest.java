@@ -45,6 +45,40 @@ public class CancellationTokenTest {
     }
 
     @Test
+    public void linkedSourcesKeepStableTokensAndObserveParentCancellationWithoutCancellingSiblings() {
+        var lifetime = new CancellationTokenSource();
+        var request = new CancellationTokenSource(lifetime.token());
+        var sibling = new CancellationTokenSource(lifetime.token());
+        CancellationToken requestToken = request.token();
+        CancellationToken siblingToken = sibling.token();
+        assertSame(requestToken, request.token());
+        assertFalse(requestToken.isCancellationRequested());
+
+        assertTrue(request.cancel());
+        assertTrue(requestToken.isCancellationRequested());
+        assertFalse(lifetime.token().isCancellationRequested());
+        assertFalse(siblingToken.isCancellationRequested());
+
+        lifetime.cancel();
+        assertTrue(siblingToken.isCancellationRequested());
+        assertSame(siblingToken, sibling.token());
+        assertSame(requestToken, request.token());
+        assertThrows(CancellationException.class, siblingToken::throwIfCancellationRequested);
+        assertTrue(sibling.cancel());
+        assertFalse(sibling.cancel());
+    }
+
+    @Test
+    public void linkedSourceImmediatelyObservesAnAlreadyCancelledParent() {
+        var lifetime = new CancellationTokenSource();
+        lifetime.cancel();
+        var request = new CancellationTokenSource(lifetime.token());
+        assertTrue(request.token().isCancellationRequested());
+        assertThrows(CancellationException.class, request.token()::throwIfCancellationRequested);
+        assertThrows(NullPointerException.class, () -> new CancellationTokenSource(null));
+    }
+
+    @Test
     public void onlyTheFirstCancellationReportsSuccess() {
         var source = new CancellationTokenSource();
 

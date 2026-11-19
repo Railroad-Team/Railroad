@@ -1,7 +1,5 @@
 package dev.railroadide.railroad.ide.sst.document.api;
 
-import dev.railroadide.railroad.ide.language.LanguageSupport;
-
 import java.nio.charset.Charset;
 import java.util.Objects;
 import java.util.Optional;
@@ -155,14 +153,14 @@ public final class TextDocumentSnapshot implements DocumentSnapshot {
 
     /**
      * Safely returns the content of a {@link DocumentSnapshot}, only if it is an
-     * instance of {@link TextDocumentSnapshot} and is supported by the provided {@link LanguageSupport}.
+     * instance of {@link TextDocumentSnapshot} and has the required document language identity.
      *
      * @param snapshot Snapshot to unwrap
-     * @param language Required language
+     * @param languageId required document language identity
      * @return content of the snapshot
      */
-    public static Optional<String> unwrap(DocumentSnapshot snapshot, LanguageSupport language) {
-        if (!Objects.equals(snapshot.languageId(), language.languageId()))
+    public static Optional<String> unwrap(DocumentSnapshot snapshot, String languageId) {
+        if (!Objects.equals(snapshot.languageId(), languageId))
             return Optional.empty();
 
         if (snapshot instanceof TextDocumentSnapshot textDocumentSnapshot)

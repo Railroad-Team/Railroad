@@ -1,10 +1,11 @@
 package dev.railroadide.railroad.ide.sst.request.api;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Objects;
 
 /**
  * Owns the cancellation state of one SST request and exposes an observation-only token.
- * A source starts uncancelled and can transition permanently to cancelled exactly once.
+ * A source owns a cancellation flag and can also observe a parent lifetime token.
  * The request owner retains the source; workers receive {@link #token()}.
  * <p>
  * Sources and their tokens support concurrent use. Cancellation is cooperative:
@@ -24,6 +25,19 @@ public final class CancellationTokenSource {
     }
 
     /**
+     * Creates a source whose stable token observes both local cancellation and a parent lifetime.
+     * Cancelling this source never cancels the parent. The parent must obey the token's monotonic,
+     * thread-safe cancellation contract. No listener or external resource is allocated.
+     *
+     * @param parent lifetime observed in addition to this source's own cancellation flag
+     * @throws NullPointerException if the parent is null
+     */
+    public CancellationTokenSource(CancellationToken parent) {
+        Objects.requireNonNull(parent, "parent");
+        this.token = () -> isCancellationRequested.get() || parent.isCancellationRequested();
+    }
+
+    /**
      * Returns the observation-only token for this source.
      * Every call returns the same instance, and previously obtained tokens observe later
      * cancellation requests.
@@ -37,10 +51,10 @@ public final class CancellationTokenSource {
     /**
      * Permanently requests cancellation without waiting for workers to stop.
      * Repeated calls are harmless. When calls race, exactly one call performs the
-     * uncancelled-to-cancelled transition and reports success.
+     * local uncancelled-to-cancelled transition and reports success, independently of parent cancellation.
      *
-     * @return {@code true} if this call first requested cancellation, or {@code false}
-     *         if cancellation had already been requested
+     * @return {@code true} if this call first requested local cancellation, or {@code false}
+     *         if local cancellation had already been requested
      */
     public boolean cancel() {
         return isCancellationRequested.compareAndSet(false, true);

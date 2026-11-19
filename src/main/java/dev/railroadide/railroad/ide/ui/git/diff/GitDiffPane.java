@@ -1,8 +1,8 @@
 package dev.railroadide.railroad.ide.ui.git.diff;
 
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.ide.syntaxhighlighting.JsonSyntaxHighlighting;
-import dev.railroadide.railroad.ide.syntaxhighlighting.TreeSitterJavaSyntaxHighlighting;
+import dev.railroadide.railroad.ide.language.LanguageCapabilities;
+import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRBorderPane;
 import dev.railroadide.railroad.ui.RRHBox;
@@ -42,6 +42,7 @@ public class GitDiffPane extends RRBorderPane implements AutoCloseable {
 
     private final ObjectProperty<Path> filePath = new SimpleObjectProperty<>();
     private final GitManager gitManager;
+    private final Project project;
     private final CodeArea diffArea = new CodeArea();
     private final LocalizedText placeholderText = new LocalizedText(PLACEHOLDER_NO_FILE_KEY);
     private final StringProperty title = new SimpleStringProperty(DEFAULT_TITLE);
@@ -63,6 +64,7 @@ public class GitDiffPane extends RRBorderPane implements AutoCloseable {
      * @param filePath file whose changes should be displayed, or null for no selected file
      */
     public GitDiffPane(Project project, Path filePath) {
+        this.project = project;
         this.gitManager = project.getGitManager();
 
         getStyleClass().add("git-diff-pane-root");
@@ -241,7 +243,7 @@ public class GitDiffPane extends RRBorderPane implements AutoCloseable {
         diffArea.setStyleSpans(0, spans);
     }
 
-    private static StyleSpans<Collection<String>> buildStyles(String diffText, List<RenderLine> lines) {
+    private StyleSpans<Collection<String>> buildStyles(String diffText, List<RenderLine> lines) {
         StyleSpansBuilder<Collection<String>> builder = new StyleSpansBuilder<>();
         int lineCount = lines.size();
         for (int i = 0; i < lineCount; i++) {
@@ -253,7 +255,7 @@ public class GitDiffPane extends RRBorderPane implements AutoCloseable {
         return builder.create();
     }
 
-    private static void appendLineStyles(
+    private void appendLineStyles(
         StyleSpansBuilder<Collection<String>> builder,
         RenderLine line,
         boolean hasNewline
@@ -315,15 +317,14 @@ public class GitDiffPane extends RRBorderPane implements AutoCloseable {
         };
     }
 
-    private static StyleSpans<Collection<String>> computeSyntaxHighlight(String languageId, String content) {
+    private StyleSpans<Collection<String>> computeSyntaxHighlight(String languageId, String content) {
         if (languageId == null || content == null || content.isEmpty())
             return null;
 
-        return switch (languageId) {
-            case "java" -> TreeSitterJavaSyntaxHighlighting.computeHighlighting(content);
-            case "json" -> JsonSyntaxHighlighting.computeHighlighting(content);
-            default -> null;
-        };
+        return LanguageSupportRegistry.get(languageId)
+            .flatMap(support -> LanguageSupportRegistry.runtime().session(project, support.id(), "")
+                .capability(LanguageCapabilities.HIGHLIGHTING))
+            .map(provider -> provider.compute(content)).orElse(null);
     }
 
     private DiffResult renderDiff(String diffText) {
@@ -420,14 +421,7 @@ public class GitDiffPane extends RRBorderPane implements AutoCloseable {
         if (path == null)
             return null;
 
-        String name = path.getFileName().toString().toLowerCase(Locale.ROOT);
-        if (name.endsWith(".java"))
-            return "java";
-
-        if (name.endsWith(".json"))
-            return "json";
-
-        return null;
+        return LanguageSupportRegistry.find(path).map(support -> support.languageId()).orElse(null);
     }
 
     private void updateGutterMetrics() {

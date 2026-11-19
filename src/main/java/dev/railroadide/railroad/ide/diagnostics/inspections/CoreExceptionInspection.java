@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
+import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
@@ -169,8 +171,8 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
             if (expression == null)
                 return;
 
-            Type thrownType = context.inferredType(expression).orElse(new Type.UnknownType("<unknown>"));
-            if (thrownType.kind() != Type.Kind.DECLARED)
+            Type thrownType = context.inferredType(expression).orElse(new JavaTypes.UnknownType("<unknown>"));
+            if (thrownType.kind() != JavaTypes.Kind.DECLARED)
                 return;
 
             String qualifiedTypeName = context.resolveQualifiedTypeName(thrownType.displayName());
@@ -349,8 +351,8 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         if (expression == null)
             return;
 
-        Type thrownType = context.inferredType(expression).orElse(new Type.UnknownType("<unknown>"));
-        if (thrownType.kind() != Type.Kind.DECLARED)
+        Type thrownType = context.inferredType(expression).orElse(new JavaTypes.UnknownType("<unknown>"));
+        if (thrownType.kind() != JavaTypes.Kind.DECLARED)
             return;
 
         String qualifiedTypeName = context.resolveQualifiedTypeName(thrownType.displayName());
@@ -366,7 +368,7 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         List<ThrownException> out
     ) {
         Symbol symbol = context.resolvedSymbol(node).orElse(null);
-        if (symbol == null || (symbol.kind() != SymbolKind.METHOD && symbol.kind() != SymbolKind.CONSTRUCTOR))
+        if (symbol == null || (symbol.kind() != JavaSymbolKind.METHOD && symbol.kind() != JavaSymbolKind.CONSTRUCTOR))
             return;
 
         for (String qualifiedTypeName : context.thrownTypeNames(symbol)) {

@@ -5,8 +5,10 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -321,6 +323,96 @@ public final class DocumentIdentityRegistry {
         removeAssociations(documentId);
         versionsById.remove(documentId);
         releasedIds.add(documentId);
+    }
+
+    /**
+     * Removes every location association of an owned identity while keeping it owned, so that it can later be
+     * associated again. Unlike {@link #release(DocumentId)}, this is reversible.
+     *
+     * @param documentId owned identity to detach from its locations
+     * @throws IllegalStateException if the identity is not owned by this registry
+     */
+    public synchronized void dissociate(DocumentId documentId) {
+        currentVersion(documentId);
+        removeAssociations(documentId);
+    }
+
+    /**
+     * Forgets a deleted location of a document that another of its registered locations still reaches, such as one
+     * of several hard links to its file. The identity remains with the surviving locations; spellings of the deleted
+     * location and other registered locations that no longer exist are forgotten. Nothing changes when no other
+     * registered location exists. A file that has since been created at the deleted location does not count as a
+     * surviving location.
+     *
+     * @param documentId identity that was registered at the deleted location
+     * @param deleted location whose file was deleted
+     * @return a surviving location, preferring a registered spelling over its resolved real path, or empty when no
+     *         other registered location exists
+     * @throws UncheckedIOException if a location cannot be resolved
+     */
+    public synchronized Optional<Path> forgetDeletedAlias(DocumentId documentId, Path deleted) {
+        Objects.requireNonNull(documentId, "documentId");
+        Path normalized = normalize(deleted);
+        Path resolved = resolve(normalized);
+        Set<Path> forgotten = new HashSet<>();
+        List<Path> surviving = new ArrayList<>();
+        for (Map.Entry<Path, DocumentId> entry : idsByPath.entrySet()) {
+            Path path = entry.getKey();
+            if (!entry.getValue().equals(documentId))
+                continue;
+            if (path.equals(normalized) || Files.notExists(path) || resolve(path).equals(resolved)) {
+                forgotten.add(path);
+            } else if (Files.exists(path)) {
+                surviving.add(path);
+            }
+        }
+        if (surviving.isEmpty())
+            return Optional.empty();
+
+        for (Path path : forgotten) {
+            idsByPath.remove(path);
+            idsByUri.remove(DocumentUri.fromPath(path), documentId);
+        }
+        return Optional.of(preferredSpelling(surviving));
+    }
+
+    /**
+     * Finds another existing location of a document that is currently the same physical file as {@code path} but a
+     * different directory entry, such as another hard link to it. Spellings of {@code path} itself are not aliases.
+     *
+     * @param documentId identity registered at {@code path}
+     * @param path existing location of the document
+     * @return another registered location of the same file, preferring a registered spelling over its resolved real
+     *         path, or empty when there is none
+     * @throws UncheckedIOException if a location cannot be resolved or compared
+     */
+    public synchronized Optional<Path> findAlias(DocumentId documentId, Path path) {
+        Objects.requireNonNull(documentId, "documentId");
+        Path normalized = normalize(path);
+        Path resolved = resolve(normalized);
+        if (Files.notExists(normalized))
+            return Optional.empty();
+
+        List<Path> aliases = new ArrayList<>();
+        for (Map.Entry<Path, DocumentId> entry : idsByPath.entrySet()) {
+            Path candidate = entry.getKey();
+            if (!entry.getValue().equals(documentId) || !Files.exists(candidate)
+                || resolve(candidate).equals(resolved))
+                continue;
+            try {
+                if (Files.isSameFile(candidate, normalized)) {
+                    aliases.add(candidate);
+                }
+            } catch (IOException exception) {
+                throw new UncheckedIOException("Failed to compare document paths " + candidate + " and " + path,
+                    exception);
+            }
+        }
+        return aliases.isEmpty() ? Optional.empty() : Optional.of(preferredSpelling(aliases));
+    }
+
+    private static Path preferredSpelling(List<Path> paths) {
+        return paths.stream().filter(path -> !path.equals(resolve(path))).findFirst().orElse(paths.getFirst());
     }
 
     private void removeAssociations(DocumentId documentId) {

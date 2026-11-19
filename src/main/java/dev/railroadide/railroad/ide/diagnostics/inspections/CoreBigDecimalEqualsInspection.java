@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
@@ -72,7 +73,7 @@ public class CoreBigDecimalEqualsInspection implements JavaInspectionRuleProvide
     }
 
     private static String qualifiedTypeNameOfExpression(JavaRuleContext context, SyntaxNode expression) {
-        Type inferred = context.inferredType(expression).orElse(new Type.UnknownType("<unknown>"));
+        Type inferred = context.inferredType(expression).orElse(new JavaTypes.UnknownType("<unknown>"));
         return qualifiedTypeName(context, inferred);
     }
 
@@ -89,16 +90,18 @@ public class CoreBigDecimalEqualsInspection implements JavaInspectionRuleProvide
 
     private static String qualifiedTypeName(JavaRuleContext context, Type type) {
         return switch (type.kind()) {
-            case UNKNOWN, VOID, TYPE_VARIABLE, WILDCARD -> null;
-            case PRIMITIVE -> type.displayName();
-            case ARRAY -> {
-                if (!(type instanceof Type.ArrayType(Type componentType1)))
+            default -> null;
+            case JavaTypes.Kind.UNKNOWN, JavaTypes.Kind.VOID, JavaTypes.Kind.TYPE_VARIABLE, JavaTypes.Kind.WILDCARD ->
+                null;
+            case JavaTypes.Kind.PRIMITIVE -> type.displayName();
+            case JavaTypes.Kind.ARRAY -> {
+                if (!(type instanceof JavaTypes.ArrayType(Type componentType1)))
                     yield null;
 
                 String componentType = qualifiedTypeName(context, componentType1);
                 yield componentType == null ? null : componentType + "[]";
             }
-            case DECLARED -> {
+            case JavaTypes.Kind.DECLARED -> {
                 String typeName = type.displayName();
                 int genericStart = typeName.indexOf('<');
                 if (genericStart >= 0) {

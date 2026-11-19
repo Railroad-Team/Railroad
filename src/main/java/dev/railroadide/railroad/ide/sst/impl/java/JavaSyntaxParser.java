@@ -66,12 +66,7 @@ public final class JavaSyntaxParser {
 
         requireJavaSnapshot(textDocumentSnapshot);
 
-        Runnable activityCheck = new ActivityCheckpoint(context::checkActive);
-        try (var lexer = new JavaLexer(textDocumentSnapshot.text(), null, activityCheck)) {
-            SyntaxTree parsed = parse(textDocumentSnapshot, lexer, activityCheck);
-            context.checkActive();
-            return parsed;
-        }
+        return parse(textDocumentSnapshot, context::checkActive);
     }
 
     /**
@@ -83,6 +78,19 @@ public final class JavaSyntaxParser {
      */
     public static SyntaxTree parse(CharSequence source) {
         return parse(DocumentId.create(), source);
+    }
+
+    /**
+     * Parses source with cooperative controls shared by lexing, parsing, and validation.
+     *
+     * @param source Java source to parse
+     * @param activityCheck request activity check, invoked at bounded work intervals
+     * @return completed syntax tree; cancellation never publishes a partial tree
+     */
+    public static SyntaxTree parse(CharSequence source, Runnable activityCheck) {
+        DocumentId id = DocumentId.create();
+        return parse(new TextDocumentSnapshot(id, DocumentUri.inMemory(id), DocumentVersion.initial(),
+            "java", source, StandardCharsets.UTF_8), activityCheck);
     }
 
     /**
@@ -142,9 +150,27 @@ public final class JavaSyntaxParser {
      * @throws IllegalArgumentException if the snapshot language is not Java
      */
     public static SyntaxTree parse(TextDocumentSnapshot documentSnapshot) {
+        return parse(documentSnapshot, ActivityCheckpoint::checkInterrupted);
+    }
+
+    /**
+     * Parses a captured snapshot, discarding partial work when the request becomes inactive.
+     *
+     * @param documentSnapshot immutable Java snapshot
+     * @param activityCheck request activity check
+     * @return completed tree retaining the exact snapshot
+     */
+    public static SyntaxTree parse(TextDocumentSnapshot documentSnapshot, Runnable activityCheck) {
         requireJavaSnapshot(documentSnapshot);
-        try (var lexer = new JavaLexer(documentSnapshot.text())) {
-            return parse(documentSnapshot, lexer);
+        Objects.requireNonNull(activityCheck, "activityCheck");
+        Runnable checkpoint = activityCheck instanceof ActivityCheckpoint
+            ? activityCheck
+            : new ActivityCheckpoint(activityCheck);
+        checkpoint.run();
+        try (var lexer = new JavaLexer(documentSnapshot.text(), null, checkpoint)) {
+            SyntaxTree tree = parse(documentSnapshot, lexer, checkpoint);
+            checkpoint.run();
+            return tree;
         }
     }
 
@@ -210,15 +236,17 @@ public final class JavaSyntaxParser {
         Objects.requireNonNull(documentId, "documentId");
         Objects.requireNonNull(documentUri, "documentUri");
         Objects.requireNonNull(documentVersion, "documentVersion");
-        GreenNode root = new JavaGreenParser(Objects.requireNonNull(lexer, "lexer")).parseGreenTree();
+        Runnable checkpoint = new ActivityCheckpoint(ActivityCheckpoint::checkInterrupted);
+        checkpoint.run();
+        GreenNode root = new JavaGreenParser(Objects.requireNonNull(lexer, "lexer"), checkpoint).parseGreenTree();
         var documentSnapshot = new TextDocumentSnapshot(
             documentId,
             documentUri,
             documentVersion,
             "java",
-            SyntaxInternalFactory.sourceText(root),
+            SyntaxInternalFactory.sourceText(root, checkpoint),
             StandardCharsets.UTF_8);
-        return SyntaxInternalFactory.treeFromGreenRoot(documentSnapshot, root);
+        return SyntaxInternalFactory.treeFromGreenRoot(documentSnapshot, root, checkpoint);
     }
 
     /**
@@ -233,8 +261,7 @@ public final class JavaSyntaxParser {
         TextDocumentSnapshot documentSnapshot,
         Lexer<JavaTokenType> lexer
     ) {
-        return parse(documentSnapshot, lexer, () -> {
-        });
+        return parse(documentSnapshot, lexer, new ActivityCheckpoint(ActivityCheckpoint::checkInterrupted));
     }
 
     private static SyntaxTree parse(
@@ -479,6 +506,7 @@ public final class JavaSyntaxParser {
         TextDocumentSnapshot newSnapshot,
         TextEdit edit
     ) {
+        ActivityCheckpoint.checkInterrupted();
         Objects.requireNonNull(previousTree, "previousTree");
         requireJavaSnapshot(newSnapshot);
         Objects.requireNonNull(edit, "edit");
@@ -515,7 +543,10 @@ public final class JavaSyntaxParser {
                 edit,
                 oldLength,
                 newLength);
+            ActivityCheckpoint.checkInterrupted();
             return new IncrementalParseResult(incrementalTree, incrementalPlan, false);
+        } catch (CancellationException exception) {
+            throw exception;
         } catch (RuntimeException _) {
             SyntaxTree reparsed = parse(newSnapshot);
             return new IncrementalParseResult(reparsed, fallbackPlan, true);
@@ -540,6 +571,7 @@ public final class JavaSyntaxParser {
         CharSequence newSource,
         TextEdit edit
     ) {
+        ActivityCheckpoint.checkInterrupted();
         Objects.requireNonNull(previousTree, "previousTree");
         Objects.requireNonNull(previousSource, "previousSource");
         Objects.requireNonNull(newSource, "newSource");
@@ -585,6 +617,7 @@ public final class JavaSyntaxParser {
         int delta = edit.lengthDelta();
         List<ReuseCandidate> candidates = new ArrayList<>();
         collectReuseCandidates(root, clampedOldStart, clampedOldEnd, delta, candidates);
+        ActivityCheckpoint.checkInterrupted();
         return new ReusePlan(clampedOldStart, clampedOldEnd, newReparseStart, newReparseEnd, delta,
             List.copyOf(candidates));
     }
@@ -648,6 +681,7 @@ public final class JavaSyntaxParser {
         List<SyntaxNode> previousChildren = previousTree.root().children();
         List<GreenElement> mergedChildren = new ArrayList<>(previousChildren.size());
         for (int index = 0; index < window.startChildIndex(); index++) {
+            ActivityCheckpoint.checkInterrupted();
             mergedChildren.add(SyntaxInternalFactory.greenElement(previousChildren.get(index)));
         }
 
@@ -656,8 +690,10 @@ public final class JavaSyntaxParser {
         GreenNode reparsedTailRoot = SyntaxInternalFactory.greenRoot(reparsedTail);
         mergedChildren.addAll(reparsedTailRoot.children());
 
-        GreenNode mergedRoot = SyntaxInternalFactory.greenNode(JavaSyntaxKinds.COMPILATION_UNIT, mergedChildren);
-        return SyntaxInternalFactory.treeFromGreenRoot(newSnapshot, mergedRoot);
+        Runnable checkpoint = new ActivityCheckpoint(ActivityCheckpoint::checkInterrupted);
+        GreenNode mergedRoot = SyntaxInternalFactory.greenNode(JavaSyntaxKinds.COMPILATION_UNIT, mergedChildren,
+            checkpoint);
+        return SyntaxInternalFactory.treeFromGreenRoot(newSnapshot, mergedRoot, checkpoint);
     }
 
     private static void requireJavaSnapshot(TextDocumentSnapshot documentSnapshot) {
@@ -667,6 +703,7 @@ public final class JavaSyntaxParser {
     }
 
     private static void verifyPreviousSource(SyntaxTree previousTree, CharSequence previousSource) {
+        ActivityCheckpoint.checkInterrupted();
         Objects.requireNonNull(previousSource, "previousSource");
         if (!previousTree.documentSnapshot().text().contentEquals(previousSource))
             throw new IllegalArgumentException(
@@ -687,6 +724,7 @@ public final class JavaSyntaxParser {
         }
 
         for (int index = 0; index < topLevelChildren.size(); index++) {
+            ActivityCheckpoint.checkInterrupted();
             SyntaxNode child = topLevelChildren.get(index);
             if (rangesOverlap(child.start(), child.end(), probeStart, probeEnd))
                 return index;
@@ -694,6 +732,7 @@ public final class JavaSyntaxParser {
 
         if (oldEditStart >= oldLength) {
             for (int index = topLevelChildren.size() - 1; index >= 0; index--) {
+                ActivityCheckpoint.checkInterrupted();
                 if (!isEofNode(topLevelChildren.get(index)))
                     return index;
             }
@@ -731,6 +770,7 @@ public final class JavaSyntaxParser {
             return null;
 
         for (SyntaxNode child : node.children()) {
+            ActivityCheckpoint.checkInterrupted();
             SyntaxNode covering = findSmallestCoveringNode(child, start, endExclusive);
             if (covering != null)
                 return covering;
@@ -748,6 +788,7 @@ public final class JavaSyntaxParser {
     ) {
         if (node instanceof SyntaxToken || node.width() == 0) {
             for (SyntaxNode child : node.children()) {
+                ActivityCheckpoint.checkInterrupted();
                 collectReuseCandidates(child, oldReparseStart, oldReparseEnd, delta, candidates);
             }
             return;
@@ -763,15 +804,35 @@ public final class JavaSyntaxParser {
         }
 
         for (SyntaxNode child : node.children()) {
+            ActivityCheckpoint.checkInterrupted();
             collectReuseCandidates(child, oldReparseStart, oldReparseEnd, delta, candidates);
         }
     }
 
+    /**
+     * Parses a request and collects recovery diagnostics under the same cancellation controls.
+     *
+     * @param context captured document and request activity controls
+     * @return the syntax tree and recovery diagnostics for the captured document
+     */
+    public static ParseResult parseWithDiagnostics(FeatureRequestContext context) {
+        context.checkActive();
+        SyntaxTree tree = parse(context);
+        List<SyntaxDiagnostic> diagnostics = collectSyntaxDiagnostics(tree.root(), context::checkActive);
+        context.checkActive();
+        return new ParseResult(tree, diagnostics);
+    }
+
     private static List<SyntaxDiagnostic> collectSyntaxDiagnostics(SyntaxNode root) {
+        return collectSyntaxDiagnostics(root, ActivityCheckpoint::checkInterrupted);
+    }
+
+    private static List<SyntaxDiagnostic> collectSyntaxDiagnostics(SyntaxNode root, Runnable activityCheck) {
         List<SyntaxDiagnostic> diagnostics = new ArrayList<>();
         ArrayDeque<SyntaxNode> stack = new ArrayDeque<>();
         stack.push(root);
         while (!stack.isEmpty()) {
+            activityCheck.run();
             SyntaxNode node = stack.pop();
             String kindId = node.kind().id();
             if (ERROR_NODE_KIND_ID.equals(kindId)) {
@@ -791,6 +852,7 @@ public final class JavaSyntaxParser {
             }
 
             for (SyntaxNode child : node.children()) {
+                activityCheck.run();
                 stack.push(child);
             }
         }

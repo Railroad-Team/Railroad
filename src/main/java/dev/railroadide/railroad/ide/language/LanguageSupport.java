@@ -1,185 +1,72 @@
 package dev.railroadide.railroad.ide.language;
 
-import dev.railroadide.railroad.ide.completion.CompletionProvider;
-import dev.railroadide.railroad.ide.diagnostics.DiagnosticsProvider;
-import dev.railroadide.railroad.ide.language.index.LanguageIndexContextContributor;
-import dev.railroadide.railroad.ide.language.index.ProjectIndexContext;
-import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexPersistence;
-import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexer;
-import dev.railroadide.railroad.ide.language.ProjectDiagnosticsFeatureFactory;
-import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.provider.api.*;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
-import org.jspecify.annotations.Nullable;
-
 import java.io.File;
 import java.nio.file.Path;
-import java.util.Locale;
 import java.util.Set;
 
-/**
- * Defines file recognition, editor creation, optional language features, and project indexing integration.
- */
-public interface LanguageSupport {
+/** Host editor presentation for a language contribution; optional features live in its session. */
+public interface LanguageSupport extends LanguageContribution {
     /**
-     * Returns the stable identifier used to associate features and indexes with a language.
+     * Host storage identity. Built-ins retain their existing persisted index names.
      *
-     * @return the language identifier
+     * @return the stable host language identifier used for storage
      */
     String languageId();
 
     /**
-     * Returns the language name presented to users.
+     * Declares filename suffixes recognized by the default matcher.
      *
-     * @return the display name
-     */
-    String displayName();
-
-    /**
-     * Returns the extensions recognized by the default filename matcher.
-     *
-     * @return supported lowercase extensions without leading dots
+     * @return the supported single or compound file extensions
      */
     Set<String> fileExtensions();
 
-    /**
-     * Checks whether the supplied file is supported.
-     *
-     * @param path the file path to inspect
-     * @return {@code true} if this language supports the file
-     */
-    default boolean supports(Path path) {
-        String name = path.getFileName().toString().toLowerCase(Locale.ROOT);
-        return fileExtensions().stream().anyMatch(ext -> name.endsWith("." + ext));
+    @Override
+    default LanguageId id() {
+        String id = languageId();
+        return new LanguageId(id.contains(":") ? id : "railroad:" + id);
+    }
+
+    @Override
+    default LanguageMatcher matcher() {
+        return LanguageMatcher.any(fileExtensions().stream().map(LanguageMatcher::extension)
+            .toArray(LanguageMatcher[]::new));
     }
 
     /**
-     * Checks whether the supplied file is supported.
+     * Checks the path using the language matcher with an empty content prefix.
      *
-     * @param file the source file to process
-     * @return {@code true} if this language supports the file
+     * @param path file path to test
+     * @return whether the path matches this language
+     */
+    default boolean supports(Path path) {
+        return matcher().match(new LanguageMatchInput(path, new byte[0])) > 0;
+    }
+
+    /**
+     * Checks the file using the language matcher with an empty content prefix.
+     *
+     * @param file file to test
+     * @return whether the file matches this language
      */
     default boolean supports(File file) {
         return supports(file.toPath());
     }
 
     /**
-     * Creates the editor view for a file in the supplied project.
-     * Text editors, including those created lazily by the view, must retain the
-     * supplied document identity in their captured snapshots.
+     * Creates the host editor presentation for a document.
      *
-     * @param project the project whose files and configuration are used
-     * @param documentId authoritative logical document identity allocated by the IDE owner
-     * @param file the source file to process
-     * @return the opened content and optional active text editor
+     * @param project project owning the document
+     * @param documentId stable identity of the document to open
+     * @param file document file path
+     * @return the view and optional text editor for the document
      */
     EditorOpenView open(Project project, DocumentId documentId, Path file);
 
-    /**
-     * Reports whether this language uses text editing; the default is true.
-     *
-     * @return {@code true} for text-based editor content
-     */
-    default boolean isTextBased() {
-        return true;
-    }
-
-    /**
-     * Checks whether a file diagnostics factory is available.
-     *
-     * @return {@code true} if diagnostics are supported
-     */
-    default boolean supportsDiagnostics() {
-        return diagnosticsFactory() != null;
-    }
-
-    /**
-     * Checks whether a completion factory is available.
-     *
-     * @return {@code true} if completion is supported
-     */
-    default boolean supportsCompletion() {
-        return completionFactory() != null;
-    }
-
-    /**
-     * Checks whether a signature help factory is available.
-     *
-     * @return {@code true} if signature help is supported
-     */
-    default boolean supportsSignatureHelp() {
-        return signatureHelpFactory() != null;
-    }
-
-    /**
-     * Returns a factory for document diagnostics.
-     *
-     * @return the feature factory, or {@code null} if unsupported
-     */
-    @Nullable
-    LanguageFeatureFactory<DiagnosticsProvider> diagnosticsFactory();
-
-    /**
-     * Returns a factory for diagnostics sharing a project context.
-     *
-     * @return the feature factory, or {@code null} if unsupported
-     */
-    @Nullable
-    default ProjectDiagnosticsFeatureFactory<DiagnosticsProvider> projectDiagnosticsFactory() {
-        return null;
-    }
-
-    /**
-     * Returns a factory for completion.
-     *
-     * @return the feature factory, or {@code null} if unsupported
-     */
-    @Nullable
-    LanguageFeatureFactory<CompletionProvider> completionFactory();
-
-    /**
-     * Returns a factory for signature help.
-     *
-     * @return the feature factory, or {@code null} if unsupported
-     */
-    @Nullable
-    LanguageFeatureFactory<SignatureHelpProvider> signatureHelpFactory();
-
-    /**
-     * Creates an indexer for project files in this language.
-     *
-     * @return the indexer, or {@code null} if indexing is unsupported
-     */
-    @Nullable
-    default ProjectLanguageIndexer<?, ?> createIndexer() {
-        return null;
-    }
-
-    /**
-     * Creates persistence support for this language's project index.
-     *
-     * @return the persistence adapter, or {@code null} if unsupported
-     */
-    @Nullable
-    default ProjectLanguageIndexPersistence<?> createPersistence() {
-        return null;
-    }
-
-    /**
-     * Creates a contributor that resolves language-specific project indexing inputs.
-     *
-     * @return the context contributor, or {@code null} if unsupported
-     */
-    @Nullable
-    default LanguageIndexContextContributor createIndexContextContributor() {
-        return null;
-    }
-
-    /**
-     * Warms auxiliary indexes needed by this language; the default implementation does nothing.
-     *
-     * @param context the project indexing context
-     */
-    default void warmAdditionalIndexes(ProjectIndexContext context) {
+    @Override
+    default LanguageSession openSession(LanguageSessionContext context) {
+        return new LanguageSession(CapabilityRegistry.empty());
     }
 }

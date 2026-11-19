@@ -15,8 +15,7 @@ import java.util.Objects;
  * tree does not invalidate this tree or its node identities.
  * <p>
  * Most consumers start here, obtain the {@linkplain #root() root node}, and then traverse
- * via {@link SyntaxNode#children()} or helpers such as
- * {@link dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext#traverse}.
+ * via {@link SyntaxNode#children()}.
  */
 public final class SyntaxTree {
     private final TextDocumentSnapshot documentSnapshot;

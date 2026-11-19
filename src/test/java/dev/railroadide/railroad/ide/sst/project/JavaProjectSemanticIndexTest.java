@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +18,7 @@ public class JavaProjectSemanticIndexTest {
     public void publishedIndexCopiesInputsAndSupportsConcurrentReadsAfterBuilderReuse() throws Exception {
         Path path = Path.of("Example.java");
         var descriptor = new JavaProjectSemanticIndex.SymbolDescriptor(
-            SymbolKind.CLASS, "Example", "demo.Example", null, null, path, false, true);
+            JavaSymbolKind.CLASS, "Example", "demo.Example", null, null, path, false, true);
         var declarations = new ArrayList<>(List.of(descriptor));
         var imports = new ArrayList<>(
             List.of(new JavaProjectSemanticIndex.ImportDescriptor("java.util.List", false, false)));
@@ -84,7 +85,7 @@ public class JavaProjectSemanticIndexTest {
             List.of(),
             List.of(
                 new JavaProjectSemanticIndex.SymbolDescriptor(
-                    SymbolKind.CLASS,
+                    JavaSymbolKind.CLASS,
                     "Utility",
                     "demo.Utility",
                     null,
@@ -93,7 +94,7 @@ public class JavaProjectSemanticIndexTest {
                     false,
                     true),
                 new JavaProjectSemanticIndex.SymbolDescriptor(
-                    SymbolKind.FIELD,
+                    JavaSymbolKind.FIELD,
                     "VALUE",
                     "demo.Utility#VALUE",
                     "demo.Utility",
@@ -102,7 +103,7 @@ public class JavaProjectSemanticIndexTest {
                     true,
                     false),
                 new JavaProjectSemanticIndex.SymbolDescriptor(
-                    SymbolKind.METHOD,
+                    JavaSymbolKind.METHOD,
                     "run",
                     "demo.Utility#run(String)",
                     "demo.Utility",
@@ -119,7 +120,7 @@ public class JavaProjectSemanticIndexTest {
                 new JavaProjectSemanticIndex.ImportDescriptor("demo.Utility.VALUE", true, false)),
             List.of(
                 new JavaProjectSemanticIndex.SymbolDescriptor(
-                    SymbolKind.CLASS,
+                    JavaSymbolKind.CLASS,
                     "Use",
                     "demo.Use",
                     null,
@@ -154,7 +155,7 @@ public class JavaProjectSemanticIndexTest {
             List.of(),
             List.of(
                 new JavaProjectSemanticIndex.SymbolDescriptor(
-                    SymbolKind.CLASS,
+                    JavaSymbolKind.CLASS,
                     "Utility",
                     "demo.Utility",
                     null,
@@ -184,7 +185,7 @@ public class JavaProjectSemanticIndexTest {
             List.of(),
             List.of(
                 new JavaProjectSemanticIndex.SymbolDescriptor(
-                    SymbolKind.CLASS,
+                    JavaSymbolKind.CLASS,
                     "Utility",
                     "demo.Utility",
                     null,
@@ -193,7 +194,7 @@ public class JavaProjectSemanticIndexTest {
                     false,
                     true),
                 new JavaProjectSemanticIndex.SymbolDescriptor(
-                    SymbolKind.LOCAL_VARIABLE,
+                    JavaSymbolKind.LOCAL_VARIABLE,
                     "temp",
                     null,
                     "demo.Utility#run(String)",
@@ -213,7 +214,7 @@ public class JavaProjectSemanticIndexTest {
             () -> new JavaProjectSemanticIndex.ImportDescriptor("   ", false, false));
 
         assertThrows(IllegalArgumentException.class, () -> new JavaProjectSemanticIndex.SymbolDescriptor(
-            SymbolKind.CLASS,
+            JavaSymbolKind.CLASS,
             "   ",
             "demo.Utility",
             null,

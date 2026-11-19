@@ -2,10 +2,12 @@ package dev.railroadide.railroad.plugin.spi.inspection;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
+import dev.railroadide.railroad.ide.sst.provider.api.ProviderExecutor;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 
 /**
  * Evaluates enabled inspection rules and routes diagnostics through configured severity settings.
@@ -17,6 +19,8 @@ public final class LanguageInspectionRuleEngine {
     /**
      * Runs a provider's enabled, nonnull rules in list order.
      * Exceptions from individual rule evaluations are logged so subsequent rules can run.
+     * A failed rule's partial diagnostics are discarded. Cancellation propagates immediately,
+     * and request activity is checked before each rule and before publishing its diagnostics.
      *
      * @param <C> context type accepted by the provider's rules
      * @param provider provider supplying the rules to evaluate
@@ -36,16 +40,25 @@ public final class LanguageInspectionRuleEngine {
         Objects.requireNonNull(reporter, "reporter");
         Objects.requireNonNull(settings, "settings");
 
+        context.checkActive();
         for (LanguageInspectionRule<C> rule : provider.rules()) {
+            context.checkActive();
             if (rule == null || !settings.isEnabled(rule))
                 continue;
 
-            LanguageInspectionRuleReporter ruleReporter = new DefaultLanguageInspectionRuleReporter(rule, reporter,
+            List<SemanticDiagnostic> pending = new ArrayList<>();
+            LanguageInspectionRuleReporter ruleReporter = new DefaultLanguageInspectionRuleReporter(rule, pending::add,
                 settings);
 
             try {
                 rule.evaluate(context, ruleReporter);
+                context.checkActive();
+                pending.forEach(reporter::report);
+            } catch (CancellationException exception) {
+                throw exception;
             } catch (Exception exception) {
+                ProviderExecutor.shared().reportFailure("inspection:" + provider.languageId() + ":" + provider.id(),
+                    exception);
                 Railroad.LOGGER.error(
                     "Inspection rule '{}:{}' failed for {}",
                     provider.id(),
@@ -54,6 +67,7 @@ public final class LanguageInspectionRuleEngine {
                     exception);
             }
         }
+        context.checkActive();
     }
 
     /**

@@ -44,7 +44,7 @@ public class CodeEditorSignatureRequestTest {
     public void acceptedHelpKeepsItsRequestActive() throws Exception {
         try (Fixture fixture = open(context -> help(context, "ACCEPTED"))) {
             Invocation invocation = fixture.request();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertEquals("ACCEPTED", fixture.editor.activeSignatureHelp.get().methodName());
                 assertTrue(fixture.editor.signaturePopup.isShowing());
@@ -76,14 +76,14 @@ public class CodeEditorSignatureRequestTest {
                 assertSame(old.context().documentSnapshot(), current.context().documentSnapshot());
                 assertNotSame(old.context(), current.context());
                 assertTrue(old.context().cancellationToken().isCancellationRequested());
-                awaitWorkers(fixture.editor.worker, 1);
+                awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
                     assertEquals("NEW", fixture.editor.activeSignatureHelp.get().methodName());
                     return null;
                 });
 
                 releaseOld.countDown();
-                awaitWorkers(fixture.editor.worker, 0);
+                awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
                     assertEquals("NEW", fixture.editor.activeSignatureHelp.get().methodName());
                     return null;
@@ -108,7 +108,7 @@ public class CodeEditorSignatureRequestTest {
                 Invocation old = fixture.request();
                 try (FxBlocker blocker = FxBlocker.start(() -> fixture.editor.moveTo(old.caret() + 1))) {
                     returnOld.countDown();
-                    awaitWorkers(fixture.editor.worker, 0);
+                    awaitRequests(fixture.editor.featureRequests);
                     blocker.releaseAndAwait();
                 }
                 fixture.nextRequest();
@@ -119,7 +119,7 @@ public class CodeEditorSignatureRequestTest {
                 });
 
                 returnNew.countDown();
-                awaitWorkers(fixture.editor.worker, 0);
+                awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
                     assertEquals("NEW", fixture.editor.activeSignatureHelp.get().methodName());
                     return null;
@@ -147,7 +147,7 @@ public class CodeEditorSignatureRequestTest {
                     return null;
                 });
                 release.countDown();
-                awaitWorkers(fixture.editor.worker, 0);
+                awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
                     assertNull(fixture.editor.activeSignatureHelp.get());
                     assertFalse(fixture.editor.signaturePopup.isShowing());
@@ -170,7 +170,7 @@ public class CodeEditorSignatureRequestTest {
                 Invocation invocation = fixture.request();
                 try (FxBlocker blocker = FxBlocker.start(fixture.editor::dismiss)) {
                     release.countDown();
-                    awaitWorkers(fixture.editor.worker, 0);
+                    awaitRequests(fixture.editor.featureRequests);
                     blocker.releaseAndAwait();
                 }
                 onFx(() -> {
@@ -194,12 +194,12 @@ public class CodeEditorSignatureRequestTest {
             return result;
         })) {
             Invocation first = fixture.request();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             SignatureHelp displayed = onFx(() -> fixture.editor.activeSignatureHelp.get());
             Object header = onFx(() -> fixture.editor.signatureTextFlow.getChildren().getFirst());
 
             Invocation second = fixture.request();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertTrue(first.context().cancellationToken().isCancellationRequested());
                 assertFalse(second.context().cancellationToken().isCancellationRequested());
@@ -220,14 +220,14 @@ public class CodeEditorSignatureRequestTest {
             ? help(context, "PREVIOUS")
             : new FeatureResult<>(context, null))) {
             fixture.request();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertNotNull(fixture.editor.activeSignatureHelp.get());
                 return null;
             });
 
             Invocation unsupported = fixture.request();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertNull(fixture.editor.activeSignatureHelp.get());
                 assertFalse(fixture.editor.signaturePopup.isShowing());
@@ -247,7 +247,7 @@ public class CodeEditorSignatureRequestTest {
             return help(different, "WRONG_REQUEST");
         })) {
             fixture.request();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertNull(fixture.editor.activeSignatureHelp.get());
                 assertFalse(fixture.editor.signaturePopup.isShowing());
@@ -260,7 +260,7 @@ public class CodeEditorSignatureRequestTest {
     public void storeReplacementClearsDisplayedHelpAndCancelsTheRequest() throws Exception {
         try (Fixture fixture = open(context -> help(context, "OLD_STORE"))) {
             Invocation invocation = fixture.request();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertNotNull(fixture.editor.activeSignatureHelp.get());
                 WorkspaceSnapshot workspace = invocation.context().workspaceSnapshot();
@@ -279,7 +279,7 @@ public class CodeEditorSignatureRequestTest {
     public void confirmedCloseClearsDisplayedHelpAndCancelsTheRequest() throws Exception {
         try (Fixture fixture = open(context -> help(context, "CLOSING"))) {
             Invocation invocation = fixture.request();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertNotNull(fixture.editor.activeSignatureHelp.get());
                 fixture.editor.discardChangesOnClose();
@@ -309,7 +309,7 @@ public class CodeEditorSignatureRequestTest {
                     return null;
                 });
                 release.countDown();
-                awaitWorkers(fixture.editor.worker, 0);
+                awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
                     assertNull(fixture.editor.activeSignatureHelp.get());
                     return null;
@@ -336,7 +336,7 @@ public class CodeEditorSignatureRequestTest {
                     return null;
                 });
                 release.countDown();
-                awaitWorkers(fixture.editor.worker, 0);
+                awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
                     assertNull(fixture.editor.activeSignatureHelp.get());
                     return null;
@@ -356,9 +356,9 @@ public class CodeEditorSignatureRequestTest {
             return help(context, "RECOVERED");
         })) {
             fixture.request();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             fixture.request();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertEquals("RECOVERED", fixture.editor.activeSignatureHelp.get().methodName());
                 return null;
@@ -377,7 +377,8 @@ public class CodeEditorSignatureRequestTest {
             Thread.UncaughtExceptionHandler previousHandler = Thread.currentThread().getUncaughtExceptionHandler();
             Thread.currentThread().setUncaughtExceptionHandler((_, failure) -> failures.add(failure));
             Project project = new RailroadProject(directory, "Signature request", new WritableImage(1, 1));
-            var pane = new TestEditor(project, id, file, new CodeEditorConfig("java", null, null, provider, null));
+            var pane = new TestEditor(project, id, file,
+                new CodeEditorConfig("java", null, null, provider, null, null));
             store.publishBacking(pane.captureSnapshot());
             pane.setDocumentStore(store);
             var stage = new Stage();
@@ -438,7 +439,7 @@ public class CodeEditorSignatureRequestTest {
                 }
                 return null;
             });
-            assertTrue(editor.worker.awaitTermination(10, TimeUnit.SECONDS));
+            CodeEditorRequestTestSupport.awaitRequests(editor.featureRequests);
             if (!fxFailures.isEmpty())
                 throw new AssertionError("Uncaught JavaFX publication failure", fxFailures.peek());
         }

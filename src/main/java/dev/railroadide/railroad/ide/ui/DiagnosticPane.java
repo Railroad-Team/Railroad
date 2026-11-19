@@ -11,11 +11,12 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 
-import javax.tools.Diagnostic;
-import javax.tools.JavaFileObject;
+import dev.railroadide.railroad.ide.diagnostics.DiagnosticSeverity;
+import java.util.Comparator;
+import java.util.Locale;
 
 /**
- * A pane component for displaying Java compilation diagnostics (errors and warnings).
+ * A pane component for displaying language-neutral diagnostics.
  * Provides a structured layout with location information and diagnostic messages.
  * Automatically applies styling based on the diagnostic kind (error or warning).
  */
@@ -51,12 +52,9 @@ public class DiagnosticPane extends BorderPane {
 
         setTop(locationText);
         setCenter(messageText);
+        setBottom(new Text(diagnostic.source() + " ? " + diagnostic.origin()));
         getStyleClass().add("diagnostic-pane");
-        if (diagnostic.kind() == Diagnostic.Kind.ERROR) {
-            getStyleClass().add("error");
-        } else {
-            getStyleClass().add("warning");
-        }
+        getStyleClass().add(diagnostic.kind().name().toLowerCase(Locale.ROOT));
         if (sourcePath != null) {
             installSourceNavigation(sourcePath);
         }
@@ -67,23 +65,20 @@ public class DiagnosticPane extends BorderPane {
      *
      * @param diagnostics the collection of diagnostics to display
      */
-    public DiagnosticPane(Collection<Diagnostic<? extends JavaFileObject>> diagnostics) {
+    public DiagnosticPane(Collection<? extends EditorDiagnostic<?>> diagnostics) {
         var message = new StringBuilder();
         for (var diagnostic : diagnostics) {
-            message.append(diagnostic.getMessage(null)).append("\n");
+            message.append(diagnostic.message(null)).append("\n");
         }
 
         var messageText = new Text(message.toString());
-        var locationText = new Text("Multiple errors");
+        var locationText = new Text("Multiple diagnostics");
 
         setTop(locationText);
         setCenter(messageText);
         getStyleClass().add("diagnostic-pane");
-        if (diagnostics.stream().anyMatch(diagnostic -> diagnostic.getKind() == Diagnostic.Kind.ERROR)) {
-            getStyleClass().add("error");
-        } else {
-            getStyleClass().add("warning");
-        }
+        diagnostics.stream().map(EditorDiagnostic::kind).min(Comparator.naturalOrder())
+            .ifPresent(severity -> getStyleClass().add(severity.name().toLowerCase(Locale.ROOT)));
     }
 
     /**
@@ -92,7 +87,7 @@ public class DiagnosticPane extends BorderPane {
      * @param diagnostics the diagnostics to display
      */
     @SafeVarargs
-    public DiagnosticPane(Diagnostic<? extends JavaFileObject>... diagnostics) {
+    public DiagnosticPane(EditorDiagnostic<?>... diagnostics) {
         this(List.of(diagnostics));
     }
 

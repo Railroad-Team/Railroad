@@ -23,6 +23,10 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import dev.railroadide.railroad.ui.RRListView;
+import dev.railroadide.railroad.ide.sst.provider.api.CapabilityRegistry;
+import dev.railroadide.railroad.ide.sst.provider.api.LanguageSession;
 
 import static dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorRequestTestSupport.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -44,7 +48,7 @@ public class CodeEditorCompletionRequestTest {
     public void acceptedCompletionKeepsItsRequestActiveWhileBuildingThePopup() throws Exception {
         try (Fixture fixture = open(context -> completion(context, "ACCEPTED"))) {
             FeatureRequestContext context = fixture.request();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertEquals(List.of("ACCEPTED"), fixture.editor.candidates());
                 assertFalse(context.cancellationToken().isCancellationRequested());
@@ -70,14 +74,14 @@ public class CodeEditorCompletionRequestTest {
                 FeatureRequestContext current = fixture.request();
                 assertTrue(old.cancellationToken().isCancellationRequested());
                 assertNotSame(old, current);
-                awaitWorkers(fixture.editor.worker, 1);
+                awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
                     assertEquals(List.of("NEW"), fixture.editor.candidates());
                     return null;
                 });
 
                 releaseOld.countDown();
-                awaitWorkers(fixture.editor.worker, 0);
+                awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
                     assertEquals(List.of("NEW"), fixture.editor.candidates());
                     return null;
@@ -109,7 +113,7 @@ public class CodeEditorCompletionRequestTest {
                 if (alreadyQueued) {
                     try (FxBlocker blocker = FxBlocker.start(fixture.editor::escape)) {
                         releaseResult.countDown();
-                        awaitWorkers(fixture.editor.worker, 0);
+                        awaitRequests(fixture.editor.featureRequests);
                         blocker.releaseAndAwait();
                     }
                 } else {
@@ -118,7 +122,7 @@ public class CodeEditorCompletionRequestTest {
                         return null;
                     });
                     releaseResult.countDown();
-                    awaitWorkers(fixture.editor.worker, 0);
+                    awaitRequests(fixture.editor.featureRequests);
                 }
                 assertTrue(context.cancellationToken().isCancellationRequested());
                 onFx(() -> {
@@ -143,7 +147,7 @@ public class CodeEditorCompletionRequestTest {
             return completion(different, "WRONG_REQUEST");
         })) {
             fixture.request();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertTrue(fixture.editor.candidates().isEmpty());
                 return null;
@@ -155,7 +159,7 @@ public class CodeEditorCompletionRequestTest {
     public void unsupportedNullPayloadDismissesCompletionWithoutAnFxFailure() throws Exception {
         try (Fixture fixture = open(context -> new FeatureResult<>(context, null))) {
             FeatureRequestContext context = fixture.request();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertTrue(fixture.editor.candidates().isEmpty());
                 assertNull(fixture.editor.activeCompletionPopup.get());
@@ -171,7 +175,7 @@ public class CodeEditorCompletionRequestTest {
     public void emptyPayloadDismissesCompletionWithoutAnFxFailure() throws Exception {
         try (Fixture fixture = open(context -> new FeatureResult<>(context, CompletionResult.empty()))) {
             FeatureRequestContext context = fixture.request();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertTrue(fixture.editor.candidates().isEmpty());
                 assertNull(fixture.editor.activeCompletionPopup.get());
@@ -197,7 +201,7 @@ public class CodeEditorCompletionRequestTest {
                     return null;
                 });
                 releaseResult.countDown();
-                awaitWorkers(fixture.editor.worker, 0);
+                awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
                     assertTrue(fixture.editor.candidates().isEmpty());
                     return null;
@@ -212,7 +216,7 @@ public class CodeEditorCompletionRequestTest {
     public void replacingTheStoreClearsAlreadyDisplayedCompletionState() throws Exception {
         try (Fixture fixture = open(context -> completion(context, "OLD_STORE"))) {
             FeatureRequestContext context = fixture.request();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertEquals(List.of("OLD_STORE"), fixture.editor.candidates());
                 fixture.editor.setDocumentStore(replacementStore(context));
@@ -228,7 +232,7 @@ public class CodeEditorCompletionRequestTest {
     public void confirmedCloseClearsAlreadyDisplayedCompletionState() throws Exception {
         try (Fixture fixture = open(context -> completion(context, "CLOSING"))) {
             FeatureRequestContext context = fixture.request();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertEquals(List.of("CLOSING"), fixture.editor.candidates());
                 fixture.editor.discardChangesOnClose();
@@ -257,7 +261,7 @@ public class CodeEditorCompletionRequestTest {
                     return null;
                 });
                 releaseResult.countDown();
-                awaitWorkers(fixture.editor.worker, 0);
+                awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
                     assertTrue(fixture.editor.candidates().isEmpty());
                     return null;
@@ -277,9 +281,9 @@ public class CodeEditorCompletionRequestTest {
             return completion(context, "RECOVERED");
         })) {
             fixture.request();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             fixture.request();
-            awaitWorkers(fixture.editor.worker, 0);
+            awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertEquals(List.of("RECOVERED"), fixture.editor.candidates());
                 return null;
@@ -287,19 +291,132 @@ public class CodeEditorCompletionRequestTest {
         }
     }
 
+    @Test
+    public void unloadedProviderCannotPublishAResultAlreadyQueuedForTheEditor() throws Exception {
+        var releaseResult = new CountDownLatch(1);
+        try (var session = new LanguageSession(
+            CapabilityRegistry.empty());
+            Fixture fixture = open(context -> {
+                await(releaseResult);
+                return completion(context, "UNLOADED");
+            }, "this.", text -> text.endsWith("."), session.cancellationToken())) {
+            try {
+                FeatureRequestContext request = fixture.request();
+                try (FxBlocker blocker = FxBlocker.start(() -> {
+                })) {
+                    releaseResult.countDown();
+                    awaitRequests(fixture.editor.featureRequests);
+                    assertFalse(request.cancellationToken().isCancellationRequested());
+                    session.close();
+                    assertTrue(request.cancellationToken().isCancellationRequested());
+                    blocker.releaseAndAwait();
+                }
+                onFx(() -> {
+                    assertTrue(fixture.editor.candidates().isEmpty());
+                    assertNull(fixture.editor.activeCompletionPopup.get());
+                    return null;
+                });
+            } finally {
+                releaseResult.countDown();
+            }
+        }
+    }
+
+    @Test
+    public void displayedCompletionCannotBeAcceptedAfterProviderUnload() throws Exception {
+        try (var session = new LanguageSession(
+            CapabilityRegistry.empty());
+            Fixture fixture = open(context -> completion(context, "UNLOADED"), "this.",
+                text -> text.endsWith("."), session.cancellationToken())) {
+            fixture.request();
+            awaitRequests(fixture.editor.featureRequests);
+            onFx(() -> {
+                assertEquals(List.of("UNLOADED"), fixture.editor.candidates());
+                session.close();
+                var accept = CodeEditorPane.class.getDeclaredMethod("completeFromSelection", RRListView.class);
+                accept.setAccessible(true);
+                accept.invoke(fixture.editor, fixture.editor.activeCompletionList.get());
+                assertEquals("this.", fixture.editor.getText());
+                assertNull(fixture.editor.activeCompletionPopup.get());
+                return null;
+            });
+        }
+    }
+
+    @Test
+    public void providerCanCompleteAfterColonWithoutEditorLanguageRules() throws Exception {
+        assertCustomCompletion("name", ":", 5, "name:value", text -> text.endsWith(":"));
+    }
+
+    @Test
+    public void providerCanReplaceAWordPrefixStartingAtZero() throws Exception {
+        assertCustomCompletion("", "va", 0, "value", text -> !text.isEmpty());
+    }
+
+    private void assertCustomCompletion(
+        String initial,
+        String inserted,
+        int replacementStart,
+        String expected,
+        Predicate<String> policy
+    ) throws Exception {
+        try (Fixture fixture = open(context -> new FeatureResult<>(context,
+            new CompletionResult(replacementStart, List.of(new CompletionItem("value", "value")))), initial, policy)) {
+            onFx(() -> {
+                fixture.editor.moveTo(fixture.editor.getLength());
+                fixture.editor.insertText(fixture.editor.getLength(), inserted);
+                fixture.editor.moveTo(fixture.editor.getLength());
+                return null;
+            });
+            assertNotNull(fixture.provider.requests.poll(10, TimeUnit.SECONDS), "Custom trigger was not dispatched");
+            awaitRequests(fixture.editor.featureRequests);
+            onFx(() -> {
+                assertEquals(List.of("value"), fixture.editor.candidates());
+                var filter = CodeEditorPane.class.getDeclaredMethod("filterAutoComplete", String.class);
+                filter.setAccessible(true);
+                filter.invoke(fixture.editor, fixture.editor.getText());
+                assertNotNull(fixture.editor.activeCompletionList.get());
+                var accept = CodeEditorPane.class.getDeclaredMethod("completeFromSelection",
+                    RRListView.class);
+                accept.setAccessible(true);
+                accept.invoke(fixture.editor, fixture.editor.activeCompletionList.get());
+                assertEquals(expected, fixture.editor.getText());
+                return null;
+            });
+        }
+    }
+
     private Fixture open(Function<FeatureRequestContext, FeatureResult<CompletionResult>> computation)
         throws Exception {
-        Path file = directory.resolve("Example.java");
-        Files.writeString(file, "class Example { void call() { this.; } }");
+        return open(computation, "class Example { void call() { this.; } }", text -> text.endsWith("."));
+    }
+
+    private Fixture open(
+        Function<FeatureRequestContext, FeatureResult<CompletionResult>> computation,
+        String initialText,
+        Predicate<String> triggerPolicy
+    ) throws Exception {
+        return open(computation, initialText, triggerPolicy, CancellationToken.none());
+    }
+
+    private Fixture open(
+        Function<FeatureRequestContext, FeatureResult<CompletionResult>> computation,
+        String initialText,
+        Predicate<String> triggerPolicy,
+        CancellationToken providerLifetime
+    ) throws Exception {
+        Path file = directory.resolve("Example.txt");
+        Files.writeString(file, initialText);
         DocumentId id = DocumentId.create();
         var store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()));
-        var provider = new ControlledProvider(computation);
+        var provider = new ControlledProvider(computation, triggerPolicy);
         Fixture fixture = onFx(() -> {
             var failures = new LinkedBlockingQueue<Throwable>();
             Thread.UncaughtExceptionHandler previousHandler = Thread.currentThread().getUncaughtExceptionHandler();
             Thread.currentThread().setUncaughtExceptionHandler((_, failure) -> failures.add(failure));
             Project project = new RailroadProject(directory, "Completion request", new WritableImage(1, 1));
-            var pane = new TestEditor(project, id, file, new CodeEditorConfig("java", provider, null, null, null));
+            var pane = new TestEditor(project, id, file,
+                new CodeEditorConfig("java", provider, null, null, null, null, providerLifetime));
             store.publishBacking(pane.captureSnapshot());
             pane.setDocumentStore(store);
             var stage = new Stage();
@@ -316,7 +433,7 @@ public class CodeEditorCompletionRequestTest {
     private static FeatureResult<CompletionResult> completion(FeatureRequestContext context, String label) {
         String text = ((TextDocumentSnapshot) context.documentSnapshot()).text();
         return new FeatureResult<>(context,
-            new CompletionResult(text.indexOf('.'), List.of(new CompletionItem(label, label))));
+            new CompletionResult(text.indexOf('.') + 1, List.of(new CompletionItem(label, label))));
     }
 
     private static DefaultDocumentStore replacementStore(FeatureRequestContext context) {
@@ -361,7 +478,7 @@ public class CodeEditorCompletionRequestTest {
                 }
                 return null;
             });
-            assertTrue(editor.worker.awaitTermination(10, TimeUnit.SECONDS));
+            CodeEditorRequestTestSupport.awaitRequests(editor.featureRequests);
             assertNoFxFailures();
         }
     }
@@ -369,9 +486,19 @@ public class CodeEditorCompletionRequestTest {
     private static final class ControlledProvider implements CompletionProvider {
         private final BlockingQueue<FeatureRequestContext> requests = new LinkedBlockingQueue<>();
         private final Function<FeatureRequestContext, FeatureResult<CompletionResult>> computation;
+        private final Predicate<String> triggerPolicy;
 
-        private ControlledProvider(Function<FeatureRequestContext, FeatureResult<CompletionResult>> computation) {
+        private ControlledProvider(
+            Function<FeatureRequestContext, FeatureResult<CompletionResult>> computation,
+            Predicate<String> triggerPolicy
+        ) {
             this.computation = computation;
+            this.triggerPolicy = triggerPolicy;
+        }
+
+        @Override
+        public boolean shouldTrigger(String insertedText) {
+            return triggerPolicy.test(insertedText);
         }
 
         @Override
@@ -383,7 +510,9 @@ public class CodeEditorCompletionRequestTest {
         public FeatureResult<CompletionResult> compute(FeatureRequestContext context, int triggerAt) {
             assertSame(context.documentSnapshot(),
                 context.workspaceSnapshot().document(context.documentSnapshot().id()).orElseThrow());
-            assertEquals(((TextDocumentSnapshot) context.documentSnapshot()).text().indexOf('.'), triggerAt);
+            String text = ((TextDocumentSnapshot) context.documentSnapshot()).text();
+            assertTrue(triggerAt >= 0 && triggerAt < text.length());
+            assertTrue(triggerPolicy.test(text.substring(triggerAt, triggerAt + 1)));
             requests.add(context);
             // Intentionally ignore cancellation so late-result rejection is tested in the editor.
             return computation.apply(context);
@@ -408,6 +537,7 @@ public class CodeEditorCompletionRequestTest {
         private void trigger() throws ReflectiveOperationException {
             Method method = CodeEditorPane.class.getDeclaredMethod("triggerCompletion", int.class);
             method.setAccessible(true);
+            moveTo(getText().indexOf('.') + 1);
             method.invoke(this, getText().indexOf('.'));
         }
 

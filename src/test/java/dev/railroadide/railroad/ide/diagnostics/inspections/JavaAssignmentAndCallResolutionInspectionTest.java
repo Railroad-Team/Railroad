@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.project.*;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
@@ -142,8 +143,8 @@ public class JavaAssignmentAndCallResolutionInspectionTest {
             Path.of("Example.java"), source, JavaSemanticAnalyzer.analyzeFacts(source));
 
         assertTrue(context.isAssignable(
-            new Type.DeclaredType("example.Outer.Inner", List.of()),
-            new Type.DeclaredType("example.Outer$Inner", List.of())));
+            new JavaTypes.DeclaredType("example.Outer.Inner", List.of()),
+            new JavaTypes.DeclaredType("example.Outer$Inner", List.of())));
     }
 
     @Test

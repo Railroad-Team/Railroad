@@ -1,8 +1,13 @@
 package dev.railroadide.railroad.ide.language.impl.index;
 
+import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.WorkspaceModes;
+import dev.railroadide.railroad.ide.language.index.ProjectIndexContext;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService;
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.sst.request.api.CancellationTokenSource;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.objectweb.asm.*;
@@ -20,6 +25,55 @@ import static org.junit.jupiter.api.Assertions.*;
 public class JavaCacheLifecycleTest {
     @TempDir
     public Path root;
+
+    @BeforeAll
+    public static void initialize() {
+        WorkspaceModes.initialize();
+    }
+
+    @Test
+    public void liveAuxiliaryIndexingObservesRequestCancellationBeforeCachingBinaries() throws Exception {
+        Path jar = root.resolve("library.jar");
+        Path jdk = root.resolve("jdk");
+        archive(jar, "demo/Library", "oldValue");
+        archive(jdk.resolve("lib/rt.jar"), "demo/Runtime", "runtime");
+        Project project = project();
+        var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
+        var session = service.openProject(project);
+        try (var provider = new JavaAnalysisContextProvider()) {
+            provider.adoptConfiguration(session, provider.prepareConfiguration(session, configuration(jar, jdk)));
+            var cancellation = new CancellationTokenSource();
+            List<Path> cancellingRoots = new AbstractList<>() {
+                @Override
+                public Path get(int index) {
+                    Objects.checkIndex(index, 1);
+                    cancellation.cancel();
+                    return jar;
+                }
+
+                @Override
+                public int size() {
+                    return 1;
+                }
+            };
+            var language = new JavaLanguageIndexContext(List.of(), List.of(), cancellingRoots, List.of(), List.of(),
+                jdk);
+            var request = new ProjectIndexContext(project, root, Map.of("java", language), session,
+                session.configurationGeneration(), cancellation.token());
+            assertThrows(CancellationException.class, () -> provider.index(request));
+            assertTrue(cancellation.token().isCancellationRequested());
+
+            archive(jar, "demo/Library", "newValue");
+            var retryLanguage = new JavaLanguageIndexContext(List.of(), List.of(), List.of(jar), List.of(), List.of(),
+                jdk);
+            var retry = new ProjectIndexContext(project, root, Map.of("java", retryLanguage), session);
+            var result = provider.index(retry);
+            assertNotNull(result);
+            assertEquals("newValue", result.classStubsByQualifiedName().get("demo.Library").fields().getFirst().name());
+        } finally {
+            service.closeProject(session);
+        }
+    }
 
     @Test
     public void standaloneProviderDoesNotReuseAPathOnlyJdkAcrossConfigurations() throws Exception {

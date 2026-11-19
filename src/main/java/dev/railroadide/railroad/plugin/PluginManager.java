@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRegistries;
+import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.defaults.DefaultPluginContext;
 import dev.railroadide.railroad.plugin.spi.Plugin;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
+import java.util.ServiceConfigurationError;
 
 /**
  * PluginManager is responsible for loading, enabling, and disabling plugins in the Railroad application.
@@ -204,18 +206,24 @@ public class PluginManager {
 
             registeredProviderIds = registerJavaInspectionRuleProviders(descriptor,
                 loadJavaInspectionRuleProviders(classLoader));
+            LanguageSupportRegistry.runtime().discover(descriptor.getId(), classLoader);
 
             loadResult.setPlugin(plugin, classLoader);
             loadResult.setJavaInspectionRuleProviderRegistrationIds(registeredProviderIds);
             Plugin enabledPlugin = plugin;
-            ShutdownHooks.addHook(() -> {
+            loadResult.setShutdownRegistration(ShutdownHooks.registerHook(() -> {
                 try {
                     enabledPlugin.onDisable(context);
-                    unloadPluginRuntime(loadResult);
                 } catch (Exception exception) {
                     Railroad.LOGGER.error("Error during plugin {} shutdown cleanup", descriptor.getName(), exception);
+                } finally {
+                    try {
+                        unloadPluginRuntime(loadResult);
+                    } catch (Exception exception) {
+                        Railroad.LOGGER.error("Error disposing plugin {}", descriptor.getName(), exception);
+                    }
                 }
-            });
+            }));
 
             Map<String, Boolean> enabledPluginsById = ConfigHandler.getConfig().getEnabledPlugins();
             enabledPluginsById.put(descriptor.getId(), true);
@@ -225,16 +233,27 @@ public class PluginManager {
             L18n.onPluginEnabled(descriptor);
 
             Railroad.LOGGER.info("Enabled plugin: {}", descriptor.getName());
-        } catch (Exception exception) {
-            unregisterJavaInspectionRuleProviders(registeredProviderIds);
+        } catch (Exception | LinkageError | ServiceConfigurationError exception) {
+            var failure = new RuntimeException("Failed to instantiate plugin: " + descriptor.getName(), exception);
+            try {
+                LanguageSupportRegistry.runtime().unregisterOwner(descriptor.getId());
+            } catch (RuntimeException cleanupFailure) {
+                failure.addSuppressed(cleanupFailure);
+            }
+            try {
+                unregisterJavaInspectionRuleProviders(registeredProviderIds);
+            } catch (RuntimeException cleanupFailure) {
+                failure.addSuppressed(cleanupFailure);
+            }
+            loadResult.clearShutdownRegistration();
             loadResult.clearJavaInspectionRuleProviderRegistrationIds();
             loadResult.setPlugin(null, null);
 
             if (pluginEnabled && plugin != null) {
                 try {
                     plugin.onDisable(context);
-                } catch (Exception disableException) {
-                    exception.addSuppressed(disableException);
+                } catch (Exception | LinkageError disableException) {
+                    failure.addSuppressed(disableException);
                 }
             }
 
@@ -242,11 +261,11 @@ public class PluginManager {
                 try {
                     classLoader.close();
                 } catch (Exception closeException) {
-                    exception.addSuppressed(closeException);
+                    failure.addSuppressed(closeException);
                 }
             }
 
-            throw new RuntimeException("Failed to instantiate plugin: " + descriptor.getName(), exception);
+            throw failure;
         }
     }
 
@@ -271,28 +290,7 @@ public class PluginManager {
             return;
         }
 
-        RuntimeException failure = null;
-        Plugin plugin = loadResult.pluginInstance();
-        if (plugin != null) {
-            try {
-                var context = new DefaultPluginContext(descriptor, Railroad.EVENT_BUS);
-                plugin.onDisable(context);
-            } catch (Exception exception) {
-                failure = new RuntimeException("Plugin onDisable failed: " + descriptor.getName(), exception);
-            }
-        } else {
-            Railroad.LOGGER.warn("Plugin instance for {} is null, skipping onDisable", descriptor.getName());
-        }
-
-        try {
-            unloadPluginRuntime(loadResult);
-        } catch (Exception exception) {
-            if (failure == null) {
-                failure = new RuntimeException("Failed to clean up plugin: " + descriptor.getName(), exception);
-            } else {
-                failure.addSuppressed(exception);
-            }
-        }
+        RuntimeException failure = disablePluginRuntime(loadResult);
 
         Map<String, Boolean> enabledPluginsById = ConfigHandler.getConfig().getEnabledPlugins();
         enabledPluginsById.put(descriptor.getId(), false);
@@ -612,13 +610,65 @@ public class PluginManager {
         }
     }
 
-    private static void unloadPluginRuntime(PluginLoadResult loadResult) throws IOException {
-        unregisterJavaInspectionRuleProviders(loadResult);
+    private static RuntimeException disablePluginRuntime(PluginLoadResult loadResult) {
+        PluginDescriptor descriptor = loadResult.descriptor();
+        RuntimeException failure = null;
+        Plugin plugin = loadResult.pluginInstance();
+        if (plugin != null) {
+            try {
+                var context = new DefaultPluginContext(descriptor, Railroad.EVENT_BUS);
+                plugin.onDisable(context);
+            } catch (Exception | LinkageError exception) {
+                failure = new RuntimeException("Plugin onDisable failed: " + descriptor.getName(), exception);
+            }
+        } else {
+            Railroad.LOGGER.warn("Plugin instance for {} is null, skipping onDisable", descriptor.getName());
+        }
 
+        try {
+            unloadPluginRuntime(loadResult);
+        } catch (Exception exception) {
+            if (failure == null) {
+                failure = new RuntimeException("Failed to clean up plugin: " + descriptor.getName(), exception);
+            } else {
+                failure.addSuppressed(exception);
+            }
+        }
+
+        return failure;
+    }
+
+    private static void unloadPluginRuntime(PluginLoadResult loadResult) throws IOException {
+        loadResult.clearShutdownRegistration();
+        IOException failure = null;
+        try {
+            LanguageSupportRegistry.runtime().unregisterOwner(loadResult.descriptor().getId());
+        } catch (RuntimeException exception) {
+            failure = new IOException("Unable to dispose language providers", exception);
+        }
+        try {
+            unregisterJavaInspectionRuleProviders(loadResult);
+        } catch (RuntimeException exception) {
+            if (failure == null) {
+                failure = new IOException("Unable to unregister inspection providers", exception);
+            } else {
+                failure.addSuppressed(exception);
+            }
+        }
         PluginClassLoader classLoader = loadResult.classLoader();
         loadResult.setPlugin(null, null);
         if (classLoader != null) {
-            classLoader.close();
+            try {
+                classLoader.close();
+            } catch (IOException exception) {
+                if (failure == null) {
+                    failure = exception;
+                } else {
+                    failure.addSuppressed(exception);
+                }
+            }
         }
+        if (failure != null)
+            throw failure;
     }
 }

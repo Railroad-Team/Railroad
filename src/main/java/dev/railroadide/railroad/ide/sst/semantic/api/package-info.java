@@ -5,13 +5,12 @@
  * declared symbols, resolved references, inferred types, scopes, and diagnostics produced
  * by semantic analysis.
  * <p>
- * Inspection authors normally access this package through {@link
- * dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext}:
+ * Language-neutral inspections access this package through their analysis result:
  *
  * <pre>{@code
- * context.resolvedSymbol(node)
- * context.declaredSymbol(node)
- * context.inferredType(node)
+ * model.resolvedSymbol(node)
+ * model.declaredSymbol(node)
+ * model.inferredType(node)
  * }</pre>
  * <p>
  * Use this package when an inspection needs name resolution, assignability, visibility,

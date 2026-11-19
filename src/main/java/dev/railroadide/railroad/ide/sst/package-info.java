@@ -18,8 +18,8 @@
  * fresh scopes. Model builders may be reused for associations/diagnostics; earlier models
  * remain unchanged. Scope queries preserve overload order and local-to-parent lookup;
  * declaration maps preserve first-name insertion order. SimpleSymbol, Java's internal
- * synthetic symbols, and sealed semantic Type implementations are immutable.
- * Provider-defined Symbol and SyntaxNode implementations must satisfy the same contract;
+ * synthetic symbols, and Java extension type values are immutable.
+ * Provider-defined Type, SymbolKind, Symbol and SyntaxNode implementations must satisfy the same contract;
  * the core cannot clone arbitrary implementations or make a mutable provider object safe
  * by copying its container.
  *
@@ -86,14 +86,19 @@
  * immutable snapshots. Migrating those graphs or publishing immutable query projections
  * belongs to the classparser/library-index subsystem; until then callers must not mutate
  * them and shared use requires ownership discipline. JavaAnalysisContextProvider's
- * per-service library/JDK maps can retain many distinct roots and need lifecycle/size
- * bounds in that subsystem. ProjectLanguageIndexService owns current indexes by project
- * and language, but its lifecycle/publication rules still need to meet the policy above.
+ * library/JDK caches now have explicit session ownership and access-based size bounds;
+ * replacement and close release retained entries and reject late cache publication.
+ * ProjectLanguageIndexService owns current indexes by project and language and checks
+ * session, configuration, operation generation and cancellation before publication.
  * <p>
  * CodeEditorPane captures one workspace per language request and retains the stable
  * document identity. UI publication rejects changed documents, metadata, configuration,
  * superseded request generations, and closed editors. Existing document-only providers
  * remain compatible through workspace-aware default adapters.
+ * Shared request scheduling additionally cancels superseded work, bounds waiting tasks,
+ * and prioritizes interactive features. The language-neutral provider execution boundary
+ * enforces caller deadlines, limits outstanding provider executions and exposes bounded
+ * timing/failure diagnostics separately from source diagnostics.
  * <p>
  * JavaSemanticAnalyzer's process-wide JDK stub cache uses lock/volatile publication and
  * holds one runtime's data, rather than historical snapshots, but its public stub graph
@@ -111,5 +116,8 @@
  * builder reuse, collection isolation, node identity maps, revision comparisons, and
  * historical readability. Coordinated worker tests read shared results and race cold
  * red-node child initialisation using latches and futures, without timing-based sleeps.
+ *
+ * @see dev.railroadide.railroad.ide.sst.request.api.SstScheduler
+ * @see dev.railroadide.railroad.ide.sst.provider.api.ProviderExecutor
  */
 package dev.railroadide.railroad.ide.sst;

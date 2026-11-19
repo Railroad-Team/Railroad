@@ -10,6 +10,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.atomic.AtomicInteger;
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import java.nio.charset.StandardCharsets;
 import static org.junit.jupiter.api.Assertions.*;
@@ -57,6 +58,38 @@ public class JavaSignatureSourcesTest {
             Thread.interrupted();
         }
         assertEmpty();
+    }
+
+    @Test
+    public void cooperativeCancellationDuringStagingRemovesThePartialTree() throws Exception {
+        JavaWorkspaceAnalysis analysis = analysis(false, false);
+        var checks = new AtomicInteger();
+        assertThrows(CancellationException.class,
+            () -> JavaSignatureSources.create(analysis, directory, Set.of(), () -> {
+                if (checks.incrementAndGet() == 3)
+                    throw new CancellationException();
+            }));
+        assertEquals(3, checks.get());
+        assertEmpty();
+    }
+
+    @Test
+    public void cancelledRequestCannotAcquireAWarmSourceLease() throws Exception {
+        var request = new TextDocumentSnapshot(DocumentId.create(),
+            DocumentUri.fromPath(directory.resolve("Use.java")), DocumentVersion.initial(), "java",
+            "package demo; class Use {}", StandardCharsets.UTF_8);
+        var analysis = withRequest(request, "first");
+        Path staged;
+        try (var cache = new JavaSignatureSourceCache(1)) {
+            try (var lease = cache.acquire(analysis, request)) {
+                staged = lease.directory();
+            }
+            assertThrows(CancellationException.class, () -> cache.acquire(analysis, request, () -> {
+                throw new CancellationException();
+            }));
+            assertTrue(Files.exists(staged));
+        }
+        assertFalse(Files.exists(staged));
     }
 
     @Test

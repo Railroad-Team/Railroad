@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.semantic.api.Type;
@@ -62,7 +63,7 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
         if (initializer == null)
             return;
 
-        Type sourceType = context.inferredType(initializer).orElse(new Type.UnknownType("<unknown>"));
+        Type sourceType = context.inferredType(initializer).orElse(new JavaTypes.UnknownType("<unknown>"));
         if (isUnknownLike(declaredType) || isUnknownLike(sourceType))
             return;
         if (isPolyExpression(initializer)) {
@@ -85,8 +86,9 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
         if (expressionChildren.size() < 2)
             return;
 
-        Type leftType = context.inferredType(expressionChildren.getFirst()).orElse(new Type.UnknownType("<unknown>"));
-        Type rightType = context.inferredType(expressionChildren.get(1)).orElse(new Type.UnknownType("<unknown>"));
+        Type leftType = context.inferredType(expressionChildren.getFirst())
+            .orElse(new JavaTypes.UnknownType("<unknown>"));
+        Type rightType = context.inferredType(expressionChildren.get(1)).orElse(new JavaTypes.UnknownType("<unknown>"));
         if (isUnknownLike(leftType) || isUnknownLike(rightType))
             return;
         if (isPolyExpression(expressionChildren.get(1))) {
@@ -106,7 +108,7 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
     }
 
     private static boolean isUnknownLike(Type type) {
-        return type.kind() == Type.Kind.UNKNOWN
+        return type.kind() == JavaTypes.Kind.UNKNOWN
             || "<unknown>".equals(type.displayName())
             || type.displayName().isBlank();
     }

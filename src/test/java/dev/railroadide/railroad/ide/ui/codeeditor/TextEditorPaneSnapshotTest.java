@@ -233,6 +233,33 @@ public class TextEditorPaneSnapshotTest {
     }
 
     @Test
+    public void undoAfterOpeningAnUntouchedFileKeepsItsLoadedContent() throws Exception {
+        Path file = tempDirectory.resolve("Untouched.txt");
+        Files.writeString(file, "loaded content");
+        onFxThread(() -> {
+            var editor = new TextEditorPane(DocumentId.create(), file, "plaintext");
+            try {
+                assertFalse(editor.isUndoAvailable());
+                editor.undo();
+                assertEquals("loaded content", editor.getText());
+
+                editor.appendText("!");
+                editor.undo();
+                assertEquals("loaded content", editor.getText());
+                editor.undo();
+                assertEquals("loaded content", editor.getText());
+                editor.redo();
+                assertEquals("loaded content!", editor.getText());
+            } finally {
+                editor.discardChangesOnClose();
+                editor.close();
+                editor.dispose();
+            }
+        });
+        assertEquals("loaded content", Files.readString(file));
+    }
+
+    @Test
     public void legacyChangeRangeKeepsLinesAndColumnsInTheirDeclaredOrder() throws Exception {
         var buildChange = TextEditorPane.class.getDeclaredMethod("buildChange", String.class, PlainTextChange.class);
         buildChange.setAccessible(true);

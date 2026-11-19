@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 import org.jetbrains.annotations.Nullable;
 
@@ -8,11 +9,36 @@ import java.util.Map;
 import java.util.Set;
 import java.util.LinkedHashSet;
 import java.util.Objects;
+import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
 
 /**
  * Lookup contract for Java types, packages, members, and available binary class stubs.
  */
 public interface JavaSymbolIndex {
+    /**
+     * Returns immutable declaration and reference shards in this index's lookup order.
+     *
+     * @return node-free source and binary facts
+     */
+    default List<SemanticIndexShard> semanticShards() {
+        return List.of();
+    }
+
+    /**
+     * Returns immutable facts while honoring request cancellation during lazy materialization.
+     * Implementations doing substantial work must propagate the callback through that work.
+     * The callback belongs only to this invocation and must not be retained by published facts.
+     *
+     * @param activityCheck current request's activity check
+     * @return complete available source and binary facts
+     */
+    default List<SemanticIndexShard> semanticShards(Runnable activityCheck) {
+        Objects.requireNonNull(activityCheck, "activityCheck").run();
+        List<SemanticIndexShard> result = semanticShards();
+        activityCheck.run();
+        return result;
+    }
+
     /**
      * Returns qualified names of types declared by this index.
      *
@@ -86,7 +112,8 @@ public interface JavaSymbolIndex {
     default String canonicalTypeName(String qualifiedName) {
         return lookupQualifiedName(qualifiedName).stream()
             .filter(symbol -> switch (symbol.kind()) {
-                case CLASS, INTERFACE, ENUM, RECORD, ANNOTATION -> true;
+                case JavaSymbolKind.CLASS, JavaSymbolKind.INTERFACE, JavaSymbolKind.ENUM, JavaSymbolKind.RECORD,
+                    JavaSymbolKind.ANNOTATION -> true;
                 default -> false;
             })
             .map(JavaProjectSemanticIndex.SymbolDescriptor::qualifiedName)

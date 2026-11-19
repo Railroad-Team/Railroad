@@ -1,56 +1,40 @@
 package dev.railroadide.railroad.ide.diagnostics;
 
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
-import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
-import dev.railroadide.railroad.ide.language.impl.index.JavaAnalysisContextProvider;
 import dev.railroadide.railroad.ide.language.index.DefaultProjectIndexContextResolver;
 import dev.railroadide.railroad.ide.language.index.ProjectIndexContext;
-import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
-import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
 
 /**
- * Reusable state for a project diagnostics export run.
+ * Captured project roots and cancellation controls shared by a diagnostics export.
  *
- * @param project project being analyzed
- * @param indexContext resolved source roots and language settings
- * @param javaSymbolIndex shared Java symbol index, or null if unavailable
+ * @param project project whose diagnostics are being collected
+ * @param indexContext captured indexing inputs and cancellation controls
  */
-public record ProjectDiagnosticsContext(
-    Project project,
-    ProjectIndexContext indexContext,
-    @Nullable JavaSymbolIndex javaSymbolIndex
-) {
+public record ProjectDiagnosticsContext(Project project, ProjectIndexContext indexContext) {
     /**
-     * Creates a context requiring a project and resolved indexing settings.
+     * Creates a diagnostics context with non-null project and indexing inputs.
      *
-     * @param project project being analyzed
-     * @param indexContext resolved source roots and language settings
-     * @param javaSymbolIndex shared Java symbol index, or null if unavailable
+     * @param project project whose diagnostics are being collected
+     * @param indexContext captured indexing inputs and cancellation controls
      */
     public ProjectDiagnosticsContext {
-        project = Objects.requireNonNull(project, "project");
-        indexContext = Objects.requireNonNull(indexContext, "indexContext");
+        Objects.requireNonNull(project, "project");
+        Objects.requireNonNull(indexContext, "indexContext");
     }
 
     /**
-     * Loads project indexing state for reuse throughout a diagnostics scan.
+     * Resolves language-neutral project inputs; each language session owns its analysis state.
      *
-     * @param project project being analyzed
-     * @return initialized project diagnostics context
+     * @param project project whose diagnostics are being collected
+     * @return the resolved project diagnostics context
      */
     public static ProjectDiagnosticsContext create(Project project) {
         Objects.requireNonNull(project, "project");
-
         ProjectIndexContext indexContext = new DefaultProjectIndexContextResolver(
             Services.PROJECT_LANGUAGE_INDEX_SERVICE::session).resolve(project);
-        Railroad.LOGGER.info("Loading Java project index for diagnostics export from {}", indexContext.projectRoot());
-        Services.PROJECT_LANGUAGE_INDEX_SERVICE.index(indexContext, JavaLanguageSupport.LANGUAGE_ID);
-        JavaAnalysisContextProvider analysisContextProvider = JavaLanguageSupport.analysisContextProvider();
-        JavaSymbolIndex javaSymbolIndex = analysisContextProvider.index(indexContext);
-        return new ProjectDiagnosticsContext(project, indexContext, javaSymbolIndex);
+        return new ProjectDiagnosticsContext(project, indexContext);
     }
 }

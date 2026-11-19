@@ -1,10 +1,14 @@
 package dev.railroadide.railroad.ide;
 
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
+import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.edit.WorkspaceEditService;
+import dev.railroadide.railroad.ide.edit.WorkspaceEditorHost;
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
@@ -32,6 +36,8 @@ public class DefaultIDEStateService implements IDEStateService {
     private ProjectWorkspaceConfiguration workspaceConfiguration;
     @Getter(lombok.AccessLevel.NONE)
     private ProjectDocumentSynchronizer documentSynchronizer;
+    @Getter(lombok.AccessLevel.NONE)
+    private WorkspaceEditService workspaceEdits;
     private long openedProjectAtMillis = -1L;
     private Document activeDocument;
 
@@ -74,8 +80,20 @@ public class DefaultIDEStateService implements IDEStateService {
             Services.PROJECT_LANGUAGE_INDEX_SERVICE.closeProject(previousSession);
             JavaLanguageSupport.analysisContextProvider()
                 .closeSession(previousSession);
+            if (currentProject != null) {
+                try {
+                    LanguageSupportRegistry.runtime().closeProject(currentProject);
+                } catch (RuntimeException exception) {
+                    Railroad.LOGGER.error("Unable to dispose all language providers for the previous project",
+                        exception);
+                }
+            }
             if (project != null) {
                 Services.PROJECT_LANGUAGE_INDEX_SERVICE.openProject(project);
+            }
+            if (workspaceEdits != null) {
+                workspaceEdits.close();
+                workspaceEdits = null;
             }
             if (documentSynchronizer != null) {
                 documentSynchronizer.close();
@@ -99,6 +117,23 @@ public class DefaultIDEStateService implements IDEStateService {
                 : new DefaultDocumentStore(project.getId(), initialConfiguration);
             if (project != null) {
                 workspaceConfiguration = new ProjectWorkspaceConfiguration(project, documentStore);
+                workspaceEdits = new WorkspaceEditService(project.getPath(), documentStore, documentIdentities,
+                    new WorkspaceEditorHost() {
+                        @Override
+                        public Optional<TextEditorPane> openEditor(DocumentId id) {
+                            return Services.EDITOR_TAB_MANAGER.openTextEditor(id);
+                        }
+
+                        @Override
+                        public boolean isOpen(DocumentId id) {
+                            return Services.EDITOR_TAB_MANAGER.hasOpenTab(id);
+                        }
+
+                        @Override
+                        public void relocate(DocumentIdentity identity, Path newPath) {
+                            Services.EDITOR_TAB_MANAGER.relocateDocument(identity, newPath);
+                        }
+                    });
                 try {
                     documentSynchronizer = new ProjectDocumentSynchronizer(project.getPath(), documentStore,
                         documentIdentities,
@@ -188,6 +223,15 @@ public class DefaultIDEStateService implements IDEStateService {
             .flatMap(firstIdentity -> documentIdentities.findIdentity(second.getUri())
                 .map(secondIdentity -> firstIdentity.id().equals(secondIdentity.id())))
             .orElse(false);
+    }
+
+    /**
+     * Returns the current project's workspace-edit service. Call on the JavaFX application thread.
+     *
+     * @return service owning transactional edits and their shared undo history, or empty without a project
+     */
+    public Optional<WorkspaceEditService> getWorkspaceEdits() {
+        return Optional.ofNullable(workspaceEdits);
     }
 
     @Override

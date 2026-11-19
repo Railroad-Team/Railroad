@@ -1,6 +1,12 @@
 package dev.railroadide.railroad.ide.ui.codeeditor;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.command.Command;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.CommandMenuItems;
+import dev.railroadide.railroad.command.Commands;
+import dev.railroadide.railroad.command.EditCommands;
 import dev.railroadide.railroad.ide.completion.CompletionItem;
 import dev.railroadide.railroad.ide.completion.CompletionProvider;
 import dev.railroadide.railroad.ide.completion.CompletionResult;
@@ -10,13 +16,31 @@ import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagn
 import dev.railroadide.railroad.ide.signature.SignatureHelp;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.sst.provider.api.CodeActionProvider;
+import dev.railroadide.railroad.ide.sst.provider.api.CodeActionRequest;
+import dev.railroadide.railroad.ide.sst.provider.api.NavigationProvider;
+import dev.railroadide.railroad.ide.sst.provider.api.RenamePreparation;
+import dev.railroadide.railroad.ide.sst.provider.api.RenameProvider;
+import dev.railroadide.railroad.ide.sst.provider.api.UsageQuery;
 import dev.railroadide.railroad.ide.sst.request.api.CancellationTokenSource;
+import dev.railroadide.railroad.ide.sst.request.api.CancellationToken;
 import dev.railroadide.railroad.ide.sst.request.api.Deadline;
+import dev.railroadide.railroad.ide.sst.request.api.DeadlineExceededException;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
+import dev.railroadide.railroad.ide.sst.request.api.RequestPriority;
+import dev.railroadide.railroad.ide.sst.request.api.SstScheduler;
+import dev.railroadide.railroad.ide.sst.provider.api.ProviderExecutor;
 import dev.railroadide.railroad.ide.ui.DiagnosticPane;
+import dev.railroadide.railroad.ide.ui.codeaction.CodeActionController;
+import dev.railroadide.railroad.ide.ui.codeaction.CodeActionMenu;
+import dev.railroadide.railroad.ide.ui.navigation.UsagesPane;
+import dev.railroadide.railroad.ide.ui.refactor.RenameDialog;
+import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
+import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.ui.RRListView;
-import dev.railroadide.railroad.utility.ShutdownHooks;
+import dev.railroadide.railroad.ui.id.UIIds;
 import io.github.palexdev.mfxresources.fonts.MFXFontIcon;
 import io.github.palexdev.mfxresources.fonts.fontawesome.FontAwesomeSolid;
 import javafx.animation.PauseTransition;
@@ -25,12 +49,19 @@ import javafx.beans.value.ChangeListener;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.IndexRange;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Tooltip;
+import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
@@ -44,7 +75,7 @@ import org.fxmisc.richtext.model.StyleSpansBuilder;
 import org.jspecify.annotations.Nullable;
 import org.reactfx.Subscription;
 
-import javax.tools.Diagnostic;
+import dev.railroadide.railroad.ide.diagnostics.DiagnosticSeverity;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
@@ -52,6 +83,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -63,11 +96,16 @@ public abstract class CodeEditorPane extends TextEditorPane {
     protected final @Nullable DiagnosticsProvider<TextEditorDiagnostic> diagnosticsProvider;
     protected final @Nullable SignatureHelpProvider signatureHelpProvider;
     protected final @Nullable SyntaxHighlightingProvider highlightingProvider;
+    protected final @Nullable NavigationProvider navigationProvider;
+    protected final @Nullable RenameProvider renameProvider;
+    protected final @Nullable CodeActionProvider codeActionProvider;
 
-    protected final ExecutorService worker = Executors.newFixedThreadPool(
-        Math.max(2, Runtime.getRuntime().availableProcessors() / 2),
-        namedThreadFactory("railroad-code-editor-worker-%d"));
-    private final ShutdownHooks.Registration workerShutdownRegistration;
+    protected final SstScheduler.Scope featureRequests = SstScheduler.shared().newScope();
+    private static final Duration INTERACTIVE_BUDGET = Duration.ofSeconds(2);
+    private static final Duration NAVIGATION_BUDGET = Duration.ofSeconds(15);
+    private static final double NAVIGATION_CHOICE_HEIGHT = 36;
+    private static final Duration HIGHLIGHT_BUDGET = Duration.ofSeconds(5);
+    private static final Duration DIAGNOSTICS_BUDGET = Duration.ofSeconds(30);
     private boolean codeEditorClosed;
     private final List<Subscription> subscriptions = new ArrayList<>();
     private DocumentStore.ChangeSubscription workspaceSubscription;
@@ -79,13 +117,14 @@ public abstract class CodeEditorPane extends TextEditorPane {
     private final PauseTransition workspaceDiagnosticsDelay = new PauseTransition(
         javafx.util.Duration.millis(DIAGNOSTIC_DEBOUNCE.toMillis()));
 
-    protected final Map<Integer, Diagnostic.Kind> lineSeverity = new ConcurrentHashMap<>();
+    protected final Map<Integer, DiagnosticSeverity> lineSeverity = new ConcurrentHashMap<>();
     protected final Map<Integer, String> lineDiagnosticMessages = new ConcurrentHashMap<>();
     protected final AtomicInteger diagnosticsGeneration = new AtomicInteger();
 
     protected volatile List<TextEditorDiagnostic> visibleDiagnostics = List.of();
     protected final Popup diagnosticPopup = new Popup();
 
+    private final CancellationToken providerLifetime;
     private @Nullable CancellationTokenSource activeDiagnosticsCancellation;
     private @Nullable FeatureRequestContext activeDiagnosticsContext;
     // endregion
@@ -102,7 +141,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     // region Completion state
     protected final List<CompletionItem> completionCandidates = new ArrayList<>();
-    protected volatile int completionDotIndex = -1;
+    protected volatile int completionReplacementStart = -1;
     protected final AtomicInteger completionGeneration = new AtomicInteger();
     protected final AtomicReference<Popup> activeCompletionPopup = new AtomicReference<>(null);
     protected final AtomicReference<RRListView<CompletionItem>> activeCompletionList = new AtomicReference<>(null);
@@ -121,6 +160,28 @@ public abstract class CodeEditorPane extends TextEditorPane {
     private @Nullable CancellationTokenSource activeSignatureCancellation;
     private @Nullable FeatureRequestContext activeSignatureContext;
     // endregion
+
+    /**
+     * Keybind context of code editors, in which navigation shortcuts are dispatched before workspace shortcuts.
+     */
+    public static final String KEYBIND_CONTEXT = "railroad:code_editor";
+
+    private @Nullable CancellationTokenSource activeNavigationCancellation;
+    private @Nullable FeatureRequestContext activeNavigationContext;
+    private final Popup navigationPopup = new Popup();
+    private @Nullable PendingNavigation activeNavigationChoices;
+    private @Nullable String activeNavigationMessage;
+    private @Nullable ContextMenu activeContextMenu;
+    private @Nullable CancellationTokenSource activeRenameCancellation;
+    private @Nullable FeatureRequestContext activeRenameContext;
+    private @Nullable RenameDialog activeRenameDialog;
+    private static final Duration CODE_ACTION_BULB_DELAY = Duration.ofMillis(250);
+    private final @Nullable CodeActionController codeActions;
+    private final PauseTransition codeActionBulbDelay = new PauseTransition(
+        javafx.util.Duration.millis(CODE_ACTION_BULB_DELAY.toMillis()));
+    private @Nullable CodeActionMenu activeCodeActionMenu;
+    private @Nullable Object pendingCodeActionMenu;
+    private int codeActionBulbLine = -1;
 
     // region Bracket Highlighting state
     protected static final Map<Character, Character> OPENING_BRACKETS = Map.of('(', ')', '{', '}', '[', ']');
@@ -142,19 +203,34 @@ public abstract class CodeEditorPane extends TextEditorPane {
      * @param config language-service configuration for the editor
      * @throws NullPointerException if any argument is {@code null}
      */
+    @SuppressWarnings("unchecked")
     protected CodeEditorPane(Project project, DocumentId documentId, Path filePath, CodeEditorConfig config) {
         super(documentId, filePath, config.languageId());
         this.project = Objects.requireNonNull(project, "project");
         Objects.requireNonNull(filePath, "filePath");
         Objects.requireNonNull(config, "config");
+        this.providerLifetime = config.providerLifetime();
         this.completionProvider = config.completionProvider();
-        this.diagnosticsProvider = config.diagnosticsProvider();
+        this.diagnosticsProvider = (DiagnosticsProvider<TextEditorDiagnostic>) config.diagnosticsProvider();
         this.signatureHelpProvider = config.signatureHelpProvider();
+        this.navigationProvider = config.navigationProvider();
+        this.renameProvider = config.renameProvider();
+        this.codeActionProvider = config.codeActionProvider();
+        this.codeActions = codeActionProvider == null
+            ? null
+            : new CodeActionController(codeActionProvider, providerLifetime, this::getDocumentStore,
+                Services.IDE_STATE::getWorkspaceEdits);
         this.highlightingProvider = config.highlightingProvider() != null
             ? config.highlightingProvider()
             : text -> StyleSpans.singleton(Collections.emptyList(), text.length());
 
         diagnosticPopup.setAutoHide(true);
+        navigationPopup.setAutoHide(true);
+        navigationPopup.setHideOnEscape(true);
+        navigationPopup.setOnHidden(_ -> {
+            activeNavigationChoices = null;
+            activeNavigationMessage = null;
+        });
 
         signaturePopup.setAutoHide(false);
         signaturePopup.setAutoFix(true);
@@ -176,6 +252,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
             invalidateHighlightRequest();
             invalidateDiagnosticsRequest();
             invalidateCompletionRequest();
+            invalidateNavigationRequest();
+            invalidateRenameRequest();
+            invalidateCodeActions();
             visibleDiagnostics = List.of();
             recomputeLineDecorations();
             diagnosticPopup.hide();
@@ -192,10 +271,13 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (supportsSignatureHelp()) {
             installSignatureHelp();
         }
+        installNavigation();
+        installRename();
+        installCodeActions();
+        installContextMenu();
         installBracketHighlighting();
         installDiagnosticPopupHandlers();
 
-        workerShutdownRegistration = ShutdownHooks.registerHook(worker::shutdownNow);
     }
 
     @Override
@@ -221,11 +303,21 @@ public abstract class CodeEditorPane extends TextEditorPane {
         signatureGeneration.incrementAndGet();
         invalidateHighlightRequest();
         invalidateDiagnosticsRequest();
+        invalidateNavigationRequest();
+        invalidateRenameRequest();
+        if (activeRenameDialog != null) {
+            activeRenameDialog.close();
+            activeRenameDialog = null;
+        }
+        invalidateCodeActions();
+        if (codeActions != null) {
+            codeActions.close();
+        }
         hideAutoComplete();
         hideSignatureHelp();
-        workerShutdownRegistration.close();
-        worker.shutdownNow();
+        featureRequests.close();
         diagnosticPopup.hide();
+        closeEditorContextMenu();
         Popup completionPopup = activeCompletionPopup.getAndSet(null);
         if (completionPopup != null) {
             completionPopup.hide();
@@ -240,6 +332,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
         }
         invalidateHighlightRequest();
         invalidateDiagnosticsRequest();
+        invalidateNavigationRequest();
+        invalidateCodeActions();
         hideAutoComplete();
         hideSignatureHelp();
         DocumentStore store = getDocumentStore();
@@ -282,6 +376,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
         signatureGeneration.incrementAndGet();
         invalidateDiagnosticsRequest();
         invalidateCompletionRequest();
+        invalidateNavigationRequest();
+        invalidateCodeActions();
         visibleDiagnostics = List.of();
         recomputeLineDecorations();
         diagnosticPopup.hide();
@@ -313,6 +409,701 @@ public abstract class CodeEditorPane extends TextEditorPane {
             && latest.configuration().equals(workspace.configuration());
     }
 
+    // region Navigation
+    private void invalidateNavigationRequest() {
+        featureRequests.cancel("navigation");
+        if (activeNavigationCancellation != null) {
+            activeNavigationCancellation.cancel();
+            activeNavigationCancellation = null;
+        }
+        activeNavigationContext = null;
+        hideNavigationPopup();
+    }
+
+    private void installNavigation() {
+        if (navigationProvider == null)
+            return;
+
+        KeybindHandler.registerCapture(KeybindContexts.of(KEYBIND_CONTEXT), this);
+        caretPositionProperty().addListener(
+            (observable, previous, current) -> invalidateNavigationRequest());
+        addEventFilter(MouseEvent.MOUSE_CLICKED, event -> {
+            if (event.getButton() != MouseButton.PRIMARY || !event.isShortcutDown() || event.isShiftDown()
+                || event.isAltDown() || !event.isStillSincePress())
+                return;
+
+            int index = hit(event.getX(), event.getY()).getCharacterIndex().orElse(-1);
+            if (index < 0)
+                return;
+
+            event.consume();
+            moveTo(index);
+            goToDefinition();
+        });
+    }
+
+    /**
+     * Reports whether this editor's language provides navigation queries.
+     *
+     * @return whether definition, implementation and usage commands can run
+     */
+    public boolean supportsNavigation() {
+        return navigationProvider != null && !codeEditorClosed && !providerLifetime.isCancellationRequested();
+    }
+
+    /**
+     * Navigates to the declaration of the symbol at the caret, offering a choice when it has several.
+     * Call on the JavaFX thread.
+     */
+    public void goToDefinition() {
+        requestNavigation(NavigationKind.DEFINITION);
+    }
+
+    /**
+     * Navigates to an implementation of the type or method at the caret, offering a choice when there are
+     * several. Call on the JavaFX thread.
+     */
+    public void goToImplementation() {
+        requestNavigation(NavigationKind.IMPLEMENTATION);
+    }
+
+    /**
+     * Searches usages of the symbol at the caret and shows them in the workspace's Find Usages tool.
+     * Call on the JavaFX thread.
+     */
+    public void findUsages() {
+        usageSearchAtCaret().ifPresent(request -> Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
+            .ifPresent(ide -> ide.showUsages(request)));
+    }
+
+    /**
+     * Captures the inputs of a usage search at the caret from the editor's current document store state,
+     * including unsaved changes.
+     *
+     * @return captured search, or an empty optional when navigation is unsupported or the editor is detached
+     */
+    public Optional<UsagesPane.Request> usageSearchAtCaret() {
+        NavigationProvider provider = navigationProvider;
+        DocumentStore store = getDocumentStore();
+        if (!supportsNavigation() || provider == null || store == null)
+            return Optional.empty();
+
+        WorkspaceSnapshot workspace = store.capture();
+        if (!(workspace.document(documentId).orElse(null) instanceof TextDocumentSnapshot snapshot)
+            || !snapshot.text().equals(getText()))
+            return Optional.empty();
+
+        return Optional.of(new UsagesPane.Request(provider, providerLifetime, store, workspace, snapshot,
+            new UsageQuery.AtOffset(getCaretPosition())));
+    }
+
+    private void requestNavigation(NavigationKind kind) {
+        invalidateNavigationRequest();
+
+        NavigationProvider provider = navigationProvider;
+        if (!supportsNavigation() || provider == null)
+            return;
+
+        WorkspaceSnapshot workspace = captureFeatureWorkspace();
+        if (workspace == null
+            || !(workspace.document(documentId).orElse(null) instanceof TextDocumentSnapshot snapshot))
+            return;
+
+        int offset = getCaretPosition();
+        var cancellation = new CancellationTokenSource(providerLifetime);
+        var context = new FeatureRequestContext(workspace, snapshot, cancellation.token(),
+            Deadline.after(NAVIGATION_BUDGET));
+        activeNavigationCancellation = cancellation;
+        activeNavigationContext = context;
+
+        featureRequests.submit("navigation", RequestPriority.NAVIGATION, context,
+            cancellation, () -> ProviderExecutor.shared().execute(
+                snapshot.languageId() + ":navigation", context, NAVIGATION_BUDGET,
+                () -> kind == NavigationKind.DEFINITION
+                    ? provider.definitions(context, offset)
+                    : provider.implementations(context, offset)))
+            .thenAccept(result -> Platform.runLater(() -> {
+                if (activeNavigationContext != context)
+                    return;
+
+                boolean current = result != null && result.belongsTo(context)
+                    && !context.cancellationToken().isCancellationRequested()
+                    && !context.deadline().isExpired()
+                    && getCaretPosition() == offset
+                    && isCurrent(workspace);
+                invalidateNavigationRequest();
+                if (current) {
+                    applyNavigationTargets(kind, result.value(), workspace);
+                }
+            }))
+            .exceptionally(throwable -> {
+                Throwable cause = throwable;
+                while ((cause instanceof CompletionException || cause instanceof ExecutionException)
+                    && cause.getCause() != null) {
+                    cause = cause.getCause();
+                }
+                boolean timedOut = DeadlineExceededException.class.isInstance(cause);
+                Platform.runLater(() -> {
+                    if (activeNavigationContext == context) {
+                        invalidateNavigationRequest();
+                        if (timedOut) {
+                            showNavigationMessage(L18n.localize("railroad.editor.navigation.timed_out"));
+                        }
+                    }
+                });
+                if (timedOut) {
+                    Railroad.LOGGER.warn("Timed out resolving {}", kind.name().toLowerCase(Locale.ROOT));
+                } else if (!(cause instanceof CancellationException)) {
+                    Railroad.LOGGER.error("Failed to resolve {}", kind.name().toLowerCase(Locale.ROOT), cause);
+                }
+                return null;
+            });
+    }
+
+    private void applyNavigationTargets(
+        NavigationKind kind,
+        @Nullable List<Location<?>> targets,
+        WorkspaceSnapshot workspace
+    ) {
+        List<NavigationChoice> choices = new ArrayList<>();
+        for (Location<?> target : targets == null ? List.<Location<?>>of() : targets) {
+            if (!(target instanceof Location.TextLocation location)
+                || !(workspace.document(location.documentId())
+                    .orElse(null) instanceof TextDocumentSnapshot destination))
+                continue;
+
+            try {
+                location.validateAgainst(destination);
+            } catch (IllegalArgumentException | IndexOutOfBoundsException exception) {
+                Railroad.LOGGER.warn("Navigation provider returned an invalid location", exception);
+                continue;
+            }
+
+            var choice = new NavigationChoice(destination, location);
+            if (!choices.contains(choice)) {
+                choices.add(choice);
+            }
+        }
+
+        hideAutoComplete();
+        hideSignatureHelp();
+        if (choices.isEmpty()) {
+            showNavigationMessage(L18n.localize(kind == NavigationKind.DEFINITION
+                ? "railroad.editor.navigation.no_definition"
+                : "railroad.editor.navigation.no_implementation"));
+        } else if (choices.size() == 1) {
+            navigate(choices.getFirst(), workspace);
+        } else {
+            showNavigationChooser(choices, workspace);
+        }
+    }
+
+    private void navigate(NavigationChoice choice, WorkspaceSnapshot workspace) {
+        hideNavigationPopup();
+        if (!isCurrent(workspace))
+            return;
+
+        Services.EDITOR_TAB_MANAGER.navigateTo(this, choice.snapshot(), choice.location());
+    }
+
+    private void showNavigationChooser(List<NavigationChoice> choices, WorkspaceSnapshot workspace) {
+        var list = new RRListView<NavigationChoice>();
+        list.getStyleClass().add("navigation-chooser");
+        list.setCellFactory(_ -> new NavigationChoiceCell());
+        list.getItems().setAll(choices);
+        list.getSelectionModel().selectFirst();
+        int longestLabel = choices.stream().mapToInt(choice -> choice.label().length()).max().orElse(0);
+        list.setFixedCellSize(NAVIGATION_CHOICE_HEIGHT);
+        list.setPrefSize(Math.clamp(longestLabel * 8.0 + 56, 320, 760),
+            Math.min(choices.size(), 10) * NAVIGATION_CHOICE_HEIGHT + 24);
+        list.setMinSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        list.setOnMouseClicked(_ -> {
+            NavigationChoice selected = list.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                navigate(selected, workspace);
+            }
+        });
+        list.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                NavigationChoice selected = list.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    navigate(selected, workspace);
+                }
+                event.consume();
+            } else if (event.getCode() == KeyCode.ESCAPE) {
+                hideNavigationPopup();
+                event.consume();
+            }
+        });
+
+        showNavigationPopup(list);
+        activeNavigationChoices = new PendingNavigation(List.copyOf(choices), workspace);
+        list.requestFocus();
+    }
+
+    private void showNavigationMessage(String message) {
+        var label = new Label(message);
+        label.getStyleClass().add("navigation-message");
+        showNavigationPopup(label);
+        activeNavigationMessage = message;
+    }
+
+    private void showNavigationPopup(Node content) {
+        hideNavigationPopup();
+        navigationPopup.getContent().setAll(content);
+        if (getScene() == null || getScene().getWindow() == null || !getScene().getWindow().isShowing())
+            return;
+
+        Point2D anchor = getCaretBounds()
+            .map(bounds -> new Point2D(bounds.getMinX(), bounds.getMaxY()))
+            .orElseGet(() -> localToScreen(0, 0));
+        if (anchor != null) {
+            navigationPopup.show(this, anchor.getX(), anchor.getY());
+        }
+    }
+
+    private void hideNavigationPopup() {
+        activeNavigationChoices = null;
+        activeNavigationMessage = null;
+        navigationPopup.hide();
+        navigationPopup.getContent().clear();
+    }
+
+    /**
+     * Returns the targets offered by an open ambiguity chooser.
+     *
+     * @return offered targets in rank order, or an empty list when no chooser is open
+     */
+    protected final List<Location.TextLocation> navigationChoices() {
+        PendingNavigation pending = activeNavigationChoices;
+        return pending == null
+            ? List.of()
+            : pending.choices().stream().map(NavigationChoice::location).toList();
+    }
+
+    /**
+     * Navigates to one target of the open ambiguity chooser, as if the user had picked it.
+     *
+     * @param index zero-based index into {@link #navigationChoices()}
+     */
+    protected final void chooseNavigationTarget(int index) {
+        PendingNavigation pending = activeNavigationChoices;
+        if (pending != null && index >= 0 && index < pending.choices().size()) {
+            navigate(pending.choices().get(index), pending.workspace());
+        }
+    }
+
+    /**
+     * Returns the message shown after a navigation request found no target.
+     *
+     * @return visible message, or {@code null} when none is shown
+     */
+    protected final @Nullable String navigationMessage() {
+        return activeNavigationMessage;
+    }
+
+    private enum NavigationKind {
+        DEFINITION,
+        IMPLEMENTATION
+    }
+
+    private record NavigationChoice(TextDocumentSnapshot snapshot, Location.TextLocation location) {
+        private String label() {
+            LineMap lines = snapshot.lineMap();
+            int line = location.line();
+            String name = snapshot.uri().fileName().orElse(snapshot.uri().toString());
+            return name + ":" + (line + 1) + "  "
+                + snapshot.text().substring(lines.lineStart(line), lines.lineEnd(line)).strip();
+        }
+    }
+
+    private record PendingNavigation(List<NavigationChoice> choices, WorkspaceSnapshot workspace) {
+    }
+
+    private static final class NavigationChoiceCell extends ListCell<NavigationChoice> {
+        @Override
+        protected void updateItem(NavigationChoice item, boolean empty) {
+            super.updateItem(item, empty);
+            setText(empty || item == null ? null : item.label());
+        }
+    }
+    // endregion
+
+    // region Rename
+    private void installRename() {
+        if (renameProvider == null)
+            return;
+
+        if (navigationProvider == null) {
+            KeybindHandler.registerCapture(KeybindContexts.of(KEYBIND_CONTEXT), this);
+        }
+        caretPositionProperty().addListener((observable, previous, current) -> invalidateRenameRequest());
+    }
+
+    private void invalidateRenameRequest() {
+        featureRequests.cancel("rename");
+        if (activeRenameCancellation != null) {
+            activeRenameCancellation.cancel();
+            activeRenameCancellation = null;
+        }
+        activeRenameContext = null;
+    }
+
+    /**
+     * Reports whether the symbol at the caret can be renamed from this editor.
+     *
+     * @return whether this editor is editable and its language provides semantic renames
+     */
+    public boolean supportsRename() {
+        return renameProvider != null && !codeEditorClosed && !providerLifetime.isCancellationRequested()
+            && isEditable();
+    }
+
+    /**
+     * Checks the symbol at the caret and, when it can be renamed, opens the rename dialog with a preview of every
+     * change; otherwise explains why it cannot be renamed. Call on the JavaFX thread.
+     */
+    public void rename() {
+        invalidateRenameRequest();
+        hideNavigationPopup();
+
+        RenameProvider provider = renameProvider;
+        DocumentStore store = getDocumentStore();
+        if (!supportsRename() || provider == null || store == null)
+            return;
+
+        WorkspaceSnapshot workspace = store.capture();
+        if (!(workspace.document(documentId).orElse(null) instanceof TextDocumentSnapshot snapshot)
+            || !snapshot.text().equals(getText()))
+            return;
+
+        int offset = getCaretPosition();
+        var cancellation = new CancellationTokenSource(providerLifetime);
+        var context = new FeatureRequestContext(workspace, snapshot, cancellation.token(),
+            Deadline.after(NAVIGATION_BUDGET));
+        activeRenameCancellation = cancellation;
+        activeRenameContext = context;
+
+        featureRequests.submit("rename", RequestPriority.NAVIGATION, context, cancellation,
+            () -> ProviderExecutor.shared().execute(snapshot.languageId() + ":rename", context, NAVIGATION_BUDGET,
+                () -> provider.prepareRename(context, offset)))
+            .thenAccept(result -> Platform.runLater(() -> {
+                if (activeRenameContext != context)
+                    return;
+
+                boolean current = result != null && result.belongsTo(context)
+                    && !context.cancellationToken().isCancellationRequested()
+                    && getCaretPosition() == offset
+                    && isCurrent(workspace);
+                invalidateRenameRequest();
+                if (!current)
+                    return;
+                switch (result.value()) {
+                    case RenamePreparation.Rejected rejected -> showNavigationMessage(
+                        L18n.localize("railroad.editor.rename.rejected", rejected.reason()));
+                    case RenamePreparation.Renameable symbol -> openRenameDialog(
+                        new RenameDialog.Request(provider, providerLifetime, store, snapshot, offset, symbol,
+                            Services.IDE_STATE::getWorkspaceEdits));
+                }
+            }))
+            .exceptionally(throwable -> {
+                Throwable cause = throwable;
+                while ((cause instanceof CompletionException || cause instanceof ExecutionException)
+                    && cause.getCause() != null) {
+                    cause = cause.getCause();
+                }
+                boolean timedOut = DeadlineExceededException.class.isInstance(cause);
+                Platform.runLater(() -> {
+                    if (activeRenameContext == context) {
+                        invalidateRenameRequest();
+                        if (timedOut) {
+                            showNavigationMessage(L18n.localize("railroad.editor.navigation.timed_out"));
+                        }
+                    }
+                });
+                if (!(cause instanceof CancellationException)) {
+                    Railroad.LOGGER.error("Failed to prepare rename", cause);
+                }
+                return null;
+            });
+    }
+
+    private void openRenameDialog(RenameDialog.Request request) {
+        if (activeRenameDialog != null) {
+            activeRenameDialog.close();
+        }
+        var dialog = new RenameDialog(request);
+        activeRenameDialog = dialog;
+        dialog.show(getScene() == null ? null : getScene().getWindow());
+    }
+
+    /**
+     * Returns the rename dialog opened by the last rename request, while it is open.
+     *
+     * @return open rename dialog, or {@code null}
+     */
+    protected final @Nullable RenameDialog activeRenameDialog() {
+        RenameDialog dialog = activeRenameDialog;
+        return dialog == null || dialog.isClosed() ? null : dialog;
+    }
+    // endregion
+
+    // region Code Actions
+    private void installCodeActions() {
+        if (codeActions == null)
+            return;
+
+        if (navigationProvider == null && renameProvider == null) {
+            KeybindHandler.registerCapture(KeybindContexts.of(KEYBIND_CONTEXT), this);
+        }
+        codeActionBulbDelay.setOnFinished(_ -> refreshCodeActionBulb());
+        caretPositionProperty().addListener((observable, previous, current) -> {
+            closeCodeActionMenu();
+            scheduleCodeActionBulb();
+        });
+    }
+
+    private void invalidateCodeActions() {
+        codeActionBulbDelay.stop();
+        pendingCodeActionMenu = null;
+        if (codeActions != null) {
+            codeActions.cancel();
+        }
+        closeCodeActionMenu();
+        setCodeActionBulbLine(-1);
+    }
+
+    private void closeCodeActionMenu() {
+        CodeActionMenu menu = activeCodeActionMenu;
+        activeCodeActionMenu = null;
+        if (menu != null) {
+            menu.close();
+        }
+    }
+
+    private void scheduleCodeActionBulb() {
+        if (codeActions == null || codeEditorClosed)
+            return;
+        if (codeActionBulbLine >= 0 && codeActionBulbLine != getCurrentParagraph() + 1) {
+            setCodeActionBulbLine(-1);
+        }
+        codeActionBulbDelay.playFromStart();
+    }
+
+    private void setCodeActionBulbLine(int line) {
+        if (codeActionBulbLine != line) {
+            codeActionBulbLine = line;
+            getGutter().refresh();
+        }
+    }
+
+    private void refreshCodeActionBulb() {
+        if (!supportsCodeActions()) {
+            setCodeActionBulbLine(-1);
+            return;
+        }
+        if (activeCodeActionMenu() != null || pendingCodeActionMenu != null)
+            return;
+        discoverCodeActions(RequestPriority.OPEN_DOCUMENT_ANALYSIS, _ -> {
+        }, () -> {
+        });
+    }
+
+    /**
+     * Reports whether this editor can offer code actions for its language.
+     *
+     * @return whether the editor is open, editable and its language provides code actions
+     */
+    public boolean supportsCodeActions() {
+        return codeActions != null && !codeEditorClosed && !providerLifetime.isCancellationRequested()
+            && isEditable();
+    }
+
+    /**
+     * Discovers the code actions at the caret or selection and shows them in a keyboard-driven menu, or explains
+     * that none are available. Call on the JavaFX thread.
+     */
+    public void showCodeActions() {
+        hideNavigationPopup();
+        closeCodeActionMenu();
+        if (!supportsCodeActions())
+            return;
+        codeActionBulbDelay.stop();
+        var request = new Object();
+        pendingCodeActionMenu = request;
+        discoverCodeActions(RequestPriority.NAVIGATION, discovery -> {
+            if (discovery.actions().isEmpty()) {
+                showNavigationMessage(L18n.localize("railroad.code_actions.none"));
+                return;
+            }
+            hideAutoComplete();
+            hideSignatureHelp();
+            var menu = new CodeActionMenu(Objects.requireNonNull(codeActions), discovery, this::requestFocus);
+            activeCodeActionMenu = menu;
+            Point2D anchor = getCaretBounds()
+                .map(bounds -> new Point2D(bounds.getMinX(), bounds.getMaxY()))
+                .orElseGet(() -> localToScreen(0, 0));
+            menu.show(this, anchor == null ? 0 : anchor.getX(), anchor == null ? 0 : anchor.getY());
+        }, () -> {
+            if (pendingCodeActionMenu == request) {
+                pendingCodeActionMenu = null;
+            }
+        });
+    }
+
+    private void discoverCodeActions(
+        RequestPriority priority,
+        Consumer<CodeActionController.Discovery> shown,
+        Runnable finished
+    ) {
+        CodeActionController controller = codeActions;
+        WorkspaceSnapshot workspace = captureFeatureWorkspace();
+        if (controller == null || workspace == null
+            || !(workspace.document(documentId).orElse(null) instanceof TextDocumentSnapshot snapshot)
+            || !snapshot.text().equals(getText())) {
+            finished.run();
+            return;
+        }
+
+        IndexRange selection = getSelection();
+        int caret = getCaretPosition();
+        controller.discover(workspace, snapshot, codeActionRequest(snapshot, selection), priority)
+            .whenComplete((discovery, failure) -> {
+                finished.run();
+                if (failure != null) {
+                    Throwable cause = failure instanceof CompletionException && failure.getCause() != null
+                        ? failure.getCause()
+                        : failure;
+                    if (cause instanceof DeadlineExceededException) {
+                        if (priority == RequestPriority.NAVIGATION) {
+                            showNavigationMessage(L18n.localize("railroad.code_actions.timed_out"));
+                        }
+                    } else if (!(cause instanceof CancellationException)) {
+                        Railroad.LOGGER.error("Failed to discover code actions", cause);
+                    }
+                    return;
+                }
+                if (getCaretPosition() != caret || !getSelection().equals(selection) || !isCurrent(workspace))
+                    return;
+                setCodeActionBulbLine(discovery.hasAvailableActions()
+                    ? snapshot.lineMap().positionAt(caret).line() + 1
+                    : -1);
+                shown.accept(discovery);
+            });
+    }
+
+    private CodeActionRequest codeActionRequest(TextDocumentSnapshot snapshot, IndexRange selection) {
+        LineMap lines = snapshot.lineMap();
+        int start = lines.lineStart(lines.positionAt(selection.getStart()).line());
+        int end = lines.lineEnd(lines.positionAt(selection.getEnd()).line());
+        List<TextEditorDiagnostic> nearby = visibleDiagnostics.stream()
+            .filter(diagnostic -> diagnostic.location().range().start <= end
+                && diagnostic.location().range().end >= start)
+            .toList();
+        return new CodeActionRequest(new TextRange(selection.getStart(), selection.getEnd()), nearby);
+    }
+
+    /**
+     * Returns the code action menu opened by the last request, while it is open.
+     *
+     * @return open menu, or {@code null}
+     */
+    public final @Nullable CodeActionMenu activeCodeActionMenu() {
+        CodeActionMenu menu = activeCodeActionMenu;
+        return menu == null || menu.isClosed() ? null : menu;
+    }
+
+    /**
+     * Returns the one-based line showing the code action lightbulb.
+     *
+     * @return line with available actions at the caret, or {@code -1} when no lightbulb is shown
+     */
+    public final int codeActionBulbLine() {
+        return codeActionBulbLine;
+    }
+    // endregion
+
+    // region Context Menu
+    private void installContextMenu() {
+        addEventHandler(ContextMenuEvent.CONTEXT_MENU_REQUESTED, event -> {
+            if (codeEditorClosed)
+                return;
+
+            if (!event.isKeyboardTrigger()) {
+                int index = hit(event.getX(), event.getY()).getCharacterIndex().orElse(-1);
+                IndexRange selection = getSelection();
+                if (index >= 0 && (selection.getLength() == 0 || index < selection.getStart()
+                    || index >= selection.getEnd())) {
+                    moveTo(index);
+                }
+            }
+
+            hideAutoComplete();
+            hideSignatureHelp();
+            closeEditorContextMenu();
+            ContextMenu menu = createEditorContextMenu();
+            activeContextMenu = menu;
+            if (getScene() != null && getScene().getWindow() != null && getScene().getWindow().isShowing()) {
+                Point2D anchor = event.isKeyboardTrigger()
+                    ? getCaretBounds().map(bounds -> new Point2D(bounds.getMinX(), bounds.getMaxY()))
+                        .orElseGet(() -> localToScreen(0, 0))
+                    : new Point2D(event.getScreenX(), event.getScreenY());
+                menu.show(this, anchor.getX(), anchor.getY());
+            }
+            event.consume();
+        });
+    }
+
+    /**
+     * Builds the editor's context menu for the current caret: symbol navigation, code actions, rename and clipboard
+     * editing.
+     * Items are enabled from their commands' current state.
+     *
+     * @return new context menu
+     */
+    protected final ContextMenu createEditorContextMenu() {
+        Supplier<CommandContext<CodeEditorPane>> navigation = () -> CommandContext.withArgument(project, this,
+            this);
+        Supplier<CommandContext<Void>> editing = () -> CommandContext.forProject(project, this);
+        var menu = new ContextMenu(
+            menuItem(Commands.GO_TO_DEFINITION, navigation),
+            menuItem(Commands.GO_TO_IMPLEMENTATION, navigation),
+            menuItem(Commands.FIND_USAGES, navigation),
+            new SeparatorMenuItem(),
+            menuItem(Commands.SHOW_CODE_ACTIONS, navigation),
+            menuItem(Commands.RENAME, navigation),
+            new SeparatorMenuItem(),
+            menuItem(EditCommands.CUT, editing),
+            menuItem(EditCommands.COPY, editing),
+            menuItem(EditCommands.PASTE, editing));
+        menu.getStyleClass().add("code-editor-context-menu");
+        return menu;
+    }
+
+    /**
+     * Returns the context menu opened by the last request, while it is open.
+     *
+     * @return open context menu, or {@code null}
+     */
+    protected final @Nullable ContextMenu activeContextMenu() {
+        return activeContextMenu;
+    }
+
+    private static <T> MenuItem menuItem(Command<T> command, Supplier<CommandContext<T>> context) {
+        MenuItem item = CommandMenuItems.create(command, context);
+        item.setDisable(!command.canExecute(context.get()));
+        return item;
+    }
+
+    private void closeEditorContextMenu() {
+        ContextMenu menu = activeContextMenu;
+        activeContextMenu = null;
+        if (menu != null) {
+            menu.hide();
+        }
+    }
+    // endregion
+
     // region Gutter
     private void configureGutter() {
         getGutter().setLineNumberFactory(line -> {
@@ -322,24 +1113,39 @@ public abstract class CodeEditorPane extends TextEditorPane {
             return label;
         });
         getGutter().addColumn(new GutterColumn("diagnostics", 12, this::createDiagnosticMarker));
+        getGutter().addColumn(new GutterColumn("code-actions", 14, this::createCodeActionBulb, (line, event) -> {
+            if (line == codeActionBulbLine) {
+                event.consume();
+                showCodeActions();
+            }
+        }));
+    }
+
+    private @Nullable Node createCodeActionBulb(int line) {
+        if (line != codeActionBulbLine)
+            return null;
+        var icon = new MFXFontIcon(FontAwesomeSolid.LIGHTBULB, 12);
+        icon.getStyleClass().add("editor-code-action-bulb");
+        Tooltip.install(icon, new Tooltip(L18n.localize("railroad.code_actions.bulb")));
+        return icon;
     }
 
     private @Nullable Node createDiagnosticMarker(int line) {
-        Diagnostic.Kind severity = lineSeverity.get(line);
+        DiagnosticSeverity severity = lineSeverity.get(line);
         if (severity == null)
             return null;
 
-        FontAwesomeSolid iconType = severity == Diagnostic.Kind.ERROR
-            ? FontAwesomeSolid.CIRCLE_EXCLAMATION
-            : FontAwesomeSolid.TRIANGLE_EXCLAMATION;
+        FontAwesomeSolid iconType = switch (severity) {
+            case ERROR -> FontAwesomeSolid.CIRCLE_EXCLAMATION;
+            case WARNING -> FontAwesomeSolid.TRIANGLE_EXCLAMATION;
+            case INFORMATION, HINT -> FontAwesomeSolid.CIRCLE_INFO;
+        };
 
         var icon = new MFXFontIcon(iconType, 12);
-        icon.getStyleClass().add(severity == Diagnostic.Kind.ERROR
-            ? "editor-diagnostic-error"
-            : "editor-diagnostic-warning");
+        icon.getStyleClass().add("editor-diagnostic-" + severity.name().toLowerCase(Locale.ROOT));
         String tooltipText = lineDiagnosticMessages.getOrDefault(
             line,
-            severity == Diagnostic.Kind.ERROR ? "Error" : "Warning");
+            severity.name());
         Tooltip.install(icon, new Tooltip(tooltipText));
         return icon;
     }
@@ -351,6 +1157,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
      * Cancels the JavaFX-thread-owned highlighting request and releases its captured inputs.
      */
     private void invalidateHighlightRequest() {
+        featureRequests.cancel("highlighting");
         if (activeHighlightCancellation != null) {
             activeHighlightCancellation.cancel();
             activeHighlightCancellation = null;
@@ -374,7 +1181,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
      */
     private void requestHighlight() {
         invalidateHighlightRequest();
-        if (codeEditorClosed || !supportsHighlighting())
+        if (codeEditorClosed || providerLifetime.isCancellationRequested() || !supportsHighlighting())
             return;
 
         int generation = highlightGeneration.incrementAndGet();
@@ -383,12 +1190,15 @@ public abstract class CodeEditorPane extends TextEditorPane {
             || !(workspace.document(documentId).orElse(null) instanceof TextDocumentSnapshot snapshot))
             return;
 
-        activeHighlightCancellation = new CancellationTokenSource();
+        activeHighlightCancellation = new CancellationTokenSource(providerLifetime);
         var context = new FeatureRequestContext(workspace, snapshot, activeHighlightCancellation.token(),
-            Deadline.none());
+            Deadline.after(HIGHLIGHT_BUDGET));
         activeHighlightContext = context;
 
-        CompletableFuture.supplyAsync(() -> highlightingProvider.compute(context), worker)
+        featureRequests.submit("highlighting", RequestPriority.OPEN_DOCUMENT_ANALYSIS, context,
+            activeHighlightCancellation, () -> ProviderExecutor.shared().execute(
+                context.documentSnapshot().languageId() + ":highlighting", context, HIGHLIGHT_BUDGET,
+                () -> highlightingProvider.compute(context)))
             .thenAccept(result -> Platform.runLater(() -> {
                 if (highlightGeneration.get() != generation
                     || activeHighlightContext != context
@@ -432,6 +1242,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
      * Generation advancement remains with the calling lifecycle transition.
      */
     private void invalidateDiagnosticsRequest() {
+        featureRequests.cancel("diagnostics");
         if (activeDiagnosticsCancellation != null) {
             activeDiagnosticsCancellation.cancel();
             activeDiagnosticsCancellation = null;
@@ -461,7 +1272,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         invalidateDiagnosticsRequest();
 
         workspaceDiagnosticsDelay.stop();
-        if (codeEditorClosed || !supportsDiagnostics())
+        if (codeEditorClosed || providerLifetime.isCancellationRequested() || !supportsDiagnostics())
             return;
 
         int generation = diagnosticsGeneration.incrementAndGet();
@@ -471,12 +1282,15 @@ public abstract class CodeEditorPane extends TextEditorPane {
             || !(workspace.document(documentId).orElse(null) instanceof TextDocumentSnapshot snapshot))
             return;
 
-        activeDiagnosticsCancellation = new CancellationTokenSource();
+        activeDiagnosticsCancellation = new CancellationTokenSource(providerLifetime);
         var context = new FeatureRequestContext(workspace, snapshot, activeDiagnosticsCancellation.token(),
-            Deadline.none());
+            Deadline.after(DIAGNOSTICS_BUDGET));
         activeDiagnosticsContext = context;
 
-        CompletableFuture.supplyAsync(() -> diagnosticsProvider.compute(context), worker)
+        featureRequests.submit("diagnostics", RequestPriority.VISIBLE_DIAGNOSTICS, context,
+            activeDiagnosticsCancellation, () -> ProviderExecutor.shared().execute(
+                context.documentSnapshot().languageId() + ":diagnostics", context, DIAGNOSTICS_BUDGET,
+                () -> diagnosticsProvider.compute(context)))
             .thenAccept(result -> Platform.runLater(() -> {
                 if (activeDiagnosticsContext != context
                     || !result.belongsTo(context)
@@ -519,6 +1333,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (lineDecorationsChanged) {
             getGutter().refresh();
         }
+        scheduleCodeActionBulb();
     }
 
     /**
@@ -598,6 +1413,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
      * Cancels the JavaFX-thread-owned completion request and releases its captured inputs.
      */
     private void invalidateCompletionRequest() {
+        featureRequests.cancel("completion");
         if (activeCompletionCancellation != null) {
             activeCompletionCancellation.cancel();
             activeCompletionCancellation = null;
@@ -620,7 +1436,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         });
 
         caretPositionProperty().addListener((obs, oldPos, newPos) -> {
-            if (completionDotIndex >= 0 && newPos <= completionDotIndex) {
+            if (completionReplacementStart >= 0 && newPos < completionReplacementStart) {
                 hideAutoComplete();
             }
         });
@@ -637,25 +1453,28 @@ public abstract class CodeEditorPane extends TextEditorPane {
      * Publication on the JavaFX thread must validate request identity, activity, generation,
      * and current workspace state before interpreting the possibly unsupported payload.
      *
-     * @param dotIndex zero-based UTF-16 completion trigger offset in the captured document
+     * @param triggerAt zero-based UTF-16 completion trigger offset in the captured document
      */
-    private void triggerCompletion(int dotIndex) {
+    private void triggerCompletion(int triggerAt) {
         invalidateCompletionRequest();
 
-        if (codeEditorClosed || !supportsCompletion())
+        if (codeEditorClosed || providerLifetime.isCancellationRequested() || !supportsCompletion())
             return;
 
         WorkspaceSnapshot workspace = captureFeatureWorkspace();
         if (workspace == null || workspace.document(documentId).isEmpty())
             return;
 
-        activeCompletionCancellation = new CancellationTokenSource();
+        activeCompletionCancellation = new CancellationTokenSource(providerLifetime);
         var context = new FeatureRequestContext(workspace, workspace.document(documentId).get(),
-            activeCompletionCancellation.token(), Deadline.none());
+            activeCompletionCancellation.token(), Deadline.after(INTERACTIVE_BUDGET));
         activeCompletionContext = context;
 
         int generation = completionGeneration.incrementAndGet();
-        CompletableFuture.supplyAsync(() -> completionProvider.compute(context, dotIndex), worker)
+        featureRequests.submit("completion", RequestPriority.COMPLETION, context,
+            activeCompletionCancellation, () -> ProviderExecutor.shared().execute(
+                context.documentSnapshot().languageId() + ":completion", context, INTERACTIVE_BUDGET,
+                () -> completionProvider.compute(context, triggerAt)))
             .thenAccept(result -> Platform.runLater(() -> {
                 if (completionGeneration.get() != generation
                     || activeCompletionContext != context
@@ -688,14 +1507,15 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
 
     private void handleCompletionResult(CompletionResult result) {
-        if (result.items().isEmpty()) {
+        if (result.items().isEmpty() || result.replacementStart() < 0
+            || result.replacementStart() > getCaretPosition()) {
             hideAutoComplete();
             return;
         }
 
         completionCandidates.clear();
         completionCandidates.addAll(result.items());
-        completionDotIndex = result.dotIndex();
+        completionReplacementStart = result.replacementStart();
         showAutoComplete();
     }
 
@@ -729,12 +1549,20 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
 
     private void completeFromSelection(RRListView<CompletionItem> listView) {
+        if (codeEditorClosed || providerLifetime.isCancellationRequested()) {
+            hideAutoComplete();
+            return;
+        }
         CompletionItem selected = listView.getSelectionModel().getSelectedItem();
         if (selected == null)
             return;
 
         int caret = getCaretPosition();
-        int start = Math.min(completionDotIndex + 1, caret);
+        if (completionReplacementStart < 0 || completionReplacementStart > caret) {
+            hideAutoComplete();
+            return;
+        }
+        int start = completionReplacementStart;
         String insert = selected.insertText();
         replaceText(start, caret, insert);
         moveTo(start + insert.length());
@@ -748,17 +1576,17 @@ public abstract class CodeEditorPane extends TextEditorPane {
             return;
 
         int caret = getCaretPosition();
-        if (completionDotIndex < 0 || completionDotIndex >= text.length() || text.charAt(completionDotIndex) != '.') {
+        if (completionReplacementStart < 0 || completionReplacementStart > text.length()) {
             hideAutoComplete();
             return;
         }
 
-        if (caret <= completionDotIndex) {
+        if (caret < completionReplacementStart) {
             hideAutoComplete();
             return;
         }
 
-        String prefix = text.substring(completionDotIndex + 1, Math.min(caret, text.length()));
+        String prefix = text.substring(completionReplacementStart, Math.min(caret, text.length()));
         List<CompletionItem> filtered = completionCandidates.stream()
             .filter(item -> item.insertText().startsWith(prefix))
             .collect(Collectors.toList());
@@ -797,18 +1625,26 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (clearState) {
             invalidateCompletionRequest();
             completionCandidates.clear();
-            completionDotIndex = -1;
+            completionReplacementStart = -1;
         }
     }
 
     private void showAutocomplete(PlainTextChange change) {
+        if (codeEditorClosed || providerLifetime.isCancellationRequested())
+            return;
         String inserted = change.getInserted();
         if (inserted == null || inserted.isEmpty())
             return;
 
-        if (inserted.endsWith(".")) {
-            int dotIndex = change.getPosition() + inserted.length() - 1;
-            triggerCompletion(dotIndex);
+        try {
+            if (completionProvider.shouldTrigger(inserted)) {
+                int triggerAt = change.getPosition() + inserted.length() - 1;
+                triggerCompletion(triggerAt);
+            }
+        } catch (CancellationException _) {
+            // The session can close before its editor notification reaches the UI thread.
+        } catch (RuntimeException exception) {
+            Railroad.LOGGER.error("Completion trigger policy failed", exception);
         }
     }
     // endregion
@@ -819,6 +1655,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
      * Cancels the JavaFX-thread-owned signature request and releases its captured inputs.
      */
     private void invalidateSignatureRequest() {
+        featureRequests.cancel("signature");
         if (activeSignatureCancellation != null) {
             activeSignatureCancellation.cancel();
             activeSignatureCancellation = null;
@@ -854,7 +1691,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     private void requestSignatureHelp(boolean textChanged) {
         invalidateSignatureRequest();
 
-        if (codeEditorClosed || !supportsSignatureHelp()) {
+        if (codeEditorClosed || providerLifetime.isCancellationRequested() || !supportsSignatureHelp()) {
             hideSignatureHelp();
             return;
         }
@@ -872,12 +1709,15 @@ public abstract class CodeEditorPane extends TextEditorPane {
             || !(workspace.document(documentId).orElse(null) instanceof TextDocumentSnapshot snapshot))
             return;
 
-        activeSignatureCancellation = new CancellationTokenSource();
+        activeSignatureCancellation = new CancellationTokenSource(providerLifetime);
         var context = new FeatureRequestContext(workspace, snapshot, activeSignatureCancellation.token(),
-            Deadline.none());
+            Deadline.after(INTERACTIVE_BUDGET));
         activeSignatureContext = context;
 
-        CompletableFuture.supplyAsync(() -> signatureHelpProvider.compute(context, caret), worker)
+        featureRequests.submit("signature", RequestPriority.SIGNATURE_HELP, context,
+            activeSignatureCancellation, () -> ProviderExecutor.shared().execute(
+                context.documentSnapshot().languageId() + ":signature", context, INTERACTIVE_BUDGET,
+                () -> signatureHelpProvider.compute(context, caret)))
             .thenAccept(result -> Platform.runLater(() -> {
                 if (signatureGeneration.get() != generation
                     || activeSignatureContext != context
@@ -1174,7 +2014,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
             if (end <= start)
                 continue;
 
-            boolean error = diagnostic.kind() == Diagnostic.Kind.ERROR;
+            if (diagnostic.kind() == DiagnosticSeverity.INFORMATION || diagnostic.kind() == DiagnosticSeverity.HINT)
+                continue;
+            boolean error = diagnostic.kind() == DiagnosticSeverity.ERROR;
             registerDiagnosticEvent(events, start, error, 1);
             registerDiagnosticEvent(events, end, error, -1);
         }
@@ -1267,21 +2109,17 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
 
     private boolean recomputeLineDecorations() {
-        Map<Integer, Diagnostic.Kind> updatedSeverity = new LinkedHashMap<>();
+        Map<Integer, DiagnosticSeverity> updatedSeverity = new LinkedHashMap<>();
         Map<Integer, String> updatedMessages = new LinkedHashMap<>();
 
         for (TextEditorDiagnostic diagnostic : visibleDiagnostics) {
             int line = diagnostic.location().line() + 1;
-            Diagnostic.Kind kind = diagnostic.kind();
-            Diagnostic.Kind effectiveKind = kind == Diagnostic.Kind.ERROR
-                ? Diagnostic.Kind.ERROR
-                : Diagnostic.Kind.WARNING;
-            Diagnostic.Kind existing = updatedSeverity.get(line);
-            if (existing != Diagnostic.Kind.ERROR) {
-                updatedSeverity.put(line, effectiveKind);
+            DiagnosticSeverity kind = diagnostic.kind();
+            DiagnosticSeverity existing = updatedSeverity.get(line);
+            if (existing == null || kind.ordinal() < existing.ordinal()) {
+                updatedSeverity.put(line, kind);
+                updatedMessages.put(line, diagnostic.message(Locale.getDefault()));
             }
-
-            updatedMessages.putIfAbsent(line, diagnostic.message(Locale.getDefault()));
         }
 
         boolean changed = !lineSeverity.equals(updatedSeverity) || !lineDiagnosticMessages.equals(updatedMessages);

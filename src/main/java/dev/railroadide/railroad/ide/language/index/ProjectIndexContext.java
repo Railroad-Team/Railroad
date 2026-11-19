@@ -2,6 +2,9 @@ package dev.railroadide.railroad.ide.language.index;
 
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.utility.FileUtils;
+import dev.railroadide.railroad.ide.sst.request.api.CancellationToken;
+import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
+import java.util.concurrent.CancellationException;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
@@ -16,14 +19,34 @@ import java.util.Objects;
  * @param languages the language contexts keyed by language identifier
  * @param session live index ownership, or {@code null} for a standalone context
  * @param configurationGeneration captured session configuration revision, or zero for a standalone context
+ * @param cancellationToken cancellation shared with the owning index operation
  */
 public record ProjectIndexContext(
     Project project,
     Path projectRoot,
     Map<String, LanguageIndexContext> languages,
     ProjectLanguageIndexService.Session session,
-    long configurationGeneration
+    long configurationGeneration,
+    CancellationToken cancellationToken
 ) {
+    /**
+     * Creates a context without an explicit operation cancellation token.
+     *
+     * @param project project owner
+     * @param projectRoot normalized project root
+     * @param languages captured language configuration
+     * @param session active project session, or null for standalone work
+     * @param configurationGeneration captured configuration revision
+     */
+    public ProjectIndexContext(
+        Project project,
+        Path projectRoot,
+        Map<String, LanguageIndexContext> languages,
+        ProjectLanguageIndexService.Session session,
+        long configurationGeneration
+    ) {
+        this(project, projectRoot, languages, session, configurationGeneration, CancellationToken.none());
+    }
     /**
      * Creates a project context, normalizing its root and copying the language context map.
      *
@@ -64,11 +87,27 @@ public record ProjectIndexContext(
      * @param languages the language contexts keyed by language identifier
      * @param session live index ownership, or {@code null} for a standalone context
      * @param configurationGeneration captured session configuration revision, or zero for a standalone context
+     * @param cancellationToken cancellation shared with the owning index operation
      */
     public ProjectIndexContext {
         project = Objects.requireNonNull(project, "project");
         projectRoot = normalize(projectRoot);
         languages = Map.copyOf(Objects.requireNonNull(languages, "languages"));
+        cancellationToken = Objects.requireNonNull(cancellationToken, "cancellationToken");
+    }
+
+    /**
+     * Checks explicit cancellation, interruption and captured project ownership.
+     * Index providers must call this during long-running scans and before returning results.
+     *
+     * @throws CancellationException if the operation or its captured session is no longer active
+     */
+    public void checkActive() {
+        cancellationToken.throwIfCancellationRequested();
+        ActivityCheckpoint.checkInterrupted();
+        if (session != null && (session.isClosed()
+            || session.configurationGeneration() != configurationGeneration))
+            throw new CancellationException("Project indexing configuration is no longer active");
     }
 
     /**

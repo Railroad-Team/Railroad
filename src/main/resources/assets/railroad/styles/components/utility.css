@@ -74,3 +74,8 @@
 .diagnostic-pane.warning {
     -fx-border-color: orange;
 }
+
+.diagnostic-pane.information,
+.diagnostic-pane.hint {
+    -fx-border-color: -color-fg-default;
+}

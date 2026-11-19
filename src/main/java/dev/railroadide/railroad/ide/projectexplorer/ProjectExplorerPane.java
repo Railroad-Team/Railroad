@@ -2,6 +2,14 @@ package dev.railroadide.railroad.ide.projectexplorer;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.sst.request.api.*;
+import dev.railroadide.railroad.ide.ProjectWorkspaceConfiguration;
+import dev.railroadide.railroad.ide.sst.provider.api.ProviderExecutor;
+import java.time.Duration;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.concurrent.CompletableFuture;
 import dev.railroadide.railroad.command.CommandButtons;
 import dev.railroadide.railroad.command.CommandContext;
 import dev.railroadide.railroad.command.Commands;
@@ -68,6 +76,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     private static boolean fileChangeListenerEnabled = true;
     private final Project project;
     private final ExecutorService executorService = Executors.newFixedThreadPool(3);
+    private final SstScheduler.Scope indexRequests = SstScheduler.shared().newScope();
     private final Future<ProjectLanguageIndexCoordinator> projectLanguageIndexCoordinator;
     private final StringProperty messageProperty = new SimpleStringProperty();
     private final TreeView<PathItem> treeView = new TreeView<>();
@@ -87,13 +96,18 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
      */
     public ProjectExplorerPane(Project project) {
         this.project = project;
-        shutdownRegistration = ShutdownHooks.registerHook(this.executorService::shutdownNow);
+        shutdownRegistration = ShutdownHooks.registerHook(() -> {
+            indexRequests.close();
+            executorService.shutdownNow();
+        });
         var indexSession = Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project);
-        this.projectLanguageIndexCoordinator = executorService.submit(() -> {
+        this.projectLanguageIndexCoordinator = submitIndex("initialize", request -> {
             try {
                 var coordinator = new ProjectLanguageIndexCoordinator(project, indexSession);
-                coordinator.warmIndexes();
+                coordinator.warmIndexes(request);
                 return coordinator;
+            } catch (CancellationException exception) {
+                throw exception;
             } catch (RuntimeException exception) {
                 Railroad.LOGGER.error("Failed to initialize project indexes for {}", project.getPath(), exception);
                 throw exception;
@@ -154,6 +168,18 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         }
     }
 
+    private <T> CompletableFuture<T> submitIndex(Object key, Function<RequestContext, T> operation) {
+        WorkspaceSnapshot workspace = Services.IDE_STATE.getDocumentStore().map(DocumentStore::capture)
+            .filter(snapshot -> snapshot.projectId().equals(project.getId()))
+            .orElseGet(() -> new WorkspaceSnapshot(project.getId(), Map.of(),
+                ProjectWorkspaceConfiguration.initial(project), 0));
+        var cancellation = new CancellationTokenSource();
+        Duration budget = Duration.ofMinutes(5);
+        var context = new WorkspaceRequestContext(workspace, cancellation.token(), Deadline.after(budget));
+        return indexRequests.submit(key, RequestPriority.BACKGROUND_INDEXING, context, cancellation,
+            () -> ProviderExecutor.shared().executeWithContext("project-index", context, budget, operation));
+    }
+
     @Override
     public void close() {
         if (closed)
@@ -162,6 +188,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         closed = true;
         Settings.COMPACT_MIDDLE_PACKAGES.removeListener(compactPackagesListener);
         shutdownRegistration.close();
+        indexRequests.close();
         projectLanguageIndexCoordinator.cancel(true);
         executorService.shutdownNow();
     }
@@ -526,14 +553,21 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         try {
             // This callback runs on the watcher thread. Wait here so changes observed
             // during initialization are applied after the initial index is ready.
-            projectLanguageIndexCoordinator.get().handleFileChange(path, kind);
+            ProjectLanguageIndexCoordinator coordinator = projectLanguageIndexCoordinator.get();
+            submitIndex(path, request -> {
+                coordinator.handleFileChange(path, kind, request);
+                return null;
+            }).get();
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             return;
         } catch (CancellationException exception) {
+            Services.PROJECT_LANGUAGE_INDEX_SERVICE.invalidateProject(project);
             return;
         } catch (ExecutionException exception) {
-            // Initialization already logged the failure; keep the explorer usable.
+            Services.PROJECT_LANGUAGE_INDEX_SERVICE.invalidateProject(project);
+            Railroad.LOGGER.warn("Project index update was not completed for {}; invalidating cached indexes", path,
+                exception.getCause());
         }
         if (kind != StandardWatchEventKinds.ENTRY_CREATE && kind != StandardWatchEventKinds.ENTRY_DELETE)
             return;

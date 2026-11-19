@@ -33,7 +33,7 @@ import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
-import javax.tools.Diagnostic;
+import dev.railroadide.railroad.ide.diagnostics.DiagnosticSeverity;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -99,7 +99,7 @@ public class JavaDiagnosticsProviderTest {
             .findFirst()
             .orElse(null);
         assertNotNull(mismatch, "Generated virtual documents must receive the public-class-filename inspection");
-        assertEquals(Diagnostic.Kind.ERROR, mismatch.kind());
+        assertEquals(DiagnosticSeverity.ERROR, mismatch.kind());
         assertEquals("Public class 'Wrong' must be declared in a file named 'Expected.java'", mismatch.message());
     }
 
@@ -121,12 +121,32 @@ public class JavaDiagnosticsProviderTest {
 
             List<EditorDiagnostic.TextEditorDiagnostic> diagnostics = providerRunner.compute(snapshot);
             assertTrue(diagnostics.stream().anyMatch(diagnostic -> PLUGIN_RULE_ID.equals(diagnostic.code())));
-            assertTrue(diagnostics.stream().anyMatch(diagnostic -> diagnostic.kind() == Diagnostic.Kind.WARNING));
+            assertTrue(diagnostics.stream().anyMatch(diagnostic -> diagnostic.kind() == DiagnosticSeverity.WARNING));
+            TextEditorDiagnostic pluginDiagnostic = diagnostics.stream()
+                .filter(diagnostic -> PLUGIN_RULE_ID.equals(diagnostic.code())).findFirst().orElseThrow();
+            assertEquals(id, pluginDiagnostic.source());
+            assertEquals(DiagnosticOrigin.INSPECTION, pluginDiagnostic.origin());
+            assertEquals(snapshot.version(), pluginDiagnostic.location().documentVersion());
         } finally {
             if (JavaInspectionRegistries.containsRuleProvider(id)) {
                 JavaInspectionRegistries.unregisterRuleProvider(id);
             }
         }
+    }
+
+    @Test
+    public void syntaxAndInspectionReportsShareTheVersionedEditorModel() {
+        ensureJavaLanguageSupportRegistered();
+        var snapshot = new TextDocumentSnapshot(DocumentId.create(),
+            DocumentUri.virtual("diagnostics", "/Broken.java"), new DocumentVersion(7),
+            JavaLanguageSupport.LANGUAGE_ID, "class Broken { void run( { missing = 1; }", StandardCharsets.UTF_8);
+        List<TextEditorDiagnostic> diagnostics = new JavaDiagnosticsProvider().compute(snapshot);
+        assertTrue(diagnostics.stream().anyMatch(diagnostic -> diagnostic.origin() == DiagnosticOrigin.SYNTAX));
+        diagnostics.forEach(diagnostic -> {
+            assertEquals(snapshot.version(), diagnostic.location().documentVersion());
+            assertFalse(diagnostic.source().equals("unspecified"));
+            assertDoesNotThrow(() -> diagnostic.location().validateAgainst(snapshot));
+        });
     }
 
     @Test
@@ -179,7 +199,7 @@ public class JavaDiagnosticsProviderTest {
                 .findFirst()
                 .orElse(null);
             assertNotNull(unresolved);
-            assertEquals(Diagnostic.Kind.NOTE, unresolved.kind());
+            assertEquals(DiagnosticSeverity.INFORMATION, unresolved.kind());
         } finally {
             JavaInspectionRuleSettings.resetAll();
         }
@@ -227,9 +247,6 @@ public class JavaDiagnosticsProviderTest {
 
         LanguageSupports.initialize();
 
-        if (!Services.PROJECT_LANGUAGE_INDEX_SERVICE.hasIndexer(JavaLanguageSupport.LANGUAGE_ID)) {
-            Services.PROJECT_LANGUAGE_INDEX_SERVICE.registerIndexer(new JavaLanguageSupport().createIndexer());
-        }
     }
 
     private static final class TestJavaInspectionRuleProvider implements JavaInspectionRuleProvider {

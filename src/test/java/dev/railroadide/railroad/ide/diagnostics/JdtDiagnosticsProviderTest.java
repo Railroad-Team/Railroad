@@ -13,7 +13,7 @@ import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import javax.tools.Diagnostic;
+import dev.railroadide.railroad.ide.diagnostics.DiagnosticSeverity;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
@@ -48,7 +48,7 @@ public class JdtDiagnosticsProviderTest {
         List<TextEditorDiagnostic> diagnostics = assertDoesNotThrow(
             () -> new JdtDiagnosticsProvider().compute(snapshot));
 
-        assertTrue(diagnostics.stream().anyMatch(diagnostic -> diagnostic.kind() == Diagnostic.Kind.ERROR));
+        assertTrue(diagnostics.stream().anyMatch(diagnostic -> diagnostic.kind() == DiagnosticSeverity.ERROR));
         for (TextEditorDiagnostic diagnostic : diagnostics) {
             assertEquals(snapshot.id(), diagnostic.location().documentId());
             assertEquals(snapshot.version(), diagnostic.location().documentVersion());
@@ -77,7 +77,7 @@ public class JdtDiagnosticsProviderTest {
         List<TextEditorDiagnostic> physicalDiagnostics = provider.compute(physical);
         List<TextEditorDiagnostic> virtualDiagnostics = provider.compute(virtual);
 
-        assertTrue(physicalDiagnostics.stream().anyMatch(diagnostic -> diagnostic.kind() == Diagnostic.Kind.ERROR));
+        assertTrue(physicalDiagnostics.stream().anyMatch(diagnostic -> diagnostic.kind() == DiagnosticSeverity.ERROR));
         assertEquals(physicalDiagnostics.size(), virtualDiagnostics.size());
         for (int index = 0; index < physicalDiagnostics.size(); index++) {
             TextEditorDiagnostic expected = physicalDiagnostics.get(index);
@@ -114,7 +114,7 @@ public class JdtDiagnosticsProviderTest {
             List<TextEditorDiagnostic> diagnostics = assertDoesNotThrow(
                 () -> new JdtDiagnosticsProvider().compute(snapshot));
 
-            assertTrue(diagnostics.stream().anyMatch(diagnostic -> diagnostic.kind() == Diagnostic.Kind.ERROR));
+            assertTrue(diagnostics.stream().anyMatch(diagnostic -> diagnostic.kind() == DiagnosticSeverity.ERROR));
         }
     }
 }

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import javax.tools.Diagnostic;
+import dev.railroadide.railroad.ide.diagnostics.DiagnosticSeverity;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
@@ -83,7 +83,7 @@ public class CodeEditorDiagnosticsRequestTest {
                 assertSame(old.documentSnapshot(), current.documentSnapshot());
                 assertFalse(current.cancellationToken().isCancellationRequested());
 
-                fixture.editor.awaitWorkersExcept(1);
+                fixture.editor.awaitRequests();
                 onFx(() -> {
                     assertEquals(List.of("NEW"), fixture.editor.diagnosticCodes());
                     return null;
@@ -91,7 +91,7 @@ public class CodeEditorDiagnosticsRequestTest {
 
                 // The old provider deliberately ignores cancellation and completes last.
                 releaseOld.countDown();
-                fixture.editor.awaitWorkersExcept(0);
+                fixture.editor.awaitRequests();
                 onFx(() -> {
                     assertEquals(List.of("NEW"), fixture.editor.diagnosticCodes());
                     return null;
@@ -146,7 +146,7 @@ public class CodeEditorDiagnosticsRequestTest {
                 });
 
                 releaseOld.countDown();
-                fixture.editor.awaitWorkersExcept(0);
+                fixture.editor.awaitRequests();
                 onFx(() -> {
                     assertTrue(fixture.editor.diagnosticCodes().isEmpty());
                     return null;
@@ -172,7 +172,7 @@ public class CodeEditorDiagnosticsRequestTest {
                     assertTrue(captured.cancellationToken().isCancellationRequested());
                 })) {
                     returnResult.countDown();
-                    fixture.editor.awaitWorkersExcept(0);
+                    fixture.editor.awaitRequests();
                     blocker.releaseAndAwait();
                 }
                 onFx(() -> {
@@ -199,7 +199,7 @@ public class CodeEditorDiagnosticsRequestTest {
                 FeatureRequestContext old = fixture.nextRequest();
                 try (FxBlocker blocker = FxBlocker.start(fixture.editor::request)) {
                     returnOld.countDown();
-                    fixture.editor.awaitWorkersExcept(0);
+                    fixture.editor.awaitRequests();
                     blocker.releaseAndAwait();
                 }
                 FeatureRequestContext current = fixture.nextRequest();
@@ -211,7 +211,7 @@ public class CodeEditorDiagnosticsRequestTest {
                 });
 
                 returnNew.countDown();
-                fixture.editor.awaitWorkersExcept(0);
+                fixture.editor.awaitRequests();
                 onFx(() -> {
                     assertEquals(List.of("NEW"), fixture.editor.diagnosticCodes());
                     return null;
@@ -238,7 +238,7 @@ public class CodeEditorDiagnosticsRequestTest {
                     assertTrue(captured.cancellationToken().isCancellationRequested());
                 })) {
                     returnResult.countDown();
-                    fixture.editor.awaitWorkersExcept(0);
+                    fixture.editor.awaitRequests();
                     blocker.releaseAndAwait();
                 }
                 onFx(() -> {
@@ -294,7 +294,7 @@ public class CodeEditorDiagnosticsRequestTest {
             return diagnostics(different, "WRONG_REQUEST");
         })) {
             fixture.nextRequest();
-            fixture.editor.awaitWorkersExcept(0);
+            fixture.editor.awaitRequests();
             onFx(() -> {
                 assertTrue(fixture.editor.diagnosticCodes().isEmpty());
                 return null;
@@ -311,13 +311,13 @@ public class CodeEditorDiagnosticsRequestTest {
             return diagnostics(context, "RECOVERED");
         })) {
             fixture.nextRequest();
-            fixture.editor.awaitWorkersExcept(0);
+            fixture.editor.awaitRequests();
             onFx(() -> {
                 fixture.editor.request();
                 return null;
             });
             fixture.nextRequest();
-            fixture.editor.awaitWorkersExcept(0);
+            fixture.editor.awaitRequests();
             onFx(() -> {
                 assertEquals(List.of("RECOVERED"), fixture.editor.diagnosticCodes());
                 return null;
@@ -338,7 +338,8 @@ public class CodeEditorDiagnosticsRequestTest {
         var provider = new ControlledProvider(computation);
         TestEditor editor = onFx(() -> {
             Project project = new RailroadProject(directory, "Diagnostics request", new WritableImage(1, 1));
-            var pane = new TestEditor(project, id, file, new CodeEditorConfig("java", null, provider, null, null));
+            var pane = new TestEditor(project, id, file,
+                new CodeEditorConfig("java", null, provider, null, null, null));
             store.publishBacking(pane.captureSnapshot());
             pane.setDocumentStore(store);
             return pane;
@@ -349,7 +350,7 @@ public class CodeEditorDiagnosticsRequestTest {
     private static FeatureResult<List<TextEditorDiagnostic>> diagnostics(FeatureRequestContext context, String code) {
         return new FeatureResult<>(context, List.of(new TextEditorDiagnostic(
             Location.TextLocation.from((TextDocumentSnapshot) context.documentSnapshot(), 0, 1),
-            Diagnostic.Kind.ERROR, code, code)));
+            DiagnosticSeverity.ERROR, code, code)));
     }
 
     private static void await(CountDownLatch latch) {
@@ -387,7 +388,7 @@ public class CodeEditorDiagnosticsRequestTest {
                 editor.dispose();
                 return null;
             });
-            assertTrue(editor.worker.awaitTermination(10, TimeUnit.SECONDS));
+            CodeEditorRequestTestSupport.awaitRequests(editor.featureRequests);
         }
     }
 
@@ -465,25 +466,10 @@ public class CodeEditorDiagnosticsRequestTest {
             return visibleDiagnostics.stream().map(TextEditorDiagnostic::code).toList();
         }
 
-        private void awaitWorkersExcept(int blockedRequests) throws InterruptedException {
-            var executor = (ThreadPoolExecutor) worker;
-            int available = executor.getCorePoolSize() - blockedRequests;
-            var ready = new CountDownLatch(available);
-            var release = new CountDownLatch(1);
-            try {
-                // Occupying every remaining worker proves earlier computations and their
-                // synchronous future continuations have finished queuing publication.
-                for (int index = 0; index < available; index++) {
-                    executor.execute(() -> {
-                        ready.countDown();
-                        await(release);
-                    });
-                }
-                assertTrue(ready.await(10, TimeUnit.SECONDS), "Earlier worker tasks did not finish");
-            } finally {
-                release.countDown();
-            }
+        private void awaitRequests() throws InterruptedException {
+            CodeEditorRequestTestSupport.awaitRequests(featureRequests);
         }
+
     }
 
     private static final class FxBlocker implements AutoCloseable {

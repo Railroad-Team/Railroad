@@ -56,7 +56,7 @@ public class CompletionProviderTest {
 
                 assertNotNull(result,
                     () -> provider.getClass().getSimpleName() + " returned no completions for " + uri);
-                assertEquals(triggerAt, result.dotIndex());
+                assertEquals(triggerAt + 1, result.replacementStart());
                 assertTrue(hasItem(result, "marker"));
             }
         }

@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.ide.sst.semantic.api;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
+import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxParser;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxKind;
@@ -69,7 +71,7 @@ public class SemanticPublicationTest {
         var diagnostic = new SemanticDiagnostic(SemanticDiagnostic.Severity.INFO, "test", "message", 0, 1, tree.root());
         Symbol declaration = symbol("Example");
         builder.declare(tree.root(), declaration).resolve(tree.root(), declaration)
-            .type(tree.root(), new Type.PrimitiveType("int")).diagnostic(diagnostic);
+            .type(tree.root(), new JavaTypes.PrimitiveType("int")).diagnostic(diagnostic);
         var second = builder.build();
         assertTrue(first.declaredSymbol(tree.root()).isEmpty());
         assertTrue(first.resolvedSymbol(tree.root()).isEmpty());
@@ -82,8 +84,8 @@ public class SemanticPublicationTest {
         assertEquals(List.of(diagnostic), augmented.diagnostics());
         assertThrows(UnsupportedOperationException.class, () -> augmented.diagnostics().clear());
         assertSame(first.rootScope(), augmented.rootScope());
-        var arguments = new ArrayList<Type>(List.of(new Type.PrimitiveType("int")));
-        var type = new Type.DeclaredType("Box", arguments);
+        var arguments = new ArrayList<Type>(List.of(new JavaTypes.PrimitiveType("int")));
+        var type = new JavaTypes.DeclaredType("Box", arguments);
         arguments.clear();
         assertEquals(1, type.typeArguments().size());
         assertThrows(UnsupportedOperationException.class, () -> type.typeArguments().clear());
@@ -100,8 +102,8 @@ public class SemanticPublicationTest {
         var model = SemanticModel.builder(new SyntaxTree(first), Scope.root())
             .declare(first, a).declare(second, b)
             .resolve(first, b).resolve(second, a)
-            .type(first, new Type.PrimitiveType("int"))
-            .type(second, new Type.PrimitiveType("long"))
+            .type(first, new JavaTypes.PrimitiveType("int"))
+            .type(second, new JavaTypes.PrimitiveType("long"))
             .build();
         assertSame(a, model.declaredSymbol(first).orElseThrow());
         assertSame(b, model.declaredSymbol(second).orElseThrow());
@@ -171,7 +173,7 @@ public class SemanticPublicationTest {
     }
 
     private static Symbol symbol(String name) {
-        return new SimpleSymbol(SymbolKind.METHOD, name, null, null);
+        return new SimpleSymbol(JavaSymbolKind.METHOD, name, null, null);
     }
 
     private record EqualNode(SyntaxKind kind) implements SyntaxNode {

@@ -42,7 +42,26 @@ public final class JavaSignatureSources implements AutoCloseable {
      */
     public static JavaSignatureSources create(JavaWorkspaceAnalysis analysis, Path parent, Set<Path> excluded)
         throws IOException {
-        checkCancelled();
+        return create(analysis, parent, excluded, JavaSignatureSources::checkCancelled);
+    }
+
+    /**
+     * Stages captured sources with request checks before each filesystem operation and publication.
+     *
+     * @param analysis captured sources
+     * @param parent optional temporary parent
+     * @param excluded paths supplied directly to the parser
+     * @param activityCheck request cancellation and deadline check
+     * @return owned source tree
+     * @throws IOException if staging fails
+     */
+    public static JavaSignatureSources create(
+        JavaWorkspaceAnalysis analysis,
+        Path parent,
+        Set<Path> excluded,
+        Runnable activityCheck
+    ) throws IOException {
+        Objects.requireNonNull(activityCheck, "activityCheck").run();
         Path directory = parent == null
             ? Files.createTempDirectory("railroad-java-signatures-")
             : Files.createTempDirectory(parent, "railroad-java-signatures-");
@@ -51,7 +70,7 @@ public final class JavaSignatureSources implements AutoCloseable {
             Map<Path, String> units = new HashMap<>();
             Set<Path> ambiguous = new HashSet<>();
             for (JavaProjectSemanticIndex.SourceFileIndex entry : analysis.sourceIndex().files().values()) {
-                checkCancelled();
+                activityCheck.run();
                 if (excluded.contains(entry.path()))
                     continue;
                 String packageName = entry.packageName();
@@ -67,13 +86,13 @@ public final class JavaSignatureSources implements AutoCloseable {
                 }
             }
             for (Map.Entry<Path, String> entry : units.entrySet()) {
-                checkCancelled();
+                activityCheck.run();
                 if (ambiguous.contains(entry.getKey()))
                     continue;
                 Files.createDirectories(entry.getKey().getParent());
                 Files.writeString(entry.getKey(), entry.getValue(), StandardCharsets.UTF_8);
             }
-            checkCancelled();
+            activityCheck.run();
             return sources;
         } catch (IOException | RuntimeException exception) {
             sources.close();

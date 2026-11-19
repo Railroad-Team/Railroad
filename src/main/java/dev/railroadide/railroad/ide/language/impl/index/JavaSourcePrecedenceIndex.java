@@ -4,6 +4,8 @@ import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 import dev.railroadide.railroad.ide.sst.project.*;
 import java.util.*;
 import java.util.stream.Stream;
+import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
+import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 
 /** Prevents an older binary declaration from supplying members for a captured source type. */
 public final class JavaSourcePrecedenceIndex implements JavaSymbolIndex {
@@ -85,6 +87,30 @@ public final class JavaSourcePrecedenceIndex implements JavaSymbolIndex {
             return sourceNames.getOrDefault(name.substring(0, member), name.substring(0, member))
                 + name.substring(member);
         return sourceNames.getOrDefault(name, name);
+    }
+
+    @Override
+    public List<SemanticIndexShard> semanticShards() {
+        return semanticShards(ActivityCheckpoint::checkInterrupted);
+    }
+
+    @Override
+    public List<SemanticIndexShard> semanticShards(Runnable activityCheck) {
+        Objects.requireNonNull(activityCheck, "activityCheck").run();
+        var result = new ArrayList<>(sources.semanticShards(activityCheck));
+        for (var shard : binaries.semanticShards(activityCheck)) {
+            activityCheck.run();
+            boolean hidden = shard.declarations().stream()
+                .anyMatch(symbol -> {
+                    activityCheck.run();
+                    return symbol.qualifiedName() != null && hiddenBinaries.contains(symbol.qualifiedName());
+                });
+            if (!hidden) {
+                result.add(shard);
+            }
+        }
+        activityCheck.run();
+        return List.copyOf(result);
     }
 
     @Override
