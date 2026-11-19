@@ -402,7 +402,7 @@ public final class JavaRenameEngine {
         int start = reference.location().range().start;
         int end = reference.location().range().end;
         String region = text.substring(start, end);
-        if (region.equals(name))
+        if (JavaUnicodeEscapes.translate(region).equals(name))
             return List.of(new TextRange(start, end));
 
         List<Segment> segments;
@@ -556,7 +556,8 @@ public final class JavaRenameEngine {
                     } else
                         break;
                 }
-                if (name != null && name.text().equals(annotationName) && !resolved.contains(name.start())) {
+                if (name != null && JavaUnicodeEscapes.translate(name.text()).equals(annotationName)
+                    && !resolved.contains(name.start())) {
                     conflicts.add(error("The annotation at " + describe(document, name.start()) + " could not be "
                         + "resolved, so its '" + target.name() + "' element cannot be renamed safely",
                         location(document, new TextRange(name.start(), name.end()))));
@@ -617,7 +618,7 @@ public final class JavaRenameEngine {
                 continue;
             pairs = true;
             SyntaxNode name = arguments.get(index);
-            if (name instanceof SyntaxToken token && token.text().equals(oldName)) {
+            if (name instanceof SyntaxToken token && JavaUnicodeEscapes.translate(token.text()).equals(oldName)) {
                 plan.replace(document, new TextRange(token.start(), token.end()), newName);
             }
         }
@@ -816,7 +817,7 @@ public final class JavaRenameEngine {
                         && usage.start() <= reference.location().range().start
                         && reference.location().range().end <= usage.end())
                     || tokens(usage).stream().anyMatch(token -> token.kind().id().equals("JAVA_TOKEN_IDENTIFIER")
-                        && token.text().equals(containerName));
+                        && JavaUnicodeEscapes.translate(token.text()).equals(containerName));
                 if (names) {
                     conflicts.add(error("'" + simpleName(container) + "' is the container of a @Repeatable "
                         + "annotation, which requires its 'value' element",
@@ -848,7 +849,8 @@ public final class JavaRenameEngine {
                 }
             }
             for (SyntaxToken token : tokens(tree(document))) {
-                if (!token.kind().id().equals("JAVA_TOKEN_IDENTIFIER") || !names.contains(token.text()))
+                if (!token.kind().id().equals("JAVA_TOKEN_IDENTIFIER")
+                    || !names.contains(JavaUnicodeEscapes.translate(token.text())))
                     continue;
                 Boolean unqualified = callShape(token);
                 if (unqualified == null)
@@ -857,7 +859,8 @@ public final class JavaRenameEngine {
                 boolean reference = token.parent()
                     .filter(parent -> parent.kind().id().equals(JavaSyntaxKinds.METHOD_REFERENCE_EXPRESSION.id()))
                     .isPresent();
-                sites.add(new CallSite(document, token.start(), token.text(), unqualified, reference,
+                sites.add(new CallSite(document, token.start(), JavaUnicodeEscapes.translate(token.text()), unqualified,
+                    reference,
                     targets.size() == 1 ? targets.iterator().next() : null));
             }
         }
@@ -1616,7 +1619,8 @@ public final class JavaRenameEngine {
                     pending.addAll(node.children());
                     continue;
                 }
-                if (!token.kind().id().endsWith("IDENTIFIER") || !token.text().equals(target.name())
+                if (!token.kind().id().endsWith("IDENTIFIER")
+                    || !JavaUnicodeEscapes.translate(token.text()).equals(target.name())
                     || plan.replaces(document.id(), token.start())
                     || resolved.stream().anyMatch(range -> range.start <= token.start() && token.end() <= range.end))
                     continue;
@@ -1783,22 +1787,31 @@ public final class JavaRenameEngine {
         return !prefix.isEmpty() && parts.size() >= prefix.size() && parts.subList(0, prefix.size()).equals(prefix);
     }
 
+    /** Splits a dotted name into its identifiers, whose text has Unicode escapes translated. */
     private static List<Segment> segments(String text, int start, int end) {
         List<Segment> segments = new ArrayList<>();
         int index = start;
         while (index < end) {
-            if (Character.isJavaIdentifierStart(text.charAt(index))) {
+            if (Character.isJavaIdentifierStart(translatedAt(text, index))) {
                 int from = index;
-                while (index < end && Character.isJavaIdentifierPart(text.charAt(index))) {
-                    index++;
+                var name = new StringBuilder();
+                while (index < end && Character.isJavaIdentifierPart(translatedAt(text, index))) {
+                    name.append(translatedAt(text, index));
+                    int escape = JavaUnicodeEscapes.escapeEnd(text, index);
+                    index = escape > 0 ? escape : index + 1;
                 }
-                segments.add(new Segment(text.substring(from, index), from, index));
+                segments.add(new Segment(name.toString(), from, index));
             } else if (Character.isWhitespace(text.charAt(index)) || text.charAt(index) == '.') {
                 index++;
             } else
                 return List.of();
         }
         return segments;
+    }
+
+    private static char translatedAt(String text, int index) {
+        int escape = JavaUnicodeEscapes.escapeEnd(text, index);
+        return escape > 0 ? JavaUnicodeEscapes.decoded(text, escape) : text.charAt(index);
     }
 
     private static Optional<String> identifierAt(String text, int offset) {

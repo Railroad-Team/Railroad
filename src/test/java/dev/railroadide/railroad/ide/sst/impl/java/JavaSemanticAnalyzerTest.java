@@ -34,6 +34,31 @@ public class JavaSemanticAnalyzerTest {
     public Path tempDir;
 
     @Test
+    public void resolvesNamesWrittenWithUnicodeEscapes() {
+        String source = """
+            import java.util.List;
+
+            class Example {
+                \\u004Cist<String> names;
+                int t\\u006Ftal;
+
+                int read() {
+                    return tot\\u0061l + total + names.size() + m\\u0069ssing;
+                }
+            }
+            """;
+
+        SemanticModel model = JavaSemanticAnalyzer.analyze(source, JavaJdkSymbolIndex.fromCurrentRuntime());
+        List<String> unresolved = model.diagnostics().stream()
+            .filter(diagnostic -> diagnostic.code().startsWith("SEM_UNRESOLVED"))
+            .map(diagnostic -> diagnostic.code() + ": " + diagnostic.message())
+            .toList();
+
+        assertEquals(1, unresolved.size(), () -> String.join(System.lineSeparator(), unresolved));
+        assertTrue(unresolved.getFirst().contains("missing"), unresolved::toString);
+    }
+
+    @Test
     public void preservesNestedGenericClosersAroundArrayTypeArguments() {
         String source = """
             import java.util.concurrent.atomic.AtomicReference;

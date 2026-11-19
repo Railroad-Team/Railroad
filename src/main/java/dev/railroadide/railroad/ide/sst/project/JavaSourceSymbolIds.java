@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.sst.project;
 
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaUnicodeEscapes;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolIds;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
@@ -344,8 +345,8 @@ public final class JavaSourceSymbolIds {
                 return last == null ? "<init>" : last;
             if (child instanceof SyntaxToken token && identifier(token)) {
                 if (isTypeNode(node) || node.kind().id().equals("JAVA_TYPE_PARAMETER"))
-                    return token.text();
-                last = token.text();
+                    return JavaUnicodeEscapes.translate(token.text());
+                last = JavaUnicodeEscapes.translate(token.text());
             }
         }
         return last == null ? "<anonymous>" : last;
@@ -413,7 +414,7 @@ public final class JavaSourceSymbolIds {
      */
     public static String compactText(SyntaxNode node) {
         if (node instanceof SyntaxToken token)
-            return trivia(token) ? "" : token.text();
+            return trivia(token) ? "" : identifier(token) ? JavaUnicodeEscapes.translate(token.text()) : token.text();
         var text = new StringBuilder();
         for (SyntaxNode child : node.children()) {
             text.append(compactText(child));

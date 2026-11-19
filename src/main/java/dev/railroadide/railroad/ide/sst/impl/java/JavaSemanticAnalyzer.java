@@ -4318,7 +4318,7 @@ public final class JavaSemanticAnalyzer {
                 if (JavaSyntaxKinds.tokenKind(JavaTokenType.THIS_KEYWORD).id().equals(token.kind().id())
                     || JavaSyntaxKinds.tokenKind(JavaTokenType.SUPER_KEYWORD).id().equals(token.kind().id()))
                     break;
-                qualifier.append(token.text());
+                qualifier.append(JavaUnicodeEscapes.translate(token.text()));
             }
             String text = qualifier.toString();
             while (text.endsWith(".")) {
@@ -5973,7 +5973,7 @@ public final class JavaSemanticAnalyzer {
                 if (JavaSyntaxKinds.tokenKind(JavaTokenType.DOUBLE_COLON).id().equals(token.kind().id()))
                     break;
                 if (!isTriviaToken(token) && !isMissingTokenKind(token.kind().id())) {
-                    builder.append(token.text());
+                    builder.append(JavaUnicodeEscapes.translate(token.text()));
                 }
             }
             return builder.isEmpty() ? null : builder.toString();
@@ -5989,7 +5989,7 @@ public final class JavaSemanticAnalyzer {
                     continue;
                 }
                 if (afterSeparator && !isTriviaToken(token) && !isMissingTokenKind(token.kind().id())) {
-                    name = token.text();
+                    name = JavaUnicodeEscapes.translate(token.text());
                 }
             }
             return name;
@@ -7492,7 +7492,7 @@ public final class JavaSemanticAnalyzer {
             }
 
             if (isIdentifierLikeToken(token))
-                return token.text();
+                return JavaUnicodeEscapes.translate(token.text());
         }
         return null;
     }
@@ -7512,7 +7512,7 @@ public final class JavaSemanticAnalyzer {
                 return lastIdentifier;
 
             if (child instanceof SyntaxToken token && isIdentifierLikeToken(token)) {
-                lastIdentifier = token.text();
+                lastIdentifier = JavaUnicodeEscapes.translate(token.text());
             }
         }
         return lastIdentifier;
@@ -7526,7 +7526,7 @@ public final class JavaSemanticAnalyzer {
      */
     public static @Nullable String firstIdentifierLikeTokenText(SyntaxNode node) {
         if (node instanceof SyntaxToken token)
-            return isIdentifierLikeToken(token) ? token.text() : null;
+            return isIdentifierLikeToken(token) ? JavaUnicodeEscapes.translate(token.text()) : null;
 
         for (SyntaxNode child : node.children()) {
             String identifier = firstIdentifierLikeTokenText(child);
@@ -7545,7 +7545,7 @@ public final class JavaSemanticAnalyzer {
      */
     public static @Nullable String lastIdentifierLikeTokenText(SyntaxNode node) {
         if (node instanceof SyntaxToken token)
-            return isIdentifierLikeToken(token) ? token.text() : null;
+            return isIdentifierLikeToken(token) ? JavaUnicodeEscapes.translate(token.text()) : null;
         for (int index = node.children().size() - 1; index >= 0; index--) {
             String identifier = lastIdentifierLikeTokenText(node.children().get(index));
             if (identifier != null)
@@ -7626,7 +7626,7 @@ public final class JavaSemanticAnalyzer {
             if (isIdentifierLikeToken(token)
                 || JavaSyntaxKinds.tokenKind(JavaTokenType.DOT).id().equals(kindId)
                 || JavaSyntaxKinds.tokenKind(JavaTokenType.STAR).id().equals(kindId)) {
-                builder.append(token.text());
+                builder.append(JavaUnicodeEscapes.translate(token.text()));
             }
             return;
         }
@@ -7676,7 +7676,7 @@ public final class JavaSemanticAnalyzer {
                 || JavaSyntaxKinds.tokenKind(JavaTokenType.PIPE).id().equals(kindId)
                 || JavaSyntaxKinds.tokenKind(JavaTokenType.OPEN_BRACKET).id().equals(kindId)
                 || JavaSyntaxKinds.tokenKind(JavaTokenType.CLOSE_BRACKET).id().equals(kindId)) {
-                builder.append(token.text());
+                builder.append(JavaUnicodeEscapes.translate(token.text()));
             }
             return;
         }

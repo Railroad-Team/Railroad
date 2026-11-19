@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.ide.sst.impl.java.JavaUnicodeEscapes;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import dev.railroadide.railroad.ide.sst.document.api.*;
@@ -397,7 +398,7 @@ public final class JavaProjectSemanticExtractor {
 
     private void appendQualifiedName(SyntaxNode node, StringBuilder builder) {
         if (node instanceof SyntaxToken token && isQualifiedNameToken(token)) {
-            builder.append(token.text());
+            builder.append(JavaUnicodeEscapes.translate(token.text()));
             return;
         }
 

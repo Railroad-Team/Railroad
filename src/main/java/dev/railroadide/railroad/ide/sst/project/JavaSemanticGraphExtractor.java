@@ -4,6 +4,7 @@ import dev.railroadide.railroad.ide.sst.document.api.Location;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import dev.railroadide.railroad.ide.sst.graph.api.*;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaUnicodeEscapes;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolIds;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
@@ -284,13 +285,13 @@ public final class JavaSemanticGraphExtractor {
                     && JavaSourceSymbolIds.child(parent, "JAVA_ANONYMOUS_CLASS_BODY") != null);
         SyntaxToken last = segments.getLast();
         if (!inheritance) {
-            namedTypeId(type, last.text()).ifPresent(target -> addReference(
+            namedTypeId(type, JavaUnicodeEscapes.translate(last.text())).ifPresent(target -> addReference(
                 new ReferenceOccurrence(target, ReferenceKindId.TYPE_USE, location(last), enclosing)));
         }
 
         var prefix = new StringBuilder();
         for (SyntaxToken segment : segments.subList(0, segments.size() - 1)) {
-            prefix.append(prefix.isEmpty() ? "" : ".").append(segment.text());
+            prefix.append(prefix.isEmpty() ? "" : ".").append(JavaUnicodeEscapes.translate(segment.text()));
             SymbolId target = resolvedTypeName(prefix.toString(), type);
             if (target != null) {
                 addReference(new ReferenceOccurrence(target, ReferenceKindId.TYPE_USE, location(segment), enclosing));
@@ -338,7 +339,7 @@ public final class JavaSemanticGraphExtractor {
         if (!(type instanceof JavaTypes.DeclaredType declared))
             return;
 
-        String name = tokens.getFirst().text();
+        String name = JavaUnicodeEscapes.translate(tokens.getFirst().text());
         declaredTypeId(declared, item).ifPresent(enumType -> {
             SymbolId constant = JavaSymbolIds.field(enumType, name);
             boolean known = declarations.containsKey(constant) || index != null
@@ -549,7 +550,7 @@ public final class JavaSemanticGraphExtractor {
                     type = new TypeReference("?");
                 }
                 SyntaxToken identifier = lastIdentifier(parameter);
-                String name = identifier == null ? "" : identifier.text();
+                String name = identifier == null ? "" : JavaUnicodeEscapes.translate(identifier.text());
                 boolean varargs = parameter.children().stream()
                     .anyMatch(part -> part instanceof SyntaxToken token && token.text().equals("..."));
                 int extraArrays = (int) parameter.children().stream()
@@ -672,8 +673,8 @@ public final class JavaSemanticGraphExtractor {
         Set<String> modifiers = new LinkedHashSet<>();
         List<TypeReference> annotations = new ArrayList<>();
         for (SyntaxNode part : node.children()) {
-            if (part instanceof SyntaxToken token && MODIFIERS.contains(token.text())) {
-                modifiers.add(token.text());
+            if (part instanceof SyntaxToken token && MODIFIERS.contains(JavaUnicodeEscapes.translate(token.text()))) {
+                modifiers.add(JavaUnicodeEscapes.translate(token.text()));
             }
             if (part.kind().id().equals("JAVA_ANNOTATION")) {
                 String text = JavaSourceSymbolIds.compactText(part).replaceFirst("^@", "");
@@ -782,20 +783,20 @@ public final class JavaSemanticGraphExtractor {
         }
         if (node.kind().id().equals("JAVA_FIELD_ACCESS_EXPRESSION")) {
             SyntaxToken selected = lastIdentifier(node);
-            if (selected != null && selected.text().equals(name))
+            if (selected != null && JavaUnicodeEscapes.translate(selected.text()).equals(name))
                 return selected;
         }
         for (SyntaxNode child : node.children()) {
-            if (child instanceof SyntaxToken token && token.text().equals(name))
+            if (child instanceof SyntaxToken token && JavaUnicodeEscapes.translate(token.text()).equals(name))
                 return child;
         }
-        if (node instanceof SyntaxToken token && token.text().equals(name))
+        if (node instanceof SyntaxToken token && JavaUnicodeEscapes.translate(token.text()).equals(name))
             return node;
         for (SyntaxNode child : node.children()) {
             if (child.kind().id().endsWith("BODY") || child.kind().id().equals("JAVA_BLOCK"))
                 continue;
             SyntaxNode found = nameNode(child, name);
-            if (found instanceof SyntaxToken token && token.text().equals(name))
+            if (found instanceof SyntaxToken token && JavaUnicodeEscapes.translate(token.text()).equals(name))
                 return found;
         }
         return node;

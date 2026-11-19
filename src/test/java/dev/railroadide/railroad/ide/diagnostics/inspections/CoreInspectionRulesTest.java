@@ -2894,4 +2894,19 @@ public class CoreInspectionRulesTest {
         assertFalse(
             diagnostics.stream().anyMatch(d -> "SEM_CONDITIONAL_EXPRESSION_WITH_IDENTICAL_BRANCHES".equals(d.code())));
     }
+
+    @Test
+    public void coreConditionalExpressionWithIdenticalBranchesComparesNamesAfterTranslatingUnicodeEscapes() {
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreConditionalExpressionWithIdenticalBranchesInspection(), """
+                class Example {
+                    int run(boolean flag, int value) {
+                        return flag ? value : v\\u0061lue;
+                    }
+                }
+                """);
+
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> "SEM_CONDITIONAL_EXPRESSION_WITH_IDENTICAL_BRANCHES".equals(d.code())));
+    }
 }

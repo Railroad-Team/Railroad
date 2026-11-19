@@ -5,6 +5,7 @@ import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaUnicodeEscapes;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
@@ -751,7 +752,7 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         for (SyntaxToken token : JavaSemanticAnalyzer.leafTokens(node)) {
             if (!JavaSemanticAnalyzer.isTriviaToken(token)
                 && !JavaSemanticAnalyzer.isMissingTokenKind(token.kind().id()))
-                return token.text();
+                return JavaUnicodeEscapes.translate(token.text());
         }
 
         return null;

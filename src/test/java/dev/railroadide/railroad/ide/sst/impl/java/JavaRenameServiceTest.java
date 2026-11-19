@@ -43,6 +43,38 @@ public class JavaRenameServiceTest {
     }
 
     @Test
+    public void renamesReferencesAndImportsWrittenWithUnicodeEscapes() {
+        source("p/A.java", """
+            package p;
+            public class A {
+                int total;
+                int read() { return t\\u006Ftal + total; }
+            }
+            """);
+        String expected = """
+            package p;
+            public class A {
+                int sum;
+                int read() { return sum + sum; }
+            }
+            """;
+        assertEquals(expected, renamed("p/A.java", "+ total", 2, "sum").get("p/A.java"));
+        assertEquals(expected, renamed("p/A.java", "t\\u006Ftal", 0, "sum").get("p/A.java"));
+
+        source("q/B.java", """
+            package q;
+            import p.\\u0041;
+            class B { A a; }
+            """);
+        Map<String, String> result = renamed("q/B.java", "A a", 0, "Account");
+        assertEquals("""
+            package q;
+            import p.Account;
+            class B { Account a; }
+            """, result.get("q/B.java"));
+    }
+
+    @Test
     public void renamesLocalVariableFromDeclarationUsageAndIdentifierEnd() {
         source("p/A.java", """
             package p;

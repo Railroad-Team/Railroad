@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.impl.java.JavaUnicodeEscapes;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
@@ -328,7 +329,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
 
     private static void collectIdentifierLikeTokens(SyntaxNode node, List<String> out) {
         if (node instanceof SyntaxToken token) {
-            String text = token.text();
+            String text = JavaUnicodeEscapes.translate(token.text());
             if (!text.isBlank()
                 && Character.isJavaIdentifierStart(text.charAt(0))
                 && !Set.of("break", "continue", "return").contains(text)) {
@@ -550,7 +551,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
 
     private static void collectLeafTokenTexts(SyntaxNode node, List<String> out) {
         if (node instanceof SyntaxToken token) {
-            out.add(token.text());
+            out.add(JavaUnicodeEscapes.translate(token.text()));
             return;
         }
 
