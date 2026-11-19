@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.semantic.api.Type;
@@ -42,7 +43,7 @@ public final class CoreTypeResolutionInspection implements JavaInspectionRulePro
                 return;
 
             Type type = context.inferredType(node).orElse(null);
-            if (type == null || type.kind() != Type.Kind.DECLARED)
+            if (type == null || type.kind() != JavaTypes.Kind.DECLARED)
                 return;
 
             String simpleName = context.simpleTypeName(type.displayName());

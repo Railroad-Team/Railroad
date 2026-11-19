@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
@@ -56,7 +57,7 @@ public final class CoreFunctionalInterfaceInspection implements JavaInspectionRu
             if (hasAnnotation(context, node, "java.lang.FunctionalInterface"))
                 continue;
 
-            if (context.isFunctionalInterface(new Type.DeclaredType(qualifiedName, List.of()))) {
+            if (context.isFunctionalInterface(new JavaTypes.DeclaredType(qualifiedName, List.of()))) {
                 reporter.report(node, declaredName.simpleName());
             }
         }

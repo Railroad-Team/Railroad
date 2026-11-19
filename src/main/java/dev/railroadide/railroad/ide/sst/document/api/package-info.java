@@ -14,10 +14,34 @@
  * binary inputs are copied and exposed only through defensive copies or read-only
  * buffers.
  * <p>
+ * {@link dev.railroadide.railroad.ide.sst.document.api.DocumentStore} publishes backing
+ * snapshots and editor overlays for one project. An overlay remains current even when
+ * its backing changes or disappears; its captured base revision identifies staleness.
+ * Reconciliation, commit, discard, and unchanged-overlay removal provide explicit
+ * transitions between editor and backing state. These operations perform no filesystem I/O.
+ * {@link dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot} captures current
+ * documents, project identity, and immutable
+ * {@link dev.railroadide.railroad.ide.sst.document.api.WorkspaceConfigurationSnapshot}
+ * metadata together. Workspace revisions count store-state changes independently of
+ * configuration revisions and document content versions. Older captures remain usable
+ * after later publications or removals.
+ * <p>
  * Identity does not imply location or snapshot equality. A rename retains the same ID
  * while changing its URI, an edit advances the version while retaining the ID, and a
- * copy receives a different ID. Snapshot equality and source-origin contracts remain
- * intentionally separate platform concepts.
+ * copy receives a different ID. Snapshots use reference equality; hasSameRevision compares
+ * ID and version without implying equal metadata or complete state. Retained snapshots
+ * remain readable after close/removal and need no disposal. See the
+ * {@link dev.railroadide.railroad.ide.sst SST publication policy} for lifetime, cache
+ * ownership, safe sharing, and currentness rules.
+ * <p>
+ * {@link dev.railroadide.railroad.ide.sst.document.api.LineMap} is the canonical API
+ * for text offset/line/column conversion. Offsets and columns count zero-based UTF-16
+ * code units; line indices are also zero-based. Line content ends exclude LF, CR,
+ * and CRLF terminators, while positions inside terminators belong to the preceding
+ * line and round-trip exactly. Obtain a text snapshot's immutable, thread-safe,
+ * lazily cached map through
+ * {@link dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot#lineMap()}.
+ * The cache belongs to that snapshot and is independent of other revisions.
  * <p>
  * Legacy syntax construction and parser entry points without owner-supplied metadata
  * remain source compatible by allocating a fresh anonymous identity, in-memory URI, and

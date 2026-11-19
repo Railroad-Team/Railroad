@@ -1,0 +1,70 @@
+import groovy.json.JsonOutput
+
+// Post-build source-plus-binary regression: never use the test worker's execution classpath.
+def contextFile = layout.buildDirectory.file('sst-self-analysis/contexts.json')
+def exportContexts = tasks.register('sstSelfAnalysisContexts') {
+    group = 'verification'
+    description = 'Builds and exports the actual Java source-set contexts for SST self-analysis.'
+    dependsOn sourceSets.collect { tasks.named(it.classesTaskName) }
+    // Always refresh metadata after Gradle has checked/rebuilt every required output.
+    outputs.upToDateWhen { false }
+    doLast {
+        def contexts = sourceSets.sort { it.name }.collect { sourceSet ->
+            def compile = tasks.named(sourceSet.compileJavaTaskName, JavaCompile).get()
+            def sources = sourceSet.allJava.files.sort { it.absolutePath }
+            if (sources.empty) {
+                throw new GradleException("Unexpected empty Java source set: ${sourceSet.name}")
+            }
+            def outputs = sourceSet.output.classesDirs.files
+            outputs.each { output ->
+                if (!output.isDirectory() || fileTree(output).matching {
+                    include '**/*.class'
+                }.isEmpty()) {
+                    throw new GradleException("Missing compiled output for ${sourceSet.name}: ${output}")
+                }
+            }
+            // SourceSetOutput also contains resource directories; absent resource-only outputs
+            // with no declared resources carry no Java symbols. Record this explicitly.
+            def emptyResources = sourceSets.findAll { it.resources.files.empty }
+            .collect { it.output.resourcesDir }
+            def omittedResources = sourceSet.compileClasspath.files.findAll {
+                !it.exists() && emptyResources.contains(it)
+            }
+            def classpath = sourceSet.compileClasspath.files - omittedResources
+            classpath.each {
+                if (!it.exists() || !it.canRead()) {
+                    throw new GradleException("Unavailable compile classpath for ${sourceSet.name}: ${it}")
+                }
+            }
+            [name: sourceSet.name,
+                sourceRoots: sourceSet.java.srcDirs.collect {
+                    it.absolutePath
+                }.sort(),
+                sources: sources.collect { it.absolutePath },
+                sourceDependencies: sourceSets.findAll { dependency ->
+                    dependency != sourceSet && dependency.output.classesDirs.files.any {
+                        classpath.contains(it)
+                    }
+                }.collect { it.name }.sort(),
+                compileClasspath: classpath.collect { it.absolutePath },
+                omittedEmptyResourceOutputs: omittedResources.collect {
+                    it.absolutePath
+                },
+                outputs: outputs.collect { it.absolutePath },
+                javaHome: compile.javaCompiler.get().metadata.installationPath.asFile.absolutePath,
+                release: compile.options.release.get()]
+        }
+        def destination = contextFile.get().asFile
+        destination.parentFile.mkdirs()
+        destination.setText(JsonOutput.prettyPrint(JsonOutput.toJson(contexts)), 'UTF-8')
+    }
+}
+
+tasks.named('test', Test) {
+    dependsOn exportContexts
+    inputs.file(contextFile)
+    systemProperty 'railroad.selfAnalysis.contexts', contextFile.get().asFile.absolutePath
+    // The self-analysis library/JDK indexes exhaust the default 512 MB worker heap.
+    maxHeapSize = '4g'
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+}

@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
@@ -355,7 +356,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
     private static boolean isReturnTypeCompatible(JavaRuleContext context, Type inherited, Type declared) {
         if (Objects.equals(inherited.displayName(), declared.displayName()))
             return true;
-        if (inherited.kind() == Type.Kind.DECLARED && declared.kind() == Type.Kind.DECLARED)
+        if (inherited.kind() == JavaTypes.Kind.DECLARED && declared.kind() == JavaTypes.Kind.DECLARED)
             return context.isSubtype(declared.displayName(), inherited.displayName());
         return context.isAssignable(inherited, declared);
     }
@@ -418,7 +419,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
         JavaRuleContext.MethodDescriptor method
     ) {
         Type returnType = method.returnType();
-        if (returnType.kind() != Type.Kind.DECLARED)
+        if (returnType.kind() != JavaTypes.Kind.DECLARED)
             return false;
 
         if (!context.isSubtype(returnType.displayName(), "java.lang.Object")
@@ -438,7 +439,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
     }
 
     private static boolean isFinalizeCompatibleWithObjectFinalize(JavaRuleContext.MethodDescriptor method) {
-        if (method.returnType().kind() != Type.Kind.VOID)
+        if (method.returnType().kind() != JavaTypes.Kind.VOID)
             return false;
 
         for (String thrownType : method.thrownTypes()) {

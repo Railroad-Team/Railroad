@@ -104,6 +104,14 @@ public final class EditorTab {
         if (editor != null) {
             this.saveState.bind(editor.saveStateProperty());
         }
+        view.observeSourceEditor(current -> {
+            this.saveState.unbind();
+            if (current != null) {
+                this.saveState.bind(current.saveStateProperty());
+            } else {
+                this.saveState.set(EditorSaveState.CLEAN);
+            }
+        });
         this.dirty.bind(this.saveState.isNotEqualTo(EditorSaveState.CLEAN));
         this.saving.bind(this.saveState.isEqualTo(EditorSaveState.SAVING));
         this.saved.bind(this.saveState.isEqualTo(EditorSaveState.CLEAN));
@@ -362,12 +370,7 @@ public final class EditorTab {
     public String languageDisplayName() {
         String displayName = LanguageSupportRegistry.get(languageId())
             .map(support -> support.displayName())
-            .orElseGet(() -> switch (languageId()) {
-                case "image" -> "Image";
-                case "plaintext" -> "Plain Text";
-                case "binary" -> "Binary";
-                default -> languageId();
-            });
+            .orElse(languageId());
         String localizationKey = "railroad.language.name." + languageId();
         return L18n.hasTranslation(localizationKey) ? L18n.localize(localizationKey) : displayName;
     }
@@ -409,7 +412,19 @@ public final class EditorTab {
         this.identity.set(Objects.requireNonNull(identity));
         Path normalizedPath = Objects.requireNonNull(path).toAbsolutePath().normalize();
         this.path.set(normalizedPath);
+        view.rebind(normalizedPath);
         this.tab.setId(normalizedPath.toString());
+    }
+
+    /** Releases bindings and wrapper resources after the source has accepted closure. */
+    public void dispose() {
+        saveState.unbind();
+        dirty.unbind();
+        saving.unbind();
+        saved.unbind();
+        saveFailed.unbind();
+        L18n.currentLanguageProperty().removeListener(weakLocalizationListener);
+        view.closeResources();
     }
 
     /**

@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.ide.language.index.IndexTestProviders;
 import com.google.gson.JsonObject;
 import dev.railroadide.railroad.gradle.project.GradleManager;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
@@ -27,6 +28,10 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.HashMap;
+import java.util.Map;
+import dev.railroadide.railroad.ide.language.LanguageSupports;
+import dev.railroadide.railroad.ide.language.impl.index.JavaLanguageIndexContextContributor;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -243,16 +248,16 @@ public class ProjectLanguageIndexServiceTest {
     private static final class TestJavaProjectIndexAccess {
         private static final String LANGUAGE_ID = "java";
 
-        private final ProjectLanguageIndexService indexService = new ProjectLanguageIndexService();
+        private final ProjectLanguageIndexService indexService = IndexTestProviders.service();
         private final DefaultProjectIndexContextResolver contextResolver = new DefaultProjectIndexContextResolver();
 
         private TestJavaProjectIndexAccess() {
-            if (!LanguageSupportRegistry.contains(JavaLanguageSupport.LANGUAGE_ID)) {
-                LanguageSupportRegistry.register(new JavaLanguageSupport());
-            }
+            LanguageSupports.initialize();
 
-            indexService.registerIndexer(new JavaProjectLanguageIndexer());
-            indexService.registerPersistence(new JavaProjectSemanticPersistence());
+            IndexTestProviders.indexer(indexService, new JavaProjectLanguageIndexer());
+            IndexTestProviders.persistence(indexService, new JavaProjectSemanticPersistence());
+            IndexTestProviders.context(indexService,
+                new JavaLanguageIndexContextContributor());
         }
 
         private JavaProjectSemanticIndex index(Path projectRoot) {
@@ -308,11 +313,20 @@ public class ProjectLanguageIndexServiceTest {
         }
 
         private Project project(Path projectRoot) {
-            return new TestProject(normalize(projectRoot));
+            return projects.computeIfAbsent(normalize(projectRoot), root -> {
+                Project project = new TestProject(root);
+                indexService.openProject(project);
+                return project;
+            });
         }
 
+        private final Map<Path, Project> projects = new HashMap<>();
+
         private ProjectIndexContext context(Path projectRoot) {
-            return contextResolver.resolve(project(projectRoot));
+            Project project = project(projectRoot);
+            ProjectIndexContext context = contextResolver.resolve(project);
+            return new ProjectIndexContext(project, context.projectRoot(), context.languages(),
+                indexService.session(project));
         }
 
         private record TestProject(Path path) implements Project {

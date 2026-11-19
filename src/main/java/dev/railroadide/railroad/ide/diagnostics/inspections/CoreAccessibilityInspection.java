@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
@@ -84,7 +85,7 @@ public final class CoreAccessibilityInspection implements JavaInspectionRuleProv
         context.traverse(node -> {
             if ("JAVA_FIELD_ACCESS_EXPRESSION".equals(node.kind().id())) {
                 Symbol resolved = context.resolvedSymbol(node).orElse(null);
-                if (resolved == null || resolved.kind() != SymbolKind.FIELD)
+                if (resolved == null || resolved.kind() != JavaSymbolKind.FIELD)
                     return;
                 if (ownerTypeInaccessible(context, resolved, node) || context.isSymbolAccessible(resolved, node))
                     return;
@@ -98,7 +99,7 @@ public final class CoreAccessibilityInspection implements JavaInspectionRuleProv
                 return;
 
             Symbol resolved = context.resolvedSymbol(node).orElse(null);
-            if (resolved == null || resolved.kind() != SymbolKind.FIELD)
+            if (resolved == null || resolved.kind() != JavaSymbolKind.FIELD)
                 return;
             if (ownerTypeInaccessible(context, resolved, node) || context.isSymbolAccessible(resolved, node))
                 return;
@@ -111,7 +112,7 @@ public final class CoreAccessibilityInspection implements JavaInspectionRuleProv
             String kindId = node.kind().id();
             if ("JAVA_METHOD_INVOCATION_EXPRESSION".equals(kindId)) {
                 Symbol resolved = context.resolvedSymbol(node).orElse(null);
-                if (resolved == null || resolved.kind() != SymbolKind.METHOD)
+                if (resolved == null || resolved.kind() != JavaSymbolKind.METHOD)
                     return;
                 if (ownerTypeInaccessible(context, resolved, node) || context.isSymbolAccessible(resolved, node))
                     return;
@@ -125,7 +126,7 @@ public final class CoreAccessibilityInspection implements JavaInspectionRuleProv
                 return;
 
             Symbol resolved = context.resolvedSymbol(node).orElse(null);
-            if (resolved == null || resolved.kind() != SymbolKind.CONSTRUCTOR)
+            if (resolved == null || resolved.kind() != JavaSymbolKind.CONSTRUCTOR)
                 return;
             if (Modifier.isProtected(context.symbolModifiers(resolved))
                 && context.directChild(node, "JAVA_ANONYMOUS_CLASS_BODY") != null)

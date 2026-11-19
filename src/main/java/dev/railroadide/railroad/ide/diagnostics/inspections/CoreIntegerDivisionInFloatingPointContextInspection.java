@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
@@ -112,21 +113,21 @@ public class CoreIntegerDivisionInFloatingPointContextInspection implements Java
         if (children.size() != 2)
             return false;
 
-        Type left = context.inferredType(children.get(0)).orElse(new Type.UnknownType("<unknown>"));
-        Type right = context.inferredType(children.get(1)).orElse(new Type.UnknownType("<unknown>"));
+        Type left = context.inferredType(children.get(0)).orElse(new JavaTypes.UnknownType("<unknown>"));
+        Type right = context.inferredType(children.get(1)).orElse(new JavaTypes.UnknownType("<unknown>"));
 
         return isIntegralType(left) && isIntegralType(right);
     }
 
     private static boolean isIntegralType(Type type) {
         return type != null
-            && type.kind() == Type.Kind.PRIMITIVE
+            && type.kind() == JavaTypes.Kind.PRIMITIVE
             && INTEGRAL_TYPE_PRIMITIVE_NAMES.contains(type.displayName());
     }
 
     private static boolean isFloatingPointType(Type type) {
         return type != null
-            && type.kind() == Type.Kind.PRIMITIVE
+            && type.kind() == JavaTypes.Kind.PRIMITIVE
             && FLOATING_POINT_TYPE_PRIMITIVE_NAMES.contains(type.displayName());
     }
 }

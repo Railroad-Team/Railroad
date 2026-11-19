@@ -4,6 +4,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.function.Consumer;
 
 /**
  * Loads, stores, and invalidates persisted language-specific project indexes.
@@ -40,12 +41,53 @@ public interface ProjectLanguageIndexPersistence<I extends ProjectLanguageIndex<
     }
 
     /**
+     * Loads an index with cooperative controls. Expensive adapters must forward the check into their scans.
+     *
+     * @param projectRoot project root directory
+     * @param indexedFiles source files expected in the cache
+     * @param activityCheck owning request or index-operation activity check
+     * @return current cached index, or null when absent or stale
+     */
+    default @Nullable I loadIfCurrent(Path projectRoot, Collection<Path> indexedFiles, Runnable activityCheck) {
+        activityCheck.run();
+        I result = loadIfCurrent(projectRoot, indexedFiles);
+        activityCheck.run();
+        return result;
+    }
+
+    /**
      * Persists the supplied project index.
      *
      * @param projectRoot the project root directory
      * @param index the project index
      */
     void save(Path projectRoot, I index);
+
+    /**
+     * Prepares a disposable snapshot, then submits only its final atomic replacement to the ownership guard.
+     * Adapters without guarded replacement skip caching rather than commit stale data or block project close.
+     *
+     * @param projectRoot project root
+     * @param index published index
+     * @param commit invokes the replacement only while its session and generation remain current
+     */
+    default void save(Path projectRoot, I index, Consumer<Runnable> commit) {
+        // Persistence is optional. Legacy adapters can opt into guarded replacement independently.
+    }
+
+    /**
+     * Prepares a guarded replacement with cooperative controls throughout expensive serialization.
+     *
+     * @param projectRoot project root directory
+     * @param index complete index to persist
+     * @param commit ownership guard for the final atomic replacement
+     * @param activityCheck owning request or index-operation activity check
+     */
+    default void save(Path projectRoot, I index, Consumer<Runnable> commit, Runnable activityCheck) {
+        activityCheck.run();
+        save(projectRoot, index, commit);
+        activityCheck.run();
+    }
 
     /**
      * Persists an index after one file changed. The default implementation saves the complete index.
@@ -75,4 +117,13 @@ public interface ProjectLanguageIndexPersistence<I extends ProjectLanguageIndex<
      * @param projectRoot the project root directory
      */
     void delete(Path projectRoot);
+
+    /**
+     * Deletes only through a short ownership-checked final commit; unsupported adapters skip deletion.
+     *
+     * @param projectRoot the project root directory
+     * @param commit invokes deletion only while its session and generation remain current
+     */
+    default void delete(Path projectRoot, Consumer<Runnable> commit) {
+    }
 }

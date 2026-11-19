@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
@@ -54,7 +55,7 @@ public class CoreAssertionCanBeReplacedWithIfStatementInspection implements Java
             boolean isPublic = context.hasDirectModifierToken(enclosingMethod, JavaTokenType.PUBLIC_KEYWORD);
             boolean isProtected = context.hasDirectModifierToken(enclosingMethod, JavaTokenType.PROTECTED_KEYWORD);
             boolean inInterface = context.enclosingTypeSymbol(enclosingMethod)
-                .map(symbol -> symbol.kind() == SymbolKind.INTERFACE || symbol.kind() == SymbolKind.ANNOTATION)
+                .map(symbol -> symbol.kind() == JavaSymbolKind.INTERFACE || symbol.kind() == JavaSymbolKind.ANNOTATION)
                 .orElse(false);
 
             boolean hasMessage = context.directExpressionChildren(assertNode).size() > 1;

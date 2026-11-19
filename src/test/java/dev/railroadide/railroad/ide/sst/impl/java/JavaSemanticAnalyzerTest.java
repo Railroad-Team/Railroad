@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
+import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import com.google.gson.GsonBuilder;
 import dev.railroadide.railroad.ide.sst.project.*;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticModel;
@@ -30,6 +32,31 @@ import static org.junit.jupiter.api.Assertions.*;
 public class JavaSemanticAnalyzerTest {
     @TempDir
     public Path tempDir;
+
+    @Test
+    public void resolvesNamesWrittenWithUnicodeEscapes() {
+        String source = """
+            import java.util.List;
+
+            class Example {
+                \\u004Cist<String> names;
+                int t\\u006Ftal;
+
+                int read() {
+                    return tot\\u0061l + total + names.size() + m\\u0069ssing;
+                }
+            }
+            """;
+
+        SemanticModel model = JavaSemanticAnalyzer.analyze(source, JavaJdkSymbolIndex.fromCurrentRuntime());
+        List<String> unresolved = model.diagnostics().stream()
+            .filter(diagnostic -> diagnostic.code().startsWith("SEM_UNRESOLVED"))
+            .map(diagnostic -> diagnostic.code() + ": " + diagnostic.message())
+            .toList();
+
+        assertEquals(1, unresolved.size(), () -> String.join(System.lineSeparator(), unresolved));
+        assertTrue(unresolved.getFirst().contains("missing"), unresolved::toString);
+    }
 
     @Test
     public void preservesNestedGenericClosersAroundArrayTypeArguments() {
@@ -222,9 +249,9 @@ public class JavaSemanticAnalyzerTest {
 
         SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarations(source);
 
-        assertSymbol(model.rootScope().lookupLocal("sample"), SymbolKind.PACKAGE);
-        assertSymbol(model.rootScope().lookupLocal("java.util.List"), SymbolKind.IMPORT);
-        assertSymbol(model.rootScope().lookupLocal("Outer"), SymbolKind.CLASS);
+        assertSymbol(model.rootScope().lookupLocal("sample"), JavaSymbolKind.PACKAGE);
+        assertSymbol(model.rootScope().lookupLocal("java.util.List"), JavaSymbolKind.IMPORT);
+        assertSymbol(model.rootScope().lookupLocal("Outer"), JavaSymbolKind.CLASS);
 
         List<SyntaxNode> variableDeclarators = nodesOfKind(model.syntaxTree().root(),
             JavaSyntaxKinds.VARIABLE_DECLARATOR.id());
@@ -232,7 +259,7 @@ public class JavaSemanticAnalyzerTest {
         for (SyntaxNode variableDeclarator : variableDeclarators) {
             Symbol symbol = model.declaredSymbol(variableDeclarator).orElse(null);
             assertNotNull(symbol);
-            assertEquals(SymbolKind.FIELD, symbol.kind());
+            assertEquals(JavaSymbolKind.FIELD, symbol.kind());
         }
 
         List<SyntaxNode> constructors = nodesOfKind(model.syntaxTree().root(),
@@ -240,14 +267,14 @@ public class JavaSemanticAnalyzerTest {
         assertEquals(1, constructors.size());
         Symbol constructorSymbol = model.declaredSymbol(constructors.getFirst()).orElse(null);
         assertNotNull(constructorSymbol);
-        assertEquals(SymbolKind.CONSTRUCTOR, constructorSymbol.kind());
+        assertEquals(JavaSymbolKind.CONSTRUCTOR, constructorSymbol.kind());
         assertEquals("Outer", constructorSymbol.simpleName());
 
         List<SyntaxNode> methods = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.METHOD_DECLARATION.id());
         assertEquals(1, methods.size());
         Symbol methodSymbol = model.declaredSymbol(methods.getFirst()).orElse(null);
         assertNotNull(methodSymbol);
-        assertEquals(SymbolKind.METHOD, methodSymbol.kind());
+        assertEquals(JavaSymbolKind.METHOD, methodSymbol.kind());
         assertEquals("run", methodSymbol.simpleName());
 
         List<SyntaxNode> parameters = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.PARAMETER.id());
@@ -255,7 +282,7 @@ public class JavaSemanticAnalyzerTest {
         for (SyntaxNode parameter : parameters) {
             Symbol symbol = model.declaredSymbol(parameter).orElse(null);
             assertNotNull(symbol);
-            assertEquals(SymbolKind.PARAMETER, symbol.kind());
+            assertEquals(JavaSymbolKind.PARAMETER, symbol.kind());
         }
 
         List<SyntaxNode> classes = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.CLASS_DECLARATION.id());
@@ -264,7 +291,7 @@ public class JavaSemanticAnalyzerTest {
             .map(model::declaredSymbol)
             .filter(Optional::isPresent)
             .map(Optional::get)
-            .anyMatch(symbol -> symbol.kind() == SymbolKind.CLASS && "Inner".equals(symbol.simpleName()));
+            .anyMatch(symbol -> symbol.kind() == JavaSymbolKind.CLASS && "Inner".equals(symbol.simpleName()));
         assertTrue(sawInner);
     }
 
@@ -311,9 +338,9 @@ public class JavaSemanticAnalyzerTest {
         SyntaxNode fieldRef = findNameExpression(nameExpressions, "field");
         SyntaxNode missingRef = findNameExpression(nameExpressions, "missing");
 
-        assertEquals(SymbolKind.PARAMETER, model.resolvedSymbol(paramRef).orElseThrow().kind());
-        assertEquals(SymbolKind.LOCAL_VARIABLE, model.resolvedSymbol(localRef).orElseThrow().kind());
-        assertEquals(SymbolKind.FIELD, model.resolvedSymbol(fieldRef).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.PARAMETER, model.resolvedSymbol(paramRef).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.LOCAL_VARIABLE, model.resolvedSymbol(localRef).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.FIELD, model.resolvedSymbol(fieldRef).orElseThrow().kind());
         assertTrue(model.resolvedSymbol(missingRef).isEmpty());
 
         long unresolvedDiagnostics = model.diagnostics().stream()
@@ -340,7 +367,7 @@ public class JavaSemanticAnalyzerTest {
         SyntaxNode stringLiteral = findLiteralExpression(model.syntaxTree().root(), "\"ok\"");
 
         assertEquals("int", model.inferredType(intLiteral).orElseThrow().displayName());
-        assertEquals("String", model.inferredType(stringLiteral).orElseThrow().displayName());
+        assertEquals("java.lang.String", model.inferredType(stringLiteral).orElseThrow().displayName());
 
         long incompatibleDiagnostics = model.diagnostics().stream()
             .filter(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code()))
@@ -440,7 +467,7 @@ public class JavaSemanticAnalyzerTest {
         SemanticModel model = JavaSemanticAnalyzer.analyze(source);
         List<SyntaxNode> nameExpressions = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.NAME_EXPRESSION.id());
         SyntaxNode piRef = findNameExpression(nameExpressions, "PI");
-        assertEquals(SymbolKind.FIELD, model.resolvedSymbol(piRef).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.FIELD, model.resolvedSymbol(piRef).orElseThrow().kind());
 
         List<SyntaxNode> invocations = nodesOfKind(model.syntaxTree().root(),
             JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id());
@@ -449,7 +476,7 @@ public class JavaSemanticAnalyzerTest {
             .findFirst()
             .orElse(null);
         assertNotNull(maxInvocation);
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(maxInvocation).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(maxInvocation).orElseThrow().kind());
     }
 
     @Test
@@ -469,7 +496,7 @@ public class JavaSemanticAnalyzerTest {
         SemanticModel model = JavaSemanticAnalyzer.analyze(source);
         List<SyntaxNode> nameExpressions = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.NAME_EXPRESSION.id());
         SyntaxNode piRef = findNameExpression(nameExpressions, "PI");
-        assertEquals(SymbolKind.FIELD, model.resolvedSymbol(piRef).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.FIELD, model.resolvedSymbol(piRef).orElseThrow().kind());
 
         List<SyntaxNode> invocations = nodesOfKind(model.syntaxTree().root(),
             JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id());
@@ -478,7 +505,7 @@ public class JavaSemanticAnalyzerTest {
             .findFirst()
             .orElse(null);
         assertNotNull(maxInvocation);
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(maxInvocation).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(maxInvocation).orElseThrow().kind());
     }
 
     @Test
@@ -528,7 +555,7 @@ public class JavaSemanticAnalyzerTest {
         assertNotNull(okInvocation);
         assertNotNull(badInvocation);
 
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(okInvocation).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(okInvocation).orElseThrow().kind());
         assertTrue(model.resolvedSymbol(badInvocation).isEmpty());
     }
 
@@ -654,7 +681,7 @@ public class JavaSemanticAnalyzerTest {
         SemanticModel model = JavaSemanticAnalyzer.analyze(source, index);
         List<SyntaxNode> nameExpressions = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.NAME_EXPRESSION.id());
         SyntaxNode valueRef = findNameExpression(nameExpressions, "VALUE");
-        assertEquals(SymbolKind.FIELD, model.resolvedSymbol(valueRef).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.FIELD, model.resolvedSymbol(valueRef).orElseThrow().kind());
 
         List<SyntaxNode> invocations = nodesOfKind(model.syntaxTree().root(),
             JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id());
@@ -663,7 +690,7 @@ public class JavaSemanticAnalyzerTest {
             .findFirst()
             .orElse(null);
         assertNotNull(twiceInvocation);
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(twiceInvocation).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(twiceInvocation).orElseThrow().kind());
     }
 
     @Test
@@ -711,7 +738,7 @@ public class JavaSemanticAnalyzerTest {
             .findFirst()
             .orElse(null);
         assertNotNull(utilValue);
-        assertEquals(SymbolKind.FIELD, model.resolvedSymbol(utilValue).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.FIELD, model.resolvedSymbol(utilValue).orElseThrow().kind());
 
         List<SyntaxNode> invocations = nodesOfKind(model.syntaxTree().root(),
             JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id());
@@ -720,7 +747,7 @@ public class JavaSemanticAnalyzerTest {
             .findFirst()
             .orElse(null);
         assertNotNull(utilTwice);
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(utilTwice).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(utilTwice).orElseThrow().kind());
 
         List<SyntaxNode> creations = nodesOfKind(model.syntaxTree().root(),
             JavaSyntaxKinds.CLASS_INSTANCE_CREATION_EXPRESSION.id());
@@ -729,7 +756,7 @@ public class JavaSemanticAnalyzerTest {
             .findFirst()
             .orElse(null);
         assertNotNull(boxCreation);
-        assertEquals(SymbolKind.CONSTRUCTOR, model.resolvedSymbol(boxCreation).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.CONSTRUCTOR, model.resolvedSymbol(boxCreation).orElseThrow().kind());
     }
 
     @Test
@@ -772,10 +799,10 @@ public class JavaSemanticAnalyzerTest {
         assertNotNull(maxCall);
         assertNotNull(printlnCall);
 
-        assertEquals(SymbolKind.FIELD, model.resolvedSymbol(systemOut).orElseThrow().kind());
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(lengthCall).orElseThrow().kind());
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(maxCall).orElseThrow().kind());
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(printlnCall).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.FIELD, model.resolvedSymbol(systemOut).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(lengthCall).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(maxCall).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(printlnCall).orElseThrow().kind());
     }
 
     @Test
@@ -810,7 +837,7 @@ public class JavaSemanticAnalyzerTest {
 
         assertNotNull(okCreation);
         assertNotNull(badCreation);
-        assertEquals(SymbolKind.CONSTRUCTOR, model.resolvedSymbol(okCreation).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.CONSTRUCTOR, model.resolvedSymbol(okCreation).orElseThrow().kind());
         assertTrue(model.resolvedSymbol(badCreation).isEmpty());
 
         long unresolvedCallDiagnostics = model.diagnostics().stream()
@@ -870,8 +897,8 @@ public class JavaSemanticAnalyzerTest {
 
         assertNotNull(gsonBuilderCreation);
         assertNotNull(illegalStateCreation);
-        assertEquals(SymbolKind.CONSTRUCTOR, model.resolvedSymbol(gsonBuilderCreation).orElseThrow().kind());
-        assertEquals(SymbolKind.CONSTRUCTOR, model.resolvedSymbol(illegalStateCreation).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.CONSTRUCTOR, model.resolvedSymbol(gsonBuilderCreation).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.CONSTRUCTOR, model.resolvedSymbol(illegalStateCreation).orElseThrow().kind());
 
         List<SyntaxNode> invocations = nodesOfKind(model.syntaxTree().root(),
             JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id());
@@ -891,9 +918,9 @@ public class JavaSemanticAnalyzerTest {
         assertNotNull(disableHtmlEscapingCall);
         assertNotNull(createCall);
         assertNotNull(getHostServicesCall);
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(disableHtmlEscapingCall).orElseThrow().kind());
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(createCall).orElseThrow().kind());
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(getHostServicesCall).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(disableHtmlEscapingCall).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(createCall).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(getHostServicesCall).orElseThrow().kind());
     }
 
     @Test
@@ -930,7 +957,7 @@ public class JavaSemanticAnalyzerTest {
             .findFirst()
             .orElse(null);
         assertNotNull(firstStepCreation);
-        assertEquals(SymbolKind.CONSTRUCTOR, model.resolvedSymbol(firstStepCreation).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.CONSTRUCTOR, model.resolvedSymbol(firstStepCreation).orElseThrow().kind());
 
         List<SyntaxNode> invocations = nodesOfKind(model.syntaxTree().root(),
             JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id());
@@ -944,7 +971,8 @@ public class JavaSemanticAnalyzerTest {
         assertEquals("List", syntaxText(listReceiver).trim());
         assertTrue(model.resolvedSymbol(listReceiver).isPresent());
         assertTrue(switch (model.resolvedSymbol(listReceiver).orElseThrow().kind()) {
-            case CLASS, INTERFACE, ENUM, ANNOTATION, RECORD -> true;
+            case JavaSymbolKind.CLASS, JavaSymbolKind.INTERFACE, JavaSymbolKind.ENUM, JavaSymbolKind.ANNOTATION,
+                JavaSymbolKind.RECORD -> true;
             default -> false;
         });
         SyntaxNode listSelector = JavaSemanticAnalyzer.selectorNameNode(listOfCall);
@@ -957,7 +985,7 @@ public class JavaSemanticAnalyzerTest {
             .orElse(null);
         assertNotNull(listName);
         assertTrue(model.resolvedSymbol(listName).isPresent());
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(listOfCall).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(listOfCall).orElseThrow().kind());
     }
 
     @Test
@@ -1006,14 +1034,14 @@ public class JavaSemanticAnalyzerTest {
             .findFirst()
             .orElse(null);
         assertNotNull(initStepCreation);
-        assertEquals(SymbolKind.CONSTRUCTOR, model.resolvedSymbol(initStepCreation).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.CONSTRUCTOR, model.resolvedSymbol(initStepCreation).orElseThrow().kind());
 
         SyntaxNode statusNotificationCreation = creations.stream()
             .filter(node -> syntaxText(node).contains("new StatusNotification"))
             .findFirst()
             .orElse(null);
         assertNotNull(statusNotificationCreation);
-        assertEquals(SymbolKind.CONSTRUCTOR, model.resolvedSymbol(statusNotificationCreation).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.CONSTRUCTOR, model.resolvedSymbol(statusNotificationCreation).orElseThrow().kind());
 
         List<SyntaxNode> invocations = nodesOfKind(model.syntaxTree().root(),
             JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id());
@@ -1030,14 +1058,14 @@ public class JavaSemanticAnalyzerTest {
         SyntaxNode getSelector = JavaSemanticAnalyzer.selectorNameNode(getCall);
         assertNotNull(getSelector);
         assertEquals("get", JavaSemanticAnalyzer.lastIdentifierLikeTokenText(getSelector));
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(getCall).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(getCall).orElseThrow().kind());
 
         SyntaxNode notifyPreloaderCall = invocations.stream()
             .filter(node -> syntaxText(node).contains("notifyPreloader("))
             .findFirst()
             .orElse(null);
         assertNotNull(notifyPreloaderCall);
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(notifyPreloaderCall).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(notifyPreloaderCall).orElseThrow().kind());
     }
 
     @Test
@@ -1086,14 +1114,14 @@ public class JavaSemanticAnalyzerTest {
             .findFirst()
             .orElse(null);
         assertNotNull(initStepCreation);
-        assertEquals(SymbolKind.CONSTRUCTOR, model.resolvedSymbol(initStepCreation).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.CONSTRUCTOR, model.resolvedSymbol(initStepCreation).orElseThrow().kind());
 
         SyntaxNode statusCreation = creations.stream()
             .filter(node -> syntaxText(node).contains("new RailroadPreloader.StatusNotification"))
             .findFirst()
             .orElse(null);
         assertNotNull(statusCreation);
-        assertEquals(SymbolKind.CONSTRUCTOR, model.resolvedSymbol(statusCreation).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.CONSTRUCTOR, model.resolvedSymbol(statusCreation).orElseThrow().kind());
 
         List<SyntaxNode> invocations = nodesOfKind(model.syntaxTree().root(),
             JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id());
@@ -1102,21 +1130,21 @@ public class JavaSemanticAnalyzerTest {
             .findFirst()
             .orElse(null);
         assertNotNull(actionCall);
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(actionCall).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(actionCall).orElseThrow().kind());
 
         SyntaxNode runCall = invocations.stream()
             .filter(node -> syntaxText(node).contains(".run()"))
             .findFirst()
             .orElse(null);
         assertNotNull(runCall);
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(runCall).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(runCall).orElseThrow().kind());
 
         SyntaxNode messageCall = invocations.stream()
             .filter(node -> syntaxText(node).contains("step.message()"))
             .findFirst()
             .orElse(null);
         assertNotNull(messageCall);
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(messageCall).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(messageCall).orElseThrow().kind());
     }
 
     @Test
@@ -1176,14 +1204,14 @@ public class JavaSemanticAnalyzerTest {
             .findFirst()
             .orElse(null);
         assertNotNull(getNameCall);
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(getNameCall).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(getNameCall).orElseThrow().kind());
 
         SyntaxNode getVersionCall = invocations.stream()
             .filter(node -> syntaxText(node).contains("getVersion()"))
             .findFirst()
             .orElse(null);
         assertNotNull(getVersionCall);
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(getVersionCall).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(getVersionCall).orElseThrow().kind());
     }
 
     @Test
@@ -1262,7 +1290,7 @@ public class JavaSemanticAnalyzerTest {
             .findFirst()
             .orElse(null);
         assertNotNull(publishCall);
-        assertEquals(SymbolKind.METHOD, model.resolvedSymbol(publishCall).orElseThrow().kind());
+        assertEquals(JavaSymbolKind.METHOD, model.resolvedSymbol(publishCall).orElseThrow().kind());
     }
 
     @Test
@@ -1382,7 +1410,7 @@ public class JavaSemanticAnalyzerTest {
             .toList();
         assertEquals(3, initCreations.size());
         for (SyntaxNode creation : initCreations) {
-            assertEquals(SymbolKind.CONSTRUCTOR, model.resolvedSymbol(creation).orElseThrow().kind());
+            assertEquals(JavaSymbolKind.CONSTRUCTOR, model.resolvedSymbol(creation).orElseThrow().kind());
         }
     }
 
@@ -1480,8 +1508,8 @@ public class JavaSemanticAnalyzerTest {
             .findFirst()
             .orElseThrow();
 
-        Type.DeclaredType receiverType = assertInstanceOf(
-            Type.DeclaredType.class, model.inferredType(receiver).orElseThrow());
+        JavaTypes.DeclaredType receiverType = assertInstanceOf(
+            JavaTypes.DeclaredType.class, model.inferredType(receiver).orElseThrow());
         assertEquals("java.util.function.Function", receiverType.displayName());
         assertEquals(List.of("N", "T"), receiverType.typeArguments().stream().map(Type::displayName).toList());
         assertEquals("T", model.inferredType(invocation).orElseThrow().displayName());

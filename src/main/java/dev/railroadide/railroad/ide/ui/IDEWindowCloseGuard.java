@@ -73,7 +73,9 @@ public final class IDEWindowCloseGuard implements AutoCloseable {
 
         EditorTabManager.SaveResult saveResult = Services.EDITOR_TAB_MANAGER.saveAll();
         if (saveResult.successful()) {
-            closeActiveProject();
+            if (!closeActiveProject()) {
+                event.consume();
+            }
             return;
         }
 
@@ -142,7 +144,8 @@ public final class IDEWindowCloseGuard implements AutoCloseable {
     }
 
     private void permitAndClose(Stage dialog) {
-        closeActiveProject();
+        if (!closeActiveProject())
+            return;
         allowClose = true;
         dialog.close();
         if (observedStage != null) {
@@ -150,11 +153,12 @@ public final class IDEWindowCloseGuard implements AutoCloseable {
         }
     }
 
-    private static void closeActiveProject() {
+    private static boolean closeActiveProject() {
         Project project = Railroad.PROJECT_MANAGER.getOpenProject();
         if (project != null) {
             project.close();
         }
+        return Railroad.PROJECT_MANAGER.getOpenProject() == null;
     }
 
     @Override

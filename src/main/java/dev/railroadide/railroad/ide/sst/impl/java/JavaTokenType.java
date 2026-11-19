@@ -651,17 +651,18 @@ public enum JavaTokenType {
         }
     };
 
-    private static final Map<String, JavaTokenType> KEYWORDS = new HashMap<>();
+    private static final Map<String, JavaTokenType> KEYWORDS = createKeywords();
 
     /**
-     * Builds or returns the cached map from recognized keyword spellings to token categories.
+     * Returns the immutable map from recognized keyword spellings to token categories.
      *
      * @return the keyword spelling-to-token map
      */
     public static Map<String, JavaTokenType> listKeywords() {
-        if (!KEYWORDS.isEmpty())
-            return KEYWORDS;
+        return KEYWORDS;
+    }
 
+    private static Map<String, JavaTokenType> createKeywords() {
         Map<String, JavaTokenType> keywords = new HashMap<>();
         for (JavaTokenType tokenType : JavaTokenType.values()) {
             if (tokenType == NON_SEALED_KEYWORD) {
@@ -678,8 +679,7 @@ public enum JavaTokenType {
             }
         }
 
-        KEYWORDS.putAll(keywords);
-        return keywords;
+        return Map.copyOf(keywords);
     }
 
     /**

@@ -52,3 +52,5 @@ bin/
 
 ### Logs ###
 hs_err_pid*.log
+
+/docs/

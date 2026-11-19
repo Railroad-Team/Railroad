@@ -16,16 +16,21 @@ public final class BinaryDocumentSnapshot implements DocumentSnapshot {
     private final DocumentUri uri;
     private final DocumentVersion version;
     private final String languageId;
+    private final DocumentOrigin origin;
     private final byte[] content;
 
     /**
-     * Creates an immutable binary document revision from a byte array.
+     * Creates a binary revision with unspecified provenance, deriving backing from the URI.
+     * Use the origin-taking constructor when provenance is known by the owner.
      *
      * @param id stable logical document identity
      * @param uri physical or virtual document location
      * @param version content revision
      * @param languageId provider-defined non-blank language identity
      * @param content complete binary content; copied during construction
+     * @throws NullPointerException if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code languageId} is blank
+     * @see DocumentOrigin#unspecified(DocumentUri)
      */
     public BinaryDocumentSnapshot(
         DocumentId id,
@@ -34,10 +39,58 @@ public final class BinaryDocumentSnapshot implements DocumentSnapshot {
         String languageId,
         byte[] content
     ) {
+        this(id, uri, version, languageId, DocumentOrigin.unspecified(uri), content);
+    }
+
+    /**
+     * Creates a binary revision with unspecified provenance from the remaining buffer bytes.
+     * The source buffer's position is not modified. Backing is derived from the URI;
+     * use the origin-taking constructor when provenance is known by the owner.
+     *
+     * @param id stable logical document identity
+     * @param uri physical or virtual document location
+     * @param version content revision
+     * @param languageId provider-defined non-blank language identity
+     * @param content buffer whose remaining bytes are copied
+     * @throws NullPointerException if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code languageId} is blank
+     * @see DocumentOrigin#unspecified(DocumentUri)
+     */
+    public BinaryDocumentSnapshot(
+        DocumentId id,
+        DocumentUri uri,
+        DocumentVersion version,
+        String languageId,
+        ByteBuffer content
+    ) {
+        this(id, uri, version, languageId, DocumentOrigin.unspecified(uri), content);
+    }
+
+    /**
+     * Creates an immutable binary document revision from a byte array.
+     *
+     * @param id stable logical document identity
+     * @param uri physical or virtual document location
+     * @param version content revision
+     * @param languageId provider-defined non-blank language identity
+     * @param origin document backing and provenance
+     * @param content complete binary content; copied during construction
+     * @throws NullPointerException if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code languageId} is blank
+     */
+    public BinaryDocumentSnapshot(
+        DocumentId id,
+        DocumentUri uri,
+        DocumentVersion version,
+        String languageId,
+        DocumentOrigin origin,
+        byte[] content
+    ) {
         this.id = Objects.requireNonNull(id, "id");
         this.uri = Objects.requireNonNull(uri, "uri");
         this.version = Objects.requireNonNull(version, "version");
-        this.languageId = requireLanguageId(languageId);
+        this.languageId = DocumentSnapshot.requireLanguageId(languageId);
+        this.origin = Objects.requireNonNull(origin, "origin");
         content = Objects.requireNonNull(content, "content");
         this.content = Arrays.copyOf(content, content.length);
     }
@@ -50,36 +103,20 @@ public final class BinaryDocumentSnapshot implements DocumentSnapshot {
      * @param uri physical or virtual document location
      * @param version content revision
      * @param languageId provider-defined non-blank language identity
+     * @param origin document backing and provenance
      * @param content buffer whose remaining bytes are copied
+     * @throws NullPointerException if any argument is {@code null}
+     * @throws IllegalArgumentException if {@code languageId} is blank
      */
     public BinaryDocumentSnapshot(
         DocumentId id,
         DocumentUri uri,
         DocumentVersion version,
         String languageId,
+        DocumentOrigin origin,
         ByteBuffer content
     ) {
-        this(id, uri, version, languageId, copyRemaining(content));
-    }
-
-    @Override
-    public DocumentId id() {
-        return id;
-    }
-
-    @Override
-    public DocumentUri uri() {
-        return uri;
-    }
-
-    @Override
-    public DocumentVersion version() {
-        return version;
-    }
-
-    @Override
-    public String languageId() {
-        return languageId;
+        this(id, uri, version, languageId, origin, copyRemaining(content));
     }
 
     /**
@@ -109,17 +146,40 @@ public final class BinaryDocumentSnapshot implements DocumentSnapshot {
         return content.length;
     }
 
+    @Override
+    public DocumentId id() {
+        return id;
+    }
+
+    @Override
+    public DocumentUri uri() {
+        return uri;
+    }
+
+    @Override
+    public DocumentVersion version() {
+        return version;
+    }
+
+    @Override
+    public String languageId() {
+        return languageId;
+    }
+
+    @Override
+    public ContentKind contentKind() {
+        return ContentKind.BINARY;
+    }
+
+    @Override
+    public DocumentOrigin origin() {
+        return origin;
+    }
+
     private static byte[] copyRemaining(ByteBuffer content) {
         ByteBuffer source = Objects.requireNonNull(content, "content").duplicate();
         byte[] copy = new byte[source.remaining()];
         source.get(copy);
         return copy;
-    }
-
-    private static String requireLanguageId(String languageId) {
-        languageId = Objects.requireNonNull(languageId, "languageId");
-        if (languageId.isBlank())
-            throw new IllegalArgumentException("languageId cannot be blank");
-        return languageId;
     }
 }

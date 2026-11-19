@@ -1,10 +1,10 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
-import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
-import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.lexer.Lexer;
+import dev.railroadide.railroad.ide.sst.request.api.DeadlineExceededException;
+import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
+import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import dev.railroadide.railroad.ide.sst.syntax.api.*;
 import dev.railroadide.railroad.ide.sst.syntax.internal.GreenElement;
 import dev.railroadide.railroad.ide.sst.syntax.internal.GreenNode;
@@ -12,6 +12,7 @@ import dev.railroadide.railroad.ide.sst.syntax.internal.SyntaxInternalFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.CancellationException;
 
 /**
  * Creates Java syntax trees and recovery diagnostics from source snapshots or lexers.
@@ -36,6 +37,39 @@ public final class JavaSyntaxParser {
     }
 
     /**
+     * Parses the exact Java text snapshot captured by a document request.
+     * The request's activity check is shared by lexing and green-tree construction;
+     * cancellation and deadline failures propagate without producing a partial result.
+     * The lexer is closed on both normal and exceptional completion.
+     *
+     * <p>
+     * Validation and lazy construction of internal child views share the same activity
+     * check. A final request check also rejects cancellation or expiry observed after
+     * validation. Successful completion does not establish that the captured workspace
+     * is still current; publication owners must validate that separately.
+     *
+     * @param context captured document request and cooperative execution controls
+     * @return the completed tree retaining the request's exact text snapshot
+     * @throws NullPointerException if the context is {@code null}
+     * @throws IllegalArgumentException if the document is binary or its language is not Java
+     * @throws CancellationException if explicit cancellation is observed
+     * @throws DeadlineExceededException if the deadline expires
+     */
+    public static SyntaxTree parse(FeatureRequestContext context)
+        throws CancellationException, DeadlineExceededException {
+        Objects.requireNonNull(context, "context");
+        context.checkActive();
+
+        DocumentSnapshot documentSnapshot = context.documentSnapshot();
+        if (!(documentSnapshot instanceof TextDocumentSnapshot textDocumentSnapshot))
+            throw new IllegalArgumentException("FeatureRequestContext must carry a text document snapshot");
+
+        requireJavaSnapshot(textDocumentSnapshot);
+
+        return parse(textDocumentSnapshot, context::checkActive);
+    }
+
+    /**
      * Parses Java source text.
      * A fresh in-memory document identity and initial version are assigned.
      *
@@ -44,6 +78,19 @@ public final class JavaSyntaxParser {
      */
     public static SyntaxTree parse(CharSequence source) {
         return parse(DocumentId.create(), source);
+    }
+
+    /**
+     * Parses source with cooperative controls shared by lexing, parsing, and validation.
+     *
+     * @param source Java source to parse
+     * @param activityCheck request activity check, invoked at bounded work intervals
+     * @return completed syntax tree; cancellation never publishes a partial tree
+     */
+    public static SyntaxTree parse(CharSequence source, Runnable activityCheck) {
+        DocumentId id = DocumentId.create();
+        return parse(new TextDocumentSnapshot(id, DocumentUri.inMemory(id), DocumentVersion.initial(),
+            "java", source, StandardCharsets.UTF_8), activityCheck);
     }
 
     /**
@@ -103,9 +150,27 @@ public final class JavaSyntaxParser {
      * @throws IllegalArgumentException if the snapshot language is not Java
      */
     public static SyntaxTree parse(TextDocumentSnapshot documentSnapshot) {
-        documentSnapshot = requireJavaSnapshot(documentSnapshot);
-        try (var lexer = new JavaLexer(documentSnapshot.text())) {
-            return parse(documentSnapshot, lexer);
+        return parse(documentSnapshot, ActivityCheckpoint::checkInterrupted);
+    }
+
+    /**
+     * Parses a captured snapshot, discarding partial work when the request becomes inactive.
+     *
+     * @param documentSnapshot immutable Java snapshot
+     * @param activityCheck request activity check
+     * @return completed tree retaining the exact snapshot
+     */
+    public static SyntaxTree parse(TextDocumentSnapshot documentSnapshot, Runnable activityCheck) {
+        requireJavaSnapshot(documentSnapshot);
+        Objects.requireNonNull(activityCheck, "activityCheck");
+        Runnable checkpoint = activityCheck instanceof ActivityCheckpoint
+            ? activityCheck
+            : new ActivityCheckpoint(activityCheck);
+        checkpoint.run();
+        try (var lexer = new JavaLexer(documentSnapshot.text(), null, checkpoint)) {
+            SyntaxTree tree = parse(documentSnapshot, lexer, checkpoint);
+            checkpoint.run();
+            return tree;
         }
     }
 
@@ -171,15 +236,17 @@ public final class JavaSyntaxParser {
         Objects.requireNonNull(documentId, "documentId");
         Objects.requireNonNull(documentUri, "documentUri");
         Objects.requireNonNull(documentVersion, "documentVersion");
-        GreenNode root = new JavaGreenParser(Objects.requireNonNull(lexer, "lexer")).parseGreenTree();
+        Runnable checkpoint = new ActivityCheckpoint(ActivityCheckpoint::checkInterrupted);
+        checkpoint.run();
+        GreenNode root = new JavaGreenParser(Objects.requireNonNull(lexer, "lexer"), checkpoint).parseGreenTree();
         var documentSnapshot = new TextDocumentSnapshot(
             documentId,
             documentUri,
             documentVersion,
             "java",
-            SyntaxInternalFactory.sourceText(root),
+            SyntaxInternalFactory.sourceText(root, checkpoint),
             StandardCharsets.UTF_8);
-        return SyntaxInternalFactory.treeFromGreenRoot(documentSnapshot, root);
+        return SyntaxInternalFactory.treeFromGreenRoot(documentSnapshot, root, checkpoint);
     }
 
     /**
@@ -194,9 +261,17 @@ public final class JavaSyntaxParser {
         TextDocumentSnapshot documentSnapshot,
         Lexer<JavaTokenType> lexer
     ) {
-        documentSnapshot = requireJavaSnapshot(documentSnapshot);
-        GreenNode root = new JavaGreenParser(Objects.requireNonNull(lexer, "lexer")).parseGreenTree();
-        return SyntaxInternalFactory.treeFromGreenRoot(documentSnapshot, root);
+        return parse(documentSnapshot, lexer, new ActivityCheckpoint(ActivityCheckpoint::checkInterrupted));
+    }
+
+    private static SyntaxTree parse(
+        TextDocumentSnapshot documentSnapshot,
+        Lexer<JavaTokenType> lexer,
+        Runnable activityCheck
+    ) {
+        requireJavaSnapshot(documentSnapshot);
+        GreenNode root = new JavaGreenParser(Objects.requireNonNull(lexer, "lexer"), activityCheck).parseGreenTree();
+        return SyntaxInternalFactory.treeFromGreenRoot(documentSnapshot, root, activityCheck);
     }
 
     /**
@@ -380,6 +455,7 @@ public final class JavaSyntaxParser {
             previousSnapshot.uri(),
             previousSnapshot.version().next(),
             previousSnapshot.languageId(),
+            previousSnapshot.origin(),
             newSource,
             previousSnapshot.encoding()), edit);
     }
@@ -411,6 +487,7 @@ public final class JavaSyntaxParser {
             previousSnapshot.uri(),
             Objects.requireNonNull(newVersion, "newVersion"),
             previousSnapshot.languageId(),
+            previousSnapshot.origin(),
             newSource,
             previousSnapshot.encoding()), edit);
     }
@@ -429,9 +506,10 @@ public final class JavaSyntaxParser {
         TextDocumentSnapshot newSnapshot,
         TextEdit edit
     ) {
+        ActivityCheckpoint.checkInterrupted();
         Objects.requireNonNull(previousTree, "previousTree");
-        newSnapshot = requireJavaSnapshot(newSnapshot);
-        edit = Objects.requireNonNull(edit, "edit");
+        requireJavaSnapshot(newSnapshot);
+        Objects.requireNonNull(edit, "edit");
 
         TextDocumentSnapshot previousSnapshot = previousTree.documentSnapshot();
         if (!newSnapshot.id().equals(previousSnapshot.id()))
@@ -465,7 +543,10 @@ public final class JavaSyntaxParser {
                 edit,
                 oldLength,
                 newLength);
+            ActivityCheckpoint.checkInterrupted();
             return new IncrementalParseResult(incrementalTree, incrementalPlan, false);
+        } catch (CancellationException exception) {
+            throw exception;
         } catch (RuntimeException _) {
             SyntaxTree reparsed = parse(newSnapshot);
             return new IncrementalParseResult(reparsed, fallbackPlan, true);
@@ -490,6 +571,7 @@ public final class JavaSyntaxParser {
         CharSequence newSource,
         TextEdit edit
     ) {
+        ActivityCheckpoint.checkInterrupted();
         Objects.requireNonNull(previousTree, "previousTree");
         Objects.requireNonNull(previousSource, "previousSource");
         Objects.requireNonNull(newSource, "newSource");
@@ -515,8 +597,8 @@ public final class JavaSyntaxParser {
             }
         }
 
-        int oldReparseStart = clamp(coveringNode.start(), 0, oldLength);
-        int oldReparseEnd = clamp(coveringNode.end(), oldReparseStart, oldLength);
+        int oldReparseStart = Math.clamp(coveringNode.start(), 0, oldLength);
+        int oldReparseEnd = Math.clamp(coveringNode.end(), oldReparseStart, oldLength);
         return buildReusePlan(root, oldReparseStart, oldReparseEnd, edit, oldLength, newLength);
     }
 
@@ -528,13 +610,14 @@ public final class JavaSyntaxParser {
         int oldLength,
         int newLength
     ) {
-        int clampedOldStart = clamp(oldReparseStart, 0, oldLength);
-        int clampedOldEnd = clamp(oldReparseEnd, clampedOldStart, oldLength);
-        int newReparseStart = clamp(mapOldOffsetToNew(clampedOldStart, edit), 0, newLength);
-        int newReparseEnd = clamp(mapOldOffsetToNew(clampedOldEnd, edit), newReparseStart, newLength);
+        int clampedOldStart = Math.clamp(oldReparseStart, 0, oldLength);
+        int clampedOldEnd = Math.clamp(oldReparseEnd, clampedOldStart, oldLength);
+        int newReparseStart = Math.clamp(mapOldOffsetToNew(clampedOldStart, edit), 0, newLength);
+        int newReparseEnd = Math.clamp(mapOldOffsetToNew(clampedOldEnd, edit), newReparseStart, newLength);
         int delta = edit.lengthDelta();
         List<ReuseCandidate> candidates = new ArrayList<>();
         collectReuseCandidates(root, clampedOldStart, clampedOldEnd, delta, candidates);
+        ActivityCheckpoint.checkInterrupted();
         return new ReusePlan(clampedOldStart, clampedOldEnd, newReparseStart, newReparseEnd, delta,
             List.copyOf(candidates));
     }
@@ -581,15 +664,13 @@ public final class JavaSyntaxParser {
         if (!isIncrementalAnchor(affected))
             return Optional.empty();
 
-        int oldReparseStart = clamp(affected.start(), 0, oldLength);
-        int oldReparseEnd = oldLength;
-        int newReparseStart = clamp(mapOldOffsetToNew(oldReparseStart, edit), 0, newLength);
-        int newReparseEnd = newLength;
-        if (newReparseStart > newReparseEnd)
+        int oldReparseStart = Math.clamp(affected.start(), 0, oldLength);
+        int newReparseStart = Math.clamp(mapOldOffsetToNew(oldReparseStart, edit), 0, newLength);
+        if (newReparseStart > newLength)
             return Optional.empty();
 
-        return Optional.of(new TopLevelReparseWindow(affectedChildIndex, oldReparseStart, oldReparseEnd,
-            newReparseStart, newReparseEnd));
+        return Optional.of(new TopLevelReparseWindow(affectedChildIndex, oldReparseStart, oldLength,
+            newReparseStart, newLength));
     }
 
     private static SyntaxTree reparseTopLevelTail(
@@ -600,6 +681,7 @@ public final class JavaSyntaxParser {
         List<SyntaxNode> previousChildren = previousTree.root().children();
         List<GreenElement> mergedChildren = new ArrayList<>(previousChildren.size());
         for (int index = 0; index < window.startChildIndex(); index++) {
+            ActivityCheckpoint.checkInterrupted();
             mergedChildren.add(SyntaxInternalFactory.greenElement(previousChildren.get(index)));
         }
 
@@ -608,19 +690,21 @@ public final class JavaSyntaxParser {
         GreenNode reparsedTailRoot = SyntaxInternalFactory.greenRoot(reparsedTail);
         mergedChildren.addAll(reparsedTailRoot.children());
 
-        GreenNode mergedRoot = SyntaxInternalFactory.greenNode(JavaSyntaxKinds.COMPILATION_UNIT, mergedChildren);
-        return SyntaxInternalFactory.treeFromGreenRoot(newSnapshot, mergedRoot);
+        Runnable checkpoint = new ActivityCheckpoint(ActivityCheckpoint::checkInterrupted);
+        GreenNode mergedRoot = SyntaxInternalFactory.greenNode(JavaSyntaxKinds.COMPILATION_UNIT, mergedChildren,
+            checkpoint);
+        return SyntaxInternalFactory.treeFromGreenRoot(newSnapshot, mergedRoot, checkpoint);
     }
 
-    private static TextDocumentSnapshot requireJavaSnapshot(TextDocumentSnapshot documentSnapshot) {
-        documentSnapshot = Objects.requireNonNull(documentSnapshot, "documentSnapshot");
+    private static void requireJavaSnapshot(TextDocumentSnapshot documentSnapshot) {
+        Objects.requireNonNull(documentSnapshot, "documentSnapshot");
         if (!"java".equalsIgnoreCase(documentSnapshot.languageId()))
             throw new IllegalArgumentException("Java parser requires a snapshot with languageId 'java'");
-        return documentSnapshot;
     }
 
     private static void verifyPreviousSource(SyntaxTree previousTree, CharSequence previousSource) {
-        previousSource = Objects.requireNonNull(previousSource, "previousSource");
+        ActivityCheckpoint.checkInterrupted();
+        Objects.requireNonNull(previousSource, "previousSource");
         if (!previousTree.documentSnapshot().text().contentEquals(previousSource))
             throw new IllegalArgumentException(
                 "previousSource must match the immutable snapshot carried by previousTree");
@@ -640,6 +724,7 @@ public final class JavaSyntaxParser {
         }
 
         for (int index = 0; index < topLevelChildren.size(); index++) {
+            ActivityCheckpoint.checkInterrupted();
             SyntaxNode child = topLevelChildren.get(index);
             if (rangesOverlap(child.start(), child.end(), probeStart, probeEnd))
                 return index;
@@ -647,6 +732,7 @@ public final class JavaSyntaxParser {
 
         if (oldEditStart >= oldLength) {
             for (int index = topLevelChildren.size() - 1; index >= 0; index--) {
+                ActivityCheckpoint.checkInterrupted();
                 if (!isEofNode(topLevelChildren.get(index)))
                     return index;
             }
@@ -684,6 +770,7 @@ public final class JavaSyntaxParser {
             return null;
 
         for (SyntaxNode child : node.children()) {
+            ActivityCheckpoint.checkInterrupted();
             SyntaxNode covering = findSmallestCoveringNode(child, start, endExclusive);
             if (covering != null)
                 return covering;
@@ -701,6 +788,7 @@ public final class JavaSyntaxParser {
     ) {
         if (node instanceof SyntaxToken || node.width() == 0) {
             for (SyntaxNode child : node.children()) {
+                ActivityCheckpoint.checkInterrupted();
                 collectReuseCandidates(child, oldReparseStart, oldReparseEnd, delta, candidates);
             }
             return;
@@ -716,19 +804,35 @@ public final class JavaSyntaxParser {
         }
 
         for (SyntaxNode child : node.children()) {
+            ActivityCheckpoint.checkInterrupted();
             collectReuseCandidates(child, oldReparseStart, oldReparseEnd, delta, candidates);
         }
     }
 
-    private static int clamp(int value, int min, int max) {
-        return Math.max(min, Math.min(value, max));
+    /**
+     * Parses a request and collects recovery diagnostics under the same cancellation controls.
+     *
+     * @param context captured document and request activity controls
+     * @return the syntax tree and recovery diagnostics for the captured document
+     */
+    public static ParseResult parseWithDiagnostics(FeatureRequestContext context) {
+        context.checkActive();
+        SyntaxTree tree = parse(context);
+        List<SyntaxDiagnostic> diagnostics = collectSyntaxDiagnostics(tree.root(), context::checkActive);
+        context.checkActive();
+        return new ParseResult(tree, diagnostics);
     }
 
     private static List<SyntaxDiagnostic> collectSyntaxDiagnostics(SyntaxNode root) {
+        return collectSyntaxDiagnostics(root, ActivityCheckpoint::checkInterrupted);
+    }
+
+    private static List<SyntaxDiagnostic> collectSyntaxDiagnostics(SyntaxNode root, Runnable activityCheck) {
         List<SyntaxDiagnostic> diagnostics = new ArrayList<>();
         ArrayDeque<SyntaxNode> stack = new ArrayDeque<>();
         stack.push(root);
         while (!stack.isEmpty()) {
+            activityCheck.run();
             SyntaxNode node = stack.pop();
             String kindId = node.kind().id();
             if (ERROR_NODE_KIND_ID.equals(kindId)) {
@@ -748,6 +852,7 @@ public final class JavaSyntaxParser {
             }
 
             for (SyntaxNode child : node.children()) {
+                activityCheck.run();
                 stack.push(child);
             }
         }
@@ -835,6 +940,8 @@ public final class JavaSyntaxParser {
     }
 
     /**
+     * Immutable description of reuse across one incremental parse. Candidate inputs
+     * are defensively copied so callers cannot change a published plan.
      * Describes a reparse range and subtrees that may be reused outside it.
      * Candidates describe potential reuse, including when parsing falls back to a full reparse.
      * All ranges use zero-based UTF-16 offsets with exclusive end offsets.
@@ -854,6 +961,19 @@ public final class JavaSyntaxParser {
         int lengthDelta,
         List<ReuseCandidate> candidates
     ) {
+        /**
+         * Creates a reuse plan with an immutable copy of its candidates.
+         *
+         * @param oldReparseStart the inclusive reparse start in the previous source
+         * @param oldReparseEnd the exclusive reparse end in the previous source
+         * @param newReparseStart the inclusive reparse start in the new source
+         * @param newReparseEnd the exclusive reparse end in the new source
+         * @param lengthDelta the change in source length
+         * @param candidates the syntax subtrees eligible for reuse
+         */
+        public ReusePlan {
+            candidates = List.copyOf(Objects.requireNonNull(candidates, "candidates"));
+        }
     }
 
     /**
@@ -887,7 +1007,7 @@ public final class JavaSyntaxParser {
          * @param diagnostics syntax recovery diagnostics to copy
          */
         public ParseResult {
-            tree = Objects.requireNonNull(tree, "tree");
+            Objects.requireNonNull(tree, "tree");
             diagnostics = List.copyOf(Objects.requireNonNull(diagnostics, "diagnostics"));
         }
     }

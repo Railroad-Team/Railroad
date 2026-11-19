@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -8,17 +9,21 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 /**
  * Builds a project-wide semantic index by extracting declaration facts from
  * Java source files.
  */
-public final class JavaProjectSemanticIndexer {
+public class JavaProjectSemanticIndexer {
+    private static final int MAXIMUM_HELPERS = Math.clamp(Runtime.getRuntime().availableProcessors() - 1, 1, 7);
+    private static final Semaphore HELPER_PERMITS = new Semaphore(MAXIMUM_HELPERS);
+
     private final JavaProjectSemanticExtractor extractor;
 
     /**
@@ -38,68 +43,153 @@ public final class JavaProjectSemanticIndexer {
     }
 
     /**
-     * Builds a semantic index from Java source files, processing multiple files concurrently.
+     * Builds a semantic index from Java source files with globally bounded parallel extraction.
      *
      * @param projectRoot the directory recursively searched for regular {@code .java} files
      * @return the immutable project source index
      */
     public JavaProjectSemanticIndex build(Path projectRoot) {
+        return build(projectRoot, ActivityCheckpoint::checkInterrupted);
+    }
+
+    /**
+     * Builds a source index with checks during discovery and file extraction.
+     *
+     * @param projectRoot directory containing the source files
+     * @param activityCheck cooperative request activity check
+     * @return complete source index
+     */
+    public JavaProjectSemanticIndex build(Path projectRoot, Runnable activityCheck) {
         Objects.requireNonNull(projectRoot, "projectRoot");
+        Objects.requireNonNull(activityCheck, "activityCheck").run();
 
         try (Stream<Path> paths = Files.walk(projectRoot)) {
             List<Path> javaFiles = paths
+                .peek(_ -> activityCheck.run())
                 .filter(Files::isRegularFile)
                 .filter(path -> path.getFileName().toString().endsWith(".java"))
                 .sorted(Comparator.naturalOrder())
                 .toList();
-            return build(javaFiles);
+            return build(javaFiles, activityCheck);
         } catch (IOException exception) {
             throw new UncheckedIOException("Failed to build semantic index for " + projectRoot, exception);
         }
     }
 
     /**
-     * Builds a semantic index from Java source files, processing multiple files concurrently.
+     * Builds a semantic index from Java source files with globally bounded parallel extraction.
      *
      * @param sourceFiles the source files to index; null entries are ignored
      * @return the immutable project source index
      */
     public JavaProjectSemanticIndex build(List<Path> sourceFiles) {
+        return build(sourceFiles, ActivityCheckpoint::checkInterrupted);
+    }
+
+    /**
+     * Indexes a captured source list, discarding the builder if cancellation or expiry is observed.
+     * The calling worker invokes the supplied callback exclusively. Additional extraction workers
+     * observe cancellation through the calling worker and interruption; each owns its checking budget.
+     * Helpers are globally bounded and never wait for admission or reuse the request scheduler.
+     *
+     * @param sourceFiles files to index; null entries are ignored
+     * @param activityCheck cooperative request activity check
+     * @return complete immutable source index
+     */
+    public JavaProjectSemanticIndex build(List<Path> sourceFiles, Runnable activityCheck) {
         Objects.requireNonNull(sourceFiles, "sourceFiles");
-
-        List<Path> files = sourceFiles.stream()
-            .filter(Objects::nonNull)
-            .toList();
-        JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
-        if (files.size() < 2) {
-            files.forEach(sourceFile -> builder.putFile(indexFile(sourceFile)));
-            return builder.build();
+        Objects.requireNonNull(activityCheck, "activityCheck").run();
+        List<Path> files = new ArrayList<>(sourceFiles.size());
+        for (Path sourceFile : sourceFiles) {
+            activityCheck.run();
+            if (sourceFile != null) {
+                files.add(sourceFile);
+            }
         }
-
-        int parallelism = Math.min(files.size(), Math.max(2,
-            Math.min(Runtime.getRuntime().availableProcessors(), 8)));
-        ExecutorService executor = Executors.newFixedThreadPool(parallelism);
-        List<Future<JavaProjectSemanticIndex.SourceFileIndex>> futures = new ArrayList<>(files.size());
+        var indexed = new JavaProjectSemanticIndex.SourceFileIndex[files.size()];
+        var next = new AtomicInteger();
+        var stopped = new AtomicBoolean();
+        var failure = new AtomicReference<Throwable>();
+        Runnable helperCheck = () -> {
+            ActivityCheckpoint.checkInterrupted();
+            if (stopped.get())
+                throw new CancellationException("Java source indexing stopped");
+        };
+        Runnable ownerCheck = () -> {
+            activityCheck.run();
+            ActivityCheckpoint.checkInterrupted();
+            rethrowFailure(failure.get());
+        };
+        List<Thread> helpers = new ArrayList<>(MAXIMUM_HELPERS);
         try {
-            for (Path sourceFile : files) {
-                futures.add(executor.submit(() -> indexFile(sourceFile)));
+            int helperCount = Math.min(MAXIMUM_HELPERS, files.size() - 1);
+            for (int helperIndex = 0; helperIndex < helperCount && HELPER_PERMITS.tryAcquire(); helperIndex++) {
+                try {
+                    Thread helper = Thread.ofVirtual().name("railroad-java-source-index").unstarted(() -> {
+                        try {
+                            extractFiles(files, indexed, next, helperCheck);
+                        } catch (Throwable exception) {
+                            failure.compareAndSet(null, exception);
+                            stopped.set(true);
+                        } finally {
+                            HELPER_PERMITS.release();
+                        }
+                    });
+                    helpers.add(helper);
+                    helper.start();
+                } catch (RuntimeException | Error exception) {
+                    HELPER_PERMITS.release();
+                    throw exception;
+                }
             }
-            for (Future<JavaProjectSemanticIndex.SourceFileIndex> future : futures) {
-                builder.putFile(future.get());
+            extractFiles(files, indexed, next, ownerCheck);
+            for (Thread helper : helpers) {
+                while (helper.isAlive()) {
+                    ownerCheck.run();
+                    helper.join(10);
+                }
             }
+            ownerCheck.run();
+            JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
+            for (JavaProjectSemanticIndex.SourceFileIndex file : indexed) {
+                ownerCheck.run();
+                builder.putFile(file);
+            }
+            JavaProjectSemanticIndex result = builder.build();
+            ownerCheck.run();
+            return result;
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("Java project indexing was interrupted", exception);
-        } catch (ExecutionException exception) {
-            Throwable cause = exception.getCause();
-            if (cause instanceof RuntimeException runtimeException)
-                throw runtimeException;
-            throw new IllegalStateException("Failed to index Java project", cause);
+            throw new CancellationException("Java source indexing was interrupted");
         } finally {
-            executor.shutdownNow();
+            stopped.set(true);
+            helpers.forEach(Thread::interrupt);
         }
+    }
 
-        return builder.build();
+    private void extractFiles(
+        List<Path> files,
+        JavaProjectSemanticIndex.SourceFileIndex[] indexed,
+        AtomicInteger next,
+        Runnable activityCheck
+    ) {
+        while (true) {
+            activityCheck.run();
+            int index = next.getAndIncrement();
+            if (index >= files.size())
+                return;
+            indexed[index] = indexFile(files.get(index), activityCheck);
+            activityCheck.run();
+        }
+    }
+
+    private static void rethrowFailure(Throwable failure) {
+        if (failure instanceof RuntimeException runtime)
+            throw runtime;
+        if (failure instanceof Error error)
+            throw error;
+        if (failure != null)
+            throw new IllegalStateException("Failed to index Java project", failure);
     }
 
     /**
@@ -110,8 +200,22 @@ public final class JavaProjectSemanticIndexer {
      * @throws UncheckedIOException if the source file cannot be read
      */
     public JavaProjectSemanticIndex.SourceFileIndex indexFile(Path sourceFile) {
+        return indexFile(sourceFile, ActivityCheckpoint::checkInterrupted);
+    }
+
+    /**
+     * Reads and indexes a file, checking the request before and after filesystem access.
+     *
+     * @param sourceFile source file path
+     * @param activityCheck cooperative request activity check
+     * @return complete immutable source entry
+     */
+    public JavaProjectSemanticIndex.SourceFileIndex indexFile(Path sourceFile, Runnable activityCheck) {
         Objects.requireNonNull(sourceFile, "sourceFile");
-        return extractor.extract(sourceFile, readSource(sourceFile));
+        activityCheck.run();
+        String source = readSource(sourceFile);
+        activityCheck.run();
+        return indexFile(sourceFile, source, activityCheck);
     }
 
     /**
@@ -122,9 +226,25 @@ public final class JavaProjectSemanticIndexer {
      * @return the file's package, imports, and indexed declarations
      */
     public JavaProjectSemanticIndex.SourceFileIndex indexFile(Path sourceFile, CharSequence sourceContent) {
+        return indexFile(sourceFile, sourceContent, ActivityCheckpoint::checkInterrupted);
+    }
+
+    /**
+     * Indexes captured source text with cooperative request controls.
+     *
+     * @param sourceFile source file identity
+     * @param sourceContent captured text
+     * @param activityCheck cooperative request activity check
+     * @return complete immutable source entry
+     */
+    public JavaProjectSemanticIndex.SourceFileIndex indexFile(
+        Path sourceFile,
+        CharSequence sourceContent,
+        Runnable activityCheck
+    ) {
         Objects.requireNonNull(sourceFile, "sourceFile");
         Objects.requireNonNull(sourceContent, "sourceContent");
-        return extractor.extract(sourceFile, sourceContent);
+        return extractor.extract(sourceFile, sourceContent, activityCheck);
     }
 
     private static String readSource(Path sourceFile) {

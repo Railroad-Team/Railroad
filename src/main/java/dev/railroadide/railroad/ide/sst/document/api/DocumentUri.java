@@ -116,6 +116,28 @@ public record DocumentUri(URI value) {
         return isFile() ? Optional.of(Path.of(value)) : Optional.empty();
     }
 
+    /**
+     * Returns the decoded final filename without requiring a physical filesystem path.
+     * Uses the URI path, or the scheme-specific part for opaque URIs such as archive entries.
+     *
+     * @return the filename, or empty for missing, blank, or directory-only names
+     */
+    public Optional<String> fileName() {
+        String path = value.getPath();
+        if (path == null) {
+            path = value.getSchemeSpecificPart();
+        }
+
+        if (path == null || path.isEmpty() || path.endsWith("/"))
+            return Optional.empty();
+
+        String fileName = path.substring(path.lastIndexOf('/') + 1);
+        if (fileName.isBlank() || fileName.equals(".") || fileName.equals(".."))
+            return Optional.empty();
+
+        return Optional.of(fileName);
+    }
+
     @Override
     public String toString() {
         return value.toString();

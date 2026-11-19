@@ -31,10 +31,12 @@ public final class JavaProjectLanguageIndexer
 
     @Override
     public JavaProjectSemanticIndex build(ProjectIndexContext context, Collection<Path> sourceFiles) {
+        context.checkActive();
         return indexer.build(sourceFiles.stream()
+            .peek(_ -> context.checkActive())
             .filter(this::supports)
             .sorted(Comparator.naturalOrder())
-            .toList());
+            .toList(), context::checkActive);
     }
 
     @Override
@@ -43,7 +45,7 @@ public final class JavaProjectLanguageIndexer
         Path sourceFile,
         String sourceContent
     ) {
-        return indexer.indexFile(sourceFile, sourceContent);
+        return indexer.indexFile(sourceFile, sourceContent, context::checkActive);
     }
 
     @Override
@@ -52,26 +54,11 @@ public final class JavaProjectLanguageIndexer
         Path sourceFile,
         JavaProjectSemanticIndex.SourceFileIndex indexedFile
     ) {
-        JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
-        index.files().forEach((path, fileIndex) -> {
-            if (!path.equals(sourceFile)) {
-                builder.putFile(fileIndex);
-            }
-        });
-
-        builder.putFile(indexedFile);
-        return builder.build();
+        return index.withFile(indexedFile);
     }
 
     @Override
     public JavaProjectSemanticIndex withRemovedFile(JavaProjectSemanticIndex index, Path sourceFile) {
-        JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
-        index.files().forEach((path, fileIndex) -> {
-            if (!path.equals(sourceFile)) {
-                builder.putFile(fileIndex);
-            }
-        });
-
-        return builder.build();
+        return index.withoutFile(sourceFile);
     }
 }

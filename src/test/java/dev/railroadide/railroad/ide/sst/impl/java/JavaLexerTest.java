@@ -81,4 +81,40 @@ public class JavaLexerTest {
         assertFalse(diagnostics.isEmpty(), "Expected lexer diagnostics for unterminated string");
         assertTrue(tokens.stream().anyMatch(token -> token.flags().contains(TokenFlag.ERROR)));
     }
+
+    @Test
+    public void lexesUnicodeEscapedIdentifiersAndKeywordsWithTheirRawText() {
+        List<Token<JavaTokenType>> tokens = significant(
+            "\\u0069nt \\u004Cist = S\\uu0065t; \\\\u0041 \\u00zz");
+
+        assertEquals(JavaTokenType.INT_KEYWORD, tokens.get(0).type());
+        assertEquals("\\u0069nt", tokens.get(0).lexeme());
+        assertEquals(JavaTokenType.IDENTIFIER, tokens.get(1).type());
+        assertEquals("\\u004Cist", tokens.get(1).lexeme());
+        assertEquals(JavaTokenType.IDENTIFIER, tokens.get(3).type());
+        assertEquals("S\\uu0065t", tokens.get(3).lexeme());
+        assertEquals(JavaTokenType.SEMICOLON, tokens.get(4).type());
+        assertEquals(List.of(JavaTokenType.UNKNOWN, JavaTokenType.UNKNOWN, JavaTokenType.IDENTIFIER),
+            tokens.subList(5, 8).stream().map(Token::type).toList(),
+            "A backslash after an odd number of backslashes does not start an escape");
+        assertEquals(List.of(JavaTokenType.UNKNOWN, JavaTokenType.IDENTIFIER, JavaTokenType.EOF),
+            tokens.subList(8, 11).stream().map(Token::type).toList(), "Malformed escapes are not translated");
+    }
+
+    @Test
+    public void translatesUnicodeEscapesLikeTheCompiler() {
+        assertEquals("List", JavaUnicodeEscapes.translate("\\u004Cist"));
+        assertEquals("Set", JavaUnicodeEscapes.translate("S\\uuu0065t"));
+        assertEquals("\\\\u0041", JavaUnicodeEscapes.translate("\\\\u0041"));
+        assertEquals("\\\\A", JavaUnicodeEscapes.translate("\\\\\\u0041"));
+        assertEquals("\\u0041", JavaUnicodeEscapes.translate("\\u005cu0041"),
+            "A translated backslash never starts another escape");
+        assertEquals("\\u12", JavaUnicodeEscapes.translate("\\u12"));
+    }
+
+    private static List<Token<JavaTokenType>> significant(String source) {
+        return JavaParserTestSupport.lexAll(source).stream()
+            .filter(token -> token.channel() == TokenChannel.DEFAULT)
+            .toList();
+    }
 }

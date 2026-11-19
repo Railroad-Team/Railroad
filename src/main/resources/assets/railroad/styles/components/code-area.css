@@ -77,6 +77,11 @@
     -mfx-color: -color-warning-emphasis;
 }
 
+.code-area .editor-diagnostic-information,
+.code-area .editor-diagnostic-hint {
+    -mfx-color: -color-fg-default;
+}
+
 /* Colourful syntax roles, with separate colours for light and dark canvases. */
 .code-area {
     -syntax-keyword: ladder(-color-surface-editor, #c792ea 49%, #8539a8 50%);
@@ -198,6 +203,15 @@
     -fx-border-color: rgba(255, 255, 255, 0.25);
 }
 
+.navigation-message {
+    -fx-background-color: rgba(40, 40, 40, 0.95);
+    -fx-text-fill: white;
+    -fx-padding: 6px 10px;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-border-color: rgba(255, 255, 255, 0.25);
+}
+
 .signature-help-text {
     -fx-text-fill: white;
 }
@@ -219,4 +233,50 @@
 
 .code-area .editor-breakpoint-marker:disabled {
     -fx-fill: transparent;
+}
+
+.rename-dialog .rename-heading {
+    -fx-font-size: 1.15em;
+    -fx-font-weight: bold;
+}
+
+.rename-conflicts .rename-error {
+    -fx-text-fill: -color-danger-fg;
+}
+
+.rename-conflicts .rename-warning {
+    -fx-text-fill: -color-warning-fg;
+}
+
+.workspace-edit-preview .workspace-edit-preview-file {
+    -fx-font-weight: bold;
+}
+
+.code-area .editor-code-action-bulb {
+    -mfx-color: -color-warning-emphasis;
+    -fx-cursor: hand;
+}
+
+.code-action-menu {
+    -fx-background-color: rgba(40, 40, 40, 0.95);
+    -fx-padding: 6px;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-border-color: rgba(255, 255, 255, 0.25);
+}
+
+.code-action-menu .code-action-status {
+    -fx-text-fill: white;
+}
+
+.code-action-list .code-action-preferred {
+    -fx-font-weight: bold;
+}
+
+.code-action-list .code-action-unavailable {
+    -fx-opacity: 0.6;
+}
+
+.code-action-menu .code-action-status.code-action-error {
+    -fx-text-fill: -color-danger-fg;
 }

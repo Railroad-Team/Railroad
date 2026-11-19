@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import dev.railroadide.railroad.utility.ShutdownHooks;
 
 /**
  * Represents the result of loading a plugin, containing the plugin instance and its descriptor.
@@ -16,6 +17,7 @@ public final class PluginLoadResult {
     private final PluginDescriptor descriptor;
     private Plugin pluginInstance;
     private PluginClassLoader classLoader;
+    private ShutdownHooks.Registration shutdownRegistration;
     private List<String> javaInspectionRuleProviderRegistrationIds = List.of();
 
     /**
@@ -83,6 +85,26 @@ public final class PluginLoadResult {
     public void setPlugin(Plugin plugin, PluginClassLoader classLoader) {
         this.pluginInstance = plugin;
         this.classLoader = classLoader;
+    }
+
+    /**
+     * Replaces the tracked shutdown registration, closing any previous registration.
+     *
+     * @param registration shutdown registration to retain, or null to leave none registered
+     */
+    public void setShutdownRegistration(ShutdownHooks.Registration registration) {
+        clearShutdownRegistration();
+        shutdownRegistration = registration;
+    }
+
+    /**
+     * Closes and clears the tracked shutdown registration, if present.
+     */
+    public void clearShutdownRegistration() {
+        if (shutdownRegistration != null) {
+            shutdownRegistration.close();
+            shutdownRegistration = null;
+        }
     }
 
     /**

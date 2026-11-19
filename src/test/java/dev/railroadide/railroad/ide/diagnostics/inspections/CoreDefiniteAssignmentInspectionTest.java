@@ -14,6 +14,84 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class CoreDefiniteAssignmentInspectionTest {
     @Test
+    public void localClassMethodsReceiveAssignedCapturedParametersAndLocals() {
+        var diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
+            class Example {
+                Object create(int parameter) {
+                    final int local = parameter;
+                    class Local {
+                        int value() { return local + parameter; }
+                        class Nested { int value() { return parameter; } }
+                    }
+                    return new Local();
+                }
+            }
+            """);
+        assertTrue(diagnostics.stream().noneMatch(diagnostic -> "SEM_UNASSIGNED_VARIABLE".equals(diagnostic.code())),
+            () -> diagnostics.toString());
+    }
+
+    @Test
+    public void localClassCaptureIsCheckedAtDeclarationAndOwnUnassignedLocalsRemainChecked() {
+        var diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
+            class Example {
+                Object create() {
+                    int missingCapture;
+                    class Local {
+                        int value() {
+                            int missingLocal;
+                            return missingCapture + missingLocal;
+                        }
+                    }
+                    missingCapture = 1;
+                    return new Local();
+                }
+            }
+            """);
+        assertTrue(diagnostics.stream().anyMatch(diagnostic -> "SEM_UNASSIGNED_VARIABLE".equals(diagnostic.code())
+            && diagnostic.message().contains("missingCapture")));
+        assertTrue(diagnostics.stream().anyMatch(diagnostic -> "SEM_UNASSIGNED_VARIABLE".equals(diagnostic.code())
+            && diagnostic.message().contains("missingLocal")));
+    }
+
+    @Test
+    public void anonymousMethodsReceiveAssignedCapturedParametersAndLocals() {
+        var diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
+            class Example {
+                Object create(int parameter) {
+                    final int local = parameter;
+                    return new Object() {
+                        int value() { return local + parameter; }
+                    };
+                }
+            }
+            """);
+        assertTrue(diagnostics.stream().noneMatch(diagnostic -> "SEM_UNASSIGNED_VARIABLE".equals(diagnostic.code())),
+            () -> diagnostics.toString());
+    }
+
+    @Test
+    public void anonymousCaptureIsCheckedAtCreationAndOwnUnassignedLocalsRemainChecked() {
+        var diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
+            class Example {
+                Object create() {
+                    int missingCapture;
+                    return new Object() {
+                        int value() {
+                            int missingLocal;
+                            return missingCapture + missingLocal;
+                        }
+                    };
+                }
+            }
+            """);
+        assertTrue(diagnostics.stream().anyMatch(diagnostic -> "SEM_UNASSIGNED_VARIABLE".equals(diagnostic.code())
+            && diagnostic.message().contains("missingCapture")));
+        assertTrue(diagnostics.stream().anyMatch(diagnostic -> "SEM_UNASSIGNED_VARIABLE".equals(diagnostic.code())
+            && diagnostic.message().contains("missingLocal")));
+    }
+
+    @Test
     public void coreDefiniteAssignmentRuleEmitsUnassignedAndIllegalFinalAssignmentDiagnostics() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
@@ -127,6 +205,7 @@ public class CoreDefiniteAssignmentInspectionTest {
         List<Path> sourceFiles = List.of(
             Path.of("src/main/java/dev/railroadide/railroad/ide/sst/impl/java/JavaLexer.java"),
             Path.of("src/main/java/dev/railroadide/railroad/ide/projectexplorer/task/WatchTask.java"),
+            Path.of("src/main/java/dev/railroadide/railroad/ui/UIManager.java"),
             Path.of("src/main/java/dev/railroadide/railroad/config/ConfigHandler.java"));
         List<String> errors = new ArrayList<>();
         for (Path sourceFile : sourceFiles) {

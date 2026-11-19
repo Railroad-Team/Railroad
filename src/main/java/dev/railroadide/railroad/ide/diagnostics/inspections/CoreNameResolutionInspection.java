@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRule;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
@@ -99,11 +100,11 @@ public final class CoreNameResolutionInspection implements JavaInspectionRulePro
     }
 
     private static boolean isTypeSymbol(SymbolKind kind) {
-        return kind == SymbolKind.CLASS
-            || kind == SymbolKind.INTERFACE
-            || kind == SymbolKind.ENUM
-            || kind == SymbolKind.ANNOTATION
-            || kind == SymbolKind.RECORD;
+        return kind == JavaSymbolKind.CLASS
+            || kind == JavaSymbolKind.INTERFACE
+            || kind == JavaSymbolKind.ENUM
+            || kind == JavaSymbolKind.ANNOTATION
+            || kind == JavaSymbolKind.RECORD;
     }
 
     private static void reportAmbiguousNames(JavaRuleContext context, JavaInspectionRuleReporter reporter) {

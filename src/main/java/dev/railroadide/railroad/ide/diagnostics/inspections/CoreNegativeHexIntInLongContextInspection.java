@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
@@ -294,7 +295,7 @@ public class CoreNegativeHexIntInLongContextInspection implements JavaInspection
         if (type == null)
             return false;
 
-        return type.kind() == Type.Kind.PRIMITIVE && "long".equals(type.displayName().toLowerCase(Locale.ROOT));
+        return type.kind() == JavaTypes.Kind.PRIMITIVE && "long".equals(type.displayName().toLowerCase(Locale.ROOT));
     }
 
     private static boolean isLongTypeText(String text) {
@@ -320,10 +321,10 @@ public class CoreNegativeHexIntInLongContextInspection implements JavaInspection
         if (type == null)
             return false;
 
-        if (type.kind() != Type.Kind.ARRAY)
+        if (type.kind() != JavaTypes.Kind.ARRAY)
             return false;
 
-        Type componentType = ((Type.ArrayType) type).componentType();
+        Type componentType = ((JavaTypes.ArrayType) type).componentType();
         return isLongType(componentType);
     }
 }

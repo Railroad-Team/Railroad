@@ -1,5 +1,8 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
+
+import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
@@ -100,8 +103,8 @@ public class CoreAutoCloseableWithoutTryWithResourcesInspection implements JavaI
         if (fromInitializer != null)
             return fromInitializer;
 
-        Type inferredType = context.inferredType(initializer).orElse(new Type.UnknownType("<unknown>"));
-        if (inferredType.kind() == Type.Kind.UNKNOWN)
+        Type inferredType = context.inferredType(initializer).orElse(new JavaTypes.UnknownType("<unknown>"));
+        if (inferredType.kind() == JavaTypes.Kind.UNKNOWN)
             return null;
 
         return context.resolveQualifiedTypeName(inferredType.displayName());
@@ -118,9 +121,10 @@ public class CoreAutoCloseableWithoutTryWithResourcesInspection implements JavaI
             return null;
 
         return switch (symbol.kind()) {
-            case CLASS, INTERFACE, ENUM, ANNOTATION, RECORD -> symbol.qualifiedName().orElse(null);
-            case CONSTRUCTOR -> context.ownerQualifiedName(symbol).orElse(null);
-            case METHOD -> {
+            case JavaSymbolKind.CLASS, JavaSymbolKind.INTERFACE, JavaSymbolKind.ENUM, JavaSymbolKind.ANNOTATION,
+                JavaSymbolKind.RECORD -> symbol.qualifiedName().orElse(null);
+            case JavaSymbolKind.CONSTRUCTOR -> context.ownerQualifiedName(symbol).orElse(null);
+            case JavaSymbolKind.METHOD -> {
                 SyntaxNode declaration = symbol.declaration().orElse(null);
                 if (declaration == null)
                     yield null;

@@ -143,8 +143,10 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
         } else if (JAVA_ENUM_DECLARATION.equals(kindId) || JAVA_RECORD_DECLARATION.equals(kindId)) {
             reportIfPresent(reporter, node, modifiers, JavaTokenType.ABSTRACT_KEYWORD,
                 "'abstract' is not allowed on %s declarations".formatted(typeKindDisplayName(kindId)));
-            reportIfPresent(reporter, node, modifiers, JavaTokenType.FINAL_KEYWORD,
-                "'final' is not allowed on %s declarations".formatted(typeKindDisplayName(kindId)));
+            if (JAVA_ENUM_DECLARATION.equals(kindId)) {
+                reportIfPresent(reporter, node, modifiers, JavaTokenType.FINAL_KEYWORD,
+                    "'final' is not allowed on enum declarations");
+            }
             reportIfPresent(reporter, node, modifiers, JavaTokenType.SEALED_KEYWORD,
                 "'sealed' is not allowed on %s declarations".formatted(typeKindDisplayName(kindId)));
             reportIfPresent(reporter, node, modifiers, JavaTokenType.NON_SEALED_KEYWORD,

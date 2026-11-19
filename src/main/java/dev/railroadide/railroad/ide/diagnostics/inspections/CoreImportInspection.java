@@ -3,6 +3,8 @@ package dev.railroadide.railroad.ide.diagnostics.inspections;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRule;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaImports;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleReporter;
@@ -14,7 +16,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Provides built-in Java inspections for .
+ * Provides built-in Java inspections for duplicate, ambiguous, unresolved and unused imports.
  */
 @RegisteredInspection
 public final class CoreImportInspection implements JavaInspectionRuleProvider {
@@ -26,7 +28,8 @@ public final class CoreImportInspection implements JavaInspectionRuleProvider {
     private static final List<JavaInspectionRule> RULES = List.of(
         rule(JavaSemanticRules.DUPLICATE_IMPORT),
         rule(JavaSemanticRules.AMBIGUOUS_IMPORT),
-        rule(JavaSemanticRules.UNRESOLVED_IMPORT));
+        rule(JavaSemanticRules.UNRESOLVED_IMPORT),
+        rule(JavaSemanticRules.UNUSED_IMPORT));
 
     @Override
     public String id() {
@@ -47,6 +50,7 @@ public final class CoreImportInspection implements JavaInspectionRuleProvider {
                 case "SEM_DUPLICATE_IMPORT" -> CoreImportInspection::reportDuplicateImports;
                 case "SEM_AMBIGUOUS_IMPORT" -> CoreImportInspection::reportAmbiguousImports;
                 case "SEM_UNRESOLVED_IMPORT" -> CoreImportInspection::reportUnresolvedImports;
+                case "SEM_UNUSED_IMPORT" -> CoreImportInspection::reportUnusedImports;
                 default -> (context, reporter) -> {
                 };
             });
@@ -80,6 +84,15 @@ public final class CoreImportInspection implements JavaInspectionRuleProvider {
                 importEntry.importedName(),
                 previous.qualifiedTarget(),
                 importEntry.qualifiedTarget());
+        }
+    }
+
+    private static void reportUnusedImports(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+        for (JavaImports.ImportDeclaration declaration : JavaImports.unusedImports(context.syntaxTree().root(),
+            context::checkActive)) {
+            SyntaxNode target = context.directChild(declaration.node(), "JAVA_IMPORT_TARGET");
+            reporter.report(target == null ? declaration.node() : target,
+                (declaration.isStatic() ? "static " : "") + declaration.target());
         }
     }
 

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -44,6 +45,45 @@ public class DocumentUriTest {
         assertEquals("jar", uri.value().getScheme());
         assertTrue(uri.value().isOpaque());
         assertTrue(uri.filePath().isEmpty());
+    }
+
+    @Test
+    public void extractsFileNamesFromPhysicalVirtualAndArchiveUris() {
+        for (String value : List.of(
+            "file:///project/Example.java",
+            "generated:/demo/Example.java",
+            "jar:file:///libs/example.jar!/demo/Example.java",
+            "generated:/demo/Example.java?revision=2#source")) {
+            assertEquals("Example.java", DocumentUri.parse(value).fileName().orElseThrow());
+        }
+
+        assertEquals("Example.java",
+            DocumentUri.fromPath(tempDirectory.resolve("Example.java")).fileName().orElseThrow());
+    }
+
+    @Test
+    public void decodesFileNamesFromPhysicalVirtualAndArchiveUris() {
+        for (String value : List.of(
+            "file:///project/My%20File.java",
+            "generated:/demo/My%20File.java",
+            "jar:file:///libs/example.jar!/demo/My%20File.java")) {
+            assertEquals("My File.java", DocumentUri.parse(value).fileName().orElseThrow());
+        }
+    }
+
+    @Test
+    public void returnsEmptyWhenNoUsableFileNameExists() {
+        for (String value : List.of(
+            "file:///",
+            "generated:/",
+            "generated://workspace",
+            "generated:/demo/",
+            "jar:file:///libs/example.jar!/",
+            "generated:/demo/.",
+            "generated:/demo/..",
+            "generated:/demo/%20")) {
+            assertTrue(DocumentUri.parse(value).fileName().isEmpty(), value);
+        }
     }
 
     @Test

@@ -2,6 +2,14 @@ package dev.railroadide.railroad.ide.projectexplorer;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.sst.request.api.*;
+import dev.railroadide.railroad.ide.ProjectWorkspaceConfiguration;
+import dev.railroadide.railroad.ide.sst.provider.api.ProviderExecutor;
+import java.time.Duration;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.concurrent.CompletableFuture;
 import dev.railroadide.railroad.command.CommandButtons;
 import dev.railroadide.railroad.command.CommandContext;
 import dev.railroadide.railroad.command.Commands;
@@ -68,6 +76,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     private static boolean fileChangeListenerEnabled = true;
     private final Project project;
     private final ExecutorService executorService = Executors.newFixedThreadPool(3);
+    private final SstScheduler.Scope indexRequests = SstScheduler.shared().newScope();
     private final Future<ProjectLanguageIndexCoordinator> projectLanguageIndexCoordinator;
     private final StringProperty messageProperty = new SimpleStringProperty();
     private final TreeView<PathItem> treeView = new TreeView<>();
@@ -87,59 +96,88 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
      */
     public ProjectExplorerPane(Project project) {
         this.project = project;
-        this.projectLanguageIndexCoordinator = executorService.submit(() -> {
+        shutdownRegistration = ShutdownHooks.registerHook(() -> {
+            indexRequests.close();
+            executorService.shutdownNow();
+        });
+        var indexSession = Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project);
+        this.projectLanguageIndexCoordinator = submitIndex("initialize", request -> {
             try {
-                var coordinator = new ProjectLanguageIndexCoordinator(project);
-                coordinator.warmIndexes();
+                var coordinator = new ProjectLanguageIndexCoordinator(project, indexSession);
+                coordinator.warmIndexes(request);
                 return coordinator;
+            } catch (CancellationException exception) {
+                throw exception;
             } catch (RuntimeException exception) {
                 Railroad.LOGGER.error("Failed to initialize project indexes for {}", project.getPath(), exception);
                 throw exception;
             }
         });
-        Path rootPath = project.getPath();
-        getStyleClass().add("rr-project-explorer");
+        try {
+            Path rootPath = project.getPath();
+            getStyleClass().add("rr-project-explorer");
 
-        this.searchField = new RRTextField("railroad.ide.project_explorer.search_field");
-        this.searchField.getStyleClass().add("rr-search-field");
+            this.searchField = new RRTextField("railroad.ide.project_explorer.search_field");
+            this.searchField.getStyleClass().add("rr-search-field");
 
-        var header = createModernHeader(project);
+            var header = createModernHeader(project);
 
-        this.treeView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-        this.treeView.setRoot(new PathTreeItem(new PathItem(rootPath), Settings.COMPACT_MIDDLE_PACKAGES.getValue()));
-        this.treeView.setEditable(true);
-        this.treeView.getStyleClass().add("rr-tree-view");
-        this.treeView.setCellFactory(_ -> {
-            var cell = new PathTreeCell(messageProperty);
-            handleDragDrop(cell);
-            return cell;
-        });
-        this.treeView.getSelectionModel().selectedItemProperty().addListener((_, _, selectedItem) -> {
-            if (selectedItem == null)
-                return;
+            this.treeView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+            this.treeView
+                .setRoot(new PathTreeItem(new PathItem(rootPath), Settings.COMPACT_MIDDLE_PACKAGES.getValue()));
+            this.treeView.setEditable(true);
+            this.treeView.getStyleClass().add("rr-tree-view");
+            this.treeView.setCellFactory(_ -> {
+                var cell = new PathTreeCell(messageProperty);
+                handleDragDrop(cell);
+                return cell;
+            });
+            this.treeView.getSelectionModel().selectedItemProperty().addListener((_, _, selectedItem) -> {
+                if (selectedItem == null)
+                    return;
 
-            Path selectedPath = selectedItem.getValue().getPath();
-            if (Files.isRegularFile(selectedPath)) {
-                Services.EDITOR_TAB_MANAGER.openPreview(selectedPath);
+                Path selectedPath = selectedItem.getValue().getPath();
+                if (Files.isRegularFile(selectedPath)) {
+                    Services.EDITOR_TAB_MANAGER.openPreview(selectedPath);
+                }
+            });
+            this.treeView.getRoot().setExpanded(true);
+            this.treeView.setMinHeight(0);
+            VBox.setVgrow(this.treeView, Priority.ALWAYS);
+            sortTreeItems(this.treeView.getRoot());
+
+            handleSearchEvents(rootPath);
+
+            var watchTask = new WatchTask(rootPath, this);
+            this.executorService.submit(watchTask);
+
+            getChildren().addAll(header, this.treeView);
+
+            KeybindHandler.registerCapture(KeybindContexts.of("railroad:project_explorer"), this.treeView);
+
+            Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.PROJECT_EXPLORER, this);
+            Settings.COMPACT_MIDDLE_PACKAGES.addListener(compactPackagesListener);
+        } catch (RuntimeException | Error failure) {
+            try {
+                close();
+            } catch (RuntimeException cleanup) {
+                Throwable cause = failure;
+                cause.addSuppressed(cleanup);
             }
-        });
-        this.treeView.getRoot().setExpanded(true);
-        this.treeView.setMinHeight(0);
-        VBox.setVgrow(this.treeView, Priority.ALWAYS);
-        sortTreeItems(this.treeView.getRoot());
+            throw failure;
+        }
+    }
 
-        handleSearchEvents(rootPath);
-
-        var watchTask = new WatchTask(rootPath, this);
-        this.executorService.submit(watchTask);
-
-        getChildren().addAll(header, this.treeView);
-
-        KeybindHandler.registerCapture(KeybindContexts.of("railroad:project_explorer"), this.treeView);
-
-        shutdownRegistration = ShutdownHooks.registerHook(this.executorService::shutdownNow);
-        Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.PROJECT_EXPLORER, this);
-        Settings.COMPACT_MIDDLE_PACKAGES.addListener(compactPackagesListener);
+    private <T> CompletableFuture<T> submitIndex(Object key, Function<RequestContext, T> operation) {
+        WorkspaceSnapshot workspace = Services.IDE_STATE.getDocumentStore().map(DocumentStore::capture)
+            .filter(snapshot -> snapshot.projectId().equals(project.getId()))
+            .orElseGet(() -> new WorkspaceSnapshot(project.getId(), Map.of(),
+                ProjectWorkspaceConfiguration.initial(project), 0));
+        var cancellation = new CancellationTokenSource();
+        Duration budget = Duration.ofMinutes(5);
+        var context = new WorkspaceRequestContext(workspace, cancellation.token(), Deadline.after(budget));
+        return indexRequests.submit(key, RequestPriority.BACKGROUND_INDEXING, context, cancellation,
+            () -> ProviderExecutor.shared().executeWithContext("project-index", context, budget, operation));
     }
 
     @Override
@@ -150,6 +188,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         closed = true;
         Settings.COMPACT_MIDDLE_PACKAGES.removeListener(compactPackagesListener);
         shutdownRegistration.close();
+        indexRequests.close();
         projectLanguageIndexCoordinator.cancel(true);
         executorService.shutdownNow();
     }
@@ -514,14 +553,21 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         try {
             // This callback runs on the watcher thread. Wait here so changes observed
             // during initialization are applied after the initial index is ready.
-            projectLanguageIndexCoordinator.get().handleFileChange(path, kind);
+            ProjectLanguageIndexCoordinator coordinator = projectLanguageIndexCoordinator.get();
+            submitIndex(path, request -> {
+                coordinator.handleFileChange(path, kind, request);
+                return null;
+            }).get();
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             return;
         } catch (CancellationException exception) {
+            Services.PROJECT_LANGUAGE_INDEX_SERVICE.invalidateProject(project);
             return;
         } catch (ExecutionException exception) {
-            // Initialization already logged the failure; keep the explorer usable.
+            Services.PROJECT_LANGUAGE_INDEX_SERVICE.invalidateProject(project);
+            Railroad.LOGGER.warn("Project index update was not completed for {}; invalidating cached indexes", path,
+                exception.getCause());
         }
         if (kind != StandardWatchEventKinds.ENTRY_CREATE && kind != StandardWatchEventKinds.ENTRY_DELETE)
             return;

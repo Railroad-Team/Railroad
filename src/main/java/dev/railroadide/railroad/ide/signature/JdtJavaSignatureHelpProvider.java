@@ -1,25 +1,151 @@
 package dev.railroadide.railroad.ide.signature;
 
 import dev.railroadide.railroad.ide.completion.JdtCompletionProvider;
+import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import org.eclipse.jdt.core.dom.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.List;
+import dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.language.impl.index.JavaWorkspaceAnalysis;
+import java.nio.file.Files;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.util.stream.Stream;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import dev.railroadide.railroad.ide.sst.request.api.*;
 
 /**
  * Signature help provider backed by Eclipse JDT. Responsible solely for
  * analysing the document and producing {@link SignatureHelp} records; UI logic
  * remains in the editor.
  *
- * @param filePath source file path used for analysis
+ * @param filePath optional legacy file context; signature help uses the supplied snapshot
  * @param systemModulePaths paths supplied to the JDT binding environment
+ * @param analysis captures Java analysis for the request workspace and cancellation controls
+ * @param sourceCache source cache owned and closed by this provider
  */
-public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModulePaths) implements SignatureHelpProvider {
+public record JdtJavaSignatureHelpProvider(
+    @Nullable Path filePath,
+    String[] systemModulePaths,
+    Function<RequestContext, JavaWorkspaceAnalysis> analysis,
+    JavaSignatureSourceCache sourceCache
+)
+    implements
+        SignatureHelpProvider,
+        AutoCloseable {
+    /**
+     * Creates signature help with the shared Java analysis context and a new source cache.
+     *
+     * @param filePath optional file context; requests use their captured document snapshot
+     * @param systemModulePaths module paths supplied to the JDT binding environment
+     */
+    public JdtJavaSignatureHelpProvider(Path filePath, String[] systemModulePaths) {
+        this(filePath, systemModulePaths, JavaLanguageSupport.analysisContextProvider()::index,
+            new JavaSignatureSourceCache(4));
+    }
+
+    /**
+     * Creates signature help with caller-supplied analysis and source caching, copying the module paths.
+     *
+     * @param filePath optional file context; requests use their captured document snapshot
+     * @param systemModulePaths module paths supplied to the JDT binding environment
+     * @param analysis captures Java analysis for the request workspace and cancellation controls
+     * @param sourceCache source cache owned and closed by this provider
+     */
+    public JdtJavaSignatureHelpProvider {
+        systemModulePaths = systemModulePaths.clone();
+        Objects.requireNonNull(analysis, "analysis");
+        Objects.requireNonNull(sourceCache, "sourceCache");
+    }
+
     @Override
-    public @Nullable SignatureHelp compute(String document, int caretPosition) {
-        if (document == null || document.isEmpty() || caretPosition < 0)
+    public void close() {
+        sourceCache.close();
+    }
+
+    /**
+     * Creates a JDT provider whose document location is supplied by each snapshot.
+     *
+     * @param systemModulePaths paths supplied to the JDT binding environment
+     */
+    public JdtJavaSignatureHelpProvider(String[] systemModulePaths) {
+        this(null, systemModulePaths);
+    }
+
+    @Override
+    public @Nullable SignatureHelp compute(DocumentSnapshot snapshot, int caretPosition) {
+        return compute(snapshot, caretPosition, systemModulePaths, null, JavaSignatureSources::checkCancelled);
+    }
+
+    @Override
+    public @Nullable SignatureHelp compute(WorkspaceSnapshot workspace, DocumentId id, int caretPosition) {
+        return compute(new FeatureRequestContext(workspace, workspace.document(id).orElseThrow(),
+            CancellationToken.none(), Deadline.none()), caretPosition).value();
+    }
+
+    @Override
+    public FeatureResult<SignatureHelp> compute(FeatureRequestContext context, int caretPosition) {
+        context.checkActive();
+        SignatureHelp result = computeCaptured(context, caretPosition);
+        context.checkActive();
+        return new FeatureResult<>(context, result);
+    }
+
+    private @Nullable SignatureHelp computeCaptured(FeatureRequestContext context, int caretPosition) {
+        DocumentSnapshot snapshot = context.documentSnapshot();
+        if (!(snapshot instanceof TextDocumentSnapshot text) || !"java".equals(text.languageId()))
+            return null;
+        context.checkActive();
+        JavaWorkspaceAnalysis analysis = this.analysis.apply(context);
+        context.checkActive();
+        try (JavaSignatureSourceCache.Lease sources = sourceCache.acquire(analysis, text, context::checkActive)) {
+            List<String> classpath = new ArrayList<>(analysis.classpath().stream().map(Path::toString).toList());
+            Path jmods = analysis.jdkHome().resolve("jmods");
+            if (Files.isDirectory(jmods)) {
+                try (Stream<Path> modules = Files.list(jmods)) {
+                    modules.peek(_ -> context.checkActive())
+                        .filter(path -> path.getFileName().toString().endsWith(".jmod"))
+                        .sorted().map(Path::toString).forEach(classpath::add);
+                }
+            } else {
+                for (String runtime : List.of("jre/lib/rt.jar", "lib/rt.jar")) {
+                    context.checkActive();
+                    Path archive = analysis.jdkHome().resolve(runtime);
+                    if (Files.isRegularFile(archive)) {
+                        classpath.add(archive.toString());
+                        break;
+                    }
+                }
+            }
+            return compute(snapshot, caretPosition, classpath.toArray(String[]::new),
+                new String[]{sources.directory().toString()}, context::checkActive);
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Cannot prepare captured Java sources for signature help", exception);
+        }
+    }
+
+    private @Nullable SignatureHelp compute(
+        DocumentSnapshot snapshot,
+        int caretPosition,
+        String[] classpath,
+        String[] sourceRoots,
+        Runnable activityCheck
+    ) {
+        if (!(snapshot instanceof TextDocumentSnapshot textSnapshot)
+            || !JavaLanguageSupport.LANGUAGE_ID.equals(textSnapshot.languageId()))
+            return null;
+
+        String document = textSnapshot.text();
+        if (document.isEmpty() || caretPosition < 0)
             return null;
 
         ASTParser parser = ASTParser.newParser(AST.getJLSLatest()); // TODO: Detect version from project settings
@@ -28,16 +154,26 @@ public record JdtJavaSignatureHelpProvider(Path filePath, String[] systemModuleP
         parser.setResolveBindings(true);
         parser.setBindingsRecovery(true);
         parser.setStatementsRecovery(true);
-        parser.setUnitName(filePath.getFileName().toString());
-        parser.setEnvironment(systemModulePaths, null, null, false);
+        parser.setUnitName(snapshot.uri().fileName().orElse("Snapshot.java"));
+        parser.setEnvironment(classpath, sourceRoots,
+            sourceRoots == null ? null : new String[]{StandardCharsets.UTF_8.name()}, false);
 
-        CompilationUnit unit = (CompilationUnit) parser.createAST(null);
+        activityCheck.run();
+        CompilationUnit unit = (CompilationUnit) parser.createAST(new NullProgressMonitor() {
+            @Override
+            public boolean isCanceled() {
+                activityCheck.run();
+                return Thread.currentThread().isInterrupted() || super.isCanceled();
+            }
+        });
+        activityCheck.run();
         int searchAt = Math.max(0,
             Math.min(Math.max(document.length() - 1, 0), caretPosition > 0 ? caretPosition - 1 : 0));
         var finder = new NodeFinder(unit, searchAt, 0);
         ASTNode node = finder.getCoveringNode();
 
         while (node != null) {
+            activityCheck.run();
             SignatureHelp result = switch (node) {
                 case MethodInvocation invocation ->
                     buildSignatureHelpForMethodInvocation(invocation, caretPosition, document);

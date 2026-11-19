@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.impl.java.JavaUnicodeEscapes;
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
@@ -135,6 +137,12 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 return;
 
             FlowState state = FlowState.initial();
+            SyntaxNode captureBoundary = enclosingCaptureBoundary(node);
+            if (captureBoundary != null) {
+                for (CapturedUse capture : capturedUses(context, captureBoundary)) {
+                    state = state.assign(capture.symbol());
+                }
+            }
             SyntaxNode parameterList = context.directChild(node, JAVA_PARAMETER_LIST);
             if (parameterList != null) {
                 for (SyntaxNode child : parameterList.children()) {
@@ -714,6 +722,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         @Nullable JavaInspectionRuleReporter illegalFinalReporter
     ) {
         String kindId = node.kind().id();
+        if (isCaptureBoundary(node))
+            return analyzeCaptures(context, node, state, unassignedReporter);
         if (ANALYSIS_BARRIERS.contains(kindId))
             return state;
 
@@ -779,6 +789,8 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         @Nullable JavaInspectionRuleReporter illegalFinalReporter
     ) {
         String kindId = node.kind().id();
+        if (isCaptureBoundary(node))
+            return analyzeCaptures(context, node, state, unassignedReporter);
         if (ANALYSIS_BARRIERS.contains(kindId))
             return state;
 
@@ -804,6 +816,65 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             current = analyzeReads(context, child, current, unassignedReporter, illegalFinalReporter);
         }
         return current;
+    }
+
+    private static FlowState analyzeCaptures(
+        JavaRuleContext context,
+        SyntaxNode node,
+        FlowState state,
+        @Nullable JavaInspectionRuleReporter unassignedReporter
+    ) {
+        if (unassignedReporter != null) {
+            for (CapturedUse capture : capturedUses(context, node)) {
+                if (!state.definitelyAssigned().contains(variableKey(capture.symbol()))) {
+                    unassignedReporter.report(capture.node(), capture.symbol().simpleName());
+                }
+            }
+        }
+        return state;
+    }
+
+    private static boolean isCaptureBoundary(SyntaxNode node) {
+        return "JAVA_ANONYMOUS_CLASS_BODY".equals(node.kind().id())
+            || JAVA_CLASS_DECLARATION.equals(node.kind().id());
+    }
+
+    private static @Nullable SyntaxNode enclosingCaptureBoundary(SyntaxNode executable) {
+        for (SyntaxNode parent = executable.parent().orElse(null); parent != null; parent = parent.parent()
+            .orElse(null)) {
+            if (isCaptureBoundary(parent))
+                return parent;
+            if (ANALYSIS_BARRIERS.contains(parent.kind().id()))
+                return null;
+        }
+        return null;
+    }
+
+    private static List<CapturedUse> capturedUses(JavaRuleContext context, SyntaxNode boundary) {
+        List<CapturedUse> captures = new ArrayList<>();
+        context.traverseDescendants(boundary, node -> {
+            if (!JAVA_NAME_EXPRESSION.equals(node.kind().id()))
+                return;
+            Symbol symbol = context.resolvedSymbol(node).orElse(null);
+            if (!isTrackedVariable(symbol) || !isVisibleAtUse(symbol, node))
+                return;
+            SyntaxNode declaration = symbol.declaration().orElse(null);
+            if (declaration != null && !inside(declaration, boundary)) {
+                captures.add(new CapturedUse(node, symbol));
+            }
+        });
+        return captures;
+    }
+
+    private static boolean inside(SyntaxNode node, SyntaxNode ancestor) {
+        for (SyntaxNode current = node; current != null; current = current.parent().orElse(null)) {
+            if (current == ancestor)
+                return true;
+        }
+        return false;
+    }
+
+    private record CapturedUse(SyntaxNode node, Symbol symbol) {
     }
 
     private static FlowState applyWrite(
@@ -832,7 +903,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         if (symbol.declaration().map(declaration -> "JAVA_RECORD_COMPONENT".equals(declaration.kind().id()))
             .orElse(false))
             return false;
-        return symbol.kind() == SymbolKind.LOCAL_VARIABLE || symbol.kind() == SymbolKind.PARAMETER;
+        return symbol.kind() == JavaSymbolKind.LOCAL_VARIABLE || symbol.kind() == JavaSymbolKind.PARAMETER;
     }
 
     private static boolean isVisibleAtUse(Symbol symbol, SyntaxNode usageNode) {
@@ -1635,7 +1706,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
 
     private static void collectIdentifierLikeTokens(SyntaxNode node, List<String> out) {
         if (node instanceof SyntaxToken token) {
-            String text = token.text();
+            String text = JavaUnicodeEscapes.translate(token.text());
             if (!text.isBlank()
                 && Character.isJavaIdentifierStart(text.charAt(0))
                 && !"break".equals(text)

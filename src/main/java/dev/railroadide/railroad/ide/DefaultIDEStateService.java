@@ -1,27 +1,29 @@
 package dev.railroadide.railroad.ide;
 
+import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
+import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
+
 import dev.railroadide.railroad.Railroad;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentityRegistry;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
+import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.edit.WorkspaceEditService;
+import dev.railroadide.railroad.ide.edit.WorkspaceEditorHost;
+import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.events.DocumentEvent;
 import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
 import dev.railroadide.railroad.plugin.spi.services.IDEStateService;
+import javafx.application.Platform;
 import lombok.Getter;
 
+import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Tracks the current project and open documents and publishes their lifecycle events.
+ * Owns one document store for the current project session, releasing it on project close.
  */
 @Getter
 public class DefaultIDEStateService implements IDEStateService {
@@ -29,9 +31,25 @@ public class DefaultIDEStateService implements IDEStateService {
     private final Map<Document, Long> openDocuments = new LinkedHashMap<>();
     private final Map<Path, Long> recentFiles = new HashMap<>();
     private DocumentIdentityRegistry documentIdentities = new DocumentIdentityRegistry();
-    private Project currentProject;
+    private volatile DocumentStore documentStore;
+    private volatile Project currentProject;
+    private ProjectWorkspaceConfiguration workspaceConfiguration;
+    @Getter(lombok.AccessLevel.NONE)
+    private ProjectDocumentSynchronizer documentSynchronizer;
+    @Getter(lombok.AccessLevel.NONE)
+    private WorkspaceEditService workspaceEdits;
     private long openedProjectAtMillis = -1L;
     private Document activeDocument;
+
+    /**
+     * Reports project watcher coverage for editor presentation ownership. Call on the editor UI thread.
+     *
+     * @param path physical document location
+     * @return whether the current project synchronizer covers the path
+     */
+    public boolean isDocumentWatched(Path path) {
+        return documentSynchronizer != null && documentSynchronizer.covers(path);
+    }
 
     private DefaultIDEStateService() {
         Railroad.EVENT_BUS.subscribe(ProjectEvent.class, event -> {
@@ -57,6 +75,75 @@ public class DefaultIDEStateService implements IDEStateService {
     }
 
     private void setCurrentProject_internal(Project project) {
+        if (project != currentProject) {
+            var previousSession = Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(currentProject);
+            Services.PROJECT_LANGUAGE_INDEX_SERVICE.closeProject(previousSession);
+            JavaLanguageSupport.analysisContextProvider()
+                .closeSession(previousSession);
+            if (currentProject != null) {
+                try {
+                    LanguageSupportRegistry.runtime().closeProject(currentProject);
+                } catch (RuntimeException exception) {
+                    Railroad.LOGGER.error("Unable to dispose all language providers for the previous project",
+                        exception);
+                }
+            }
+            if (project != null) {
+                Services.PROJECT_LANGUAGE_INDEX_SERVICE.openProject(project);
+            }
+            if (workspaceEdits != null) {
+                workspaceEdits.close();
+                workspaceEdits = null;
+            }
+            if (documentSynchronizer != null) {
+                documentSynchronizer.close();
+                documentSynchronizer = null;
+            }
+            WorkspaceConfigurationSnapshot initialConfiguration = project == null
+                ? null
+                : ProjectWorkspaceConfiguration.initial(project);
+            if (initialConfiguration != null) {
+                var values = new HashMap<>(initialConfiguration.settings());
+                values.put("index.session", Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project).id());
+                values.put("index.binary.epoch", "pending");
+                initialConfiguration = new WorkspaceConfigurationSnapshot(0, initialConfiguration.moduleIds(), values);
+            }
+            if (workspaceConfiguration != null) {
+                workspaceConfiguration.close();
+                workspaceConfiguration = null;
+            }
+            documentStore = project == null
+                ? null
+                : new DefaultDocumentStore(project.getId(), initialConfiguration);
+            if (project != null) {
+                workspaceConfiguration = new ProjectWorkspaceConfiguration(project, documentStore);
+                workspaceEdits = new WorkspaceEditService(project.getPath(), documentStore, documentIdentities,
+                    new WorkspaceEditorHost() {
+                        @Override
+                        public Optional<TextEditorPane> openEditor(DocumentId id) {
+                            return Services.EDITOR_TAB_MANAGER.openTextEditor(id);
+                        }
+
+                        @Override
+                        public boolean isOpen(DocumentId id) {
+                            return Services.EDITOR_TAB_MANAGER.hasOpenTab(id);
+                        }
+
+                        @Override
+                        public void relocate(DocumentIdentity identity, Path newPath) {
+                            Services.EDITOR_TAB_MANAGER.relocateDocument(identity, newPath);
+                        }
+                    });
+                try {
+                    documentSynchronizer = new ProjectDocumentSynchronizer(project.getPath(), documentStore,
+                        documentIdentities,
+                        id -> Services.EDITOR_TAB_MANAGER.hasOpenTextEditor(id),
+                        Platform::runLater);
+                } catch (IOException exception) {
+                    Railroad.LOGGER.error("Unable to monitor workspace documents", exception);
+                }
+            }
+        }
         this.currentProject = project;
         this.openedProjectAtMillis = project != null ? System.currentTimeMillis() : -1L;
         if (project == null) {
@@ -136,6 +223,20 @@ public class DefaultIDEStateService implements IDEStateService {
             .flatMap(firstIdentity -> documentIdentities.findIdentity(second.getUri())
                 .map(secondIdentity -> firstIdentity.id().equals(secondIdentity.id())))
             .orElse(false);
+    }
+
+    /**
+     * Returns the current project's workspace-edit service. Call on the JavaFX application thread.
+     *
+     * @return service owning transactional edits and their shared undo history, or empty without a project
+     */
+    public Optional<WorkspaceEditService> getWorkspaceEdits() {
+        return Optional.ofNullable(workspaceEdits);
+    }
+
+    @Override
+    public Optional<DocumentStore> getDocumentStore() {
+        return Optional.ofNullable(documentStore);
     }
 
     @Override

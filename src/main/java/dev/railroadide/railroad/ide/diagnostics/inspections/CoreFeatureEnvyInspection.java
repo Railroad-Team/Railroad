@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
@@ -73,7 +74,7 @@ public class CoreFeatureEnvyInspection implements JavaInspectionRuleProvider {
                     return;
 
                 Symbol symbol = context.resolvedSymbol(descendant).orElse(null);
-                if (symbol == null || (symbol.kind() != SymbolKind.FIELD && symbol.kind() != SymbolKind.METHOD))
+                if (symbol == null || (symbol.kind() != JavaSymbolKind.FIELD && symbol.kind() != JavaSymbolKind.METHOD))
                     return;
 
                 if (Modifier.isStatic(context.symbolModifiers(symbol)))
@@ -123,7 +124,7 @@ public class CoreFeatureEnvyInspection implements JavaInspectionRuleProvider {
                     return;
 
                 Symbol symbol = context.resolvedSymbol(descendant).orElse(null);
-                if (symbol == null || (symbol.kind() != SymbolKind.FIELD && symbol.kind() != SymbolKind.METHOD))
+                if (symbol == null || (symbol.kind() != JavaSymbolKind.FIELD && symbol.kind() != JavaSymbolKind.METHOD))
                     return;
 
                 if (Modifier.isStatic(context.symbolModifiers(symbol)))

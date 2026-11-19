@@ -18,6 +18,9 @@ public class ClassStubVisitor extends ClassVisitor {
     private final List<AnnotationStub> annotations = new ArrayList<>();
     private String className;
     private String packageName;
+    private String internalClassName;
+    private String enclosingClassName;
+    private boolean innerInstance;
     private int modifiers;
     private List<TypeParameter> typeParameters = new ArrayList<>();
     private Type superClass;
@@ -32,6 +35,7 @@ public class ClassStubVisitor extends ClassVisitor {
 
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+        internalClassName = name;
         int lastSlashIndex = name.lastIndexOf('/');
         this.className = (lastSlashIndex == -1) ? name : name.substring(lastSlashIndex + 1);
         this.packageName = (lastSlashIndex == -1) ? "" : name.substring(0, lastSlashIndex).replace('/', '.');
@@ -58,6 +62,19 @@ public class ClassStubVisitor extends ClassVisitor {
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
         String annotationName = org.objectweb.asm.Type.getType(descriptor).getClassName();
         return new AnnotationStubVisitor(annotationName, this.annotations::add);
+    }
+
+    @Override
+    public void visitInnerClass(String name, String outerName, String innerName, int access) {
+        if (name.equals(internalClassName) && outerName != null) {
+            enclosingClassName = outerName.replace('/', '.');
+            innerInstance = (access & Opcodes.ACC_STATIC) == 0;
+        }
+    }
+
+    @Override
+    public void visitOuterClass(String owner, String name, String descriptor) {
+        enclosingClassName = owner.replace('/', '.');
     }
 
     @Override
@@ -117,6 +134,23 @@ public class ClassStubVisitor extends ClassVisitor {
             returnType = Type.fromAsmType(org.objectweb.asm.Type.getReturnType(descriptor));
         }
 
+        int hiddenParameters = 0;
+        if (name.equals("<init>")) {
+            org.objectweb.asm.Type[] descriptorParameters = org.objectweb.asm.Type.getArgumentTypes(descriptor);
+            if ((modifiers & Opcodes.ACC_ENUM) != 0 && descriptorParameters.length >= 2
+                && descriptorParameters[0].getClassName().equals("java.lang.String")
+                && descriptorParameters[1].equals(org.objectweb.asm.Type.INT_TYPE)) {
+                hiddenParameters = 2;
+            } else if (innerInstance && descriptorParameters.length > 0
+                && descriptorParameters[0].getClassName().equals(enclosingClassName)) {
+                hiddenParameters = 1;
+            }
+            // Generic signatures can already omit the compiler-supplied constructor prefix.
+            if (hiddenParameters > 0
+                && parameterTypes.size() == descriptorParameters.length) {
+                parameterTypes = parameterTypes.subList(hiddenParameters, parameterTypes.size());
+            }
+        }
         List<String> parameterNames = new ArrayList<>();
         List<List<AnnotationStub>> parameterAnnotations = new ArrayList<>(parameterTypes.size());
         for (int i = 0; i < parameterTypes.size(); i++) {
@@ -142,7 +176,8 @@ public class ClassStubVisitor extends ClassVisitor {
             parameterAnnotations,
             methodAnnotations,
             methodTypeParameters,
-            thrownTypes);
+            thrownTypes,
+            hiddenParameters);
     }
 
     /**
@@ -174,7 +209,8 @@ public class ClassStubVisitor extends ClassVisitor {
             methods,
             constructors,
             modifiers,
-            annotations);
+            annotations,
+            enclosingClassName);
     }
 
     private static class AnnotationStubVisitor extends AnnotationVisitor {
@@ -387,6 +423,8 @@ public class ClassStubVisitor extends ClassVisitor {
         private final List<TypeParameter> finalMethodTypeParameters;
         private final List<Type> thrownTypes;
         private int parameterIndex = 0;
+        private final int hiddenParameters;
+        private int annotationOffset;
 
         public MethodStubVisitor(
             int access,
@@ -397,7 +435,8 @@ public class ClassStubVisitor extends ClassVisitor {
             List<List<AnnotationStub>> parameterAnnotations,
             List<AnnotationStub> methodAnnotations,
             List<TypeParameter> finalMethodTypeParameters,
-            List<Type> thrownTypes
+            List<Type> thrownTypes,
+            int hiddenParameters
         ) {
             super(Opcodes.ASM9);
             this.access = access;
@@ -409,19 +448,27 @@ public class ClassStubVisitor extends ClassVisitor {
             this.methodAnnotations = methodAnnotations;
             this.finalMethodTypeParameters = finalMethodTypeParameters;
             this.thrownTypes = List.copyOf(thrownTypes);
+            this.hiddenParameters = hiddenParameters;
+            this.annotationOffset = hiddenParameters;
         }
 
         @Override
         public void visitParameter(String name, int access) {
-            if (parameterIndex < parameterNames.size()) {
-                parameterNames.set(parameterIndex, name);
-                parameterIndex++;
+            int sourceIndex = parameterIndex++ - hiddenParameters;
+            if (sourceIndex >= 0 && sourceIndex < parameterNames.size()) {
+                parameterNames.set(sourceIndex, name);
             }
         }
 
         @Override
+        public void visitAnnotableParameterCount(int parameterCount, boolean visible) {
+            annotationOffset = Math.max(0, parameterCount - parameterTypes.size());
+        }
+
+        @Override
         public AnnotationVisitor visitParameterAnnotation(int parameterIndex, String descriptor, boolean visible) {
-            if (parameterIndex < parameterAnnotations.size()) {
+            parameterIndex -= annotationOffset;
+            if (parameterIndex >= 0 && parameterIndex < parameterAnnotations.size()) {
                 String annotationName = org.objectweb.asm.Type.getType(descriptor).getClassName();
                 return new AnnotationStubVisitor(annotationName, parameterAnnotations.get(parameterIndex)::add);
             }

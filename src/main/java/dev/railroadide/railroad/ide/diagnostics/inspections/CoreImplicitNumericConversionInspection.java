@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
@@ -136,7 +137,7 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
 
         SyntaxNode left = expressionChildren.get(0);
         SyntaxNode right = expressionChildren.get(1);
-        Type leftType = context.inferredType(left).orElse(new Type.UnknownType("<unknown>"));
+        Type leftType = context.inferredType(left).orElse(new JavaTypes.UnknownType("<unknown>"));
         if (context.hasOperatorToken(node, JavaTokenType.EQUALS)) {
             reportImplicitConversion(context, reporter, right, leftType);
             return;
@@ -155,7 +156,7 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
         if (!isNumericPrimitive(leftType))
             return;
 
-        Type rightType = context.inferredType(rightExpression).orElse(new Type.UnknownType("<unknown>"));
+        Type rightType = context.inferredType(rightExpression).orElse(new JavaTypes.UnknownType("<unknown>"));
         if (!isNumericPrimitive(rightType))
             return;
 
@@ -195,7 +196,7 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
         if (returnTypeRef == null)
             return;
 
-        Type returnType = context.inferredType(returnTypeRef).orElse(new Type.UnknownType("<unknown>"));
+        Type returnType = context.inferredType(returnTypeRef).orElse(new JavaTypes.UnknownType("<unknown>"));
         reportImplicitConversion(context, reporter, expression, returnType);
     }
 
@@ -232,8 +233,8 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
 
             if (argumentCount > parameterTypes.size()
                 && argumentIndex >= parameterTypes.size() - 1
-                && directParameterType.kind() == Type.Kind.ARRAY)
-                return ((Type.ArrayType) directParameterType).componentType();
+                && directParameterType.kind() == JavaTypes.Kind.ARRAY)
+                return ((JavaTypes.ArrayType) directParameterType).componentType();
 
             return directParameterType;
         }
@@ -242,8 +243,8 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
             return null;
 
         Type lastParameterType = parameterTypes.getLast();
-        if (lastParameterType.kind() == Type.Kind.ARRAY)
-            return ((Type.ArrayType) lastParameterType).componentType();
+        if (lastParameterType.kind() == JavaTypes.Kind.ARRAY)
+            return ((JavaTypes.ArrayType) lastParameterType).componentType();
 
         return null;
     }
@@ -305,7 +306,7 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
         if (isExplicitCastExpression(sourceExpression))
             return;
 
-        Type sourceType = context.inferredType(sourceExpression).orElse(new Type.UnknownType("<unknown>"));
+        Type sourceType = context.inferredType(sourceExpression).orElse(new JavaTypes.UnknownType("<unknown>"));
         ConversionKind conversionKind = classifyImplicitConversion(sourceType, targetType);
         if (conversionKind == null)
             return;
@@ -350,7 +351,7 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
 
     private static boolean isNumericPrimitive(Type type) {
         return type != null
-            && type.kind() == Type.Kind.PRIMITIVE
+            && type.kind() == JavaTypes.Kind.PRIMITIVE
             && NUMERIC_PRIMITIVES.contains(type.displayName());
     }
 

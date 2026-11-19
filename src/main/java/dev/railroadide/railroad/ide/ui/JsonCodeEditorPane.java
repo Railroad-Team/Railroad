@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorConfig;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -56,11 +57,12 @@ public class JsonCodeEditorPane extends CodeEditorPane {
      * Creates a JSON editor with schema validation and syntax highlighting.
      *
      * @param project project whose files and workspace are being displayed
+     * @param documentId authoritative logical identity shared with the editor tab
      * @param item file to open in the editor
      * @param config language-service configuration for the editor
      */
-    public JsonCodeEditorPane(Project project, Path item, CodeEditorConfig config) {
-        super(project, item, config);
+    public JsonCodeEditorPane(Project project, DocumentId documentId, Path item, CodeEditorConfig config) {
+        super(project, documentId, item, config);
         autoInsertPairs();
         autoIndentOnEnter();
 

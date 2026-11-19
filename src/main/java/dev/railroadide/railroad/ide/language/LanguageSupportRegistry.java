@@ -1,132 +1,225 @@
 package dev.railroadide.railroad.ide.language;
 
-import dev.railroadide.railroad.ide.language.impl.ImageLanguageSupport;
 import dev.railroadide.railroad.ide.language.impl.PlainTextLanguageSupport;
-import dev.railroadide.railroad.registry.Registry;
-import dev.railroadide.railroad.registry.RegistryManager;
+import dev.railroadide.railroad.ide.language.index.LanguageNotSupportedException;
+import dev.railroadide.railroad.ide.sst.provider.api.*;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorConfig;
+import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.utility.FileUtils;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import dev.railroadide.railroad.ide.sst.document.api.ContentKind;
+import javafx.scene.control.Label;
 
-/**
- * Maintains ordered language support registrations and resolves editor languages for files.
- */
+/** Host presentation and storage adapter over the single language runtime. */
 public final class LanguageSupportRegistry {
-    /**
-     * Ordered registry of language support implementations keyed by language identifier.
-     */
-    public static final Registry<LanguageSupport> REGISTRY = RegistryManager
-        .createOrderedRegistry("railroad:language_support", LanguageSupport.class);
+    private static final LanguageRuntime RUNTIME = new LanguageRuntime();
 
     private LanguageSupportRegistry() {
     }
 
     /**
-     * Registers a language support implementation under its language identifier.
+     * Returns the shared runtime used by host and plugin language contributions.
      *
-     * @param support the language support to register
+     * @return the application language runtime
+     */
+    public static LanguageRuntime runtime() {
+        return RUNTIME;
+    }
+
+    /**
+     * Registers host language support under the Railroad owner.
+     *
+     * @param support language presentation and session factory to register
      */
     public static void register(LanguageSupport support) {
-        if (support == null)
-            throw new IllegalArgumentException("Language support cannot be null.");
-
-        REGISTRY.register(support.languageId(), support);
+        RUNTIME.register("railroad", support);
     }
 
     /**
-     * Registers each supplied language support implementation in iteration order.
+     * Registers each host language in collection order. Earlier registrations remain if a later one fails.
      *
-     * @param supports the language support implementations
+     * @param supports language supports to register
      */
     public static void registerAll(Collection<? extends LanguageSupport> supports) {
-        if (supports == null)
-            throw new IllegalArgumentException("Language supports cannot be null.");
-
-        for (LanguageSupport support : supports) {
-            register(support);
-        }
+        supports.forEach(LanguageSupportRegistry::register);
     }
 
     /**
-     * Looks up registered language support by identifier.
+     * Resolves a language and adapts independent contributions to host editor support.
      *
-     * @param languageId the stable language identifier
-     * @return the registered support, or an empty optional if absent
+     * @param languageId host storage identifier or namespaced contribution identifier
+     * @return the host language support, or empty if unregistered
      */
     public static Optional<LanguageSupport> get(String languageId) {
-        if (languageId == null)
-            throw new IllegalArgumentException("Language id cannot be null.");
-
-        return Optional.ofNullable(REGISTRY.get(languageId));
+        Objects.requireNonNull(languageId, "languageId");
+        return RUNTIME.all().stream().filter(contribution -> contribution.id().value().equals(languageId)
+            || hostLanguageId(contribution).equals(languageId)).findFirst().map(LanguageSupportRegistry::present);
     }
 
     /**
-     * Checks whether a language identifier is registered.
+     * Resolves required language support.
      *
-     * @param languageId the stable language identifier
-     * @return {@code true} if a registration exists
+     * @param languageId host storage identifier or namespaced contribution identifier
+     * @return the registered host language support
+     * @throws LanguageNotSupportedException if the language is not registered
+     */
+    public static LanguageSupport getExpected(String languageId) {
+        return get(languageId).orElseThrow(() -> new LanguageNotSupportedException(languageId));
+    }
+
+    /**
+     * Checks whether language support is registered.
+     *
+     * @param languageId host storage identifier or namespaced contribution identifier
+     * @return whether a matching registration exists
      */
     public static boolean contains(String languageId) {
-        if (languageId == null)
-            throw new IllegalArgumentException("Language id cannot be null.");
-
-        return REGISTRY.contains(languageId);
+        return get(languageId).isPresent();
     }
 
     /**
-     * Finds the first registered language support accepting the path.
+     * Selects host language support using runtime file recognition.
      *
-     * @param path the file path to inspect
-     * @return the first matching support, or an empty optional if none matches
+     * @param path file to recognize
+     * @return the matching language support, or empty if none matches
      */
     public static Optional<LanguageSupport> find(Path path) {
-        return REGISTRY.values().stream()
-            .filter(support -> support.supports(path))
-            .findFirst();
+        return RUNTIME.find(path).map(LanguageSupportRegistry::present);
     }
 
     /**
-     * Resolves a registered language, then falls back to image, binary, or plain text recognition.
+     * Resolves the storage language identifier, falling back to binary or plain text when no contribution matches.
      *
-     * @param path the file path to inspect
-     * @return the resolved language identifier
+     * @param path file to recognize
+     * @return the selected or fallback host language identifier
      */
     public static String resolveLanguageId(Path path) {
-        if (path == null)
-            throw new IllegalArgumentException("Path cannot be null.");
-
-        return find(path)
-            .map(LanguageSupport::languageId)
-            .orElseGet(() -> {
-                if (ImageLanguageSupport.INSTANCE.supports(path))
-                    return ImageLanguageSupport.INSTANCE.languageId();
-
-                if (Files.isRegularFile(path) && FileUtils.isBinaryFile(path))
-                    return "binary";
-
-                return PlainTextLanguageSupport.INSTANCE.languageId();
-            });
+        Objects.requireNonNull(path, "path");
+        return find(path).map(LanguageSupport::languageId)
+            .orElseGet(() -> Files.isRegularFile(path) && FileUtils.isBinaryFile(path)
+                ? "binary"
+                : PlainTextLanguageSupport.INSTANCE.languageId());
     }
 
     /**
-     * Returns all registered language support implementations.
+     * Resolves the storage language identifier for known content, which need not exist on disk, falling back to binary
+     * or plain text from that content when no contribution matches.
      *
-     * @return the registered implementations in registry order
+     * @param path file location to recognize
+     * @param content file content used for the fallback
+     * @return the selected or fallback host language identifier
+     */
+    public static String resolveLanguageId(Path path, byte[] content) {
+        Objects.requireNonNull(path, "path");
+        Objects.requireNonNull(content, "content");
+        return find(path).map(LanguageSupport::languageId)
+            .orElseGet(() -> FileUtils.isBinaryContent(content, content.length)
+                ? "binary"
+                : PlainTextLanguageSupport.INSTANCE.languageId());
+    }
+
+    /**
+     * Returns host presentations for all registered contributions.
+     *
+     * @return an immutable list ordered by contribution ID
      */
     public static List<LanguageSupport> all() {
-        return REGISTRY.values();
+        return RUNTIME.all().stream().map(LanguageSupportRegistry::present).toList();
     }
 
     /**
-     * Unregisters every language support implementation.
+     * Clears all language registrations and closes their project sessions.
      */
     public static void clear() {
-        for (String languageId : REGISTRY.keys()) {
-            REGISTRY.unregister(languageId);
+        RUNTIME.clear();
+    }
+
+    /**
+     * Unregisters a language and closes its sessions; unknown identifiers have no effect.
+     *
+     * @param languageId host storage identifier or namespaced contribution identifier
+     */
+    public static void unregister(String languageId) {
+        get(languageId).ifPresent(support -> RUNTIME.unregister(support.id()));
+    }
+
+    /**
+     * Built-in storage names predate namespaced registration; independent languages retain their full ID.
+     *
+     * @param contribution contribution whose storage identity is needed
+     * @return the host storage name or the independent contribution's namespaced ID
+     */
+    public static String hostLanguageId(LanguageContribution contribution) {
+        return contribution instanceof LanguageSupport support ? support.languageId() : contribution.id().value();
+    }
+
+    private static LanguageSupport present(LanguageContribution contribution) {
+        return contribution instanceof LanguageSupport support ? support : new ContributionEditor(contribution);
+    }
+
+    private record ContributionEditor(LanguageContribution contribution) implements LanguageSupport {
+        @Override
+        public LanguageId id() {
+            return contribution.id();
+        }
+
+        @Override
+        public String languageId() {
+            return contribution.id().value();
+        }
+
+        @Override
+        public String displayName() {
+            return contribution.displayName();
+        }
+
+        @Override
+        public Set<String> fileExtensions() {
+            return Set.of();
+        }
+
+        @Override
+        public LanguageMatcher matcher() {
+            return contribution.matcher();
+        }
+
+        @Override
+        public int priority() {
+            return contribution.priority();
+        }
+
+        @Override
+        public Set<CapabilityKey<?>> supportedCapabilities() {
+            return contribution.supportedCapabilities();
+        }
+
+        @Override
+        public LanguageSession openSession(LanguageSessionContext context) {
+            return contribution.openSession(context);
+        }
+
+        @Override
+        public ContentKind contentKind() {
+            return contribution.contentKind();
+        }
+
+        @Override
+        public EditorOpenView open(Project project, DocumentId documentId, Path file) {
+            if (contentKind() != ContentKind.TEXT)
+                return new EditorOpenView(new Label("Binary document: " + file.getFileName()),
+                    null, languageId());
+            var editor = new CodeEditorPane(project, documentId, file,
+                CodeEditorConfig.fromLanguageSupport(project, file, this, null)) {
+                @Override
+                protected boolean shouldRequestSignatureHelp(String text, int caret, boolean textChanged) {
+                    return textChanged;
+                }
+            };
+            return new EditorOpenView(editor, editor, languageId());
         }
     }
 }

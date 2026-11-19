@@ -1,9 +1,11 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
+import dev.railroadide.railroad.ide.sst.project.JavaSourceSymbolIds;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
@@ -60,7 +62,8 @@ public final class CoreDuplicateDeclarationInspection implements JavaInspectionR
         JavaInspectionRuleReporter reporter
     ) {
         Symbol symbol = context.declaredSymbol(node).orElse(null);
-        if (symbol != null && symbol.kind() != SymbolKind.IMPORT && !"_".equals(symbol.simpleName())) {
+        if (symbol != null && symbol.kind() != JavaSymbolKind.IMPORT && !"_".equals(symbol.simpleName())
+            && !"JAVA_ANONYMOUS_CLASS_BODY".equals(node.kind().id())) {
             if (JAVA_PATTERN.equals(node.kind().id())) {
                 symbol = null;
             }
@@ -81,16 +84,16 @@ public final class CoreDuplicateDeclarationInspection implements JavaInspectionR
     }
 
     private static String declarationKey(JavaRuleContext context, Symbol symbol, SyntaxNode node) {
-        if (symbol.kind() != SymbolKind.METHOD && symbol.kind() != SymbolKind.CONSTRUCTOR)
+        if (symbol.kind() != JavaSymbolKind.METHOD && symbol.kind() != JavaSymbolKind.CONSTRUCTOR)
             return symbol.simpleName();
 
-        SyntaxNode parameterList = context.directChild(node, "JAVA_PARAMETER_LIST");
+        SyntaxNode parameterList = JavaSourceSymbolIds.parameterList(node);
         if (parameterList == null)
             return symbol.simpleName() + "()";
 
         List<String> parameterTypes = new ArrayList<>();
         for (SyntaxNode child : parameterList.children()) {
-            if (!"JAVA_PARAMETER".equals(child.kind().id()))
+            if (!"JAVA_PARAMETER".equals(child.kind().id()) && !"JAVA_RECORD_COMPONENT".equals(child.kind().id()))
                 continue;
             SyntaxNode typeReference = context.directChild(child, "JAVA_TYPE_REFERENCE");
             String typeText = typeReference == null ? null : context.canonicalTypeText(typeReference);
@@ -111,6 +114,8 @@ public final class CoreDuplicateDeclarationInspection implements JavaInspectionR
         return JAVA_BLOCK.equals(kindId)
             || JAVA_METHOD_DECLARATION.equals(kindId)
             || JAVA_CONSTRUCTOR_DECLARATION.equals(kindId)
+            || "JAVA_RECORD_COMPACT_CONSTRUCTOR".equals(kindId)
+            || "JAVA_ANONYMOUS_CLASS_BODY".equals(kindId)
             || JAVA_CLASS_DECLARATION.equals(kindId)
             || JAVA_INTERFACE_DECLARATION.equals(kindId)
             || JAVA_ENUM_DECLARATION.equals(kindId)

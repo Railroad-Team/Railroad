@@ -4,6 +4,7 @@ import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaUnicodeEscapes;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
@@ -73,7 +74,8 @@ public class CoreConditionalExpressionWithIdenticalBranchesInspection implements
             if (JavaSemanticAnalyzer.isTriviaToken(leftToken) || JavaSemanticAnalyzer.isTriviaToken(rightToken))
                 return JavaSemanticAnalyzer.isTriviaToken(leftToken) == JavaSemanticAnalyzer.isTriviaToken(rightToken);
 
-            return Objects.equals(leftToken.text(), rightToken.text())
+            return Objects.equals(JavaUnicodeEscapes.translate(leftToken.text()),
+                JavaUnicodeEscapes.translate(rightToken.text()))
                 && Objects.equals(leftToken.kind(), rightToken.kind());
         }
 

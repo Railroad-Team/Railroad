@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
+import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRuleEngine;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.project.*;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
@@ -26,7 +28,8 @@ public class CoreInspectionRulesTest {
     public void coreProvidersExposeExpectedRuleIds() {
         assertRuleIds(new CoreDuplicateDeclarationInspection(), Set.of("SEM_DUPLICATE_DECLARATION"));
         assertRuleIds(new CoreImportInspection(),
-            Set.of("SEM_DUPLICATE_IMPORT", "SEM_AMBIGUOUS_IMPORT", "SEM_UNRESOLVED_IMPORT"));
+            Set.of("SEM_DUPLICATE_IMPORT", "SEM_AMBIGUOUS_IMPORT", "SEM_UNRESOLVED_IMPORT",
+                "SEM_UNUSED_IMPORT"));
         assertRuleIds(new CoreNameResolutionInspection(), Set.of("SEM_UNRESOLVED_NAME", "SEM_AMBIGUOUS_NAME"));
         assertRuleIds(new CoreTypeResolutionInspection(), Set.of("SEM_UNRESOLVED_TYPE"));
         assertRuleIds(new CoreMemberResolutionInspection(), Set.of("SEM_UNRESOLVED_MEMBER"));
@@ -175,6 +178,23 @@ public class CoreInspectionRulesTest {
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_PUBLIC_CLASS_NOT_NAMED_AFTER_FILE".equals(d.code())));
         assertTrue(diagnostics.stream().anyMatch(
             d -> d.message().contains("Public class 'Wrong' must be declared in a file named 'Example.java'")));
+    }
+
+    @Test
+    public void corePublicClassNotNamedAfterFileRuleSkipsDocumentsWithoutFileNames() {
+        String source = "public class Wrong {}";
+        var model = JavaSemanticAnalyzer.analyzeFacts(source);
+        for (DocumentUri uri : List.of(
+            DocumentUri.virtual("generated", "/demo/"),
+            DocumentUri.parse("jar:file:///libs/example.jar!/"))) {
+            var context = new JavaRuleContext(uri, source, model);
+            List<SemanticDiagnostic> diagnostics = new ArrayList<>();
+
+            assertDoesNotThrow(() -> JavaInspectionRuleEngine.runRules(
+                new CorePublicClassNotNamedAfterFileInspection(), context, diagnostics::add));
+
+            assertTrue(diagnostics.isEmpty());
+        }
     }
 
     @Test
@@ -1107,6 +1127,59 @@ public class CoreInspectionRulesTest {
             """);
 
         assertFalse(diagnostics.stream().anyMatch(d -> "SEM_PUBLIC_METHOD_NOT_EXPOSED_BY_INTERFACE".equals(d.code())));
+    }
+
+    @Test
+    public void coreModifierRuleAllowsExplicitFinalRecords() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreModifierInspection(), """
+            final record TopLevel(int value) {
+            }
+
+            class Host {
+                private static final record Nested(String value) {
+                }
+            }
+
+            interface Contract {
+                final record Member(int value) {
+                }
+            }
+            """);
+
+        assertTrue(diagnostics.isEmpty(), () -> diagnostics.toString());
+    }
+
+    @Test
+    public void coreModifierRuleStillRejectsExplicitFinalEnumsInterfacesAndAnnotations() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreModifierInspection(), """
+            final enum Mode { ON }
+            final interface Contract {}
+            final @interface Flag {}
+            """);
+
+        assertEquals(3, diagnostics.size());
+        assertTrue(
+            diagnostics.stream().anyMatch(d -> d.message().contains("'final' is not allowed on enum declarations")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("'final' is not allowed on interface declarations")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("'final' is not allowed on annotation type declarations")));
+    }
+
+    @Test
+    public void coreModifierRuleStillRejectsIllegalRecordModifiers() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreModifierInspection(), """
+            abstract record AbstractRecord(int value) {}
+            sealed record SealedRecord(int value) {}
+            final final record DuplicateFinalRecord(int value) {}
+            """);
+
+        assertEquals(3, diagnostics.size());
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("'abstract' is not allowed on record declarations")));
+        assertTrue(diagnostics.stream()
+            .anyMatch(d -> d.message().contains("'sealed' is not allowed on record declarations")));
+        assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("duplicate modifier 'final'")));
     }
 
     @Test
@@ -2819,6 +2892,21 @@ public class CoreInspectionRulesTest {
                 """);
 
         assertFalse(
+            diagnostics.stream().anyMatch(d -> "SEM_CONDITIONAL_EXPRESSION_WITH_IDENTICAL_BRANCHES".equals(d.code())));
+    }
+
+    @Test
+    public void coreConditionalExpressionWithIdenticalBranchesComparesNamesAfterTranslatingUnicodeEscapes() {
+        List<SemanticDiagnostic> diagnostics = runProvider(
+            new CoreConditionalExpressionWithIdenticalBranchesInspection(), """
+                class Example {
+                    int run(boolean flag, int value) {
+                        return flag ? value : v\\u0061lue;
+                    }
+                }
+                """);
+
+        assertTrue(
             diagnostics.stream().anyMatch(d -> "SEM_CONDITIONAL_EXPRESSION_WITH_IDENTICAL_BRANCHES".equals(d.code())));
     }
 }

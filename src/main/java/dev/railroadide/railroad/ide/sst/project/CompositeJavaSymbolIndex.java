@@ -3,6 +3,9 @@ package dev.railroadide.railroad.ide.sst.project;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 
 import java.util.*;
+import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
+import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 
 /**
  * Combines symbol indexes, deduplicating lookup results and preferring earlier delegates for binary class stubs.
@@ -32,6 +35,33 @@ public final class CompositeJavaSymbolIndex implements JavaSymbolIndex {
         this.declaredQualifiedNames = Set.copyOf(qualifiedNames);
         this.typeNames = Set.copyOf(typeNames);
         this.classStubsByQualifiedName = Map.copyOf(classStubs);
+    }
+
+    @Override
+    public List<SemanticIndexShard> semanticShards() {
+        return semanticShards(ActivityCheckpoint::checkInterrupted);
+    }
+
+    @Override
+    public List<SemanticIndexShard> semanticShards(Runnable activityCheck) {
+        Objects.requireNonNull(activityCheck, "activityCheck").run();
+        Set<SymbolId> seen = new HashSet<>();
+        List<SemanticIndexShard> result = new ArrayList<>();
+        for (JavaSymbolIndex delegate : delegates) {
+            for (var shard : delegate.semanticShards(activityCheck)) {
+                activityCheck.run();
+                var declarations = shard.declarations().stream().filter(symbol -> {
+                    activityCheck.run();
+                    return seen.add(symbol.id());
+                }).toList();
+                if (!declarations.isEmpty()) {
+                    result.add(new SemanticIndexShard(shard.documentId(),
+                        shard.documentVersion(), shard.uri(), declarations, shard.references(), shard.edges()));
+                }
+            }
+        }
+        activityCheck.run();
+        return List.copyOf(result);
     }
 
     @Override

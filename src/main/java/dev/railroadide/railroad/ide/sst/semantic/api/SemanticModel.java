@@ -8,6 +8,9 @@ import java.util.ArrayList;
 
 /**
  * Immutable semantic analysis output for a syntax tree.
+ * Scopes are permanently frozen on construction; maps and diagnostic lists are copied.
+ * Supplied symbols and syntax nodes must obey their immutable public contracts.
+ * Instances retain reference equality and support concurrent reads after safe publication.
  * <p>
  * This is the bridge between the concrete syntax tree and higher-level inspection logic.
  * It stores:
@@ -20,9 +23,7 @@ import java.util.ArrayList;
  * <li>semantic diagnostics produced during analysis</li>
  * </ul>
  * <p>
- * Inspection authors usually access these capabilities through
- * {@link dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext}, but the raw model
- * remains useful for tests and lower-level tooling.
+ * Providers expose language-specific conveniences separately from this neutral model.
  */
 public final class SemanticModel {
     private final SyntaxTree syntaxTree;
@@ -41,7 +42,7 @@ public final class SemanticModel {
         List<SemanticDiagnostic> diagnostics
     ) {
         this.syntaxTree = Objects.requireNonNull(syntaxTree, "syntaxTree");
-        this.rootScope = Objects.requireNonNull(rootScope, "rootScope");
+        this.rootScope = Objects.requireNonNull(rootScope, "rootScope").freeze();
         this.declaredSymbols = copyIdentityMap(declaredSymbols, "declaredSymbols");
         this.resolvedSymbols = copyIdentityMap(resolvedSymbols, "resolvedSymbols");
         this.inferredTypes = copyIdentityMap(inferredTypes, "inferredTypes");
@@ -58,7 +59,9 @@ public final class SemanticModel {
     }
 
     /**
-     * Returns the root lexical scope for the file.
+     * Returns the permanently frozen root lexical scope for the file. Its parent and
+     * descendant scopes are also frozen; declaration and child construction operations
+     * throw {@link IllegalStateException} on any retained scope reference.
      *
      * @return the root scope
      */
@@ -128,6 +131,8 @@ public final class SemanticModel {
 
     /**
      * Creates a builder for a new semantic model tied to the supplied syntax tree.
+     * The supplied scope remains available for construction until {@link Builder#build()},
+     * which permanently freezes its connected hierarchy.
      *
      * @param syntaxTree analysed syntax tree
      * @param rootScope root lexical scope
@@ -142,11 +147,14 @@ public final class SemanticModel {
         source = Objects.requireNonNull(source, name);
         Map<SyntaxNode, T> copy = new IdentityHashMap<>(source.size());
         copy.putAll(source);
-        return Map.copyOf(copy);
+        return Collections.unmodifiableMap(copy);
     }
 
     /**
-     * Incremental builder used by semantic analysis passes.
+     * Thread-confined builder used by semantic analysis passes. Each build copies its
+     * maps and diagnostics, but permanently freezes the supplied scope hierarchy.
+     * Reusing the builder can add model associations without changing an earlier model;
+     * further scope declarations require a new construction hierarchy.
      */
     public static final class Builder {
         private final SyntaxTree syntaxTree;
@@ -214,6 +222,7 @@ public final class SemanticModel {
 
         /**
          * Builds an immutable semantic model snapshot.
+         * All connected scopes are permanently frozen before the result is returned.
          *
          * @return immutable semantic model
          */

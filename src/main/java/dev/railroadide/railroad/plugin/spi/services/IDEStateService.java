@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.plugin.spi.services;
 
 import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentStore;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -20,6 +21,15 @@ public interface IDEStateService {
      * @return the current project, or null if no project is open
      */
     Project getCurrentProject();
+
+    /**
+     * Gets the document store owned by the current project session. The same store
+     * is returned throughout that session. Closing the project releases it; opening
+     * another session creates a fresh store with workspace revision zero.
+     *
+     * @return the current project's store, or empty if no project is open
+     */
+    Optional<DocumentStore> getDocumentStore();
 
     /**
      * Gets the list of open documents in the IDE.

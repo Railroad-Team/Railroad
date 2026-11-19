@@ -163,6 +163,8 @@ test {
     dependsOn tasks.named('formatterClasses')
 }
 
+apply from: 'gradle/sst-self-analysis.gradle'
+
 spotless {
     if (!providers.gradleProperty('formatAll').isPresent())
         ratchetFrom providers.gradleProperty('formatRatchetFrom').getOrElse('HEAD')
@@ -172,6 +174,7 @@ spotless {
         'src/javadocCoverageTool/java/**/*.java', 'src/javadocCoverageTest/java/**/*.java',
         'src/cssValidation/java/**/*.java', 'src/cssValidationTest/java/**/*.java'
         eclipse().configFile('config/format/railroad-eclipse-formatter.xml')
+        lineEndings = 'UNIX'
         trimTrailingWhitespace()
         endWithNewline()
     }

@@ -56,6 +56,33 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
             resolveJdkHome(project));
     }
 
+    /**
+     * Resolves inputs for a captured workspace on a worker. Maven contributes dependency artifacts only;
+     * project output directories and module source directories cannot supply stale compiled declarations.
+     * Resolution failures propagate so the owner can retain its last usable configuration.
+     *
+     * @param project project whose configuration is being resolved
+     * @return resolved Java source roots and external dependencies
+     * @throws IllegalStateException if Maven configuration or dependencies cannot be resolved
+     */
+    public JavaLanguageIndexContext resolveWorkspace(Project project) {
+        if (project.hasFacet(FacetManager.GRADLE) || !project.hasFacet(FacetManager.MAVEN))
+            return (JavaLanguageIndexContext) resolve(project);
+        Model model = MAVEN_MODELS.loadEffectiveModel(project.getPath())
+            .orElseThrow(() -> new IllegalStateException("Cannot resolve Maven model for " + project.getPath()));
+        List<Path> dependencies = new ArrayList<>();
+        addMavenDependencyRoots(project, model, dependencies, true);
+        List<Path> roots = normalizePaths(dependencies);
+        Build build = model.getBuild();
+        Path buildDirectory = resolveMavenBuildDirectory(project, model);
+        return new JavaLanguageIndexContext(normalizePaths(List.of(
+            resolveProjectPath(project, build != null ? build.getSourceDirectory() : null, "src/main/java"),
+            resolveProjectPath(project, build != null ? build.getTestSourceDirectory() : null, "src/test/java"))),
+            normalizePaths(List.of(buildDirectory.resolve("generated-sources"),
+                buildDirectory.resolve("generated-test-sources"))),
+            roots, roots, List.of(), resolveJdkHome(project));
+    }
+
     private static List<Path> resolveSourceRoots(Project project) {
         List<Path> sourceRoots = new ArrayList<>();
         if (project.hasFacet(FacetManager.GRADLE)) {
@@ -64,13 +91,13 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
                     for (RailroadContentRoot sourceSet : module.getContentRoots()) {
                         for (RailroadSourceDirectory sourceDir : sourceSet.getSourceDirectories()) {
                             if (!sourceDir.isGenerated()) {
-                                addReadableDirectory(sourceRoots, sourceDir.getDirectory().toPath());
+                                sourceRoots.add(sourceDir.getDirectory().toPath());
                             }
                         }
 
                         for (RailroadSourceDirectory sourceDir : sourceSet.getTestSourceDirectories()) {
                             if (!sourceDir.isGenerated()) {
-                                addReadableDirectory(sourceRoots, sourceDir.getDirectory().toPath());
+                                sourceRoots.add(sourceDir.getDirectory().toPath());
                             }
                         }
                     }
@@ -79,14 +106,14 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         } else if (project.hasFacet(FacetManager.MAVEN)) {
             consumeMavenModel(project, model -> {
                 Build build = model.getBuild();
-                addReadableDirectory(sourceRoots,
+                sourceRoots.add(
                     resolveProjectPath(project, build != null ? build.getSourceDirectory() : null, "src/main/java"));
-                addReadableDirectory(sourceRoots, resolveProjectPath(project,
+                sourceRoots.add(resolveProjectPath(project,
                     build != null ? build.getTestSourceDirectory() : null, "src/test/java"));
             });
         } else {
-            addReadableDirectory(sourceRoots, project.getPath().resolve("src/main/java"));
-            addReadableDirectory(sourceRoots, project.getPath().resolve("src/test/java"));
+            sourceRoots.add(project.getPath().resolve("src/main/java"));
+            sourceRoots.add(project.getPath().resolve("src/test/java"));
         }
 
         return normalizePaths(sourceRoots);
@@ -100,13 +127,13 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
                     for (RailroadContentRoot sourceSet : module.getContentRoots()) {
                         for (RailroadSourceDirectory sourceDir : sourceSet.getSourceDirectories()) {
                             if (sourceDir.isGenerated()) {
-                                addReadableDirectory(generatedRoots, sourceDir.getDirectory().toPath());
+                                generatedRoots.add(sourceDir.getDirectory().toPath());
                             }
                         }
 
                         for (RailroadSourceDirectory sourceDir : sourceSet.getTestSourceDirectories()) {
                             if (sourceDir.isGenerated()) {
-                                addReadableDirectory(generatedRoots, sourceDir.getDirectory().toPath());
+                                generatedRoots.add(sourceDir.getDirectory().toPath());
                             }
                         }
                     }
@@ -115,8 +142,8 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         } else if (project.hasFacet(FacetManager.MAVEN)) {
             consumeMavenModel(project, model -> {
                 Path buildDirectory = resolveMavenBuildDirectory(project, model);
-                addReadableDirectory(generatedRoots, buildDirectory.resolve("generated-sources"));
-                addReadableDirectory(generatedRoots, buildDirectory.resolve("generated-test-sources"));
+                generatedRoots.add(buildDirectory.resolve("generated-sources"));
+                generatedRoots.add(buildDirectory.resolve("generated-test-sources"));
             });
         }
 
@@ -271,6 +298,10 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
     }
 
     private static void addMavenDependencyRoots(Project project, Model model, List<Path> roots) {
+        addMavenDependencyRoots(project, model, roots, false);
+    }
+
+    private static void addMavenDependencyRoots(Project project, Model model, List<Path> roots, boolean failOnError) {
         List<Dependency> dependencies = model.getDependencies();
         if (dependencies == null || dependencies.isEmpty())
             return;
@@ -307,6 +338,8 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
                 addReadableFile(roots, jar.toPath());
             }
         } catch (CoursierError error) {
+            if (failOnError)
+                throw new IllegalStateException("Cannot resolve Maven dependencies for " + project.getPath(), error);
             Railroad.LOGGER.error("Error resolving Maven dependencies for {}", project.getPath(), error);
         }
     }
@@ -366,6 +399,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         try (var paths = Files.list(directory)) {
             paths
                 .filter(path -> path.getFileName().toString().endsWith(".jar"))
+                .sorted()
                 .forEach(path -> addReadableFile(roots, path));
         } catch (Exception exception) {
             Railroad.LOGGER.error("Error resolving local JAR roots from {}", directory, exception);
