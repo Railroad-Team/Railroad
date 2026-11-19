@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide;
 
+import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexCoordinator;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService.Session;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
@@ -46,6 +47,8 @@ import java.util.function.BiFunction;
 /** Publishes immutable project configuration when facets, project settings, or imported modules change. */
 public final class ProjectWorkspaceConfiguration implements AutoCloseable {
     private static final String DEPENDENCIES_UNAVAILABLE = "dependencies.unavailable";
+    private static final Duration CONFIGURATION_BUDGET = Duration.ofMinutes(2);
+    private static final Duration WARMUP_BUDGET = Duration.ofMinutes(5);
     private static final List<String> BUILD_TOOL_FILES = List.of("pom.xml", "build.gradle", "build.gradle.kts",
         "settings.gradle", "settings.gradle.kts");
     private final Session indexSession;
@@ -68,6 +71,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
     private long resolutionGeneration;
     private GradleModelService modelService;
     private boolean closed;
+    private boolean warmedAfterAdoption;
 
     /**
      * Subscribes to configuration changes for one project session.
@@ -282,7 +286,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         Map<String, String> inputs = requestedSettings;
         CompletableFuture<Void> completed = new CompletableFuture<>();
         resolution = completed;
-        dependencyTask = submitBackground("dependencies", completed, request -> {
+        dependencyTask = submitBackground("dependencies", CONFIGURATION_BUDGET, completed, request -> {
             try {
                 JavaLanguageIndexContext context = dependencyResolver.apply(project);
                 request.checkActive();
@@ -318,13 +322,18 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         });
     }
 
+    private void warmIndexes() {
+        submitBackground("index-warmup", WARMUP_BUDGET, new CompletableFuture<>(),
+            request -> new ProjectLanguageIndexCoordinator(project, indexSession).warmIndexes(request));
+    }
+
     private CompletableFuture<Void> submitBackground(
         String key,
+        Duration budget,
         CompletableFuture<Void> completed,
         Consumer<RequestContext> operation
     ) {
         var cancellation = new CancellationTokenSource();
-        Duration budget = Duration.ofMinutes(2);
         var context = new WorkspaceRequestContext(store.capture(), cancellation.token(), Deadline.after(budget));
         CompletableFuture<Void> task = backgroundRequests.submit(key, RequestPriority.BACKGROUND_INDEXING, context,
             cancellation, () -> ProviderExecutor.shared().executeWithContext("project-configuration:" + key,
@@ -432,7 +441,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             CompletableFuture<Void> completed = new CompletableFuture<>();
             binaryResolution = completed;
             var candidate = new WorkspaceConfigurationSnapshot(current.revision() + 1, ids, values);
-            binaryTask = submitBackground("binary-inputs", completed, request -> {
+            binaryTask = submitBackground("binary-inputs", CONFIGURATION_BUDGET, completed, request -> {
                 try {
                     var provider = JavaLanguageSupport.analysisContextProvider();
                     var prepared = binaryPreparer.apply(indexSession, candidate);
@@ -445,6 +454,10 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
                         Services.PROJECT_LANGUAGE_INDEX_SERVICE.refreshProject(indexSession);
                         provider.adoptConfiguration(indexSession, prepared);
                         store.publishConfiguration(prepared);
+                        if (!warmedAfterAdoption) {
+                            warmedAfterAdoption = true;
+                            warmIndexes();
+                        }
                     }
                     completed.complete(null);
                 } catch (CancellationException exception) {
