@@ -7,6 +7,8 @@ import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxParser;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
+import dev.railroadide.railroad.ide.sst.semantic.api.DefinitionTarget;
+import dev.railroadide.railroad.ide.sst.semantic.api.SemanticNavigationResolver;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
@@ -177,25 +179,73 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         var extractor = new JavaProjectSemanticExtractor();
         for (var file : sourceIndex.files().values()) {
             activityCheck.run();
-            var shard = file.semanticShard();
-            if (shard == null)
-                throw new IllegalStateException("Captured source has no semantic shard: " + file.path());
-            var origin = shard.declarations().stream().flatMap(symbol -> symbol.locations().stream())
-                .filter(location -> location.uri().equals(shard.uri())).map(location -> location.origin())
-                .findFirst().orElseGet(() -> DocumentOrigin.unspecified(shard.uri()));
-            String text = Objects.requireNonNull(sourceTexts.get(file.path()), "Captured source text");
-            var snapshot = new TextDocumentSnapshot(shard.documentId(), shard.uri(), shard.documentVersion(),
-                "java", origin, text, StandardCharsets.UTF_8);
-            var tree = JavaSyntaxParser.parse(snapshot, activityCheck);
-            var model = JavaSemanticAnalyzer.analyzeFacts(tree, this, activityCheck);
-            var resolved = extractor.extract(file.path(), model, this, activityCheck).semanticShard();
-            activityCheck.run();
+            var resolved = resolveShard(extractor, file, activityCheck);
             shards.put(resolved.documentId(), resolved);
         }
         var result = WorkspaceSymbolGraph.of(JavaOverrideGraphExtractor.extract(shards.values(), activityCheck),
             activityCheck);
         activityCheck.run();
         return result;
+    }
+
+    /**
+     * Finds the navigable declarations of the symbol at an offset, resolving only the requesting document's body
+     * against the captured declarations. Library declarations live in archives and are never navigable, so neither
+     * the whole-workspace graph nor binary declarations are needed.
+     *
+     * @param workspace workspace capture this analysis was built from
+     * @param source captured revision containing the offset
+     * @param offset zero-based UTF-16 offset in the source revision
+     * @param activityCheck callback invoked to check cancellation or interruption; may throw to abort
+     * @return ranked targets, or an empty list when the offset is unresolved, ambiguous, or not navigable
+     */
+    public List<DefinitionTarget> definitionsAt(
+        WorkspaceSnapshot workspace,
+        TextDocumentSnapshot source,
+        int offset,
+        Runnable activityCheck
+    ) {
+        Objects.requireNonNull(activityCheck).run();
+        Map<DocumentId, SemanticIndexShard> shards = new LinkedHashMap<>();
+        JavaProjectSemanticIndex.SourceFileIndex requested = null;
+        for (var file : sourceIndex.files().values()) {
+            activityCheck.run();
+            var shard = file.semanticShard();
+            if (shard == null)
+                continue;
+            shards.put(shard.documentId(), shard);
+            if (shard.documentId().equals(source.id())) {
+                requested = file;
+            }
+        }
+        if (requested == null)
+            return List.of();
+
+        var resolved = resolveShard(new JavaProjectSemanticExtractor(), requested, activityCheck);
+        shards.put(resolved.documentId(), resolved);
+        var graph = WorkspaceSymbolGraph.of(shards.values(), activityCheck);
+        return SemanticNavigationResolver.definitionAt(graph, workspace, source, offset);
+    }
+
+    private SemanticIndexShard resolveShard(
+        JavaProjectSemanticExtractor extractor,
+        JavaProjectSemanticIndex.SourceFileIndex file,
+        Runnable activityCheck
+    ) {
+        var shard = file.semanticShard();
+        if (shard == null)
+            throw new IllegalStateException("Captured source has no semantic shard: " + file.path());
+        var origin = shard.declarations().stream().flatMap(symbol -> symbol.locations().stream())
+            .filter(location -> location.uri().equals(shard.uri())).map(location -> location.origin())
+            .findFirst().orElseGet(() -> DocumentOrigin.unspecified(shard.uri()));
+        String text = Objects.requireNonNull(sourceTexts.get(file.path()), "Captured source text");
+        var snapshot = new TextDocumentSnapshot(shard.documentId(), shard.uri(), shard.documentVersion(),
+            "java", origin, text, StandardCharsets.UTF_8);
+        var tree = JavaSyntaxParser.parse(snapshot, activityCheck);
+        var model = JavaSemanticAnalyzer.analyzeFacts(tree, this, activityCheck);
+        var resolved = extractor.extract(file.path(), model, this, activityCheck).semanticShard();
+        activityCheck.run();
+        return resolved;
     }
 
     /**

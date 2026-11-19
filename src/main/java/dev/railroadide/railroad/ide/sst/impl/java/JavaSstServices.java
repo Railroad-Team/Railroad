@@ -92,8 +92,16 @@ public final class JavaSstServices
 
     @Override
     public FeatureResult<List<Location<?>>> definitions(FeatureRequestContext context, int offset) {
-        return targets(context, offset, (graph, id) -> SemanticNavigationResolver.definitionsOf(graph,
-            context.workspaceSnapshot(), id));
+        context.checkActive();
+        if (!(context.documentSnapshot() instanceof TextDocumentSnapshot source))
+            return new FeatureResult<>(context, List.of());
+
+        List<Location<?>> locations = capture(context)
+            .definitionsAt(context.workspaceSnapshot(), source, offset, context::checkActive).stream()
+            .<Location<?>>map(DefinitionTarget::location)
+            .toList();
+        context.checkActive();
+        return new FeatureResult<>(context, locations);
     }
 
     @Override

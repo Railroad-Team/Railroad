@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
+import dev.railroadide.railroad.ide.language.impl.index.JavaWorkspaceAnalysis;
 import dev.railroadide.railroad.ide.language.impl.index.JavaWorkspaceAnalysisProvider;
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.provider.api.UsageQuery;
@@ -14,6 +15,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
@@ -71,6 +73,31 @@ public class JavaNavigationServiceTest {
             var target = result.value().getFirst();
             assertEquals(source.id(), target.documentId());
             assertEquals(text.indexOf(name), target.range().start);
+        }
+    }
+
+    @Test
+    public void definitionsResolveOnlyTheRequestingDocument() throws Exception {
+        String declarations = "class Helper { static void run() {} }";
+        var helper = document("Helper.java", declarations);
+        var other = document("Other.java", "class Other { void unrelated() { Helper.run(); } }");
+        var source = document("Main.java", "class Main { void test() { int local = 1; Helper.run(); local++; } }");
+        var store = store(source, helper, other);
+        try (var services = new JavaSstServices()) {
+            var context = context(store.capture(), source);
+            var call = services.definitions(context, source.text().lastIndexOf("run")).value();
+            var local = services.definitions(context, source.text().lastIndexOf("local")).value();
+
+            var target = assertInstanceOf(Location.TextLocation.class, call.getFirst());
+            assertEquals(helper.id(), target.documentId());
+            assertEquals(declarations.indexOf("run"), target.range().start);
+            var localTarget = assertInstanceOf(Location.TextLocation.class, local.getFirst());
+            assertEquals(source.id(), localTarget.documentId());
+            assertEquals(source.text().indexOf("local"), localTarget.range().start);
+            Field resolved = JavaWorkspaceAnalysis.class.getDeclaredField("resolvedGraph");
+            resolved.setAccessible(true);
+            assertNull(resolved.get(services.capture(context)),
+                "Go to definition must not resolve every document's body");
         }
     }
 
