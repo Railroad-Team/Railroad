@@ -127,6 +127,32 @@ public class JavaBoundedAnalysisCacheTest {
     }
 
     @Test
+    public void coldCaptureOverlapsSourceIndexingWithBinaryLoading() {
+        var binaryStarted = new CountDownLatch(1);
+        var sourceIndexed = new CountDownLatch(1);
+        try (var provider = new JavaWorkspaceAnalysisProvider(() -> true, (_, _) -> {
+            binaryStarted.countDown();
+            await(sourceIndexed);
+            return emptyIndex();
+        })) {
+            var store = store();
+            store.publishBacking(source(DocumentId.create(), 0, "class Example {}"));
+            var context = new WorkspaceRequestContext(store.capture(), () -> {
+                if (provider.cacheUsage().sourceFiles() == 1 && sourceIndexed.getCount() != 0) {
+                    try {
+                        await(binaryStarted);
+                    } finally {
+                        sourceIndexed.countDown();
+                    }
+                }
+                return false;
+            }, Deadline.none());
+
+            assertTrue(provider.capture(context).declaredQualifiedNames().contains("Example"));
+        }
+    }
+
+    @Test
     public void binaryLoadOutlivesACancelledRequestAndServesTheNext() throws Exception {
         var entered = new CountDownLatch(1);
         var release = new CountDownLatch(1);

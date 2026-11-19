@@ -815,7 +815,7 @@ public final class JavaGreenParser {
 
     private List<GreenElement> parseOptionalDimensions() {
         List<GreenElement> dimensions = new ArrayList<>();
-        while (true) {
+        while (pendingTypeArgumentClosers == 0) {
             int marker = position;
             List<GreenElement> dimensionChildren = new ArrayList<>();
 

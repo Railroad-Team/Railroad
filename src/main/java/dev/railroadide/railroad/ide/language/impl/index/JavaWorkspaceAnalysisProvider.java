@@ -180,6 +180,10 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
         Set<Path> roots,
         Runnable check
     ) {
+        WorkspaceConfigurationSnapshot configuration = workspace.configuration();
+        List<Path> classpath = classpath(configuration);
+        Path jdk = jdkHome(configuration);
+        CompletableFuture<JavaSymbolIndex> binaryLoad = loadBinaries(configuration, classpath, jdk, check);
         JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
         Map<Path, String> texts = new HashMap<>();
         Map<Path, TextDocumentSnapshot> snapshots = new HashMap<>();
@@ -202,13 +206,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
             snapshots.put(indexed.path(), text);
         }
         JavaProjectSemanticIndex sources = builder.build();
-        WorkspaceConfigurationSnapshot configuration = workspace.configuration();
-        List<Path> classpath = classpath(configuration);
-        Path jdk = jdkHome(configuration);
-        JavaSymbolIndex binary = binaries.getIfPresent(configuration);
-        if (binary == null) {
-            binary = awaitBinaries(configuration, classpath, jdk, check);
-        }
+        JavaSymbolIndex binary = awaitBinaries(binaryLoad, check);
         check.run();
         JavaSymbolIndex discovered = new JavaSourcePrecedenceIndex(sources, binary);
         JavaProjectSemanticIndex.Builder canonical = JavaProjectSemanticIndex.builder();
@@ -228,24 +226,27 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     }
 
     /**
-     * Waits for the binary index of a configuration, starting its load if none is running. The load is shared by every
+     * Starts loading the binary index alongside source indexing when needed. The load is shared by every
      * request for the configuration and is not bound to any request's cancellation or deadline, so a large classpath
      * that outlasts one request's budget still completes and is cached for the next.
      */
-    private JavaSymbolIndex awaitBinaries(
+    private CompletableFuture<JavaSymbolIndex> loadBinaries(
         WorkspaceConfigurationSnapshot configuration,
         List<Path> classpath,
         Path jdk,
         Runnable check
     ) {
-        CompletableFuture<JavaSymbolIndex> load;
         synchronized (publicationLock) {
             check.run();
-            JavaSymbolIndex cached = binaries.asMap().get(configuration);
+            JavaSymbolIndex cached = binaries.getIfPresent(configuration);
             if (cached != null)
-                return cached;
-            load = binaryLoads.computeIfAbsent(configuration, _ -> startBinaryLoad(configuration, classpath, jdk));
+                return CompletableFuture.completedFuture(cached);
+            CompletableFuture<JavaSymbolIndex> load = binaryLoads.get(configuration);
+            return load == null ? startBinaryLoad(configuration, classpath, jdk) : load;
         }
+    }
+
+    private JavaSymbolIndex awaitBinaries(CompletableFuture<JavaSymbolIndex> load, Runnable check) {
         while (true) {
             check.run();
             try {
@@ -283,6 +284,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
                     : binaryLoader.apply(classpath, jdk);
             }
         }, BINARY_LOADS);
+        binaryLoads.put(configuration, load);
         load.whenComplete((index, failure) -> {
             synchronized (publicationLock) {
                 binaryLoads.remove(configuration, load);

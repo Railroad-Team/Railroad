@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -72,6 +73,22 @@ public class JavaSyntaxParserTest {
 
         SyntaxTree tree = JavaSyntaxParser.parse(source);
         assertEquals(source, JavaParserTestSupport.syntaxText(tree));
+    }
+
+    @Test
+    public void parsesAnnotatedReturnTypesAfterAdjacentGenericClosers() {
+        String source = """
+            class Example {
+                <T extends Box<X>> @Nullable T get() { return null; }
+                <T extends Box<Box<X>>> @Nullable T nested() { return null; }
+            }
+            """;
+        var checkpoints = new AtomicInteger();
+        SyntaxTree tree = JavaSyntaxParser.parse(source,
+            () -> assertTrue(checkpoints.incrementAndGet() < 1000, "Parser stalled at a return-type annotation"));
+
+        assertEquals(source, JavaParserTestSupport.syntaxText(tree));
+        assertTrue(JavaSyntaxParser.parseWithDiagnostics(source).diagnostics().isEmpty());
     }
 
     @Test
