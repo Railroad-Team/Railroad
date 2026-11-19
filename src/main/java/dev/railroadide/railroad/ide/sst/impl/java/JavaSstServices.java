@@ -166,10 +166,16 @@ public final class JavaSstServices
     }
 
     @Override
-    public FeatureResult<RenameProposal> rename(FeatureRequestContext context, int offset, String newName) {
+    public FeatureResult<RenameProposal> rename(
+        FeatureRequestContext context,
+        int offset,
+        SymbolId symbol,
+        String newName
+    ) {
+        Objects.requireNonNull(symbol, "symbol");
         Objects.requireNonNull(newName, "newName");
         context.checkActive();
-        RenameProposal proposal = new JavaRenameEngine(context, this::capture).rename(offset, newName);
+        RenameProposal proposal = new JavaRenameEngine(context, this::capture).rename(offset, symbol, newName);
         context.checkActive();
         return new FeatureResult<>(context, proposal);
     }

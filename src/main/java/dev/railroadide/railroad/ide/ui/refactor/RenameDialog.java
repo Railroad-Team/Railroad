@@ -46,8 +46,13 @@ import java.util.function.Supplier;
  * <p>
  * The first confirmation computes the preview; confirming again applies exactly the previewed edit. Changing the
  * name discards the preview. The rename is computed against a fresh capture of the editor's document store,
- * including unsaved documents, and the workspace-edit service rejects it if any affected document changes before
- * it is applied. All methods must be called on the JavaFX application thread.
+ * including unsaved documents, for the symbol that was prepared; it is rejected if the workspace changed so that
+ * the caret names a different symbol. A rename depends on every document of its language it analysed, not only
+ * those it edits, so a preview is never applied once such a document or the configuration has changed since it
+ * was computed: the preview is computed again and shown for confirmation instead. The workspace-edit service
+ * additionally rejects
+ * the edit if an edited document changes during application. All methods must be called on the JavaFX
+ * application thread.
  */
 public final class RenameDialog implements AutoCloseable {
     private static final Duration RENAME_BUDGET = Duration.ofSeconds(60);
@@ -64,6 +69,8 @@ public final class RenameDialog implements AutoCloseable {
     private @Nullable CancellationTokenSource activeCancellation;
     private @Nullable FeatureRequestContext activeContext;
     private @Nullable RenameProposal proposal;
+    private @Nullable WorkspaceSnapshot previewed;
+    private boolean refreshed;
     private State state = State.EDITING;
     private boolean closed;
 
@@ -213,8 +220,14 @@ public final class RenameDialog implements AutoCloseable {
      *         could not be computed
      */
     public CompletableFuture<State> preview() {
+        refreshed = false;
+        return computePreview();
+    }
+
+    private CompletableFuture<State> computePreview() {
         cancelComputation();
         proposal = null;
+        previewed = null;
         clearPreview();
         if (closed)
             return CompletableFuture.completedFuture(state);
@@ -241,7 +254,8 @@ public final class RenameDialog implements AutoCloseable {
         try {
             future = requests.submit("rename", RequestPriority.NAVIGATION, context, cancellation,
                 () -> ProviderExecutor.shared().execute(source.languageId() + ":rename", context, RENAME_BUDGET,
-                    () -> request.provider().rename(context, request.offset(), name)));
+                    () -> request.provider().rename(context, request.offset(), request.symbol().symbol(),
+                        name)));
         } catch (RuntimeException exception) {
             future = CompletableFuture.failedFuture(exception);
         }
@@ -263,24 +277,33 @@ public final class RenameDialog implements AutoCloseable {
                 shown.complete(state);
                 return;
             }
-            show(result.value());
+            show(result.value(), workspace);
             shown.complete(state);
         }));
         return shown;
     }
 
     /**
-     * Applies the shown preview through the project's workspace-edit service.
+     * Applies the shown preview through the project's workspace-edit service. When the workspace changed since the
+     * preview was computed, nothing is applied; the preview is computed again for the prepared symbol and shown for
+     * confirmation.
      *
-     * @return outcome, or an empty optional when no applicable preview is shown or the project has no edit service
+     * @return outcome, or an empty optional when no applicable preview is shown, the project has no edit service, or
+     *         the preview was out of date
      */
     public Optional<WorkspaceEditResult> apply() {
         RenameProposal current = proposal;
-        if (state != State.PREVIEWED || current == null || current.edit() == null)
+        WorkspaceSnapshot basis = previewed;
+        if (state != State.PREVIEWED || current == null || current.edit() == null || basis == null)
             return Optional.empty();
         Optional<WorkspaceEditService> service = request.edits().get();
         if (service.isEmpty()) {
             block("railroad.rename.status.no_project");
+            return Optional.empty();
+        }
+        if (!sameInputs(basis, request.store().capture(), request.prepared().languageId())) {
+            refreshed = true;
+            computePreview();
             return Optional.empty();
         }
 
@@ -362,7 +385,7 @@ public final class RenameDialog implements AutoCloseable {
         }
     }
 
-    private void show(RenameProposal result) {
+    private void show(RenameProposal result, WorkspaceSnapshot workspace) {
         proposal = result;
         result.conflicts().forEach(conflict -> addMessage(describe(conflict),
             conflict.severity() == RenameConflict.Severity.ERROR ? "rename-error" : "rename-warning"));
@@ -385,13 +408,56 @@ public final class RenameDialog implements AutoCloseable {
 
         int count = changes.show(preview);
 
+        previewed = workspace;
         state = State.PREVIEWED;
-        status.setKey(result.conflicts().isEmpty()
-            ? "railroad.rename.status.ready"
-            : "railroad.rename.status.ready_with_warnings", count, preview.documents().size());
+        status.setKey(refreshed
+            ? "railroad.rename.status.refreshed"
+            : result.conflicts().isEmpty()
+                ? "railroad.rename.status.ready"
+                : "railroad.rename.status.ready_with_warnings",
+            count, preview.documents().size());
         confirmButton
             .setLocalizedText(result.conflicts().isEmpty() ? "railroad.rename.apply" : "railroad.rename.apply_anyway");
         confirmButton.setDisable(false);
+    }
+
+    /**
+     * Reports whether two captures have the same configuration and the same documents of the rename's language,
+     * with the same locations and content. Those are what the rename was computed from. Versions are ignored, so
+     * saving a document without changing it keeps a preview usable.
+     */
+    private static boolean sameInputs(WorkspaceSnapshot previewed, WorkspaceSnapshot current, String languageId) {
+        if (!previewed.configuration().equals(current.configuration()))
+            return false;
+        Map<DocumentId, DocumentSnapshot> before = inputs(previewed, languageId);
+        Map<DocumentId, DocumentSnapshot> after = inputs(current, languageId);
+        if (!before.keySet().equals(after.keySet()))
+            return false;
+        for (DocumentSnapshot document : before.values()) {
+            DocumentSnapshot other = after.get(document.id());
+            if (!document.uri().equals(other.uri()) || !sameContent(document, other))
+                return false;
+        }
+        return true;
+    }
+
+    private static Map<DocumentId, DocumentSnapshot> inputs(WorkspaceSnapshot workspace, String languageId) {
+        Map<DocumentId, DocumentSnapshot> inputs = new HashMap<>();
+        workspace.documents().forEach((id, document) -> {
+            if (document.languageId().equals(languageId)) {
+                inputs.put(id, document);
+            }
+        });
+        return inputs;
+    }
+
+    private static boolean sameContent(DocumentSnapshot before, DocumentSnapshot after) {
+        return switch (before) {
+            case TextDocumentSnapshot text -> after instanceof TextDocumentSnapshot other
+                && text.text().equals(other.text());
+            case BinaryDocumentSnapshot binary -> after instanceof BinaryDocumentSnapshot other
+                && binary.bytes().equals(other.bytes());
+        };
     }
 
     private static String describe(RenameConflict conflict) {
@@ -420,6 +486,8 @@ public final class RenameDialog implements AutoCloseable {
     private void discardPreview() {
         cancelComputation();
         proposal = null;
+        previewed = null;
+        refreshed = false;
         clearPreview();
         if (state != State.APPLIED) {
             state = State.EDITING;

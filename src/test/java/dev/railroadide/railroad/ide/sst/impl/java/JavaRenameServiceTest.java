@@ -9,6 +9,7 @@ import dev.railroadide.railroad.ide.sst.provider.api.RenameProposal;
 import dev.railroadide.railroad.ide.sst.request.api.CancellationToken;
 import dev.railroadide.railroad.ide.sst.request.api.Deadline;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
 import dev.railroadide.railroad.plugin.spi.editor.TextReplacement;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -426,7 +427,7 @@ public class JavaRenameServiceTest {
                 void use() { accept(5); take(5); }
             }
             """);
-        assertConflict(proposal("p/Calls.java", "take(int", 0, "accept"), "would refer to method 'accept'");
+        assertConflict(proposal("p/Calls.java", "take(int", 0, "accept"), "would overload accept(long)");
     }
 
     @Test
@@ -628,7 +629,7 @@ public class JavaRenameServiceTest {
     }
 
     private Map<String, String> applyAt(String file, int offset, String newName) {
-        RenameProposal proposal = services.rename(context(file), offset, newName).value();
+        RenameProposal proposal = rename(file, offset, newName);
         assertTrue(proposal.applicable(), () -> String.valueOf(proposal.conflicts()));
         assertTrue(proposal.conflicts().isEmpty(), () -> String.valueOf(proposal.conflicts()));
         return apply(proposal.edit());
@@ -637,7 +638,16 @@ public class JavaRenameServiceTest {
     private RenameProposal proposal(String file, String marker, int delta, String newName) {
         int offset = text(file).indexOf(marker);
         assertTrue(offset >= 0, marker);
-        return services.rename(context(file), offset + delta, newName).value();
+        return rename(file, offset + delta, newName);
+    }
+
+    /** Prepares the rename first and passes the prepared symbol, as the rename dialog does. */
+    private RenameProposal rename(String file, int offset, String newName) {
+        SymbolId symbol = services.prepareRename(context(file), offset)
+            .value() instanceof RenamePreparation.Renameable renameable
+                ? renameable.symbol()
+                : new SymbolId("test:unprepared");
+        return services.rename(context(file), offset, symbol, newName).value();
     }
 
     private RenamePreparation prepare(String file, String marker, int delta) {

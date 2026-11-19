@@ -8,6 +8,8 @@ import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceEdit;
 import dev.railroadide.railroad.ide.sst.graph.api.*;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolIds;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
+import dev.railroadide.railroad.ide.sst.project.JavaOverrideGraphExtractor;
+import dev.railroadide.railroad.ide.sst.project.JavaOverrideGraphExtractor.InheritedImplementation;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
 import dev.railroadide.railroad.ide.sst.provider.api.RenameConflict;
 import dev.railroadide.railroad.ide.sst.provider.api.RenamePreparation;
@@ -38,6 +40,11 @@ import java.util.regex.Pattern;
  * is verified by analysing the renamed workspace again: each reference must resolve to the same declaration as
  * before, no other reference may start resolving to a renamed declaration, override and subtype relations must be
  * unchanged, and no two declarations may end up with the same identity. Any difference is reported as a conflict.
+ * <p>
+ * The analysis only approximates Java's overload resolution, so an unchanged analysed resolution does not prove an
+ * unchanged compiled one. Method renames that add an overload existing calls could choose, that change which
+ * enclosing type an unqualified call is resolved in, or that produce an unqualified call to {@code yield} are
+ * therefore rejected rather than verified.
  */
 public final class JavaRenameEngine {
     private static final Set<String> KEYWORDS = Set.of("abstract", "assert", "boolean", "break", "byte", "case",
@@ -63,6 +70,13 @@ public final class JavaRenameEngine {
         "JAVA_ENUM_BODY", "JAVA_RECORD_BODY", "JAVA_ANNOTATION_TYPE_BODY", "JAVA_ANONYMOUS_CLASS_BODY");
     private static final Map<String, String> OBJECT_METHODS = Map.of("toString", "", "hashCode", "",
         "equals", "java.lang.Object", "clone", "", "finalize", "");
+    private static final Set<String> PRIMITIVES = Set.of("boolean", "byte", "short", "char", "int", "long",
+        "float", "double");
+    private static final Set<String> BOXING_TYPES = Set.of("java.lang.Object", "java.lang.Number",
+        "java.io.Serializable", "java.lang.Comparable", "java.lang.constant.Constable",
+        "java.lang.constant.ConstantDesc", "java.lang.Boolean", "java.lang.Byte", "java.lang.Short",
+        "java.lang.Character", "java.lang.Integer", "java.lang.Long", "java.lang.Float", "java.lang.Double");
+    private static final SymbolId OBJECT = JavaSymbolIds.type("java.lang.Object");
     private static final int REPORTED_UNRESOLVED_LIMIT = 20;
     private static final String OCCURRENCES = "rename.occurrences";
     private static final String FILE = "rename.file";
@@ -72,6 +86,11 @@ public final class JavaRenameEngine {
     private final Function<FeatureRequestContext, JavaWorkspaceAnalysis> capture;
     private final WorkspaceSymbolGraph graph;
     private final Map<DocumentId, TextDocumentSnapshot> sources = new LinkedHashMap<>();
+    private @Nullable JavaWorkspaceAnalysis analysis;
+    private @Nullable List<InheritedImplementation> implementations;
+    private @Nullable Map<SymbolId, List<SymbolDescriptor>> sourceMembers;
+    private final Map<MemberQuery, List<Member>> members = new HashMap<>();
+    private final Map<DocumentId, SyntaxNode> trees = new HashMap<>();
 
     /**
      * Pins the resolved graph of the request's workspace.
@@ -116,10 +135,12 @@ public final class JavaRenameEngine {
      * Computes and verifies the rename of the symbol at an offset.
      *
      * @param offset UTF-16 offset of, or just after, the identifier
+     * @param symbol identity the rename was prepared for; the identifier at the offset must still name it
      * @param newName requested name
      * @return edit and conflicts
      */
-    public RenameProposal rename(int offset, String newName) {
+    public RenameProposal rename(int offset, SymbolId symbol, String newName) {
+        Objects.requireNonNull(symbol, "symbol");
         Objects.requireNonNull(newName, "newName");
         Target target;
         try {
@@ -127,6 +148,9 @@ public final class JavaRenameEngine {
         } catch (Rejection rejection) {
             return blocked("", newName, List.of(error(rejection.getMessage(), null)));
         }
+        if (!target.id().equals(symbol))
+            return blocked(target.name(), newName, List.of(error("The workspace changed since the rename was "
+                + "started, and the name at the caret now refers to a different symbol", null)));
 
         var conflicts = new Conflicts();
         validateName(target, newName, conflicts);
@@ -269,13 +293,21 @@ public final class JavaRenameEngine {
                     pending.add(edge.source());
                 }
             }
+            for (InheritedImplementation pair : implementations()) {
+                if (pair.implementation().equals(next) && family.add(pair.method())) {
+                    pending.add(pair.method());
+                }
+                if (pair.method().equals(next) && family.add(pair.implementation())) {
+                    pending.add(pair.implementation());
+                }
+            }
         }
 
         for (SymbolId member : family) {
             String owner = ownerName(member);
             if (declaration(member).isEmpty())
-                throw new Rejection("'" + simpleName(id) + "' overrides or is overridden by a method of " + owner
-                    + ", which is declared in a library and cannot be renamed");
+                throw new Rejection("'" + simpleName(id) + "' overrides, implements or is overridden by a method of "
+                    + owner + ", which is declared in a library and cannot be renamed");
             SymbolDescriptor descriptor = graph.symbols(member).getFirst();
             boolean overrides = graph.outgoingEdges(member).stream()
                 .anyMatch(edge -> edge.kind().equals(EdgeKindId.OVERRIDE));
@@ -286,6 +318,14 @@ public final class JavaRenameEngine {
                     + " overrides a method whose declaration is not available, such as a method of java.lang.Object");
         }
         return List.copyOf(family);
+    }
+
+    private List<InheritedImplementation> implementations() {
+        if (implementations == null) {
+            implementations = JavaOverrideGraphExtractor.inheritedImplementations(graph.shards().values(),
+                sources.keySet(), context::checkActive);
+        }
+        return implementations;
     }
 
     private boolean overridesObjectMethod(SymbolDescriptor method) {
@@ -343,6 +383,9 @@ public final class JavaRenameEngine {
         if (target.kind().equals(PARAMETER)) {
             parameterDocumentation(target).ifPresent(range -> plan.replace(target.declaration().document(), range,
                 newName));
+        }
+        if (annotationElement(target.descriptor())) {
+            annotationArguments(target, newName, plan, conflicts);
         }
 
         fileRename(target, newName, plan, conflicts);
@@ -460,6 +503,142 @@ public final class JavaRenameEngine {
         return Optional.empty();
     }
 
+    private boolean annotationElement(SymbolDescriptor symbol) {
+        if (!symbol.kind().id().equals(METHOD) || symbol.ownerId() == null)
+            return false;
+        List<SymbolDescriptor> owners = graph.symbols(symbol.ownerId());
+        return !owners.isEmpty() && owners.getFirst().kind().id().equals("java:annotation");
+    }
+
+    /**
+     * Renames the element name in every usage of the renamed element's annotation type. Element names are not
+     * resolved references, so they are found in the arguments of resolved annotation usages: {@code old = value}
+     * pairs are renamed, and a single-element shorthand {@code @A(value)}, which names {@code value} implicitly,
+     * gains an explicit element name. A usage whose annotation type is not resolved, such as an annotation nested in
+     * another annotation's arguments, cannot be updated and blocks the rename if it might be of this type.
+     */
+    private void annotationArguments(Target target, String newName, Plan plan, Conflicts conflicts) {
+        SymbolId annotation = target.descriptor().ownerId();
+        String annotationName = simpleName(annotation);
+        for (SemanticIndexShard shard : sourceShards()) {
+            TextDocumentSnapshot document = sources.get(shard.documentId());
+            if (annotationName == null || !document.text().contains(annotationName))
+                continue;
+            SyntaxNode root = tree(document);
+            Set<Integer> resolved = new HashSet<>();
+            for (ReferenceOccurrence reference : shard.references()) {
+                if (!reference.kind().equals(ReferenceKindId.ANNOTATION) || documentOf(reference) == null)
+                    continue;
+                resolved.add(reference.location().range().start);
+                if (!reference.target().equals(annotation))
+                    continue;
+                SyntaxNode usage = ancestor(tokenAt(root, reference.location().range().start),
+                    JavaSyntaxKinds.ANNOTATION.id());
+                if (usage != null) {
+                    elementNames(usage, target.name(), newName, document, plan);
+                }
+            }
+            List<SyntaxToken> tokens = tokens(root);
+            for (int index = 0; index < tokens.size(); index++) {
+                if (!tokens.get(index).kind().id().equals("JAVA_TOKEN_AT"))
+                    continue;
+                SyntaxToken name = null;
+                boolean segment = true;
+                for (int next = index + 1; next < tokens.size(); next++) {
+                    String kind = tokens.get(next).kind().id();
+                    if (trivia(kind))
+                        continue;
+                    if (segment && kind.equals("JAVA_TOKEN_IDENTIFIER")) {
+                        name = tokens.get(next);
+                        segment = false;
+                    } else if (!segment && kind.equals("JAVA_TOKEN_DOT")) {
+                        segment = true;
+                    } else
+                        break;
+                }
+                if (name != null && name.text().equals(annotationName) && !resolved.contains(name.start())) {
+                    conflicts.add(error("The annotation at " + describe(document, name.start()) + " could not be "
+                        + "resolved, so its '" + target.name() + "' element cannot be renamed safely",
+                        location(document, new TextRange(name.start(), name.end()))));
+                }
+            }
+        }
+    }
+
+    private static List<SyntaxToken> tokens(SyntaxNode root) {
+        List<SyntaxToken> tokens = new ArrayList<>();
+        Deque<SyntaxNode> pending = new ArrayDeque<>(List.of(root));
+        while (!pending.isEmpty()) {
+            SyntaxNode node = pending.removeFirst();
+            if (node instanceof SyntaxToken token) {
+                tokens.add(token);
+            } else {
+                node.children().reversed().forEach(pending::addFirst);
+            }
+        }
+        return tokens;
+    }
+
+    private static void elementNames(
+        SyntaxNode annotation,
+        String oldName,
+        String newName,
+        TextDocumentSnapshot document,
+        Plan plan
+    ) {
+        List<SyntaxNode> arguments = new ArrayList<>();
+        int depth = 0;
+        for (SyntaxNode child : annotation.children()) {
+            String kind = child.kind().id();
+            if (trivia(kind))
+                continue;
+            if (Set.of("JAVA_TOKEN_OPEN_PAREN", "JAVA_TOKEN_OPEN_BRACE", "JAVA_TOKEN_OPEN_BRACKET").contains(kind)) {
+                if (depth == 1) {
+                    arguments.add(child);
+                }
+                depth++;
+            } else if (Set.of("JAVA_TOKEN_CLOSE_PAREN", "JAVA_TOKEN_CLOSE_BRACE", "JAVA_TOKEN_CLOSE_BRACKET")
+                .contains(kind)) {
+                if (--depth == 0)
+                    break;
+            } else if (depth == 1) {
+                arguments.add(child);
+            }
+        }
+        if (arguments.isEmpty())
+            return;
+
+        boolean pairs = false;
+        for (int index = 0; index < arguments.size(); index++) {
+            boolean elementStart = index == 0 || arguments.get(index - 1).kind().id().equals("JAVA_TOKEN_COMMA");
+            if (!elementStart || index + 1 >= arguments.size()
+                || !arguments.get(index).kind().id().equals("JAVA_TOKEN_IDENTIFIER")
+                || !arguments.get(index + 1).kind().id().equals("JAVA_TOKEN_EQUALS"))
+                continue;
+            pairs = true;
+            SyntaxNode name = arguments.get(index);
+            if (name instanceof SyntaxToken token && token.text().equals(oldName)) {
+                plan.replace(document, new TextRange(token.start(), token.end()), newName);
+            }
+        }
+        if (!pairs && oldName.equals("value")) {
+            int start = arguments.getFirst().start();
+            plan.replace(document, new TextRange(start, start), newName + " = ");
+        }
+    }
+
+    private static boolean trivia(String kind) {
+        return kind.endsWith("WHITESPACE") || kind.endsWith("COMMENT");
+    }
+
+    private static @Nullable SyntaxNode ancestor(@Nullable SyntaxNode node, String kind) {
+        for (SyntaxNode current = node; current != null; current = current.parent().orElse(null)) {
+            if (current.kind().id().equals(kind))
+                return current;
+        }
+        return null;
+    }
+
     private void fileRename(Target target, String newName, Plan plan, Conflicts conflicts) {
         if (!TYPE_KINDS.contains(target.kind()) || !topLevel(target.descriptor()))
             return;
@@ -519,6 +698,7 @@ public final class JavaRenameEngine {
     }
 
     private void checkDeclarations(Target target, String newName, Plan plan, Conflicts conflicts) {
+        checkIdentityCollisions(target, identityMapping(target, newName), conflicts);
         if (TYPE_KINDS.contains(target.kind())) {
             checkNestedTypeNames(target, newName, conflicts);
         }
@@ -527,7 +707,446 @@ public final class JavaRenameEngine {
         }
         if (target.kind().equals(METHOD)) {
             checkHierarchy(target, newName, conflicts);
+            checkImplicitImplementations(target, conflicts);
+            checkRecordAccessors(target, newName, conflicts);
+            if (annotationElement(target.descriptor())) {
+                checkAnnotationElement(target, newName, conflicts);
+            }
+            List<CallSite> sites = callSites(target, newName);
+            checkOverloads(target, newName, sites, conflicts);
+            checkUnqualifiedCalls(target, newName, sites, conflicts);
         }
+    }
+
+    /**
+     * Rejects renaming an interface method that a concrete source type implements through a member the analysis
+     * does not model, such as an implicit record accessor or a method inherited from {@link Enum}. Such a type
+     * would no longer implement the renamed method.
+     */
+    private void checkImplicitImplementations(Target target, Conflicts conflicts) {
+        for (SymbolId member : target.family()) {
+            SymbolId owner = graph.symbols(member).getFirst().ownerId();
+            List<SymbolDescriptor> owners = owner == null ? List.of() : graph.symbols(owner);
+            if (owners.isEmpty() || !owners.getFirst().kind().id().equals("java:interface"))
+                continue;
+            for (SymbolId type : related(owner, false)) {
+                List<SymbolDescriptor> types = graph.symbols(type);
+                if (types.isEmpty() || !Set.of("java:class", "java:enum", "java:record")
+                    .contains(types.getFirst().kind().id())
+                    || types.getFirst().metadata().modifiers().contains("abstract")
+                    || declarationLocation(types.getFirst()) == null)
+                    continue;
+                Set<SymbolId> inherited = related(type, true);
+                inherited.add(type);
+                boolean implemented = target.family().stream().anyMatch(candidate -> {
+                    SymbolDescriptor method = graph.symbols(candidate).getFirst();
+                    return inherited.contains(method.ownerId()) && !method.metadata().modifiers().contains("abstract")
+                        && (method.ownerId().equals(type) || !isPrivate(method));
+                });
+                if (!implemented) {
+                    conflicts.add(error(describeSymbol(graph, type) + " implements '" + target.name() + "' through "
+                        + "a member that is not declared in source, such as a record accessor or an enum method, and "
+                        + "would no longer implement it", declarationLocation(types.getFirst())));
+                    return;
+                }
+            }
+        }
+    }
+
+    /**
+     * Rejects giving a record method a component's name, or renaming a method named like a component, when the
+     * method takes no parameters: it would become, or stop being, the component's accessor, which record patterns
+     * and implementations of interface methods use.
+     */
+    private void checkRecordAccessors(Target target, String newName, Conflicts conflicts) {
+        for (SymbolId member : target.family()) {
+            SymbolId owner = graph.symbols(member).getFirst().ownerId();
+            List<SymbolDescriptor> owners = owner == null ? List.of() : graph.symbols(owner);
+            if (owners.isEmpty() || !owners.getFirst().kind().id().equals("java:record")
+                || !Objects.equals(parameterSignature(member), ""))
+                continue;
+            List<JavaSymbolIds.Component> record = components(owner);
+            for (SemanticIndexShard shard : sourceShards()) {
+                for (SymbolDescriptor symbol : shard.declarations()) {
+                    List<JavaSymbolIds.Component> parts = components(symbol.id());
+                    if (!isRecordComponent(symbol.id()) || !startsWith(parts, record)
+                        || parts.subList(record.size(), parts.size()).stream()
+                            .anyMatch(part -> Set.of("type", "localType", "anonymous").contains(part.kind()))
+                        || !Set.of(newName, target.name()).contains(symbol.simpleName()))
+                        continue;
+                    conflicts.add(error("'" + symbol.simpleName() + "' is a component of record " + ownerName(member)
+                        + ", so renaming '" + target.name() + "' to '" + newName + "' would change its accessor",
+                        declarationLocation(symbol)));
+                    return;
+                }
+            }
+        }
+    }
+
+    /**
+     * Rejects element names every annotation interface already has as methods of
+     * {@link java.lang.annotation.Annotation}, and renaming the {@code value} element of an annotation that a
+     * {@code @Repeatable} annotation may name as its container, which must declare {@code value}. The container's
+     * class literal is not a resolved reference, so a {@code @Repeatable} argument spelling the container's simple
+     * name is treated as naming it.
+     */
+    private void checkAnnotationElement(Target target, String newName, Conflicts conflicts) {
+        if (newName.equals("annotationType")) {
+            conflicts.add(error("'annotationType' is a method of java.lang.annotation.Annotation, which every "
+                + "annotation interface extends", null));
+            return;
+        }
+        if (!target.name().equals("value"))
+            return;
+        SymbolId container = target.descriptor().ownerId();
+        for (SemanticIndexShard shard : sourceShards()) {
+            TextDocumentSnapshot document = sources.get(shard.documentId());
+            for (ReferenceOccurrence repeatable : shard.references()) {
+                if (!repeatable.kind().equals(ReferenceKindId.ANNOTATION)
+                    || !"java.lang.annotation.Repeatable".equals(typeName(repeatable.target()))
+                    || documentOf(repeatable) == null)
+                    continue;
+                SyntaxNode usage = ancestor(tokenAt(tree(document), repeatable.location().range().start),
+                    JavaSyntaxKinds.ANNOTATION.id());
+                if (usage == null)
+                    continue;
+                String containerName = simpleName(container);
+                boolean names = shard.references().stream()
+                    .anyMatch(reference -> reference.target().equals(container)
+                        && usage.start() <= reference.location().range().start
+                        && reference.location().range().end <= usage.end())
+                    || tokens(usage).stream().anyMatch(token -> token.kind().id().equals("JAVA_TOKEN_IDENTIFIER")
+                        && token.text().equals(containerName));
+                if (names) {
+                    conflicts.add(error("'" + simpleName(container) + "' is the container of a @Repeatable "
+                        + "annotation, which requires its 'value' element",
+                        location(document,
+                            repeatable.location().range())));
+                    return;
+                }
+            }
+        }
+    }
+
+    /**
+     * Finds the method invocations and method references spelling the old or the new name, with the method each
+     * one resolves to. Sites the analysis could not resolve are included with no target.
+     */
+    private List<CallSite> callSites(Target target, String newName) {
+        List<CallSite> sites = new ArrayList<>();
+        Set<String> names = Set.of(target.name(), newName);
+        for (TextDocumentSnapshot document : sources.values()) {
+            context.checkActive();
+            if (!document.text().contains(target.name()) && !document.text().contains(newName))
+                continue;
+            Map<Integer, Set<SymbolId>> resolved = new HashMap<>();
+            for (ReferenceOccurrence reference : graph.shards().get(document.id()).references()) {
+                if (reference.kind().equals(ReferenceKindId.CALL)
+                    || reference.kind().equals(ReferenceKindId.METHOD_REFERENCE)) {
+                    resolved.computeIfAbsent(reference.location().range().start, _ -> new LinkedHashSet<>())
+                        .add(reference.target());
+                }
+            }
+            for (SyntaxToken token : tokens(tree(document))) {
+                if (!token.kind().id().equals("JAVA_TOKEN_IDENTIFIER") || !names.contains(token.text()))
+                    continue;
+                Boolean unqualified = callShape(token);
+                if (unqualified == null)
+                    continue;
+                Set<SymbolId> targets = resolved.getOrDefault(token.start(), Set.of());
+                boolean reference = token.parent()
+                    .filter(parent -> parent.kind().id().equals(JavaSyntaxKinds.METHOD_REFERENCE_EXPRESSION.id()))
+                    .isPresent();
+                sites.add(new CallSite(document, token.start(), token.text(), unqualified, reference,
+                    targets.size() == 1 ? targets.iterator().next() : null));
+            }
+        }
+        return sites;
+    }
+
+    /**
+     * Reports whether an identifier names the method of an invocation or method reference: {@code true} for an
+     * unqualified invocation such as {@code run()}, {@code false} for a qualified one or a method reference, and
+     * {@code null} for any other identifier.
+     */
+    private static @Nullable Boolean callShape(SyntaxToken token) {
+        SyntaxNode parent = token.parent().orElse(null);
+        if (parent == null)
+            return null;
+        if (parent.kind().id().equals(JavaSyntaxKinds.METHOD_REFERENCE_EXPRESSION.id()))
+            return meaningful(parent.children()).getLast().start() == token.start() ? false : null;
+        SyntaxNode invocation = parent.parent().orElse(null);
+        if (!parent.kind().id().equals(JavaSyntaxKinds.NAME_EXPRESSION.id()) || invocation == null
+            || !invocation.kind().id().equals(JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id()))
+            return null;
+        List<SyntaxNode> children = meaningful(invocation.children());
+        int index = children.indexOf(parent);
+        if (index < 0 || index + 1 >= children.size()
+            || !children.get(index + 1).kind().id().equals(JavaSyntaxKinds.ARGUMENT_LIST.id()))
+            return null;
+        return index == 0;
+    }
+
+    private static List<SyntaxNode> meaningful(List<? extends SyntaxNode> nodes) {
+        return nodes.stream().<SyntaxNode>map(node -> node).filter(node -> !trivia(node.kind().id())).toList();
+    }
+
+    /**
+     * Rejects a method rename that adds an overload existing calls could choose between. The analysis
+     * approximates Java's overload resolution, so an unchanged analysed resolution does not establish that the
+     * compiler would still choose the same method, or any method at all. Two overloads compete unless one of their
+     * parameter positions accepts no common argument. A method reference to an overloaded name is inexact, and an
+     * inexact reference no longer helps choose among the overloads of a call it is passed to, so any overload of a
+     * method-referenced name competes. Identical signatures are clashes, which the hierarchy and identity checks
+     * report.
+     */
+    private void checkOverloads(Target target, String newName, List<CallSite> sites, Conflicts conflicts) {
+        for (SymbolId member : target.family()) {
+            SymbolDescriptor method = graph.symbols(member).getFirst();
+            SymbolId owner = method.ownerId();
+            if (owner == null)
+                continue;
+            Set<SymbolId> types = new LinkedHashSet<>(List.of(owner));
+            if (!isPrivate(method)) {
+                types.addAll(related(owner, false));
+            }
+            String parameters = parameterSignature(member);
+            for (SymbolId type : types) {
+                for (Member existing : methodsNamed(type, newName, target)) {
+                    context.checkActive();
+                    if (existing.renamed() || parameters != null && parameters.equals(existing.parameters()))
+                        continue;
+                    List<CallSite> affected = sites.stream().filter(site -> site.target() == null
+                        ? site.name().equals(newName)
+                        : target.family().contains(site.target())
+                            || methodKey(site.target()).equals(existing.key()))
+                        .toList();
+                    if (affected.isEmpty() || !compete(parameters, existing.parameters())
+                        && affected.stream().noneMatch(CallSite::reference))
+                        continue;
+                    conflicts.add(error("Renaming '" + target.name() + "' in " + ownerName(member) + " to '"
+                        + newName + "' would overload " + newName + "(" + Objects.requireNonNullElse(
+                            existing.parameters(), "...")
+                        + ") in " + existing.owner()
+                        + ", and existing calls or method references could then resolve to a different method "
+                        + "or become ambiguous", null));
+                    return;
+                }
+            }
+        }
+    }
+
+    /**
+     * Checks invocations that name the method without a qualifier. Java does not allow an unqualified call to a
+     * method named {@code yield}, and it resolves an unqualified call only among the methods of the innermost
+     * enclosing type that has a method of that name, even when none of them is applicable.
+     */
+    private void checkUnqualifiedCalls(Target target, String newName, List<CallSite> sites, Conflicts conflicts) {
+        for (CallSite site : sites) {
+            context.checkActive();
+            boolean renamed = site.target() != null && target.family().contains(site.target());
+            if (!site.unqualified() || !renamed && !site.name().equals(newName))
+                continue;
+            String where = describe(site.document(), site.start());
+            Location.TextLocation location = location(site.document(),
+                new TextRange(site.start(), site.start() + site.name().length()));
+            if (renamed && newName.equals("yield")) {
+                conflicts.add(error("The call at " + where + " would become an unqualified call to 'yield', which "
+                    + "Java does not allow", location));
+                continue;
+            }
+            for (SymbolId type : enclosingTypes(site.document(), site.start())) {
+                List<Member> members = methodsNamed(type, newName, target);
+                if (members.isEmpty())
+                    continue;
+                boolean resolves = site.target() != null
+                    && members.stream().anyMatch(member -> methodKey(site.target()).equals(member.key()));
+                if (!resolves && (renamed || members.stream().anyMatch(Member::renamed))) {
+                    conflicts.add(error("The call to '" + site.name() + "' at " + where + " would be resolved "
+                        + "among the '" + newName + "' methods of " + describeSymbol(graph, type)
+                        + (site.target() == null ? ", and it could not be verified" : " instead"), location));
+                }
+                break;
+            }
+        }
+    }
+
+    /**
+     * Lists the types whose bodies contain an offset, innermost first. The arguments of an anonymous class's
+     * instance creation lie within its declaration but outside its body, in the scope of the enclosing type.
+     */
+    private List<SymbolId> enclosingTypes(TextDocumentSnapshot document, int offset) {
+        List<SyntaxNode> bodies = new ArrayList<>();
+        for (SyntaxNode node = tokenAt(tree(document), offset); node != null; node = node.parent().orElse(null)) {
+            if (TYPE_BODY_KINDS.contains(node.kind().id())) {
+                bodies.add(node);
+            }
+        }
+        Map<SymbolId, Integer> types = new HashMap<>();
+        for (SymbolDescriptor symbol : graph.shards().get(document.id()).declarations()) {
+            if (!TYPE_KINDS.contains(symbol.kind().id()))
+                continue;
+            for (SymbolLocation location : symbol.locations()) {
+                if (location.declaration() instanceof Location.TextLocation declaration
+                    && declaration.documentId().equals(document.id()) && declaration.range().start <= offset
+                    && offset < declaration.range().end
+                    && bodies.stream().anyMatch(body -> declaration.range().start <= body.start()
+                        && body.end() <= declaration.range().end)) {
+                    types.merge(symbol.id(), declaration.range().end - declaration.range().start, Math::min);
+                }
+            }
+        }
+        return types.entrySet().stream().sorted(Map.Entry.comparingByValue()).map(Map.Entry::getKey).toList();
+    }
+
+    /**
+     * Lists the methods named {@code name} that are members of a type once the rename is applied: those it declares
+     * or inherits under that name, and the renamed methods it declares or inherits.
+     */
+    private List<Member> methodsNamed(SymbolId type, String name, Target target) {
+        return members.computeIfAbsent(new MemberQuery(type, name), _ -> membersNamed(type, name, target));
+    }
+
+    private List<Member> membersNamed(SymbolId type, String name, Target target) {
+        List<SymbolId> types = new ArrayList<>(List.of(type));
+        types.addAll(related(type, true));
+        types.add(OBJECT);
+        List<Member> members = new ArrayList<>();
+        for (SymbolId owner : new LinkedHashSet<>(types)) {
+            boolean own = owner.equals(type);
+            for (Member member : declaredMethods(owner, name)) {
+                if ((own || !member.isPrivate()) && !target.family().contains(member.key())) {
+                    members.add(member);
+                }
+            }
+            for (SymbolId renamed : target.family()) {
+                SymbolDescriptor method = graph.symbols(renamed).getFirst();
+                if (owner.equals(method.ownerId()) && (own || !isPrivate(method))) {
+                    members.add(new Member(methodKey(renamed), ownerName(renamed), parameterSignature(renamed),
+                        isPrivate(method), true));
+                }
+            }
+        }
+        return members;
+    }
+
+    private List<Member> declaredMethods(SymbolId type, String name) {
+        List<SymbolDescriptor> declared = sourceMembers().get(type);
+        if (declared != null)
+            return declared.stream()
+                .filter(symbol -> symbol.kind().id().equals(METHOD) && symbol.simpleName().equals(name))
+                .map(symbol -> new Member(methodKey(symbol.id()), ownerName(symbol.id()),
+                    parameterSignature(symbol.id()), isPrivate(symbol), false))
+                .toList();
+        String owner = typeName(type);
+        if (owner == null)
+            return List.of();
+        List<Member> members = new ArrayList<>();
+        for (var candidate : analysis().lookupMember(owner.replace('$', '.'), name)) {
+            if (candidate.kind() != JavaSymbolKind.METHOD)
+                continue;
+            String parameters = candidateParameters(candidate);
+            SymbolId key = candidate.descriptor() != null
+                ? methodKey(candidate.descriptor().id())
+                : parameters == null
+                    ? null
+                    : JavaSymbolIds.method(type, name, parameters.isEmpty()
+                        ? List.of()
+                        : List.of(parameters
+                            .split(",")));
+            members.add(new Member(key, owner.replace('$', '.'), parameters,
+                candidate.descriptor() != null && isPrivate(candidate.descriptor()), false));
+        }
+        return members;
+    }
+
+    /** Indexes the declarations of analysed sources by their owner; every source type has an entry. */
+    private Map<SymbolId, List<SymbolDescriptor>> sourceMembers() {
+        if (sourceMembers == null) {
+            Map<SymbolId, List<SymbolDescriptor>> members = new HashMap<>();
+            for (SemanticIndexShard shard : sourceShards()) {
+                for (SymbolDescriptor symbol : shard.declarations()) {
+                    if (TYPE_KINDS.contains(symbol.kind().id())) {
+                        members.computeIfAbsent(symbol.id(), _ -> new ArrayList<>());
+                    }
+                    if (symbol.ownerId() != null) {
+                        members.computeIfAbsent(symbol.ownerId(), _ -> new ArrayList<>()).add(symbol);
+                    }
+                }
+            }
+            sourceMembers = members;
+        }
+        return sourceMembers;
+    }
+
+    /**
+     * Reports whether some argument list could be applicable to both overloads. Overloads of different arity can
+     * compete only through variable arity; at equal arity, a position whose types accept no common argument
+     * separates them. Unknown signatures always compete.
+     */
+    private static boolean compete(@Nullable String first, @Nullable String second) {
+        if (first == null || second == null)
+            return true;
+        List<String> left = first.isEmpty() ? List.of() : List.of(first.split(",", -1));
+        List<String> right = second.isEmpty() ? List.of() : List.of(second.split(",", -1));
+        if (left.size() != right.size())
+            return variableArity(left) || variableArity(right);
+        for (int index = 0; index < left.size(); index++) {
+            String one = left.get(index);
+            String two = right.get(index);
+            boolean last = index == left.size() - 1;
+            if (disjoint(one, two) && (!last || (!one.endsWith("[]") || disjoint(element(one), two))
+                && (!two.endsWith("[]") || disjoint(one, element(two)))))
+                return false;
+        }
+        return true;
+    }
+
+    private static boolean variableArity(List<String> parameters) {
+        return !parameters.isEmpty() && parameters.getLast().endsWith("[]");
+    }
+
+    private static String element(String array) {
+        return array.substring(0, array.length() - 2);
+    }
+
+    /**
+     * Reports whether no argument converts to both erased parameter types. Any two reference types accept
+     * {@code null}; a primitive and a reference type share arguments only through boxing.
+     */
+    private static boolean disjoint(String first, String second) {
+        if (first.equals(second))
+            return false;
+        boolean primitive = PRIMITIVES.contains(first);
+        if (primitive && PRIMITIVES.contains(second))
+            return first.equals("boolean") != second.equals("boolean");
+        if (primitive == PRIMITIVES.contains(second))
+            return false;
+        String reference = primitive ? second : first;
+        return !BOXING_TYPES.contains(reference) && (reference.contains(".") || reference.endsWith("[]"));
+    }
+
+    private static boolean isPrivate(SymbolDescriptor symbol) {
+        return symbol.metadata().visibility().equals("private")
+            || symbol.metadata().modifiers().contains("private");
+    }
+
+    private static SymbolId methodKey(SymbolId id) {
+        List<JavaSymbolIds.Component> parts = components(id);
+        if (parts.isEmpty() || !parts.getLast().kind().equals("return"))
+            return id;
+        return JavaSymbolIds.fromComponents(parts.subList(0, parts.size() - 1));
+    }
+
+    private SyntaxNode tree(TextDocumentSnapshot document) {
+        return trees.computeIfAbsent(document.id(), _ -> JavaSyntaxParser.parse(document, context::checkActive).root());
+    }
+
+    private JavaWorkspaceAnalysis analysis() {
+        if (analysis == null) {
+            analysis = capture.apply(context);
+        }
+        return analysis;
     }
 
     private void checkNestedTypeNames(Target target, String newName, Conflicts conflicts) {
@@ -567,7 +1186,7 @@ public final class JavaRenameEngine {
 
     private void checkScope(Target target, String newName, Conflicts conflicts) {
         TextDocumentSnapshot document = target.declaration().document();
-        SyntaxNode root = JavaSyntaxParser.parse(document, context::checkActive).root();
+        SyntaxNode root = tree(document);
         SyntaxNode renamed = tokenAt(root, target.declaration().location().range().start);
         if (renamed == null)
             return;
@@ -638,14 +1257,14 @@ public final class JavaRenameEngine {
     }
 
     private void checkHierarchy(Target target, String newName, Conflicts conflicts) {
-        JavaWorkspaceAnalysis analysis = capture.apply(context);
+        JavaWorkspaceAnalysis analysis = analysis();
         for (SymbolId member : target.family()) {
             SymbolDescriptor method = graph.symbols(member).getFirst();
             if (method.ownerId() == null)
                 continue;
             String parameters = parameterSignature(member);
             Set<SymbolId> supertypes = related(method.ownerId(), true);
-            supertypes.add(JavaSymbolIds.type("java.lang.Object"));
+            supertypes.add(OBJECT);
             Set<SymbolId> types = new LinkedHashSet<>(supertypes);
             types.addAll(related(method.ownerId(), false));
             types.remove(method.ownerId());
@@ -727,9 +1346,11 @@ public final class JavaRenameEngine {
             context.deadline());
         WorkspaceSymbolGraph after = capture.apply(request).resolvedGraph(context::checkActive);
 
-        checkIdentityCollisions(target, rename, conflicts);
         compareReferences(after, rename, plan, renamedDocuments, conflicts);
         compareEdges(after, rename, conflicts);
+        if (target.kind().equals(METHOD) || TYPE_KINDS.contains(target.kind())) {
+            compareImplementations(after, rename, conflicts);
+        }
     }
 
     /**
@@ -943,6 +1564,31 @@ public final class JavaRenameEngine {
             }
         }
     }
+    private void compareImplementations(
+        WorkspaceSymbolGraph after,
+        Function<SymbolId, SymbolId> rename,
+        Conflicts conflicts
+    ) {
+        Set<InheritedImplementation> expected = new LinkedHashSet<>();
+        for (InheritedImplementation pair : implementations()) {
+            expected.add(new InheritedImplementation(rename.apply(pair.implementation()),
+                rename.apply(pair.method()), rename.apply(pair.type())));
+        }
+        Set<InheritedImplementation> actual = new LinkedHashSet<>(JavaOverrideGraphExtractor
+            .inheritedImplementations(after.shards().values(), sources.keySet(), context::checkActive));
+        for (InheritedImplementation pair : expected) {
+            if (!actual.contains(pair)) {
+                conflicts.add(error(describeSymbol(after, pair.implementation()) + " would no longer implement "
+                    + describeSymbol(after, pair.method()) + " in " + describeSymbol(after, pair.type()), null));
+            }
+        }
+        for (InheritedImplementation pair : actual) {
+            if (!expected.contains(pair)) {
+                conflicts.add(error(describeSymbol(after, pair.implementation()) + " would start implementing "
+                    + describeSymbol(after, pair.method()) + " in " + describeSymbol(after, pair.type()), null));
+            }
+        }
+    }
     // endregion
 
     // region Unresolved occurrences
@@ -963,7 +1609,7 @@ public final class JavaRenameEngine {
             List<Range<?>> resolved = graph.shards().get(document.id()).references().stream()
                 .<Range<?>>map(reference -> reference.location().range()).toList();
             Deque<SyntaxNode> pending = new ArrayDeque<>(
-                List.of(JavaSyntaxParser.parse(document, context::checkActive).root()));
+                List.of(tree(document)));
             while (!pending.isEmpty()) {
                 SyntaxNode node = pending.removeFirst();
                 if (!(node instanceof SyntaxToken token)) {
@@ -1198,8 +1844,12 @@ public final class JavaRenameEngine {
             return type == null ? "another symbol" : "a member of " + type.replace('$', '.');
         }
         SymbolDescriptor symbol = symbols.getFirst();
-        return kindLabel(symbol.kind().id()) + " '" + (symbol.qualifiedName() != null
-            && TYPE_KINDS.contains(symbol.kind().id()) ? symbol.qualifiedName() : symbol.simpleName()) + "'";
+        if (symbol.simpleName().startsWith("<"))
+            return "an anonymous " + kindLabel(symbol.kind().id());
+        String qualified = symbol.qualifiedName();
+        boolean readable = qualified != null && TYPE_KINDS.contains(symbol.kind().id())
+            && !qualified.contains("$local$") && !qualified.contains("$anonymous$");
+        return kindLabel(symbol.kind().id()) + " '" + (readable ? qualified : symbol.simpleName()) + "'";
     }
 
     private static String kindLabel(String kind) {
@@ -1288,6 +1938,41 @@ public final class JavaRenameEngine {
     }
 
     private record EdgeKey(SymbolId source, SymbolId target, EdgeKindId kind) {
+    }
+
+    private record MemberQuery(SymbolId type, String name) {
+    }
+
+    /**
+     * An invocation or method reference spelling the old or new name.
+     *
+     * @param reference whether the site is a method reference
+     * @param target method it resolves to, or {@code null} when unresolved or ambiguous
+     */
+    private record CallSite(
+        TextDocumentSnapshot document,
+        int start,
+        String name,
+        boolean unqualified,
+        boolean reference,
+        @Nullable SymbolId target
+    ) {
+    }
+
+    /**
+     * A method that is a member of a type once the rename is applied.
+     *
+     * @param key identity without any return-type component, or {@code null} when unknown
+     * @param parameters erased parameter types, or {@code null} when unknown
+     * @param renamed whether the method is one of the renamed methods
+     */
+    private record Member(
+        @Nullable SymbolId key,
+        String owner,
+        @Nullable String parameters,
+        boolean isPrivate,
+        boolean renamed
+    ) {
     }
 
     /** Planned replacements and file renames, with offset mapping between the old and new texts. */

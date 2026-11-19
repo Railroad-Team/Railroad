@@ -1338,6 +1338,7 @@ railroad.rename.status.document_changed=The file changed since the rename was st
 railroad.rename.status.apply_failed=The rename could not be applied. Preview it again to use the current files.
 railroad.rename.status.failed=The rename could not be computed. See the log for details.
 railroad.rename.status.timed_out=The rename timed out while analysing the workspace.
+railroad.rename.status.refreshed=The workspace changed since the preview, so nothing was renamed. %d occurrences in %d files will now be renamed. Review the updated preview and press Enter to rename.
 railroad.rename.status.no_project=No project is open to apply the rename to.
 railroad.rename.preview.file=%s (%d changes, %s)
 railroad.rename.preview.rename_file=Rename file %s to %s

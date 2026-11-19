@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.graph.api.*;
 import dev.railroadide.railroad.ide.sst.semantic.api.*;
 import java.util.*;
@@ -7,11 +8,13 @@ import java.util.*;
 /** Adds certain Java override/implementation relations from captured declarations and parameterized hierarchy facts. */
 public final class JavaOverrideGraphExtractor {
     private static final TypeReference OBJECT = new TypeReference("java.lang.Object");
+    private static final Set<String> CLASS_KINDS = Set.of("java:class", "java:enum", "java:record");
     private final Map<SymbolId, SymbolDescriptor> declarations = new HashMap<>();
     private final Map<SymbolId, List<SymbolDescriptor>> methods = new HashMap<>();
     private final Map<SymbolId, List<SymbolEdge>> parents = new HashMap<>();
     private final Map<String, List<SymbolDescriptor>> typesByName = new HashMap<>();
     private final Map<SymbolId, List<Binding>> bindings = new HashMap<>();
+    private final Map<SymbolId, Map<String, List<SymbolDescriptor>>> methodNames = new HashMap<>();
     private final Runnable check;
 
     private JavaOverrideGraphExtractor(Collection<SemanticIndexShard> shards, Runnable check) {
@@ -49,6 +52,73 @@ public final class JavaOverrideGraphExtractor {
      */
     public static List<SemanticIndexShard> extract(Collection<SemanticIndexShard> shards, Runnable check) {
         return new JavaOverrideGraphExtractor(shards, check).extract(shards);
+    }
+
+    /**
+     * Finds methods that implement an interface method only because a subclass inherits both, such as
+     * {@code Base.draw()} implementing {@code Shape.draw()} in {@code class Circle extends Base implements Shape}.
+     * Such pairs have no override relation, since neither declaring type is a subtype of the other.
+     *
+     * @param shards captured document shards with unique document identities
+     * @param documents documents whose declared types are examined as the inheriting subclass
+     * @param check callback invoked to check cancellation or interruption; may throw to abort
+     * @return pairs found, in declaration order
+     */
+    public static List<InheritedImplementation> inheritedImplementations(
+        Collection<SemanticIndexShard> shards,
+        Set<DocumentId> documents,
+        Runnable check
+    ) {
+        var extractor = new JavaOverrideGraphExtractor(shards, check);
+        Set<InheritedImplementation> found = new LinkedHashSet<>();
+        for (var shard : shards) {
+            if (!documents.contains(shard.documentId()))
+                continue;
+            for (var type : shard.declarations()) {
+                check.run();
+                if (CLASS_KINDS.contains(type.kind().id())) {
+                    extractor.inheritedImplementations(type.id(), found);
+                }
+            }
+        }
+        return List.copyOf(found);
+    }
+
+    private void inheritedImplementations(SymbolId type, Set<InheritedImplementation> found) {
+        List<Binding> ancestors = bindings.computeIfAbsent(type, this::ancestorBindings);
+        for (var inherited : ancestors) {
+            SymbolDescriptor owner = declarations.get(inherited.type());
+            if (owner == null || !CLASS_KINDS.contains(owner.kind().id()))
+                continue;
+            for (var implemented : ancestors) {
+                SymbolDescriptor contract = declarations.get(implemented.type());
+                if (contract == null || !contract.kind().id().equals("java:interface")
+                    || bindings.computeIfAbsent(inherited.type(), this::ancestorBindings).stream()
+                        .anyMatch(binding -> binding.type().equals(implemented.type())))
+                    continue;
+                Map<String, List<SymbolDescriptor>> candidates = methodsByName(inherited.type());
+                boolean samePackage = packageName(owner).equals(packageName(declarations.get(type)));
+                for (var base : methods.getOrDefault(implemented.type(), List.of())) {
+                    for (var method : candidates.getOrDefault(base.simpleName(), List.of())) {
+                        check.run();
+                        if ((samePackage || !method.metadata().visibility().equals("package"))
+                            && matches(method, inherited.arguments(), base, implemented.arguments())) {
+                            found.add(new InheritedImplementation(method.id(), base.id(), type));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private Map<String, List<SymbolDescriptor>> methodsByName(SymbolId type) {
+        return methodNames.computeIfAbsent(type, owner -> {
+            Map<String, List<SymbolDescriptor>> byName = new HashMap<>();
+            for (var method : methods.getOrDefault(owner, List.of())) {
+                byName.computeIfAbsent(method.simpleName(), _ -> new ArrayList<>()).add(method);
+            }
+            return byName;
+        });
     }
 
     private List<SemanticIndexShard> extract(Collection<SemanticIndexShard> shards) {
@@ -270,5 +340,27 @@ public final class JavaOverrideGraphExtractor {
     }
 
     private record Binding(SymbolId type, Map<String, TypeReference> arguments) {
+    }
+
+    /**
+     * A method that implements an interface method in a subclass inheriting both.
+     *
+     * @param implementation inherited method of a superclass
+     * @param method implemented interface method
+     * @param type subclass inheriting both
+     */
+    public record InheritedImplementation(SymbolId implementation, SymbolId method, SymbolId type) {
+        /**
+         * Validates that all identities are present.
+         *
+         * @param implementation inherited method of a superclass
+         * @param method implemented interface method
+         * @param type subclass inheriting both
+         */
+        public InheritedImplementation {
+            Objects.requireNonNull(implementation, "implementation");
+            Objects.requireNonNull(method, "method");
+            Objects.requireNonNull(type, "type");
+        }
     }
 }

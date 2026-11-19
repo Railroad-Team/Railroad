@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.sst.provider.api;
 
 import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureResult;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
 
 /**
  * Prepares and computes semantic renames of the symbol at a source position without mutating the workspace.
@@ -27,11 +28,16 @@ public interface RenameProvider {
 
     /**
      * Computes the edit that renames the symbol at a position, together with any conflicts it would cause.
+     * <p>
+     * The workspace may have changed since the symbol was prepared. The rename is rejected unless the identifier
+     * at the offset still names exactly the prepared symbol in the context's workspace, so a rename never moves to
+     * a different declaration or overload.
      *
      * @param context captured document, workspace, cancellation token, and deadline
      * @param offset UTF-16 offset accepted by {@link #prepareRename}
+     * @param symbol identity returned by {@link #prepareRename} as {@link RenamePreparation.Renameable#symbol()}
      * @param newName requested new name
      * @return the proposed edit and its conflicts; the edit is absent when an error conflict prevents the rename
      */
-    FeatureResult<RenameProposal> rename(FeatureRequestContext context, int offset, String newName);
+    FeatureResult<RenameProposal> rename(FeatureRequestContext context, int offset, SymbolId symbol, String newName);
 }
