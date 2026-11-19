@@ -16,7 +16,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -35,7 +34,7 @@ public class GradleTaskTreeBuilder implements GradleTreeBuilder<RailroadGradleTa
         Map<String, RailroadModule> projectsByPath = tasksByProject.keySet().stream()
             .collect(Collectors.toMap(RailroadModule::getPath, Function.identity()));
 
-        Map<String, TreeItem<GradleTreeElement>> projectNodes = new ConcurrentHashMap<>();
+        Map<String, TreeItem<GradleTreeElement>> projectNodes = new HashMap<>();
 
         for (RailroadModule module : tasksByProject.keySet()) {
             ensureProjectNode(project, module, projectsByPath, projectNodes, root);
@@ -60,20 +59,24 @@ public class GradleTaskTreeBuilder implements GradleTreeBuilder<RailroadGradleTa
         Map<String, TreeItem<GradleTreeElement>> projectNodes,
         TreeItem<GradleTreeElement> root
     ) {
-        return projectNodes.computeIfAbsent(module.getPath(), path -> {
-            TreeItem<GradleTreeElement> parentNode = root;
-            String parentPath = getParentProjectPath(path);
-            if (parentPath != null) {
-                RailroadModule parentProject = projectsByPath.get(parentPath);
-                if (parentProject != null) {
-                    parentNode = ensureProjectNode(project, parentProject, projectsByPath, projectNodes, root);
-                }
-            }
+        String path = module.getPath();
+        TreeItem<GradleTreeElement> existing = projectNodes.get(path);
+        if (existing != null)
+            return existing;
 
-            TreeItem<GradleTreeElement> node = new TreeItem<>(new GradleModuleElement(project, module));
-            parentNode.getChildren().add(node);
-            return node;
-        });
+        TreeItem<GradleTreeElement> parentNode = root;
+        String parentPath = getParentProjectPath(path);
+        if (parentPath != null) {
+            RailroadModule parentProject = projectsByPath.get(parentPath);
+            if (parentProject != null) {
+                parentNode = ensureProjectNode(project, parentProject, projectsByPath, projectNodes, root);
+            }
+        }
+
+        TreeItem<GradleTreeElement> node = new TreeItem<>(new GradleModuleElement(project, module));
+        parentNode.getChildren().add(node);
+        projectNodes.put(path, node);
+        return node;
     }
 
     private void addTasksToProjectNode(
