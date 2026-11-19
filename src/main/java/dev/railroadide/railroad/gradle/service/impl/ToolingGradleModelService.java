@@ -6,6 +6,7 @@ import dev.railroadide.railroad.gradle.GradleEnvironment;
 import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.gradle.model.GradleModelListener;
 import dev.railroadide.railroad.gradle.service.GradleModelService;
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.utility.function.ThrowingSupplier;
 import dev.railroadide.railroadplugin.action.RailroadProjectAction;
@@ -192,7 +193,11 @@ public class ToolingGradleModelService implements GradleModelService {
                 return ongoingRefresh;
 
             refresh = CompletableFuture.supplyAsync(
-                safely(() -> ToolingGradleModelService.loadModel(this.project, this.environment)),
+                safely(() -> {
+                    try (var _ = BackgroundActivities.shared().start("railroad.activity.importing_gradle")) {
+                        return ToolingGradleModelService.loadModel(this.project, this.environment);
+                    }
+                }),
                 executor)
                 .orTimeout(modelTimeout.toMillis(), TimeUnit.MILLISECONDS);
             ongoingRefresh = refresh;

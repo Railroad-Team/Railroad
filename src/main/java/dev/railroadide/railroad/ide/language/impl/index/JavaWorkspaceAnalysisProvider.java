@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.language.impl.index;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxParser;
@@ -274,10 +275,14 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
             if (generation != cacheGeneration)
                 throw new CancellationException("Java analysis caches were cleared");
         };
-        CompletableFuture<JavaSymbolIndex> load = CompletableFuture.supplyAsync(() -> binaryLoader == null
-            ? new CompositeJavaSymbolIndex(List.of(JavaLibrarySymbolIndex.build(classpath, loadCheck),
-                JavaJdkSymbolIndex.build(jdk, loadCheck)))
-            : binaryLoader.apply(classpath, jdk), BINARY_LOADS);
+        CompletableFuture<JavaSymbolIndex> load = CompletableFuture.supplyAsync(() -> {
+            try (var _ = BackgroundActivities.shared().start("railroad.activity.indexing_libraries")) {
+                return binaryLoader == null
+                    ? new CompositeJavaSymbolIndex(List.of(JavaLibrarySymbolIndex.build(classpath, loadCheck),
+                        JavaJdkSymbolIndex.build(jdk, loadCheck)))
+                    : binaryLoader.apply(classpath, jdk);
+            }
+        }, BINARY_LOADS);
         load.whenComplete((index, failure) -> {
             synchronized (publicationLock) {
                 binaryLoads.remove(configuration, load);

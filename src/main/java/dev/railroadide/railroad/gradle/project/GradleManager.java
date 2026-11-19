@@ -4,6 +4,7 @@ import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.DefaultGradleEnvironment;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.gradle.GradleEnvironment;
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.gradle.GradleSettings;
 import dev.railroadide.railroad.gradle.service.GradleConsoleMode;
 import dev.railroadide.railroad.gradle.service.GradleExecutionService;
@@ -209,16 +210,19 @@ public final class GradleManager {
             false,
             GradleConsoleMode.RICH);
 
+        var activity = BackgroundActivities.shared().start("railroad.activity.downloading_sources");
         GradleTaskExecutionHandle handle;
         try {
             handle = execService.runTask(request);
         } catch (Exception exception) {
+            activity.close();
             deleteIfExists(initScriptPath);
             completion.completeExceptionally(exception);
             return completion;
         }
 
         handle.completionFuture().whenComplete((result, throwable) -> {
+            activity.close();
             deleteIfExists(initScriptPath);
             if (throwable != null) {
                 completion.completeExceptionally(throwable);

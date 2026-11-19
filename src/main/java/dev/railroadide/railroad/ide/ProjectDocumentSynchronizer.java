@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.ide.language.LanguageSupport;
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.sst.document.api.*;
@@ -67,6 +68,8 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
         this.dispatch = dispatch;
         watcher = root.getFileSystem().newWatchService();
         initialScan = refresh(this.root);
+        var scanning = BackgroundActivities.shared().start("railroad.activity.scanning_files");
+        initialScan.whenComplete((_, _) -> scanning.close());
         var thread = new Thread(this::watch, "Railroad workspace document watcher");
         thread.setDaemon(true);
         thread.start();

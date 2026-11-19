@@ -501,6 +501,18 @@ railroad.ide.project_explorer.search_field=Search files...
 
 railroad.ide.status_bar.caret_position_format.text=Ln %s, Col %s
 railroad.ide.status_bar.caret_position_format.colon=%s:%s
+railroad.activity.others=+%d more
+railroad.activity.scanning_files=Scanning project files
+railroad.activity.importing_gradle=Importing Gradle project
+railroad.activity.resolving_dependencies=Resolving dependencies
+railroad.activity.preparing_libraries=Preparing libraries
+railroad.activity.indexing_project=Indexing project
+railroad.activity.indexing_libraries=Indexing libraries
+railroad.activity.indexing_jdk=Indexing JDK
+railroad.activity.downloading_sources=Downloading library sources
+railroad.activity.git_fetch=Fetching from Git remote
+railroad.activity.git_push=Pushing to Git remote
+railroad.activity.git_pull=Pulling from Git remote
 
 
 # =============================================================================

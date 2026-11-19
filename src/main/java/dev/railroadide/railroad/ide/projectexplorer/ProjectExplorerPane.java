@@ -14,6 +14,7 @@ import dev.railroadide.railroad.command.CommandButtons;
 import dev.railroadide.railroad.command.CommandContext;
 import dev.railroadide.railroad.command.Commands;
 import dev.railroadide.railroad.command.ExplorerTarget;
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexCoordinator;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CopyModalDialog;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
@@ -102,7 +103,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         });
         var indexSession = Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project);
         this.projectLanguageIndexCoordinator = submitIndex("initialize", request -> {
-            try {
+            try (var _ = BackgroundActivities.shared().start("railroad.activity.indexing_project")) {
                 var coordinator = new ProjectLanguageIndexCoordinator(project, indexSession);
                 coordinator.warmIndexes(request);
                 return coordinator;

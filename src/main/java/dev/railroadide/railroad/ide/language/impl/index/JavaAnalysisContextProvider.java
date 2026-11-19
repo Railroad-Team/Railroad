@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.language.index.DefaultProjectIndexContextResolver;
@@ -81,6 +82,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         private <K, V> V load(
             com.google.common.cache.Cache<K, V> cache,
             K key,
+            String activityKey,
             Runnable activityCheck,
             Supplier<V> loader
         ) {
@@ -93,7 +95,9 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
                 try {
                     value = cache.getIfPresent(key);
                     if (value == null) {
-                        value = loader.get();
+                        try (var _ = BackgroundActivities.shared().start(activityKey)) {
+                            value = loader.get();
+                        }
                         synchronized (this) {
                             activityCheck.run();
                             checkActive();
@@ -345,7 +349,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
 
         List<Path> normalizedRoots = FileUtils.normalizePaths(List.copyOf(roots));
         var key = new LibraryIndexKey(normalizedRoots);
-        return cache.load(cache.libraries, key, activityCheck, () -> {
+        return cache.load(cache.libraries, key, "railroad.activity.indexing_libraries", activityCheck, () -> {
             Railroad.LOGGER.warn(
                 "Building Java library index: roots={}, javafxBaseRoots={}, javafxGraphicsRoots={}, sampleRoots={}",
                 normalizedRoots.size(),
@@ -369,7 +373,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         Path cacheKey = jdkHome == null
             ? Path.of(System.getProperty("java.home")).toAbsolutePath().normalize()
             : FileUtils.normalizePath(jdkHome);
-        return cache.load(cache.jdks, cacheKey, activityCheck, () -> {
+        return cache.load(cache.jdks, cacheKey, "railroad.activity.indexing_jdk", activityCheck, () -> {
             Railroad.LOGGER.warn("Building Java JDK index: jdkHome={}, cacheKey={}", jdkHome, cacheKey);
             JavaJdkSymbolIndex index = JavaJdkSymbolIndex.build(jdkHome, activityCheck);
             Railroad.LOGGER.warn(

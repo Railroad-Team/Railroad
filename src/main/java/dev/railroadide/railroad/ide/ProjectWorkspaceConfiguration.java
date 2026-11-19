@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide;
 
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexCoordinator;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService.Session;
 import dev.railroadide.railroad.Services;
@@ -286,7 +287,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         Map<String, String> inputs = requestedSettings;
         CompletableFuture<Void> completed = new CompletableFuture<>();
         resolution = completed;
-        dependencyTask = submitBackground("dependencies", CONFIGURATION_BUDGET, completed, request -> {
+        dependencyTask = submitBackground("dependencies", "railroad.activity.resolving_dependencies", CONFIGURATION_BUDGET, completed, request -> {
             try {
                 JavaLanguageIndexContext context = dependencyResolver.apply(project);
                 request.checkActive();
@@ -323,12 +324,13 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
     }
 
     private void warmIndexes() {
-        submitBackground("index-warmup", WARMUP_BUDGET, new CompletableFuture<>(),
+        submitBackground("index-warmup", "railroad.activity.indexing_project", WARMUP_BUDGET, new CompletableFuture<>(),
             request -> new ProjectLanguageIndexCoordinator(project, indexSession).warmIndexes(request));
     }
 
     private CompletableFuture<Void> submitBackground(
         String key,
+        String activityKey,
         Duration budget,
         CompletableFuture<Void> completed,
         Consumer<RequestContext> operation
@@ -338,7 +340,9 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         CompletableFuture<Void> task = backgroundRequests.submit(key, RequestPriority.BACKGROUND_INDEXING, context,
             cancellation, () -> ProviderExecutor.shared().executeWithContext("project-configuration:" + key,
                 context, budget, child -> {
-                    operation.accept(child);
+                    try (var _ = BackgroundActivities.shared().start(activityKey)) {
+                        operation.accept(child);
+                    }
                     return null;
                 }));
         task.whenComplete((_, failure) -> {
@@ -441,7 +445,8 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             CompletableFuture<Void> completed = new CompletableFuture<>();
             binaryResolution = completed;
             var candidate = new WorkspaceConfigurationSnapshot(current.revision() + 1, ids, values);
-            binaryTask = submitBackground("binary-inputs", CONFIGURATION_BUDGET, completed, request -> {
+            binaryTask = submitBackground("binary-inputs", "railroad.activity.preparing_libraries", CONFIGURATION_BUDGET,
+                completed, request -> {
                 try {
                     var provider = JavaLanguageSupport.analysisContextProvider();
                     var prepared = binaryPreparer.apply(indexSession, candidate);
