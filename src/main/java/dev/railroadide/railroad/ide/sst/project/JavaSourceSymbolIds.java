@@ -22,11 +22,7 @@ public final class JavaSourceSymbolIds {
      * @return canonical identity, or an empty optional if insufficient declaration facts are available
      */
     public static Optional<SymbolId> deriveSymbolId(Symbol symbol) {
-        try {
-            return deriveValidSymbolId(symbol, null);
-        } catch (IllegalArgumentException exception) {
-            return Optional.empty();
-        }
+        return deriveSymbolId(symbol, null);
     }
 
     /**
@@ -37,14 +33,18 @@ public final class JavaSourceSymbolIds {
      * @return canonical identity, or an empty optional if insufficient declaration facts are available
      */
     public static Optional<SymbolId> deriveSymbolId(Symbol symbol, JavaSymbolIndex index) {
+        return deriveSymbolId(symbol, index, null);
+    }
+
+    private static Optional<SymbolId> deriveSymbolId(Symbol symbol, JavaSymbolIndex index, Resolver resolver) {
         try {
-            return deriveValidSymbolId(symbol, index);
+            return deriveValidSymbolId(symbol, index, resolver);
         } catch (IllegalArgumentException exception) {
             return Optional.empty();
         }
     }
 
-    private static Optional<SymbolId> deriveValidSymbolId(Symbol symbol, JavaSymbolIndex index) {
+    private static Optional<SymbolId> deriveValidSymbolId(Symbol symbol, JavaSymbolIndex index, Resolver resolver) {
         if (symbol.id().isPresent())
             return symbol.id();
         SyntaxNode node = symbol.declaration().orElse(null);
@@ -60,19 +60,23 @@ public final class JavaSourceSymbolIds {
                 node = node.parent().orElse(null);
             }
             if (node != null)
-                return Optional.of(typeId(node, index));
+                return Optional.of(resolver != null && isTypeNode(node)
+                    ? resolver.declarationId(node)
+                    : typeId(node, index, resolver));
             return Optional.of(JavaSymbolIds.type(qualified));
         }
         if (node == null)
             return Optional.empty();
         SyntaxNode owner = enclosingDeclaration(node);
-        SymbolId ownerId = owner == null ? JavaSymbolIds.packageId("", packageName(node)) : declarationId(owner, index);
+        SymbolId ownerId = owner == null
+            ? JavaSymbolIds.packageId("", packageName(node))
+            : declarationId(owner, index, resolver);
         return switch (symbol.kind()) {
             case JavaSymbolKind.FIELD -> Optional.of(JavaSymbolIds.field(ownerId, symbol.simpleName()));
             case JavaSymbolKind.METHOD ->
-                Optional.of(JavaSymbolIds.method(ownerId, symbol.simpleName(), parameterTypes(node, index)));
+                Optional.of(JavaSymbolIds.method(ownerId, symbol.simpleName(), parameterTypes(node, index, resolver)));
             case JavaSymbolKind.CONSTRUCTOR ->
-                Optional.of(JavaSymbolIds.constructor(ownerId, parameterTypes(node, index)));
+                Optional.of(JavaSymbolIds.constructor(ownerId, parameterTypes(node, index, resolver)));
             case JavaSymbolKind.PARAMETER -> Optional.of(node.kind().id().equals("JAVA_PARAMETER")
                 && node.parent().flatMap(SyntaxNode::parent).orElse(null) == owner
                     ? JavaSymbolIds.parameter(ownerId, siblingIndex(node))
@@ -115,26 +119,39 @@ public final class JavaSourceSymbolIds {
      * @return canonical identity of the source declaration
      */
     public static SymbolId declarationId(SyntaxNode node, JavaSymbolIndex index) {
-        if (isTypeNode(node))
-            return typeId(node, index);
-        SyntaxNode owner = enclosingDeclaration(node);
-        SymbolId ownerId = owner == null ? JavaSymbolIds.packageId("", packageName(node)) : declarationId(owner, index);
-        return (node.kind().id().equals("JAVA_CONSTRUCTOR_DECLARATION")
-            || node.kind().id().equals("JAVA_RECORD_COMPACT_CONSTRUCTOR"))
-                ? JavaSymbolIds.constructor(ownerId, parameterTypes(node, index))
-                : JavaSymbolIds.method(ownerId, declarationName(node), parameterTypes(node, index));
+        return declarationId(node, index, null);
     }
 
-    private static SymbolId typeId(SyntaxNode node, JavaSymbolIndex index) {
+    private static SymbolId declarationId(SyntaxNode node, JavaSymbolIndex index, Resolver resolver) {
+        return resolver == null ? computeDeclarationId(node, index, null) : resolver.declarationId(node);
+    }
+
+    private static SymbolId computeDeclarationId(SyntaxNode node, JavaSymbolIndex index, Resolver resolver) {
+        if (isTypeNode(node))
+            return typeId(node, index, resolver);
+        SyntaxNode owner = enclosingDeclaration(node);
+        SymbolId ownerId = owner == null
+            ? JavaSymbolIds.packageId("", packageName(node))
+            : declarationId(owner, index, resolver);
+        return (node.kind().id().equals("JAVA_CONSTRUCTOR_DECLARATION")
+            || node.kind().id().equals("JAVA_RECORD_COMPACT_CONSTRUCTOR"))
+                ? JavaSymbolIds.constructor(ownerId, parameterTypes(node, index, resolver))
+                : JavaSymbolIds.method(ownerId, declarationName(node), parameterTypes(node, index, resolver));
+    }
+
+    private static SymbolId typeId(SyntaxNode node, JavaSymbolIndex index, Resolver resolver) {
         SyntaxNode owner = enclosingDeclaration(node);
         if (node.kind().id().equals("JAVA_CLASS_INSTANCE_CREATION_EXPRESSION"))
             return JavaSymbolIds.anonymous(owner == null
                 ? JavaSymbolIds.packageId("", packageName(node))
-                : declarationId(owner, index), lexicalPath(node, owner));
+                : declarationId(owner, index, resolver), lexicalPath(node, owner));
         String name = declarationName(node);
-        if (owner != null && (!isTypeNode(owner) || declarationId(owner, index).value().contains("/localType/")
-            || declarationId(owner, index).value().contains("/anonymous/")))
-            return JavaSymbolIds.localType(declarationId(owner, index), lexicalPath(node, owner), name);
+        if (owner != null) {
+            SymbolId ownerId = declarationId(owner, index, resolver);
+            if (!isTypeNode(owner) || ownerId.value().contains("/localType/")
+                || ownerId.value().contains("/anonymous/"))
+                return JavaSymbolIds.localType(ownerId, lexicalPath(node, owner), name);
+        }
         String qualified = typeQualifiedName(node);
         return JavaSymbolIds.type(qualified);
     }
@@ -154,10 +171,16 @@ public final class JavaSourceSymbolIds {
      * @return canonical erased parameter types in declaration order
      */
     public static List<String> parameterTypes(SyntaxNode callable) {
-        return parameterTypes(callable, null);
+        return computeParameterTypes(callable, null, null);
     }
 
-    private static List<String> parameterTypes(SyntaxNode callable, JavaSymbolIndex index) {
+    private static List<String> parameterTypes(SyntaxNode callable, JavaSymbolIndex index, Resolver resolver) {
+        return resolver == null
+            ? computeParameterTypes(callable, index, null)
+            : resolver.parameters.computeIfAbsent(callable, node -> computeParameterTypes(node, index, resolver));
+    }
+
+    private static List<String> computeParameterTypes(SyntaxNode callable, JavaSymbolIndex index, Resolver resolver) {
         SyntaxNode list = parameterList(callable);
         if (list == null)
             return List.of();
@@ -178,7 +201,7 @@ public final class JavaSourceSymbolIds {
                     throw new IllegalArgumentException("Cyclic type variable bounds");
                 erasedBase = erase(bound);
             }
-            String canonical = qualify(erasedBase, callable, index);
+            String canonical = qualify(erasedBase, callable, index, resolver);
             int rank = (text.length() - base.length()) / 2;
             for (SyntaxNode part : parameter.children()) {
                 if (part instanceof SyntaxToken token && (token.text().equals("...") || token.text().equals("["))) {
@@ -224,6 +247,10 @@ public final class JavaSourceSymbolIds {
      * @return qualified type spelling where resolvable, otherwise the available spelling
      */
     public static String qualify(String name, SyntaxNode context, JavaSymbolIndex index) {
+        return qualify(name, context, index, null);
+    }
+
+    private static String qualify(String name, SyntaxNode context, JavaSymbolIndex index, Resolver resolver) {
         if (name.isBlank()
             || Set.of("void", "boolean", "byte", "short", "int", "long", "float", "double", "char", "var", "?")
                 .contains(name))
@@ -231,7 +258,6 @@ public final class JavaSourceSymbolIds {
         String first = name.contains(".") ? name.substring(0, name.indexOf('.')) : name;
         if (name.contains(".") && Character.isLowerCase(name.charAt(0)))
             return normalizeNested(name, index);
-        SyntaxNode root = root(context);
         for (SyntaxNode current = context; current != null; current = current.parent().orElse(null)) {
             if (isTypeNode(current) && declarationName(current).equals(first))
                 return typeQualifiedName(current) + name.substring(first.length()).replace('.', '$');
@@ -249,6 +275,13 @@ public final class JavaSourceSymbolIds {
                     return typeQualifiedName(nested) + name.substring(first.length()).replace('.', '$');
             }
         }
+        SyntaxNode root = root(context);
+        if (resolver != null && root == resolver.root)
+            return resolver.qualifiedNames.computeIfAbsent(name, key -> qualifyFileName(key, first, root, index));
+        return qualifyFileName(name, first, root, index);
+    }
+
+    private static String qualifyFileName(String name, String first, SyntaxNode root, JavaSymbolIndex index) {
         for (SyntaxNode declaration : root.children()) {
             if (!declaration.kind().id().equals("JAVA_IMPORT_DECLARATION") || compactText(declaration).contains("*"))
                 continue;
@@ -259,7 +292,8 @@ public final class JavaSourceSymbolIds {
             if (imported.endsWith("." + first))
                 return normalizeNested(imported + name.substring(first.length()), index);
         }
-        String packageType = packageName(context).isEmpty() ? name : packageName(context) + "." + name;
+        String packageName = packageName(root);
+        String packageType = packageName.isEmpty() ? name : packageName + "." + name;
         if (index != null && index.declaredQualifiedNames().contains(packageType))
             return normalizeNested(packageType, index);
         Set<String> candidates = new LinkedHashSet<>();
@@ -284,6 +318,62 @@ public final class JavaSourceSymbolIds {
         if (candidates.isEmpty() && onDemandImport)
             throw new IllegalArgumentException("Unresolved imported type: " + name);
         return candidates.isEmpty() ? packageType : candidates.iterator().next();
+    }
+
+    /** Reuses source identities during a single analysis of one immutable compilation unit. */
+    public static final class Resolver {
+        private final SyntaxNode root;
+        private final JavaSymbolIndex index;
+        private final Map<SyntaxNode, SymbolId> declarationIds = new IdentityHashMap<>();
+        private final Map<SyntaxNode, List<String>> parameters = new IdentityHashMap<>();
+        private final Map<String, String> qualifiedNames = new HashMap<>();
+
+        /**
+         * Creates a resolver for one syntax tree and captured index. Use it from one worker.
+         *
+         * @param root compilation-unit root
+         * @param index external names, or {@code null} for local resolution
+         */
+        public Resolver(SyntaxNode root, JavaSymbolIndex index) {
+            this.root = Objects.requireNonNull(root);
+            this.index = index;
+        }
+
+        /**
+         * Resolves a symbol using this compilation unit's cached declaration identities.
+         *
+         * @param symbol symbol to identify
+         * @return canonical identity when sufficient declaration information is present
+         */
+        public Optional<SymbolId> deriveSymbolId(Symbol symbol) {
+            return JavaSourceSymbolIds.deriveSymbolId(symbol, index, this);
+        }
+
+        /**
+         * Resolves a structural declaration identity.
+         *
+         * @param node declaration to identify
+         * @return canonical source declaration identity
+         */
+        public SymbolId declarationId(SyntaxNode node) {
+            SymbolId id = declarationIds.get(node);
+            if (id == null) {
+                id = computeDeclarationId(node, index, this);
+                declarationIds.put(node, id);
+            }
+            return id;
+        }
+
+        /**
+         * Resolves a type name in its lexical scope and this compilation unit's imports.
+         *
+         * @param name source name to resolve
+         * @param context syntax location from which the name is visible
+         * @return qualified spelling when resolvable, otherwise the available spelling
+         */
+        public String qualify(String name, SyntaxNode context) {
+            return JavaSourceSymbolIds.qualify(name, context, index, this);
+        }
     }
 
     private static boolean knownType(String name, JavaSymbolIndex index) {
@@ -392,7 +482,11 @@ public final class JavaSourceSymbolIds {
      * @return first direct child with the requested kind, or {@code null}
      */
     public static SyntaxNode child(SyntaxNode node, String kind) {
-        return node.children().stream().filter(part -> part.kind().id().equals(kind)).findFirst().orElse(null);
+        for (SyntaxNode part : node.children()) {
+            if (part.kind().id().equals(kind))
+                return part;
+        }
+        return null;
     }
 
     private static SyntaxNode find(SyntaxNode node, String kind) {
@@ -414,12 +508,24 @@ public final class JavaSourceSymbolIds {
      */
     public static String compactText(SyntaxNode node) {
         if (node instanceof SyntaxToken token)
-            return trivia(token) ? "" : identifier(token) ? JavaUnicodeEscapes.translate(token.text()) : token.text();
+            return compactTokenText(token);
         var text = new StringBuilder();
-        for (SyntaxNode child : node.children()) {
-            text.append(compactText(child));
-        }
+        appendCompactText(node, text);
         return text.toString();
+    }
+
+    private static void appendCompactText(SyntaxNode node, StringBuilder text) {
+        if (node instanceof SyntaxToken token) {
+            text.append(compactTokenText(token));
+            return;
+        }
+        for (SyntaxNode child : node.children()) {
+            appendCompactText(child, text);
+        }
+    }
+
+    private static String compactTokenText(SyntaxToken token) {
+        return trivia(token) ? "" : identifier(token) ? JavaUnicodeEscapes.translate(token.text()) : token.text();
     }
 
     private static boolean trivia(SyntaxToken token) {

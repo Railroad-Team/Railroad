@@ -27,9 +27,37 @@ public final class JavaDeclarationAnalysis {
      * @param compilationUnit the compilation-unit syntax root
      */
     public static void collect(Context context, SyntaxNode compilationUnit) {
+        collect(context, compilationUnit, false);
+    }
+
+    /**
+     * Collects declarations and scopes visible in project headers.
+     *
+     * @param context current analysis state
+     * @param compilationUnit syntax root to visit
+     */
+    public static void collectProjectDeclarations(Context context, SyntaxNode compilationUnit) {
+        collect(context, compilationUnit, true);
+    }
+
+    private static void collect(Context context, SyntaxNode compilationUnit, boolean projectDeclarationsOnly) {
         context.activityCheck.run();
-        new DeclarationCollector(context).visitCompilationUnit(compilationUnit);
+        new DeclarationCollector(context, projectDeclarationsOnly).visitCompilationUnit(compilationUnit);
         context.activityCheck.run();
+    }
+
+    /**
+     * Identifies executable subtrees whose declarations and references are local to a source file.
+     *
+     * @param node syntax node to inspect
+     * @return whether workspace declaration indexing can skip this subtree
+     */
+    public static boolean isExecutableBody(SyntaxNode node) {
+        return switch (node.kind().id()) {
+            case "JAVA_BLOCK", "JAVA_STATIC_INITIALIZER", "JAVA_INSTANCE_INITIALIZER",
+                "JAVA_ANONYMOUS_CLASS_BODY", "JAVA_LAMBDA_EXPRESSION" -> true;
+            default -> false;
+        };
     }
 
     /**
@@ -268,10 +296,14 @@ public final class JavaDeclarationAnalysis {
     }
 
     private static final class DeclarationCollector {
+        private final JavaSourceSymbolIds.Resolver symbolIds;
         private final Context context;
+        private final boolean projectDeclarationsOnly;
 
-        private DeclarationCollector(Context context) {
+        private DeclarationCollector(Context context, boolean projectDeclarationsOnly) {
             this.context = context;
+            this.symbolIds = new JavaSourceSymbolIds.Resolver(context.syntaxRoot, context.projectIndex);
+            this.projectDeclarationsOnly = projectDeclarationsOnly;
         }
 
         private void visitCompilationUnit(SyntaxNode compilationUnit) {
@@ -279,6 +311,8 @@ public final class JavaDeclarationAnalysis {
         }
 
         private void visitNode(SyntaxNode node, Scope scope, @Nullable String currentTypeQualifiedName) {
+            if (projectDeclarationsOnly && isExecutableBody(node))
+                return;
             context.attachScope(node, scope);
 
             String kindId = node.kind().id();
@@ -380,7 +414,7 @@ public final class JavaDeclarationAnalysis {
                 SyntaxNode creation = node.parent().orElseThrow();
                 Symbol temporary = new SimpleSymbol(JavaSymbolKind.CLASS, "<anonymous>", qualifiedName, creation);
                 Symbol anonymous = new SimpleSymbol(
-                    JavaSourceSymbolIds.deriveSymbolId(temporary, context.projectIndex).orElse(null),
+                    symbolIds.deriveSymbolId(temporary).orElse(null),
                     JavaSymbolKind.CLASS, "<anonymous>", qualifiedName, node);
                 context.declare(node, anonymous);
                 for (SyntaxNode child : node.children()) {
@@ -769,7 +803,7 @@ public final class JavaDeclarationAnalysis {
         ) {
             Symbol temporary = new SimpleSymbol(kind, simpleName, qualifiedName, declarationNode);
             Symbol symbol = new SimpleSymbol(
-                JavaSourceSymbolIds.deriveSymbolId(temporary, context.projectIndex).orElse(null), kind,
+                symbolIds.deriveSymbolId(temporary).orElse(null), kind,
                 simpleName, qualifiedName, declarationNode);
             scope.declare(symbol);
             context.declare(declarationNode, symbol);

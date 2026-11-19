@@ -198,7 +198,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
                 text.uri().fileName().orElse("Snapshot.java")).toAbsolutePath().normalize());
             JavaProjectSemanticIndex.SourceFileIndex indexed = files.getIfPresent(text);
             if (indexed == null) {
-                indexed = extractor.extract(path, text, check);
+                indexed = extractor.discoverTypes(path, text, check);
                 publish(files, text, indexed, check);
             }
             builder.putFile(indexed);
@@ -213,8 +213,8 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
         for (var entry : snapshots.entrySet()) {
             check.run();
             var tree = JavaSyntaxParser.parse(entry.getValue(), check);
-            var model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(tree, discovered, check);
-            var indexed = extractor.extract(entry.getKey(), model, discovered, check);
+            var model = JavaSemanticAnalyzer.analyzeProjectDeclarations(tree, discovered, check);
+            var indexed = extractor.extractProjectDeclarations(entry.getKey(), model, discovered, check);
             canonical.putFile(new JavaProjectSemanticIndex.SourceFileIndex(indexed.path(), indexed.packageName(),
                 indexed.imports(), indexed.declaredSymbols(), sources.getFileIndex(entry.getKey()).sourceHash(),
                 indexed.semanticShard()));

@@ -80,7 +80,8 @@ public class JavaNavigationServiceTest {
     public void definitionsResolveOnlyTheRequestingDocument() throws Exception {
         String declarations = "class Helper { static void run() {} }";
         var helper = document("Helper.java", declarations);
-        var other = document("Other.java", "class Other { void unrelated() { Helper.run(); } }");
+        var other = document("Other.java",
+            "class Other { void unrelated() { int unrelatedLocal = 1; Helper.run(); } }");
         var source = document("Main.java", "class Main { void test() { int local = 1; Helper.run(); local++; } }");
         var store = store(source, helper, other);
         try (var services = new JavaSstServices()) {
@@ -94,10 +95,17 @@ public class JavaNavigationServiceTest {
             var localTarget = assertInstanceOf(Location.TextLocation.class, local.getFirst());
             assertEquals(source.id(), localTarget.documentId());
             assertEquals(source.text().indexOf("local"), localTarget.range().start);
+            var analysis = services.capture(context);
+            var otherShard = analysis.sourceIndex().semanticShards().stream()
+                .filter(shard -> shard.documentId().equals(other.id())).findFirst().orElseThrow();
+            assertTrue(otherShard.declarations().stream().anyMatch(symbol -> symbol.simpleName().equals("unrelated")));
+            assertFalse(otherShard.declarations().stream()
+                .anyMatch(symbol -> symbol.simpleName().equals("unrelatedLocal")));
             Field resolved = JavaWorkspaceAnalysis.class.getDeclaredField("resolvedGraph");
             resolved.setAccessible(true);
-            assertNull(resolved.get(services.capture(context)),
-                "Go to definition must not resolve every document's body");
+            assertNull(resolved.get(analysis), "Go to definition must not resolve every document's body");
+            assertTrue(analysis.resolvedGraph().shards().get(other.id()).declarations().stream()
+                .anyMatch(symbol -> symbol.simpleName().equals("unrelatedLocal")));
         }
     }
 

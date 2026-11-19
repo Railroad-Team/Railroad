@@ -334,6 +334,22 @@ public final class JavaSemanticAnalyzer {
         return performAnalysis(Objects.requireNonNull(syntaxTree), false, index, activityCheck);
     }
 
+    /**
+     * Collects source headers with canonical signatures for workspace indexing.
+     *
+     * @param syntaxTree captured syntax tree
+     * @param index captured types used for signature resolution
+     * @param activityCheck callback used to check cancellation or interruption
+     * @return project declarations and their scopes
+     */
+    public static SemanticModel analyzeProjectDeclarations(
+        SyntaxTree syntaxTree,
+        JavaSymbolIndex index,
+        Runnable activityCheck
+    ) {
+        return performAnalysis(Objects.requireNonNull(syntaxTree), false, true, index, activityCheck);
+    }
+
     private static SemanticModel withCoreDiagnostics(SemanticModel facts) {
         var context = new JavaRuleContext(Path.of("memory.java"), "", facts);
         List<SemanticDiagnostic> diagnostics = new ArrayList<>();
@@ -363,6 +379,16 @@ public final class JavaSemanticAnalyzer {
         @Nullable JavaSymbolIndex projectIndex,
         Runnable activityCheck
     ) {
+        return performAnalysis(syntaxTree, includeResolutionAndTypes, false, projectIndex, activityCheck);
+    }
+
+    private static SemanticModel performAnalysis(
+        SyntaxTree syntaxTree,
+        boolean includeResolutionAndTypes,
+        boolean projectDeclarationsOnly,
+        @Nullable JavaSymbolIndex projectIndex,
+        Runnable activityCheck
+    ) {
         Runnable checkpoint = new ActivityCheckpoint(activityCheck);
         checkpoint.run();
         Scope rootScope = Scope.root();
@@ -370,7 +396,11 @@ public final class JavaSemanticAnalyzer {
 
         var context = new JavaDeclarationAnalysis.Context(syntaxTree.root(), rootScope, builder, projectIndex,
             checkpoint);
-        JavaDeclarationAnalysis.collect(context, syntaxTree.root());
+        if (projectDeclarationsOnly) {
+            JavaDeclarationAnalysis.collectProjectDeclarations(context, syntaxTree.root());
+        } else {
+            JavaDeclarationAnalysis.collect(context, syntaxTree.root());
+        }
 
         if (includeResolutionAndTypes) {
             var nameResolver = new NameResolver(context);

@@ -3,6 +3,7 @@ package dev.railroadide.railroad.ide.sst.project;
 import dev.railroadide.railroad.ide.sst.document.api.Location;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import dev.railroadide.railroad.ide.sst.graph.api.*;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaDeclarationAnalysis;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaUnicodeEscapes;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolIds;
@@ -25,15 +26,24 @@ public final class JavaSemanticGraphExtractor {
     private final TextDocumentSnapshot snapshot;
     private final Runnable check;
     private final JavaSymbolIndex index;
+    private final JavaSourceSymbolIds.Resolver symbolIds;
+    private final boolean projectDeclarationsOnly;
     private final Map<SymbolId, SymbolDescriptor> declarations = new LinkedHashMap<>();
     private final Map<ReferenceKey, ReferenceOccurrence> references = new LinkedHashMap<>();
     private final Set<SymbolEdge> edges = new LinkedHashSet<>();
 
-    private JavaSemanticGraphExtractor(SemanticModel model, JavaSymbolIndex index, Runnable check) {
+    private JavaSemanticGraphExtractor(
+        SemanticModel model,
+        JavaSymbolIndex index,
+        Runnable check,
+        boolean projectDeclarationsOnly
+    ) {
         this.model = Objects.requireNonNull(model);
         this.snapshot = model.syntaxTree().documentSnapshot();
         this.check = Objects.requireNonNull(check);
         this.index = index;
+        this.symbolIds = new JavaSourceSymbolIds.Resolver(model.syntaxTree().root(), index);
+        this.projectDeclarationsOnly = projectDeclarationsOnly;
     }
 
     /**
@@ -56,7 +66,32 @@ public final class JavaSemanticGraphExtractor {
      * @return immutable document shard containing the available declarations, references and relations
      */
     public static SemanticIndexShard extract(SemanticModel model, JavaSymbolIndex index, Runnable check) {
-        var extractor = new JavaSemanticGraphExtractor(model, index, check);
+        return extract(model, index, check, false);
+    }
+
+    /**
+     * Extracts graph facts from project declaration headers.
+     *
+     * @param model project declaration facts for the captured revision
+     * @param index captured external symbols used for name resolution
+     * @param check cooperative cancellation callback
+     * @return immutable shard containing project declarations and header references
+     */
+    public static SemanticIndexShard extractProjectDeclarations(
+        SemanticModel model,
+        JavaSymbolIndex index,
+        Runnable check
+    ) {
+        return extract(model, index, check, true);
+    }
+
+    private static SemanticIndexShard extract(
+        SemanticModel model,
+        JavaSymbolIndex index,
+        Runnable check,
+        boolean projectDeclarationsOnly
+    ) {
+        var extractor = new JavaSemanticGraphExtractor(model, index, check, projectDeclarationsOnly);
         extractor.collectDeclarations(model.syntaxTree().root());
         extractor.collectReferences(model.syntaxTree().root(), null);
         check.run();
@@ -67,6 +102,8 @@ public final class JavaSemanticGraphExtractor {
 
     private void collectDeclarations(SyntaxNode node) {
         check.run();
+        if (projectDeclarationsOnly && JavaDeclarationAnalysis.isExecutableBody(node))
+            return;
         model.declaredSymbol(node).ifPresent(symbol -> JavaSourceSymbolIds.deriveSymbolId(symbol).ifPresent(id -> {
             SyntaxNode container = container(node);
             SyntaxNode owner = JavaSourceSymbolIds.enclosingDeclaration(
@@ -133,7 +170,7 @@ public final class JavaSemanticGraphExtractor {
             return owner == null
                 ? null
                 : model.declaredSymbol(owner).flatMap(JavaSourceSymbolIds::deriveSymbolId)
-                    .orElseGet(() -> JavaSourceSymbolIds.declarationId(owner, index));
+                    .orElseGet(() -> symbolIds.declarationId(owner));
         } catch (IllegalArgumentException exception) {
             return null;
         }
@@ -141,6 +178,8 @@ public final class JavaSemanticGraphExtractor {
 
     private void collectReferences(SyntaxNode node, SymbolId enclosing) {
         check.run();
+        if (projectDeclarationsOnly && JavaDeclarationAnalysis.isExecutableBody(node))
+            return;
         Optional<SymbolId> declaration = model.declaredSymbol(node).flatMap(JavaSourceSymbolIds::deriveSymbolId);
         SymbolId current = declaration.orElse(enclosing);
         if (node.kind().id().equals("JAVA_TYPE_REFERENCE")
@@ -408,7 +447,7 @@ public final class JavaSemanticGraphExtractor {
         String name = type.name();
         if (!name.startsWith("?") && JavaSourceSymbolIds.typeVariableBound(name, context) == null) {
             try {
-                name = JavaSourceSymbolIds.qualify(name, context, index);
+                name = symbolIds.qualify(name, context);
             } catch (IllegalArgumentException exception) {
                 name = type.name();
             }
@@ -509,7 +548,7 @@ public final class JavaSemanticGraphExtractor {
         try {
             String erased = JavaSymbolIds.normalizeParameterType(type);
             String base = erased.replace("[]", "");
-            return JavaSourceSymbolIds.qualify(base, context, index) + erased.substring(base.length());
+            return symbolIds.qualify(base, context) + erased.substring(base.length());
         } catch (IllegalArgumentException exception) {
             return type;
         }
@@ -753,7 +792,7 @@ public final class JavaSemanticGraphExtractor {
 
     private String qualifiedName(String name, SyntaxNode context) {
         try {
-            return JavaSourceSymbolIds.qualify(name, context, index).replace('$', '.');
+            return symbolIds.qualify(name, context).replace('$', '.');
         } catch (IllegalArgumentException exception) {
             return null;
         }
