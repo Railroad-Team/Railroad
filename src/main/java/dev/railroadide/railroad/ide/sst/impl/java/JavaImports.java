@@ -12,8 +12,8 @@ import java.util.regex.Pattern;
  * <p>
  * Usage is decided conservatively from tokens: an import counts as used whenever its imported name appears as a
  * token outside the import declarations, including package annotations, or as a word in a Javadoc or Markdown
- * ({@code ///}) documentation comment. Unicode escapes are translated as the compiler translates them before lexing;
- * when code outside the imports contains any, every identifier of its translated text counts as a use. An import
+ * ({@code ///}) documentation comment. Names are compared with their Unicode escapes translated; when an escape
+ * appears outside identifiers, every identifier of the translated text outside the imports counts as a use. An import
  * reported as unused can therefore be removed without changing what any name in the file refers to.
  */
 public final class JavaImports {
@@ -24,6 +24,7 @@ public final class JavaImports {
     private static final String SEMICOLON = "JAVA_TOKEN_SEMICOLON";
     private static final String JAVADOC = "JAVA_TOKEN_JAVADOC_COMMENT";
     private static final String LINE_COMMENT = "JAVA_TOKEN_LINE_COMMENT";
+    private static final String IDENTIFIER_TOKEN = "JAVA_TOKEN_IDENTIFIER";
     private static final Set<String> TRIVIA = Set.of("JAVA_TOKEN_WHITESPACE", LINE_COMMENT,
         "JAVA_TOKEN_BLOCK_COMMENT", JAVADOC);
     private static final Set<String> NON_NAME_TOKENS = Set.of("JAVA_TOKEN_STRING_LITERAL",
@@ -123,18 +124,19 @@ public final class JavaImports {
                 if (isDocumentation(token)) {
                     documentation.add(token.text());
                 } else if (!TRIVIA.contains(kind) && !NON_NAME_TOKENS.contains(kind)) {
-                    names.add(token.text());
+                    names.add(JavaUnicodeEscapes.translate(token.text()));
                 }
-                backslash |= !NON_NAME_TOKENS.contains(kind) && token.text().indexOf('\\') >= 0;
+                backslash |= !IDENTIFIER_TOKEN.equals(kind) && !NON_NAME_TOKENS.contains(kind)
+                    && token.text().indexOf('\\') >= 0;
                 continue;
             }
             node.children().reversed().forEach(pending::addFirst);
         }
         check.run();
         if (backslash) {
-            // The lexer does not translate escapes, so its tokens may split or hide identifiers.
+            // Escapes outside identifiers, such as an escaped line break in a comment, can reveal code.
             String code = code(root);
-            String translated = translateUnicodeEscapes(code);
+            String translated = JavaUnicodeEscapes.translate(code);
             if (!translated.equals(code)) {
                 IDENTIFIER.matcher(translated).results().forEach(match -> names.add(match.group()));
             }
@@ -174,28 +176,6 @@ public final class JavaImports {
         return List.copyOf(duplicates);
     }
 
-    /**
-     * Translates Unicode escapes as the compiler does before lexing: a backslash starts an escape only when an even
-     * number of contiguous backslashes precedes it.
-     */
-    private static String translateUnicodeEscapes(CharSequence text) {
-        var translated = new StringBuilder(text.length());
-        int backslashes = 0;
-        for (int index = 0; index < text.length(); index++) {
-            char current = text.charAt(index);
-            int end = current == '\\' && backslashes % 2 == 0 ? escapeEnd(text, index) : -1;
-            if (end > 0) {
-                translated.append((char) Integer.parseInt(text.subSequence(end - 4, end).toString(), 16));
-                index = end - 1;
-                backslashes = 0;
-                continue;
-            }
-            backslashes = current == '\\' ? backslashes + 1 : 0;
-            translated.append(current);
-        }
-        return translated.toString();
-    }
-
     private static @Nullable ImportDeclaration declaration(SyntaxNode node) {
         int keyword = -1;
         int semicolon = -1;
@@ -228,10 +208,10 @@ public final class JavaImports {
                 String kind = token.kind().id();
                 if (TRIVIA.contains(kind))
                     continue;
-                if (!kind.equals("JAVA_TOKEN_IDENTIFIER") && !kind.equals("JAVA_TOKEN_DOT")
+                if (!kind.equals(IDENTIFIER_TOKEN) && !kind.equals("JAVA_TOKEN_DOT")
                     && !kind.equals("JAVA_TOKEN_STAR"))
                     return null;
-                text.append(token.text());
+                text.append(JavaUnicodeEscapes.translate(token.text()));
             } else {
                 node.children().reversed().forEach(pending::addFirst);
             }
@@ -263,21 +243,5 @@ public final class JavaImports {
             }
         }
         return code.toString();
-    }
-
-    private static int escapeEnd(CharSequence text, int backslash) {
-        int index = backslash + 1;
-        if (index >= text.length() || text.charAt(index) != 'u')
-            return -1;
-        while (index < text.length() && text.charAt(index) == 'u') {
-            index++;
-        }
-        if (index + 4 > text.length())
-            return -1;
-        for (int digit = index; digit < index + 4; digit++) {
-            if (Character.digit(text.charAt(digit), 16) < 0)
-                return -1;
-        }
-        return index + 4;
     }
 }

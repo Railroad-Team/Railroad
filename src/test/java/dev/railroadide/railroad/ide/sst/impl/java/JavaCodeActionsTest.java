@@ -265,15 +265,29 @@ public class JavaCodeActionsTest {
                 String text = "\\\\u004Dap";
             }
             """);
-        for (String used : List.of("java.util.List", "java.util.Set", "java.util.\\u0041")) {
+        for (String used : List.of("java.util.List", "java.util.Set")) {
             assertEquals(List.of(), actionsAt("p/A.java", used), used);
         }
         CodeAction map = single(actionsAt("p/A.java", "java.util.Map"));
         assertEquals("Remove unused import 'java.util.Map'", map.title());
         assertEquals(text("p/A.java").replace("import java.util.Map;\n", ""),
             applied("p/A.java", resolve("p/A.java", map)));
-        assertEquals(List.of("java.util.Map"), unusedImportDiagnostics("p/A.java"),
-            "An escaped backslash in a literal is not an escape, and escaped imports are never guessed at");
+        CodeAction escaped = single(actionsAt("p/A.java", "java.util.\\u0041"));
+        assertEquals("Remove unused import 'java.util.ArrayList'", escaped.title());
+        assertEquals(text("p/A.java").replace("import java.util.\\u0041rrayList;\n", ""),
+            applied("p/A.java", resolve("p/A.java", escaped)));
+        assertEquals(List.of("java.util.Map", "java.util.\\u0041rrayList"), unusedImportDiagnostics("p/A.java"),
+            "An escaped backslash in a literal is not an escape");
+
+        source("p/B.java", """
+            package p;
+            import java.util.\\u004Cist;
+            import java.util.List;
+            class B { Object names = List.of(); }
+            """);
+        assertEquals(List.of(), actionsAt("p/B.java", "List.of"), "An escaped import already makes the name resolve");
+        assertEquals("Remove duplicate import 'java.util.List'",
+            single(actionsAt("p/B.java", "import java.util.List")).title());
     }
 
     @Test

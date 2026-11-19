@@ -524,30 +524,31 @@ public final class JavaCodeActions {
                 SyntaxToken token = tokens.get(index);
                 if (!token.kind().id().equals(IDENTIFIER))
                     continue;
+                String name = JavaUnicodeEscapes.translate(token.text());
                 SyntaxNode parent = token.parent().orElse(null);
                 String parentKind = parent == null ? "" : parent.kind().id();
                 switch (parentKind) {
                     case TYPE_REFERENCE -> {
                         if (firstIdentifier(parent) == token) {
-                            references.add(new Reference(token.text(), token.start(), token.end(), false));
+                            references.add(new Reference(name, token.start(), token.end(), false));
                         }
                     }
                     case NAME_EXPRESSION -> {
                         if (qualifier(tokens, index)) {
-                            references.add(new Reference(token.text(), token.start(), token.end(), false));
+                            references.add(new Reference(name, token.start(), token.end(), false));
                         }
                     }
                     case QUALIFIED_NAME -> {
                         if (parent.parent().filter(grand -> grand.kind().id().equals(ANNOTATION)).isEmpty()) {
-                            declared.add(token.text());
+                            declared.add(name);
                         } else if (firstIdentifier(parent) == token && significant(tokens, index, 1)
                             .filter(next -> next.kind().id().equals("JAVA_TOKEN_DOT")).isEmpty()) {
-                            references.add(new Reference(token.text(), token.start(), token.end(), true));
+                            references.add(new Reference(name, token.start(), token.end(), true));
                         }
                     }
                     case ANNOTATION -> {
                     }
-                    default -> declared.add(token.text());
+                    default -> declared.add(name);
                 }
             }
             check.run();
@@ -589,7 +590,7 @@ public final class JavaCodeActions {
                 SyntaxNode node = pending.removeFirst();
                 if (node instanceof SyntaxToken token) {
                     if (token.kind().id().equals(IDENTIFIER) || token.kind().id().equals("JAVA_TOKEN_DOT")) {
-                        name.append(token.text());
+                        name.append(JavaUnicodeEscapes.translate(token.text()));
                     }
                 } else if (!node.kind().id().equals(ANNOTATION)) {
                     node.children().reversed().forEach(pending::addFirst);
