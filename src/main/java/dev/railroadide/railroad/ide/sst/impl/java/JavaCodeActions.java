@@ -27,7 +27,8 @@ import java.util.function.Function;
  * <p>
  * Fixes are verified against the captured document and workspace, never derived from diagnostics alone. An import
  * is added only when the name provably resolves to no type in the file, and exactly one accessible top-level type
- * of that name exists in the captured workspace; when several exist, an unavailable action names them instead.
+ * of that name exists in the captured workspace; when several accessible ones exist, an unavailable action names them
+ * instead. Inaccessible types are named only when no accessible type exists.
  * Types in JDK packages that no system module exports to all code are not candidates, since no source file can
  * refer to them. Edits are computed only on resolution.
  */
@@ -177,13 +178,16 @@ public final class JavaCodeActions {
                     .equals(name) && diagnostic.location().range().start <= other.start()
                     && other.end() <= diagnostic.location().range().end))
                 .toList();
-            if (candidates.names().size() > 1) {
+            if (!candidates.accessible()) {
+                String shown = candidates.names().size() == 1 ? candidates.names().getFirst() : name;
+                actions.add(CodeAction.unavailable("Import '" + shown + "'",
+                    candidates.names().size() == 1
+                        ? "'" + shown + "' is not accessible from this file"
+                        : "No '" + name + "' is accessible from this file: " + listed(candidates.names()))
+                    .withDiagnostics(fixed));
+            } else if (candidates.names().size() > 1) {
                 actions.add(CodeAction.unavailable("Import '" + name + "'",
                     "'" + name + "' is ambiguous: " + listed(candidates.names()))
-                    .withDiagnostics(fixed));
-            } else if (!candidates.accessible()) {
-                actions.add(CodeAction.unavailable("Import '" + candidates.names().getFirst() + "'",
-                    "'" + candidates.names().getFirst() + "' is not accessible from this file")
                     .withDiagnostics(fixed));
             } else {
                 actions.add(CodeAction.deferred("Import '" + candidates.names().getFirst() + "'",
@@ -282,8 +286,14 @@ public final class JavaCodeActions {
                 continue;
             types.merge(qualifiedName, symbol, (first, second) -> accessible(first) ? first : second);
         }
-        boolean accessible = types.size() == 1 && accessible(types.values().iterator().next());
-        return new Candidates(List.copyOf(types.keySet()), accessible);
+        List<String> accessible = types.entrySet().stream()
+            .filter(type -> accessible(type.getValue()))
+            .map(Map.Entry::getKey)
+            .toList();
+        // A type that cannot be imported never competes with one that can.
+        return accessible.isEmpty()
+            ? new Candidates(List.copyOf(types.keySet()), false)
+            : new Candidates(accessible, true);
     }
 
     private static boolean accessible(JavaProjectSemanticIndex.SymbolDescriptor symbol) {

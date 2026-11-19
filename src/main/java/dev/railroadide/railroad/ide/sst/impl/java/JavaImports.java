@@ -11,7 +11,9 @@ import java.util.regex.Pattern;
  * Syntax-only facts about the import declarations of one Java compilation unit.
  * <p>
  * Usage is decided conservatively from tokens: an import counts as used whenever its imported name appears as a
- * token outside the import declarations, including package annotations, or as a word in a Javadoc comment. An import
+ * token outside the import declarations, including package annotations, or as a word in a Javadoc or Markdown
+ * ({@code ///}) documentation comment. Unicode escapes are translated as the compiler translates them before lexing;
+ * when code outside the imports contains any, every identifier of its translated text counts as a use. An import
  * reported as unused can therefore be removed without changing what any name in the file refers to.
  */
 public final class JavaImports {
@@ -21,10 +23,13 @@ public final class JavaImports {
     private static final String STATIC_KEYWORD = "JAVA_TOKEN_STATIC_KEYWORD";
     private static final String SEMICOLON = "JAVA_TOKEN_SEMICOLON";
     private static final String JAVADOC = "JAVA_TOKEN_JAVADOC_COMMENT";
-    private static final Set<String> TRIVIA = Set.of("JAVA_TOKEN_WHITESPACE", "JAVA_TOKEN_LINE_COMMENT",
+    private static final String LINE_COMMENT = "JAVA_TOKEN_LINE_COMMENT";
+    private static final Set<String> TRIVIA = Set.of("JAVA_TOKEN_WHITESPACE", LINE_COMMENT,
         "JAVA_TOKEN_BLOCK_COMMENT", JAVADOC);
     private static final Set<String> NON_NAME_TOKENS = Set.of("JAVA_TOKEN_STRING_LITERAL",
         "JAVA_TOKEN_TEXT_BLOCK_LITERAL", "JAVA_TOKEN_CHARACTER_LITERAL", "JAVA_TOKEN_EOF");
+    private static final Pattern IDENTIFIER = Pattern.compile(
+        "\\p{javaJavaIdentifierStart}\\p{javaJavaIdentifierPart}*");
 
     private JavaImports() {
     }
@@ -102,7 +107,8 @@ public final class JavaImports {
             return List.of();
 
         Set<String> names = new HashSet<>();
-        List<String> javadoc = new ArrayList<>();
+        List<String> documentation = new ArrayList<>();
+        boolean backslash = false;
         Deque<SyntaxNode> pending = new ArrayDeque<>(root.children());
         int visited = 0;
         while (!pending.isEmpty()) {
@@ -114,16 +120,26 @@ public final class JavaImports {
             if (IMPORT_DECLARATION.equals(kind))
                 continue;
             if (node instanceof SyntaxToken token) {
-                if (JAVADOC.equals(kind)) {
-                    javadoc.add(token.text());
+                if (isDocumentation(token)) {
+                    documentation.add(token.text());
                 } else if (!TRIVIA.contains(kind) && !NON_NAME_TOKENS.contains(kind)) {
                     names.add(token.text());
                 }
+                backslash |= !NON_NAME_TOKENS.contains(kind) && token.text().indexOf('\\') >= 0;
                 continue;
             }
             node.children().reversed().forEach(pending::addFirst);
         }
         check.run();
+        if (backslash) {
+            // The lexer does not translate escapes, so its tokens may split or hide identifiers.
+            String code = code(root);
+            String translated = translateUnicodeEscapes(code);
+            if (!translated.equals(code)) {
+                IDENTIFIER.matcher(translated).results().forEach(match -> names.add(match.group()));
+            }
+            check.run();
+        }
 
         List<ImportDeclaration> unused = new ArrayList<>();
         for (ImportDeclaration declaration : imports) {
@@ -134,7 +150,7 @@ public final class JavaImports {
                 continue;
             Pattern word = Pattern.compile("(?<![\\p{javaJavaIdentifierPart}])" + Pattern.quote(name)
                 + "(?![\\p{javaJavaIdentifierPart}])");
-            if (javadoc.stream().anyMatch(comment -> word.matcher(comment).find()))
+            if (documentation.stream().anyMatch(comment -> word.matcher(comment).find()))
                 continue;
             unused.add(declaration);
         }
@@ -156,6 +172,28 @@ public final class JavaImports {
             }
         }
         return List.copyOf(duplicates);
+    }
+
+    /**
+     * Translates Unicode escapes as the compiler does before lexing: a backslash starts an escape only when an even
+     * number of contiguous backslashes precedes it.
+     */
+    private static String translateUnicodeEscapes(CharSequence text) {
+        var translated = new StringBuilder(text.length());
+        int backslashes = 0;
+        for (int index = 0; index < text.length(); index++) {
+            char current = text.charAt(index);
+            int end = current == '\\' && backslashes % 2 == 0 ? escapeEnd(text, index) : -1;
+            if (end > 0) {
+                translated.append((char) Integer.parseInt(text.subSequence(end - 4, end).toString(), 16));
+                index = end - 1;
+                backslashes = 0;
+                continue;
+            }
+            backslashes = current == '\\' ? backslashes + 1 : 0;
+            translated.append(current);
+        }
+        return translated.toString();
     }
 
     private static @Nullable ImportDeclaration declaration(SyntaxNode node) {
@@ -199,5 +237,47 @@ public final class JavaImports {
             }
         }
         return text.toString();
+    }
+
+    private static boolean isDocumentation(SyntaxToken token) {
+        String kind = token.kind().id();
+        return JAVADOC.equals(kind) || LINE_COMMENT.equals(kind) && token.text().startsWith("///")
+            && !token.text().startsWith("////");
+    }
+
+    /**
+     * Returns the text of the compilation unit outside import declarations, with each literal replaced by a space.
+     */
+    private static String code(SyntaxNode root) {
+        var code = new StringBuilder();
+        Deque<SyntaxNode> pending = new ArrayDeque<>(root.children());
+        while (!pending.isEmpty()) {
+            SyntaxNode node = pending.removeFirst();
+            String kind = node.kind().id();
+            if (IMPORT_DECLARATION.equals(kind)) {
+                code.append(' ');
+            } else if (node instanceof SyntaxToken token) {
+                code.append(NON_NAME_TOKENS.contains(kind) ? " " : token.text());
+            } else {
+                node.children().reversed().forEach(pending::addFirst);
+            }
+        }
+        return code.toString();
+    }
+
+    private static int escapeEnd(CharSequence text, int backslash) {
+        int index = backslash + 1;
+        if (index >= text.length() || text.charAt(index) != 'u')
+            return -1;
+        while (index < text.length() && text.charAt(index) == 'u') {
+            index++;
+        }
+        if (index + 4 > text.length())
+            return -1;
+        for (int digit = index; digit < index + 4; digit++) {
+            if (Character.digit(text.charAt(digit), 16) < 0)
+                return -1;
+        }
+        return index + 4;
     }
 }

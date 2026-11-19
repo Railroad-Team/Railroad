@@ -4,6 +4,7 @@ import com.panemu.tiwulfx.control.dock.DetachableTabPane;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.WorkspaceModes;
+import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
 import dev.railroadide.railroad.ide.sst.provider.api.CodeAction;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
@@ -58,6 +59,7 @@ public class CodeActionEditorIntegrationTest {
     private Stage stage;
     private CodeEditorPane editor;
     private Path file;
+    private DetachableTabPane tabs;
 
     @BeforeAll
     public static void startJavaFx() throws Exception {
@@ -91,7 +93,7 @@ public class CodeActionEditorIntegrationTest {
         file = projectDirectory.resolve("src/main/java/p/A.java");
         Files.createDirectories(file.getParent());
         Files.writeString(file, SOURCE);
-        var tabs = onFx(DetachableTabPane::new);
+        tabs = onFx(DetachableTabPane::new);
         stage = onFx(() -> {
             Platform.setImplicitExit(false);
             ThemeManager.init();
@@ -101,8 +103,7 @@ public class CodeActionEditorIntegrationTest {
             window.show();
             return window;
         });
-        EditorTab tab = onFx(() -> openInTabPane(file, tabs));
-        editor = (CodeEditorPane) tab.view().activeEditor();
+        editor = open(file);
     }
 
     @AfterEach
@@ -216,6 +217,86 @@ public class CodeActionEditorIntegrationTest {
         assertNull(onFx(editor::activeCodeActionMenu));
         assertFalse(onFx(editor::supportsCodeActions));
         assertEquals(-1, onFx(editor::codeActionBulbLine));
+    }
+
+    @Test
+    public void importsUsedThroughUnicodeEscapesOrDocumentationLinksOfferNoRemoval() throws Exception {
+        Path escaped = projectDirectory.resolve("src/main/java/p/Escaped.java");
+        Files.writeString(escaped, """
+            package p;
+
+            import java.util.List;
+            import java.util.Set;
+
+            /// Collects [Set] values.
+            class Escaped {
+                \\u004Cist<String> names;
+            }
+            """);
+        editor = open(escaped);
+        for (String marker : List.of("java.util.List", "java.util.Set")) {
+            moveTo(marker);
+            onFx(() -> {
+                press(editor, KeyCode.ENTER, true);
+                return null;
+            });
+            awaitFx(() -> visibleNode(".navigation-message") != null);
+            assertNull(onFx(editor::activeCodeActionMenu), marker);
+        }
+        assertEquals(Files.readString(escaped), onFx(editor::getText));
+    }
+
+    @Test
+    public void previewShowsAnImportInsertedAfterThePackageAndMatchesTheAppliedText() throws Exception {
+        Path bare = projectDirectory.resolve("src/main/java/p/Bare.java");
+        String source = """
+            package p;
+
+            class Bare {
+                ArrayList<String> names;
+            }
+            """;
+        Files.writeString(bare, source);
+        editor = open(bare);
+        moveTo("ArrayList<");
+
+        CodeActionMenu menu = openMenu();
+        assertEquals(List.of("Import 'java.util.ArrayList'"), titles(menu));
+        awaitFx(() -> !menu.previewLines().isEmpty());
+        assertEquals("  1:  package p;  →  package p; ⏎ import java.util.ArrayList;",
+            onFx(menu::previewLines).get(1));
+
+        pressInMenu(KeyCode.ENTER);
+        String imported = source.replace("package p;\n", "package p;\n\nimport java.util.ArrayList;\n");
+        awaitFx(() -> editor.getText().equals(imported));
+    }
+
+    @Test
+    public void actionsPreparedBeforeTheLanguageUnloadsAreNeverApplied() throws Exception {
+        moveTo("ArrayList<");
+        CodeActionMenu menu = openMenu();
+        awaitFx(() -> !menu.previewLines().isEmpty());
+        try {
+            onFx(() -> {
+                LanguageSupportRegistry.unregister("java");
+                return null;
+            });
+            assertFalse(onFx(editor::supportsCodeActions));
+            pressInMenu(KeyCode.ENTER);
+            assertEquals(SOURCE, onFx(editor::getText));
+            assertFalse(Services.IDE_STATE.getWorkspaceEdits().orElseThrow().canUndo());
+        } finally {
+            onFx(() -> {
+                menu.close();
+                LanguageSupports.initialize();
+                return null;
+            });
+        }
+    }
+
+    private CodeEditorPane open(Path path) throws Exception {
+        EditorTab tab = onFx(() -> openInTabPane(path, tabs));
+        return (CodeEditorPane) tab.view().activeEditor();
     }
 
     private CodeActionMenu openMenu() throws Exception {

@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.ui.refactor;
 
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
+import dev.railroadide.railroad.ide.sst.document.api.TextRange;
 import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceEditPreview;
 import dev.railroadide.railroad.localization.L18n;
 import javafx.scene.control.TreeCell;
@@ -11,6 +12,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 /**
  * Shows a {@link WorkspaceEditPreview} as a tree: one entry per changed document or renamed file, each followed by
@@ -81,13 +83,30 @@ public final class WorkspaceEditPreviewView extends TreeView<WorkspaceEditPrevie
         return lines;
     }
 
+    /**
+     * Describes a change by the lines it touches before the edit and the same lines after it, so that inserted and
+     * removed lines are shown as well as changes within a line.
+     */
     private static String describe(
         WorkspaceEditPreview.DocumentPreview document,
         WorkspaceEditPreview.ChangePreview change
     ) {
-        return (lineNumber(document.before(), change.before().start) + 1) + ":  "
-            + lineText(document.before(), change.before().start).strip() + "  →  "
-            + lineText(document.after(), change.after().start).strip();
+        String before = document.before();
+        String after = document.after();
+        TextRange replaced = change.before();
+        TextRange inserted = change.after();
+        // Ranges ending just after a line break end that line rather than touching the next one.
+        boolean replacesLines = endsWithLineBreak(before, replaced);
+        int beforeEnd = replacesLines ? replaced.end - 1 : lineEnd(before, replaced.end);
+        int afterStart = lineStart(after, inserted.start);
+        boolean insertsLines = endsWithLineBreak(after, inserted)
+            || inserted.start == inserted.end && inserted.start == afterStart;
+        int afterEnd = replacesLines && insertsLines
+            ? Math.max(afterStart, inserted.end - 1)
+            : lineEnd(after, inserted.end);
+        return (lineNumber(before, replaced.start) + 1) + ":  "
+            + excerpt(before, lineStart(before, replaced.start), beforeEnd) + "  →  "
+            + excerpt(after, afterStart, afterEnd);
     }
 
     private static int lineNumber(String text, int offset) {
@@ -100,10 +119,24 @@ public final class WorkspaceEditPreviewView extends TreeView<WorkspaceEditPrevie
         return line;
     }
 
-    private static String lineText(String text, int offset) {
-        int start = text.lastIndexOf('\n', offset - 1) + 1;
+    private static boolean endsWithLineBreak(String text, TextRange range) {
+        return range.end > range.start && text.charAt(range.end - 1) == '\n';
+    }
+
+    private static int lineStart(String text, int offset) {
+        return text.lastIndexOf('\n', offset - 1) + 1;
+    }
+
+    private static int lineEnd(String text, int offset) {
         int end = text.indexOf('\n', offset);
-        return text.substring(start, end < 0 ? text.length() : end);
+        return end < 0 ? text.length() : end;
+    }
+
+    private static String excerpt(String text, int start, int end) {
+        return text.substring(start, end).lines()
+            .map(String::strip)
+            .filter(line -> !line.isEmpty())
+            .collect(Collectors.joining(" ⏎ "));
     }
 
     private static String fileName(@Nullable DocumentUri uri) {

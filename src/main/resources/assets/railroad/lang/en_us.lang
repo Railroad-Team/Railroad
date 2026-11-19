@@ -1354,6 +1354,7 @@ railroad.code_actions.timed_out=Finding actions timed out while analysing the wo
 railroad.code_actions.computing=Computing changes...
 railroad.code_actions.ready=Press Enter to apply these changes.
 railroad.code_actions.confirm=This action changes %d files. Review the changes and press Enter again to apply them.
+railroad.code_actions.confirm_annotated=These changes need confirmation (%s). Review them and press Enter again to apply them.
 railroad.code_actions.apply_failed=The action could not be applied: %s
 railroad.code_actions.failed=The action could not be computed. See the log for details.
 railroad.code_actions.cancelled=Computing the action was cancelled. Show the actions again to retry.

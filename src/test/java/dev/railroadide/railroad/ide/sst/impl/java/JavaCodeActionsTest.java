@@ -250,6 +250,98 @@ public class JavaCodeActionsTest {
     }
 
     @Test
+    public void importsUsedThroughUnicodeEscapesAreKept() {
+        source("p/A.java", """
+            package p;
+
+            import java.util.List;
+            import java.util.Map;
+            import java.util.Set;
+            import java.util.\\u0041rrayList;
+
+            class A {
+                \\u004Cist<String> names;
+                S\\u0065t<String> unique;
+                String text = "\\\\u004Dap";
+            }
+            """);
+        for (String used : List.of("java.util.List", "java.util.Set", "java.util.\\u0041")) {
+            assertEquals(List.of(), actionsAt("p/A.java", used), used);
+        }
+        CodeAction map = single(actionsAt("p/A.java", "java.util.Map"));
+        assertEquals("Remove unused import 'java.util.Map'", map.title());
+        assertEquals(text("p/A.java").replace("import java.util.Map;\n", ""),
+            applied("p/A.java", resolve("p/A.java", map)));
+        assertEquals(List.of("java.util.Map"), unusedImportDiagnostics("p/A.java"),
+            "An escaped backslash in a literal is not an escape, and escaped imports are never guessed at");
+    }
+
+    @Test
+    public void importsLinkedOnlyFromDocumentationCommentsAreKept() {
+        source("p/A.java", """
+            package p;
+
+            import java.util.List;
+            import java.util.Map;
+            import java.util.Optional;
+            import java.util.Set;
+
+            /// Holds a [List] and refers to {@link Optional}.
+            class A {
+                /** Keyed by {@linkplain Set sets}. */
+                int size;
+            }
+            """);
+        for (String used : List.of("java.util.List", "java.util.Optional", "java.util.Set")) {
+            assertEquals(List.of(), actionsAt("p/A.java", used), used);
+        }
+        assertEquals("Remove unused import 'java.util.Map'", single(actionsAt("p/A.java", "java.util.Map")).title());
+        assertEquals(List.of("java.util.Map"), unusedImportDiagnostics("p/A.java"));
+
+        source("p/B.java", """
+            package p;
+            import java.util.List;
+            // Not documentation: [List]
+            //////// [List] ////////
+            class B {}
+            """);
+        assertEquals("Remove unused import 'java.util.List'", single(actionsAt("p/B.java", "java.util.List")).title());
+    }
+
+    @Test
+    public void inaccessibleTypesNeverMakeAnImportAmbiguous() {
+        source("q/Widget.java", """
+            package q;
+            public class Widget {}
+            """);
+        source("r/Widget.java", """
+            package r;
+            class Widget {}
+            """);
+        source("s/Gadget.java", """
+            package s;
+            class Gadget {}
+            """);
+        source("t/Gadget.java", """
+            package t;
+            class Gadget {}
+            """);
+        source("p/A.java", """
+            package p;
+            class A { Widget widget; Gadget gadget; }
+            """);
+        CodeAction widget = single(actionsAt("p/A.java", "Widget widget"));
+        assertEquals("Import 'q.Widget'", widget.title(), widget::toString);
+        assertTrue(widget.available());
+        assertEquals("package p;\n\nimport q.Widget;\nclass A { Widget widget; Gadget gadget; }\n",
+            applied("p/A.java", resolve("p/A.java", widget)));
+
+        CodeAction gadget = single(actionsAt("p/A.java", "Gadget gadget"));
+        assertFalse(gadget.available());
+        assertEquals("No 'Gadget' is accessible from this file: s.Gadget, t.Gadget", gadget.unavailableReason());
+    }
+
+    @Test
     public void removesOnlyTheRepeatedCopyOfADuplicateImport() {
         source("p/A.java", """
             package p;
@@ -541,6 +633,14 @@ public class JavaCodeActionsTest {
 
     private String text(String file) {
         return documents.get(file).text();
+    }
+
+    private List<String> unusedImportDiagnostics(String file) {
+        return new JavaDiagnosticsProvider(null, null, services::capture).compute(context(file)).value().stream()
+            .filter(diagnostic -> JavaCodeActions.UNUSED_IMPORT.equals(diagnostic.code()))
+            .map(diagnostic -> text(file).substring(diagnostic.location().range().start,
+                diagnostic.location().range().end))
+            .toList();
     }
 
     private void source(String file, String text) {

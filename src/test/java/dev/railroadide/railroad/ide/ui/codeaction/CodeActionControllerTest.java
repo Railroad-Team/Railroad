@@ -8,6 +8,8 @@ import dev.railroadide.railroad.ide.edit.WorkspaceEditService;
 import dev.railroadide.railroad.ide.edit.WorkspaceEditorHost;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.sst.edit.api.ChangeAnnotation;
+import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceChange;
 import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceEdit;
 import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceEditProblem;
 import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceEditResult;
@@ -358,6 +360,172 @@ public class CodeActionControllerTest {
             stale.close();
             return null;
         });
+    }
+
+    @Test
+    public void preparedActionsCannotBeAppliedAfterTheProviderUnloads() throws Exception {
+        TextDocumentSnapshot document = disk("A.txt", "alpha");
+        provider.actions = (context, request) -> List.of(CodeAction.deferred("Capitalise", "x"),
+            CodeAction.deferred("Other", "y"));
+        provider.resolver = (context, action) -> action.withEdit(WorkspaceEdit.builder(action.title())
+            .replace(document, replacement(0, 5, "ALPHA")).build());
+        Discovery discovery = discover(document, CodeActionRequest.at(0));
+        Resolution ready = resolve(discovery, discovery.actions().getFirst());
+        assertEquals(Status.READY, ready.status());
+        var applied = new AtomicInteger();
+        CodeActionMenu menu = onFx(() -> new CodeActionMenu(controller, discovery, applied::incrementAndGet));
+        awaitFx(() -> menu.statusText().equals(L18n.localize("railroad.code_actions.ready")));
+
+        lifetime.cancel();
+
+        WorkspaceEditResult result = onFx(() -> controller.apply(ready));
+        assertFalse(result.applied());
+        assertEquals(WorkspaceEditProblem.Kind.INVALID, result.problems().getFirst().kind());
+        onFx(() -> {
+            menu.choose();
+            return null;
+        });
+        assertFalse(onFx(menu::isClosed));
+        assertTrue(onFx(menu::statusText).startsWith(
+            L18n.localize("railroad.code_actions.apply_failed", "").strip()), onFx(menu::statusText));
+        assertCancelled(onFx(() -> controller.resolve(discovery, discovery.actions().get(1))));
+        assertEquals(0, applied.get());
+        assertEquals("alpha", Files.readString(root.resolve("A.txt")));
+        assertFalse(onFx(service::canUndo), "Nothing may be recorded for undo");
+        onFx(() -> {
+            menu.close();
+            return null;
+        });
+    }
+
+    @Test
+    public void menuConfirmsSingleDocumentChangesAnnotatedAsNeedingConfirmation() throws Exception {
+        TextDocumentSnapshot document = disk("A.txt", "alpha beta");
+        provider.actions = (context, request) -> List.of(
+            CodeAction.resolved("Risky", WorkspaceEdit.builder("Risky")
+                .annotation("risky", new ChangeAnnotation("Changes behaviour", "", true))
+                .annotation("safe", new ChangeAnnotation("Cosmetic", "", false))
+                .change(new WorkspaceChange.TextEdit(document, List.of(replacement(0, 1, "A")), "risky"))
+                .build()),
+            CodeAction.resolved("Safe", WorkspaceEdit.builder("Safe")
+                .annotation("safe", new ChangeAnnotation("Cosmetic", "", false))
+                .annotation("unused", new ChangeAnnotation("Never referenced", "", true))
+                .change(new WorkspaceChange.TextEdit(document, List.of(replacement(6, 7, "B")), "safe"))
+                .build()));
+        Discovery discovery = discover(document, CodeActionRequest.at(0));
+        Resolution risky = resolve(discovery, discovery.actions().getFirst());
+        assertFalse(risky.affectsOtherDocuments());
+        assertTrue(risky.needsConfirmation());
+        assertEquals(List.of("Changes behaviour"), risky.confirmationLabels());
+        assertFalse(resolve(discovery, discovery.actions().get(1)).needsConfirmation(),
+            "Only annotations of applied changes ask for confirmation");
+
+        var applied = new AtomicInteger();
+        CodeActionMenu menu = onFx(() -> new CodeActionMenu(controller, discovery, applied::incrementAndGet));
+        awaitFx(() -> menu.statusText().equals(L18n.localize("railroad.code_actions.ready")));
+        onFx(() -> {
+            menu.choose();
+            return null;
+        });
+        assertFalse(onFx(menu::isClosed));
+        assertEquals(L18n.localize("railroad.code_actions.confirm_annotated", "Changes behaviour"),
+            onFx(menu::statusText));
+        assertEquals("alpha beta", Files.readString(root.resolve("A.txt")));
+        onFx(() -> {
+            menu.choose();
+            return null;
+        });
+        assertTrue(onFx(menu::isClosed));
+        assertEquals(1, applied.get());
+        assertEquals("Alpha beta", Files.readString(root.resolve("A.txt")));
+
+        TextDocumentSnapshot current = (TextDocumentSnapshot) store.current(document.id()).orElseThrow();
+        provider.actions = (context, request) -> List.of(CodeAction.resolved("Safe", WorkspaceEdit.builder("Safe")
+            .annotation("safe", new ChangeAnnotation("Cosmetic", "", false))
+            .change(new WorkspaceChange.TextEdit(current, List.of(replacement(6, 7, "B")), "safe"))
+            .build()));
+        Discovery later = discover(current, CodeActionRequest.at(0));
+        CodeActionMenu safe = onFx(() -> new CodeActionMenu(controller, later, applied::incrementAndGet));
+        awaitFx(() -> safe.statusText().equals(L18n.localize("railroad.code_actions.ready")));
+        onFx(() -> {
+            safe.choose();
+            return null;
+        });
+        assertTrue(onFx(safe::isClosed), "Unconfirmed annotations apply on the first choice");
+        assertEquals("Alpha Beta", Files.readString(root.resolve("A.txt")));
+
+        TextDocumentSnapshot latest = (TextDocumentSnapshot) store.current(document.id()).orElseThrow();
+        TextDocumentSnapshot other = disk("B.txt", "gamma");
+        provider.actions = (context, request) -> List.of(CodeAction.resolved("Both", WorkspaceEdit.builder("Both")
+            .annotation("risky", new ChangeAnnotation("Changes behaviour", "", true))
+            .change(new WorkspaceChange.TextEdit(latest, List.of(replacement(0, 1, "a")), "risky"))
+            .replace(other, replacement(0, 1, "G"))
+            .build()));
+        Discovery both = discover(latest, CodeActionRequest.at(0));
+        CodeActionMenu wide = onFx(() -> new CodeActionMenu(controller, both, applied::incrementAndGet));
+        awaitFx(() -> wide.statusText().equals(L18n.localize("railroad.code_actions.ready")));
+        onFx(() -> {
+            wide.choose();
+            return null;
+        });
+        assertEquals(L18n.localize("railroad.code_actions.confirm_annotated", "Changes behaviour") + "\n"
+            + L18n.localize("railroad.code_actions.confirm", 2), onFx(wide::statusText));
+        onFx(() -> {
+            wide.close();
+            return null;
+        });
+    }
+
+    @Test
+    public void previewsShowInsertedAndRemovedLinesExactlyAsTheyAreApplied() throws Exception {
+        String text = "package p;\n\nimport a.B;\nimport a.C;\n\nclass D {}\n";
+        TextDocumentSnapshot document = disk("D.java", text);
+        provider.actions = (context, request) -> List.of(
+            CodeAction.resolved("After package", WorkspaceEdit.builder("After package")
+                .replace(document, replacement(10, 10, "\n\nimport a.A;")).build()),
+            CodeAction.resolved("Remove line", WorkspaceEdit.builder("Remove line")
+                .replace(document, replacement(12, 24, "")).build()),
+            CodeAction.resolved("Insert line", WorkspaceEdit.builder("Insert line")
+                .replace(document, replacement(24, 24, "import a.Ba;\n")).build()),
+            CodeAction.resolved("Rename", WorkspaceEdit.builder("Rename")
+                .replace(document, replacement(43, 44, "E")).build()));
+        Discovery discovery = discover(document, CodeActionRequest.at(0));
+        CodeActionMenu menu = onFx(() -> new CodeActionMenu(controller, discovery, () -> {
+        }));
+        List<String> expected = List.of(
+            "  1:  package p;  →  package p; ⏎ import a.A;",
+            "  3:  import a.B;  →  ",
+            "  4:  import a.C;  →  import a.Ba; ⏎ import a.C;",
+            "  6:  class D {}  →  class E {}");
+        for (int index = 0; index < expected.size(); index++) {
+            int selected = index;
+            onFx(() -> {
+                menu.select(selected);
+                return null;
+            });
+            awaitFx(() -> menu.statusText().equals(L18n.localize("railroad.code_actions.ready")));
+            assertEquals(2, onFx(menu::previewLines).size(), "One file and one change");
+            assertEquals(expected.get(index), onFx(menu::previewLines).get(1),
+                discovery.actions().get(index).title());
+        }
+
+        Resolution insertion = resolve(discovery, discovery.actions().getFirst());
+        String previewed = insertion.preview().documents().getFirst().after();
+        assertEquals("package p;\n\nimport a.A;\n\nimport a.B;\nimport a.C;\n\nclass D {}\n", previewed);
+        assertTrue(onFx(() -> controller.apply(insertion)).applied());
+        assertEquals(previewed, Files.readString(root.resolve("D.java")));
+        onFx(() -> {
+            menu.close();
+            return null;
+        });
+    }
+
+    private static void awaitFx(Callable<Boolean> condition) throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (!onFx(condition)) {
+            assertTrue(System.nanoTime() < deadline, "Timed out waiting for the code action menu");
+            Thread.sleep(10);
+        }
     }
 
     private static void awaitCancellation(FeatureRequestContext context) {

@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.ui.codeaction;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceEditPreview;
 import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceEditProblem;
 import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceEditResult;
 import dev.railroadide.railroad.ide.sst.provider.api.CodeAction;
@@ -18,6 +19,7 @@ import javafx.scene.input.MouseButton;
 import javafx.stage.Popup;
 import org.jspecify.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,8 +29,9 @@ import java.util.concurrent.CompletionException;
 
 /**
  * Popup listing the code actions of one discovery. The selected action is resolved lazily and its changes are
- * previewed below the list; Enter or a double click applies it. Changes reaching beyond the edited document must be
- * confirmed with a second Enter. Unavailable actions are listed with their reason and are never applied.
+ * previewed below the list; Enter or a double click applies it. Changes reaching beyond the edited document, or
+ * annotated as needing confirmation, must be confirmed with a second Enter. Unavailable actions are listed with their
+ * reason and are never applied.
  * <p>
  * The menu is keyboard driven: Up and Down select, Enter applies and Escape closes. Call on the JavaFX thread.
  */
@@ -158,11 +161,19 @@ public final class CodeActionMenu implements AutoCloseable {
             showResolution(resolution);
             return;
         }
-        if (resolution.affectsOtherDocuments() && confirmed != selected) {
+        if (resolution.needsConfirmation() && confirmed != selected) {
             confirmed = selected;
-            status.setText(L18n.localize("railroad.code_actions.confirm",
-                Objects.requireNonNull(resolution.preview()).documents().size()
-                    + resolution.preview().resources().size()));
+            WorkspaceEditPreview changes = Objects.requireNonNull(resolution.preview());
+            List<String> reasons = new ArrayList<>();
+            if (!resolution.confirmationLabels().isEmpty()) {
+                reasons.add(L18n.localize("railroad.code_actions.confirm_annotated",
+                    String.join(", ", resolution.confirmationLabels())));
+            }
+            if (resolution.affectsOtherDocuments()) {
+                reasons.add(L18n.localize("railroad.code_actions.confirm",
+                    changes.documents().size() + changes.resources().size()));
+            }
+            status.setText(String.join("\n", reasons));
             return;
         }
 

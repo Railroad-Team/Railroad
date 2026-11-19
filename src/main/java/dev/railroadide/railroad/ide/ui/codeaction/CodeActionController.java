@@ -7,6 +7,7 @@ import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentStore;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot;
+import dev.railroadide.railroad.ide.sst.edit.api.ChangeAnnotation;
 import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceChange;
 import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceEdit;
 import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceEditPreview;
@@ -153,6 +154,37 @@ public final class CodeActionController implements AutoCloseable {
             return preview != null && (!preview.resources().isEmpty() || preview.documents().stream()
                 .anyMatch(document -> !document.document().equals(discovery.document().id())));
         }
+
+        /**
+         * Returns the labels of the annotations that ask for the resolved edit's changes to be confirmed.
+         *
+         * @return distinct labels in edit order; empty when no applied change needs confirmation
+         */
+        public List<String> confirmationLabels() {
+            WorkspaceEdit edit = action.edit();
+            if (edit == null)
+                return List.of();
+            Set<String> labels = new LinkedHashSet<>();
+            for (WorkspaceChange change : edit.changes()) {
+                ChangeAnnotation annotation = change.annotationId() == null
+                    ? null
+                    : edit.annotations().get(change.annotationId());
+                if (annotation != null && annotation.needsConfirmation()) {
+                    labels.add(annotation.label());
+                }
+            }
+            return List.copyOf(labels);
+        }
+
+        /**
+         * Reports whether the user must confirm the resolved edit before it is applied: because it changes more
+         * than the discovered document, or because one of its changes is annotated as needing confirmation.
+         *
+         * @return whether applying needs a confirmation
+         */
+        public boolean needsConfirmation() {
+            return affectsOtherDocuments() || !confirmationLabels().isEmpty();
+        }
     }
 
     /**
@@ -268,7 +300,8 @@ public final class CodeActionController implements AutoCloseable {
 
     /**
      * Applies a ready resolution through the project's workspace-edit service as one undoable step. Nothing is
-     * changed when the document changed since discovery or the service rejects the edit.
+     * changed when the provider's language session ended, the document changed since discovery or the service
+     * rejects the edit. Confirmation is the caller's duty: see {@link Resolution#needsConfirmation()}.
      *
      * @param resolved resolution whose status is {@link Status#READY}
      * @return outcome of the application
@@ -279,6 +312,9 @@ public final class CodeActionController implements AutoCloseable {
         if (resolved.status() != Status.READY)
             throw new IllegalArgumentException("Only ready resolutions can be applied");
         TextDocumentSnapshot document = resolved.discovery().document();
+        if (lifetime.isCancellationRequested())
+            return rejected(WorkspaceEditProblem.Kind.INVALID, document,
+                "The language support that offered the action is no longer loaded");
         if (closed || !isCurrent(document))
             return rejected(WorkspaceEditProblem.Kind.STALE, document,
                 "The document changed after the action was computed");
