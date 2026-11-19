@@ -19,6 +19,7 @@ import dev.railroadide.railroad.ide.diagnostics.DiagnosticSeverity;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -29,6 +30,7 @@ import java.lang.reflect.Field;
 import javafx.animation.Animation;
 import javafx.animation.PauseTransition;
 import javafx.event.ActionEvent;
+import org.fxmisc.richtext.model.StyleSpansBuilder;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -63,7 +65,7 @@ public class CodeEditorWorkspaceTest {
             pane.setDocumentStore(store);
             return pane;
         });
-        Field delayField = CodeEditorPane.class.getDeclaredField("workspaceDiagnosticsDelay");
+        Field delayField = CodeEditorPane.class.getDeclaredField("workspaceFeaturesDelay");
         delayField.setAccessible(true);
         PauseTransition delay = (PauseTransition) delayField.get(editor);
         Method refresh = CodeEditorPane.class.getDeclaredMethod("refreshWorkspaceFeatures");
@@ -101,6 +103,68 @@ public class CodeEditorWorkspaceTest {
                 assertTrue(requests.isEmpty());
                 return null;
             });
+        } finally {
+            onFx(() -> {
+                editor.discardChangesOnClose();
+                editor.close();
+                editor.dispose();
+                return null;
+            });
+        }
+    }
+
+    @Test
+    public void workspaceChangesDebounceHighlighting() throws Exception {
+        Path file = directory.resolve("Highlighted.java");
+        Files.writeString(file, "class Highlighted {}");
+        DocumentId id = DocumentId.create();
+        var store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()));
+        var highlights = new AtomicInteger();
+        SyntaxHighlightingProvider highlighter = text -> {
+            highlights.incrementAndGet();
+            return new StyleSpansBuilder<Collection<String>>().add(List.of(), text.length()).create();
+        };
+        TestEditor editor = onFx(() -> {
+            Project project = new RailroadProject(directory, "Debounced highlighting", new WritableImage(1, 1));
+            var pane = new TestEditor(project, id, file,
+                new CodeEditorConfig("java", null, null, null, null, highlighter), true);
+            store.publishBacking(pane.captureSnapshot());
+            pane.setDocumentStore(store);
+            return pane;
+        });
+        Field delayField = CodeEditorPane.class.getDeclaredField("workspaceFeaturesDelay");
+        delayField.setAccessible(true);
+        PauseTransition delay = (PauseTransition) delayField.get(editor);
+        Method refresh = CodeEditorPane.class.getDeclaredMethod("refreshWorkspaceFeatures");
+        refresh.setAccessible(true);
+        try {
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+            while (highlights.get() == 0 && System.nanoTime() < deadline) {
+                Thread.sleep(10);
+            }
+            editor.awaitWorkerCompletion();
+            int initial = highlights.get();
+            assertTrue(initial > 0);
+            for (long revision = 1; revision <= 3; revision++) {
+                long next = revision;
+                onFx(() -> {
+                    store.publishConfiguration(new WorkspaceConfigurationSnapshot(next, Set.of("module-" + next)));
+                    refresh.invoke(editor);
+                    delay.pause();
+                    return null;
+                });
+            }
+            editor.awaitWorkerCompletion();
+            assertEquals(initial, highlights.get(), "Workspace changes must wait for the debounce to re-highlight");
+            onFx(() -> {
+                delay.getOnFinished().handle(new ActionEvent());
+                return null;
+            });
+            deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+            while (highlights.get() == initial && System.nanoTime() < deadline) {
+                Thread.sleep(10);
+            }
+            assertEquals(initial + 1, highlights.get());
         } finally {
             onFx(() -> {
                 editor.discardChangesOnClose();
@@ -456,10 +520,16 @@ public class CodeEditorWorkspaceTest {
 
     private static final class TestEditor extends CodeEditorPane {
         private boolean enabled;
+        private boolean highlighting;
 
         private TestEditor(Project project, DocumentId id, Path file, CodeEditorConfig config) {
+            this(project, id, file, config, false);
+        }
+
+        private TestEditor(Project project, DocumentId id, Path file, CodeEditorConfig config, boolean highlighting) {
             super(project, id, file, config);
             enabled = true;
+            this.highlighting = highlighting;
         }
 
         @Override
@@ -479,7 +549,7 @@ public class CodeEditorWorkspaceTest {
 
         @Override
         protected boolean supportsHighlighting() {
-            return false;
+            return highlighting && super.supportsHighlighting();
         }
 
         @Override

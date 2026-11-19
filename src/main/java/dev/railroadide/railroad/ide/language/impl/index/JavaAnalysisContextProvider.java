@@ -3,9 +3,12 @@ package dev.railroadide.railroad.ide.language.impl.index;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService.Session;
 import dev.railroadide.railroad.ide.sst.document.api.WorkspaceConfigurationSnapshot;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import dev.railroadide.railroad.Railroad;
@@ -56,6 +59,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
             .concurrencyLevel(1).maximumSize(2).build();
         private final JavaWorkspaceAnalysisProvider workspace;
         private final BooleanSupplier active;
+        private final Map<Object, ReentrantLock> loading = new ConcurrentHashMap<>();
         private volatile boolean disposed;
         private Cache(
             Session session,
@@ -84,16 +88,37 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
             checkActive();
             V value = cache.getIfPresent(key);
             if (value == null) {
-                value = loader.get();
-                synchronized (this) {
-                    activityCheck.run();
-                    checkActive();
-                    cache.put(key, value);
+                ReentrantLock lock = loading.computeIfAbsent(key, _ -> new ReentrantLock());
+                acquire(lock, activityCheck);
+                try {
+                    value = cache.getIfPresent(key);
+                    if (value == null) {
+                        value = loader.get();
+                        synchronized (this) {
+                            activityCheck.run();
+                            checkActive();
+                            cache.put(key, value);
+                        }
+                    }
+                } finally {
+                    lock.unlock();
                 }
             }
             activityCheck.run();
             checkActive();
             return value;
+        }
+
+        private void acquire(ReentrantLock lock, Runnable activityCheck) {
+            try {
+                while (!lock.tryLock(10, TimeUnit.MILLISECONDS)) {
+                    activityCheck.run();
+                    checkActive();
+                }
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new CancellationException("Interrupted waiting for a Java index load");
+            }
         }
 
         private synchronized void dispose() {

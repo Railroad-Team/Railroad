@@ -5,6 +5,7 @@ import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.language.index.ProjectIndexContext;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService;
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.sst.request.api.CancellationToken;
 import dev.railroadide.railroad.ide.sst.request.api.CancellationTokenSource;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import org.junit.jupiter.api.BeforeAll;
@@ -72,6 +73,64 @@ public class JavaCacheLifecycleTest {
             assertEquals("newValue", result.classStubsByQualifiedName().get("demo.Library").fields().getFirst().name());
         } finally {
             service.closeProject(session);
+        }
+    }
+
+    @Test
+    public void concurrentWarmupsShareOneLibraryBuild() throws Exception {
+        Path jar = root.resolve("library.jar");
+        Path jdk = root.resolve("jdk");
+        archive(jar, "demo/Library", "value");
+        archive(jdk.resolve("lib/rt.jar"), "demo/Runtime", "runtime");
+        Project project = project();
+        var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
+        var session = service.openProject(project);
+        var building = new CountDownLatch(1);
+        var waiting = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        CancellationToken pausesWhileBuilding = () -> {
+            if (inFrame("dev.railroadide.railroad.ide.sst.project.JavaLibrarySymbolIndex", null)) {
+                building.countDown();
+                awaitQuietly(release);
+            }
+            return false;
+        };
+        CancellationToken reportsWaiting = () -> {
+            if (inFrame(JavaAnalysisContextProvider.class.getName() + "$Cache", "acquire")) {
+                waiting.countDown();
+            }
+            return false;
+        };
+        try (var provider = new JavaAnalysisContextProvider(); var workers = Executors.newFixedThreadPool(2)) {
+            provider.adoptConfiguration(session, provider.prepareConfiguration(session, configuration(jar, jdk)));
+            var language = new JavaLanguageIndexContext(List.of(), List.of(), List.of(jar), List.of(), List.of(),
+                jdk);
+            var first = workers.submit(() -> provider.index(new ProjectIndexContext(project, root,
+                Map.of("java", language), session, session.configurationGeneration(), pausesWhileBuilding)));
+            assertTrue(building.await(5, TimeUnit.SECONDS));
+            var second = workers.submit(() -> provider.index(new ProjectIndexContext(project, root,
+                Map.of("java", language), session, session.configurationGeneration(), reportsWaiting)));
+            assertTrue(waiting.await(5, TimeUnit.SECONDS), "A second warm-up must wait for the running build");
+            release.countDown();
+
+            assertSame(first.get(5, TimeUnit.SECONDS).classStubsByQualifiedName().get("demo.Library"),
+                second.get(5, TimeUnit.SECONDS).classStubsByQualifiedName().get("demo.Library"));
+        } finally {
+            release.countDown();
+            service.closeProject(session);
+        }
+    }
+
+    private static boolean inFrame(String className, String methodName) {
+        return StackWalker.getInstance().walk(frames -> frames.anyMatch(frame -> frame.getClassName().equals(className)
+            && (methodName == null || frame.getMethodName().equals(methodName))));
+    }
+
+    private static void awaitQuietly(CountDownLatch latch) {
+        try {
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
         }
     }
 

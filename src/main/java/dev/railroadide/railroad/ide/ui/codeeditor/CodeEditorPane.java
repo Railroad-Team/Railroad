@@ -114,7 +114,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     // region Diagnostics state
     protected static final Duration DIAGNOSTIC_DEBOUNCE = Duration.ofMillis(300);
-    private final PauseTransition workspaceDiagnosticsDelay = new PauseTransition(
+    private final PauseTransition workspaceFeaturesDelay = new PauseTransition(
         javafx.util.Duration.millis(DIAGNOSTIC_DEBOUNCE.toMillis()));
 
     protected final Map<Integer, DiagnosticSeverity> lineSeverity = new ConcurrentHashMap<>();
@@ -242,7 +242,10 @@ public abstract class CodeEditorPane extends TextEditorPane {
         signaturePopup.getContent().add(signaturePopupContainer);
 
         configureGutter();
-        workspaceDiagnosticsDelay.setOnFinished(_ -> requestDiagnostics());
+        workspaceFeaturesDelay.setOnFinished(_ -> {
+            requestHighlight();
+            requestDiagnostics();
+        });
 
         subscriptions.add(plainTextChanges().subscribe(_ -> {
             highlightGeneration.incrementAndGet();
@@ -290,7 +293,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             return;
 
         codeEditorClosed = true;
-        workspaceDiagnosticsDelay.stop();
+        workspaceFeaturesDelay.stop();
         if (workspaceSubscription != null) {
             workspaceSubscription.close();
             workspaceSubscription = null;
@@ -326,7 +329,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     @Override
     protected void documentStoreAttached() {
-        workspaceDiagnosticsDelay.stop();
+        workspaceFeaturesDelay.stop();
         if (workspaceSubscription != null) {
             workspaceSubscription.close();
         }
@@ -383,8 +386,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         diagnosticPopup.hide();
         hideAutoComplete();
         hideSignatureHelp();
-        requestHighlight();
-        workspaceDiagnosticsDelay.playFromStart();
+        workspaceFeaturesDelay.playFromStart();
     }
 
     private @Nullable WorkspaceSnapshot captureFeatureWorkspace() {
@@ -1271,7 +1273,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     private void requestDiagnostics() {
         invalidateDiagnosticsRequest();
 
-        workspaceDiagnosticsDelay.stop();
+        workspaceFeaturesDelay.stop();
         if (codeEditorClosed || providerLifetime.isCancellationRequested() || !supportsDiagnostics())
             return;
 

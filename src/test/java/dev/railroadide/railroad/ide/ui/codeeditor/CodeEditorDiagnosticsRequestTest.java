@@ -457,7 +457,7 @@ public class CodeEditorDiagnosticsRequestTest {
         }
 
         private void pauseWorkspaceDebounce() throws ReflectiveOperationException {
-            Field field = CodeEditorPane.class.getDeclaredField("workspaceDiagnosticsDelay");
+            Field field = CodeEditorPane.class.getDeclaredField("workspaceFeaturesDelay");
             field.setAccessible(true);
             ((PauseTransition) field.get(this)).pause();
         }
