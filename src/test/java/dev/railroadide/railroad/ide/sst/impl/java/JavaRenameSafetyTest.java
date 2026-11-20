@@ -204,8 +204,20 @@ public class JavaRenameSafetyTest {
         main("\"\" + ((HasX) new Point(3)).x()");
         assertEquals("3", run());
 
-        assertConflict(rename("p/HasX.java", "x()", "getX"), "would no longer implement it");
-        assertConflict(rename("p/Main.java", "x()", "getX"), "would no longer implement it");
+        assertConflict(rename("p/HasX.java", "x()", "getX"), "would change its accessor");
+        assertConflict(rename("p/Main.java", "x()", "getX"), "would change its accessor");
+    }
+
+    @Test
+    public void rejectsRenamingAnImplicitRecordAccessorAtItsCallSite() {
+        source("p/Point.java", """
+            package p;
+            public record Point(int x) {}
+            """);
+        main("\"\" + new Point(3).x()");
+        assertEquals("3", run());
+
+        assertConflict(rename("p/Main.java", "x()", "getX"), "would change its accessor");
     }
 
     @Test

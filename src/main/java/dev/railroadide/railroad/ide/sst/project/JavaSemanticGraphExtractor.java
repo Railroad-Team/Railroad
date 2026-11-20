@@ -133,6 +133,11 @@ public final class JavaSemanticGraphExtractor {
             declarations.put(id, descriptor);
             addReference(new ReferenceOccurrence(id, ReferenceKindId.DECLARATION, location(name), ownerId));
         }));
+        if (node.kind().id().equals("JAVA_RECORD_DECLARATION")) {
+            model.declaredSymbol(node).ifPresent(record -> JavaSourceSymbolIds.deriveSymbolId(record)
+                .ifPresent(recordId -> addRecordAccessors(node, recordId,
+                    record.qualifiedName().orElse(record.simpleName()))));
+        }
         if (node.kind().id().equals("JAVA_TYPE_PARAMETER") && model.declaredSymbol(node).isEmpty()) {
             SyntaxNode owner = JavaSourceSymbolIds.enclosingDeclaration(node);
             if (owner != null) {
@@ -153,6 +158,37 @@ public final class JavaSemanticGraphExtractor {
         }
         for (SyntaxNode child : node.children()) {
             collectDeclarations(child);
+        }
+    }
+
+    /**
+     * Declares the implicit accessor of each record component at the component, so calls and method references to an
+     * accessor have a declaration to navigate to. The record body is collected afterwards, so an explicitly declared
+     * accessor replaces the implicit one. No declaration reference is added: the component's own declaration already
+     * occupies its name.
+     */
+    private void addRecordAccessors(SyntaxNode record, SymbolId recordId, String recordName) {
+        SyntaxNode header = JavaSourceSymbolIds.child(record, "JAVA_RECORD_HEADER");
+        if (header == null)
+            return;
+
+        for (SyntaxNode component : header.children()) {
+            check.run();
+            if (!component.kind().id().equals("JAVA_RECORD_COMPONENT"))
+                continue;
+
+            SyntaxToken identifier = lastIdentifier(component);
+            if (identifier == null)
+                continue;
+
+            String name = JavaUnicodeEscapes.translate(identifier.text());
+            SymbolId id = JavaSymbolIds.method(recordId, name, List.of());
+            TypeReference type = declaredType(component);
+            declarations.put(id, new SymbolDescriptor(id, new SymbolKindId(JavaSymbolKind.METHOD.id()), name,
+                recordName + "#" + name + "()", recordId, new SymbolSignature(List.of(), List.of(), type, List.of()),
+                type, new SymbolMetadata(Set.of("public"), "public", false, List.of(), Map.of()),
+                List.of(new SymbolLocation(snapshot.uri(), snapshot.origin(), location(component), location(identifier),
+                    true))));
         }
     }
 

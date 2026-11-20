@@ -261,6 +261,81 @@ public class JavaNavigationServiceTest {
         assertTrue(batches.isEmpty());
     }
 
+    @TestFactory
+    public Stream<DynamicTest> methodReferencesAndRecordAccessorsNavigateToTheirDeclarations() {
+        String declarations = "record Point(int x, String label) { static Point origin() { return null; } } "
+            + "class Shape { int area() { return 0; } static Shape unit() { return null; } }";
+        String usages = "import java.util.function.*; class Main { void test(Point point, Shape shape) {\n"
+            + " Supplier<Point> a = Point::origin;\n"
+            + " ToIntFunction<Shape> b = Shape::area;\n"
+            + " IntSupplier c = shape::area;\n"
+            + " Supplier<Shape> d = Shape::unit;\n"
+            + " int e = point.x();\n"
+            + " ToIntFunction<Point> f = Point::x;\n"
+            + " Function<Point, String> g = Point::label;\n"
+            + "} }";
+        return Stream.of(
+            new String[]{"Point::origin", "origin", "origin()"},
+            new String[]{"Shape::area", "area", "area()"},
+            new String[]{"shape::area", "area", "area()"},
+            new String[]{"Shape::unit", "unit", "unit()"},
+            new String[]{"point.x()", "x", "x,"},
+            new String[]{"Point::x", "x", "x,"},
+            new String[]{"Point::label", "label", "label)"})
+            .map(test -> DynamicTest.dynamicTest(test[0], () -> {
+                var helper = document("Declarations.java", declarations);
+                var source = document("Main.java", usages);
+                try (var services = new JavaSstServices()) {
+                    var context = context(store(source, helper).capture(), source);
+                    int offset = usages.indexOf(test[0]) + test[0].indexOf(test[1]);
+
+                    var result = services.definitions(context, offset).value();
+
+                    assertEquals(1, result.size());
+                    var target = assertInstanceOf(Location.TextLocation.class, result.getFirst());
+                    assertEquals(helper.id(), target.documentId());
+                    assertEquals(declarations.indexOf(test[2]), target.range().start);
+                    assertEquals(test[1], declarations.substring(target.range().start, target.range().end));
+                }
+            }));
+    }
+
+    @Test
+    public void recordAccessorsNavigateWithinTheirOwnRecord() {
+        String text = "import java.util.function.*; record Box(int size) { "
+            + "static ToIntFunction<Box> SIZE = Box::size; int twice() { return size() * 2; } }";
+        var source = document("Box.java", text);
+        try (var services = new JavaSstServices()) {
+            var context = context(store(source).capture(), source);
+            int component = text.indexOf("size)");
+
+            for (int offset : List.of(text.indexOf("Box::size") + 5, text.indexOf("size()"), component)) {
+                var result = services.definitions(context, offset).value();
+                assertEquals(1, result.size(), "Offset: " + offset);
+                assertEquals(component, result.getFirst().range().start, "Offset: " + offset);
+            }
+        }
+    }
+
+    @Test
+    public void explicitRecordAccessorReplacesTheImplicitOne() {
+        String declarations = "record Temperature(double celsius) { public double celsius() { return celsius; } }";
+        var helper = document("Temperature.java", declarations);
+        var source = document("Main.java",
+            "import java.util.function.*; class Main { double read(Temperature t) { "
+                + "ToDoubleFunction<Temperature> f = Temperature::celsius; return t.celsius(); } }");
+        try (var services = new JavaSstServices()) {
+            var context = context(store(source, helper).capture(), source);
+            int explicit = declarations.indexOf("celsius()");
+
+            for (int offset : List.of(source.text().indexOf("::celsius") + 2, source.text().lastIndexOf("celsius"))) {
+                var result = services.definitions(context, offset).value();
+                assertEquals(1, result.size(), "Offset: " + offset);
+                assertEquals(explicit, result.getFirst().range().start, "Offset: " + offset);
+            }
+        }
+    }
+
     private TextDocumentSnapshot document(String name, String text) {
         var uri = DocumentUri.fromPath(directory.resolve(name));
         return new TextDocumentSnapshot(DocumentId.create(), uri, DocumentVersion.initial(), "java",

@@ -517,13 +517,12 @@ public final class JavaSemanticAnalyzer {
             if (receiver == null || methodName == null || methodName.isBlank())
                 return;
 
-            Symbol receiverSymbol = context.resolvedSymbol(receiver);
-            boolean typeReceiver = receiverSymbol != null && isTypeSymbol(receiverSymbol.kind());
-            String ownerQualifiedName = typeReceiver
-                ? receiverSymbol.qualifiedName().orElse(null)
-                : qualifiedTypeNameOfExpression(receiver, methodReference);
-            if (ownerQualifiedName == null)
+            MemberLookup lookup = resolveMemberLookup(receiver, methodReference);
+            String ownerQualifiedName = lookup == null ? null : lookup.ownerQualifiedName();
+            if (ownerQualifiedName == null || ownerQualifiedName.isBlank())
                 return;
+
+            boolean typeReceiver = lookup.staticAccess();
 
             List<MemberCandidate> candidates = new ArrayList<>();
             candidates.addAll(findMethodCandidates(ownerQualifiedName, methodName, false));

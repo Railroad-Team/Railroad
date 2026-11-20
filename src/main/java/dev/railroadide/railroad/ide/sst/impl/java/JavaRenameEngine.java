@@ -721,8 +721,8 @@ public final class JavaRenameEngine {
 
     /**
      * Rejects renaming an interface method that a concrete source type implements through a member the analysis
-     * does not model, such as an implicit record accessor or a method inherited from {@link Enum}. Such a type
-     * would no longer implement the renamed method.
+     * does not model, such as a method inherited from {@link Enum}. Such a type would no longer implement the renamed
+     * method. Implicit record accessors are modelled and handled by {@link #checkRecordAccessors}.
      */
     private void checkImplicitImplementations(Target target, Conflicts conflicts) {
         for (SymbolId member : target.family()) {
@@ -746,7 +746,7 @@ public final class JavaRenameEngine {
                 });
                 if (!implemented) {
                     conflicts.add(error(describeSymbol(graph, type) + " implements '" + target.name() + "' through "
-                        + "a member that is not declared in source, such as a record accessor or an enum method, and "
+                        + "a member that is not declared in source, such as an enum method, and "
                         + "would no longer implement it", declarationLocation(types.getFirst())));
                     return;
                 }
