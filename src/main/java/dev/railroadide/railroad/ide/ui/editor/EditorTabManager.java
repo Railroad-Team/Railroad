@@ -353,7 +353,9 @@ public class EditorTabManager {
 
     /**
      * Opens or selects the destination and reveals a range only while the captured revision still matches the
-     * destination editor. A successful jump records the origin caret and the destination in the workspace's
+     * destination editor. A read-only view captured outside the workspace, such as attached or decompiled library
+     * source, is matched by its file and exact text instead of its revision. A successful jump records the origin caret
+     * and the destination in the workspace's
      * navigation history so that Navigate Back returns to the origin.
      *
      * @param origin editor the navigation started from, or {@code null} to use the active editor
@@ -413,7 +415,7 @@ public class EditorTabManager {
         var revealed = new boolean[1];
         IDEContentRouter.routeActive(WorkspaceContentTargets.CODE_EDITOR, tabPane -> {
             EditorTab tab = openInTabPane(project, path, tabPane, TabOpenRequest.normal());
-            if (tab == null || !tab.documentId().equals(destination.id()))
+            if (tab == null)
                 return;
 
             TextEditorAccess editor = tab.view().textEditor().orElse(null);
@@ -425,17 +427,42 @@ public class EditorTabManager {
             } catch (IllegalStateException exception) {
                 return;
             }
-            TextDocumentSnapshot current = currentRevision(editor, destination, target);
+            TextDocumentSnapshot current = tab.documentId().equals(destination.id())
+                ? currentRevision(editor, destination, target)
+                : derivedView(editor, destination);
             if (current == null || editor.selectAndReveal(current,
                 new TextSelection(target.range().start, target.range().end)) != EditResult.APPLIED)
                 return;
 
             revealed[0] = true;
             destinationPane.ifPresent(pane -> pane.recordNavigationDestination(tab.tab(),
-                new WorkspaceTabNavigationHistory.Position(destination.id(), destination.version(),
+                new WorkspaceTabNavigationHistory.Position(current.id(), current.version(),
                     target.range().start)));
         });
         return revealed[0];
+    }
+
+    /**
+     * Accepts an editor opened for a read-only view captured outside the workspace, such as attached or decompiled
+     * library source, when it shows exactly the captured text. Ranges in the destination then address the same text
+     * in the editor. Original documents must match by identity instead.
+     */
+    private static @Nullable TextDocumentSnapshot derivedView(
+        TextEditorAccess editor,
+        TextDocumentSnapshot destination
+    ) {
+        ProvenanceKind provenance = destination.origin().provenance();
+        if (provenance == ProvenanceKind.ORIGINAL || provenance == ProvenanceKind.UNSPECIFIED)
+            return null;
+
+        try {
+            TextDocumentSnapshot current = editor.snapshot();
+            return current.uri().equals(destination.uri()) && current.text().equals(destination.text())
+                ? current
+                : null;
+        } catch (IllegalStateException exception) {
+            return null;
+        }
     }
 
     private static @Nullable TextDocumentSnapshot currentRevision(

@@ -49,7 +49,7 @@ public class JavaNavigationServiceTest {
             var result = services.definitions(context, offset);
             assertTrue(result.belongsTo(context));
             assertEquals(1, result.value().size());
-            var target = assertInstanceOf(Location.TextLocation.class, result.value().getFirst());
+            var target = result.value().getFirst().location();
             assertEquals(helper.id(), target.documentId());
             assertEquals(declarations.indexOf(expected), target.range().start);
             assertEquals(name, declarations.substring(target.range().start, target.range().end));
@@ -70,7 +70,7 @@ public class JavaNavigationServiceTest {
         try (var services = new JavaSstServices()) {
             var result = services.definitions(context(store(source).capture(), source), text.lastIndexOf(name));
             assertEquals(1, result.value().size());
-            var target = result.value().getFirst();
+            var target = result.value().getFirst().location();
             assertEquals(source.id(), target.documentId());
             assertEquals(text.indexOf(name), target.range().start);
         }
@@ -89,10 +89,10 @@ public class JavaNavigationServiceTest {
             var call = services.definitions(context, source.text().lastIndexOf("run")).value();
             var local = services.definitions(context, source.text().lastIndexOf("local")).value();
 
-            var target = assertInstanceOf(Location.TextLocation.class, call.getFirst());
+            var target = call.getFirst().location();
             assertEquals(helper.id(), target.documentId());
             assertEquals(declarations.indexOf("run"), target.range().start);
-            var localTarget = assertInstanceOf(Location.TextLocation.class, local.getFirst());
+            var localTarget = local.getFirst().location();
             assertEquals(source.id(), localTarget.documentId());
             assertEquals(source.text().indexOf("local"), localTarget.range().start);
             var analysis = services.capture(context);
@@ -132,8 +132,8 @@ public class JavaNavigationServiceTest {
         store.publishOverlay(changed);
         try (var services = new JavaSstServices()) {
             int offset = source.text().indexOf("VALUE");
-            var before = services.definitions(old, offset).value().getFirst();
-            var after = services.definitions(context(store.capture(), source), offset).value().getFirst();
+            var before = services.definitions(old, offset).value().getFirst().location();
+            var after = services.definitions(context(store.capture(), source), offset).value().getFirst().location();
             assertEquals(helper.version(), before.documentVersion());
             assertEquals(changed.version(), after.documentVersion());
             assertEquals(before.range().start + 2, after.range().start);
@@ -186,12 +186,14 @@ public class JavaNavigationServiceTest {
         try (var services = new JavaSstServices()) {
             var context = context(store.capture(), shape);
             var types = services.implementations(context, shape.text().indexOf("Shape")).value();
-            assertEquals(List.of(circle.id(), square.id()), types.stream().map(Location::documentId).toList());
-            assertEquals(circle.text().indexOf("Circle"), types.getFirst().range().start);
+            assertEquals(List.of(circle.id(), square.id()),
+                types.stream().map(target -> target.location().documentId()).toList());
+            assertEquals(circle.text().indexOf("Circle"), types.getFirst().location().range().start);
 
             var methods = services.implementations(context, shape.text().indexOf("area")).value();
-            assertEquals(List.of(circle.id(), square.id()), methods.stream().map(Location::documentId).toList());
-            assertEquals(circle.text().indexOf("area"), methods.getFirst().range().start);
+            assertEquals(List.of(circle.id(), square.id()),
+                methods.stream().map(target -> target.location().documentId()).toList());
+            assertEquals(circle.text().indexOf("area"), methods.getFirst().location().range().start);
             assertTrue(services.implementations(context(store.capture(), square), square.text().indexOf("Square"))
                 .value().isEmpty());
         }
@@ -292,7 +294,7 @@ public class JavaNavigationServiceTest {
                     var result = services.definitions(context, offset).value();
 
                     assertEquals(1, result.size());
-                    var target = assertInstanceOf(Location.TextLocation.class, result.getFirst());
+                    var target = result.getFirst().location();
                     assertEquals(helper.id(), target.documentId());
                     assertEquals(declarations.indexOf(test[2]), target.range().start);
                     assertEquals(test[1], declarations.substring(target.range().start, target.range().end));
@@ -312,7 +314,7 @@ public class JavaNavigationServiceTest {
             for (int offset : List.of(text.indexOf("Box::size") + 5, text.indexOf("size()"), component)) {
                 var result = services.definitions(context, offset).value();
                 assertEquals(1, result.size(), "Offset: " + offset);
-                assertEquals(component, result.getFirst().range().start, "Offset: " + offset);
+                assertEquals(component, result.getFirst().location().range().start, "Offset: " + offset);
             }
         }
     }
@@ -331,7 +333,7 @@ public class JavaNavigationServiceTest {
             for (int offset : List.of(source.text().indexOf("::celsius") + 2, source.text().lastIndexOf("celsius"))) {
                 var result = services.definitions(context, offset).value();
                 assertEquals(1, result.size(), "Offset: " + offset);
-                assertEquals(explicit, result.getFirst().range().start, "Offset: " + offset);
+                assertEquals(explicit, result.getFirst().location().range().start, "Offset: " + offset);
             }
         }
     }
@@ -355,7 +357,7 @@ public class JavaNavigationServiceTest {
                     var result = services.definitions(context, start).value();
                     assertEquals(1, result.size());
                     assertEquals(text.indexOf(keyword.equals("this") ? "Example(int" : "Base(int"),
-                        result.getFirst().range().start);
+                        result.getFirst().location().range().start);
                     for (int offset = start + keyword.length(); offset < start + keyword.length() + 4; offset++) {
                         assertTrue(services.definitions(context, offset).value().isEmpty(),
                             "Constructor punctuation or literal must not navigate at offset " + offset);

@@ -6,9 +6,12 @@ import dev.railroadide.railroad.ide.sst.graph.api.*;
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxParser;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolIds;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import dev.railroadide.railroad.ide.sst.semantic.api.DefinitionTarget;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticNavigationResolver;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolDescriptor;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
@@ -190,12 +193,15 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
 
     /**
      * Finds the navigable declarations of the symbol at an offset, resolving only the requesting document's body
-     * against the captured declarations. Library declarations live in archives and are never navigable, so neither
-     * the whole-workspace graph nor binary declarations are needed.
+     * against the captured declarations, so the whole-workspace graph is not needed. A symbol declared only by a
+     * library or the JDK navigates into a read-only view of its class from {@code librarySources}: the attached
+     * source when available, otherwise a declaration-only view. That view is not part of the workspace capture
+     * unless it is already open.
      *
      * @param workspace workspace capture this analysis was built from
      * @param source captured revision containing the offset
      * @param offset zero-based UTF-16 offset in the source revision
+     * @param librarySources provider of readable views of compiled classes
      * @param activityCheck callback invoked to check cancellation or interruption; may throw to abort
      * @return ranked targets, or an empty list when the offset is unresolved, ambiguous, or not navigable
      */
@@ -203,8 +209,10 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         WorkspaceSnapshot workspace,
         TextDocumentSnapshot source,
         int offset,
+        JavaLibrarySources librarySources,
         Runnable activityCheck
     ) {
+        Objects.requireNonNull(librarySources, "librarySources");
         Objects.requireNonNull(activityCheck).run();
         Map<DocumentId, SemanticIndexShard> shards = new LinkedHashMap<>();
         JavaProjectSemanticIndex.SourceFileIndex requested = null;
@@ -224,7 +232,121 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         var resolved = resolveShard(new JavaProjectSemanticExtractor(), requested, activityCheck);
         shards.put(resolved.documentId(), resolved);
         var graph = WorkspaceSymbolGraph.of(shards.values(), activityCheck);
-        return SemanticNavigationResolver.definitionAt(graph, workspace, source, offset);
+        SymbolId symbol = SemanticNavigationResolver.symbolAt(graph, source, offset).orElse(null);
+        if (symbol == null)
+            return List.of();
+        if (!graph.symbols(symbol).isEmpty())
+            return SemanticNavigationResolver.definitionsOf(graph, workspace, symbol);
+
+        return libraryDefinition(workspace, symbol, librarySources, activityCheck).map(List::of).orElseGet(List::of);
+    }
+
+    private Optional<DefinitionTarget> libraryDefinition(
+        WorkspaceSnapshot workspace,
+        SymbolId symbol,
+        JavaLibrarySources librarySources,
+        Runnable activityCheck
+    ) {
+        List<JavaSymbolIds.Component> components;
+        try {
+            components = JavaSymbolIds.components(symbol);
+        } catch (IllegalArgumentException exception) {
+            return Optional.empty();
+        }
+        int typeIndex = -1;
+        for (int index = 0; index < components.size(); index++) {
+            if (components.get(index).kind().equals("type")) {
+                typeIndex = index;
+            }
+        }
+        if (typeIndex < 0)
+            return Optional.empty();
+
+        ClassStub topLevel = symbols.lookupClassStub(components.get(typeIndex).value());
+        Set<String> visited = new HashSet<>();
+        while (topLevel != null && topLevel.enclosingClassName() != null && visited.add(topLevel.getFullName())) {
+            topLevel = symbols.lookupClassStub(topLevel.enclosingClassName());
+        }
+        if (topLevel == null || topLevel.enclosingClassName() != null)
+            return Optional.empty();
+
+        DocumentUri binary = binaryLocation(topLevel.getFullName()).orElse(null);
+        if (binary == null)
+            return Optional.empty();
+        activityCheck.run();
+        TextDocumentSnapshot view = librarySources.open(binary, topLevel, symbols.classStubsByQualifiedName())
+            .orElse(null);
+        if (view == null)
+            return Optional.empty();
+        activityCheck.run();
+        for (DocumentSnapshot document : workspace.documents().values()) {
+            if (document instanceof TextDocumentSnapshot open && open.uri().equals(view.uri())
+                && open.text().equals(view.text())) {
+                view = open;
+                break;
+            }
+        }
+
+        Path path = view.uri().filePath().orElseThrow();
+        var tree = JavaSyntaxParser.parse(view, activityCheck);
+        var model = JavaSemanticAnalyzer.analyzeProjectDeclarations(tree, symbols, activityCheck);
+        var declarations = new JavaProjectSemanticExtractor()
+            .extractProjectDeclarations(path, model, symbols, activityCheck).semanticShard().declarations();
+        activityCheck.run();
+
+        Location.TextLocation location = null;
+        for (int length = components.size(); length > typeIndex && location == null; length--) {
+            location = declarationLocation(declarations, components.subList(0, length));
+        }
+        if (location == null) {
+            location = Location.TextLocation.from(view, 0, 0);
+        }
+        return Optional.of(new DefinitionTarget(view, location));
+    }
+
+    private Optional<DocumentUri> binaryLocation(String qualifiedName) {
+        for (var descriptor : symbols.lookupQualifiedName(qualifiedName)) {
+            if (descriptor.descriptor() == null)
+                continue;
+            for (var location : descriptor.descriptor().locations()) {
+                if (!location.uri().isFile() || location.uri().toString().endsWith(".class"))
+                    return Optional.of(location.uri());
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Finds the declaration identified by, or nested under, a prefix of a Java identity, preferring the shallowest
+     * declaration and then the earliest. A prefix ending at a member name thereby matches the first overload.
+     */
+    private static Location.TextLocation declarationLocation(
+        List<SymbolDescriptor> declarations,
+        List<JavaSymbolIds.Component> prefix
+    ) {
+        Location.TextLocation best = null;
+        int bestDepth = Integer.MAX_VALUE;
+        for (var declaration : declarations) {
+            List<JavaSymbolIds.Component> components;
+            try {
+                components = JavaSymbolIds.components(declaration.id());
+            } catch (IllegalArgumentException exception) {
+                continue;
+            }
+            if (components.size() < prefix.size() || !components.subList(0, prefix.size()).equals(prefix))
+                continue;
+            for (var source : declaration.locations()) {
+                Location<?> candidate = source.selection() != null ? source.selection() : source.declaration();
+                if (!(candidate instanceof Location.TextLocation text))
+                    continue;
+                if (components.size() < bestDepth
+                    || components.size() == bestDepth && text.range().start < best.range().start) {
+                    best = text;
+                    bestDepth = components.size();
+                }
+            }
+        }
+        return best;
     }
 
     private SemanticIndexShard resolveShard(

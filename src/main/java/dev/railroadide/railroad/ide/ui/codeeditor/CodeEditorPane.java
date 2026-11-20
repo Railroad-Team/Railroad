@@ -30,6 +30,7 @@ import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
 import dev.railroadide.railroad.ide.sst.request.api.RequestPriority;
 import dev.railroadide.railroad.ide.sst.request.api.SstScheduler;
 import dev.railroadide.railroad.ide.sst.provider.api.ProviderExecutor;
+import dev.railroadide.railroad.ide.sst.semantic.api.DefinitionTarget;
 import dev.railroadide.railroad.ide.ui.DiagnosticPane;
 import dev.railroadide.railroad.ide.ui.codeaction.CodeActionController;
 import dev.railroadide.railroad.ide.ui.codeaction.CodeActionMenu;
@@ -564,14 +565,21 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     private void applyNavigationTargets(
         NavigationKind kind,
-        @Nullable List<Location<?>> targets,
+        @Nullable List<DefinitionTarget> targets,
         WorkspaceSnapshot workspace
     ) {
         List<NavigationChoice> choices = new ArrayList<>();
-        for (Location<?> target : targets == null ? List.<Location<?>>of() : targets) {
-            if (!(target instanceof Location.TextLocation location)
-                || !(workspace.document(location.documentId())
-                    .orElse(null) instanceof TextDocumentSnapshot destination))
+        for (DefinitionTarget target : targets == null ? List.<DefinitionTarget>of() : targets) {
+            if (target == null)
+                continue;
+
+            Location.TextLocation location = target.location();
+            DocumentSnapshot captured = workspace.document(location.documentId()).orElse(null);
+            // Read-only views outside the capture, such as library sources, are opened from their file.
+            TextDocumentSnapshot destination = captured == null && target.snapshot().uri().isFile()
+                ? target.snapshot()
+                : captured instanceof TextDocumentSnapshot text ? text : null;
+            if (destination == null)
                 continue;
 
             try {

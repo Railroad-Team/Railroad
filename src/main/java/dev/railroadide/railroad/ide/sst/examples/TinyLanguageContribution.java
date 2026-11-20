@@ -94,7 +94,7 @@ public final class TinyLanguageContribution implements LanguageContribution {
         return new FeatureResult<>(context, List.copyOf(found));
     }
 
-    private FeatureResult<List<Location<?>>> definitions(FeatureRequestContext context, int offset) {
+    private FeatureResult<List<DefinitionTarget>> definitions(FeatureRequestContext context, int offset) {
         Analysis analysis = analyze(context);
         if (offset < 0 || offset > analysis.tree().documentSnapshot().text().length())
             throw new IndexOutOfBoundsException(offset);
@@ -107,8 +107,13 @@ public final class TinyLanguageContribution implements LanguageContribution {
             }
             if (symbol.isPresent()) {
                 Symbol target = symbol.get();
+                TextDocumentSnapshot snapshot = analysis.tree().documentSnapshot();
                 return new FeatureResult<>(context, analysis.symbols().stream()
-                    .filter(entry -> entry.symbol() == target).map(SymbolOccurrence::location).toList());
+                    .filter(entry -> entry.symbol() == target)
+                    .map(SymbolOccurrence::location)
+                    .filter(Location.TextLocation.class::isInstance)
+                    .map(location -> new DefinitionTarget(snapshot, (Location.TextLocation) location))
+                    .toList());
             }
         }
         return new FeatureResult<>(context, List.of());

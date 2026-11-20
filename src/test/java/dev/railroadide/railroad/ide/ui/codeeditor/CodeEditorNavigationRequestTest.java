@@ -4,6 +4,7 @@ import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSstServices;
 import dev.railroadide.railroad.ide.sst.provider.api.NavigationProvider;
 import dev.railroadide.railroad.ide.sst.request.api.*;
+import dev.railroadide.railroad.ide.sst.semantic.api.DefinitionTarget;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.settings.keybinds.Keybinds;
@@ -98,7 +99,7 @@ public class CodeEditorNavigationRequestTest {
             WorkspaceSnapshot workspace = fixture.store.capture();
             var snapshot = (TextDocumentSnapshot) workspace.documents().values().iterator().next();
             var warmup = new FeatureRequestContext(workspace, snapshot, CancellationToken.none(), Deadline.none());
-            var expected = (Location.TextLocation) services.definitions(warmup, REFERENCE).value().getFirst();
+            var expected = services.definitions(warmup, REFERENCE).value().getFirst().location();
             assertEquals("value", SOURCE.substring(expected.range().start, expected.range().end).trim());
             assertTrue(expected.range().end < REFERENCE);
             fixture.request();
@@ -127,14 +128,14 @@ public class CodeEditorNavigationRequestTest {
 
     @TestFactory
     public Stream<DynamicTest> unusableResultsLeaveTheCaretUnchanged() {
-        return Stream.of("empty", "unsupported", "foreign", "stale", "bounds", "coordinates", "binary", "context")
+        return Stream.of("empty", "unsupported", "foreign", "stale", "bounds", "coordinates", "context")
             .map(kind -> DynamicTest.dynamicTest(kind, () -> assertUnusableResult(kind)));
     }
 
     private void assertUnusableResult(String kind) throws Exception {
         try (Fixture fixture = open((context, offset) -> {
             var snapshot = (TextDocumentSnapshot) context.documentSnapshot();
-            Location<?> location = switch (kind) {
+            Location.TextLocation location = switch (kind) {
                 case "foreign" -> new Location.TextLocation(DocumentId.create(), snapshot.version(),
                     new TextRange(0, 1), 0, 0);
                 case "stale" -> new Location.TextLocation(snapshot.id(), snapshot.version().next(),
@@ -143,7 +144,6 @@ public class CodeEditorNavigationRequestTest {
                     new TextRange(0, SOURCE.length() + 1), 0, 0);
                 case "coordinates" -> new Location.TextLocation(snapshot.id(), snapshot.version(),
                     new TextRange(0, 1), 99, 0);
-                case "binary" -> new Location.BinaryLocation(snapshot.id(), snapshot.version(), new BinaryRange(0, 1));
                 default -> Location.TextLocation.from(snapshot, 0, 1);
             };
             if (kind.equals("context")) {
@@ -151,12 +151,12 @@ public class CodeEditorNavigationRequestTest {
                     context.cancellationToken(), context.deadline());
                 assertEquals(context, other);
                 assertNotSame(context, other);
-                return new FeatureResult<>(other, List.of(location));
+                return new FeatureResult<>(other, List.of(new DefinitionTarget(snapshot, location)));
             }
-            List<Location<?>> locations = switch (kind) {
+            List<DefinitionTarget> locations = switch (kind) {
                 case "empty" -> List.of();
                 case "unsupported" -> null;
-                default -> List.of(location);
+                default -> List.of(new DefinitionTarget(snapshot, location));
             };
             return new FeatureResult<>(context, locations);
         })) {
@@ -413,9 +413,10 @@ public class CodeEditorNavigationRequestTest {
         return fixture;
     }
 
-    private static FeatureResult<List<Location<?>>> target(FeatureRequestContext context, int start) {
+    private static FeatureResult<List<DefinitionTarget>> target(FeatureRequestContext context, int start) {
         var snapshot = (TextDocumentSnapshot) context.documentSnapshot();
-        return new FeatureResult<>(context, List.of(Location.TextLocation.from(snapshot, start, start + 1)));
+        return new FeatureResult<>(context,
+            List.of(new DefinitionTarget(snapshot, Location.TextLocation.from(snapshot, start, start + 1))));
     }
 
     private static void fireF12(CodeEditorPane editor) {

@@ -16,6 +16,7 @@ import dev.railroadide.railroad.ide.sst.provider.api.NavigationProvider;
 import dev.railroadide.railroad.ide.sst.provider.api.UsageQuery;
 import dev.railroadide.railroad.ide.sst.provider.api.UsageSearch;
 import dev.railroadide.railroad.ide.sst.provider.api.UsageSink;
+import dev.railroadide.railroad.ide.sst.semantic.api.DefinitionTarget;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
 import dev.railroadide.railroad.ide.ui.navigation.UsagesPane;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
@@ -47,6 +48,8 @@ import static org.junit.jupiter.api.Assertions.*;
 public class EditorDefinitionNavigationTest {
     @TempDir
     public Path directory;
+    @TempDir
+    public Path external;
     private RailroadProject project;
     private IDEPane pane;
     private NavigationEditor sourceEditor;
@@ -117,6 +120,33 @@ public class EditorDefinitionNavigationTest {
             var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
             assertEquals(expected.id(), tab.documentId());
             assertEquals(new TextSelection(7, 17), tab.view().textEditor().orElseThrow().selection());
+            return null;
+        });
+    }
+
+    @Test
+    public void definitionOutsideTheWorkspaceOpensItsFileReadOnly() throws Exception {
+        String text = "prefix definition suffix";
+        Path file = external.resolve("Library.txt");
+        Files.writeString(file, text);
+        assertTrue(file.toFile().setWritable(false));
+        var uri = DocumentUri.fromPath(file);
+        var view = new TextDocumentSnapshot(DocumentId.create(), uri, DocumentVersion.initial(), "text",
+            new DocumentOrigin(BackingKind.FILE, ProvenanceKind.ATTACHED_SOURCE), text, StandardCharsets.UTF_8);
+        onFx(() -> {
+            assertTrue(Services.IDE_STATE.getDocumentStore().orElseThrow().capture().document(view.id()).isEmpty());
+            openSource((context, offset) -> new FeatureResult<>(context, List.of(target(view, 7, 17))));
+            sourceEditor.goToDefinition();
+            return null;
+        });
+        sourceEditor.completion().get(10, TimeUnit.SECONDS);
+        onFx(() -> {
+            var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            assertEquals(file.toAbsolutePath().normalize(), tab.path());
+            var editor = tab.view().textEditor().orElseThrow();
+            assertEquals(new TextSelection(7, 17), editor.selection());
+            assertFalse(editor.isEditable());
+            assertFalse(tab.view().activeEditor().isEditable());
             return null;
         });
     }
@@ -198,7 +228,7 @@ public class EditorDefinitionNavigationTest {
         onFx(() -> {
             var destination = publish("destination.txt", "prefix definition suffix");
             openSource((context, offset) -> new FeatureResult<>(context,
-                List.of(Location.TextLocation.from(destination, 7, 17))));
+                List.of(target(destination, 7, 17))));
             assertTrue(Commands.GO_TO_DEFINITION.execute(
                 CommandContext.withArgument(project, sourceEditor, sourceEditor)));
             return null;
@@ -228,7 +258,7 @@ public class EditorDefinitionNavigationTest {
                         Thread.currentThread().interrupt();
                         throw new CancellationException();
                     }
-                    return new FeatureResult<>(context, List.of(Location.TextLocation.from(destination, 7, 17)));
+                    return new FeatureResult<>(context, List.of(target(destination, 7, 17)));
                 });
                 sourceEditor.goToDefinition();
                 return null;
@@ -258,7 +288,7 @@ public class EditorDefinitionNavigationTest {
         var destination = onFx(() -> publish("destination.txt", "first second third"));
         onFx(() -> {
             openSource((context, offset) -> new FeatureResult<>(context, List.of(
-                Location.TextLocation.from(destination, 0, 5), Location.TextLocation.from(destination, 6, 12))));
+                target(destination, 0, 5), target(destination, 6, 12))));
             sourceEditor.goToDefinition();
             return null;
         });
@@ -280,7 +310,7 @@ public class EditorDefinitionNavigationTest {
         var destination = onFx(() -> publish("destination.txt", "first second third"));
         onFx(() -> {
             openSource((context, offset) -> new FeatureResult<>(context, List.of(
-                Location.TextLocation.from(destination, 0, 5), Location.TextLocation.from(destination, 6, 12))));
+                target(destination, 0, 5), target(destination, 6, 12))));
             sourceEditor.goToDefinition();
             return null;
         });
@@ -317,13 +347,16 @@ public class EditorDefinitionNavigationTest {
         onFx(() -> {
             openSource(new NavigationProvider() {
                 @Override
-                public FeatureResult<List<Location<?>>> definitions(FeatureRequestContext context, int offset) {
+                public FeatureResult<List<DefinitionTarget>> definitions(FeatureRequestContext context, int offset) {
                     throw new AssertionError("Definitions must not be queried");
                 }
 
                 @Override
-                public FeatureResult<List<Location<?>>> implementations(FeatureRequestContext context, int offset) {
-                    return new FeatureResult<>(context, List.of(Location.TextLocation.from(destination, 7, 21)));
+                public FeatureResult<List<DefinitionTarget>> implementations(
+                    FeatureRequestContext context,
+                    int offset
+                ) {
+                    return new FeatureResult<>(context, List.of(target(destination, 7, 21)));
                 }
             });
             sourceEditor.goToImplementation();
@@ -409,7 +442,7 @@ public class EditorDefinitionNavigationTest {
         onFx(() -> {
             openSource(new NavigationProvider() {
                 @Override
-                public FeatureResult<List<Location<?>>> definitions(FeatureRequestContext context, int offset) {
+                public FeatureResult<List<DefinitionTarget>> definitions(FeatureRequestContext context, int offset) {
                     return new FeatureResult<>(context, List.of());
                 }
 
@@ -488,6 +521,10 @@ public class EditorDefinitionNavigationTest {
         protected boolean shouldRequestSignatureHelp(String text, int caret, boolean changed) {
             return false;
         }
+    }
+
+    private static DefinitionTarget target(TextDocumentSnapshot destination, int start, int end) {
+        return new DefinitionTarget(destination, Location.TextLocation.from(destination, start, end));
     }
 
     private TextDocumentSnapshot publish(String name, String text) throws Exception {

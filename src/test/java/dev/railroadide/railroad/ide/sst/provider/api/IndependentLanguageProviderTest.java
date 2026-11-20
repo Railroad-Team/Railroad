@@ -42,7 +42,7 @@ public class IndependentLanguageProviderTest {
                 .definitions(request, document.text().toString().indexOf("use answer") + 4);
             assertEquals(1, targets.value().size());
             Location<?> declaration = symbols.value().getFirst().location();
-            Location<?> target = targets.value().getFirst();
+            Location<?> target = targets.value().getFirst().location();
             assertEquals(declaration.documentId(), target.documentId());
             assertEquals(declaration.documentVersion(), target.documentVersion());
             assertEquals(declaration.range().start, target.range().start);

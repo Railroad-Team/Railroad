@@ -241,7 +241,7 @@ public final class JavaSemanticGraphExtractor {
         model.resolvedSymbol(node).ifPresent(symbol -> JavaSourceSymbolIds.deriveSymbolId(symbol).ifPresent(target -> {
             if (model.declaredSymbol(node).isPresent())
                 return;
-            SyntaxNode name = nameNode(node, symbol.simpleName());
+            SyntaxNode name = nameNode(node, referenceName(symbol));
             Set<ReferenceKindId> kinds = referenceKinds(node, symbol);
             for (ReferenceKindId kind : kinds) {
                 addReference(new ReferenceOccurrence(target, kind, location(name), current));
@@ -839,6 +839,22 @@ public final class JavaSemanticGraphExtractor {
             || node.kind().id().equals("JAVA_ANONYMOUS_CLASS_BODY")
                 ? node.parent().orElse(node)
                 : node;
+    }
+
+    /**
+     * Returns the name a reference to a symbol is spelled with. Binary constructors are named {@code <init>} but are
+     * referenced by their class's simple name.
+     */
+    private static String referenceName(Symbol symbol) {
+        if (symbol.kind() != JavaSymbolKind.CONSTRUCTOR || !symbol.simpleName().equals("<init>"))
+            return symbol.simpleName();
+
+        String owner = symbol.qualifiedName().orElse("");
+        int member = owner.indexOf('#');
+        if (member >= 0) {
+            owner = owner.substring(0, member);
+        }
+        return owner.substring(Math.max(owner.lastIndexOf('.'), owner.lastIndexOf('$')) + 1);
     }
 
     private static SyntaxNode nameNode(SyntaxNode node, String name) {

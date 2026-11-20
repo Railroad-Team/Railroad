@@ -8,6 +8,7 @@ import dev.railroadide.railroad.ide.sst.provider.api.UsageSink;
 import dev.railroadide.railroad.ide.sst.request.api.CancellationToken;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureResult;
+import dev.railroadide.railroad.ide.sst.semantic.api.DefinitionTarget;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
 import javafx.application.Platform;
 import org.junit.jupiter.api.AfterEach;
@@ -256,7 +257,7 @@ public class UsagesPaneTest {
     private static NavigationProvider provider(UsageFunction function) {
         return new NavigationProvider() {
             @Override
-            public FeatureResult<List<Location<?>>> definitions(FeatureRequestContext context, int offset) {
+            public FeatureResult<List<DefinitionTarget>> definitions(FeatureRequestContext context, int offset) {
                 return new FeatureResult<>(context, List.of());
             }
 

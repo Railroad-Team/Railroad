@@ -1,15 +1,17 @@
 package dev.railroadide.railroad.ide.sst.provider.api;
 
-import dev.railroadide.railroad.ide.sst.document.api.Location;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureResult;
+import dev.railroadide.railroad.ide.sst.semantic.api.DefinitionTarget;
 import java.util.List;
 
 /**
  * Resolves source positions to versioned navigation targets without opening an editor.
  * <p>
- * Every returned location belongs to a document revision captured by the request's workspace, so callers can
- * validate it against that snapshot before navigating. Providers never guess: an unresolved symbol yields no
+ * Every target carries the destination revision its location belongs to. That revision is normally captured by the
+ * request's workspace, so callers can validate the target against the workspace before navigating. A provider may
+ * also target a file-backed read-only view outside the workspace, such as the source of a library class; callers
+ * open that file and validate against its text instead. Providers never guess: an unresolved symbol yields no
  * targets, and a symbol with several equally valid declarations yields all of them in rank order (navigable
  * original source before attached, generated or decompiled views, then by address and offset). Callers must
  * offer a choice for more than one target rather than silently taking the first.
@@ -26,7 +28,7 @@ public interface NavigationProvider {
      * @param offset UTF-16 offset of the source position to resolve
      * @return ranked declaration targets, or an empty list when the position resolves to no navigable declaration
      */
-    FeatureResult<List<Location<?>>> definitions(FeatureRequestContext context, int offset);
+    FeatureResult<List<DefinitionTarget>> definitions(FeatureRequestContext context, int offset);
 
     /**
      * Resolves implementations of the type or callable at a position: transitive subtypes of a type, or
@@ -36,7 +38,7 @@ public interface NavigationProvider {
      * @param offset UTF-16 offset of the source position to resolve
      * @return ranked implementation targets, or an empty list when none are known
      */
-    default FeatureResult<List<Location<?>>> implementations(FeatureRequestContext context, int offset) {
+    default FeatureResult<List<DefinitionTarget>> implementations(FeatureRequestContext context, int offset) {
         context.checkActive();
         return new FeatureResult<>(context, List.of());
     }

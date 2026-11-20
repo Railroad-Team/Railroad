@@ -8,6 +8,7 @@ import dev.railroadide.railroad.ide.sst.document.api.Location;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot;
 import dev.railroadide.railroad.ide.sst.graph.api.WorkspaceSymbolGraph;
+import dev.railroadide.railroad.ide.sst.project.JavaLibrarySources;
 import dev.railroadide.railroad.ide.sst.provider.api.*;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureResult;
@@ -36,6 +37,23 @@ public final class JavaSstServices
         RenameProvider,
         CodeActionProvider {
     private final JavaWorkspaceAnalysisProvider workspaces = new JavaWorkspaceAnalysisProvider();
+    private final JavaLibrarySources librarySources;
+
+    /**
+     * Creates services that open library and JDK classes through the application's shared library sources.
+     */
+    public JavaSstServices() {
+        this(JavaLibrarySources.shared());
+    }
+
+    /**
+     * Creates services that open library and JDK classes through the given library sources.
+     *
+     * @param librarySources provider of readable views of compiled classes
+     */
+    public JavaSstServices(JavaLibrarySources librarySources) {
+        this.librarySources = Objects.requireNonNull(librarySources, "librarySources");
+    }
 
     /**
      * Returns the shared captured Java inputs used by all features in this language session.
@@ -91,26 +109,24 @@ public final class JavaSstServices
     }
 
     @Override
-    public FeatureResult<List<Location<?>>> definitions(FeatureRequestContext context, int offset) {
+    public FeatureResult<List<DefinitionTarget>> definitions(FeatureRequestContext context, int offset) {
         context.checkActive();
         if (!(context.documentSnapshot() instanceof TextDocumentSnapshot source))
             return new FeatureResult<>(context, List.of());
 
-        List<Location<?>> locations = capture(context)
-            .definitionsAt(context.workspaceSnapshot(), source, offset, context::checkActive).stream()
-            .<Location<?>>map(DefinitionTarget::location)
-            .toList();
+        List<DefinitionTarget> targets = capture(context)
+            .definitionsAt(context.workspaceSnapshot(), source, offset, librarySources, context::checkActive);
         context.checkActive();
-        return new FeatureResult<>(context, locations);
+        return new FeatureResult<>(context, targets);
     }
 
     @Override
-    public FeatureResult<List<Location<?>>> implementations(FeatureRequestContext context, int offset) {
+    public FeatureResult<List<DefinitionTarget>> implementations(FeatureRequestContext context, int offset) {
         return targets(context, offset, (graph, id) -> SemanticNavigationResolver.implementationsOf(graph,
             context.workspaceSnapshot(), id, context::checkActive));
     }
 
-    private FeatureResult<List<Location<?>>> targets(
+    private FeatureResult<List<DefinitionTarget>> targets(
         FeatureRequestContext context,
         int offset,
         BiFunction<WorkspaceSymbolGraph, SymbolId, List<DefinitionTarget>> query
@@ -120,14 +136,11 @@ public final class JavaSstServices
             return new FeatureResult<>(context, List.of());
 
         WorkspaceSymbolGraph graph = capture(context).resolvedGraph(context::checkActive);
-        List<Location<?>> locations = SemanticNavigationResolver.symbolAt(graph, source, offset)
+        List<DefinitionTarget> targets = SemanticNavigationResolver.symbolAt(graph, source, offset)
             .map(id -> query.apply(graph, id))
-            .orElseGet(List::of)
-            .stream()
-            .<Location<?>>map(DefinitionTarget::location)
-            .toList();
+            .orElseGet(List::of);
         context.checkActive();
-        return new FeatureResult<>(context, locations);
+        return new FeatureResult<>(context, targets);
     }
 
     @Override
