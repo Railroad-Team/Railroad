@@ -4307,8 +4307,9 @@ public final class JavaSemanticAnalyzer {
             if (targetSymbol != null && isTypeSymbol(targetSymbol.kind()))
                 return new MemberLookup(targetSymbol.qualifiedName().orElse(null), true);
 
-            if (JavaSyntaxKinds.NAME_EXPRESSION.id().equals(targetNode.kind().id())
-                || JavaSyntaxKinds.FIELD_ACCESS_EXPRESSION.id().equals(targetNode.kind().id())) {
+            boolean variable = targetSymbol != null && isValueSymbol(targetSymbol.kind());
+            if (!variable && (JavaSyntaxKinds.NAME_EXPRESSION.id().equals(targetNode.kind().id())
+                || JavaSyntaxKinds.FIELD_ACCESS_EXPRESSION.id().equals(targetNode.kind().id()))) {
                 String typeLikeName = canonicalQualifiedName(targetNode);
                 String qualifiedTypeName = resolveQualifiedTypeName(typeLikeName, usageSite);
                 if (qualifiedTypeName != null && isResolvableType(qualifiedTypeName))
