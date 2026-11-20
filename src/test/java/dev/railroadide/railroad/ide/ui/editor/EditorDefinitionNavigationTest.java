@@ -125,6 +125,38 @@ public class EditorDefinitionNavigationTest {
     }
 
     @Test
+    public void opensUnopenedCrlfDestinationAndSelectsItsDefinition() throws Exception {
+        onFx(() -> {
+            String text = "class Destination {\r\n    void first() {}\r\n    void definition() {}\r\n}\r\n";
+            var expected = publish("Destination.java", text);
+            int start = text.indexOf("definition");
+            assertTrue(Services.EDITOR_TAB_MANAGER.navigateTo(null, expected,
+                Location.TextLocation.from(expected, start, start + "definition".length())));
+            var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            assertEquals(expected.id(), tab.documentId());
+            var editor = tab.view().textEditor().orElseThrow();
+            String shown = editor.snapshot().text();
+            int shownStart = shown.indexOf("definition");
+            assertEquals(new TextSelection(shownStart, shownStart + "definition".length()), editor.selection());
+            return null;
+        });
+    }
+
+    @Test
+    public void crlfDestinationWhoseFileChangedIsNotSelected() throws Exception {
+        onFx(() -> {
+            var expected = publish("Destination.java", "class Destination {\r\n    void definition() {}\r\n}\r\n");
+            Files.writeString(expected.uri().filePath().orElseThrow(),
+                "class Destination {\r\n    void renamed() {}\r\n}\r\n");
+            assertFalse(Services.EDITOR_TAB_MANAGER.navigateTo(null, expected,
+                Location.TextLocation.from(expected, 29, 39)));
+            var editor = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow().view().textEditor().orElseThrow();
+            assertEquals(new TextSelection(0, 0), editor.selection());
+            return null;
+        });
+    }
+
+    @Test
     public void definitionOutsideTheWorkspaceOpensItsFileReadOnly() throws Exception {
         String text = "prefix definition suffix";
         Path file = external.resolve("Library.txt");
@@ -532,7 +564,7 @@ public class EditorDefinitionNavigationTest {
         Path path = (name.endsWith(".md") ? directory : directory.resolve(".railroad/navigation")).resolve(name);
         Files.createDirectories(path.getParent());
         Files.writeString(path, text);
-        String language = name.endsWith(".md") ? "markdown" : "text";
+        String language = name.endsWith(".md") ? "markdown" : name.endsWith(".java") ? "java" : "text";
         var identity = Services.IDE_STATE.identifyDocument(new FileSystemDocument(path, language));
         var uri = DocumentUri.fromPath(path);
         var snapshot = new TextDocumentSnapshot(identity.id(), uri, DocumentVersion.initial(), language,

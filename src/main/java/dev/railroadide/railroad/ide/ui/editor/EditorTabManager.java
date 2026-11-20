@@ -151,6 +151,17 @@ public class EditorTabManager {
         }
     }
 
+    private record RevealTarget(TextDocumentSnapshot snapshot, TextSelection selection) {
+        private static @Nullable RevealTarget of(
+            @Nullable TextDocumentSnapshot snapshot,
+            Location.TextLocation target
+        ) {
+            return snapshot == null
+                ? null
+                : new RevealTarget(snapshot, new TextSelection(target.range().start, target.range().end));
+        }
+    }
+
     private record TabOpenRequest(
         boolean activate,
         boolean openExternally,
@@ -427,17 +438,16 @@ public class EditorTabManager {
             } catch (IllegalStateException exception) {
                 return;
             }
-            TextDocumentSnapshot current = tab.documentId().equals(destination.id())
-                ? currentRevision(editor, destination, target)
-                : derivedView(editor, destination);
-            if (current == null || editor.selectAndReveal(current,
-                new TextSelection(target.range().start, target.range().end)) != EditResult.APPLIED)
+            RevealTarget reveal = tab.documentId().equals(destination.id())
+                ? openedRevision(editor, destination, target)
+                : RevealTarget.of(derivedView(editor, destination), target);
+            if (reveal == null || editor.selectAndReveal(reveal.snapshot(), reveal.selection()) != EditResult.APPLIED)
                 return;
 
             revealed[0] = true;
             destinationPane.ifPresent(pane -> pane.recordNavigationDestination(tab.tab(),
-                new WorkspaceTabNavigationHistory.Position(current.id(), current.version(),
-                    target.range().start)));
+                new WorkspaceTabNavigationHistory.Position(reveal.snapshot().id(), reveal.snapshot().version(),
+                    reveal.selection().anchor())));
         });
         return revealed[0];
     }
@@ -463,6 +473,46 @@ public class EditorTabManager {
         } catch (IllegalStateException exception) {
             return null;
         }
+    }
+
+    /**
+     * Resolves a destination in an editor opened for it. Editors normalize line endings when loading a file, so a
+     * destination captured from a closed file with CRLF endings is reopened as a newer revision without carriage
+     * returns. That revision is accepted when it differs only in line endings, with the target shifted to match.
+     */
+    private static @Nullable RevealTarget openedRevision(
+        TextEditorAccess editor,
+        TextDocumentSnapshot destination,
+        Location.TextLocation target
+    ) {
+        TextDocumentSnapshot current = currentRevision(editor, destination, target);
+        if (current != null)
+            return RevealTarget.of(current, target);
+
+        try {
+            current = editor.snapshot();
+            target.validateAgainst(destination);
+        } catch (IllegalStateException | IllegalArgumentException | IndexOutOfBoundsException exception) {
+            return null;
+        }
+        String text = destination.text();
+        if (!current.id().equals(destination.id()) || !current.uri().equals(destination.uri())
+            || text.indexOf('\r') < 0
+            || !current.text().equals(text.replace("\r\n", "\n").replace('\r', '\n')))
+            return null;
+
+        return new RevealTarget(current, new TextSelection(withoutCarriageReturns(text, target.range().start),
+            withoutCarriageReturns(text, target.range().end)));
+    }
+
+    private static int withoutCarriageReturns(String text, int offset) {
+        int removed = 0;
+        for (int index = 0; index + 1 < offset; index++) {
+            if (text.charAt(index) == '\r' && text.charAt(index + 1) == '\n') {
+                removed++;
+            }
+        }
+        return offset - removed;
     }
 
     private static @Nullable TextDocumentSnapshot currentRevision(
