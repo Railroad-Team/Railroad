@@ -227,8 +227,8 @@ public class PersistedGradleModelStoreTest {
         }
 
         @Override
-        public LoomVersion loomVersion() {
-            return new LoomVersion() {
+        public FabricDataModel.LoomVersion loomVersion() {
+            return new FabricDataModel.LoomVersion() {
                 @Override
                 public String version() {
                     return "1.7";

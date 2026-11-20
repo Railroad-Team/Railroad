@@ -9,12 +9,36 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.List;
+import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
+import dev.railroadide.railroad.ide.sst.project.BinaryStubPublication;
+import com.google.gson.Gson;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ClassStubParserTest {
+    @Test
+    public void skippingMethodBodiesKeepsEveryDeclaration() throws Exception {
+        for (Class<?> type : List.of(ClassReader.class, Gson.class)) {
+            Path archive = Path.of(type.getProtectionDomain().getCodeSource().getLocation().toURI());
+            try (var jar = new JarFile(archive.toFile())) {
+                for (JarEntry entry : Collections.list(jar.entries())) {
+                    if (!entry.getName().endsWith(".class") || entry.getName().endsWith("module-info.class"))
+                        continue;
+
+                    byte[] bytes = jar.getInputStream(entry).readAllBytes();
+                    var withBodies = new ClassStubVisitor();
+                    new ClassReader(bytes).accept(withBodies, ClassReader.EXPAND_FRAMES);
+
+                    assertEquals(BinaryStubPublication.copy(withBodies.createClassStub()),
+                        BinaryStubPublication.copy(ClassStubParser.parse(new ClassReader(bytes))), entry.getName());
+                }
+            }
+        }
+    }
+
     @Test
     public void parsesStandaloneGenericMethodParameterTypes() throws Exception {
         var listStub = parseRuntimeClass("java/util/List.class");
