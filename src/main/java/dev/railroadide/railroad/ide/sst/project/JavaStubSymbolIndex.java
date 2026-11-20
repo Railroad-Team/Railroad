@@ -30,7 +30,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     private final Set<String> packages;
     private final Map<String, ClassStub> classStubsByQualifiedName;
     private final Map<String, Path> sourceByQualifiedName;
-    private final Map<String, Set<String>> ownersBySimpleName;
+    private final Map<String, Object> ownersBySimpleName;
     private final ConcurrentHashMap<String, ClassDeclarations> declarationsByOwner;
 
     /** Reuses fully immutable lookup storage when wrapping an already published binary index. */
@@ -122,28 +122,31 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
             locations.put(name, location);
         });
         this.binaryLocations = Map.copyOf(locations);
-        Map<String, ClassStub> published = new LinkedHashMap<>();
-        Objects.requireNonNull(classStubsByQualifiedName, "classStubsByQualifiedName")
-            .forEach((name, stub) -> {
+        Objects.requireNonNull(classStubsByQualifiedName, "classStubsByQualifiedName");
+        Map<String, ClassStub> published = classStubsByQualifiedName;
+        if (copyStubs) {
+            published = new LinkedHashMap<>();
+            for (Map.Entry<String, ClassStub> entry : classStubsByQualifiedName.entrySet()) {
                 ActivityCheckpoint.poll(activityCheck);
-                published.put(name, copyStubs ? BinaryStubPublication.copy(stub) : stub);
-            });
+                published.put(entry.getKey(), BinaryStubPublication.copy(entry.getValue()));
+            }
+        }
         this.classStubsByQualifiedName = Map.copyOf(published);
         this.sourceByQualifiedName = Map.copyOf(sourceByQualifiedName);
+        this.declaredQualifiedNames = this.classStubsByQualifiedName.keySet();
         declarationsByOwner = new ConcurrentHashMap<>();
 
-        Set<String> declaredQualifiedNames = new LinkedHashSet<>();
-        Set<String> typeNames = new LinkedHashSet<>();
-        Set<String> packages = new LinkedHashSet<>();
-        Map<String, Set<String>> ownersBySimpleName = new LinkedHashMap<>();
+        Set<String> typeNames = new HashSet<>();
+        Set<String> packages = new HashSet<>();
+        Map<String, Object> ownersBySimpleName = new HashMap<>();
 
-        for (Map.Entry<String, ClassStub> entry : this.classStubsByQualifiedName.entrySet()) {
+        for (Map.Entry<String, ClassStub> entry : published.entrySet()) {
             ActivityCheckpoint.poll(activityCheck);
             String qualifiedName = entry.getKey();
             ClassStub stub = entry.getValue();
-            Objects.requireNonNull(sourceByQualifiedName.get(qualifiedName),
-                "Missing source for " + qualifiedName);
-            declaredQualifiedNames.add(qualifiedName);
+            if (this.sourceByQualifiedName.get(qualifiedName) == null)
+                throw new NullPointerException("Missing source for " + qualifiedName);
+
             typeNames.add(qualifiedName);
             int typeNameSeparator = Math.max(qualifiedName.lastIndexOf('.'), qualifiedName.lastIndexOf('$'));
             typeNames.add(typeNameSeparator < 0 ? qualifiedName : qualifiedName.substring(typeNameSeparator + 1));
@@ -164,15 +167,10 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
             }
         }
 
-        this.declaredQualifiedNames = Set.copyOf(declaredQualifiedNames);
         this.typeNames = Set.copyOf(typeNames);
         this.packages = Set.copyOf(packages);
-        Map<String, Set<String>> frozenOwners = new LinkedHashMap<>();
-        ownersBySimpleName.forEach((name, owners) -> {
-            ActivityCheckpoint.poll(activityCheck);
-            frozenOwners.put(name, Collections.unmodifiableSet(new LinkedHashSet<>(owners)));
-        });
-        this.ownersBySimpleName = Map.copyOf(frozenOwners);
+        ownersBySimpleName.replaceAll((_, owners) -> owners instanceof List<?> list ? List.copyOf(list) : owners);
+        this.ownersBySimpleName = Map.copyOf(ownersBySimpleName);
         activityCheck.run();
     }
 
@@ -248,7 +246,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
             return List.of();
         String name = simpleName.trim();
         List<JavaProjectSemanticIndex.SymbolDescriptor> matches = new ArrayList<>();
-        for (String owner : ownersBySimpleName.getOrDefault(name, Set.of())) {
+        for (String owner : owners(name)) {
             ActivityCheckpoint.checkInterrupted();
             for (var descriptor : declarations(owner).symbols()) {
                 if (descriptor.simpleName().equals(name)) {
@@ -286,11 +284,40 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
             .toList();
     }
 
-    private static void indexOwner(Map<String, Set<String>> index, String key, String owner) {
+    /**
+     * Records {@code owner} as declaring {@code key}. Most names have a single owner, which is stored as the string
+     * itself; a name shared by several owners is stored as a list. A class adds all of its names before the next
+     * class adds any, so a repeated owner is always the last one recorded.
+     */
+    @SuppressWarnings("unchecked")
+    private static void indexOwner(Map<String, Object> index, String key, String owner) {
         if (key == null || key.isBlank())
             return;
 
-        index.computeIfAbsent(key, _ -> new LinkedHashSet<>()).add(owner);
+        Object existing = index.putIfAbsent(key, owner);
+        if (existing == null || existing.equals(owner))
+            return;
+
+        if (existing instanceof String single) {
+            List<String> owners = new ArrayList<>(2);
+            owners.add(single);
+            owners.add(owner);
+            index.put(key, owners);
+        } else {
+            List<String> owners = (List<String>) existing;
+            if (!owners.getLast().equals(owner)) {
+                owners.add(owner);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> owners(String simpleName) {
+        return switch (ownersBySimpleName.get(simpleName)) {
+            case null -> List.of();
+            case String owner -> List.of(owner);
+            case Object owners -> (List<String>) owners;
+        };
     }
 
     private ClassDeclarations declarations(String owner) {
