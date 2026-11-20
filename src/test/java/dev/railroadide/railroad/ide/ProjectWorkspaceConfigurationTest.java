@@ -377,6 +377,29 @@ public class ProjectWorkspaceConfigurationTest {
     }
 
     @Test
+    public void failedBinaryPreparationStillWarmsProjectIndexes() throws Exception {
+        Files.createDirectories(directory.resolve("src/main/java/demo"));
+        Files.writeString(directory.resolve("src/main/java/demo/Example.java"), "package demo; class Example {}");
+        var project = new RailroadProject(directory, "Warmup failure", new WritableImage(1, 1));
+        var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
+        var session = service.openProject(project);
+        var store = new DefaultDocumentStore(project.getId(), ProjectWorkspaceConfiguration.initial(project));
+        var indexes = JavaLanguageSupport.analysisContextProvider();
+        try (var _ = new ProjectWorkspaceConfiguration(project, store, _ -> null, session, (_, _) -> {
+            throw new IllegalStateException("Libraries are unavailable");
+        })) {
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+            while (service.current(project, JavaLanguageSupport.LANGUAGE_ID) == null && System.nanoTime() < deadline) {
+                Thread.sleep(25);
+            }
+            assertNotNull(service.current(project, JavaLanguageSupport.LANGUAGE_ID));
+        } finally {
+            service.closeProject(session);
+            indexes.closeSession(session);
+        }
+    }
+
+    @Test
     public void gradleDependenciesArePendingUntilTheModelIsPublishedOrFails() throws Exception {
         Files.writeString(directory.resolve("build.gradle"), "plugins { id 'java' }");
         RailroadProject project = new RailroadProject(directory, "Pending", new WritableImage(1, 1)) {

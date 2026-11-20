@@ -72,7 +72,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
     private long resolutionGeneration;
     private GradleModelService modelService;
     private boolean closed;
-    private boolean warmedAfterAdoption;
+    private boolean indexesWarmed;
 
     /**
      * Subscribes to configuration changes for one project session.
@@ -287,40 +287,41 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         Map<String, String> inputs = requestedSettings;
         CompletableFuture<Void> completed = new CompletableFuture<>();
         resolution = completed;
-        dependencyTask = submitBackground("dependencies", "railroad.activity.resolving_dependencies", CONFIGURATION_BUDGET, completed, request -> {
-            try {
-                JavaLanguageIndexContext context = dependencyResolver.apply(project);
-                request.checkActive();
-                Map<String, String> values = new TreeMap<>(inputs);
-                captureJavaConfiguration(root, context, values);
-                synchronized (this) {
+        dependencyTask = submitBackground("dependencies", "railroad.activity.resolving_dependencies",
+            CONFIGURATION_BUDGET, completed, request -> {
+                try {
+                    JavaLanguageIndexContext context = dependencyResolver.apply(project);
                     request.checkActive();
-                    if (closed || generation != resolutionGeneration || !root.equals(project.getPath())
-                        || store.capture().configuration() != expected || !isMavenProject()) {
-                        completed.cancel(false);
-                        return;
+                    Map<String, String> values = new TreeMap<>(inputs);
+                    captureJavaConfiguration(root, context, values);
+                    synchronized (this) {
+                        request.checkActive();
+                        if (closed || generation != resolutionGeneration || !root.equals(project.getPath())
+                            || store.capture().configuration() != expected || !isMavenProject()) {
+                            completed.cancel(false);
+                            return;
+                        }
+                        // A changed POM may reach the filesystem before its configuration event is delivered.
+                        if (!inputs.equals(settings(project))) {
+                            refreshSettings();
+                            completed.cancel(false);
+                            return;
+                        }
+                        publish(moduleIds(values), values);
                     }
-                    // A changed POM may reach the filesystem before its configuration event is delivered.
-                    if (!inputs.equals(settings(project))) {
-                        refreshSettings();
-                        completed.cancel(false);
-                        return;
+                    completed.complete(null);
+                } catch (CancellationException exception) {
+                    completed.cancel(false);
+                } catch (Exception exception) {
+                    synchronized (this) {
+                        if (!closed && generation == resolutionGeneration) {
+                            Railroad.LOGGER.warn("Cannot resolve workspace dependencies for {}", root, exception);
+                            markDependenciesUnavailable();
+                        }
                     }
-                    publish(moduleIds(values), values);
+                    completed.completeExceptionally(exception);
                 }
-                completed.complete(null);
-            } catch (CancellationException exception) {
-                completed.cancel(false);
-            } catch (Exception exception) {
-                synchronized (this) {
-                    if (!closed && generation == resolutionGeneration) {
-                        Railroad.LOGGER.warn("Cannot resolve workspace dependencies for {}", root, exception);
-                        markDependenciesUnavailable();
-                    }
-                }
-                completed.completeExceptionally(exception);
-            }
-        });
+            });
     }
 
     private void warmIndexes() {
@@ -445,35 +446,44 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             CompletableFuture<Void> completed = new CompletableFuture<>();
             binaryResolution = completed;
             var candidate = new WorkspaceConfigurationSnapshot(current.revision() + 1, ids, values);
-            binaryTask = submitBackground("binary-inputs", "railroad.activity.preparing_libraries", CONFIGURATION_BUDGET,
+            binaryTask = submitBackground("binary-inputs", "railroad.activity.preparing_libraries",
+                CONFIGURATION_BUDGET,
                 completed, request -> {
-                try {
-                    var provider = JavaLanguageSupport.analysisContextProvider();
-                    var prepared = binaryPreparer.apply(indexSession, candidate);
-                    synchronized (this) {
-                        request.checkActive();
-                        if (closed || indexSession.isClosed() || generation != binaryGeneration) {
-                            completed.cancel(false);
-                            return;
+                    try {
+                        var provider = JavaLanguageSupport.analysisContextProvider();
+                        var prepared = binaryPreparer.apply(indexSession, candidate);
+                        synchronized (this) {
+                            request.checkActive();
+                            if (closed || indexSession.isClosed() || generation != binaryGeneration) {
+                                completed.cancel(false);
+                                return;
+                            }
+                            Services.PROJECT_LANGUAGE_INDEX_SERVICE.refreshProject(indexSession);
+                            provider.adoptConfiguration(indexSession, prepared);
+                            store.publishConfiguration(prepared);
+                            if (!indexesWarmed) {
+                                indexesWarmed = true;
+                                warmIndexes();
+                            }
                         }
-                        Services.PROJECT_LANGUAGE_INDEX_SERVICE.refreshProject(indexSession);
-                        provider.adoptConfiguration(indexSession, prepared);
-                        store.publishConfiguration(prepared);
-                        if (!warmedAfterAdoption) {
-                            warmedAfterAdoption = true;
-                            warmIndexes();
+                        completed.complete(null);
+                    } catch (CancellationException exception) {
+                        completed.cancel(false);
+                    } catch (Exception exception) {
+                        if (!indexSession.isClosed()) {
+                            Railroad.LOGGER.warn("Cannot refresh Java binary inputs for {}", project.getPath(),
+                                exception);
                         }
+                        synchronized (this) {
+                            if (!closed && !indexSession.isClosed() && generation == binaryGeneration
+                                && !indexesWarmed) {
+                                indexesWarmed = true;
+                                warmIndexes();
+                            }
+                        }
+                        completed.completeExceptionally(exception);
                     }
-                    completed.complete(null);
-                } catch (CancellationException exception) {
-                    completed.cancel(false);
-                } catch (Exception exception) {
-                    if (!indexSession.isClosed()) {
-                        Railroad.LOGGER.warn("Cannot refresh Java binary inputs for {}", project.getPath(), exception);
-                    }
-                    completed.completeExceptionally(exception);
-                }
-            });
+                });
             return;
         }
         if (!current.moduleIds().equals(ids) || !current.settings().equals(values)) {

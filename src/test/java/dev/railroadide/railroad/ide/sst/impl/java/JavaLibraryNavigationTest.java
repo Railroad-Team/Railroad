@@ -101,6 +101,8 @@ public class JavaLibraryNavigationTest {
                 assertMember(services, workspace, source, "run()", "run", null, layout);
                 assertMember(services, workspace, source, "SAD", "SAD", null, layout);
                 assertMember(services, workspace, source, "Inner()", "Inner", null, layout);
+                assertMember(services, workspace, source, "Mood mood", "Mood", null, layout);
+                assertMember(services, workspace, source, "Greeter.Mood mood", "Greeter", null, layout);
             }
         }));
     }

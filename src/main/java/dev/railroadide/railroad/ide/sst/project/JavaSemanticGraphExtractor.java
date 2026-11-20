@@ -429,7 +429,7 @@ public final class JavaSemanticGraphExtractor {
 
     private Optional<SymbolId> namedTypeId(SyntaxNode type, String simpleName) {
         Optional<SymbolId> resolved = model.resolvedSymbol(type)
-            .filter(symbol -> isTypeKind(symbol.kind()) && symbol.simpleName().equals(simpleName))
+            .filter(symbol -> isTypeKind(symbol.kind()) && referenceName(symbol).equals(simpleName))
             .flatMap(JavaSourceSymbolIds::deriveSymbolId);
         if (resolved.isPresent())
             return resolved;
@@ -820,10 +820,20 @@ public final class JavaSemanticGraphExtractor {
         if (index == null)
             return null;
         String qualified = qualifiedName(name, context);
-        List<JavaProjectSemanticIndex.SymbolDescriptor> candidates = index.lookupQualifiedName(qualified);
-        return candidates.size() == 1 && candidates.getFirst().descriptor() != null
-            ? candidates.getFirst().descriptor().id()
-            : null;
+        if (qualified == null)
+            return null;
+        String candidate = qualified;
+        for (int dot = candidate.length(); dot > 0; dot = candidate.lastIndexOf('.', dot - 1)) {
+            if (dot < candidate.length()) {
+                candidate = candidate.substring(0, dot) + "$" + candidate.substring(dot + 1);
+            }
+            List<JavaProjectSemanticIndex.SymbolDescriptor> candidates = index.lookupQualifiedName(candidate);
+            if (!candidates.isEmpty())
+                return candidates.size() == 1 && candidates.getFirst().descriptor() != null
+                    ? candidates.getFirst().descriptor().id()
+                    : null;
+        }
+        return null;
     }
 
     private String qualifiedName(String name, SyntaxNode context) {
@@ -842,19 +852,22 @@ public final class JavaSemanticGraphExtractor {
     }
 
     /**
-     * Returns the name a reference to a symbol is spelled with. Binary constructors are named {@code <init>} but are
-     * referenced by their class's simple name.
+     * Returns the name a reference to a symbol is spelled with. Binary constructors are named {@code <init>} and binary
+     * member types by their binary name, such as {@code Outer$Inner}, but both are referenced by a simple name.
      */
     private static String referenceName(Symbol symbol) {
-        if (symbol.kind() != JavaSymbolKind.CONSTRUCTOR || !symbol.simpleName().equals("<init>"))
-            return symbol.simpleName();
-
-        String owner = symbol.qualifiedName().orElse("");
-        int member = owner.indexOf('#');
-        if (member >= 0) {
-            owner = owner.substring(0, member);
+        String name = symbol.simpleName();
+        if (symbol.kind() == JavaSymbolKind.CONSTRUCTOR && name.equals("<init>")) {
+            name = symbol.qualifiedName().orElse("");
+            int member = name.indexOf('#');
+            if (member >= 0) {
+                name = name.substring(0, member);
+            }
+            name = name.substring(name.lastIndexOf('.') + 1);
         }
-        return owner.substring(Math.max(owner.lastIndexOf('.'), owner.lastIndexOf('$')) + 1);
+        return isTypeKind(symbol.kind()) || symbol.kind() == JavaSymbolKind.CONSTRUCTOR
+            ? name.substring(name.lastIndexOf('$') + 1)
+            : name;
     }
 
     private static SyntaxNode nameNode(SyntaxNode node, String name) {
