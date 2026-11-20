@@ -4552,6 +4552,8 @@ public final class JavaSemanticAnalyzer {
                 if (currentPackageType != null)
                     return currentPackageType;
             }
+            if (text.indexOf('.') > 0)
+                return text;
 
             String simpleName = simpleTypeName(text);
             for (String localQualifiedTypeName : localQualifiedTypeNames) {
@@ -6965,6 +6967,8 @@ public final class JavaSemanticAnalyzer {
                 if (currentPackageType != null)
                     return currentPackageType;
             }
+            if (text.indexOf('.') > 0)
+                return text;
 
             String simpleName = simpleTypeName(text);
             for (String localQualifiedTypeName : localQualifiedTypeNames) {

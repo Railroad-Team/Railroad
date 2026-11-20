@@ -179,6 +179,26 @@ public class JavaAssignmentAndCallResolutionInspectionTest {
     }
 
     @Test
+    public void callsOnAMemberTypeOfAnUnindexedTypeAreNotResolvedAgainstASameNamedType() {
+        String source = """
+            import net.minecraft.world.level.block.state.BlockBehaviour;
+
+            class Example {
+                void configure(BlockBehaviour.Properties settings) {
+                    settings.noOcclusion();
+                    BlockBehaviour.Properties.of().setId(null);
+                }
+            }
+            """;
+
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreCallResolutionInspection(),
+            Path.of("Example.java"), source, JavaJdkSymbolIndex.fromCurrentRuntime());
+
+        assertTrue(diagnostics.isEmpty(),
+            () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
+    }
+
+    @Test
     public void assignmentRuleAcceptsLambdasAndMethodReferencesForFunctionalInterfaces() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), """
             import java.util.ArrayList;

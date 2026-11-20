@@ -176,7 +176,8 @@ public class JavaLibraryNavigationTest {
         Path file = view.uri().filePath().orElseThrow();
         assertTrue(file.startsWith(directory.resolve("views")));
         assertFalse(Files.isWritable(file));
-        assertEquals(view.text(), assertDoesNotThrow(() -> Files.readString(file)));
+        String written = assertDoesNotThrow(() -> Files.readString(file));
+        assertEquals(view.text(), written);
         if (following != null) {
             int end = view.text().indexOf(')', target.location().range().end);
             String signature = view.text().substring(target.location().range().end, end + 1);
