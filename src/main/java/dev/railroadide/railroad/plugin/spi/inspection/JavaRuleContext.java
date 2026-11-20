@@ -1300,7 +1300,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (target.kind() == Kind.DECLARED && source.kind() == Kind.DECLARED) {
             String targetQualifiedName = resolveQualifiedTypeName(target.displayName());
             String sourceQualifiedName = resolveQualifiedTypeName(source.displayName());
-            if (targetQualifiedName == null || sourceQualifiedName == null)
+            if (targetQualifiedName == null || sourceQualifiedName == null || !isKnownType(targetQualifiedName)
+                || !isKnownType(sourceQualifiedName))
                 return true;
 
             return equivalentQualifiedTypeNames(targetQualifiedName, sourceQualifiedName)

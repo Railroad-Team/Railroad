@@ -22,6 +22,24 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaAssignmentAndCallResolutionInspectionTest {
     @Test
+    public void assignmentRuleAcceptsTypesThatCannotBeResolved() {
+        String source = """
+            import missing.Noise;
+            import missing.SimplexNoise;
+
+            class Example {
+                private static final Noise NOISE = new SimplexNoise(1234L);
+            }
+            """;
+
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
+
+        assertFalse(
+            diagnostics.stream().anyMatch(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
+            () -> diagnostics.toString());
+    }
+
+    @Test
     public void assignmentRuleInfersGenericMethodReturnsFromArgumentsAndClassLiterals() {
         String source = """
             class Example {

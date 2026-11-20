@@ -48,6 +48,37 @@ public class JavaVariableObscuresTypeTest {
     }
 
     @Test
+    public void nestedLambdaParameterObscuresAnUnimportedType() {
+        assertResolves("""
+            import java.util.function.Function;
+            record Key(String location) {
+                static Function<Key, Function<Key, String>> f() { return outer -> e -> e.location; }
+            }
+            """);
+    }
+
+    @Test
+    public void lambdaArgumentInsideALambdaBodyObscuresAnUnimportedType() {
+        assertResolves("""
+            import java.util.function.Function;
+            record Key(String location) {
+                static <T> T apply(Function<Key, String> getter, T value) { return value; }
+                static Function<String, String> f() { return value -> apply(e -> e.location, value); }
+            }
+            """);
+    }
+
+    @Test
+    public void fieldInitializerLambdaParameterObscuresAnUnimportedType() {
+        assertResolves("""
+            import java.util.function.Function;
+            record Key(String location) {
+                static final Function<Key, String> GETTER = e -> e.location;
+            }
+            """);
+    }
+
+    @Test
     public void methodParameterObscuresAnUnimportedType() {
         assertResolves("record Key(String location) { static String f(Key e) { return e.location; } }");
     }
