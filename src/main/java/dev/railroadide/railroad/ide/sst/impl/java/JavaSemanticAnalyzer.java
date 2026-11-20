@@ -1797,7 +1797,8 @@ public final class JavaSemanticAnalyzer {
 
             Type contextualTarget = contextualInvocationTargetType(invocation);
             if (contextualTarget.kind() != JavaTypes.Kind.UNKNOWN) {
-                bindTypeVariables(typeOfResolvedSymbol(callable), contextualTarget, substitutions);
+                resolvedExpressionTypeResolver.bindReturnTypeToTarget(
+                    typeOfResolvedSymbol(callable), contextualTarget, substitutions);
             }
 
             return parameterTypes.stream()
@@ -5423,7 +5424,7 @@ public final class JavaSemanticAnalyzer {
             }
             Type contextualTarget = contextualInvocationTargetType(invocation);
             if (contextualTarget.kind() != JavaTypes.Kind.UNKNOWN) {
-                bindTypeVariables(typeOfSymbol(callable), contextualTarget, substitutions);
+                bindReturnTypeToTarget(typeOfSymbol(callable), contextualTarget, substitutions);
             }
             return parameterTypes.stream()
                 .map(type -> substituteTypeVariables(type, substitutions))
@@ -5562,7 +5563,7 @@ public final class JavaSemanticAnalyzer {
                 contextualTarget = contextualInvocationTargetType(invocationNode);
             }
             if (contextualTarget.kind() != JavaTypes.Kind.UNKNOWN) {
-                bindTypeVariables(rawReturnType, contextualTarget, substitutions);
+                bindReturnTypeToTarget(rawReturnType, contextualTarget, substitutions);
             }
         }
 
@@ -6099,6 +6100,26 @@ public final class JavaSemanticAnalyzer {
                         substitutions);
                 }
             }
+        }
+
+        /**
+         * Binds the type variables of a method's declared return type from the type its invocation is expected to
+         * produce. When the raw types differ, the return type is viewed as the target's supertype first, so that
+         * {@code RecordCodecBuilder<O, A>} expected as {@code App<Mu<Biome>, T>} binds {@code O} to {@code Biome}.
+         */
+        private void bindReturnTypeToTarget(Type returnType, Type targetType, Map<String, Type> substitutions) {
+            if (returnType instanceof JavaTypes.DeclaredType returnDeclared
+                && targetType instanceof JavaTypes.DeclaredType targetDeclared
+                && !sameRawType(returnDeclared.displayName(), targetDeclared.displayName())) {
+                String targetName = resolveQualifiedTypeName(targetDeclared.displayName());
+                JavaTypes.DeclaredType returnView = declaredViewAs(returnDeclared,
+                    targetName == null ? targetDeclared.displayName() : targetName, new HashSet<>());
+                if (returnView != null) {
+                    bindTypeVariables(returnView, targetDeclared, substitutions);
+                    return;
+                }
+            }
+            bindTypeVariables(returnType, targetType, substitutions);
         }
 
         private void bindOwnerTypeArguments(Symbol methodSymbol, Type receiverType, Map<String, Type> substitutions) {
