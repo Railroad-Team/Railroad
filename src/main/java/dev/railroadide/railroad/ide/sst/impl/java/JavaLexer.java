@@ -350,6 +350,9 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         if (current == '\'')
             return readCharLiteral();
 
+        if (current == '.' && isDecimalDigit(peek(1)))
+            return readNumber();
+
         if (JavaTokenType.MULTI_CHAR_TOKENS.containsKey(current)) {
             Optional<Token<JavaTokenType>> multiCharToken = readMulticharToken(current);
             if (multiCharToken.isPresent())
@@ -507,242 +510,182 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         return Optional.empty();
     }
 
+    /**
+     * Reads a numeric literal, including one that starts with a decimal point. A malformed literal still becomes a
+     * single token spanning all of its text, flagged as an error, so no source text is lost.
+     */
     private Token<JavaTokenType> readNumber() {
         int startOffset = pos, startLine = this.line, startColumn = this.column;
+        if (peek(0) == '0' && Character.toLowerCase(peek(1)) == 'x') {
+            consume(2);
+            return readHexadecimalNumber(startOffset, startLine, startColumn);
+        }
 
-        var number = new StringBuilder();
-        JavaTokenType type = JavaTokenType.NUMBER_INT_LITERAL;
+        if (peek(0) == '0' && Character.toLowerCase(peek(1)) == 'b') {
+            consume(2);
+            String problem = readDigits(JavaLexer::isBinaryDigit);
+            if (problem == null && Character.toLowerCase(peek(0)) == 'l') {
+                consume();
+            }
+            return finishNumber(JavaTokenType.NUMBER_BINARY_LITERAL, problem, startOffset, startLine, startColumn);
+        }
 
-        char current = consume();
-        number.append(current);
-
-        if (current == '0' && hasNext()) {
-            char next = peek(0);
-            switch (Character.toLowerCase(next)) {
-                case 'x' -> {
-                    consume();
-                    number.append(next);
-                    return readIntegerLiteral(number, JavaTokenType.NUMBER_HEXADECIMAL_LITERAL,
-                        JavaLexer::isHexadecimal, startOffset, startLine, startColumn);
-                }
-                case 'b' -> {
-                    consume();
-                    number.append(next);
-                    return readIntegerLiteral(number, JavaTokenType.NUMBER_BINARY_LITERAL, ch -> ch == '0' || ch == '1',
-                        startOffset, startLine, startColumn);
-                }
-                case '.' -> {
-                    consume();
-                    number.append(next);
-                    return readDecimalLiteral(number, startOffset, startLine, startColumn);
-                }
-                default -> {
-                    if (next >= '0' && next <= '7') {
-                        type = JavaTokenType.NUMBER_OCTAL_LITERAL;
-                        number.append(next);
-                        return readIntegerLiteral(number, type, ch -> ch >= '0' && ch <= '7', startOffset, startLine,
-                            startColumn);
-                    }
-                }
+        String problem = null;
+        boolean floating = false;
+        if (peek(0) == '.') {
+            consume();
+            floating = true;
+        } else {
+            problem = readDigits(JavaLexer::isDecimalDigit);
+            if (problem == null && peek(0) == '.') {
+                consume();
+                floating = true;
+                if (!isDecimalDigit(peek(0)))
+                    // A trailing point is valid, as in 1. or 1.e3; only the fraction is optional.
+                    return finishDecimal(true, null, startOffset, startLine, startColumn);
             }
         }
 
-        boolean lastWasUnderscore = false;
-        while (hasNext()) {
-            char nextChar = peek(0);
-            if (Character.isDigit(nextChar)) {
-                consume();
-                number.append(nextChar);
-                lastWasUnderscore = false;
-            } else if (nextChar == '_') {
-                if (lastWasUnderscore)
-                    return errorToken("Consecutive underscores in number literal: " + number);
-
-                if (pos + 1 >= length)
-                    return errorToken("Underscore at end of number literal: " + number);
-
-                char afterUnderscore = peek(1);
-                if (!Character.isDigit(afterUnderscore))
-                    return errorToken("Underscore not followed by digit in number literal: " + number);
-
-                consume();
-                number.append(nextChar);
-                lastWasUnderscore = true;
-            } else
-                break;
+        if (floating && problem == null) {
+            problem = readDigits(JavaLexer::isDecimalDigit);
         }
-
-        if (lastWasUnderscore)
-            return errorToken("Number literal ends with underscore: " + number);
-
-        if (hasNext() && peek(0) == '.') {
-            consume();
-            number.append('.');
-            return readDecimalLiteral(number, startOffset, startLine, startColumn);
-        }
-
-        if (hasNext() && (peek(0) == 'e' || peek(0) == 'E'))
-            return readDecimalExponent(number, startOffset, startLine, startColumn);
-
-        if (hasNext() && (peek(0) == 'l' || peek(0) == 'L')) {
-            consume();
-            number.append('L');
-        } else if (hasNext() && (peek(0) == 'f' || peek(0) == 'F') || (peek(0) == 'd' || peek(0) == 'D')) {
-            consume();
-            number.append('D');
-            type = JavaTokenType.NUMBER_FLOATING_POINT_LITERAL;
-        }
-
-        if (!doesCharacterTerminateNumber(peek(0)))
-            return errorToken("Unexpected character after number literal: " + number);
-
-        return token(type, startOffset, startLine, startColumn);
+        return finishDecimal(floating, problem, startOffset, startLine, startColumn);
     }
 
-    private Token<JavaTokenType> readIntegerLiteral(
-        StringBuilder text,
+    private Token<JavaTokenType> finishDecimal(
+        boolean floating,
+        String problem,
+        int startOffset,
+        int startLine,
+        int startColumn
+    ) {
+        if (problem == null && Character.toLowerCase(peek(0)) == 'e') {
+            floating = true;
+            problem = readExponent();
+        }
+
+        if (problem == null) {
+            char suffix = Character.toLowerCase(peek(0));
+            if (suffix == 'f' || suffix == 'd') {
+                consume();
+                floating = true;
+            } else if (suffix == 'l' && !floating) {
+                consume();
+            }
+        }
+
+        JavaTokenType type = JavaTokenType.NUMBER_FLOATING_POINT_LITERAL;
+        if (!floating) {
+            String digits = slice(startOffset, pos).replace("_", "").replaceAll("[lL]$", "");
+            type = digits.length() > 1 && digits.charAt(0) == '0'
+                ? JavaTokenType.NUMBER_OCTAL_LITERAL
+                : JavaTokenType.NUMBER_INT_LITERAL;
+            if (problem == null && type == JavaTokenType.NUMBER_OCTAL_LITERAL
+                && digits.chars().anyMatch(digit -> digit > '7')) {
+                problem = "Invalid digit in octal literal";
+            }
+        }
+
+        return finishNumber(type, problem, startOffset, startLine, startColumn);
+    }
+
+    private Token<JavaTokenType> readHexadecimalNumber(int startOffset, int startLine, int startColumn) {
+        boolean hasDigits = isHexadecimal(peek(0)) || peek(0) == '_';
+        String problem = hasDigits ? readDigits(JavaLexer::isHexadecimal) : null;
+        boolean floating = false;
+        if (problem == null && peek(0) == '.') {
+            consume();
+            floating = true;
+            if (isHexadecimal(peek(0)) || peek(0) == '_') {
+                hasDigits = true;
+                problem = readDigits(JavaLexer::isHexadecimal);
+            }
+        }
+
+        if (problem == null && !hasDigits) {
+            problem = "Missing digits in hexadecimal literal";
+        }
+        if (problem == null && Character.toLowerCase(peek(0)) == 'p') {
+            floating = true;
+            problem = readExponent();
+        } else if (problem == null && floating) {
+            problem = "Hexadecimal floating-point literal requires a binary exponent";
+        }
+
+        if (problem == null) {
+            char suffix = Character.toLowerCase(peek(0));
+            if (floating && (suffix == 'f' || suffix == 'd') || !floating && suffix == 'l') {
+                consume();
+            }
+        }
+
+        return finishNumber(floating
+            ? JavaTokenType.NUMBER_FLOATING_POINT_LITERAL
+            : JavaTokenType.NUMBER_HEXADECIMAL_LITERAL, problem, startOffset, startLine, startColumn);
+    }
+
+    /** Reads an exponent marker, an optional sign and the exponent digits. */
+    private String readExponent() {
+        consume();
+        if (peek(0) == '+' || peek(0) == '-') {
+            consume();
+        }
+
+        return readDigits(JavaLexer::isDecimalDigit);
+    }
+
+    /**
+     * Reads digits that may be separated by underscores, which must sit between digits.
+     *
+     * @return a description of the problem, or {@code null} when the digits are well formed
+     */
+    private String readDigits(Predicate<Character> isDigit) {
+        boolean sawDigit = false;
+        boolean lastUnderscore = false;
+        while (hasNext()) {
+            char current = peek(0);
+            if (isDigit.test(current)) {
+                sawDigit = true;
+                lastUnderscore = false;
+            } else if (current == '_') {
+                if (!sawDigit)
+                    return "Underscore must follow a digit in number literal";
+
+                lastUnderscore = true;
+            } else
+                break;
+
+            consume();
+        }
+
+        if (!sawDigit)
+            return "Missing digits in number literal";
+        if (lastUnderscore)
+            return "Underscore must be followed by a digit in number literal";
+
+        return null;
+    }
+
+    private Token<JavaTokenType> finishNumber(
         JavaTokenType type,
-        Predicate<Character> isCharValid,
+        String problem,
         int startOffset,
         int startLine,
         int startColumn
     ) {
-        boolean seenDigit = false, lastUnderscore = false;
-        while (hasNext()) {
-            char current = peek(0);
-            if (isCharValid.test(current)) {
-                consume();
-                text.append(current);
-                seenDigit = true;
-                lastUnderscore = false;
-            } else if (current == '_') {
-                if (!seenDigit || lastUnderscore)
-                    return errorToken("Invalid underscore in numeric literal: " + text);
-
-                if (pos + 1 >= length || !isCharValid.test(peek(1)))
-                    return errorToken("Underscore must separate digits: " + text);
-
-                consume();
-                text.append(current);
-                lastUnderscore = true;
-            } else
-                break;
+        if (problem == null && hasNext() && !doesCharacterTerminateNumber(peek(0))) {
+            problem = "Unexpected character after number literal: '" + peek(0) + "'";
         }
 
-        if (!seenDigit)
-            return errorToken("Malformed literal (missing digits): " + text);
-        if (lastUnderscore)
-            return errorToken("Malformed literal (trailing underscore): " + text);
+        if (problem == null)
+            return token(type, startOffset, startLine, startColumn);
 
-        char current = peek(0);
-        if (hasNext() && Character.toLowerCase(current) == 'l') {
-            text.append(consume());
-        } else if (hasNext() && (current == 'f' || current == 'd'))
-            return errorToken("Floating suffix not allowed on non-decimal integer literal: " + text + current);
-
-        if (!doesCharacterTerminateNumber(current))
-            return errorToken("Invalid trailing characters after literal: " + text + current);
-
-        return token(type, startOffset, startLine, startColumn);
-    }
-
-    private Token<JavaTokenType> readDecimalLiteral(
-        StringBuilder text,
-        int startOffset,
-        int startLine,
-        int startColumn
-    ) {
-        boolean sawFracDigits = false, lastUnderscore = false;
-        while (hasNext()) {
-            char current = peek(0);
-            if (Character.isDigit(current)) {
-                consume();
-                text.append(current);
-                sawFracDigits = true;
-                lastUnderscore = false;
-            } else if (current == '_') {
-                if (lastUnderscore)
-                    return errorToken("Consecutive underscores in number literal: " + text);
-
-                if (pos + 1 >= length || !Character.isDigit(peek(1)))
-                    return errorToken("Underscore must separate digits: " + text);
-
-                consume();
-                text.append(current);
-                lastUnderscore = true;
-            } else
-                break;
+        while (hasNext() && (Character.isLetterOrDigit(peek(0)) || peek(0) == '_')) {
+            consume();
         }
 
-        if (lastUnderscore)
-            return errorToken("Trailing underscore in number literal: " + text);
-        if (!sawFracDigits)
-            return errorToken("Malformed floating point literal (missing digits): " + text);
-
-        if (hasNext() && Character.toLowerCase(peek(0)) == 'e')
-            return readDecimalExponent(text, startOffset, startLine, startColumn);
-
-        char current = peek(0);
-        if (hasNext() && (Character.toLowerCase(current) == 'f' || Character.toLowerCase(current) == 'd')) {
-            text.append(consume());
-        }
-
-        if (!doesCharacterTerminateNumber(current))
-            return errorToken("Invalid trailing characters after floating literal: " + text + current);
-
-        return token(JavaTokenType.NUMBER_FLOATING_POINT_LITERAL, startOffset, startLine, startColumn);
-    }
-
-    private Token<JavaTokenType> readDecimalExponent(
-        StringBuilder text,
-        int startOffset,
-        int startLine,
-        int startColumn
-    ) {
-        char current = consume();
-        text.append(current);
-
-        if (hasNext() && (peek(0) == '+' || peek(0) == '-')) {
-            text.append(consume());
-        }
-
-        boolean sawExpDigits = false, lastUnderscore = false;
-        while (hasNext()) {
-            current = peek(0);
-            if (Character.isDigit(current)) {
-                consume();
-                text.append(current);
-                sawExpDigits = true;
-                lastUnderscore = false;
-            } else if (current == '_') {
-                if (lastUnderscore)
-                    return errorToken("Consecutive underscores in exponent: " + text);
-                if (!sawExpDigits)
-                    return errorToken("Underscore in exponent without preceding digits: " + text);
-
-                if (pos + 1 >= length || !Character.isDigit(peek(1)))
-                    return errorToken("Underscore must separate digits in exponent: " + text);
-
-                consume();
-                text.append(current);
-                lastUnderscore = true;
-            } else
-                break;
-        }
-
-        if (lastUnderscore)
-            return errorToken("Trailing underscore in exponent: " + text);
-        if (!sawExpDigits)
-            return errorToken("Malformed exponent (missing digits): " + text);
-
-        if (hasNext() && (peek(0) == 'f' || peek(0) == 'd')) {
-            text.append(consume());
-        }
-
-        if (!doesCharacterTerminateNumber(peek(0)))
-            return errorToken("Invalid trailing characters after exponent: " + text + peek(0));
-
-        return token(JavaTokenType.NUMBER_FLOATING_POINT_LITERAL, startOffset, startLine, startColumn);
+        diagnostics.add(new LexError(problem + ": " + slice(startOffset, pos), startOffset, startLine, startColumn));
+        return token(type, startOffset, startLine, startColumn, TokenChannel.DEFAULT, TokenFlag.ERROR);
     }
 
     private boolean consumeEscapeCode() {
@@ -799,8 +742,16 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         return Character.isWhitespace(character) || JavaTokenType.SINGLE_CHAR_TOKENS.containsKey(character);
     }
 
+    private static boolean isDecimalDigit(char character) {
+        return character >= '0' && character <= '9';
+    }
+
+    private static boolean isBinaryDigit(char character) {
+        return character == '0' || character == '1';
+    }
+
     private static boolean isHexadecimal(char character) {
-        return Character.isDigit(character) || (character >= 'A' && character <= 'F')
+        return isDecimalDigit(character) || (character >= 'A' && character <= 'F')
             || (character >= 'a' && character <= 'f');
     }
 
