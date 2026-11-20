@@ -116,6 +116,23 @@ public class JdtJavaSignatureHelpProviderTest {
         assertNull(provider.compute(snapshot(uri, SOURCE), 0));
     }
 
+    @Test
+    public void capturedClasspathIgnoresMissingDirectoriesAndStandaloneClassFiles() throws Exception {
+        Path classes = Files.createDirectories(tempDirectory.resolve("classes"));
+        Path library = classes.resolve("Library.class");
+        var writer = new ClassWriter(0);
+        writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, "Library", null, "java/lang/Object", null);
+        writer.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_NATIVE, "answer", "(I)I", null, null)
+            .visitEnd();
+        writer.visitEnd();
+        Files.write(library, writer.toByteArray());
+
+        String source = "class Example { void run() { Library.answer(1); } }";
+        SignatureHelpArchiveProbe.verify(tempDirectory, Path.of(System.getProperty("java.home")),
+            List.of(tempDirectory.resolve("not-built"), library, classes), source, source.indexOf("1)") + 1,
+            "Library", "answer", List.of("int"));
+    }
+
     private static TextDocumentSnapshot snapshot(DocumentUri uri, String text) {
         return new TextDocumentSnapshot(DocumentId.create(), uri, DocumentVersion.initial(), "java", text,
             StandardCharsets.UTF_8);

@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.List;
@@ -108,12 +109,19 @@ public record JdtJavaSignatureHelpProvider(
         JavaWorkspaceAnalysis analysis = this.analysis.apply(context);
         context.checkActive();
         try (JavaSignatureSourceCache.Lease sources = sourceCache.acquire(analysis, text, context::checkActive)) {
-            List<String> classpath = new ArrayList<>(analysis.classpath().stream().map(Path::toString).toList());
+            List<String> classpath = new ArrayList<>();
+            for (Path path : analysis.classpath()) {
+                context.checkActive();
+                if (isJdtClasspathEntry(path)) {
+                    classpath.add(path.toString());
+                }
+            }
             Path jmods = analysis.jdkHome().resolve("jmods");
             if (Files.isDirectory(jmods)) {
                 try (Stream<Path> modules = Files.list(jmods)) {
                     modules.peek(_ -> context.checkActive())
                         .filter(path -> path.getFileName().toString().endsWith(".jmod"))
+                        .filter(Files::isRegularFile)
                         .sorted().map(Path::toString).forEach(classpath::add);
                 }
             } else {
@@ -131,6 +139,16 @@ public record JdtJavaSignatureHelpProvider(
         } catch (IOException exception) {
             throw new UncheckedIOException("Cannot prepare captured Java sources for signature help", exception);
         }
+    }
+
+    private static boolean isJdtClasspathEntry(Path path) {
+        if (Files.isDirectory(path))
+            return true;
+        if (!Files.isRegularFile(path))
+            return false;
+
+        String name = path.getFileName().toString().toLowerCase(Locale.ROOT);
+        return name.contains(".") && !name.endsWith(".java") && !name.endsWith(".class");
     }
 
     private @Nullable SignatureHelp compute(
