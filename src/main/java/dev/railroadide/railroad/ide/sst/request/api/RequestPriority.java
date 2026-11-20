@@ -12,6 +12,8 @@ public enum RequestPriority {
     COMPLETION,
     /** Priority for displaying callable signatures at the current argument position. */
     SIGNATURE_HELP,
+    /** Priority for syntax highlighting of open editors, which must not wait for semantic analysis. */
+    SYNTAX_HIGHLIGHTING,
     /** Priority for explicitly requested navigation to a symbol's definition. */
     NAVIGATION,
     /** Priority for diagnostics presented in the visible editor. */

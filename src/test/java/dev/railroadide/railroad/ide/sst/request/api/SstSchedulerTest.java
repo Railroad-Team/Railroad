@@ -41,7 +41,8 @@ public class SstSchedulerTest {
             List<CompletableFuture<?>> futures = new ArrayList<>();
             for (RequestPriority priority : List.of(RequestPriority.BACKGROUND_INDEXING,
                 RequestPriority.OPEN_DOCUMENT_ANALYSIS, RequestPriority.VISIBLE_DIAGNOSTICS,
-                RequestPriority.NAVIGATION, RequestPriority.SIGNATURE_HELP, RequestPriority.COMPLETION)) {
+                RequestPriority.NAVIGATION, RequestPriority.SYNTAX_HIGHLIGHTING, RequestPriority.SIGNATURE_HELP,
+                RequestPriority.COMPLETION)) {
                 futures.add(submit(first, priority, priority, () -> order.add(priority.name() + "1")));
                 futures.add(submit(second, priority, priority, () -> order.add(priority.name() + "2")));
             }
@@ -49,7 +50,8 @@ public class SstSchedulerTest {
             blocker.get(5, TimeUnit.SECONDS);
             CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).get(5, TimeUnit.SECONDS);
             assertEquals(List.of("COMPLETION1", "COMPLETION2", "SIGNATURE_HELP1", "SIGNATURE_HELP2",
-                "NAVIGATION1", "NAVIGATION2", "VISIBLE_DIAGNOSTICS1", "VISIBLE_DIAGNOSTICS2", "OPEN_DOCUMENT_ANALYSIS1",
+                "SYNTAX_HIGHLIGHTING1", "SYNTAX_HIGHLIGHTING2", "NAVIGATION1", "NAVIGATION2", "VISIBLE_DIAGNOSTICS1",
+                "VISIBLE_DIAGNOSTICS2", "OPEN_DOCUMENT_ANALYSIS1",
                 "OPEN_DOCUMENT_ANALYSIS2", "BACKGROUND_INDEXING1", "BACKGROUND_INDEXING2"), order);
         }
     }
@@ -267,6 +269,9 @@ public class SstSchedulerTest {
             var secondBackground = submit(scope, "another", RequestPriority.BACKGROUND_INDEXING, () -> null);
             assertEquals("interactive", submit(scope, "completion", RequestPriority.COMPLETION, () -> "interactive")
                 .get(5, TimeUnit.SECONDS));
+            assertEquals("highlighting",
+                submit(scope, "highlighting", RequestPriority.SYNTAX_HIGHLIGHTING, () -> "highlighting")
+                    .get(5, TimeUnit.SECONDS));
             assertFalse(secondBackground.isDone());
             release.countDown();
             background.get(5, TimeUnit.SECONDS);

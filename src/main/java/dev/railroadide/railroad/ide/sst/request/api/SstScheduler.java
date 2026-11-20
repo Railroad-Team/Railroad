@@ -22,7 +22,7 @@ import java.util.function.Supplier;
  *
  * <p>
  * Queued tasks run in priority order and FIFO order within a priority. With more
- * than one worker, one worker is reserved for completion and signature help so that
+ * than one worker, one worker is reserved for completion, signature help and syntax highlighting so that
  * slow background work cannot occupy every dispatch slot. Saturation
  * rejects new work without running it on the caller. Cancellation removes queued
  * work and interrupts running work, but providers must still cooperate. Provider
@@ -110,7 +110,7 @@ public final class SstScheduler implements AutoCloseable {
             Task<?> task;
             synchronized (lock) {
                 while (!closed && (queue.isEmpty() || interactiveOnly
-                    && queue.peek().priority.compareTo(RequestPriority.SIGNATURE_HELP) > 0)) {
+                    && queue.peek().priority.compareTo(RequestPriority.SYNTAX_HIGHLIGHTING) > 0)) {
                     try {
                         lock.wait();
                     } catch (InterruptedException _) {

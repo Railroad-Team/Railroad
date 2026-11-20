@@ -1186,8 +1186,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
     /**
      * Captures highlighting inputs once the document store is attached and supersedes
      * previous work. The JavaFX callback rechecks identity, activity, generation, and
-     * workspace state before applying styles. Workspace changes schedule a replacement
-     * even when the document text is unchanged.
+     * editor text before applying styles. Styles for unchanged text are applied even if
+     * other workspace state changed meanwhile, so highlighting is not starved while a
+     * project loads; workspace changes still schedule a debounced replacement.
      */
     private void requestHighlight() {
         invalidateHighlightRequest();
@@ -1205,7 +1206,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             Deadline.after(HIGHLIGHT_BUDGET));
         activeHighlightContext = context;
 
-        featureRequests.submit("highlighting", RequestPriority.OPEN_DOCUMENT_ANALYSIS, context,
+        featureRequests.submit("highlighting", RequestPriority.SYNTAX_HIGHLIGHTING, context,
             activeHighlightCancellation, () -> ProviderExecutor.shared().execute(
                 context.documentSnapshot().languageId() + ":highlighting", context, HIGHLIGHT_BUDGET,
                 () -> highlightingProvider.compute(context)))
@@ -1215,7 +1216,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
                     || !result.belongsTo(context)
                     || context.cancellationToken().isCancellationRequested()
                     || context.deadline().isExpired()
-                    || !isCurrent(context.workspaceSnapshot()))
+                    || !getText().equals(snapshot.text()))
                     return;
 
                 applyHighlightIfLatest(generation, result.value());

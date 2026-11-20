@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -201,10 +202,10 @@ public class CodeEditorHighlightingRequestTest {
                             DocumentUri.fromPath(directory.resolve("Renamed.java")));
                     }
                     fixture.editor.refreshWorkspace();
-                    assertTrue(old.cancellationToken().isCancellationRequested());
                     return null;
                 });
                 FeatureRequestContext current = fixture.nextRequest();
+                assertTrue(old.cancellationToken().isCancellationRequested());
                 assertEquals(old.documentSnapshot().version(), current.documentSnapshot().version());
                 assertEquals(((TextDocumentSnapshot) old.documentSnapshot()).text(),
                     ((TextDocumentSnapshot) current.documentSnapshot()).text());
@@ -222,6 +223,76 @@ public class CodeEditorHighlightingRequestTest {
                 });
             } finally {
                 releaseOld.countDown();
+            }
+        }
+    }
+
+    @Test
+    public void stylesForUnchangedTextApplyAfterAnUnrelatedWorkspaceChange() throws Exception {
+        var releaseOld = new CountDownLatch(1);
+        var releaseRetry = new CountDownLatch(1);
+        var calls = new AtomicInteger();
+        try (Fixture fixture = open(context -> {
+            int call = calls.incrementAndGet();
+            await(call == 1 ? releaseOld : releaseRetry);
+            return styles(context, call == 1 ? "OLD_WORKSPACE" : "NEW_WORKSPACE");
+        })) {
+            try {
+                fixture.nextRequest();
+                try (FxBlocker blocker = FxBlocker.start(() -> fixture.store
+                    .publishConfiguration(new WorkspaceConfigurationSnapshot(1, Set.of("changed"))))) {
+                    releaseOld.countDown();
+                    awaitRequests(fixture.editor.featureRequests);
+                    blocker.releaseAndAwait();
+                }
+                onFx(() -> {
+                    assertEquals(List.of("OLD_WORKSPACE"), fixture.editor.highlightLabels());
+                    return null;
+                });
+
+                fixture.nextRequest();
+                releaseRetry.countDown();
+                awaitRequests(fixture.editor.featureRequests);
+                onFx(() -> {
+                    assertEquals(List.of("NEW_WORKSPACE"), fixture.editor.highlightLabels());
+                    return null;
+                });
+            } finally {
+                releaseOld.countDown();
+                releaseRetry.countDown();
+            }
+        }
+    }
+
+    @Test
+    public void highlightingIsNotQueuedBehindBackgroundIndexing() throws Exception {
+        var entered = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        var workspace = new WorkspaceSnapshot("background", Map.of(), new WorkspaceConfigurationSnapshot(0, Set.of()),
+            0);
+        try (SstScheduler.Scope background = SstScheduler.shared().newScope()) {
+            try {
+                for (int index = 0; index < 16; index++) {
+                    var cancellation = new CancellationTokenSource();
+                    background.submit(index, RequestPriority.BACKGROUND_INDEXING,
+                        new WorkspaceRequestContext(workspace, cancellation.token(), Deadline.none()), cancellation,
+                        () -> {
+                            entered.countDown();
+                            await(release);
+                            return null;
+                        });
+                }
+                await(entered);
+                try (Fixture fixture = open(context -> styles(context, "WHILE_INDEXING"))) {
+                    fixture.nextRequest();
+                    awaitRequests(fixture.editor.featureRequests);
+                    onFx(() -> {
+                        assertEquals(List.of("WHILE_INDEXING"), fixture.editor.highlightLabels());
+                        return null;
+                    });
+                }
+            } finally {
+                release.countDown();
             }
         }
     }
