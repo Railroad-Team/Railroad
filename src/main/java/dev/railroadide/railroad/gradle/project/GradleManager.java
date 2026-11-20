@@ -3,9 +3,11 @@ package dev.railroadide.railroad.gradle.project;
 import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.DefaultGradleEnvironment;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.gradle.GradleEnvironment;
 import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.gradle.GradleSettings;
+import dev.railroadide.railroad.gradle.model.PersistedGradleModelStore;
 import dev.railroadide.railroad.gradle.service.GradleConsoleMode;
 import dev.railroadide.railroad.gradle.service.GradleExecutionService;
 import dev.railroadide.railroad.gradle.service.GradleModelService;
@@ -39,6 +41,7 @@ import java.util.regex.Pattern;
 public final class GradleManager {
     private static final String DOWNLOAD_SOURCES_TASK = "railroadDownloadAllSources";
     private static final String DOWNLOAD_SOURCES_INIT_RESOURCE = "scripts/init-download-sources.gradle";
+    private static final String PERSISTED_MODELS_DIRECTORY = "gradle-models";
 
     private final Project project;
     private final Object lock = new Object();
@@ -81,7 +84,10 @@ public final class GradleManager {
                 modelService = new ToolingGradleModelService(
                     project,
                     getGradleEnvironment(),
-                    modelExecutor);
+                    modelExecutor,
+                    new PersistedGradleModelStore(
+                        ConfigHandler.getConfigDirectory().resolve(PERSISTED_MODELS_DIRECTORY),
+                        ToolingGradleModelService.importerVersion()));
             }
 
             return modelService;

@@ -5,6 +5,7 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.gradle.GradleEnvironment;
 import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.gradle.model.GradleModelListener;
+import dev.railroadide.railroad.gradle.model.PersistedGradleModelStore;
 import dev.railroadide.railroad.gradle.service.GradleModelService;
 import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -19,10 +20,16 @@ import org.gradle.tooling.UnknownModelException;
 import org.gradle.tooling.model.build.BuildEnvironment;
 import org.gradle.tooling.model.gradle.GradleBuild;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -33,17 +40,24 @@ import java.util.function.Supplier;
 /**
  * Implementation of {@link GradleModelService} that uses the Gradle Tooling API to load
  * the Gradle build model.
+ * <p>
+ * Every imported model is persisted. The persisted model is restored on first use, so a reopened project has its
+ * model without waiting for Gradle; it is re-imported in the background only when its build inputs changed.
  */
 public class ToolingGradleModelService implements GradleModelService {
+    private static final String INIT_SCRIPT = "scripts/init-gradle-plugin.gradle";
+
     private final Project project;
     private final GradleEnvironment environment;
     private final Executor executor;
+    private final PersistedGradleModelStore store;
 
     private final Object lock = new Object();
     private final AtomicReference<GradleBuildModel> cachedModel = new AtomicReference<>();
     private final Duration modelTimeout = Duration.ofMinutes(3);
     private final List<GradleModelListener> listeners = new CopyOnWriteArrayList<>();
     private volatile CompletableFuture<GradleBuildModel> ongoingRefresh = null;
+    private boolean restoreAttempted;
 
     /**
      * Creates a new ToolingGradleModelService.
@@ -51,11 +65,32 @@ public class ToolingGradleModelService implements GradleModelService {
      * @param project the project for which to load the Gradle model
      * @param environment the Gradle environment configuration
      * @param executor the executor to use for asynchronous operations
+     * @param store the store that persists imported models between sessions
      */
-    public ToolingGradleModelService(Project project, GradleEnvironment environment, Executor executor) {
+    public ToolingGradleModelService(
+        Project project,
+        GradleEnvironment environment,
+        Executor executor,
+        PersistedGradleModelStore store
+    ) {
         this.project = Objects.requireNonNull(project);
         this.environment = Objects.requireNonNull(environment);
         this.executor = Objects.requireNonNull(executor);
+        this.store = Objects.requireNonNull(store);
+    }
+
+    /**
+     * Identifies the importer, so models persisted by a different init script or Railroad Gradle plugin are
+     * discarded rather than restored.
+     *
+     * @return a hash of the init script that applies the Railroad Gradle plugin
+     */
+    public static String importerVersion() {
+        try (InputStream stream = AppResources.getResourceAsStream(INIT_SCRIPT)) {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(stream.readAllBytes()));
+        } catch (IOException | NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("Failed to read Gradle init script", exception);
+        }
     }
 
     /**
@@ -110,7 +145,7 @@ public class ToolingGradleModelService implements GradleModelService {
         try {
             Path path = Files.createTempFile("gradle-init-script", ".gradle");
             path.toFile().deleteOnExit();
-            Files.copy(AppResources.getResourceAsStream("scripts/init-gradle-plugin.gradle"), path,
+            Files.copy(AppResources.getResourceAsStream(INIT_SCRIPT), path,
                 StandardCopyOption.REPLACE_EXISTING);
             return path;
         } catch (Exception exception) {
@@ -181,6 +216,7 @@ public class ToolingGradleModelService implements GradleModelService {
 
     @Override
     public CompletableFuture<GradleBuildModel> refreshModel(boolean force) {
+        restorePersistedModel();
         CompletableFuture<GradleBuildModel> refresh;
         synchronized (lock) {
             if (!force) {
@@ -195,7 +231,10 @@ public class ToolingGradleModelService implements GradleModelService {
             refresh = CompletableFuture.supplyAsync(
                 safely(() -> {
                     try (var _ = BackgroundActivities.shared().start("railroad.activity.importing_gradle")) {
-                        return ToolingGradleModelService.loadModel(this.project, this.environment);
+                        Instant importStarted = Instant.now();
+                        GradleBuildModel model = ToolingGradleModelService.loadModel(this.project, this.environment);
+                        persist(model, importStarted);
+                        return model;
                     }
                 }),
                 executor)
@@ -206,6 +245,45 @@ public class ToolingGradleModelService implements GradleModelService {
         notifyReloadStarted();
         refresh.whenComplete((model, throwable) -> completeRefresh(refresh, model, throwable));
         return refresh;
+    }
+
+    private void restorePersistedModel() {
+        boolean stale;
+        synchronized (lock) {
+            if (restoreAttempted)
+                return;
+
+            restoreAttempted = true;
+            Optional<PersistedGradleModelStore.Restored> restored;
+            try {
+                restored = store.load(project.getPath());
+            } catch (IOException | RuntimeException exception) {
+                Railroad.LOGGER.warn("Ignoring unreadable persisted Gradle model for {}", project.getPath(), exception);
+                return;
+            }
+
+            if (restored.isEmpty() || !cachedModel.compareAndSet(null, restored.get().model()))
+                return;
+
+            stale = !restored.get().current();
+            Railroad.LOGGER.info("Restored {} persisted Gradle model for {}", stale ? "stale" : "current",
+                project.getPath());
+        }
+
+        if (stale) {
+            refreshModel(true);
+        }
+    }
+
+    private void persist(GradleBuildModel model, Instant importStarted) {
+        try {
+            if (!store.save(project.getPath(), model, importStarted)) {
+                Railroad.LOGGER.info("Not persisting Gradle model for {}: build files changed during the import",
+                    project.getPath());
+            }
+        } catch (IOException | RuntimeException exception) {
+            Railroad.LOGGER.warn("Failed to persist Gradle model for {}", project.getPath(), exception);
+        }
     }
 
     private void completeRefresh(
@@ -256,6 +334,7 @@ public class ToolingGradleModelService implements GradleModelService {
 
     @Override
     public Optional<GradleBuildModel> getCachedModel() {
+        restorePersistedModel();
         return Optional.ofNullable(cachedModel.get());
     }
 }
