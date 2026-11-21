@@ -1885,6 +1885,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (Objects.equals(currentPackage, declaringPackage))
                 return true;
             SyntaxNode receiver = unwrapTransparentExpression(explicitReceiver(usageSite));
+            String receiverType = null;
             for (SyntaxNode current = usageSite; current != null; current = current.parent().orElse(null)) {
                 Symbol enclosing = declaredSymbol(current).filter(candidate -> isTypeSymbol(candidate.kind()))
                     .orElse(null);
@@ -1894,14 +1895,25 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 if (Modifier.isStatic(modifiers) || receiver == null
                     || JavaSyntaxKinds.SUPER_EXPRESSION.id().equals(receiver.kind().id()))
                     return true;
-                MethodOwner receiverOwner = methodOwner(receiver);
-                if (receiverOwner != null && isSubtype(receiverOwner.qualifiedTypeName(), currentType))
+                if (receiverType == null) {
+                    receiverType = protectedAccessReceiverType(receiver, usageSite);
+                }
+                if (receiverType != null && isSubtype(receiverType, currentType))
                     return true;
             }
             return false;
         }
 
         return Objects.equals(currentPackage, declaringPackage);
+    }
+
+    private @Nullable String protectedAccessReceiverType(SyntaxNode receiver, SyntaxNode usageSite) {
+        if (JavaSyntaxKinds.THIS_EXPRESSION.id().equals(receiver.kind().id())
+            && "this".equals(sourceText(receiver).strip()))
+            return enclosingTypeSymbol(usageSite).flatMap(Symbol::qualifiedName).orElse(null);
+
+        MethodOwner owner = methodOwner(receiver);
+        return owner == null ? null : owner.qualifiedTypeName();
     }
 
     /**
