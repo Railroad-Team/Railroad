@@ -12,6 +12,68 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CoreOptionalGetInspectionTest {
     @Test
+    public void ternaryArmsUseTheirOwnPresenceFacts() {
+        assertWarnings("""
+            class Example {
+                String read(java.util.Optional<String> a, java.util.Optional<String> b, boolean ready) {
+                    String first = a.isPresent() && ready ? a.get() : "";
+                    String second = b.isEmpty() ? "" : b.get();
+                    return a.isPresent() ? b.get() : a.get();
+                }
+            }
+            """, List.of("b.get()", "a.get()"));
+    }
+
+    @Test
+    public void onlyPresenceOfAFilteredValueProvesSourcePresence() {
+        assertWarnings("""
+            class Example {
+                void read(java.util.Optional<String> a, java.util.Optional<String> b) {
+                    if (a.filter(String::isEmpty).isEmpty()) return;
+                    a.get();
+                    b.get();
+                }
+                void emptyResult(java.util.Optional<String> a) {
+                    if (a.filter(String::isEmpty).isPresent()) return;
+                    a.get();
+                }
+                void fallback(java.util.Optional<String> a, java.util.Optional<String> b) {
+                    if (a.or(() -> b).isEmpty()) return;
+                    a.get();
+                }
+            }
+            """, List.of("b.get()", "a.get()", "a.get()"));
+    }
+
+    @Test
+    public void onlyAResolvedThrowingGuardEstablishesItsArgument() {
+        assertWarnings("""
+            class Example {
+                private static void require(String message, boolean valid) {
+                    if (!valid) { throw new IllegalStateException(message); }
+                }
+                static void require(boolean valid) { if (!valid) return; }
+                void overridable(boolean valid) { if (!valid) throw new IllegalStateException(); }
+                void read(java.util.Optional<String> a, java.util.Optional<String> b) {
+                    require(a.isPresent());
+                    a.get();
+                    overridable(b.isPresent());
+                    b.get();
+                    require("missing", a.isPresent());
+                    a.get();
+                    b.get();
+                    a = java.util.Optional.empty();
+                    a.get();
+                }
+                void caught(java.util.Optional<String> a) {
+                    try { require("missing", a.isPresent()); } catch (IllegalStateException ignored) {}
+                    a.get();
+                }
+            }
+            """, List.of("a.get()", "b.get()", "b.get()", "a.get()", "a.get()"));
+    }
+
+    @Test
     public void emptyChecksGuardShortCircuitOperandsAndFollowingStatements() {
         assertWarnings("""
             class Example {

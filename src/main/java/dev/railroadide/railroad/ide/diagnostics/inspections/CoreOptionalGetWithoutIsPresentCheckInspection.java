@@ -8,12 +8,14 @@ import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleReporter;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 /**
@@ -105,6 +107,12 @@ public class CoreOptionalGetWithoutIsPresentCheckInspection implements JavaInspe
                             return true;
                     }
                 }
+                case "JAVA_CONDITIONAL_EXPRESSION" -> {
+                    var parts = context.directExpressionChildren(parent);
+                    if (local && parts.size() == 3 && (child == parts.get(1) || child == parts.get(2))
+                        && impliesPresent(context, parts.getFirst(), child == parts.get(1), receiver, lastWrite))
+                        return true;
+                }
                 case "JAVA_IF_STATEMENT" -> {
                     boolean thenBranch = child == context.thenBranchOf(parent);
                     if ((thenBranch || child == context.elseBranchOf(parent))
@@ -145,7 +153,12 @@ public class CoreOptionalGetWithoutIsPresentCheckInspection implements JavaInspe
         for (SyntaxNode statement : block.children()) {
             if (statement == child)
                 break;
-            if (!JavaSyntaxKinds.IF_STATEMENT.equals(statement.kind()) || statement.end() <= lastWrite)
+            if (statement.end() <= lastWrite)
+                continue;
+            if (JavaSyntaxKinds.EXPRESSION_STATEMENT.equals(statement.kind())
+                && guardedByHelper(context, context.firstExpressionChild(statement), receiver, lastWrite))
+                return true;
+            if (!JavaSyntaxKinds.IF_STATEMENT.equals(statement.kind()))
                 continue;
             SyntaxNode condition = context.conditionOf(statement);
             SyntaxNode thenBranch = context.thenBranchOf(statement);
@@ -158,6 +171,59 @@ public class CoreOptionalGetWithoutIsPresentCheckInspection implements JavaInspe
                 return true;
         }
         return false;
+    }
+
+    private static boolean guardedByHelper(
+        JavaRuleContext context,
+        @Nullable SyntaxNode call,
+        Symbol receiver,
+        int lastWrite
+    ) {
+        if (call == null || !JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.equals(call.kind()))
+            return false;
+        Symbol method = context.resolvedSymbol(call).orElse(null);
+        SyntaxNode declaration = method == null ? null : method.declaration().orElse(null);
+        if (declaration == null || !JavaSyntaxKinds.METHOD_DECLARATION.equals(declaration.kind()))
+            return false;
+        int modifiers = context.symbolModifiers(method);
+        if (!Modifier.isStatic(modifiers) && !Modifier.isPrivate(modifiers) && !Modifier.isFinal(modifiers)
+            && !context.enclosingTypeSymbol(declaration).map(context::symbolModifiers).map(Modifier::isFinal)
+                .orElse(false))
+            return false;
+
+        SyntaxNode guard = firstStatement(context.directChild(declaration, JavaSyntaxKinds.BLOCK.id()));
+        if (guard == null || !JavaSyntaxKinds.IF_STATEMENT.equals(guard.kind()))
+            return false;
+        SyntaxNode failure = context.thenBranchOf(guard);
+        if (failure != null && JavaSyntaxKinds.BLOCK.equals(failure.kind())) {
+            failure = firstStatement(failure);
+        }
+        if (failure == null || !JavaSyntaxKinds.THROW_STATEMENT.equals(failure.kind()))
+            return false;
+
+        var condition = context.unwrapLeadingNegations(context.conditionOf(guard));
+        if (condition == null || condition.expression() == null
+            || !JavaSyntaxKinds.NAME_EXPRESSION.equals(condition.expression().kind()))
+            return false;
+        SyntaxNode testedParameter = context.resolvedSymbol(condition.expression()).flatMap(Symbol::declaration)
+            .orElse(null);
+        SyntaxNode parameters = context.directChild(declaration, JavaSyntaxKinds.PARAMETER_LIST.id());
+        SyntaxNode arguments = context.directChild(call, JavaSyntaxKinds.ARGUMENT_LIST.id());
+        if (testedParameter == null || parameters == null || arguments == null)
+            return false;
+        var formals = parameters.children().stream().filter(node -> JavaSyntaxKinds.PARAMETER.equals(node.kind()))
+            .toList();
+        int index = formals.indexOf(testedParameter);
+        var actuals = context.directExpressionChildren(arguments);
+        return index >= 0 && index < actuals.size()
+            && impliesPresent(context, actuals.get(index), (condition.negationCount() & 1) != 0, receiver, lastWrite);
+    }
+
+    private static @Nullable SyntaxNode firstStatement(@Nullable SyntaxNode block) {
+        return block == null
+            ? null
+            : block.children().stream().filter(node -> !(node instanceof SyntaxToken))
+                .findFirst().orElse(null);
     }
 
     private static boolean impliesPresent(
@@ -178,9 +244,17 @@ public class CoreOptionalGetWithoutIsPresentCheckInspection implements JavaInspe
             && context.hasOperatorToken(expression, value ? JavaTokenType.AND : JavaTokenType.OR))
             return context.directExpressionChildren(expression).stream()
                 .anyMatch(operand -> impliesPresent(context, operand, value, receiver, lastWrite));
-        return expression.start() > lastWrite
-            && context.isMethodInvocationNamed(expression, value ? "isPresent" : "isEmpty")
-            && context.hasNoArguments(expression) && receiver.equals(receiverSymbol(context, expression));
+        if (expression.start() <= lastWrite
+            || !context.isMethodInvocationNamed(expression, value ? "isPresent" : "isEmpty")
+            || !context.hasNoArguments(expression))
+            return false;
+        SyntaxNode call = expression;
+        while (!receiver.equals(receiverSymbol(context, call))) {
+            call = context.unwrapTransparentExpression(context.invocationReceiver(call));
+            if (call == null || !context.isMethodInvocationNamed(call, "filter"))
+                return false;
+        }
+        return true;
     }
 
     private static @Nullable String receiverQualifiedTypeName(JavaRuleContext context, Symbol receiverSymbol) {
