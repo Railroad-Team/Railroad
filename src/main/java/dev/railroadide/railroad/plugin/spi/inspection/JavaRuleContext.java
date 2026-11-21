@@ -3155,10 +3155,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 if (!JAVA_PARAMETER.equals(child.kind().id()))
                     continue;
                 SyntaxNode typeRef = directChild(child, JAVA_TYPE_REFERENCE);
-                String qualifiedTypeName = typeRef == null ? null : resolveQualifiedTypeName(typeRef);
-                parameterTypes.add(typeRef == null || qualifiedTypeName == null
-                    ? new UnknownType("<unknown>")
-                    : new DeclaredType(qualifiedTypeName, List.of()));
+                Type parameterType = semanticTypeFromTypeReference(typeRef);
+                if (hasTokenKind(child, JavaTokenType.ELLIPSIS)) {
+                    parameterType = new JavaTypes.ArrayType(parameterType);
+                }
+                parameterTypes.add(parameterType);
             }
         }
 

@@ -197,6 +197,40 @@ public class JavaAssignmentAndCallResolutionInspectionTest {
     }
 
     @Test
+    public void callResolutionChecksSourceConstructorPrimitiveAndVarargsParameters() {
+        String source = """
+            class Example {
+                static class Box {
+                    Box(int value) {}
+                }
+
+                static class Names {
+                    Names(String first, String... rest) {}
+                }
+
+                void run() {
+                    new Box(1);
+                    new Box("bad");
+                    new Names("a");
+                    new Names("a", "b", "c");
+                    new Names("a", 1);
+                }
+            }
+            """;
+
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreCallResolutionInspection(), source);
+        List<String> unresolvedLines = diagnostics.stream()
+            .filter(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code()))
+            .map(diagnostic -> {
+                int lineStart = source.lastIndexOf('\n', diagnostic.startOffset()) + 1;
+                return source.substring(lineStart, source.indexOf('\n', lineStart)).trim();
+            })
+            .toList();
+
+        assertEquals(List.of("new Box(\"bad\");", "new Names(\"a\", 1);"), unresolvedLines, diagnostics::toString);
+    }
+
+    @Test
     public void callsOnAMemberTypeOfAnUnindexedTypeAreNotResolvedAgainstASameNamedType() {
         String source = """
             import net.minecraft.world.level.block.state.BlockBehaviour;
