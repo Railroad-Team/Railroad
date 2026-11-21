@@ -2374,7 +2374,7 @@ public final class JavaSemanticAnalyzer {
                 }
             }
 
-            SourceTypeParameterInfo sourceParameter = sourceTypeParameterInfo(
+            SourceTypeParameterInfo sourceParameter = resolvedExpressionTypeResolver.sourceTypeParameterInfo(
                 ownerQualifiedName, variableName);
             if (sourceParameter != null) {
                 if (sourceParameter.index() < receiverDeclared.typeArguments().size()) {
@@ -2408,105 +2408,6 @@ public final class JavaSemanticAnalyzer {
                 && !"Object".equals(explicitUpperBound.displayName()))
                 return explicitUpperBound;
             return declaredUpperBound;
-        }
-
-        private @Nullable SourceTypeParameterInfo sourceTypeParameterInfo(
-            String ownerQualifiedName,
-            String variableName
-        ) {
-            for (Symbol symbol : context.allTypeSymbols()) {
-                context.poll();
-                if (!Objects.equals(symbol.qualifiedName().orElse(null), ownerQualifiedName))
-                    continue;
-                SyntaxNode declaration = symbol.declaration().orElse(null);
-                if (declaration != null) {
-                    SourceTypeParameterInfo info = sourceTypeParameterInfo(
-                        declaration, variableName, null);
-                    if (info != null)
-                        return info;
-                }
-            }
-
-            if (projectIndex == null)
-                return null;
-            JavaProjectSemanticIndex.SymbolDescriptor owner = projectIndex.lookupQualifiedName(ownerQualifiedName)
-                .stream()
-                .filter(symbol -> isProjectSourceSymbol(symbol) && isTypeSymbol(symbol.kind()))
-                .findFirst()
-                .orElse(null);
-            if (owner == null)
-                return null;
-            try {
-                String source = JavaSourceSnapshotIndex.readSource(projectIndex, owner.sourceFile());
-                SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(
-                    JavaSyntaxParser.parse(source, context.activityCheck), projectIndex, context.activityCheck);
-                var sourceContext = new JavaRuleContext(
-                    owner.sourceFile(), source, model, projectIndex);
-                return findProjectSourceTypeParameterInfo(
-                    model.syntaxTree().root(), model, sourceContext,
-                    owner.qualifiedName(), variableName);
-            } catch (CancellationException exception) {
-                throw exception;
-            } catch (Exception _) {
-                return null;
-            }
-        }
-
-        private @Nullable SourceTypeParameterInfo findProjectSourceTypeParameterInfo(
-            SyntaxNode node,
-            SemanticModel model,
-            JavaRuleContext sourceContext,
-            String ownerQualifiedName,
-            String variableName
-        ) {
-            Symbol declared = model.declaredSymbol(node).orElse(null);
-            if (declared != null && isTypeSymbol(declared.kind())
-                && Objects.equals(declared.qualifiedName().orElse(null), ownerQualifiedName))
-                return sourceTypeParameterInfo(node, variableName, sourceContext);
-            for (SyntaxNode child : node.children()) {
-                context.poll();
-                SourceTypeParameterInfo info = findProjectSourceTypeParameterInfo(
-                    child, model, sourceContext, ownerQualifiedName, variableName);
-                if (info != null)
-                    return info;
-            }
-            return null;
-        }
-
-        private @Nullable SourceTypeParameterInfo sourceTypeParameterInfo(
-            SyntaxNode declaration,
-            String variableName,
-            @Nullable JavaRuleContext sourceContext
-        ) {
-            SyntaxNode typeParameters = directChild(declaration, JavaSyntaxKinds.TYPE_PARAMETERS.id());
-            if (typeParameters == null)
-                return null;
-            int index = 0;
-            for (SyntaxNode parameter : typeParameters.children()) {
-                context.poll();
-                if (!JavaSyntaxKinds.TYPE_PARAMETER.id().equals(parameter.kind().id()))
-                    continue;
-                if (variableName.equals(firstIdentifierLikeTokenText(parameter))) {
-                    SyntaxNode bound = directChild(parameter, JavaSyntaxKinds.TYPE_BOUND.id());
-                    List<Type> boundTypes = new ArrayList<>();
-                    if (bound != null) {
-                        for (SyntaxNode child : bound.children()) {
-                            context.poll();
-                            if (!JavaSyntaxKinds.TYPE_REFERENCE.id().equals(child.kind().id()))
-                                continue;
-                            boundTypes.add(sourceContext == null
-                                ? typeFromTypeReferenceForResolution(child)
-                                : projectTypeFromTypeReference(sourceContext, child));
-                        }
-                    }
-                    if (boundTypes.isEmpty()) {
-                        boundTypes.add(new JavaTypes.DeclaredType("java.lang.Object", List.of()));
-                    }
-                    return new SourceTypeParameterInfo(index, List.copyOf(boundTypes));
-                }
-                index++;
-            }
-            return null;
         }
 
         private boolean isSelfBoundTypeParameter(String ownerQualifiedName, TypeParameter parameter) {
@@ -3532,12 +3433,6 @@ public final class JavaSemanticAnalyzer {
             }
         }
 
-        private boolean isProjectSourceSymbol(JavaProjectSemanticIndex.SymbolDescriptor symbol) {
-            Path sourceFile = symbol.sourceFile();
-            return sourceFile != null && sourceFile.getFileName() != null
-                && sourceFile.getFileName().toString().endsWith(".java");
-        }
-
         private @Nullable MemberCandidate implicitLocalConstructorCandidate(String ownerQualifiedName) {
             Type constructedType = new JavaTypes.DeclaredType(ownerQualifiedName, List.of());
             List<Type> parameterTypes = localRecordCanonicalConstructorParameterTypes(ownerQualifiedName);
@@ -4479,9 +4374,12 @@ public final class JavaSemanticAnalyzer {
             String owner = ownerQualifiedName(symbol);
             if (owner == null)
                 return List.of();
-            SourceTypeParameterInfo parameter = sourceTypeParameterInfo(owner, rawType.displayName());
+            SourceTypeParameterInfo parameter = resolvedExpressionTypeResolver.sourceTypeParameterInfo(owner,
+                rawType.displayName());
             if (parameter == null)
                 return List.of();
+            if (parameter.bounds().isEmpty())
+                return List.of("java.lang.Object");
 
             List<String> bounds = new ArrayList<>();
             for (Type bound : parameter.bounds()) {
@@ -5163,14 +5061,6 @@ public final class JavaSemanticAnalyzer {
             return List.copyOf(deduped.values());
         }
 
-        private record SourceTypeParameterInfo(int index, List<Type> bounds) {
-            private Type bound() {
-                return bounds.isEmpty()
-                    ? new JavaTypes.DeclaredType("java.lang.Object", List.of())
-                    : bounds.getFirst();
-            }
-        }
-
         private record MemberLookup(@Nullable String ownerQualifiedName, boolean staticAccess) {
         }
 
@@ -5200,6 +5090,20 @@ public final class JavaSemanticAnalyzer {
         }
     }
 
+    private static boolean isProjectSourceSymbol(JavaProjectSemanticIndex.SymbolDescriptor symbol) {
+        Path sourceFile = symbol.sourceFile();
+        return sourceFile != null && sourceFile.getFileName() != null
+            && sourceFile.getFileName().toString().endsWith(".java");
+    }
+
+    private record SourceTypeParameterInfo(String name, int index, List<Type> bounds) {
+        private Type bound() {
+            return bounds.isEmpty()
+                ? new JavaTypes.DeclaredType("java.lang.Object", List.of())
+                : bounds.getFirst();
+        }
+    }
+
     private static final class TypeResolver {
         private static final Type UNKNOWN_TYPE = new JavaTypes.UnknownType("<unknown>");
         private static final Type BOOLEAN_TYPE = new JavaTypes.PrimitiveType("boolean");
@@ -5215,7 +5119,7 @@ public final class JavaSemanticAnalyzer {
         private final Map<SyntaxNode, Type> cache = new IdentityHashMap<>();
         private final Set<SyntaxNode> contextualInferenceInProgress = Collections
             .newSetFromMap(new IdentityHashMap<>());
-        private final Map<String, List<String>> indexedTypeParameterNames = new HashMap<>();
+        private final Map<String, List<SourceTypeParameterInfo>> sourceTypeParameters = new HashMap<>();
         private final Map<String, List<JavaTypes.DeclaredType>> indexedDirectSuperTypes = new HashMap<>();
 
         private TypeResolver(JavaDeclarationAnalysis.Context context) {
@@ -5758,7 +5662,8 @@ public final class JavaSemanticAnalyzer {
         private List<String> methodTypeParameterNames(Symbol methodSymbol) {
             SyntaxNode declaration = methodSymbol.declaration().orElse(null);
             if (declaration != null) {
-                List<String> declared = declaredTypeParameterNames(declaration);
+                List<String> declared = declaredTypeParameters(declaration, this::typeFromTypeReference).stream()
+                    .map(SourceTypeParameterInfo::name).toList();
                 if (!declared.isEmpty())
                     return declared;
             }
@@ -6145,63 +6050,54 @@ public final class JavaSemanticAnalyzer {
             int count = Math.min(ownerTypeParameters.size(), actualTypeArguments.size());
             for (int index = 0; index < count; index++) {
                 context.poll();
-                Type actualTypeArgument = effectiveOwnerTypeArgument(
-                    ownerQualifiedName, index, actualTypeArguments.get(index));
-                substitutions.putIfAbsent(ownerTypeParameters.get(index), actualTypeArgument);
+                Type readType = ownerArgumentReadType(ownerQualifiedName, index, ownerTypeParameters,
+                    actualTypeArguments);
+                substitutions.putIfAbsent(ownerTypeParameters.get(index), readType);
             }
         }
 
-        private Type effectiveOwnerTypeArgument(String ownerQualifiedName, int index, Type actualTypeArgument) {
-            if (!(actualTypeArgument instanceof JavaTypes.WildcardType wildcard))
-                return actualTypeArgument;
+        private Type ownerArgumentReadType(String owner, int index, List<String> names, List<Type> arguments) {
+            int count = Math.min(names.size(), arguments.size());
+            for (int depth = 0; depth < count; depth++) {
+                context.poll();
+                Type argument = arguments.get(index);
+                if (!(argument instanceof JavaTypes.WildcardType wildcard))
+                    return argument;
+                Type upper = wildcard.upperBound();
+                if (upper != null && !"java.lang.Object".equals(upper.displayName())
+                    && !"Object".equals(upper.displayName()))
+                    return upper;
 
-            Type explicitUpperBound = wildcard.upperBound();
-            if (explicitUpperBound != null
-                && !"java.lang.Object".equals(explicitUpperBound.displayName())
-                && !"Object".equals(explicitUpperBound.displayName()))
-                return explicitUpperBound;
+                Type bound = ownerParameterBound(owner, index);
+                if (bound instanceof JavaTypes.TypeVariableType variable) {
+                    index = names.indexOf(variable.displayName());
+                    if (index < 0 || index >= count)
+                        return bound;
+                    continue;
+                }
+                if (!containsTypeVariable(bound))
+                    return bound;
+                Map<String, Type> argumentsByName = new LinkedHashMap<>();
+                for (int position = 0; position < count; position++) {
+                    argumentsByName.put(names.get(position), arguments.get(position));
+                }
+                return substituteTypeVariables(bound, argumentsByName);
+            }
+            return UNKNOWN_TYPE;
+        }
 
+        private Type ownerParameterBound(String ownerQualifiedName, int index) {
             ClassStub ownerStub = classStub(ownerQualifiedName);
             if (ownerStub != null && index < ownerStub.typeParameters().size()) {
                 TypeParameter parameter = ownerStub.typeParameters().get(index);
-                if (!parameter.bounds().isEmpty())
-                    return toSemanticType(parameter.bounds().getFirst());
+                return parameter.bounds().isEmpty()
+                    ? new JavaTypes.DeclaredType("java.lang.Object", List.of())
+                    : toSemanticType(parameter.bounds().getFirst());
             }
-            Type sourceBound = sourceOwnerTypeParameterBound(ownerQualifiedName, index);
-            if (sourceBound != null)
-                return sourceBound;
-            return explicitUpperBound == null ? UNKNOWN_TYPE : explicitUpperBound;
-        }
-
-        private @Nullable Type sourceOwnerTypeParameterBound(String ownerQualifiedName, int index) {
-            for (Symbol symbol : context.allTypeSymbols()) {
-                context.poll();
-                if (!ownerQualifiedName.equals(symbol.qualifiedName().orElse(null)))
-                    continue;
-                SyntaxNode declaration = symbol.declaration().orElse(null);
-                SyntaxNode typeParameters = declaration == null
-                    ? null
-                    : directChild(declaration, JavaSyntaxKinds.TYPE_PARAMETERS.id());
-                if (typeParameters == null)
-                    return null;
-
-                int currentIndex = 0;
-                for (SyntaxNode child : typeParameters.children()) {
-                    context.poll();
-                    if (!JavaSyntaxKinds.TYPE_PARAMETER.id().equals(child.kind().id()))
-                        continue;
-                    if (currentIndex++ != index)
-                        continue;
-                    SyntaxNode boundNode = directChild(child, JavaSyntaxKinds.TYPE_BOUND.id());
-                    SyntaxNode bound = boundNode == null
-                        ? null
-                        : directChild(boundNode, JavaSyntaxKinds.TYPE_REFERENCE.id());
-                    return bound == null
-                        ? new JavaTypes.DeclaredType("java.lang.Object", List.of())
-                        : typeFromTypeReference(bound);
-                }
-            }
-            return null;
+            List<SourceTypeParameterInfo> parameters = sourceTypeParameters(ownerQualifiedName);
+            if (index < parameters.size())
+                return parameters.get(index).bound();
+            return UNKNOWN_TYPE;
         }
 
         private @Nullable JavaTypes.DeclaredType declaredViewAs(
@@ -6314,18 +6210,20 @@ public final class JavaSemanticAnalyzer {
             String text = canonicalTypeText(typeRef);
             return text == null || text.isBlank()
                 ? UNKNOWN_TYPE
-                : indexedProjectTypeFromText(sourceContext, text.trim());
+                : indexedProjectTypeFromText(sourceContext, typeRef, text.trim());
         }
 
-        private Type indexedProjectTypeFromText(JavaRuleContext sourceContext, String text) {
+        private Type indexedProjectTypeFromText(JavaRuleContext sourceContext, SyntaxNode typeRef, String text) {
             if (text.isBlank())
                 return UNKNOWN_TYPE;
             if ("void".equals(text))
                 return new JavaTypes.VoidType();
             if (text.startsWith("?extends"))
-                return new JavaTypes.WildcardType(indexedProjectTypeFromText(sourceContext, text.substring(8)), null);
+                return new JavaTypes.WildcardType(indexedProjectTypeFromText(sourceContext, typeRef, text.substring(8)),
+                    null);
             if (text.startsWith("?super"))
-                return new JavaTypes.WildcardType(null, indexedProjectTypeFromText(sourceContext, text.substring(6)));
+                return new JavaTypes.WildcardType(null,
+                    indexedProjectTypeFromText(sourceContext, typeRef, text.substring(6)));
             if ("?".equals(text))
                 return new JavaTypes.WildcardType(new JavaTypes.DeclaredType("java.lang.Object", List.of()), null);
 
@@ -6345,18 +6243,19 @@ public final class JavaSemanticAnalyzer {
                 for (String argument : splitTopLevelTypeArguments(argumentsText)) {
                     context.poll();
                     if (!argument.isBlank()) {
-                        typeArguments.add(indexedProjectTypeFromText(sourceContext, argument.trim()));
+                        typeArguments.add(indexedProjectTypeFromText(sourceContext, typeRef, argument.trim()));
                     }
                 }
             }
 
-            String qualifiedName = sourceContext.resolveQualifiedTypeName(rawType);
+            boolean typeVariable = isLexicallyDeclaredTypeVariable(rawType, typeRef);
+            String qualifiedName = typeVariable ? null : sourceContext.resolveQualifiedTypeName(rawType);
             Type resolved = switch (rawType) {
                 case "boolean", "byte", "short", "char", "int", "long", "float", "double" ->
                     new JavaTypes.PrimitiveType(rawType);
                 default -> qualifiedName == null || qualifiedName.isBlank()
                     || isLikelyTypeVariableName(rawType) && qualifiedName.equals(rawType)
-                        ? isLikelyTypeVariableName(rawType)
+                        ? typeVariable || isLikelyTypeVariableName(rawType)
                             ? new JavaTypes.TypeVariableType(rawType)
                             : new JavaTypes.UnknownType(text)
                         : new JavaTypes.DeclaredType(qualifiedName, typeArguments);
@@ -6449,25 +6348,30 @@ public final class JavaSemanticAnalyzer {
             if (stub != null && !stub.typeParameters().isEmpty())
                 return stub.typeParameters().stream().map(TypeParameter::name).toList();
 
-            for (Symbol symbol : context.allTypeSymbols()) {
-                context.poll();
-                if (!ownerQualifiedName.equals(symbol.qualifiedName().orElse(null)))
-                    continue;
-                SyntaxNode declaration = symbol.declaration().orElse(null);
-                return declaration == null ? List.of() : declaredTypeParameterNames(declaration);
-            }
-
-            if (projectIndex != null)
-                return indexedTypeParameterNames.computeIfAbsent(
-                    ownerQualifiedName, this::loadIndexedTypeParameterNames);
-
-            return List.of();
+            return sourceTypeParameters(ownerQualifiedName).stream().map(SourceTypeParameterInfo::name).toList();
         }
 
-        private List<String> loadIndexedTypeParameterNames(String ownerQualifiedName) {
+        private @Nullable SourceTypeParameterInfo sourceTypeParameterInfo(String ownerQualifiedName, String name) {
+            return sourceTypeParameters(ownerQualifiedName).stream()
+                .filter(parameter -> parameter.name().equals(name)).findFirst().orElse(null);
+        }
+
+        private List<SourceTypeParameterInfo> sourceTypeParameters(String ownerQualifiedName) {
+            return sourceTypeParameters.computeIfAbsent(ownerQualifiedName, this::loadSourceTypeParameters);
+        }
+
+        private List<SourceTypeParameterInfo> loadSourceTypeParameters(String ownerQualifiedName) {
+            for (Symbol symbol : context.allTypeSymbols()) {
+                context.poll();
+                if (ownerQualifiedName.equals(symbol.qualifiedName().orElse(null)))
+                    return symbol.declaration().map(node -> declaredTypeParameters(node, this::typeFromTypeReference))
+                        .orElse(List.of());
+            }
+            if (projectIndex == null)
+                return List.of();
             JavaProjectSemanticIndex.SymbolDescriptor descriptor = projectIndex.lookupQualifiedName(ownerQualifiedName)
                 .stream()
-                .filter(symbol -> symbol.sourceFile() != null && isTypeSymbol(symbol.kind()))
+                .filter(symbol -> isProjectSourceSymbol(symbol) && isTypeSymbol(symbol.kind()))
                 .findFirst()
                 .orElse(null);
             if (descriptor == null)
@@ -6477,8 +6381,9 @@ public final class JavaSemanticAnalyzer {
                 String source = JavaSourceSnapshotIndex.readSource(projectIndex, descriptor.sourceFile());
                 SemanticModel model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(
                     JavaSyntaxParser.parse(source, context.activityCheck), projectIndex, context.activityCheck);
-                return findDeclaredTypeParameterNames(
-                    model.syntaxTree().root(), model, descriptor.qualifiedName());
+                var sourceContext = new JavaRuleContext(descriptor.sourceFile(), source, model, projectIndex);
+                return findDeclaredTypeParameters(model.syntaxTree().root(), model, descriptor.qualifiedName(),
+                    node -> indexedProjectTypeFromTypeReference(sourceContext, node));
             } catch (CancellationException exception) {
                 throw exception;
             } catch (Exception _) {
@@ -6486,39 +6391,50 @@ public final class JavaSemanticAnalyzer {
             }
         }
 
-        private List<String> findDeclaredTypeParameterNames(
+        private List<SourceTypeParameterInfo> findDeclaredTypeParameters(
             SyntaxNode node,
             SemanticModel model,
-            String ownerQualifiedName
+            String ownerQualifiedName,
+            Function<SyntaxNode, Type> resolveBound
         ) {
             Symbol symbol = model.declaredSymbol(node).orElse(null);
             if (symbol != null && isTypeSymbol(symbol.kind())
                 && ownerQualifiedName.equals(symbol.qualifiedName().orElse(null)))
-                return declaredTypeParameterNames(node);
+                return declaredTypeParameters(node, resolveBound);
             for (SyntaxNode child : node.children()) {
                 context.poll();
-                List<String> names = findDeclaredTypeParameterNames(child, model, ownerQualifiedName);
-                if (!names.isEmpty())
-                    return names;
+                List<SourceTypeParameterInfo> parameters = findDeclaredTypeParameters(child, model, ownerQualifiedName,
+                    resolveBound);
+                if (!parameters.isEmpty())
+                    return parameters;
             }
             return List.of();
         }
 
-        private List<String> declaredTypeParameterNames(SyntaxNode declaration) {
+        private List<SourceTypeParameterInfo> declaredTypeParameters(
+            SyntaxNode declaration,
+            Function<SyntaxNode, Type> resolveBound
+        ) {
             SyntaxNode typeParameters = directChild(declaration, JavaSyntaxKinds.TYPE_PARAMETERS.id());
             if (typeParameters == null)
                 return List.of();
-            List<String> names = new ArrayList<>();
+            List<SourceTypeParameterInfo> parameters = new ArrayList<>();
             for (SyntaxNode child : typeParameters.children()) {
                 context.poll();
                 if (!JavaSyntaxKinds.TYPE_PARAMETER.id().equals(child.kind().id()))
                     continue;
                 String name = firstIdentifierLikeTokenText(child);
                 if (name != null && !name.isBlank()) {
-                    names.add(name);
+                    SyntaxNode bound = directChild(child, JavaSyntaxKinds.TYPE_BOUND.id());
+                    List<Type> bounds = bound == null
+                        ? List.of()
+                        : bound.children().stream()
+                            .filter(part -> JavaSyntaxKinds.TYPE_REFERENCE.id().equals(part.kind().id()))
+                            .map(resolveBound).toList();
+                    parameters.add(new SourceTypeParameterInfo(name, parameters.size(), bounds));
                 }
             }
-            return List.copyOf(names);
+            return List.copyOf(parameters);
         }
 
         private boolean isSelfBoundOwnerTypeParameter(String ownerQualifiedName, String variableName) {

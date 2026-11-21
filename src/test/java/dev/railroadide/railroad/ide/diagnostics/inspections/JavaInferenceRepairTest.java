@@ -2,7 +2,9 @@ package dev.railroadide.railroad.ide.diagnostics.inspections;
 
 import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
+import dev.railroadide.railroad.ide.sst.project.CompositeJavaSymbolIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaJdkSymbolIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndexer;
 import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
 import dev.railroadide.railroad.ide.sst.semantic.api.Type;
@@ -22,6 +24,63 @@ public class JavaInferenceRepairTest {
     private static final JavaSymbolIndex JDK = JavaJdkSymbolIndex.fromCurrentRuntime();
     @TempDir
     public Path directory;
+
+    @Test
+    public void wildcardReadsUseBoundsFromTheDeclaringSourceFile() throws Exception {
+        Path api = directory.resolve("api/Storage.java");
+        Files.createDirectories(api.getParent());
+        Files.writeString(api, """
+            package api;
+            import java.util.ArrayList;
+            public record Storage<Element, T extends ArrayList<Element>>(java.util.function.Supplier<T> handle) {
+                public interface Alias<T extends Parent, Parent extends Number> { T get(); }
+                public T get(int index) { return handle.get(); }
+                public java.util.Set<T> entries() { return java.util.Set.of(); }
+            }
+            """);
+        var index = new CompositeJavaSymbolIndex(List.of(new JavaProjectSemanticIndexer().build(directory), JDK));
+        String caller = """
+            import api.Storage;
+            class Example {
+                Example(java.util.List<String> list) {}
+                void aliases(Storage.Alias<?, ?> number, Storage.Alias<?, Integer> integer) {
+                    number.get().intValue();
+                    integer.get().compareTo(2);
+                }
+                void read(Storage<String, ?> storage) {
+                    java.util.List<String> list = storage.get(0);
+                    storage.get(0).get(0).strip();
+                    new Example(storage.get(0));
+                    storage.handle().get().ensureCapacity(2);
+                    storage.entries().removeIf(entry -> entry.isEmpty());
+                    storage.entries().stream().filter(entry -> entry.isEmpty());
+                    Integer invalid = storage.get(0);
+                }
+            }
+            """;
+        var errors = JavaInspectionTestSupport.runProviders(
+            List.of(new CoreAssignmentInspection(), new CoreCallResolutionInspection()),
+            directory.resolve("Example.java"), caller, index).stream()
+            .filter(issue -> issue.severity() == SemanticDiagnostic.Severity.ERROR).toList();
+        assertEquals(1, errors.size(), errors::toString);
+        assertEquals("SEM_INCOMPATIBLE_ASSIGNMENT", errors.getFirst().code());
+        assertTrue(errors.getFirst().message().contains("Integer"), errors::toString);
+    }
+
+    @Test
+    public void explicitWildcardBoundsReferToTheCallersTypeParameters() throws Exception {
+        check("""
+            import java.util.Objects;
+            import java.util.function.*;
+            class Example<T> {
+                T value;
+                void copy(Supplier<? extends T> source, Function<? super T, ? extends T> snapshot) {
+                    T current = source.get();
+                    value = Objects.requireNonNull(snapshot.apply(current));
+                }
+            }
+            """, true);
+    }
 
     @Test
     public void diamondConstructorsInferValuesAndFunctionalResults() throws Exception {
