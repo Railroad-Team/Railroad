@@ -30,8 +30,8 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
         Thread.ofVirtual().name("railroad-java-binaries-", 0).factory());
     private final Cache<WorkspaceKey, JavaWorkspaceAnalysis> workspaces;
     private final Cache<TextDocumentSnapshot, JavaProjectSemanticIndex.SourceFileIndex> files;
-    private final Cache<WorkspaceConfigurationSnapshot, JavaSymbolIndex> binaries;
-    private final Map<WorkspaceConfigurationSnapshot, CompletableFuture<JavaSymbolIndex>> binaryLoads = new HashMap<>();
+    private final Cache<BinaryKey, JavaSymbolIndex> binaries;
+    private final Map<BinaryKey, CompletableFuture<JavaSymbolIndex>> binaryLoads = new HashMap<>();
     private final ReentrantLock analysisLock = new ReentrantLock();
     private final Object publicationLock = new Object();
     private volatile boolean closed;
@@ -161,10 +161,13 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
             Set<Path> roots = sourceRoots(workspace.configuration());
             DocumentSnapshot document = request == null ? null : workspace.document(request).orElseThrow();
             DocumentId extra = document != null && !includedSource(document, roots) ? request : null;
-            var key = new WorkspaceKey(workspace, extra);
+            String module = document == null
+                ? null
+                : moduleForPath(workspace.configuration(), document.uri().filePath().orElse(null));
+            var key = new WorkspaceKey(workspace, extra, module);
             JavaWorkspaceAnalysis analysis = workspaces.getIfPresent(key);
             if (analysis == null) {
-                analysis = build(workspace, extra, roots, check);
+                analysis = build(workspace, extra, roots, module, check);
                 publish(workspaces, key, analysis, check);
             }
             check.run();
@@ -178,12 +181,14 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
         WorkspaceSnapshot workspace,
         DocumentId request,
         Set<Path> roots,
+        String module,
         Runnable check
     ) {
         WorkspaceConfigurationSnapshot configuration = workspace.configuration();
-        List<Path> classpath = classpath(configuration);
+        List<Path> classpath = classpath(configuration, module);
         Path jdk = jdkHome(configuration);
-        CompletableFuture<JavaSymbolIndex> binaryLoad = loadBinaries(configuration, classpath, jdk, check);
+        CompletableFuture<JavaSymbolIndex> binaryLoad = loadBinaries(new BinaryKey(configuration, classpath), jdk,
+            check);
         JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
         Map<Path, String> texts = new HashMap<>();
         Map<Path, TextDocumentSnapshot> snapshots = new HashMap<>();
@@ -226,23 +231,22 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     }
 
     /**
-     * Starts loading the binary index alongside source indexing when needed. The load is shared by every
-     * request for the configuration and is not bound to any request's cancellation or deadline, so a large classpath
+     * Starts loading the binary index alongside source indexing when needed. Requests with the same captured ordered
+     * classpath share the load. It is independent of request cancellation and deadlines, so a large classpath
      * that outlasts one request's budget still completes and is cached for the next.
      */
     private CompletableFuture<JavaSymbolIndex> loadBinaries(
-        WorkspaceConfigurationSnapshot configuration,
-        List<Path> classpath,
+        BinaryKey key,
         Path jdk,
         Runnable check
     ) {
         synchronized (publicationLock) {
             check.run();
-            JavaSymbolIndex cached = binaries.getIfPresent(configuration);
+            JavaSymbolIndex cached = binaries.getIfPresent(key);
             if (cached != null)
                 return CompletableFuture.completedFuture(cached);
-            CompletableFuture<JavaSymbolIndex> load = binaryLoads.get(configuration);
-            return load == null ? startBinaryLoad(configuration, classpath, jdk) : load;
+            CompletableFuture<JavaSymbolIndex> load = binaryLoads.get(key);
+            return load == null ? startBinaryLoad(key, jdk) : load;
         }
     }
 
@@ -266,8 +270,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     }
 
     private CompletableFuture<JavaSymbolIndex> startBinaryLoad(
-        WorkspaceConfigurationSnapshot configuration,
-        List<Path> classpath,
+        BinaryKey key,
         Path jdk
     ) {
         long generation = cacheGeneration;
@@ -279,17 +282,17 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
         CompletableFuture<JavaSymbolIndex> load = CompletableFuture.supplyAsync(() -> {
             try (var _ = BackgroundActivities.shared().start("railroad.activity.indexing_libraries")) {
                 return binaryLoader == null
-                    ? new CompositeJavaSymbolIndex(List.of(JavaLibrarySymbolIndex.build(classpath, loadCheck),
+                    ? new CompositeJavaSymbolIndex(List.of(JavaLibrarySymbolIndex.build(key.classpath(), loadCheck),
                         JavaJdkSymbolIndex.build(jdk, loadCheck)))
-                    : binaryLoader.apply(classpath, jdk);
+                    : binaryLoader.apply(key.classpath(), jdk);
             }
         }, BINARY_LOADS);
-        binaryLoads.put(configuration, load);
+        binaryLoads.put(key, load);
         load.whenComplete((index, failure) -> {
             synchronized (publicationLock) {
-                binaryLoads.remove(configuration, load);
+                binaryLoads.remove(key, load);
                 if (failure == null && !closed && active.getAsBoolean() && generation == cacheGeneration) {
-                    binaries.put(configuration, index);
+                    binaries.put(key, index);
                 }
             }
         });
@@ -347,7 +350,10 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     public record CacheUsage(long workspaces, long sourceFiles, long binaries, long hits, long misses, long evictions) {
     }
 
-    private record WorkspaceKey(WorkspaceSnapshot workspace, DocumentId extraDocument) {
+    private record WorkspaceKey(WorkspaceSnapshot workspace, DocumentId extraDocument, String module) {
+    }
+
+    private record BinaryKey(WorkspaceConfigurationSnapshot configuration, List<Path> classpath) {
     }
 
     private static boolean includedSource(DocumentSnapshot document, Set<Path> roots) {
@@ -358,24 +364,73 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     private static Set<Path> sourceRoots(WorkspaceConfigurationSnapshot configuration) {
         Set<Path> roots = new HashSet<>();
         for (String module : configuration.moduleIds()) {
-            String sources = configuration.settings().get("module." + module + ".sources");
-            if (sources != null) {
-                sources.lines().filter(line -> !line.isBlank())
-                    .map(line -> line.replaceFirst(":(?:test:)?generated=(?:true|false)$", ""))
-                    .map(Path::of).map(path -> path.toAbsolutePath().normalize()).forEach(roots::add);
-            }
+            roots.addAll(sourceRoots(configuration, module));
         }
         return Set.copyOf(roots);
     }
 
+    private static List<Path> sourceRoots(WorkspaceConfigurationSnapshot configuration, String module) {
+        String sources = configuration.settings().getOrDefault("module." + module + ".sources", "");
+        return sources.lines().filter(line -> !line.isBlank())
+            .map(line -> line.replaceFirst(":(?:test:)?generated=(?:true|false)$", ""))
+            .map(Path::of).map(path -> path.toAbsolutePath().normalize()).toList();
+    }
+
+    private static String moduleForPath(WorkspaceConfigurationSnapshot configuration, Path path) {
+        if (path == null)
+            return null;
+        Path file = path.toAbsolutePath().normalize();
+        String owner = null;
+        int bestSource = -1;
+        int bestDirectory = -1;
+        for (String module : configuration.moduleIds().stream().sorted().toList()) {
+            String prefix = "module." + module + ".";
+            var settings = configuration.settings();
+            if (!settings.containsKey(prefix + "classpath") && !settings.containsKey(prefix + "modulePath")
+                && !settings.containsKey(prefix + "dependencies"))
+                continue;
+            String directory = settings.get(prefix + "directory");
+            int directoryDepth = directory == null || directory.isBlank()
+                ? -1
+                : matchingDepth(file, Path.of(directory).toAbsolutePath().normalize());
+            int sourceDepth = sourceRoots(configuration, module).stream()
+                .mapToInt(root -> matchingDepth(file, root)).max().orElse(-1);
+            if (sourceDepth > bestSource || sourceDepth == bestSource && directoryDepth > bestDirectory) {
+                owner = module;
+                bestSource = sourceDepth;
+                bestDirectory = directoryDepth;
+            }
+        }
+        return owner;
+    }
+
+    private static int matchingDepth(Path file, Path root) {
+        return file.startsWith(root) ? root.getNameCount() : -1;
+    }
+
     /**
      * Collects normalized, distinct binary roots in sorted module order, excluding workspace output directories.
-     * Within each module, classpath, module path and dependency roots retain their configured order.
+     * Within each module, compile classpath and module path roots retain their configured order.
      *
      * @param configuration captured module settings
      * @return immutable ordered binary roots
      */
     public static List<Path> classpath(WorkspaceConfigurationSnapshot configuration) {
+        return classpath(configuration, null);
+    }
+
+    /**
+     * Selects the classpath for the module owning a captured source file.
+     *
+     * @param configuration captured module settings
+     * @param file requesting source file, or null for the workspace fallback
+     * @return ordered binary roots for its module, or the workspace roots if no module owns the file
+     */
+    public static List<Path> classpathForFile(WorkspaceConfigurationSnapshot configuration, Path file) {
+        return classpath(configuration, moduleForPath(configuration, file));
+    }
+
+    private static List<Path> classpath(WorkspaceConfigurationSnapshot configuration, String selectedModule) {
         LinkedHashSet<Path> roots = new LinkedHashSet<>();
         Set<Path> outputs = new HashSet<>();
         for (String module : configuration.moduleIds()) {
@@ -386,9 +441,18 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
                 }
             }
         }
-        for (String module : configuration.moduleIds().stream().sorted().toList()) {
-            for (String kind : List.of("classpath", "modulePath", "dependencies")) {
-                String value = configuration.settings().get("module." + module + "." + kind);
+        List<String> modules = selectedModule == null
+            ? configuration.moduleIds().stream().sorted().toList()
+            : List.of(selectedModule);
+        for (String module : modules) {
+            String prefix = "module." + module + ".";
+            var settings = configuration.settings();
+            List<String> kinds = settings.containsKey(prefix + "classpath")
+                || settings.containsKey(prefix + "modulePath")
+                    ? List.of("classpath", "modulePath")
+                    : List.of("dependencies");
+            for (String kind : kinds) {
+                String value = settings.get(prefix + kind);
                 if (value != null) {
                     value.lines().filter(line -> !line.isBlank()).map(Path::of)
                         .map(path -> path.toAbsolutePath().normalize()).filter(path -> !outputs.contains(path))
@@ -400,15 +464,16 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     }
 
     /**
-     * Selects the first configured JDK home in sorted module order, falling back to the running JDK.
+     * Selects the first configured JDK home in sorted module order, then the Gradle or running JDK.
      *
      * @param configuration captured module settings
      * @return absolute normalized JDK home
      */
     public static Path jdkHome(WorkspaceConfigurationSnapshot configuration) {
-        return configuration.moduleIds().stream().sorted()
+        String home = configuration.moduleIds().stream().sorted()
             .map(module -> configuration.settings().get("module." + module + ".jdkHome"))
-            .filter(Objects::nonNull).filter(home -> !home.isBlank()).findFirst()
-            .map(Path::of).map(path -> path.toAbsolutePath().normalize()).orElse(RUNNING_JDK);
+            .filter(Objects::nonNull).filter(value -> !value.isBlank()).findFirst()
+            .orElse(configuration.settings().get("gradle.jdkHome"));
+        return home == null || home.isBlank() ? RUNNING_JDK : Path.of(home).toAbsolutePath().normalize();
     }
 }

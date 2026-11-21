@@ -121,6 +121,37 @@ public class JavaCacheLifecycleTest {
         }
     }
 
+    @Test
+    public void liveLookupsKeepConflictingModuleClasspathsSeparate() throws Exception {
+        Path common = root.resolve("common/library.jar");
+        Path loader = root.resolve("loader/library.jar");
+        Path jdk = root.resolve("jdk");
+        archive(common, "demo/Library", "vanilla");
+        archive(loader, "demo/Library", "patched");
+        archive(jdk.resolve("lib/rt.jar"), "demo/Runtime", "runtime");
+        var configuration = new WorkspaceConfigurationSnapshot(0, Set.of(":common", ":loader"), Map.of(
+            "module.:common.directory", common.getParent().toString(),
+            "module.:common.classpath", common.toString(),
+            "module.:loader.directory", loader.getParent().toString(),
+            "module.:loader.classpath", String.join("\n", loader.toString(), common.toString()),
+            "module.:loader.jdkHome", jdk.toString()));
+        var language = new JavaLanguageIndexContext(List.of(), List.of(), List.of(), List.of(), List.of(), null,
+            configuration);
+        Project project = project();
+        var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
+        var session = service.openProject(project);
+        try (var provider = new JavaAnalysisContextProvider()) {
+            provider.adoptConfiguration(session, provider.prepareConfiguration(session, configuration));
+            var context = new ProjectIndexContext(project, root, Map.of("java", language), session);
+            assertEquals("patched", provider.index(context, loader.resolveSibling("Use.java"))
+                .lookupClassStub("demo.Library").fields().getFirst().name());
+            assertEquals("vanilla", provider.index(context, common.resolveSibling("Use.java"))
+                .lookupClassStub("demo.Library").fields().getFirst().name());
+        } finally {
+            service.closeProject(session);
+        }
+    }
+
     private static boolean inFrame(String className, String methodName) {
         return StackWalker.getInstance().walk(frames -> frames.anyMatch(frame -> frame.getClassName().equals(className)
             && (methodName == null || frame.getMethodName().equals(methodName))));

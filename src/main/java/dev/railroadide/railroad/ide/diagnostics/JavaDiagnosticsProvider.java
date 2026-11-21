@@ -6,6 +6,7 @@ import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagn
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.language.impl.index.JavaWorkspaceAnalysis;
+import dev.railroadide.railroad.ide.language.index.ProjectIndexContext;
 import java.util.function.Function;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
@@ -40,16 +41,13 @@ import dev.railroadide.railroad.ide.sst.document.api.WorkspaceConfigurationSnaps
 
 /**
  * Diagnostics provider backed by the SST semantic analyzer.
- *
- * @param project project being analyzed
- * @param projectIndex shared symbol index, or null to resolve it from the project
- * @param analysis captures Java analysis for the request workspace and cancellation controls
  */
-public record JavaDiagnosticsProvider(
-    Project project,
-    @Nullable JavaSymbolIndex projectIndex,
-    Function<RequestContext, JavaWorkspaceAnalysis> analysis
-) implements DiagnosticsProvider<TextEditorDiagnostic> {
+public final class JavaDiagnosticsProvider implements DiagnosticsProvider<TextEditorDiagnostic> {
+    private final Project project;
+    private final JavaSymbolIndex projectIndex;
+    private final Function<RequestContext, JavaWorkspaceAnalysis> analysis;
+    private final ProjectIndexContext indexContext;
+
     /**
      * Creates diagnostics using a supplied index or the shared Java analysis context.
      *
@@ -67,8 +65,24 @@ public record JavaDiagnosticsProvider(
      * @param projectIndex shared symbol index, or null to obtain analysis for each request
      * @param analysis captures Java analysis for the request workspace and cancellation controls
      */
-    public JavaDiagnosticsProvider {
-        Objects.requireNonNull(analysis, "analysis");
+    public JavaDiagnosticsProvider(
+        Project project,
+        @Nullable JavaSymbolIndex projectIndex,
+        Function<RequestContext, JavaWorkspaceAnalysis> analysis
+    ) {
+        this(project, projectIndex, analysis, null);
+    }
+
+    private JavaDiagnosticsProvider(
+        Project project,
+        JavaSymbolIndex projectIndex,
+        Function<RequestContext, JavaWorkspaceAnalysis> analysis,
+        ProjectIndexContext indexContext
+    ) {
+        this.project = project;
+        this.projectIndex = projectIndex;
+        this.analysis = Objects.requireNonNull(analysis, "analysis");
+        this.indexContext = indexContext;
     }
 
     private static final Duration INSPECTION_BUDGET = Duration.ofSeconds(5);
@@ -78,9 +92,10 @@ public record JavaDiagnosticsProvider(
     @Override
     public @NotNull FeatureResult<List<TextEditorDiagnostic>> compute(FeatureRequestContext context) {
         context.checkActive();
-        JavaSymbolIndex index = projectIndex == null
-            ? analysis.apply(context)
-            : projectIndex;
+        JavaSymbolIndex index = projectIndex;
+        if (index == null) {
+            index = indexContext == null ? analysis.apply(context) : liveIndex(context.documentSnapshot());
+        }
         List<TextEditorDiagnostic> diagnostics = compute(context.documentSnapshot(), index, context);
         if (ProjectWorkspaceConfiguration.dependenciesPending(context.workspaceSnapshot().configuration())) {
             diagnostics = diagnostics.stream().filter(diagnostic -> !RESOLUTION_CODES.contains(diagnostic.code()))
@@ -116,12 +131,12 @@ public record JavaDiagnosticsProvider(
     }
 
     /**
-     * Creates diagnostics using the symbol index shared by a project scan.
+     * Creates diagnostics using the source index and module configuration shared by a project scan.
      *
      * @param context the project and semantic context to inspect
      */
     public JavaDiagnosticsProvider(ProjectDiagnosticsContext context) {
-        this(context.project(), JavaLanguageSupport.analysisContextProvider().index(context.indexContext()));
+        this(context.project(), null, JavaLanguageSupport.analysisContextProvider()::index, context.indexContext());
     }
 
     @Override
@@ -130,11 +145,15 @@ public record JavaDiagnosticsProvider(
             new WorkspaceConfigurationSnapshot(0, Set.of()), 0);
         var context = new FeatureRequestContext(workspace, snapshot, () -> Thread.currentThread().isInterrupted(),
             Deadline.none());
-        JavaSymbolIndex index = projectIndex;
-        if (index == null && project != null) {
-            index = JavaLanguageSupport.analysisContextProvider().index(project);
-        }
-        return compute(snapshot, index, context);
+        return compute(snapshot, liveIndex(snapshot), context);
+    }
+
+    private JavaSymbolIndex liveIndex(DocumentSnapshot snapshot) {
+        if (projectIndex != null || project == null)
+            return projectIndex;
+        var file = snapshot.uri().filePath().orElse(null);
+        var indexes = JavaLanguageSupport.analysisContextProvider();
+        return indexContext == null ? indexes.index(project, file) : indexes.index(indexContext, file);
     }
 
     private List<TextEditorDiagnostic> compute(

@@ -91,7 +91,7 @@ public final class ProjectDiagnosticsScanner {
         WorkspaceSnapshot openWorkspace = Services.IDE_STATE.getDocumentStore().map(DocumentStore::capture)
             .filter(snapshot -> snapshot.projectId().equals(project.getId()))
             .orElseGet(() -> new WorkspaceSnapshot(project.getId(), Map.of(),
-                ProjectWorkspaceConfiguration.initial(project), 0));
+                ProjectWorkspaceConfiguration.initial(context), 0));
         ScanInputs inputs = captureSources(context, sources, openWorkspace);
         WorkspaceSnapshot workspace = inputs.workspace();
         Deque<CompletableFuture<FileScanResult>> pending = new ArrayDeque<>();

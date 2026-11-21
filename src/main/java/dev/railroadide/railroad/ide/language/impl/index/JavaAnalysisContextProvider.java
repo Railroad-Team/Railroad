@@ -284,10 +284,11 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
      * Combines the available project, library, and JDK symbol indexes for Java analysis.
      *
      * @param project the project whose files and configuration are used
+     * @param file requesting source file, or {@code null} for a project-wide lookup
      * @return the combined index, a single available index, or {@code null} if none exists
      */
-    public @Nullable JavaSymbolIndex index(Project project) {
-        return index(resolver.resolve(project));
+    public @Nullable JavaSymbolIndex index(Project project, @Nullable Path file) {
+        return index(resolver.resolve(project), file);
     }
 
     /**
@@ -297,6 +298,17 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
      * @return the combined index, a single available index, or {@code null} if none exists
      */
     public @Nullable JavaSymbolIndex index(ProjectIndexContext context) {
+        return index(context, null);
+    }
+
+    /**
+     * Combines the project's source index with the binaries visible to a requesting file.
+     *
+     * @param context the project indexing context
+     * @param file requesting source file, or {@code null} for a project-wide lookup
+     * @return the combined index, a single available index, or {@code null} if none exists
+     */
+    public @Nullable JavaSymbolIndex index(ProjectIndexContext context, @Nullable Path file) {
         Objects.requireNonNull(context, "context");
         context.checkActive();
 
@@ -318,17 +330,22 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         }
 
         if (javaContext != null) {
-            JavaLibrarySymbolIndex libraryIndex = libraryIndex(javaContext, cache, activityCheck);
+            WorkspaceConfigurationSnapshot gradle = javaContext.gradleConfiguration();
+            List<Path> roots = gradle == null
+                ? libraryRoots(javaContext)
+                : JavaWorkspaceAnalysisProvider.classpathForFile(gradle, file);
+            Path jdk = gradle == null ? javaContext.jdkHome() : JavaWorkspaceAnalysisProvider.jdkHome(gradle);
+            JavaLibrarySymbolIndex libraryIndex = libraryIndex(roots, cache, activityCheck);
             if (!libraryIndex.declaredQualifiedNames().isEmpty()) {
                 delegates.add(libraryIndex);
             }
 
-            JavaJdkSymbolIndex jdkIndex = jdkIndex(javaContext, cache, activityCheck);
+            JavaJdkSymbolIndex jdkIndex = jdkIndex(jdk, cache, activityCheck);
             if (!jdkIndex.declaredQualifiedNames().isEmpty()) {
                 delegates.add(jdkIndex);
             }
 
-            logIndexSummary(javaContext, projectIndex, libraryIndex, jdkIndex);
+            logIndexSummary(javaContext, roots.size(), jdk, projectIndex, libraryIndex, jdkIndex);
         }
 
         activityCheck.run();
@@ -341,22 +358,24 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         return new CompositeJavaSymbolIndex(delegates);
     }
 
-    private JavaLibrarySymbolIndex libraryIndex(JavaLanguageIndexContext context, Cache cache, Runnable activityCheck) {
+    private static List<Path> libraryRoots(JavaLanguageIndexContext context) {
         Set<Path> roots = new LinkedHashSet<>();
-        roots.addAll(context.dependencyRoots());
         roots.addAll(context.classpathRoots());
         roots.addAll(context.modulePathRoots());
+        roots.addAll(context.dependencyRoots());
+        return FileUtils.normalizePaths(List.copyOf(roots));
+    }
 
-        List<Path> normalizedRoots = FileUtils.normalizePaths(List.copyOf(roots));
-        var key = new LibraryIndexKey(normalizedRoots);
+    private JavaLibrarySymbolIndex libraryIndex(List<Path> roots, Cache cache, Runnable activityCheck) {
+        var key = new LibraryIndexKey(roots);
         return cache.load(cache.libraries, key, "railroad.activity.indexing_libraries", activityCheck, () -> {
             Railroad.LOGGER.warn(
                 "Building Java library index: roots={}, javafxBaseRoots={}, javafxGraphicsRoots={}, sampleRoots={}",
-                normalizedRoots.size(),
-                countRootsContaining(normalizedRoots, "javafx-base"),
-                countRootsContaining(normalizedRoots, "javafx-graphics"),
-                sampleRoots(normalizedRoots));
-            JavaLibrarySymbolIndex index = JavaLibrarySymbolIndex.build(normalizedRoots, activityCheck);
+                roots.size(),
+                countRootsContaining(roots, "javafx-base"),
+                countRootsContaining(roots, "javafx-graphics"),
+                sampleRoots(roots));
+            JavaLibrarySymbolIndex index = JavaLibrarySymbolIndex.build(roots, activityCheck);
             Railroad.LOGGER.warn(
                 "Built Java library index: classes={}, hasObservableList={}, hasReadOnlyDoubleProperty={}, hasNode={}, hasScene={}",
                 index.declaredQualifiedNames().size(),
@@ -368,8 +387,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         });
     }
 
-    private JavaJdkSymbolIndex jdkIndex(JavaLanguageIndexContext context, Cache cache, Runnable activityCheck) {
-        Path jdkHome = context.jdkHome();
+    private JavaJdkSymbolIndex jdkIndex(Path jdkHome, Cache cache, Runnable activityCheck) {
         Path cacheKey = jdkHome == null
             ? Path.of(System.getProperty("java.home")).toAbsolutePath().normalize()
             : FileUtils.normalizePath(jdkHome);
@@ -388,18 +406,18 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
 
     private static void logIndexSummary(
         JavaLanguageIndexContext context,
+        int binaryRoots,
+        Path jdkHome,
         @Nullable JavaProjectSemanticIndex projectIndex,
         JavaLibrarySymbolIndex libraryIndex,
         JavaJdkSymbolIndex jdkIndex
     ) {
         Railroad.LOGGER.warn(
-            "Java analysis index context: sourceRoots={}, generatedRoots={}, dependencyRoots={}, classpathRoots={}, modulePathRoots={}, jdkHome={}",
+            "Java analysis index context: sourceRoots={}, generatedRoots={}, binaryRoots={}, jdkHome={}",
             context.sourceRoots().size(),
             context.generatedRoots().size(),
-            context.dependencyRoots().size(),
-            context.classpathRoots().size(),
-            context.modulePathRoots().size(),
-            context.jdkHome());
+            binaryRoots,
+            jdkHome);
         Railroad.LOGGER.warn(
             "Java analysis index availability: projectClasses={}, libraryClasses={}, jdkClasses={}, hasObservableList={}, hasList={}, hasNode={}, hasReadOnlyDoubleProperty={}",
             projectIndex == null ? 0 : projectIndex.declaredQualifiedNames().size(),

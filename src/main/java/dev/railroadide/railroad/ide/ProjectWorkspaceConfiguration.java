@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide;
 
 import dev.railroadide.railroad.ide.activity.BackgroundActivities;
+import dev.railroadide.railroad.ide.language.index.ProjectIndexContext;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexCoordinator;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService.Session;
 import dev.railroadide.railroad.Services;
@@ -233,6 +234,22 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         return new WorkspaceConfigurationSnapshot(0, moduleIds(values), values);
     }
 
+    /**
+     * Captures initial workspace settings for a scan that already resolved project indexing inputs.
+     *
+     * @param context captured project indexing context
+     * @return initial settings including the captured Gradle modules when available
+     */
+    public static WorkspaceConfigurationSnapshot initial(ProjectIndexContext context) {
+        var java = context.language(JavaLanguageSupport.LANGUAGE_ID, JavaLanguageIndexContext.class);
+        var gradle = java == null ? null : java.gradleConfiguration();
+        if (gradle == null)
+            return initial(context.project());
+        Map<String, String> values = settings(context.project());
+        values.putAll(gradle.settings());
+        return new WorkspaceConfigurationSnapshot(0, gradle.moduleIds(), values);
+    }
+
     private synchronized void attachModelService() {
         if (closed || modelService != null || !project.hasFacet(FacetManager.GRADLE)
             || !project.getGradleManager().isGradleProject())
@@ -374,6 +391,23 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         Map<String, String> values = new TreeMap<>(store.capture().configuration().settings());
         values.keySet().removeIf(key -> key.startsWith("module.") || key.startsWith("gradle."));
         values.remove(DEPENDENCIES_UNAVAILABLE);
+        var gradle = captureGradleConfiguration(model);
+        values.putAll(gradle.settings());
+        publish(gradle.moduleIds(), values);
+        if (indexSession == null) {
+            Services.PROJECT_LANGUAGE_INDEX_SERVICE
+                .refreshProject(Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project));
+        }
+    }
+
+    /**
+     * Captures the imported module paths and ordered classpaths used by Java analysis.
+     *
+     * @param model imported Gradle build
+     * @return captured Gradle settings before publication into a workspace
+     */
+    public static WorkspaceConfigurationSnapshot captureGradleConfiguration(GradleBuildModel model) {
+        Map<String, String> values = new TreeMap<>();
         values.put("gradle.version", model.gradleVersion());
         RailroadJavaLanguageSettings language = model.project().javaLanguageSettings();
         languageSettings(values, "gradle.", language);
@@ -411,11 +445,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             }
             values.put(prefix + "sources", String.join("\n", sources));
         }
-        publish(ids, values);
-        if (indexSession == null) {
-            Services.PROJECT_LANGUAGE_INDEX_SERVICE
-                .refreshProject(Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project));
-        }
+        return new WorkspaceConfigurationSnapshot(0, ids, values);
     }
 
     private void publish(Set<String> ids, Map<String, String> values) {

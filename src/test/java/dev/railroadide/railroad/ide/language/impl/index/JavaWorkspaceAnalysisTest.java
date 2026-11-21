@@ -18,6 +18,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticCompletionEngine;
 import dev.railroadide.railroad.ide.sst.project.JavaSourceSnapshotIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaLibrarySymbolIndex;
 import dev.railroadide.railroad.ide.diagnostics.DiagnosticSeverity;
 import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.*;
@@ -151,6 +152,47 @@ public class JavaWorkspaceAnalysisTest {
         assertEquals("fromFirst", old.lookupClassStub("demo.Library").fields().getFirst().name());
         assertEquals("fromSecond", current.lookupClassStub("demo.Library").fields().getFirst().name());
         assertSame(old, provider.capture(original));
+    }
+
+    @Test
+    public void diagnosticsUseTheRequestingModulesClasspath() throws Exception {
+        Path common = library("vanilla-classes", "vanillaOnly");
+        Path fabric = library("fabric-classes", "fabricOnly");
+        Path neoForge = library("neoforge-classes", "neoForgeOnly");
+        Path output = library("old-workspace-output", "stale");
+        var configuration = new WorkspaceConfigurationSnapshot(1, Set.of(":common", ":fabric", ":neoforge"),
+            Map.of(
+                "module.:common.classpath", common.toString(),
+                "module.:common.directory", directory.resolve("common").toString(),
+                "module.:common.sources", directory.resolve("common/src") + ":generated=false",
+                "module.:common.output", output.toString(),
+                "module.:fabric.classpath", String.join("\n", output.toString(), fabric.toString(), common.toString()),
+                "module.:fabric.dependencies", neoForge.toString(),
+                "module.:fabric.sources", directory.resolve("generated/fabric") + ":generated=true",
+                "module.:neoforge.classpath", neoForge.toString(),
+                "module.:neoforge.sources", directory.resolve("neoforge/src") + ":generated=false"));
+        var store = new DefaultDocumentStore("test", configuration);
+        var commonUse = source("common/src/Common.java",
+            "package demo; class Common { int value(Library lib) { return lib.vanillaOnly; } }");
+        var fabricUse = source("generated/fabric/Fabric.java",
+            "package demo; class Fabric { int value(Library lib) { return lib.fabricOnly; } }");
+        var neoForgeUse = source("neoforge/src/NeoForge.java",
+            "package demo; class NeoForge { int value(Library lib) { return lib.neoForgeOnly; } }");
+        List.of(commonUse, fabricUse, neoForgeUse).forEach(store::publishBacking);
+        WorkspaceSnapshot captured = store.capture();
+        try (var provider = new JavaWorkspaceAnalysisProvider(() -> true,
+            (roots, _) -> JavaLibrarySymbolIndex.build(roots))) {
+            var diagnostics = new JavaDiagnosticsProvider(null, null, provider::capture);
+            for (var use : List.of(commonUse, fabricUse, neoForgeUse, fabricUse)) {
+                var errors = diagnostics.compute(captured, use.id()).stream()
+                    .filter(diagnostic -> diagnostic.kind() == DiagnosticSeverity.ERROR).toList();
+                assertTrue(errors.isEmpty(), () -> errors.stream().map(error -> error.message(Locale.ROOT)).toList()
+                    .toString());
+            }
+            assertEquals(List.of(fabric, common), provider.capture(captured, fabricUse.id()).classpath());
+            assertEquals(List.of(neoForge), provider.capture(captured, neoForgeUse.id()).classpath());
+            assertEquals(List.of(common), provider.capture(captured, commonUse.id()).classpath());
+        }
     }
 
     private Path library(String folder, String field) throws Exception {
