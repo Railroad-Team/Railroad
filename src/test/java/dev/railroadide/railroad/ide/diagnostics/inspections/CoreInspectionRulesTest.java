@@ -9,6 +9,7 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -139,6 +140,61 @@ public class CoreInspectionRulesTest {
             """);
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_UNRESOLVED_IMPORT".equals(d.code())));
+    }
+
+    @Test
+    public void staticImportsResolveMembersFromIndexedProjectSources(@TempDir Path root) throws Exception {
+        Path operations = root.resolve("api/Operations.java");
+        Files.createDirectories(operations.getParent());
+        Files.writeString(operations, """
+            package api;
+            public class Operations {
+                public static final int LIMIT = 3;
+                public static <T> T take(T value) { return value; }
+                public static int take(int first, int second) { return first; }
+                public static void log(String label, int... values) {}
+                public void instance() {}
+                private static void hidden() {}
+                static void internal() {}
+                public static class Nested { static void internal() {} }
+            }
+            """);
+        var index = new JavaProjectSemanticIndexer().build(root);
+        String caller = """
+            package consumer;
+            import static api.Operations.take;
+            import static api.Operations.LIMIT;
+            import static api.Operations.instance;
+            import static api.Operations.hidden;
+            import static api.Operations.internal;
+            import static api.Operations.absent;
+            import static api.Operations.*;
+            class Caller {}
+            """;
+        Path callerPath = root.resolve("consumer/Caller.java");
+        var unresolved = runProvider(new CoreImportInspection(), callerPath, caller, index).stream()
+            .filter(issue -> "SEM_UNRESOLVED_IMPORT".equals(issue.code()))
+            .map(SemanticDiagnostic::message).toList();
+        assertEquals(List.of("Cannot resolve import 'api.Operations.instance'",
+            "Cannot resolve import 'api.Operations.hidden'", "Cannot resolve import 'api.Operations.internal'",
+            "Cannot resolve import 'api.Operations.absent'"), unresolved);
+
+        var context = new JavaRuleContext(callerPath, caller, JavaSemanticAnalyzer.analyzeFacts(caller, index), index);
+        SyntaxNode site = context.syntaxTree().root();
+        assertEquals(1, context.resolveStaticImportedFields("LIMIT", site).size());
+        assertEquals(1, context.resolveStaticImportedMethods("take", site, 1).size());
+        assertEquals(1, context.resolveStaticImportedMethods("take", site, 2).size());
+        assertTrue(context.resolveStaticImportedMethods("take", site, 3).isEmpty());
+        assertTrue(context.resolveStaticImportedMethods("log", site, 0).isEmpty());
+        assertEquals(1, context.resolveStaticImportedMethods("log", site, 3).size());
+        var samePackage = runProvider(new CoreImportInspection(), root.resolve("api/Peer.java"), """
+            package api;
+            import static api.Operations.internal;
+            import static api.Operations.Nested.internal;
+            class Peer {}
+            """, index);
+        assertFalse(samePackage.stream().anyMatch(issue -> "SEM_UNRESOLVED_IMPORT".equals(issue.code())),
+            samePackage::toString);
     }
 
     @Test

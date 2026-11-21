@@ -4290,7 +4290,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         private final List<ImportEntry> onDemandStaticImports;
         private final Set<String> localQualifiedTypeNames;
         private final Set<String> availableQualifiedTypeNames;
-        private final Map<String, ClassStub> jdkClassStubsByQualifiedName;
+        private final JavaRuleContext context;
         private final Map<String, Set<String>> localStaticFieldsByOwner;
         private final Map<String, Map<String, Set<Integer>>> localStaticMethodAritiesByOwner;
 
@@ -4300,7 +4300,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             List<ImportEntry> onDemandStaticImports,
             Set<String> localQualifiedTypeNames,
             Set<String> availableQualifiedTypeNames,
-            Map<String, ClassStub> jdkClassStubsByQualifiedName,
+            JavaRuleContext context,
             Map<String, Set<String>> localStaticFieldsByOwner,
             Map<String, Map<String, Set<Integer>>> localStaticMethodAritiesByOwner
         ) {
@@ -4309,7 +4309,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             this.onDemandStaticImports = onDemandStaticImports;
             this.localQualifiedTypeNames = localQualifiedTypeNames;
             this.availableQualifiedTypeNames = availableQualifiedTypeNames;
-            this.jdkClassStubsByQualifiedName = jdkClassStubsByQualifiedName;
+            this.context = context;
             this.localStaticFieldsByOwner = localStaticFieldsByOwner;
             this.localStaticMethodAritiesByOwner = localStaticMethodAritiesByOwner;
         }
@@ -4485,7 +4485,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 List.copyOf(onDemandStaticImports),
                 immutableLocalQualifiedTypeNames,
                 availableQualifiedTypeNames,
-                context.availableClassStubsByQualifiedName(),
+                context,
                 copySetMap(localStaticFieldsByOwner),
                 copyNestedSetMap(localStaticMethodAritiesByOwner));
         }
@@ -4592,12 +4592,10 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (localFields != null && localFields.contains(fieldName))
                 return true;
 
-            ClassStub jdkStub = jdkClassStubsByQualifiedName.get(ownerQualifiedName);
-            if (jdkStub == null)
-                return false;
-
-            return jdkStub.fields().stream()
-                .anyMatch(field -> field.name().equals(fieldName) && Modifier.isStatic(field.modifiers()));
+            ClassStub stub = context.availableClassStubsByQualifiedName().get(ownerQualifiedName);
+            return stub != null && stub.fields().stream()
+                .anyMatch(field -> field.name().equals(fieldName) && Modifier.isStatic(field.modifiers()))
+                || hasIndexedStaticMember(ownerQualifiedName, fieldName, JavaSymbolKind.FIELD, -1);
         }
 
         private boolean hasResolvableStaticMethod(
@@ -4614,14 +4612,48 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 }
             }
 
-            ClassStub jdkStub = jdkClassStubsByQualifiedName.get(ownerQualifiedName);
-            if (jdkStub == null)
-                return false;
-
-            return jdkStub.methods().stream()
+            ClassStub stub = context.availableClassStubsByQualifiedName().get(ownerQualifiedName);
+            return stub != null && stub.methods().stream()
                 .anyMatch(method -> method.name().equals(methodName)
                     && Modifier.isStatic(method.modifiers())
-                    && (argumentCountOrUnknown < 0 || method.parameters().size() == argumentCountOrUnknown));
+                    && (argumentCountOrUnknown < 0 || method.parameters().size() == argumentCountOrUnknown))
+                || hasIndexedStaticMember(ownerQualifiedName, methodName, JavaSymbolKind.METHOD,
+                    argumentCountOrUnknown);
+        }
+
+        private boolean hasIndexedStaticMember(String owner, String name, JavaSymbolKind kind, int argumentCount) {
+            if (context.symbolIndex == null)
+                return false;
+            for (var member : context.symbolIndex.lookupMember(owner, name)) {
+                if (member.kind() != kind || !member.isStatic())
+                    continue;
+                if (member.descriptor() != null) {
+                    String visibility = member.descriptor().metadata().visibility();
+                    if ("private".equals(visibility) || !"public".equals(visibility) && !inCurrentPackage(owner))
+                        continue;
+                }
+                if (argumentCount < 0 || acceptsArgumentCount(member, argumentCount))
+                    return true;
+            }
+            return false;
+        }
+
+        private boolean acceptsArgumentCount(JavaProjectSemanticIndex.SymbolDescriptor member, int argumentCount) {
+            SymbolSignature signature = member.structuredSignature();
+            if (signature == null)
+                return member.signature() != null
+                    && context.parameterTypesFromIndexedSignature(member).size() == argumentCount;
+            var parameters = signature.parameters();
+            return argumentCount == parameters.size() || !parameters.isEmpty() && parameters.getLast().varargs()
+                && argumentCount >= parameters.size() - 1;
+        }
+
+        private boolean inCurrentPackage(String owner) {
+            String prefix = context.packagePrefix(owner);
+            while (isResolvableType(prefix)) {
+                prefix = context.packagePrefix(prefix);
+            }
+            return prefix.equals(context.currentPackageName());
         }
 
         private static Map<String, List<ImportEntry>> copyListMap(Map<String, List<ImportEntry>> source) {
