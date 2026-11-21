@@ -61,6 +61,29 @@ public final class JavaDeclarationAnalysis {
     }
 
     /**
+     * Conservatively checks whether a statement can reach the next statement in its block.
+     *
+     * @param node statement to inspect
+     * @return false when the statement definitely transfers control elsewhere
+     */
+    public static boolean canCompleteNormally(SyntaxNode node) {
+        String kind = node.kind().id();
+        if (JavaSyntaxKinds.RETURN_STATEMENT.id().equals(kind)
+            || JavaSyntaxKinds.THROW_STATEMENT.id().equals(kind)
+            || JavaSyntaxKinds.YIELD_STATEMENT.id().equals(kind)
+            || JavaSyntaxKinds.BREAK_STATEMENT.id().equals(kind)
+            || JavaSyntaxKinds.CONTINUE_STATEMENT.id().equals(kind))
+            return false;
+        List<SyntaxNode> children = node.children().stream().filter(child -> !(child instanceof SyntaxToken))
+            .toList();
+        if (JavaSyntaxKinds.BLOCK.id().equals(kind))
+            return children.isEmpty() || canCompleteNormally(children.getLast());
+        if (JavaSyntaxKinds.IF_STATEMENT.id().equals(kind) && children.size() == 3)
+            return canCompleteNormally(children.get(1)) || canCompleteNormally(children.get(2));
+        return true;
+    }
+
+    /**
      * Mutable declaration, scope, symbol-resolution, and inferred-type state shared by Java analysis passes.
      */
     public static final class Context {
@@ -592,23 +615,6 @@ public final class JavaDeclarationAnalysis {
                     return current;
             }
             throw new IllegalStateException("Pattern flows have no common lexical scope");
-        }
-
-        private static boolean canCompleteNormally(SyntaxNode node) {
-            String kind = node.kind().id();
-            if (JavaSyntaxKinds.RETURN_STATEMENT.id().equals(kind)
-                || JavaSyntaxKinds.THROW_STATEMENT.id().equals(kind)
-                || JavaSyntaxKinds.YIELD_STATEMENT.id().equals(kind)
-                || JavaSyntaxKinds.BREAK_STATEMENT.id().equals(kind)
-                || JavaSyntaxKinds.CONTINUE_STATEMENT.id().equals(kind))
-                return false;
-            List<SyntaxNode> children = node.children().stream().filter(child -> !(child instanceof SyntaxToken))
-                .toList();
-            if (JavaSyntaxKinds.BLOCK.id().equals(kind))
-                return children.isEmpty() || canCompleteNormally(children.getLast());
-            if (JavaSyntaxKinds.IF_STATEMENT.id().equals(kind) && children.size() == 3)
-                return canCompleteNormally(children.get(1)) || canCompleteNormally(children.get(2));
-            return true;
         }
 
         private void visitTypeDeclaration(

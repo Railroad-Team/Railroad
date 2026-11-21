@@ -12,6 +12,57 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CoreOptionalGetInspectionTest {
     @Test
+    public void emptyChecksGuardShortCircuitOperandsAndFollowingStatements() {
+        assertWarnings("""
+            class Example {
+                void read(java.util.Optional<String> opt, boolean repeat) {
+                    if (opt.isEmpty() || opt.get().isBlank()) return;
+                    opt.get();
+                    if (repeat) { opt.get(); }
+                }
+                void loop(java.util.List<java.util.OptionalInt> values) {
+                    for (java.util.OptionalInt opt : values) {
+                        if (opt.isEmpty()) { System.out.println("skipped"); continue; }
+                        opt.getAsInt();
+                    }
+                }
+            }
+            """, List.of());
+    }
+
+    @Test
+    public void guardsRequireTheSameValueOnEveryPathToTheRead() {
+        assertWarnings("""
+            class Example {
+                void read(java.util.Optional<String> first, java.util.Optional<String> other, boolean flag) {
+                    if (first.isEmpty() && first.get().isBlank()) return;
+                    if (first.isEmpty() || other.get().isBlank()) { if (flag) return; }
+                    first.get();
+                    if (first.isEmpty()) return;
+                    first = java.util.Optional.empty();
+                    first.get();
+                }
+                void loop(java.util.Optional<String> value, boolean repeat) {
+                    if (value.isEmpty()) return;
+                    while (repeat) { value.get(); value = java.util.Optional.empty(); }
+                }
+                void nested(java.util.Optional<String> opt, boolean flag) {
+                    if (flag) { if (opt.isEmpty()) return; }
+                    opt.get();
+                }
+                boolean eager(java.util.Optional<String> opt) { return opt.isEmpty() | opt.get().isBlank(); }
+            }
+            """, List.of("first.get()", "other.get()", "first.get()", "first.get()", "value.get()", "opt.get()",
+            "opt.get()"));
+    }
+
+    private static void assertWarnings(String source, List<String> expected) {
+        var diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), source);
+        assertEquals(expected, diagnostics.stream()
+            .map(issue -> source.substring(issue.startOffset(), issue.endOffset()).strip()).toList());
+    }
+
+    @Test
     public void conditionalIfPresentReceiverDoesNotInterruptInspectionOfOtherGets() {
         String source = """
             class Example {
