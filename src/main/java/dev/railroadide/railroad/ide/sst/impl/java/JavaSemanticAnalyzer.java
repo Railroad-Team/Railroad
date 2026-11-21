@@ -451,13 +451,13 @@ public final class JavaSemanticAnalyzer {
         private NameResolver(JavaDeclarationAnalysis.Context context) {
             this.context = context;
             this.projectIndex = context.projectIndex;
-            Set<String> qualified = new HashSet<>();
+            Set<String> qualified = new LinkedHashSet<>();
             for (Symbol symbol : context.allTypeSymbols()) {
                 context.poll();
                 symbol.qualifiedName().ifPresent(qualified::add);
             }
 
-            this.localQualifiedTypeNames = Set.copyOf(qualified);
+            this.localQualifiedTypeNames = Collections.unmodifiableSet(qualified);
             if (projectIndex != null) {
                 this.availableQualifiedTypeNames = projectIndex.declaredQualifiedNames();
                 this.binaryClassStubsByQualifiedName = projectIndex.classStubsByQualifiedName();
@@ -4558,6 +4558,10 @@ public final class JavaSemanticAnalyzer {
                 return text;
 
             String simpleName = simpleTypeName(text);
+            String memberType = JavaMemberTypeScope.resolve(simpleName, context.enclosingTypeSymbol(usageSite),
+                this::outerTypeSymbol, this::resolvableQualifiedTypeName, this::directSuperTypeNames);
+            if (memberType != null)
+                return memberType;
             for (String localQualifiedTypeName : localQualifiedTypeNames) {
                 context.poll();
                 if (simpleTypeName(localQualifiedTypeName).equals(simpleName))
@@ -4579,9 +4583,6 @@ public final class JavaSemanticAnalyzer {
             String javaLangResolved = resolvableQualifiedTypeName(javaLangType);
             if (javaLangResolved != null)
                 return javaLangResolved;
-            String inheritedMemberType = resolveInheritedMemberType(simpleName, usageSite);
-            if (inheritedMemberType != null)
-                return inheritedMemberType;
             for (ImportSpec onDemandImport : onDemandTypeImports) {
                 context.poll();
                 String imported = onDemandImport.ownerName() + "." + simpleName;
@@ -4623,6 +4624,11 @@ public final class JavaSemanticAnalyzer {
                 return null;
 
             return resolvableQualifiedTypeName(owner + "." + text.substring(dot + 1));
+        }
+
+        private @Nullable Symbol outerTypeSymbol(Symbol type) {
+            SyntaxNode declaration = type.declaration().orElse(null);
+            return declaration == null ? null : context.enclosingTypeSymbol(declaration);
         }
 
         private @Nullable String resolveInheritedMemberType(String simpleName, SyntaxNode usageSite) {
@@ -5216,12 +5222,12 @@ public final class JavaSemanticAnalyzer {
             this.context = context;
             this.projectIndex = context.projectIndex;
 
-            Set<String> qualified = new HashSet<>();
+            Set<String> qualified = new LinkedHashSet<>();
             for (Symbol symbol : context.allTypeSymbols()) {
                 context.poll();
                 symbol.qualifiedName().ifPresent(qualified::add);
             }
-            this.localQualifiedTypeNames = Set.copyOf(qualified);
+            this.localQualifiedTypeNames = Collections.unmodifiableSet(qualified);
 
             this.availableQualifiedTypeNames = projectIndex != null
                 ? projectIndex.declaredQualifiedNames()
@@ -6827,7 +6833,7 @@ public final class JavaSemanticAnalyzer {
                         typeArguments.add(typeFromTypeReferenceText(argumentText, usageSite));
                     }
                 }
-                String qualifiedRaw = resolveQualifiedTypeName(rawText);
+                String qualifiedRaw = resolveQualifiedTypeName(rawText, usageSite);
                 String declaredName = qualifiedRaw == null || qualifiedRaw.isBlank() ? rawText : qualifiedRaw;
                 return declaredName.isBlank()
                     ? UNKNOWN_TYPE
@@ -6840,7 +6846,7 @@ public final class JavaSemanticAnalyzer {
                 return new JavaTypes.TypeVariableType(text);
             if (isTypeVariableNameInScope(text))
                 return new JavaTypes.TypeVariableType(text);
-            String qualified = resolveQualifiedTypeName(text);
+            String qualified = resolveQualifiedTypeName(text, usageSite);
             if (isLikelyTypeVariableName(text)
                 && (qualified == null || qualified.isBlank() || Objects.equals(qualified, text)))
                 return new JavaTypes.TypeVariableType(text);
@@ -6964,6 +6970,10 @@ public final class JavaSemanticAnalyzer {
         }
 
         private @Nullable String resolveQualifiedTypeName(@Nullable String text) {
+            return resolveQualifiedTypeName(text, null);
+        }
+
+        private @Nullable String resolveQualifiedTypeName(@Nullable String text, @Nullable SyntaxNode usageSite) {
             if (text == null || text.isBlank())
                 return null;
 
@@ -6980,7 +6990,7 @@ public final class JavaSemanticAnalyzer {
             String directType = resolvableQualifiedTypeName(text);
             if (directType != null)
                 return directType;
-            String nestedType = resolveNestedQualifiedTypeName(text);
+            String nestedType = resolveNestedQualifiedTypeName(text, usageSite);
             if (nestedType != null)
                 return nestedType;
             if (text.indexOf('.') > 0 && context.currentPackageName != null && !context.currentPackageName.isBlank()) {
@@ -6993,6 +7003,12 @@ public final class JavaSemanticAnalyzer {
                 return text;
 
             String simpleName = simpleTypeName(text);
+            if (usageSite != null) {
+                String memberType = JavaMemberTypeScope.resolve(simpleName, context.enclosingTypeSymbol(usageSite),
+                    this::outerTypeSymbol, this::resolvableQualifiedTypeName, null);
+                if (memberType != null)
+                    return memberType;
+            }
             for (String localQualifiedTypeName : localQualifiedTypeNames) {
                 context.poll();
                 if (simpleTypeName(localQualifiedTypeName).equals(simpleName))
@@ -7045,16 +7061,21 @@ public final class JavaSemanticAnalyzer {
             return null;
         }
 
-        private @Nullable String resolveNestedQualifiedTypeName(String text) {
+        private @Nullable String resolveNestedQualifiedTypeName(String text, @Nullable SyntaxNode usageSite) {
             int dot = text.lastIndexOf('.');
             if (dot <= 0 || dot >= text.length() - 1)
                 return null;
 
-            String owner = resolveQualifiedTypeName(text.substring(0, dot));
+            String owner = resolveQualifiedTypeName(text.substring(0, dot), usageSite);
             if (owner == null || owner.isBlank())
                 return null;
 
             return resolvableQualifiedTypeName(owner + "." + text.substring(dot + 1));
+        }
+
+        private @Nullable Symbol outerTypeSymbol(Symbol type) {
+            SyntaxNode declaration = type.declaration().orElse(null);
+            return declaration == null ? null : context.enclosingTypeSymbol(declaration);
         }
 
         private @Nullable String uniqueProjectQualifiedTypeName(String simpleName) {

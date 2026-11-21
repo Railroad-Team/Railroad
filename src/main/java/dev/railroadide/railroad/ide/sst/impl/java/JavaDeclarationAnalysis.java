@@ -220,19 +220,20 @@ public final class JavaDeclarationAnalysis {
         }
 
         /**
-         * Collects the declared class, interface, enum, annotation, and record symbols.
+         * Collects the declared class, interface, enum, annotation, and record symbols in source order.
          *
-         * @return an immutable snapshot of declared type symbols
+         * @return an immutable snapshot of declared type symbols, ordered by declaration position
          */
         public List<Symbol> allTypeSymbols() {
-            List<Symbol> symbols = new ArrayList<>();
-            for (Symbol symbol : declaredSymbolByNode.values()) {
+            List<Map.Entry<SyntaxNode, Symbol>> declarations = new ArrayList<>();
+            for (Map.Entry<SyntaxNode, Symbol> entry : declaredSymbolByNode.entrySet()) {
                 poll();
-                if (isTypeSymbol(symbol.kind())) {
-                    symbols.add(symbol);
+                if (isTypeSymbol(entry.getValue().kind())) {
+                    declarations.add(entry);
                 }
             }
-            return List.copyOf(symbols);
+            declarations.sort(Comparator.comparingInt(entry -> entry.getKey().start()));
+            return declarations.stream().map(Map.Entry::getValue).toList();
         }
 
         /**

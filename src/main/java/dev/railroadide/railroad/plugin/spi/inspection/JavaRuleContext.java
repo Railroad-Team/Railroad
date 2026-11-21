@@ -13,6 +13,7 @@ import dev.railroadide.railroad.ide.classparser.stub.FieldStub;
 import dev.railroadide.railroad.ide.classparser.stub.MethodStub;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaMemberTypeScope;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
@@ -1468,6 +1469,14 @@ public final class JavaRuleContext implements LanguageRuleContext {
         }
 
         String simpleName = simpleTypeName(text);
+        if (usageSite != null && text.indexOf('.') < 0) {
+            String memberType = JavaMemberTypeScope.resolve(simpleName, enclosingTypeSymbol(usageSite).orElse(null),
+                type -> type.declaration().flatMap(this::enclosingTypeSymbol).orElse(null),
+                candidate -> resolvableQualifiedTypeName(candidate, availableQualifiedTypeNames),
+                collectingDirectSuperTypes ? null : this::directSuperTypeNamesInternal);
+            if (memberType != null)
+                return memberType;
+        }
         for (String localQualifiedTypeName : localTypeSymbolsByQualifiedName().keySet()) {
             if (simpleTypeName(localQualifiedTypeName).equals(simpleName))
                 return localQualifiedTypeName;
@@ -2448,7 +2457,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             }
         }));
 
-        Map<String, Symbol> copy = Map.copyOf(collected);
+        Map<String, Symbol> copy = Collections.unmodifiableMap(collected);
         cachedLocalTypeSymbolsByQualifiedName = copy;
         return copy;
     }
@@ -4206,7 +4215,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
         @Nullable Symbol symbol
     ) {
         /**
-         * Builds a method signature key from its name and parameter type display names.
+         * Builds a method signature key from its name and parameter type display names. Nested type names use their
+         * source spelling, so a binary {@code Outer$Inner} and a source {@code Outer.Inner} produce the same key.
          *
          * @return the method name followed by comma-separated parameter types in parentheses
          */
@@ -4216,7 +4226,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 if (index > 0) {
                     builder.append(',');
                 }
-                builder.append(parameterTypes.get(index).displayName());
+                builder.append(parameterTypes.get(index).displayName().replace('$', '.'));
             }
             builder.append(')');
             return builder.toString();
@@ -4313,7 +4323,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
         }
 
         /**
-         * Checks whether a qualified type name is present among local or available types.
+         * Checks whether a qualified type name is present among local or available types, accepting a nested type
+         * spelled with dots when the index stores its binary {@code $} name.
          *
          * @param qualifiedTypeName the qualified type name to inspect
          * @return {@code true} if the name identifies a known type
@@ -4323,7 +4334,18 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 return false;
             if (localQualifiedTypeNames.contains(qualifiedTypeName))
                 return true;
-            return availableQualifiedTypeNames.contains(qualifiedTypeName);
+            if (availableQualifiedTypeNames.contains(qualifiedTypeName))
+                return true;
+
+            String binaryName = qualifiedTypeName;
+            int dot = binaryName.lastIndexOf('.');
+            while (dot > 0) {
+                binaryName = binaryName.substring(0, dot) + "$" + binaryName.substring(dot + 1);
+                if (availableQualifiedTypeNames.contains(binaryName))
+                    return true;
+                dot = binaryName.lastIndexOf('.', dot - 1);
+            }
+            return false;
         }
 
         /**
