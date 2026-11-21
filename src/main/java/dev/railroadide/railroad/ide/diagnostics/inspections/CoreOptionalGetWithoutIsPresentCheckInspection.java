@@ -10,6 +10,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleReporter;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -277,10 +278,10 @@ public class CoreOptionalGetWithoutIsPresentCheckInspection implements JavaInspe
 
     private static boolean isOptionalReceiver(JavaRuleContext context, SyntaxNode receiver) {
         String qualifiedTypeName = receiverQualifiedTypeName(context, receiver);
-        return OPTIONAL_TYPE_TO_GET_METHOD.containsKey(qualifiedTypeName);
+        return qualifiedTypeName != null && OPTIONAL_TYPE_TO_GET_METHOD.containsKey(qualifiedTypeName);
     }
 
-    private static String receiverQualifiedTypeName(JavaRuleContext context, SyntaxNode receiver) {
+    private static @Nullable String receiverQualifiedTypeName(JavaRuleContext context, SyntaxNode receiver) {
         Symbol receiverSymbol = context.resolvedSymbol(receiver).orElse(null);
         if (receiverSymbol == null)
             return null;
@@ -299,7 +300,7 @@ public class CoreOptionalGetWithoutIsPresentCheckInspection implements JavaInspe
         return null;
     }
 
-    private static String normalizeOptionalTypeName(String rawTypeName) {
+    private static @Nullable String normalizeOptionalTypeName(@Nullable String rawTypeName) {
         if (rawTypeName == null || rawTypeName.isBlank())
             return null;
 

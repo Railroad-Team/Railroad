@@ -6,10 +6,30 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectionTestSupport.runProvider;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CoreOptionalGetInspectionTest {
+    @Test
+    public void conditionalIfPresentReceiverDoesNotInterruptInspectionOfOtherGets() {
+        String source = """
+            class Example {
+                String read(boolean flag, java.util.Optional<String> first, java.util.Optional<String> second) {
+                    (flag ? first : second).ifPresent(value -> {});
+                    if (first.isPresent()) {
+                        return first.get();
+                    }
+                    return second.get();
+                }
+            }
+            """;
+        var diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), source);
+        assertEquals(List.of("second.get()"), diagnostics.stream()
+            .filter(issue -> "SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK".equals(issue.code()))
+            .map(issue -> source.substring(issue.startOffset(), issue.endOffset()).strip()).toList());
+    }
+
     @Test
     public void coreOptionalGetWithoutIsPresentCheckRuleEmitsDiagnosticForPlainOptionalGet() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), """
