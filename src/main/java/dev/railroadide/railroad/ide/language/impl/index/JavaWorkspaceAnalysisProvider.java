@@ -164,6 +164,14 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
             String module = document == null
                 ? null
                 : moduleForPath(workspace.configuration(), document.uri().filePath().orElse(null));
+            if (document != null && module == null) {
+                Path archive = JavaLibrarySources.shared().ownerArchive(document, classpath(workspace.configuration()))
+                    .orElse(null);
+                if (archive != null) {
+                    module = moduleForArchive(workspace.configuration(), archive);
+                    extra = request;
+                }
+            }
             var key = new WorkspaceKey(workspace, extra, module);
             JavaWorkspaceAnalysis analysis = workspaces.getIfPresent(key);
             if (analysis == null) {
@@ -357,6 +365,9 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     }
 
     private static boolean includedSource(DocumentSnapshot document, Set<Path> roots) {
+        if (document.origin().backing() == BackingKind.ARCHIVE_ENTRY
+            || document.origin().provenance() == ProvenanceKind.ATTACHED_SOURCE)
+            return false;
         return document.uri().filePath().map(path -> roots.stream()
             .anyMatch(path.toAbsolutePath().normalize()::startsWith)).orElse(true);
     }
@@ -427,7 +438,20 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
      * @return ordered binary roots for its module, or the workspace roots if no module owns the file
      */
     public static List<Path> classpathForFile(WorkspaceConfigurationSnapshot configuration, Path file) {
-        return classpath(configuration, moduleForPath(configuration, file));
+        String module = moduleForPath(configuration, file);
+        if (module == null && file != null) {
+            Path archive = JavaLibrarySources.shared().ownerArchive(file, classpath(configuration)).orElse(null);
+            if (archive != null) {
+                module = moduleForArchive(configuration, archive);
+            }
+        }
+        return classpath(configuration, module);
+    }
+
+    private static String moduleForArchive(WorkspaceConfigurationSnapshot configuration, Path archive) {
+        List<String> owners = configuration.moduleIds().stream()
+            .filter(module -> classpath(configuration, module).contains(archive)).sorted().toList();
+        return owners.size() == 1 ? owners.getFirst() : null;
     }
 
     private static List<Path> classpath(WorkspaceConfigurationSnapshot configuration, String selectedModule) {

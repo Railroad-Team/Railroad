@@ -102,7 +102,8 @@ public final class JavaLibrarySources {
             ProvenanceKind provenance;
             if (attached.isPresent()) {
                 text = attached.get().text();
-                key = "sources/" + hash(attached.get().archive() + "!/" + attached.get().entry());
+                key = archivePath(binary).map(path -> "sources/" + hash(path.toString()))
+                    .orElseGet(() -> "sources/" + hash(attached.get().archive() + "!/" + attached.get().entry()));
                 provenance = ProvenanceKind.ATTACHED_SOURCE;
             } else {
                 text = JavaStubSourceRenderer.render(topLevel, classStubs, binary.toString());
@@ -116,7 +117,8 @@ public final class JavaLibrarySources {
             DocumentUri uri = DocumentUri.fromPath(file);
             return Optional.of(new TextDocumentSnapshot(
                 new DocumentId(UUID.nameUUIDFromBytes(uri.toString().getBytes(StandardCharsets.UTF_8))), uri,
-                DocumentVersion.initial(), "java", new DocumentOrigin(BackingKind.FILE, provenance), text,
+                DocumentVersion.initial(), "java",
+                new DocumentOrigin(BackingKind.FILE, provenance, List.of(new OriginReference(binary))), text,
                 StandardCharsets.UTF_8));
         } catch (IOException | UncheckedIOException | InvalidPathException exception) {
             Railroad.LOGGER.warn("Failed to provide source for {}", binary, exception);
@@ -170,23 +172,34 @@ public final class JavaLibrarySources {
             }
             return read(candidates, List.of(relative));
         }
-        if (!name.endsWith(".jar"))
-            return Optional.empty();
+        return read(sourceArchives(archive), List.of(relative));
+    }
 
-        String sourcesName = name.substring(0, name.length() - ".jar".length()) + "-sources.jar";
+    /**
+     * Lists locally available source attachments for a library jar, in navigation lookup order.
+     *
+     * @param archive binary root from the project classpath
+     * @return matching source archives
+     * @throws IOException if a cache directory cannot be listed
+     */
+    public static List<Path> sourceArchives(Path archive) throws IOException {
+        if (archive.getFileName() == null || !archive.getFileName().toString().endsWith(".jar"))
+            return List.of();
+        String name = archive.getFileName().toString();
+        List<String> names = sourceArchiveNames(name);
         List<Path> candidates = new ArrayList<>();
         Path parent = archive.getParent();
         if (parent != null) {
-            candidates.add(parent.resolve(sourcesName));
+            names.stream().map(parent::resolve).forEach(candidates::add);
             Path version = parent.getParent();
-            if (version != null && Files.isDirectory(version)) {
+            if (isCacheHash(parent) && version != null && Files.isDirectory(version)) {
                 try (Stream<Path> hashes = Files.list(version)) {
-                    hashes.filter(Files::isDirectory).sorted().map(hash -> hash.resolve(sourcesName))
-                        .forEach(candidates::add);
+                    hashes.filter(JavaLibrarySources::isCacheHash).filter(Files::isDirectory).sorted()
+                        .flatMap(hash -> names.stream().map(hash::resolve)).forEach(candidates::add);
                 }
             }
         }
-        return read(candidates, List.of(relative));
+        return candidates.stream().distinct().filter(Files::isRegularFile).toList();
     }
 
     private static Optional<AttachedSource> read(List<Path> archives, List<String> entries) throws IOException {
@@ -206,6 +219,82 @@ public final class JavaLibrarySources {
             }
         }
         return Optional.empty();
+    }
+
+    private static Optional<Path> archivePath(DocumentUri entry) {
+        URI uri = entry.value();
+        if (!"jar".equalsIgnoreCase(uri.getScheme()))
+            return Optional.empty();
+        String name = uri.getRawSchemeSpecificPart();
+        int end = name.indexOf("!/");
+        if (end < 0)
+            return Optional.empty();
+        URI archive = URI.create(name.substring(0, end));
+        return "file".equalsIgnoreCase(archive.getScheme())
+            ? Optional.of(Path.of(archive).toAbsolutePath().normalize())
+            : Optional.empty();
+    }
+
+    /**
+     * Identifies the binary that owns an attached source, including a materialized view reopened by file path.
+     * Only an artifact on the requesting project's imported classpath can own the view.
+     *
+     * @param document requesting document
+     * @param roots ordered binary roots
+     * @return owning archive when known
+     */
+    public Optional<Path> ownerArchive(DocumentSnapshot document, List<Path> roots) {
+        if (document.origin().provenance() == ProvenanceKind.ATTACHED_SOURCE) {
+            for (OriginReference source : document.origin().sources()) {
+                var archive = archivePath(source.uri()).filter(roots::contains);
+                if (archive.isPresent())
+                    return archive;
+            }
+        }
+        Optional<Path> attached = archivePath(document.uri());
+        if (attached.isPresent()) {
+            Path source = attached.get();
+            if (roots.contains(source))
+                return Optional.of(source);
+            return roots.stream().filter(root -> isSourceAttachment(source, root)).findFirst();
+        }
+        Path file = document.uri().filePath().orElse(null);
+        return ownerArchive(file, roots);
+    }
+
+    private static boolean isSourceAttachment(Path source, Path binary) {
+        if (binary.getFileName() == null || source.getFileName() == null)
+            return false;
+        String name = binary.getFileName().toString();
+        if (!name.endsWith(".jar"))
+            return false;
+        if (!sourceArchiveNames(name).contains(source.getFileName().toString()))
+            return false;
+        Path parent = binary.getParent();
+        Path sourceParent = source.getParent();
+        return parent.equals(sourceParent) || (isCacheHash(parent) && isCacheHash(sourceParent)
+            && parent.getParent().equals(sourceParent.getParent()));
+    }
+
+    private static boolean isCacheHash(Path directory) {
+        return directory.getFileName() != null && directory.getFileName().toString().matches("[0-9a-f]{1,40}");
+    }
+
+    private static List<String> sourceArchiveNames(String binaryName) {
+        String base = binaryName.substring(0, binaryName.length() - ".jar".length());
+        String sources = base + "-sources.jar";
+        return base.endsWith("-universal")
+            ? List.of(sources, base.substring(0, base.length() - "-universal".length()) + "-sources.jar")
+            : List.of(sources);
+    }
+
+    /** Finds the imported binary owning a materialized attached source file. */
+    public Optional<Path> ownerArchive(@Nullable Path file, List<Path> roots) {
+        Path views = directory.resolve("sources");
+        if (file == null || !file.startsWith(views) || file.getNameCount() < views.getNameCount() + 2)
+            return Optional.empty();
+        String key = views.relativize(file).getName(0).toString();
+        return roots.stream().filter(root -> hash(root.toString()).equals(key)).findFirst();
     }
 
     private static String normalize(String text) {
