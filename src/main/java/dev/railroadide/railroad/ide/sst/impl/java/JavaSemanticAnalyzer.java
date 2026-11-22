@@ -407,7 +407,7 @@ public final class JavaSemanticAnalyzer {
             checkpoint.run();
             nameResolver.resolveCompilationUnit(syntaxTree.root());
             checkpoint.run();
-            new TypeResolver(context).resolveCompilationUnit(syntaxTree.root());
+            new TypeResolver(nameResolver).resolveCompilationUnit(syntaxTree.root());
             checkpoint.run();
             nameResolver.resolveDeferredCallables(syntaxTree.root());
         }
@@ -467,9 +467,9 @@ public final class JavaSemanticAnalyzer {
             }
             collectImportsFromRootScope();
             classifyImports();
+            this.resolvedExpressionTypeResolver = new TypeResolver(this);
             indexLocalStaticMembers();
             indexLocalMembers();
-            this.resolvedExpressionTypeResolver = new TypeResolver(context);
         }
 
         private void resolveCompilationUnit(SyntaxNode root) {
@@ -480,7 +480,7 @@ public final class JavaSemanticAnalyzer {
             // The first resolution pass necessarily asks for types before all callables are
             // resolved. Discard that partial cache so deferred calls see the completed symbol
             // graph and the primary type-inference pass that just ran.
-            resolvedExpressionTypeResolver = new TypeResolver(context);
+            resolvedExpressionTypeResolver = new TypeResolver(this);
             resolveDeferredNode(root);
         }
 
@@ -1871,7 +1871,7 @@ public final class JavaSemanticAnalyzer {
             return -1;
         }
 
-        private List<SyntaxNode> lambdaParameterNodes(SyntaxNode lambda) {
+        private static List<SyntaxNode> lambdaParameterNodes(SyntaxNode lambda) {
             SyntaxNode parameters = directChild(lambda, JavaSyntaxKinds.LAMBDA_PARAMETERS.id());
             if (parameters == null)
                 return List.of();
@@ -1910,14 +1910,16 @@ public final class JavaSemanticAnalyzer {
             if (!visited.add(qualifiedType))
                 return new JavaTypes.UnknownType("<unknown>");
             ClassStub stub = binaryClassStubsByQualifiedName.get(qualifiedType);
-            if (stub == null)
-                return sourceFunctionalParameterType(qualifiedType, parameterIndex);
-
+            List<String> parameterNames = resolvedExpressionTypeResolver.ownerTypeParameterNames(qualifiedType);
             Map<String, Type> substitutions = new LinkedHashMap<>();
-            int typeArgumentCount = Math.min(stub.typeParameters().size(), functionalType.typeArguments().size());
+            int typeArgumentCount = Math.min(parameterNames.size(), functionalType.typeArguments().size());
             for (int index = 0; index < typeArgumentCount; index++) {
                 context.poll();
-                substitutions.put(stub.typeParameters().get(index).name(), functionalType.typeArguments().get(index));
+                substitutions.put(parameterNames.get(index), functionalType.typeArguments().get(index));
+            }
+            if (stub == null) {
+                Type parameter = sourceFunctionalParameterType(qualifiedType, parameterIndex);
+                return effectiveWildcardBound(substituteFunctionalType(parameter, substitutions));
             }
 
             Map<String, MethodStub> abstractMethods = stub.methods().stream()
@@ -2133,7 +2135,9 @@ public final class JavaSemanticAnalyzer {
             if (lambdaParameterType.kind() != JavaTypes.Kind.UNKNOWN)
                 return lambdaParameterType;
             Symbol symbol = context.resolvedSymbol(node);
-            return symbol == null ? new JavaTypes.UnknownType("<unknown>") : typeOfResolvedSymbol(symbol);
+            return symbol == null
+                ? new JavaTypes.UnknownType("<unknown>")
+                : resolvedExpressionTypeResolver.specializeFieldType(node, symbol, typeOfResolvedSymbol(symbol));
         }
 
         private Type contextualLambdaReferenceType(SyntaxNode referenceNode) {
@@ -2251,13 +2255,14 @@ public final class JavaSemanticAnalyzer {
             SyntaxNode argument,
             Map<String, Type> substitutions
         ) {
-            Type expectedResult = functionalReturnType(substituteFunctionalType(parameterType, substitutions));
+            Type specializedParameter = substituteFunctionalType(parameterType, substitutions);
+            resolvedExpressionTypeResolver.bindExplicitLambdaParameters(argument, specializedParameter, substitutions);
+            Type expectedResult = functionalReturnType(specializedParameter);
             if (expectedResult.kind() == JavaTypes.Kind.UNKNOWN)
                 return;
 
             Type actualResult;
             if (JavaSyntaxKinds.METHOD_REFERENCE_EXPRESSION.id().equals(argument.kind().id())) {
-                Type specializedParameter = substituteFunctionalType(parameterType, substitutions);
                 TypeResolver.FunctionalSignature signature = resolvedExpressionTypeResolver
                     .functionalSignature(specializedParameter);
                 actualResult = signature == null
@@ -4292,6 +4297,8 @@ public final class JavaSemanticAnalyzer {
                     return resolved.qualifiedName().orElse(null);
                 if (resolved.kind() == JavaSymbolKind.CONSTRUCTOR)
                     return ownerQualifiedName(resolved);
+                if (resolved.kind() == JavaSymbolKind.FIELD)
+                    return qualifiedMemberOwnerType(inferredTypeForResolvedSymbol(expressionNode), usageSite);
                 return qualifiedValueTypeNameOfSymbol(resolved, usageSite);
             }
 
@@ -5121,9 +5128,11 @@ public final class JavaSemanticAnalyzer {
             .newSetFromMap(new IdentityHashMap<>());
         private final Map<String, List<SourceTypeParameterInfo>> sourceTypeParameters = new HashMap<>();
         private final Map<String, List<JavaTypes.DeclaredType>> indexedDirectSuperTypes = new HashMap<>();
+        private final NameResolver nameResolver;
 
-        private TypeResolver(JavaDeclarationAnalysis.Context context) {
-            this.context = context;
+        private TypeResolver(NameResolver nameResolver) {
+            this.nameResolver = nameResolver;
+            this.context = nameResolver.context;
             this.projectIndex = context.projectIndex;
 
             Set<String> qualified = new LinkedHashSet<>();
@@ -5231,7 +5240,19 @@ public final class JavaSemanticAnalyzer {
             Type contextualLambdaType = contextualLambdaReferenceType(referenceNode, symbol);
             if (contextualLambdaType.kind() != JavaTypes.Kind.UNKNOWN)
                 return contextualLambdaType;
-            return typeOfSymbol(symbol);
+            return specializeFieldType(referenceNode, symbol, typeOfSymbol(symbol));
+        }
+
+        private Type specializeFieldType(SyntaxNode reference, Symbol symbol, Type fieldType) {
+            if (symbol.kind() != JavaSymbolKind.FIELD || !containsTypeVariable(fieldType))
+                return fieldType;
+            if (NameResolver.isSelectorNameExpression(reference)) {
+                reference = reference.parent().orElseThrow();
+            }
+            Type receiver = invocationReceiverType(reference, symbol);
+            Map<String, Type> substitutions = new LinkedHashMap<>();
+            bindOwnerTypeArguments(symbol, receiver, substitutions);
+            return substitutions.isEmpty() ? fieldType : substituteTypeVariables(fieldType, substitutions);
         }
 
         private Type contextualLambdaReferenceType(SyntaxNode referenceNode, Symbol symbol) {
@@ -5255,9 +5276,10 @@ public final class JavaSemanticAnalyzer {
             if (lambdaParameterIndex < 0)
                 return UNKNOWN_TYPE;
 
-            FunctionalSignature directSignature = functionalSignature(directContextualTargetType(lambda));
-            if (directSignature != null && lambdaParameterIndex < directSignature.parameterTypes().size())
-                return unwrapWildcard(directSignature.parameterTypes().get(lambdaParameterIndex));
+            Type directParameter = nameResolver.functionalParameterType(directContextualTargetType(lambda),
+                lambdaParameterIndex);
+            if (directParameter.kind() != JavaTypes.Kind.UNKNOWN)
+                return directParameter;
 
             SyntaxNode contextualExpression = lambda;
             SyntaxNode castParent = contextualExpression.parent().orElse(null);
@@ -5269,11 +5291,12 @@ public final class JavaSemanticAnalyzer {
             }
             if (castParent != null && JavaSyntaxKinds.CAST_EXPRESSION.id().equals(castParent.kind().id())) {
                 SyntaxNode typeRef = directChild(castParent, JavaSyntaxKinds.TYPE_REFERENCE.id());
-                FunctionalSignature signature = typeRef == null
-                    ? null
-                    : functionalSignature(typeFromTypeReference(typeRef));
-                if (signature != null && lambdaParameterIndex < signature.parameterTypes().size())
-                    return unwrapWildcard(signature.parameterTypes().get(lambdaParameterIndex));
+                if (typeRef != null) {
+                    Type castParameter = nameResolver.functionalParameterType(typeFromTypeReference(typeRef),
+                        lambdaParameterIndex);
+                    if (castParameter.kind() != JavaTypes.Kind.UNKNOWN)
+                        return castParameter;
+                }
             }
 
             SyntaxNode argumentList = lambda.parent().orElse(null);
@@ -5295,10 +5318,7 @@ public final class JavaSemanticAnalyzer {
                 invocation, argumentList, lambda, callable);
             if (argumentIndex < 0 || argumentIndex >= parameterTypes.size())
                 return UNKNOWN_TYPE;
-            FunctionalSignature signature = functionalSignature(parameterTypes.get(argumentIndex));
-            if (signature == null || lambdaParameterIndex >= signature.parameterTypes().size())
-                return UNKNOWN_TYPE;
-            return unwrapWildcard(signature.parameterTypes().get(lambdaParameterIndex));
+            return nameResolver.functionalParameterType(parameterTypes.get(argumentIndex), lambdaParameterIndex);
         }
 
         private boolean isLambdaParameterNode(SyntaxNode node) {
@@ -5560,14 +5580,20 @@ public final class JavaSemanticAnalyzer {
                 }
             }
             SyntaxNode receiverNode = explicitReceiver(invocationNode);
-            if (receiverNode != null)
+            if (receiverNode != null && !JavaSyntaxKinds.THIS_EXPRESSION.id().equals(receiverNode.kind().id())
+                && !JavaSyntaxKinds.SUPER_EXPRESSION.id().equals(receiverNode.kind().id()))
                 return inferType(receiverNode);
             if (isStaticCallable(methodSymbol))
                 return UNKNOWN_TYPE;
-            Symbol enclosingType = nearestEnclosingTypeSymbol(invocationNode);
-            if (enclosingType == null)
-                return UNKNOWN_TYPE;
-            String qualifiedName = enclosingType.qualifiedName().orElse(null);
+            String qualifiedName = receiverNode == null
+                ? null
+                : nameResolver.qualifiedEnclosingInstanceOwner(receiverNode, invocationNode);
+            if (qualifiedName == null) {
+                Symbol enclosingType = nearestEnclosingTypeSymbol(invocationNode);
+                if (enclosingType == null)
+                    return UNKNOWN_TYPE;
+                qualifiedName = enclosingType.qualifiedName().orElse(null);
+            }
             if (qualifiedName == null || qualifiedName.isBlank())
                 return UNKNOWN_TYPE;
             List<Type> typeArguments = ownerTypeParameterNames(qualifiedName).stream()
@@ -5725,8 +5751,9 @@ public final class JavaSemanticAnalyzer {
             SyntaxNode argumentNode,
             Map<String, Type> substitutions
         ) {
-            FunctionalSignature signature = functionalSignature(
-                substituteTypeVariables(parameterType, substitutions));
+            Type specializedParameter = substituteTypeVariables(parameterType, substitutions);
+            bindExplicitLambdaParameters(argumentNode, specializedParameter, substitutions);
+            FunctionalSignature signature = functionalSignature(specializedParameter);
             if (signature == null)
                 return;
 
@@ -5735,6 +5762,21 @@ public final class JavaSemanticAnalyzer {
                 : methodReferenceResultType(argumentNode, signature);
             if (resultType.kind() != JavaTypes.Kind.UNKNOWN) {
                 bindTypeVariables(signature.returnType(), resultType, substitutions);
+            }
+        }
+
+        private void bindExplicitLambdaParameters(
+            SyntaxNode argument,
+            Type functionalType,
+            Map<String, Type> substitutions
+        ) {
+            List<SyntaxNode> parameters = NameResolver.lambdaParameterNodes(argument);
+            for (int index = 0; index < parameters.size(); index++) {
+                SyntaxNode typeRef = directChild(parameters.get(index), JavaSyntaxKinds.TYPE_REFERENCE.id());
+                if (typeRef != null && !"var".equals(canonicalTypeText(typeRef))) {
+                    Type expected = nameResolver.functionalParameterType(functionalType, index);
+                    bindTypeVariables(expected, typeFromTypeReference(typeRef), substitutions);
+                }
             }
         }
 
@@ -6044,6 +6086,8 @@ public final class JavaSemanticAnalyzer {
             List<String> ownerTypeParameters = ownerTypeParameterNames(ownerQualifiedName);
             JavaTypes.DeclaredType ownerView = declaredViewAs(
                 receiverDeclared, ownerQualifiedName, new HashSet<>());
+            if (ownerView == null && methodSymbol.kind() == JavaSymbolKind.FIELD)
+                return;
             List<Type> actualTypeArguments = ownerView == null
                 ? declaredTypeArguments(receiverType)
                 : ownerView.typeArguments();

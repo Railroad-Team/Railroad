@@ -26,6 +26,73 @@ public class JavaInferenceRepairTest {
     public Path directory;
 
     @Test
+    public void inheritedGenericFieldsPreserveTheirReceiverType() {
+        String source = """
+            class Slot { int x; }
+            class Menu { Slot getSlot() { return null; } }
+            class Screen<M> { M menu; }
+            class Example extends Screen<Menu> {
+                int read(Screen<Menu> other) {
+                    var slot = this.menu.getSlot();
+                    return slot.x + other.menu.getSlot().x + menu.getSlot().x + slot.missing;
+                }
+            }
+            """;
+        assertOnlyMissingField(source, JDK);
+    }
+
+    @Test
+    public void typedLambdaDeterminesReceiverForChainedComparators() {
+        String source = """
+            import java.util.Comparator;
+            class Bounds { double x, y; }
+            record Row(Bounds bounds) {}
+            class Example {
+                void sort(java.util.List<Row> rows) {
+                    rows.sort(Comparator.comparingDouble((Row row) -> row.bounds().x)
+                        .thenComparingDouble(row -> row.bounds().y)
+                        .thenComparingDouble(row -> row.bounds().missing));
+                }
+            }
+            """;
+        assertOnlyMissingField(source, JDK);
+    }
+
+    @Test
+    public void indexedGenericCallbackParametersUseTheirInterfaceTypeArguments() throws Exception {
+        Path api = directory.resolve("api/Fields.java");
+        Files.createDirectories(api.getParent());
+        Files.writeString(api, """
+            package api;
+            public class Fields<B> {
+                public interface Getter<V, E> { V get(E entry); }
+                public interface Setter<V, E> { void set(E entry, V value); }
+                public <V> void register(V value, Getter<V, B> getter, Setter<V, B> setter) {}
+            }
+            """);
+        String source = """
+            import api.Fields;
+            class Base { boolean dirty; }
+            class Example<T extends Example<T>> extends Base {
+                Fields<T> fields;
+                void init() {
+                    fields.register(false, entry -> entry.dirty, (entry, value) -> entry.dirty = value);
+                    fields.register(false, entry -> entry.missing, (entry, value) -> {});
+                }
+            }
+            """;
+        var index = new CompositeJavaSymbolIndex(List.of(new JavaProjectSemanticIndexer().build(directory), JDK));
+        assertOnlyMissingField(source, index);
+    }
+
+    private void assertOnlyMissingField(String source, JavaSymbolIndex index) {
+        var issues = JavaInspectionTestSupport.runProviders(List.of(new CoreMemberResolutionInspection()),
+            directory.resolve("Example.java"), source, index);
+        assertEquals(List.of("Cannot resolve member 'missing'"), issues.stream()
+            .map(SemanticDiagnostic::message).toList());
+    }
+
+    @Test
     public void wildcardReadsUseBoundsFromTheDeclaringSourceFile() throws Exception {
         Path api = directory.resolve("api/Storage.java");
         Files.createDirectories(api.getParent());
