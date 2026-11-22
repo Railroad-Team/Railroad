@@ -32,6 +32,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
      */
     public static final String ID = "railroad:core-definite-assignment";
     private static final int LOOP_FIXPOINT_ITERATION_LIMIT = 32;
+    private static final String YIELD_TARGET = "<yield>";
 
     private static final String JAVA_METHOD_DECLARATION = "JAVA_METHOD_DECLARATION";
     private static final String JAVA_CONSTRUCTOR_DECLARATION = "JAVA_CONSTRUCTOR_DECLARATION";
@@ -331,13 +332,14 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
 
         FlowState conditionState = analyzeNode(context, children.getFirst(), state, unassignedReporter,
             illegalFinalReporter);
+        FlowState branchEntry = conditionState.withoutAbruptExits();
         FlowState thenState = children.size() > 1
-            ? analyzeNode(context, children.get(1), conditionState, unassignedReporter, illegalFinalReporter)
-            : conditionState;
+            ? analyzeNode(context, children.get(1), branchEntry, unassignedReporter, illegalFinalReporter)
+            : branchEntry;
         FlowState elseState = children.size() > 2
-            ? analyzeNode(context, children.get(2), conditionState, unassignedReporter, illegalFinalReporter)
-            : conditionState;
-        return FlowState.mergeBranches(thenState, elseState);
+            ? analyzeNode(context, children.get(2), branchEntry, unassignedReporter, illegalFinalReporter)
+            : branchEntry;
+        return FlowState.mergeBranches(thenState, elseState).withAbruptExitsFrom(conditionState);
     }
 
     private static FlowState analyzeLabeledStatement(
@@ -407,7 +409,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             ? conditionState
             : analyzeNode(context, body, conditionState, unassignedReporter, illegalFinalReporter);
         FlowSnapshot normalExit = isConstantTrueExpression(context, condition) ? null : conditionState.snapshot();
-        return FlowState.loopExitFrom(normalExit, bodyState.resumeContinues(loopLabel));
+        return FlowState.loopExitFrom(normalExit, bodyState.resumeContinues(loopLabel)).withAbruptExitsFrom(state);
     }
 
     private static FlowState analyzeDoWhileStatement(
@@ -652,51 +654,26 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         if (rules.isEmpty())
             return selectorState;
 
-        FlowState switchExit = switchHasDefault(rules)
-            ? selectorState.withNormalFlow(false)
-            : selectorState.withoutAbruptExits();
-        FlowState fallthrough = selectorState.withNormalFlow(false);
+        boolean expression = JAVA_SWITCH_EXPRESSION.equals(node.kind().id());
+        FlowState entry = selectorState.withoutAbruptExits();
+        FlowState unreachable = entry.withNormalFlow(false);
+        FlowState switchExit = expression || switchHasDefault(rules) ? unreachable : entry;
+        FlowState fallthrough = unreachable;
         for (SyntaxNode rule : rules) {
-            if (fallthrough.reachable() && isArrowSwitchRule(rule)) {
-                switchExit = FlowState.mergeBranches(switchExit, fallthrough.withoutAbruptExits());
-                fallthrough = fallthrough.withNormalFlow(false);
-            }
-
-            FlowState entryState = FlowState.mergeBranches(selectorState.withoutAbruptExits(),
-                fallthrough.withoutAbruptExits());
-            FlowState ruleState = analyzeSwitchRule(context, rule, entryState, unassignedReporter,
+            FlowState entryState = FlowState.mergeBranches(entry, fallthrough);
+            FlowState ruleState = analyzeNodeSequence(context, structuralChildren(rule), entryState, unassignedReporter,
                 illegalFinalReporter);
-            FlowState resumedBreaks = ruleState.resumeBreaks();
             if (isArrowSwitchRule(rule)) {
-                switchExit = FlowState.mergeBranches(switchExit, resumedBreaks.withoutAbruptExits());
-                fallthrough = selectorState.withNormalFlow(false);
+                switchExit = FlowState.mergeBranches(switchExit, ruleState);
+                fallthrough = unreachable;
             } else {
-                switchExit = FlowState.mergeBranches(switchExit, resumedBreaks.withNormalFlow(false));
+                switchExit = FlowState.mergeBranches(switchExit, ruleState.withNormalFlow(false));
                 fallthrough = ruleState.withoutAbruptExits();
             }
         }
-        return FlowState.mergeBranches(switchExit, fallthrough.withoutAbruptExits());
-    }
-
-    private static FlowState analyzeSwitchRule(
-        JavaRuleContext context,
-        SyntaxNode rule,
-        FlowState state,
-        @Nullable JavaInspectionRuleReporter unassignedReporter,
-        @Nullable JavaInspectionRuleReporter illegalFinalReporter
-    ) {
-        FlowState current = state;
-        boolean pastLabel = false;
-        for (SyntaxNode child : structuralChildren(rule)) {
-            if (!pastLabel) {
-                pastLabel = true;
-                continue;
-            }
-            current = analyzeNode(context, child, current, unassignedReporter, illegalFinalReporter);
-            if (!current.reachable())
-                return current;
-        }
-        return current;
+        return FlowState.mergeBranches(switchExit, fallthrough)
+            .resumeBreaks(expression ? YIELD_TARGET : null)
+            .withAbruptExitsFrom(selectorState);
     }
 
     private static FlowState analyzeAbruptStatement(
@@ -710,6 +687,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         return switch (node.kind().id()) {
             case JAVA_BREAK_STATEMENT -> analyzed.breakExit(breakOrContinueLabel(context, node));
             case JAVA_CONTINUE_STATEMENT -> analyzed.continueExit(breakOrContinueLabel(context, node));
+            case JAVA_YIELD_STATEMENT -> analyzed.breakExit(YIELD_TARGET);
             default -> analyzed.unreachable();
         };
     }
@@ -731,8 +709,6 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             return analyzeAssignmentExpression(context, node, state, unassignedReporter, illegalFinalReporter);
         if (isIncrementExpression(node))
             return analyzeIncrementExpression(context, node, state, unassignedReporter, illegalFinalReporter);
-        if (JAVA_SWITCH_EXPRESSION.equals(kindId))
-            return analyzeSwitchStatement(context, node, state, unassignedReporter, illegalFinalReporter);
         if (context.isExpressionNode(node))
             return analyzeReads(context, node, state, unassignedReporter, illegalFinalReporter);
 
@@ -798,6 +774,9 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             return analyzeAssignmentExpression(context, node, state, unassignedReporter, illegalFinalReporter);
         if (isIncrementExpression(node))
             return analyzeIncrementExpression(context, node, state, unassignedReporter, illegalFinalReporter);
+
+        if (JAVA_SWITCH_EXPRESSION.equals(kindId))
+            return analyzeSwitchStatement(context, node, state, unassignedReporter, illegalFinalReporter);
 
         FlowState current = state;
         if (JAVA_NAME_EXPRESSION.equals(kindId)) {
@@ -1790,10 +1769,6 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             return new FlowSnapshot(definitelyAssigned, maybeAssigned);
         }
 
-        private FlowState resumeBreaks() {
-            return resumeBreaks(null);
-        }
-
         private FlowState resumeBreaks(@Nullable String label) {
             return resumeExits(breakExits, true, label);
         }
@@ -1860,8 +1835,10 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                     exits.add(exit.snapshot());
                 }
             }
+            List<FlowExit> outerBreaks = bodyEnd.breakExits.stream().filter(exit -> exit.label() != null).toList();
             if (exits.isEmpty())
-                return new FlowState(bodyEnd.definitelyAssigned, bodyEnd.maybeAssigned, false, List.of(), List.of());
+                return new FlowState(bodyEnd.definitelyAssigned, bodyEnd.maybeAssigned, false, outerBreaks,
+                    bodyEnd.continueExits);
 
             Set<VariableKey> definitely = new LinkedHashSet<>(exits.getFirst().definitelyAssigned());
             Set<VariableKey> maybe = new LinkedHashSet<>();
@@ -1870,7 +1847,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 maybe.addAll(exit.maybeAssigned());
             }
             maybe.addAll(bodyEnd.maybeAssigned);
-            return new FlowState(Set.copyOf(definitely), Set.copyOf(maybe), true, List.of(), List.of());
+            return new FlowState(Set.copyOf(definitely), Set.copyOf(maybe), true, outerBreaks, bodyEnd.continueExits);
         }
 
         private static List<FlowExit> concat(List<FlowExit> left, List<FlowExit> right) {
