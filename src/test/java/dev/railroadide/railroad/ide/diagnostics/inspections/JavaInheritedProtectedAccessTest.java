@@ -92,6 +92,25 @@ public class JavaInheritedProtectedAccessTest {
     }
 
     @Test
+    public void directCallOnAnonymousClassUsesTheVisibilityOfItsOverride() {
+        String source = """
+            package sub;
+            import base.Base;
+            class Sub {
+                void run() {
+                    new Base() { @Override public void ping() {} }.ping();
+                    (new Base() { @Override public void ping() {} }).ping();
+                    new Base() {}.ping();
+                }
+            }
+            """;
+        List<SemanticDiagnostic> diagnostics = run(source);
+        assertEquals(List.of("Call 'ping' is not accessible from here"),
+            diagnostics.stream().map(SemanticDiagnostic::message).toList());
+        assertEquals(source.lastIndexOf("ping"), diagnostics.getFirst().startOffset());
+    }
+
+    @Test
     public void unrelatedReceiverIsStillInaccessible() {
         List<SemanticDiagnostic> diagnostics = run("""
             package sub;

@@ -2652,7 +2652,7 @@ public final class JavaGreenParser {
             children.add(parseVariableDeclarator());
         }
 
-        if (requireSemicolon || peekSignificantType() == JavaTokenType.SEMICOLON) {
+        if (requireSemicolon) {
             expectSignificant(JavaTokenType.SEMICOLON, children);
         }
 

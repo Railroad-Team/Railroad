@@ -22,6 +22,24 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaAssignmentAndCallResolutionInspectionTest {
     @Test
+    public void instanceofProducesBooleanForAssignmentsAndOverloadSelection() {
+        String source = """
+            class Example {
+                int select(boolean flag) { return 1; }
+                String select(Object value) { return ""; }
+                void run(Object value) {
+                    boolean plain = value instanceof String;
+                    int selected = select(value instanceof String text);
+                    int invalid = value instanceof String;
+                }
+            }
+            """;
+        var diagnostics = runProvider(new CoreAssignmentInspection(), source);
+        assertEquals(List.of("Cannot assign 'boolean' to 'int'"),
+            diagnostics.stream().map(SemanticDiagnostic::message).toList());
+    }
+
+    @Test
     public void assignmentRuleAcceptsTypesThatCannotBeResolved() {
         String source = """
             import missing.Noise;

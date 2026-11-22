@@ -76,6 +76,23 @@ public class JavaSyntaxParserTest {
     }
 
     @Test
+    public void parsesSeparatorsBetweenDeclaredAndReferencedTryResources() {
+        String source = """
+            class Example {
+                void run(Resource existing) throws Exception {
+                    try (Resource first = open();
+                         Resource second = open(); existing;) {}
+                }
+            }
+            """;
+        var result = JavaSyntaxParser.parseWithDiagnostics(source);
+        assertTrue(result.diagnostics().isEmpty(), result.diagnostics()::toString);
+        assertEquals(source, JavaParserTestSupport.syntaxText(result.tree()));
+        assertFalse(JavaSyntaxParser.parseWithDiagnostics(source.replace("open();", "open()"))
+            .diagnostics().isEmpty());
+    }
+
+    @Test
     public void parsesAnnotatedReturnTypesAfterAdjacentGenericClosers() {
         String source = """
             class Example {

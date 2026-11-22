@@ -41,6 +41,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 3) baseline type inference/checking
  */
 public final class JavaSemanticAnalyzer {
+    private static final Type BOOLEAN_TYPE = new JavaTypes.PrimitiveType("boolean");
     private static final ReentrantLock JDK_CACHE_LOCK = new ReentrantLock();
     private static volatile Set<String> cachedJdkQualifiedTypeNames;
     private static volatile Map<String, ClassStub> cachedJdkClassStubsByQualifiedName;
@@ -1198,6 +1199,9 @@ public final class JavaSemanticAnalyzer {
             SyntaxNode expressionNode,
             SyntaxNode usageSite
         ) {
+            String anonymousType = anonymousReceiverType(expressionNode);
+            if (anonymousType != null)
+                return anonymousType;
             Symbol resolved = context.resolvedSymbol(expressionNode);
             if (resolved != null) {
                 if (isTypeSymbol(resolved.kind()))
@@ -2070,6 +2074,7 @@ public final class JavaSemanticAnalyzer {
                 case "JAVA_ARRAY_ACCESS_EXPRESSION" -> inferArrayAccessTypeForResolution(node);
                 case "JAVA_ASSIGNMENT_EXPRESSION" -> inferAssignmentTypeForResolution(node);
                 case "JAVA_BINARY_EXPRESSION" -> inferBinaryTypeForResolution(node);
+                case "JAVA_INSTANCEOF_EXPRESSION" -> BOOLEAN_TYPE;
                 case "JAVA_CAST_EXPRESSION" -> inferCastTypeForResolution(node);
                 case "JAVA_CONDITIONAL_EXPRESSION" -> inferConditionalTypeForResolution(node);
                 case "JAVA_SWITCH_EXPRESSION" -> inferSwitchExpressionTypeForResolution(node);
@@ -2083,7 +2088,7 @@ public final class JavaSemanticAnalyzer {
                 context.poll();
                 String kindId = token.kind().id();
                 if (JavaSyntaxKinds.tokenKind(JavaTokenType.BOOLEAN_LITERAL).id().equals(kindId))
-                    return new JavaTypes.PrimitiveType("boolean");
+                    return BOOLEAN_TYPE;
                 if (JavaSyntaxKinds.tokenKind(JavaTokenType.NUMBER_FLOATING_POINT_LITERAL).id().equals(kindId))
                     return numericLiteralType(token.text(), true);
                 if (JavaSyntaxKinds.tokenKind(JavaTokenType.CHARACTER_LITERAL).id().equals(kindId))
@@ -2471,7 +2476,7 @@ public final class JavaSemanticAnalyzer {
                 || "==".equals(operator) || "!=".equals(operator)
                 || "<".equals(operator) || "<=".equals(operator)
                 || ">".equals(operator) || ">=".equals(operator))
-                return new JavaTypes.PrimitiveType("boolean");
+                return BOOLEAN_TYPE;
             if (isNumericType(left) && isNumericType(right))
                 return promoteNumeric(left, right);
             return new JavaTypes.UnknownType("<unknown>");
@@ -4277,7 +4282,24 @@ public final class JavaSemanticAnalyzer {
             return null;
         }
 
+        private @Nullable String anonymousReceiverType(SyntaxNode receiver) {
+            while (JavaSyntaxKinds.PARENTHESIZED_EXPRESSION.id().equals(receiver.kind().id())) {
+                receiver = receiver.children().stream().filter(JavaSemanticAnalyzer::isExpressionNode).findFirst()
+                    .orElse(null);
+                if (receiver == null)
+                    return null;
+            }
+            if (!JavaSyntaxKinds.CLASS_INSTANCE_CREATION_EXPRESSION.id().equals(receiver.kind().id()))
+                return null;
+            SyntaxNode body = directChild(receiver, JavaSyntaxKinds.ANONYMOUS_CLASS_BODY.id());
+            Symbol type = body == null ? null : context.declaredSymbol(body);
+            return type == null ? null : type.qualifiedName().orElse(null);
+        }
+
         private @Nullable String qualifiedTypeNameOfExpression(SyntaxNode expressionNode, SyntaxNode usageSite) {
+            String anonymousType = anonymousReceiverType(expressionNode);
+            if (anonymousType != null)
+                return anonymousType;
             if (JavaSyntaxKinds.NAME_EXPRESSION.id().equals(expressionNode.kind().id())) {
                 Type lambdaParameterType = contextualLambdaReferenceType(expressionNode);
                 String lambdaOwner = qualifiedMemberOwnerType(lambdaParameterType, usageSite);
@@ -5113,7 +5135,6 @@ public final class JavaSemanticAnalyzer {
 
     private static final class TypeResolver {
         private static final Type UNKNOWN_TYPE = new JavaTypes.UnknownType("<unknown>");
-        private static final Type BOOLEAN_TYPE = new JavaTypes.PrimitiveType("boolean");
         private static final Set<String> NUMERIC_PRIMITIVES = Set.of("byte", "short", "char", "int", "long", "float",
             "double");
 
@@ -5191,6 +5212,7 @@ public final class JavaSemanticAnalyzer {
                 case "JAVA_NAME_EXPRESSION", "JAVA_FIELD_ACCESS_EXPRESSION" -> inferReferenceType(node);
                 case "JAVA_ASSIGNMENT_EXPRESSION" -> inferAssignmentType(node);
                 case "JAVA_BINARY_EXPRESSION" -> inferBinaryType(node);
+                case "JAVA_INSTANCEOF_EXPRESSION" -> BOOLEAN_TYPE;
                 case "JAVA_METHOD_INVOCATION_EXPRESSION" -> inferMethodInvocationType(node);
                 case "JAVA_CLASS_INSTANCE_CREATION_EXPRESSION" -> inferClassInstanceCreationType(node);
                 case "JAVA_ARRAY_CREATION_EXPRESSION" -> inferArrayCreationType(node);
