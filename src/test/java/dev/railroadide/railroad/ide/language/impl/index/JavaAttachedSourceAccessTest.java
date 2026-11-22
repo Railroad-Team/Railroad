@@ -3,6 +3,8 @@ package dev.railroadide.railroad.ide.language.impl.index;
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.diagnostics.inspections.CoreCallResolutionInspection;
 import dev.railroadide.railroad.ide.diagnostics.inspections.CoreImportInspection;
+import dev.railroadide.railroad.ide.diagnostics.inspections.CoreMemberResolutionInspection;
+import dev.railroadide.railroad.ide.diagnostics.inspections.CoreNameResolutionInspection;
 import dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectionTestSupport;
 import dev.railroadide.railroad.ide.sst.project.JavaLibrarySources;
 import dev.railroadide.railroad.ide.sst.project.JavaLibrarySymbolIndex;
@@ -27,6 +29,36 @@ import static org.junit.jupiter.api.Assertions.*;
 public class JavaAttachedSourceAccessTest {
     @TempDir
     public Path directory;
+
+    @Test
+    public void sourceOnlyClassAndItsFieldsBelongToTheOwningAttachment() throws IOException {
+        String source = "package example; class Reader { int ok = Scope.START; int bad = Scope.MISSING; }";
+        String scope = "package example; final class Scope { static final int START = 1; }";
+        Path binary = jar("reader.jar", Map.of("example/Reader.class", libraryClass("example/Reader")));
+        Path sibling = jar("other.jar", Map.of());
+        Path archive = jar("reader-sources.jar", Map.of(
+            "example/Reader.java", source.getBytes(StandardCharsets.UTF_8),
+            "example/Scope.java", scope.getBytes(StandardCharsets.UTF_8)));
+        var doc = document(JavaLibrarySymbolIndex.archiveEntry(archive, "example/Reader.java"), source);
+        var config = new WorkspaceConfigurationSnapshot(1, Set.of("main"), Map.of(
+            "module.main.classpath", binary + "\n" + sibling));
+        var workspace = new WorkspaceSnapshot("attached", Map.of(doc.id(), doc), config, 0);
+        var base = JavaLibrarySymbolIndex.build(List.of(binary, sibling));
+        try (var provider = new JavaWorkspaceAnalysisProvider(() -> true, (_, _) -> base)) {
+            var view = provider.capture(workspace, doc.id());
+            var field = view.lookupMember("example.Scope", "START").getFirst();
+            assertEquals(scope, view.sourceText(field.sourceFile()).orElseThrow());
+            var diagnostics = JavaInspectionTestSupport.runProviders(List.of(new CoreNameResolutionInspection(),
+                new CoreMemberResolutionInspection()), Path.of("Reader.java"), source, view);
+            assertEquals(List.of("Cannot resolve member 'MISSING'"), diagnostics.stream()
+                .map(issue -> issue.message()).toList());
+        }
+        assertTrue(base.lookupQualifiedName("example.Scope").isEmpty());
+        assertTrue(base.forAttachedSource(binary, () -> {
+        }).forAttachedSource(sibling, () -> {
+        })
+            .lookupQualifiedName("example.Scope").isEmpty());
+    }
 
     @Test
     public void attachedImportsResolveToRelocatedBinaryDeclarationsOnlyInTheirOwnArchive() throws IOException {

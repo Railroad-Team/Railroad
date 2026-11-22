@@ -216,6 +216,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
         }
         JavaProjectSemanticIndex sources = builder.build();
         JavaSymbolIndex binary = awaitBinaries(binaryLoad, check);
+        binary.attachedSourceTexts().forEach(texts::putIfAbsent);
         check.run();
         JavaSymbolIndex discovered = new JavaSourcePrecedenceIndex(sources, binary);
         JavaProjectSemanticIndex.Builder canonical = JavaProjectSemanticIndex.builder();

@@ -27,6 +27,11 @@ public interface JavaSymbolIndex {
         return this;
     }
 
+    /** Returns captured library sources that have declarations but no matching class file in the attached view. */
+    default Map<Path, String> attachedSourceTexts() {
+        return Map.of();
+    }
+
     /**
      * Returns immutable declaration and reference shards in this index's lookup order.
      *

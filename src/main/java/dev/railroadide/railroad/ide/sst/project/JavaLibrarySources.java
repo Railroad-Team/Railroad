@@ -4,6 +4,7 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import org.jetbrains.annotations.Nullable;
+import javax.lang.model.SourceVersion;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -219,6 +220,58 @@ public final class JavaLibrarySources {
             }
         }
         return Optional.empty();
+    }
+
+    /** Adds declarations shipped only as source to the owning archive's analysis view. */
+    public JavaSymbolIndex withSourceOnlyTypes(
+        Path binary,
+        JavaSymbolIndex symbols,
+        JavaSymbolIndex unscoped,
+        Runnable check
+    )
+        throws IOException {
+        var builder = JavaProjectSemanticIndex.builder();
+        var texts = new HashMap<Path, String>();
+        var extractor = new JavaProjectSemanticExtractor();
+        var view = directory.resolve("sources").resolve(hash(binary.toString()));
+        for (Path archive : sourceArchives(binary)) {
+            try (var zip = new ZipFile(archive.toFile(), StandardCharsets.UTF_8)) {
+                for (var entries = zip.entries(); entries.hasMoreElements();) {
+                    check.run();
+                    var entry = entries.nextElement();
+                    String name = entry.getName();
+                    if (!name.endsWith(".java"))
+                        continue;
+                    String qualified = name.substring(0, name.length() - 5).replace('/', '.');
+                    if (!SourceVersion.isName(qualified) || !name.equals(qualified.replace('.', '/') + ".java")
+                        || symbols.declaredQualifiedNames().contains(qualified))
+                        continue;
+                    Path path = view.resolve(name);
+                    if (texts.containsKey(path))
+                        continue;
+                    String text;
+                    try (var input = zip.getInputStream(entry)) {
+                        text = normalize(new String(input.readAllBytes(), StandardCharsets.UTF_8));
+                    }
+                    var uri = JavaLibrarySymbolIndex.archiveEntry(archive, name);
+                    var snapshot = new TextDocumentSnapshot(
+                        new DocumentId(UUID.nameUUIDFromBytes(uri.toString().getBytes(StandardCharsets.UTF_8))), uri,
+                        DocumentVersion.initial(), "java", DocumentOrigin.original(uri), text, StandardCharsets.UTF_8);
+                    var file = extractor.extract(path, snapshot, check);
+                    if (file.declaredSymbols().stream().noneMatch(symbol -> qualified.equals(symbol.qualifiedName()))
+                        || file.declaredSymbols().stream()
+                            .anyMatch(symbol -> symbol.qualifiedName() != null
+                                && symbols.declaredQualifiedNames().contains(symbol.qualifiedName())))
+                        continue;
+                    write(path, text);
+                    builder.putFile(file);
+                    texts.put(path, text);
+                }
+            }
+        }
+        return texts.isEmpty()
+            ? symbols
+            : new CompositeJavaSymbolIndex(List.of(symbols, builder.build()), unscoped, texts);
     }
 
     private static Optional<Path> archivePath(DocumentUri entry) {

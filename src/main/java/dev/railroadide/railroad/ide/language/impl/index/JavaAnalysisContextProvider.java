@@ -56,7 +56,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         private final Session session;
         private final String epoch;
         private final long generation;
-        private final com.google.common.cache.Cache<LibraryIndexKey, JavaLibrarySymbolIndex> libraries = CacheBuilder
+        private final com.google.common.cache.Cache<LibraryIndexKey, JavaSymbolIndex> libraries = CacheBuilder
             .newBuilder().concurrencyLevel(1).maximumSize(4).build();
         private final com.google.common.cache.Cache<Path, JavaJdkSymbolIndex> jdks = CacheBuilder.newBuilder()
             .concurrencyLevel(1).maximumSize(2).build();
@@ -364,7 +364,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
                     .orElse(null);
             }
             Path jdk = gradle == null ? javaContext.jdkHome() : JavaWorkspaceAnalysisProvider.jdkHome(gradle);
-            JavaLibrarySymbolIndex libraryIndex = libraryIndex(roots, archive, cache, activityCheck);
+            JavaSymbolIndex libraryIndex = libraryIndex(roots, archive, cache, activityCheck);
             if (!libraryIndex.declaredQualifiedNames().isEmpty()) {
                 delegates.add(libraryIndex);
             }
@@ -395,7 +395,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         return FileUtils.normalizePaths(List.copyOf(roots));
     }
 
-    private JavaLibrarySymbolIndex libraryIndex(
+    private JavaSymbolIndex libraryIndex(
         List<Path> roots,
         @Nullable Path archive,
         Cache cache,
@@ -445,7 +445,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         int binaryRoots,
         Path jdkHome,
         @Nullable JavaProjectSemanticIndex projectIndex,
-        JavaLibrarySymbolIndex libraryIndex,
+        JavaSymbolIndex libraryIndex,
         JavaJdkSymbolIndex jdkIndex
     ) {
         Railroad.LOGGER.warn(

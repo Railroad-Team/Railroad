@@ -112,7 +112,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
     }
 
     @Override
-    public JavaLibrarySymbolIndex forAttachedSource(Path archive, Runnable check) {
+    public JavaSymbolIndex forAttachedSource(Path archive, Runnable check) {
         if (unscoped != this)
             return unscoped.forAttachedSource(archive, check);
         check.run();
@@ -156,7 +156,13 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
                 Railroad.LOGGER.warn("Failed to read package relocations for attached source from {}", archive,
                     exception);
             }
-            return view == this && aliases.isEmpty() ? this : new JavaLibrarySymbolIndex(this, view, aliases);
+            var scoped = view == this && aliases.isEmpty() ? this : new JavaLibrarySymbolIndex(this, view, aliases);
+            try {
+                return JavaLibrarySources.shared().withSourceOnlyTypes(archive, scoped, this, check);
+            } catch (IOException exception) {
+                Railroad.LOGGER.warn("Failed to index source-only declarations from {}", archive, exception);
+                return scoped;
+            }
         } catch (IOException exception) {
             Railroad.LOGGER.warn("Failed to read access declarations for attached source from {}", archive, exception);
             return this;
