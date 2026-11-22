@@ -33,6 +33,8 @@ import java.util.regex.Pattern;
  * Binary symbol index built from class directories, JAR archives, and JMOD archives.
  */
 public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
+    private final JavaLibrarySymbolIndex unscoped;
+
     private JavaLibrarySymbolIndex(
         Map<String, ClassStub> classStubsByQualifiedName,
         Map<String, Path> sourceByQualifiedName,
@@ -40,6 +42,16 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         Runnable activityCheck
     ) {
         super(classStubsByQualifiedName, sourceByQualifiedName, locations, Map.of(), activityCheck, false);
+        unscoped = this;
+    }
+
+    private JavaLibrarySymbolIndex(
+        JavaLibrarySymbolIndex unscoped,
+        JavaLibrarySymbolIndex symbols,
+        Map<String, String> aliases
+    ) {
+        super(symbols, aliases);
+        this.unscoped = unscoped;
     }
 
     /**
@@ -101,6 +113,8 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
 
     @Override
     public JavaLibrarySymbolIndex forAttachedSource(Path archive, Runnable check) {
+        if (unscoped != this)
+            return unscoped.forAttachedSource(archive, check);
         check.run();
         try {
             var declarations = AccessDeclarationVisitor.read(archive, check);
@@ -128,11 +142,21 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
                         exception);
                 }
             }
-            if (changed.isEmpty())
-                return this;
-            var stubs = new HashMap<>(classStubsByQualifiedName());
-            stubs.putAll(changed);
-            return new JavaLibrarySymbolIndex(stubs, binaryOrigins(), binaryLocations(), check);
+            JavaLibrarySymbolIndex view = this;
+            if (!changed.isEmpty()) {
+                var stubs = new HashMap<>(classStubsByQualifiedName());
+                stubs.putAll(changed);
+                view = new JavaLibrarySymbolIndex(stubs, binaryOrigins(), binaryLocations(), check);
+            }
+            Map<String, String> aliases = Map.of();
+            try {
+                aliases = JavaSourceRelocations.aliases(archive, binaryOrigins(), view.classStubsByQualifiedName(),
+                    check);
+            } catch (IOException exception) {
+                Railroad.LOGGER.warn("Failed to read package relocations for attached source from {}", archive,
+                    exception);
+            }
+            return view == this && aliases.isEmpty() ? this : new JavaLibrarySymbolIndex(this, view, aliases);
         } catch (IOException exception) {
             Railroad.LOGGER.warn("Failed to read access declarations for attached source from {}", archive, exception);
             return this;

@@ -1,6 +1,9 @@
 package dev.railroadide.railroad.ide.language.impl.index;
 
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.diagnostics.inspections.CoreCallResolutionInspection;
+import dev.railroadide.railroad.ide.diagnostics.inspections.CoreImportInspection;
+import dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectionTestSupport;
 import dev.railroadide.railroad.ide.sst.project.JavaLibrarySources;
 import dev.railroadide.railroad.ide.sst.project.JavaLibrarySymbolIndex;
 import org.junit.jupiter.api.Test;
@@ -24,6 +27,88 @@ import static org.junit.jupiter.api.Assertions.*;
 public class JavaAttachedSourceAccessTest {
     @TempDir
     public Path directory;
+
+    @Test
+    public void attachedImportsResolveToRelocatedBinaryDeclarationsOnlyInTheirOwnArchive() throws IOException {
+        String source = """
+            package example;
+            import vendor.codec.api.Reader;
+            import vendor.codec.util.Format;
+            import unrelated.Other;
+            public class Adapter {
+                Reader reader;
+                void use() { Format.name(); }
+            }
+            """;
+        var adapter = new ClassWriter(0);
+        adapter.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, "example/Adapter", null, "java/lang/Object", null);
+        adapter.visitField(0, "reader", "Linternal/codec/api/Reader;", null, null).visitEnd();
+        adapter.visitEnd();
+        Path binary = jar("adapter.jar", Map.of(
+            "example/Adapter.class", adapter.toByteArray(),
+            "internal/codec/api/Reader.class", libraryClass("internal/codec/api/Reader"),
+            "internal/codec/util/Format.class", libraryClass("internal/codec/util/Format"),
+            "internal/codec/util/Existing.class", libraryClass("internal/codec/util/Existing"),
+            "internal/Other.class", libraryClass("internal/Other")));
+        jar("adapter-sources.jar", Map.of("example/Adapter.java", source.getBytes(StandardCharsets.UTF_8)));
+        Path separate = jar("separate.jar", Map.of(
+            "vendor/codec/util/Existing.class", libraryClass("vendor/codec/util/Existing"),
+            "internal/codec/util/Foreign.class", libraryClass("internal/codec/util/Foreign")));
+        var base = JavaLibrarySymbolIndex.build(List.of(binary, separate));
+        var view = base.forAttachedSource(binary, () -> {
+        });
+        assertEquals("internal.codec.api.Reader", view.binaryTypeName("vendor.codec.api.Reader"));
+        assertEquals(base.lookupQualifiedName("internal.codec.util.Format"),
+            view.lookupQualifiedName("vendor.codec.util.Format"));
+        assertEquals(base.lookupMember("internal.codec.util.Format", "name"),
+            view.lookupMember("vendor.codec.util.Format", "name"));
+        assertFalse(view.lookupMember("vendor.codec.util.Format", "name").isEmpty());
+        assertTrue(view.containsPackage("vendor.codec.api"));
+        assertTrue(view.lookupQualifiedName("unrelated.Other").isEmpty());
+        assertTrue(view.lookupQualifiedName("vendor.codec.util.Foreign").isEmpty());
+        assertEquals("vendor.codec.util.Existing", view.binaryTypeName("vendor.codec.util.Existing"));
+        assertNull(base.lookupClassStub("vendor.codec.api.Reader"));
+        assertNull(base.forAttachedSource(separate, () -> {
+        }).lookupClassStub("vendor.codec.api.Reader"));
+        assertNull(view.forAttachedSource(separate, () -> {
+        }).lookupClassStub("vendor.codec.api.Reader"));
+        var diagnostics = JavaInspectionTestSupport.runProviders(List.of(new CoreImportInspection(),
+            new CoreCallResolutionInspection()), Path.of("Adapter.java"), source, view);
+        assertEquals(List.of("Cannot resolve import 'unrelated.Other'"), diagnostics.stream()
+            .filter(issue -> issue.code().startsWith("SEM_UNRESOLVED_")).map(issue -> issue.message()).toList());
+    }
+
+    @Test
+    public void conflictingRelocationEvidenceDoesNotIntroducePackageAliases() throws IOException {
+        var adapter = new ClassWriter(0);
+        adapter.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, "example/Adapter", null, "java/lang/Object", null);
+        adapter.visitField(0, "first", "Lone/codec/Reader;", null, null).visitEnd();
+        adapter.visitField(0, "second", "Ltwo/codec/Writer;", null, null).visitEnd();
+        adapter.visitEnd();
+        Path binary = jar("ambiguous.jar", Map.of(
+            "example/Adapter.class", adapter.toByteArray(),
+            "one/codec/Reader.class", libraryClass("one/codec/Reader"),
+            "two/codec/Writer.class", libraryClass("two/codec/Writer")));
+        String source = """
+            package example;
+            import vendor.codec.Reader;
+            import vendor.codec.Writer;
+            class Adapter { Reader first; Writer second; }
+            """;
+        jar("ambiguous-sources.jar", Map.of("example/Adapter.java", source.getBytes(StandardCharsets.UTF_8)));
+        var base = JavaLibrarySymbolIndex.build(List.of(binary));
+        assertSame(base, base.forAttachedSource(binary, () -> {
+        }));
+    }
+
+    private static byte[] libraryClass(String name) {
+        var writer = new ClassWriter(0);
+        writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, name, null, "java/lang/Object", null);
+        writer.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_NATIVE, "name",
+            "()Ljava/lang/String;", null, null).visitEnd();
+        writer.visitEnd();
+        return writer.toByteArray();
+    }
 
     @Test
     public void attachedSourcesUseTheOwningModulesCompiledArtifact() throws IOException {

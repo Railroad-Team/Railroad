@@ -30,17 +30,41 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     private final Set<String> packages;
     private final Map<String, ClassStub> classStubsByQualifiedName;
     private final Map<String, Path> sourceByQualifiedName;
+    private final Map<String, String> aliases;
+    private final Map<String, ClassStub> visibleStubs;
     private final Map<String, Object> ownersBySimpleName;
     private final ConcurrentHashMap<String, ClassDeclarations> declarationsByOwner;
 
     /** Reuses fully immutable lookup storage when wrapping an already published binary index. */
     protected JavaStubSymbolIndex(JavaStubSymbolIndex source) {
+        this(source, source.aliases);
+    }
+
+    /** Shares physical declarations and their navigation identities while exposing attachment-local source names. */
+    protected JavaStubSymbolIndex(JavaStubSymbolIndex source, Map<String, String> aliases) {
+        this.aliases = Map.copyOf(aliases);
         alternateLocations = source.alternateLocations;
         semanticShards = source.semanticShards;
         binaryLocations = source.binaryLocations;
-        declaredQualifiedNames = source.declaredQualifiedNames;
-        typeNames = source.typeNames;
-        packages = source.packages;
+        if (aliases.equals(source.aliases)) {
+            visibleStubs = source.visibleStubs;
+            declaredQualifiedNames = source.declaredQualifiedNames;
+            typeNames = source.typeNames;
+            packages = source.packages;
+        } else {
+            var visible = new HashMap<>(source.classStubsByQualifiedName);
+            var names = new HashSet<>(source.typeNames);
+            var packageNames = new HashSet<>(source.packages);
+            aliases.forEach((alias, binary) -> {
+                visible.put(alias, source.classStubsByQualifiedName.get(binary));
+                names.add(alias);
+                packageNames.add(alias.substring(0, alias.lastIndexOf('.')));
+            });
+            visibleStubs = Map.copyOf(visible);
+            declaredQualifiedNames = visibleStubs.keySet();
+            typeNames = Set.copyOf(names);
+            packages = Set.copyOf(packageNames);
+        }
         classStubsByQualifiedName = source.classStubsByQualifiedName;
         sourceByQualifiedName = source.sourceByQualifiedName;
         ownersBySimpleName = source.ownersBySimpleName;
@@ -132,6 +156,8 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
             }
         }
         this.classStubsByQualifiedName = Map.copyOf(published);
+        this.aliases = Map.of();
+        this.visibleStubs = this.classStubsByQualifiedName;
         this.sourceByQualifiedName = Map.copyOf(sourceByQualifiedName);
         this.declaredQualifiedNames = this.classStubsByQualifiedName.keySet();
         declarationsByOwner = new ConcurrentHashMap<>();
@@ -242,7 +268,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
 
     @Override
     public Map<String, ClassStub> classStubsByQualifiedName() {
-        return classStubsByQualifiedName;
+        return visibleStubs;
     }
 
     @Override
@@ -269,16 +295,19 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         String name = qualifiedName.trim();
         int separator = name.indexOf('#');
         String owner = separator < 0 ? name : name.substring(0, separator);
-        if (!classStubsByQualifiedName.containsKey(owner))
+        String binary = aliases.getOrDefault(owner, owner);
+        if (!classStubsByQualifiedName.containsKey(binary))
             return List.of();
-        return declarations(owner).symbols().stream().filter(symbol -> name.equals(symbol.qualifiedName())).toList();
+        String target = separator < 0 ? binary : binary + name.substring(separator);
+        return declarations(binary).symbols().stream().filter(symbol -> target.equals(symbol.qualifiedName())).toList();
     }
 
     @Override
     public List<JavaProjectSemanticIndex.SymbolDescriptor> lookupMembers(String qualifiedName) {
         if (qualifiedName == null || qualifiedName.isBlank())
             return List.of();
-        String owner = qualifiedName.trim();
+        String name = qualifiedName.trim();
+        String owner = aliases.getOrDefault(name, name);
         return classStubsByQualifiedName.containsKey(owner) ? declarations(owner).members() : List.of();
     }
 

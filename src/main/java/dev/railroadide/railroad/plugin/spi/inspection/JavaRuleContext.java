@@ -1531,7 +1531,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return null;
         if (localTypeSymbolsByQualifiedName().containsKey(qualifiedTypeName)
             || availableQualifiedTypeNames.contains(qualifiedTypeName))
-            return qualifiedTypeName;
+            return symbolIndex == null ? qualifiedTypeName : symbolIndex.binaryTypeName(qualifiedTypeName);
 
         String candidate = qualifiedTypeName;
         int dot = candidate.lastIndexOf('.');
@@ -1539,7 +1539,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             candidate = candidate.substring(0, dot) + "$" + candidate.substring(dot + 1);
             if (localTypeSymbolsByQualifiedName().containsKey(candidate)
                 || availableQualifiedTypeNames.contains(candidate))
-                return candidate;
+                return symbolIndex == null ? candidate : symbolIndex.binaryTypeName(candidate);
             dot = candidate.lastIndexOf('.', dot - 1);
         }
         return null;

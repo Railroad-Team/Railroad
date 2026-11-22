@@ -100,6 +100,17 @@ public interface JavaSymbolIndex {
     }
 
     /**
+     * Resolves a source spelling to the physical binary name, preserving names without a binary declaration.
+     *
+     * @param name qualified type name in source
+     * @return the name recorded in the class file, or the supplied name
+     */
+    default String binaryTypeName(String name) {
+        ClassStub stub = lookupClassStub(name);
+        return stub == null ? name : stub.getFullName();
+    }
+
+    /**
      * Finds indexed symbols sharing an unqualified name.
      *
      * @param simpleName the unqualified symbol name

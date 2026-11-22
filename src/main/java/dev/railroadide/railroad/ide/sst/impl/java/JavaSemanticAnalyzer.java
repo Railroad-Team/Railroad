@@ -4561,7 +4561,7 @@ public final class JavaSemanticAnalyzer {
             if (qualifiedTypeName == null || qualifiedTypeName.isBlank())
                 return null;
             if (isResolvableType(qualifiedTypeName))
-                return qualifiedTypeName;
+                return projectIndex == null ? qualifiedTypeName : projectIndex.binaryTypeName(qualifiedTypeName);
 
             String candidate = qualifiedTypeName;
             int dot = candidate.lastIndexOf('.');
@@ -4569,7 +4569,7 @@ public final class JavaSemanticAnalyzer {
                 context.poll();
                 candidate = candidate.substring(0, dot) + "$" + candidate.substring(dot + 1);
                 if (isResolvableType(candidate))
-                    return candidate;
+                    return projectIndex == null ? candidate : projectIndex.binaryTypeName(candidate);
                 dot = candidate.lastIndexOf('.', dot - 1);
             }
             return null;
@@ -7070,7 +7070,7 @@ public final class JavaSemanticAnalyzer {
             if (qualifiedTypeName == null || qualifiedTypeName.isBlank())
                 return null;
             if (isResolvableType(qualifiedTypeName))
-                return qualifiedTypeName;
+                return projectIndex == null ? qualifiedTypeName : projectIndex.binaryTypeName(qualifiedTypeName);
 
             String candidate = qualifiedTypeName;
             int dot = candidate.lastIndexOf('.');
@@ -7078,7 +7078,7 @@ public final class JavaSemanticAnalyzer {
                 context.poll();
                 candidate = candidate.substring(0, dot) + "$" + candidate.substring(dot + 1);
                 if (isResolvableType(candidate))
-                    return candidate;
+                    return projectIndex == null ? candidate : projectIndex.binaryTypeName(candidate);
                 dot = candidate.lastIndexOf('.', dot - 1);
             }
             return null;
