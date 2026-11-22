@@ -23,6 +23,74 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaAssignmentAndCallResolutionInspectionTest {
     @Test
+    public void compoundOperatorsAndNarrowingLiteralsRespectTheirOperandTypes() {
+        String source = """
+            class Example {
+                void run(int offset, boolean flag, Object obj) {
+                    char digit = 0;
+                    byte mask = -128;
+                    digit <<= offset;
+                    digit += offset;
+                    mask |= 1;
+                    String text = "";
+                    text += digit;
+                    obj += text;
+                    byte outside = 128;
+                    digit = offset;
+                    digit |= 1.5;
+                    text -= offset;
+                    flag += flag;
+                    Byte boxed = 1;
+                    boxed += offset;
+                }
+            }
+            """;
+        var diagnostics = runProvider(new CoreAssignmentInspection(), source);
+        assertEquals(List.of("outside = 128", "digit = offset", "digit |= 1.5", "text -= offset",
+            "flag += flag", "boxed += offset"),
+            diagnostics.stream()
+                .map(d -> source.substring(d.startOffset(), d.endOffset()).strip()).toList());
+    }
+
+    @Test
+    public void conditionalMethodReferenceUsesTheAssignmentTarget() {
+        String source = """
+            import java.util.function.Supplier;
+            class Example {
+                Supplier<String> value;
+                void update(boolean flag, String text) {
+                    value = flag ? null : text::trim;
+                    value = flag ? text::trim : 42;
+                    Object invalid = this::hashCode;
+                }
+            }
+            """;
+        var diagnostics = runProvider(new CoreAssignmentInspection(), source);
+        assertEquals(2, diagnostics.size(), diagnostics::toString);
+        var problem = diagnostics.getFirst();
+        assertEquals("42", source.substring(problem.startOffset(), problem.endOffset()).strip());
+        assertTrue(diagnostics.getLast().message().contains("java.lang.Object"));
+    }
+
+    @Test
+    public void inheritedMemberTypeKeepsItsIdentityAcrossAnAssignment() {
+        String source = """
+            import java.lang.Thread.State;
+            interface Parent { enum State { OPEN } }
+            class Example implements Parent {
+                State state = Parent.State.OPEN;
+                void update() {
+                    state = Parent.State.OPEN;
+                    state = Thread.State.NEW;
+                }
+            }
+            """;
+        var diagnostics = runProvider(new CoreAssignmentInspection(), source);
+        assertEquals(1, diagnostics.size(), diagnostics::toString);
+        assertTrue(diagnostics.getFirst().message().contains("Thread"));
+    }
+
+    @Test
     public void arrayCloneResolvesToAPublicMethodReturningItsReceiverTypeWithoutCheckedExceptions() {
         String source = """
             class Example {

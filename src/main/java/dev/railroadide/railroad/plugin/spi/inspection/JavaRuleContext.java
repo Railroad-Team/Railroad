@@ -1246,6 +1246,47 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return isAssignable(target, source, usageSite, new HashSet<>());
     }
 
+    /**
+     * Checks the binary operation and conversion back to the left operand of a compound assignment.
+     *
+     * @param operator compound assignment operator
+     * @param target type of the left operand
+     * @param source type of the right operand
+     * @return whether the operator result can be stored in the target
+     */
+    public boolean isCompoundAssignmentCompatible(JavaTokenType operator, Type target, Type source) {
+        if (operator == JavaTokenType.PLUS_EQUALS) {
+            if ("java.lang.String".equals(target.displayName()))
+                return source.kind() != Kind.VOID;
+            if ("java.lang.String".equals(source.displayName()))
+                return isAssignable(target, source);
+        }
+        String left = target.kind() == Kind.PRIMITIVE
+            ? target.displayName()
+            : unboxedPrimitiveName(target.displayName());
+        String right = source.kind() == Kind.PRIMITIVE
+            ? source.displayName()
+            : unboxedPrimitiveName(source.displayName());
+        if (left == null || right == null || !operator.isAssignmentOperator() || operator == JavaTokenType.EQUALS)
+            return false;
+        boolean bitwise = switch (operator) {
+            case PIPE_EQUALS, CARET_EQUALS, AMPERSAND_EQUALS -> true;
+            default -> false;
+        };
+        if (left.equals("boolean") || right.equals("boolean"))
+            return bitwise && left.equals(right);
+        boolean shift = switch (operator) {
+            case LEFT_SHIFT_EQUALS, RIGHT_SHIFT_EQUALS, UNSIGNED_RIGHT_SHIFT_EQUALS -> true;
+            default -> false;
+        };
+        int leftRank = numericRank(left);
+        int rightRank = numericRank(right);
+        if ((bitwise || shift) && Math.max(leftRank, rightRank) > numericRank("long"))
+            return false;
+        int resultRank = Math.max(numericRank("int"), shift ? leftRank : Math.max(leftRank, rightRank));
+        return target.kind() == Kind.PRIMITIVE || leftRank == resultRank;
+    }
+
     private boolean isAssignable(Type target, Type source, @Nullable SyntaxNode usageSite, Set<SyntaxNode> visited) {
         Objects.requireNonNull(target, "target");
         Objects.requireNonNull(source, "source");
@@ -2717,7 +2758,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
         for (SyntaxNode node : clause.children()) {
             if (!JAVA_TYPE_REFERENCE.equals(node.kind().id()))
                 continue;
-            Type type = semanticTypeFromTypeReference(node);
+            Type type = inferredType(node).filter(inferred -> inferred instanceof DeclaredType)
+                .orElseGet(() -> semanticTypeFromTypeReference(node));
             if (type instanceof DeclaredType declared) {
                 out.add(declared);
             }

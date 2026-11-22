@@ -6935,7 +6935,7 @@ public final class JavaSemanticAnalyzer {
             String simpleName = simpleTypeName(text);
             if (usageSite != null) {
                 String memberType = JavaMemberTypeScope.resolve(simpleName, context.enclosingTypeSymbol(usageSite),
-                    this::outerTypeSymbol, this::resolvableQualifiedTypeName, null);
+                    this::outerTypeSymbol, this::resolvableQualifiedTypeName, nameResolver::directSuperTypeNames);
                 if (memberType != null)
                     return memberType;
             }
