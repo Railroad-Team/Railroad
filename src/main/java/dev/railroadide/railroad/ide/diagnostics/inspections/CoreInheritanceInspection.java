@@ -3,6 +3,8 @@ package dev.railroadide.railroad.ide.diagnostics.inspections;
 import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaDeclarationAnalysis;
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolIds;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.semantic.api.Type;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
@@ -126,7 +128,14 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
     private static void reportMissingImplementation(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
         for (SyntaxNode declarationNode : localTypeDeclarationNodes(context)) {
             Symbol declared = context.declaredSymbol(declarationNode).orElse(null);
-            if (declared == null || !isConcreteImplementingType(declared, declarationNode, context))
+            if (declared == null)
+                continue;
+            if (JAVA_ENUM_DECLARATION.equals(declarationNode.kind().id())) {
+                declared.qualifiedName()
+                    .ifPresent(owner -> reportMissingEnumImplementations(context, reporter, declarationNode, owner));
+                continue;
+            }
+            if (!isConcreteImplementingType(declared, declarationNode, context))
                 continue;
 
             String ownerQualifiedName = declared.qualifiedName().orElse(null);
@@ -165,6 +174,52 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                 }
             }
         }
+    }
+
+    private static void reportMissingEnumImplementations(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode declaration,
+        String owner
+    ) {
+        List<JavaRuleContext.MethodDescriptor> required = context.declaredMethodDescriptors(owner).stream()
+            .filter(JavaRuleContext.MethodDescriptor::isAbstract).toList();
+        SyntaxNode body = context.directChild(declaration, "JAVA_ENUM_BODY");
+        if (required.isEmpty() || body == null)
+            return;
+        List<SyntaxNode> constants = body.children().stream()
+            .filter(child -> "JAVA_ENUM_CONSTANT".equals(child.kind().id())).toList();
+        if (constants.isEmpty()) {
+            required.forEach(method -> reporter.report(nodeFor(method, declaration), method.signatureKey()));
+            return;
+        }
+        for (SyntaxNode constant : constants) {
+            SyntaxNode classBody = context.directChild(constant, "JAVA_ANONYMOUS_CLASS_BODY");
+            List<JavaRuleContext.MethodDescriptor> methods = classBody == null
+                ? List.of()
+                : context.declaredSymbol(classBody).flatMap(Symbol::qualifiedName)
+                    .map(context::declaredMethodDescriptors).orElse(List.of());
+            Set<String> implemented = new HashSet<>();
+            for (var method : methods) {
+                if (!method.isAbstract() && !Modifier.isStatic(method.modifiers())) {
+                    implemented.add(erasedMethodSignature(method));
+                }
+            }
+            for (var method : required) {
+                if (!implemented.contains(erasedMethodSignature(method))) {
+                    reporter.report(constant, method.signatureKey());
+                }
+            }
+        }
+    }
+
+    private static String erasedMethodSignature(JavaRuleContext.MethodDescriptor method) {
+        if (method.symbol() == null)
+            return method.signatureKey();
+        return method.symbol().id().map(JavaSymbolIds::components).map(List::getLast)
+            .filter(component -> component.kind().equals("parameters"))
+            .map(parameters -> method.name() + "(" + parameters.value() + ")")
+            .orElseGet(method::signatureKey);
     }
 
     private static void reportInvalidOverrides(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
@@ -324,7 +379,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                 && !JAVA_INTERFACE_DECLARATION.equals(kindId)
                 && !JAVA_ENUM_DECLARATION.equals(kindId)
                 && !JAVA_ANNOTATION_TYPE_DECLARATION.equals(kindId)
-                && !JAVA_RECORD_DECLARATION.equals(kindId))
+                && !JAVA_RECORD_DECLARATION.equals(kindId) && !JavaDeclarationAnalysis.isEnumConstantBody(node))
                 return;
             if (context.declaredSymbol(node).isPresent()) {
                 nodes.add(node);

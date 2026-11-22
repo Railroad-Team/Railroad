@@ -26,6 +26,40 @@ import static org.junit.jupiter.api.Assertions.*;
 public class CoreInspectionRulesTest {
 
     @Test
+    public void enumConstantsImplementAbstractMethodsIndependently() {
+        String source = """
+            enum Mode {
+                FIRST { @Override public int apply(int n) { return super.adjust(n); } },
+                SECOND { @Override public int apply(int n) { return n + 1; } },
+                MISSING,
+                OVERLOAD { public int apply() { return 0; } };
+
+                public abstract int apply(int n);
+                int adjust(int n) { return n; }
+            }
+            """;
+        var diagnostics = runProviders(List.of(new CoreInheritanceInspection(), new CoreModifierInspection(),
+            new CoreDuplicateDeclarationInspection(), new CoreCallResolutionInspection(),
+            new CoreNameResolutionInspection()),
+            Path.of("Mode.java"), source, JavaProjectSemanticIndex.empty());
+        assertEquals(List.of("SEM_MISSING_IMPLEMENTATION", "SEM_MISSING_IMPLEMENTATION"),
+            diagnostics.stream().map(SemanticDiagnostic::code).toList(), diagnostics::toString);
+        assertEquals(List.of(source.indexOf("MISSING"), source.indexOf("OVERLOAD")),
+            diagnostics.stream().map(SemanticDiagnostic::startOffset).toList());
+    }
+
+    @Test
+    public void enumConstantsCanRenameMethodTypeParametersWhenOverriding() {
+        String source = """
+            enum Mode {
+                FIRST { @Override <U> int count(U value) { return 1; } };
+                abstract <T> int count(T value);
+            }
+            """;
+        assertEquals(List.of(), runProvider(new CoreInheritanceInspection(), source));
+    }
+
+    @Test
     public void coreProvidersExposeExpectedRuleIds() {
         assertRuleIds(new CoreDuplicateDeclarationInspection(), Set.of("SEM_DUPLICATE_DECLARATION"));
         assertRuleIds(new CoreImportInspection(),

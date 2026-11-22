@@ -234,7 +234,12 @@ public final class JavaSemanticGraphExtractor {
         if (node.kind().id().equals("JAVA_ANONYMOUS_CLASS_BODY") && declaration.isPresent()) {
             SyntaxNode creation = node.parent().orElseThrow();
             SyntaxNode base = JavaSourceSymbolIds.child(creation, "JAVA_TYPE_REFERENCE");
-            if (base != null) {
+            if (JavaDeclarationAnalysis.isEnumConstantBody(node)) {
+                SymbolId enumType = ownerId(JavaSourceSymbolIds.enclosingDeclaration(node));
+                if (enumType != null) {
+                    edges.add(new SymbolEdge(declaration.get(), enumType, EdgeKindId.SUBTYPE));
+                }
+            } else if (base != null) {
                 addInheritance(base, declaration.get());
             }
         }
@@ -769,7 +774,7 @@ public final class JavaSemanticGraphExtractor {
             SyntaxNode body = JavaSourceSymbolIds.child(node, "JAVA_ENUM_BODY");
             boolean specializedConstants = body != null && body.children().stream()
                 .filter(part -> part.kind().id().equals("JAVA_ENUM_CONSTANT"))
-                .anyMatch(part -> JavaSourceSymbolIds.child(part, "JAVA_BLOCK") != null);
+                .anyMatch(part -> JavaSourceSymbolIds.child(part, "JAVA_ANONYMOUS_CLASS_BODY") != null);
             modifiers.add(specializedConstants ? "sealed" : "final");
         }
         if (kind == JavaSymbolKind.CONSTRUCTOR && owner != null
@@ -846,7 +851,7 @@ public final class JavaSemanticGraphExtractor {
 
     private static SyntaxNode container(SyntaxNode node) {
         return node.kind().id().equals("JAVA_VARIABLE_DECLARATOR")
-            || node.kind().id().equals("JAVA_ANONYMOUS_CLASS_BODY")
+            || node.kind().id().equals("JAVA_ANONYMOUS_CLASS_BODY") && !JavaDeclarationAnalysis.isEnumConstantBody(node)
                 ? node.parent().orElse(node)
                 : node;
     }

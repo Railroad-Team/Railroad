@@ -247,13 +247,12 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
             String ownerQualifiedName = context.enclosingTypeSymbol(node).flatMap(symbol -> symbol.qualifiedName())
                 .orElse(null);
             if (ownerQualifiedName != null
-                && JAVA_CLASS_DECLARATION.equals(ownerKindId)
+                && (JAVA_CLASS_DECLARATION.equals(ownerKindId) || "JAVA_ANONYMOUS_CLASS_BODY".equals(ownerKindId))
                 && !context.isAbstractType(ownerQualifiedName)) {
                 reporter.report(node, "'abstract' methods are only allowed in abstract classes and interfaces");
             }
-            if (JAVA_ENUM_DECLARATION.equals(ownerKindId) || JAVA_RECORD_DECLARATION.equals(ownerKindId)) {
-                reporter.report(node,
-                    "'abstract' methods are not allowed in %s types".formatted(typeKindDisplayName(ownerKindId)));
+            if (JAVA_RECORD_DECLARATION.equals(ownerKindId)) {
+                reporter.report(node, "'abstract' methods are not allowed in record types");
             }
         }
 

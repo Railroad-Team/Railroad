@@ -1150,7 +1150,7 @@ public final class JavaGreenParser {
         }
 
         if (peekSignificantType() == JavaTokenType.OPEN_BRACE) {
-            children.add(parseBlock());
+            children.add(parseAnonymousClassBody());
         }
 
         return greenNode(JavaSyntaxKinds.ENUM_CONSTANT, children);

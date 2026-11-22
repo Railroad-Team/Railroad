@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.ide.sst.impl.java.JavaDeclarationAnalysis;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaUnicodeEscapes;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolIds;
@@ -56,7 +57,8 @@ public final class JavaSourceSymbolIds {
         if (symbol.kind() == JavaSymbolKind.MODULE)
             return Optional.of(JavaSymbolIds.module(qualified));
         if (isType(symbol.kind().id())) {
-            if (node != null && node.kind().id().equals("JAVA_ANONYMOUS_CLASS_BODY")) {
+            if (node != null && node.kind().id().equals("JAVA_ANONYMOUS_CLASS_BODY")
+                && !JavaDeclarationAnalysis.isEnumConstantBody(node)) {
                 node = node.parent().orElse(null);
             }
             if (node != null)
@@ -141,7 +143,8 @@ public final class JavaSourceSymbolIds {
 
     private static SymbolId typeId(SyntaxNode node, JavaSymbolIndex index, Resolver resolver) {
         SyntaxNode owner = enclosingDeclaration(node);
-        if (node.kind().id().equals("JAVA_CLASS_INSTANCE_CREATION_EXPRESSION"))
+        if (node.kind().id().equals("JAVA_CLASS_INSTANCE_CREATION_EXPRESSION")
+            || JavaDeclarationAnalysis.isEnumConstantBody(node))
             return JavaSymbolIds.anonymous(owner == null
                 ? JavaSymbolIds.packageId("", packageName(node))
                 : declarationId(owner, index, resolver), lexicalPath(node, owner));
@@ -559,6 +562,7 @@ public final class JavaSourceSymbolIds {
     private static boolean isTypeNode(SyntaxNode node) {
         return Set.of("JAVA_CLASS_DECLARATION", "JAVA_INTERFACE_DECLARATION", "JAVA_ENUM_DECLARATION",
             "JAVA_RECORD_DECLARATION", "JAVA_ANNOTATION_TYPE_DECLARATION").contains(node.kind().id())
+            || JavaDeclarationAnalysis.isEnumConstantBody(node)
             || node.kind().id().equals("JAVA_CLASS_INSTANCE_CREATION_EXPRESSION")
                 && child(node, "JAVA_ANONYMOUS_CLASS_BODY") != null;
     }

@@ -3372,6 +3372,10 @@ public final class JavaSemanticAnalyzer {
                 if (declaration == null)
                     return List.of();
 
+                if (JavaDeclarationAnalysis.isEnumConstantBody(declaration)) {
+                    Symbol enumType = context.enclosingTypeSymbol(declaration);
+                    return enumType == null ? List.of() : enumType.qualifiedName().stream().toList();
+                }
                 if (JavaSyntaxKinds.ANONYMOUS_CLASS_BODY.id().equals(declaration.kind().id())) {
                     SyntaxNode creation = declaration.parent().orElse(null);
                     SyntaxNode baseType = creation == null
@@ -6367,6 +6371,13 @@ public final class JavaSemanticAnalyzer {
             SyntaxNode declaration,
             Function<SyntaxNode, Type> typeResolver
         ) {
+            if (JavaDeclarationAnalysis.isEnumConstantBody(declaration)) {
+                Symbol enumType = context.enclosingTypeSymbol(declaration);
+                return enumType == null
+                    ? List.of()
+                    : enumType.qualifiedName()
+                        .map(name -> new JavaTypes.DeclaredType(name, List.of())).stream().toList();
+            }
             if (JavaSyntaxKinds.ANONYMOUS_CLASS_BODY.id().equals(declaration.kind().id())) {
                 SyntaxNode creation = declaration.parent().orElse(null);
                 SyntaxNode baseType = creation == null

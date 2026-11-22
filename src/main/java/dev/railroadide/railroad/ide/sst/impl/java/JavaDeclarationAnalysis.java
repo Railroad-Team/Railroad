@@ -61,6 +61,18 @@ public final class JavaDeclarationAnalysis {
     }
 
     /**
+     * Identifies an anonymous class declared by an enum constant.
+     *
+     * @param node possible class body
+     * @return whether the constant's enclosing enum is the body's direct superclass
+     */
+    public static boolean isEnumConstantBody(SyntaxNode node) {
+        return JavaSyntaxKinds.ANONYMOUS_CLASS_BODY.id().equals(node.kind().id())
+            && node.parent().filter(parent -> JavaSyntaxKinds.ENUM_CONSTANT.id().equals(parent.kind().id()))
+                .isPresent();
+    }
+
+    /**
      * Conservatively checks whether a statement can reach the next statement in its block.
      *
      * @param node statement to inspect
@@ -435,8 +447,7 @@ public final class JavaDeclarationAnalysis {
                 context.attachScope(node, anonymousScope);
                 String qualifiedName = qualifyTypeName("$anonymous$" + lexicalQualifier(node),
                     currentTypeQualifiedName);
-                SyntaxNode creation = node.parent().orElseThrow();
-                Symbol temporary = new SimpleSymbol(JavaSymbolKind.CLASS, "<anonymous>", qualifiedName, creation);
+                Symbol temporary = new SimpleSymbol(JavaSymbolKind.CLASS, "<anonymous>", qualifiedName, node);
                 Symbol anonymous = new SimpleSymbol(
                     symbolIds.deriveSymbolId(temporary).orElse(null),
                     JavaSymbolKind.CLASS, "<anonymous>", qualifiedName, node);

@@ -40,6 +40,29 @@ public class JavaSemanticGraphExtractorTest {
     }
 
     @Test
+    public void constantSpecificMethodsBelongToDistinctSubtypesOfTheEnum() {
+        String source = """
+            enum Mode {
+                A { int value() { return 1; } },
+                B { int value() { return 2; } };
+                abstract int value();
+            }
+            """;
+        var model = JavaSemanticAnalyzer.analyzeFacts(source, JavaProjectSemanticIndex.empty());
+        var shard = JavaSemanticGraphExtractor.extract(model, () -> {
+        });
+        var enumId = named(shard, "Mode").id();
+        var subtypeIds = shard.edges().stream()
+            .filter(edge -> edge.kind().equals(EdgeKindId.SUBTYPE) && edge.target().equals(enumId))
+            .map(SymbolEdge::source).collect(Collectors.toSet());
+        assertEquals(2, subtypeIds.size());
+        var owners = shard.declarations().stream().filter(symbol -> symbol.simpleName().equals("value"))
+            .map(SymbolDescriptor::ownerId).collect(Collectors.toSet());
+        assertTrue(owners.remove(enumId));
+        assertEquals(subtypeIds, owners);
+    }
+
+    @Test
     public void anonymousTypesRetainResolvedGenericSubtypeEdges() {
         String source = """
             class Parent<T> {}

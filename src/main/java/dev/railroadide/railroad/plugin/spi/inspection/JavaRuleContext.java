@@ -13,6 +13,7 @@ import dev.railroadide.railroad.ide.classparser.stub.FieldStub;
 import dev.railroadide.railroad.ide.classparser.stub.MethodStub;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaDeclarationAnalysis;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaMemberTypeScope;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
@@ -2589,7 +2590,10 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 List<DeclaredType> directSupers = new ArrayList<>();
                 collectDirectSuperTypes(node, JAVA_EXTENDS_CLAUSE, directSupers);
                 collectDirectSuperTypes(node, JAVA_IMPLEMENTS_CLAUSE, directSupers);
-                if (JavaSyntaxKinds.ANONYMOUS_CLASS_BODY.id().equals(node.kind().id())) {
+                if (JavaDeclarationAnalysis.isEnumConstantBody(node)) {
+                    enclosingTypeSymbol(node).flatMap(Symbol::qualifiedName)
+                        .ifPresent(name -> directSupers.add(new DeclaredType(name, List.of())));
+                } else if (JavaSyntaxKinds.ANONYMOUS_CLASS_BODY.id().equals(node.kind().id())) {
                     SyntaxNode creation = node.parent().orElse(null);
                     SyntaxNode base = creation == null ? null : directChild(creation, JAVA_TYPE_REFERENCE);
                     Type inherited = creation == null ? null : inferredType(creation).orElse(null);
