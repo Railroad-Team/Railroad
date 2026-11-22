@@ -22,6 +22,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
+import java.util.stream.Collectors;
 
 /** Builds reusable Java analysis inputs exclusively from captured documents and configuration. */
 public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
@@ -464,7 +465,17 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     public record SourceContext(String module, Path archive) {
         /** Returns the ordered binary roots for this source. */
         public List<Path> classpath(WorkspaceConfigurationSnapshot configuration) {
-            return JavaWorkspaceAnalysisProvider.classpath(configuration, module);
+            var roots = JavaWorkspaceAnalysisProvider.classpath(configuration, module);
+            if (module == null || archive == null)
+                return roots;
+            String prefix = "module." + module + ".";
+            var settings = configuration.settings();
+            String selected = settings.getOrDefault(prefix + "mainCompileArtifacts", "");
+            if (selected.lines().map(Path::of).noneMatch(archive::equals))
+                return roots;
+            Set<Path> excluded = settings.getOrDefault(prefix + "otherCompileVersions", "").lines().map(Path::of)
+                .collect(Collectors.toSet());
+            return roots.stream().filter(path -> !excluded.contains(path)).toList();
         }
     }
 

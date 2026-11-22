@@ -417,6 +417,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             ids.add(id);
             String prefix = "module." + id + ".";
             values.put(prefix + "classpath", paths(module.getClasspathRoots()));
+            captureMainCompileSelection(module, prefix, values);
             values.put(prefix + "modulePath", paths(module.getModulePathRoots()));
             values.put(prefix + "dependencies", paths(module.getDependencyRoots()));
             values.put(prefix + "directory", module.getProjectDir().toAbsolutePath().normalize().toString());
@@ -446,6 +447,62 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             values.put(prefix + "sources", String.join("\n", sources));
         }
         return new WorkspaceConfigurationSnapshot(0, ids, values);
+    }
+
+    /**
+     * The module root list combines source sets. Retain main's selected versions for source attached to its libraries.
+     */
+    private static void captureMainCompileSelection(RailroadModule module, String prefix, Map<String, String> values) {
+        var configurations = module.getConfigurations();
+        if (configurations == null)
+            return;
+        var main = configurations.stream().filter(c -> "compileClasspath".equals(c.getName())).findFirst();
+        if (main.isEmpty() || !main.get().getResolutionFailures().isEmpty())
+            return;
+        Set<File> roots = new HashSet<>(module.getClasspathRoots());
+        var selected = compileArtifacts(main.get(), roots);
+        Map<String, Set<String>> versions = new HashMap<>();
+        Set<File> owners = new LinkedHashSet<>();
+        for (var artifact : selected) {
+            versions.computeIfAbsent(artifact.component(), _ -> new HashSet<>()).add(artifact.version());
+            owners.add(artifact.file());
+        }
+        Set<File> excluded = new LinkedHashSet<>();
+        for (var configuration : configurations) {
+            if (!configuration.getName().endsWith("CompileClasspath"))
+                continue;
+            for (var artifact : compileArtifacts(configuration, roots)) {
+                var selectedVersions = versions.get(artifact.component());
+                if (selectedVersions != null && !selectedVersions.contains(artifact.version())
+                    && !owners.contains(artifact.file())) {
+                    excluded.add(artifact.file());
+                }
+            }
+        }
+        if (!excluded.isEmpty()) {
+            values.put(prefix + "mainCompileArtifacts", paths(owners));
+            values.put(prefix + "otherCompileVersions", paths(excluded));
+        }
+    }
+
+    private static Set<CompileArtifact> compileArtifacts(RailroadConfiguration configuration, Set<File> roots) {
+        Set<CompileArtifact> artifacts = new LinkedHashSet<>();
+        var pending = new ArrayDeque<RailroadDependency>(configuration.getDependencies());
+        Set<RailroadDependency> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+        while (!pending.isEmpty()) {
+            var dep = pending.removeFirst();
+            if (!seen.add(dep))
+                continue;
+            pending.addAll(dep.getChildren());
+            if (roots.contains(dep.getFile()) && !dep.getGroup().isBlank() && !dep.getVersion().isBlank()) {
+                artifacts
+                    .add(new CompileArtifact(dep.getGroup() + ":" + dep.getName(), dep.getVersion(), dep.getFile()));
+            }
+        }
+        return artifacts;
+    }
+
+    private record CompileArtifact(String component, String version, File file) {
     }
 
     private void publish(Set<String> ids, Map<String, String> values) {

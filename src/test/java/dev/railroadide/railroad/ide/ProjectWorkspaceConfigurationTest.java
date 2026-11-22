@@ -12,6 +12,10 @@ import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroadplugin.dto.RailroadModule;
+import dev.railroadide.railroadplugin.dto.RailroadConfiguration;
+import dev.railroadide.railroadplugin.dto.impl.BasicRailroadConfiguration;
+import dev.railroadide.railroadplugin.dto.impl.BasicRailroadDependency;
+import dev.railroadide.railroad.ide.sst.project.JavaLibrarySymbolIndex;
 import javafx.scene.image.WritableImage;
 import javafx.application.Platform;
 import org.gradle.tooling.model.DomainObjectSet;
@@ -487,6 +491,40 @@ public class ProjectWorkspaceConfigurationTest {
     }
 
     private GradleBuildModel model(String id, Path... classpath) {
+        return model(id, new ModelSet<>(), classpath);
+    }
+
+    @Test
+    public void mainLibrarySourceUsesGradlesSelectedTransitiveVersion() throws Exception {
+        Path sourceOwner = directory.resolve("lib.jar");
+        Path generated = directory.resolve("generated.jar");
+        Path client = libraryJar("client/api.jar", "clientVersion");
+        Path main = libraryJar("main/api.jar", "mainVersion");
+        var mainDep = new BasicRailroadDependency(null, "example", "api", "1", main.toFile(), null, List.of());
+        var clientDep = new BasicRailroadDependency(null, "example", "api", "2", client.toFile(), null, List.of());
+        var library = new BasicRailroadDependency(null, "example", "lib", "1", sourceOwner.toFile(), null,
+            List.of(mainDep));
+        var clientLibrary = new BasicRailroadDependency(null, "example", "lib", "1", sourceOwner.toFile(), null,
+            List.of(clientDep));
+        var configurations = new ModelSet<RailroadConfiguration>();
+        configurations.add(new BasicRailroadConfiguration("clientCompileClasspath", null, true, false, true, true,
+            List.of(), Map.of(), null, List.of(clientLibrary), List.of()));
+        configurations.add(new BasicRailroadConfiguration("compileClasspath", null, true, false, true, true,
+            List.of(), Map.of(), null, List.of(library), List.of()));
+        var cfg = ProjectWorkspaceConfiguration.captureGradleConfiguration(
+            model(":common", configurations, client, generated, main, sourceOwner));
+        var uri = JavaLibrarySymbolIndex.archiveEntry(directory.resolve("lib-sources.jar"), "Use.java");
+        var source = new TextDocumentSnapshot(DocumentId.create(), uri, DocumentVersion.initial(), "java",
+            DocumentOrigin.original(uri), "class Use {}", StandardCharsets.UTF_8);
+        var roots = JavaWorkspaceAnalysisProvider.sourceContext(cfg, null, source).classpath(cfg);
+        assertEquals(List.of(generated, main, sourceOwner), roots);
+        assertEquals("mainVersion", JavaLibrarySymbolIndex.build(roots)
+            .lookupClassStub("deps.Library").fields().getFirst().name());
+        assertEquals(List.of(client, generated, main, sourceOwner),
+            new JavaWorkspaceAnalysisProvider.SourceContext(":common", client).classpath(cfg));
+    }
+
+    private GradleBuildModel model(String id, ModelSet<RailroadConfiguration> configurations, Path... classpath) {
         RailroadModule module = (RailroadModule) Proxy.newProxyInstance(RailroadModule.class.getClassLoader(),
             new Class<?>[]{RailroadModule.class}, (proxy, method, args) -> switch (method.getName()) {
                 case "getPath" -> id;
@@ -494,6 +532,7 @@ public class ProjectWorkspaceConfigurationTest {
                 case "getClasspathRoots" -> Arrays.stream(classpath).map(Path::toFile).toList();
                 case "getDependencyRoots", "getModulePathRoots" -> List.of();
                 case "getContentRoots" -> new ModelSet<>();
+                case "getConfigurations" -> configurations;
                 case "hashCode" -> System.identityHashCode(proxy);
                 case "equals" -> proxy == args[0];
                 default -> null;
