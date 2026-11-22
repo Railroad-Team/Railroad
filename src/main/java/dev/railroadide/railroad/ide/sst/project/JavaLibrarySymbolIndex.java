@@ -3,23 +3,16 @@ package dev.railroadide.railroad.ide.sst.project;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.classparser.ClassScanException;
 import dev.railroadide.railroad.ide.classparser.ClassStubParser;
-import dev.railroadide.railroad.ide.classparser.ClassStubVisitor;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -27,7 +20,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.regex.Pattern;
 
 /**
  * Binary symbol index built from class directories, JAR archives, and JMOD archives.
@@ -47,10 +39,9 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
 
     private JavaLibrarySymbolIndex(
         JavaLibrarySymbolIndex unscoped,
-        JavaLibrarySymbolIndex symbols,
         Map<String, String> aliases
     ) {
-        super(symbols, aliases);
+        super(unscoped, aliases);
         this.unscoped = unscoped;
     }
 
@@ -116,56 +107,18 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         if (unscoped != this)
             return unscoped.forAttachedSource(archive, check);
         check.run();
+        Map<String, String> aliases = Map.of();
         try {
-            var declarations = AccessDeclarationVisitor.read(archive, check);
-            Map<String, ClassStub> changed = new HashMap<>();
-            for (var entry : declarations.entrySet()) {
-                check.run();
-                var location = binaryLocations().get(entry.getKey());
-                if (location == null)
-                    continue;
-                var connection = location.value().toURL().openConnection();
-                connection.setUseCaches(false);
-                try (var in = connection.getInputStream()) {
-                    var reader = new ClassReader(in);
-                    var original = lookupClassStub(entry.getKey());
-                    if (!BinaryStubPublication.copy(ClassStubParser.parse(reader)).equals(original))
-                        continue;
-                    var visitor = entry.getValue();
-                    reader.accept(visitor, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
-                    var scoped = BinaryStubPublication.copy(visitor.createClassStub());
-                    if (!scoped.equals(original)) {
-                        changed.put(entry.getKey(), scoped);
-                    }
-                } catch (IOException | IllegalArgumentException | ClassScanException exception) {
-                    Railroad.LOGGER.warn("Failed to read access declarations for {} from {}", entry.getKey(), location,
-                        exception);
-                }
-            }
-            JavaLibrarySymbolIndex view = this;
-            if (!changed.isEmpty()) {
-                var stubs = new HashMap<>(classStubsByQualifiedName());
-                stubs.putAll(changed);
-                view = new JavaLibrarySymbolIndex(stubs, binaryOrigins(), binaryLocations(), check);
-            }
-            Map<String, String> aliases = Map.of();
-            try {
-                aliases = JavaSourceRelocations.aliases(archive, binaryOrigins(), view.classStubsByQualifiedName(),
-                    check);
-            } catch (IOException exception) {
-                Railroad.LOGGER.warn("Failed to read package relocations for attached source from {}", archive,
-                    exception);
-            }
-            var scoped = view == this && aliases.isEmpty() ? this : new JavaLibrarySymbolIndex(this, view, aliases);
-            try {
-                return JavaLibrarySources.shared().withSourceOnlyTypes(archive, scoped, this, check);
-            } catch (IOException exception) {
-                Railroad.LOGGER.warn("Failed to index source-only declarations from {}", archive, exception);
-                return scoped;
-            }
+            aliases = JavaSourceRelocations.aliases(archive, binaryOrigins(), classStubsByQualifiedName(), check);
         } catch (IOException exception) {
-            Railroad.LOGGER.warn("Failed to read access declarations for attached source from {}", archive, exception);
-            return this;
+            Railroad.LOGGER.warn("Failed to read package relocations for attached source from {}", archive, exception);
+        }
+        var scoped = aliases.isEmpty() ? this : new JavaLibrarySymbolIndex(this, aliases);
+        try {
+            return JavaLibrarySources.shared().withSourceOnlyTypes(archive, scoped, this, check);
+        } catch (IOException exception) {
+            Railroad.LOGGER.warn("Failed to index source-only declarations from {}", archive, exception);
+            return scoped;
         }
     }
 
@@ -389,94 +342,5 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
     }
 
     private record ScannedClass(ClassStub stub, Path origin, DocumentUri location) {
-    }
-
-    /** Reads the declaration modifiers a library requests for its compile environment. */
-    private static final class AccessDeclarationVisitor extends ClassStubVisitor {
-        private static final Pattern RULE = Pattern.compile(
-            "(public|protected|default|private)([+-]f)?\\s+(\\S+)(?:\\s+(\\S+))?");
-        private static final List<Integer> VISIBILITY = List.of(Opcodes.ACC_PRIVATE, 0, Opcodes.ACC_PROTECTED,
-            Opcodes.ACC_PUBLIC);
-        private static final int ACCESS_MASK = Opcodes.ACC_PRIVATE | Opcodes.ACC_PROTECTED | Opcodes.ACC_PUBLIC;
-        private final List<Rule> rules = new ArrayList<>();
-
-        private static Map<String, AccessDeclarationVisitor> read(Path archive, Runnable check) throws IOException {
-            Map<String, AccessDeclarationVisitor> visitors = new HashMap<>();
-            try (var jar = new JarFile(archive.toFile())) {
-                var entry = jar.getJarEntry("META-INF/accesstransformer.cfg");
-                if (entry == null)
-                    return Map.of();
-                try (var reader = new BufferedReader(
-                    new InputStreamReader(jar.getInputStream(entry), StandardCharsets.UTF_8))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        check.run();
-                        int comment = line.indexOf('#');
-                        var match = RULE.matcher((comment < 0 ? line : line.substring(0, comment)).strip());
-                        if (!match.matches())
-                            continue;
-                        int visibility = switch (match.group(1)) {
-                            case "public" -> Opcodes.ACC_PUBLIC;
-                            case "protected" -> Opcodes.ACC_PROTECTED;
-                            case "private" -> Opcodes.ACC_PRIVATE;
-                            default -> 0;
-                        };
-                        String target = match.group(4) == null ? "" : match.group(4).replace('.', '/');
-                        visitors.computeIfAbsent(match.group(3), _ -> new AccessDeclarationVisitor()).rules
-                            .add(new Rule(target, visibility, match.group(2)));
-                    }
-                }
-            }
-            return visitors;
-        }
-
-        @Override
-        public void visit(
-            int version,
-            int access,
-            String name,
-            String signature,
-            String superName,
-            String[] interfaces
-        ) {
-            super.visit(version, modifiers(access, "", ""), name, signature, superName, interfaces);
-        }
-
-        @Override
-        public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-            return super.visitField(modifiers(access, name, "*"), name, descriptor, signature, value);
-        }
-
-        @Override
-        public MethodVisitor visitMethod(
-            int access,
-            String name,
-            String descriptor,
-            String signature,
-            String[] exceptions
-        ) {
-            return super.visitMethod(modifiers(access, name + descriptor, "*()"), name, descriptor, signature,
-                exceptions);
-        }
-
-        private int modifiers(int access, String target, String wildcard) {
-            int visibility = VISIBILITY.indexOf(access & ACCESS_MASK);
-            boolean addFinal = false;
-            boolean removeFinal = false;
-            for (Rule rule : rules) {
-                if (rule.target().equals(target) || rule.target().equals(wildcard)) {
-                    visibility = Math.max(visibility, VISIBILITY.indexOf(rule.visibility()));
-                    addFinal |= "+f".equals(rule.finalChange());
-                    removeFinal |= "-f".equals(rule.finalChange());
-                }
-            }
-            int result = (access & ~ACCESS_MASK) | VISIBILITY.get(visibility);
-            if (addFinal == removeFinal)
-                return result;
-            return addFinal ? result | Opcodes.ACC_FINAL : result & ~Opcodes.ACC_FINAL;
-        }
-
-        private record Rule(String target, int visibility, String finalChange) {
-        }
     }
 }
