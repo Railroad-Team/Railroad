@@ -3123,9 +3123,27 @@ public final class JavaGreenParser {
 
     private List<GreenElement> parseTypeDeclarationPrefix() {
         List<GreenElement> prefix = new ArrayList<>();
-        consumeModifiersAndAnnotations(prefix, JavaGreenParser::isTypeDeclarationModifier);
-
+        do {
+            consumeModifiersAndAnnotations(prefix, JavaGreenParser::isTypeDeclarationModifier);
+        } while (matchNonSealedModifier(prefix));
         return prefix;
+    }
+
+    private boolean matchNonSealedModifier(List<GreenElement> prefix) {
+        if (position + 2 >= tokens.size())
+            return false;
+        var non = tokens.get(position);
+        var hyphen = tokens.get(position + 1);
+        var sealed = tokens.get(position + 2);
+        if (non.type() != JavaTokenType.IDENTIFIER || hyphen.type() != JavaTokenType.MINUS
+            || sealed.type() != JavaTokenType.SEALED_KEYWORD || non.endOffset() != hyphen.pos()
+            || hyphen.endOffset() != sealed.pos() || !"non".equals(JavaUnicodeEscapes.translate(non.lexeme())))
+            return false;
+
+        prefix.add(greenToken(JavaSyntaxKinds.tokenKind(JavaTokenType.NON_SEALED_KEYWORD),
+            non.lexeme() + hyphen.lexeme() + sealed.lexeme()));
+        position += 3;
+        return true;
     }
 
     private List<GreenElement> parseMemberPrefix() {

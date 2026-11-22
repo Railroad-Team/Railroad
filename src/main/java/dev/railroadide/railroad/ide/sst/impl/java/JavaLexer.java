@@ -353,11 +353,9 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         if (current == '.' && isDecimalDigit(peek(1)))
             return readNumber();
 
-        if (JavaTokenType.MULTI_CHAR_TOKENS.containsKey(current)) {
-            Optional<Token<JavaTokenType>> multiCharToken = readMulticharToken(current);
-            if (multiCharToken.isPresent())
-                return multiCharToken.get();
-        }
+        char translatedChar = translatedAt(pos);
+        if (JavaTokenType.MULTI_CHAR_TOKENS.containsKey(translatedChar))
+            return readOperator(translatedChar);
 
         if (JavaTokenType.SINGLE_CHAR_TOKENS.containsKey(current)) {
             if (current == '@') {
@@ -375,7 +373,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
             return token(JavaTokenType.SINGLE_CHAR_TOKENS.get(current), startOffset, startLine, startCol);
         }
 
-        if (Character.isJavaIdentifierStart(translatedAt(pos))) {
+        if (Character.isJavaIdentifierStart(translatedChar)) {
             StringBuilder translated = null;
             do {
                 int escape = JavaUnicodeEscapes.escapeEnd(input, pos);
@@ -476,38 +474,35 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         return unterminated(startOffset, startLine, startOffset, "Unterminated char literal");
     }
 
-    private Optional<Token<JavaTokenType>> readMulticharToken(char current) {
+    private Token<JavaTokenType> readOperator(char current) {
         int startOffset = pos, line = this.line, column = this.column;
         List<Map.Entry<CharSequence, JavaTokenType>> possibleTokens = JavaTokenType.MULTI_CHAR_TOKENS.get(current)
             .stream()
             .sorted((a, b) -> Integer.compare(b.getKey().length(), a.getKey().length()))
             .toList();
 
-        CharSequence longestMatch = null;
-        JavaTokenType matchType = null;
+        int afterFirst = translatedCharEnd(pos);
         for (Map.Entry<CharSequence, JavaTokenType> possibleToken : possibleTokens) {
-            CharSequence possibleTokenKey = possibleToken.getKey();
-            if (pos + possibleTokenKey.length() <= length) {
-                for (int i = 0; i < possibleTokenKey.length(); i++) {
-                    if (peek(i) != possibleTokenKey.charAt(i))
-                        break;
-
-                    if (i == possibleTokenKey.length() - 1) {
-                        longestMatch = possibleTokenKey;
-                        matchType = possibleToken.getValue();
-                        break;
-                    }
-                }
+            CharSequence spelling = possibleToken.getKey();
+            int end = afterFirst;
+            int matched = 1;
+            while (matched < spelling.length() && end < length && translatedAt(end) == spelling.charAt(matched)) {
+                end = translatedCharEnd(end);
+                matched++;
             }
-
-            if (longestMatch != null) {
-                consume(longestMatch.length());
-
-                return Optional.of(token(matchType, startOffset, line, column, TokenChannel.DEFAULT));
+            if (matched == spelling.length()) {
+                consume(end - pos);
+                return token(possibleToken.getValue(), startOffset, line, column);
             }
         }
 
-        return Optional.empty();
+        consume(afterFirst - pos);
+        return token(JavaTokenType.SINGLE_CHAR_TOKENS.get(current), startOffset, line, column);
+    }
+
+    private int translatedCharEnd(int offset) {
+        int escape = JavaUnicodeEscapes.escapeEnd(input, offset);
+        return escape > 0 ? escape : offset + 1;
     }
 
     /**

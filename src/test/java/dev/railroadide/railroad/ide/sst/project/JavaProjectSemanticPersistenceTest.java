@@ -83,6 +83,8 @@ public class JavaProjectSemanticPersistenceTest {
 
             class A {
                 static int VALUE;
+                sealed interface Kind permits Child {}
+                non-sealed interface Child extends Kind { int cost(); }
             }
             """);
 
@@ -96,6 +98,7 @@ public class JavaProjectSemanticPersistenceTest {
         assertEquals(1, loaded.files().size());
         assertEquals(1, loaded.lookupQualifiedName("demo.A").size());
         assertEquals(1, loaded.lookupMember("demo.A", "VALUE").size());
+        assertEquals(1, loaded.lookupMember("demo.A.Child", "cost").size());
         var originalShard = index.getFile(aFile).orElseThrow().semanticShard();
         var loadedShard = loaded.getFile(aFile).orElseThrow().semanticShard();
         assertNotNull(loadedShard);
@@ -241,17 +244,18 @@ public class JavaProjectSemanticPersistenceTest {
     }
 
     @Test
-    public void rejectsCachesWrittenBeforeParsedInputProvenanceWasRequired() throws Exception {
+    public void rejectsObsoleteIndexVersions() throws Exception {
         Path root = tempDir.resolve("project");
         Path snapshot = root.resolve(".railroad/index/semantic/project-semantic-index.bin");
         Files.createDirectories(snapshot.getParent());
-        try (var output = new DataOutputStream(Files.newOutputStream(snapshot))) {
-            output.writeUTF("RSSTIDX1");
-            output.writeInt(3);
-            output.writeInt(0);
+        for (int obsoleteVersion : List.of(3, 6)) {
+            try (var output = new DataOutputStream(Files.newOutputStream(snapshot))) {
+                output.writeUTF("RSSTIDX1");
+                output.writeInt(obsoleteVersion);
+                output.writeInt(0);
+            }
+            assertNull(new JavaProjectSemanticPersistence().loadIfCurrent(root));
         }
-
-        assertNull(new JavaProjectSemanticPersistence().loadIfCurrent(root));
     }
 
     private static Path writeSource(Path root, String name, String source) throws Exception {

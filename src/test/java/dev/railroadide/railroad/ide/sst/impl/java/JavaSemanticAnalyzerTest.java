@@ -5,6 +5,7 @@ import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import com.google.gson.GsonBuilder;
 import dev.railroadide.railroad.ide.sst.project.*;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticModel;
+import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 import dev.railroadide.railroad.ide.sst.semantic.api.Type;
@@ -485,6 +486,25 @@ public class JavaSemanticAnalyzerTest {
             model.inferredType(findNameExpression(names, "point")).orElseThrow().displayName());
         assertTrue(
             model.diagnostics().stream().noneMatch(diagnostic -> diagnostic.code().startsWith("SEM_UNRESOLVED_")));
+    }
+
+    @Test
+    public void resolvesNestedPermittedInterfacesAndTheirMethods() {
+        String source = """
+            package example;
+            class Registry {
+                int read(Direct value) { return value.cost(); }
+                sealed interface Kind permits Direct, Registry.Dynamic {}
+                non-sealed interface Direct extends Kind { int cost(); }
+                non-sealed interface Dynamic extends Kind { int cost(int x); }
+                int read(Kind value, int x) { return ((Dynamic) value).cost(x); }
+                Missing typo;
+            }
+            """;
+        var model = JavaSemanticAnalyzer.analyze(source, JavaJdkSymbolIndex.fromCurrentRuntime());
+        assertEquals(List.of("Cannot resolve type 'Missing'"), model.diagnostics().stream()
+            .filter(diagnostic -> diagnostic.severity() == SemanticDiagnostic.Severity.ERROR)
+            .map(diagnostic -> diagnostic.message()).toList());
     }
 
     @Test

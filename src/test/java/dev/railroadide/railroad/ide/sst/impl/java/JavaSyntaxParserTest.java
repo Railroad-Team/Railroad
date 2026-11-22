@@ -93,6 +93,31 @@ public class JavaSyntaxParserTest {
     }
 
     @Test
+    public void recognizesNonSealedOnlyInTypeDeclarationPrefixes() {
+        String source = """
+            sealed interface Root permits Root.Child, Branch {
+                @Deprecated n\\u006fn\\u002ds\\u0065aled interface Child extends Root {}
+            }
+            non-sealed class Branch implements Root {
+                int difference(int non, int sealed) { return non-sealed; }
+            }
+            """;
+        var result = JavaSyntaxParser.parseWithDiagnostics(source);
+        assertTrue(result.diagnostics().isEmpty(), result.diagnostics()::toString);
+        assertEquals(source, JavaParserTestSupport.syntaxText(result.tree()));
+        var tokens = JavaParserTestSupport.collectSyntaxTokens(result.tree());
+        assertEquals(2, tokens.stream()
+            .filter(token -> token.kind().equals(JavaSyntaxKinds.tokenKind(JavaTokenType.NON_SEALED_KEYWORD))).count());
+        assertEquals(1, tokens.stream()
+            .filter(token -> token.kind().equals(JavaSyntaxKinds.tokenKind(JavaTokenType.MINUS))).count());
+
+        for (String spelling : List.of("non -sealed", "non- sealed", "non/*gap*/-sealed", "non-sealedExtra")) {
+            assertFalse(JavaSyntaxParser.parseWithDiagnostics(source.replace("non-sealed class", spelling + " class"))
+                .diagnostics().isEmpty(), spelling);
+        }
+    }
+
+    @Test
     public void parsesAnnotatedReturnTypesAfterAdjacentGenericClosers() {
         String source = """
             class Example {

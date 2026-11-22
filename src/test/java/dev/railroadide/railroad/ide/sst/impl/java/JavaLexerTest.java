@@ -71,6 +71,16 @@ public class JavaLexerTest {
     }
 
     @Test
+    public void preservesRawSpellingAndLongestMatchForEscapedHyphens() {
+        var tokens = significant("non\\u002dsealed \\u002d- -\\u003e");
+        assertEquals(List.of(JavaTokenType.IDENTIFIER, JavaTokenType.MINUS, JavaTokenType.SEALED_KEYWORD,
+            JavaTokenType.MINUS_MINUS, JavaTokenType.ARROW, JavaTokenType.EOF),
+            tokens.stream().map(Token::type).toList());
+        assertEquals(List.of("non", "\\u002d", "sealed", "\\u002d-", "-\\u003e"),
+            tokens.subList(0, 5).stream().map(Token::lexeme).toList());
+    }
+
+    @Test
     public void reportsDiagnosticAndErrorFlagForUnterminatedString() {
         String source = "class A { String s = " + '"' + "unterminated; }";
         List<Token<JavaTokenType>> tokens;

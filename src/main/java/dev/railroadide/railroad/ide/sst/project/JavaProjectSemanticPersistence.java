@@ -24,7 +24,7 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
     private static final String CACHE_DIRECTORY = ".railroad/index/semantic";
     private static final String SNAPSHOT_FILE = "project-semantic-index.bin";
     private static final String SNAPSHOT_MAGIC = "RSSTIDX1";
-    private static final int FORMAT_VERSION = 6;
+    private static final int FORMAT_VERSION = 7;
 
     @Override
     public String languageId() {
