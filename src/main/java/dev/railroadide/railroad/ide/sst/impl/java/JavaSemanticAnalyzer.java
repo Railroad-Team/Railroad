@@ -688,6 +688,8 @@ public final class JavaSemanticAnalyzer {
             List<Type> argumentTypes = inferArgumentTypes(argumentList);
             SyntaxNode targetNode = explicitReceiver(invocationNode);
             if (targetNode != null) {
+                if (resolveArrayClone(invocationNode, memberNode, targetNode, methodName, argumentTypes))
+                    return;
                 MemberLookup lookup = resolveMemberLookup(targetNode, invocationNode);
                 if (lookup.ownerQualifiedName() == null || lookup.ownerQualifiedName().isBlank())
                     return;
@@ -876,6 +878,32 @@ public final class JavaSemanticAnalyzer {
             return context.enclosingTypeSymbol(usageSite);
         }
 
+        private boolean resolveArrayClone(
+            SyntaxNode invocationNode,
+            @Nullable SyntaxNode memberNode,
+            SyntaxNode receiver,
+            String methodName,
+            List<Type> argumentTypes
+        ) {
+            if (!"clone".equals(methodName) || !argumentTypes.isEmpty())
+                return false;
+            Type receiverType = context.inferredType(receiver);
+            if (receiverType == null || receiverType.kind() == JavaTypes.Kind.UNKNOWN) {
+                receiverType = inferExpressionTypeForResolution(receiver);
+            }
+            if (!(receiverType instanceof JavaTypes.ArrayType array))
+                return false;
+
+            Symbol clone = new SyntheticMemberSymbol(JavaSymbolKind.METHOD, methodName,
+                array.displayName() + "#clone()", null, array, List.of(), false);
+            context.resolve(invocationNode, clone);
+            if (memberNode != null) {
+                context.resolve(memberNode, clone);
+            }
+            context.type(invocationNode, array);
+            return true;
+        }
+
         private void resolveDeferredMethodInvocation(SyntaxNode invocationNode) {
             SyntaxNode argumentList = directChild(invocationNode, JavaSyntaxKinds.ARGUMENT_LIST.id());
             if (argumentList == null)
@@ -893,6 +921,8 @@ public final class JavaSemanticAnalyzer {
             List<Type> argumentTypes = inferArgumentTypes(argumentList);
             SyntaxNode targetNode = explicitReceiver(invocationNode);
             if (targetNode != null) {
+                if (resolveArrayClone(invocationNode, memberNode, targetNode, methodName, argumentTypes))
+                    return;
                 MemberLookup lookup = deferredMemberLookup(targetNode, invocationNode);
                 if (lookup == null)
                     return;

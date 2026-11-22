@@ -16,11 +16,44 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import dev.railroadide.railroad.ide.sst.semantic.api.Type;
 import javafx.beans.property.StringProperty;
+import java.lang.reflect.Modifier;
 
 import static dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectionTestSupport.runProvider;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaAssignmentAndCallResolutionInspectionTest {
+    @Test
+    public void arrayCloneResolvesToAPublicMethodReturningItsReceiverTypeWithoutCheckedExceptions() {
+        String source = """
+            class Example {
+                interface Container { int[] slots(); }
+                <T> void copy(Container container, T[][] rows, Object object) {
+                    int[] slots = java.util.Objects.requireNonNull(container.slots(), "slots").clone();
+                    T[][] copiedRows = rows.clone();
+                    Object copy = object.clone();
+                }
+            }
+            """;
+        var context = new JavaRuleContext(Path.of("Example.java"), source, JavaSemanticAnalyzer.analyzeFacts(source));
+        List<String> cloneTypes = new ArrayList<>();
+        context.traverse(node -> {
+            if (!"JAVA_METHOD_INVOCATION_EXPRESSION".equals(node.kind().id())
+                || !source.substring(node.start(), node.end()).strip().endsWith(".clone()"))
+                return;
+            var symbol = context.resolvedSymbol(node).orElseThrow();
+            Type returnType = context.inferredType(node).orElseThrow();
+            cloneTypes.add(returnType.displayName());
+            if (returnType instanceof JavaTypes.ArrayType) {
+                assertTrue(Modifier.isPublic(context.symbolModifiers(symbol)));
+                assertEquals(List.of(), context.thrownTypeNames(symbol));
+            } else {
+                assertEquals("java.lang.Object#clone()", symbol.qualifiedName().orElseThrow());
+                assertEquals(List.of("java.lang.CloneNotSupportedException"), context.thrownTypeNames(symbol));
+            }
+        });
+        assertEquals(List.of("int[]", "T[][]", "java.lang.Object"), cloneTypes);
+    }
+
     @Test
     public void instanceofProducesBooleanForAssignmentsAndOverloadSelection() {
         String source = """
