@@ -151,9 +151,10 @@ public final class JavaDiagnosticsProvider implements DiagnosticsProvider<TextEd
     private JavaSymbolIndex liveIndex(DocumentSnapshot snapshot) {
         if (projectIndex != null || project == null)
             return projectIndex;
-        var file = snapshot.uri().filePath().orElse(null);
         var indexes = JavaLanguageSupport.analysisContextProvider();
-        return indexContext == null ? indexes.index(project, file) : indexes.index(indexContext, file);
+        return indexContext == null
+            ? indexes.indexForDocument(project, snapshot)
+            : indexes.indexForDocument(indexContext, snapshot);
     }
 
     private List<TextEditorDiagnostic> compute(

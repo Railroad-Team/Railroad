@@ -71,6 +71,45 @@ public class JavaAttachedSourceAccessTest {
             DocumentOrigin.original(uri), source, StandardCharsets.UTF_8);
     }
 
+    @Test
+    public void accessDeclarationsAreSpecificToTheAttachmentAndJvmSignature() throws IOException {
+        Path api = apiJar("api.jar", Opcodes.ACC_PRIVATE);
+        String rules = """
+            public api.Target render()V # one overload
+            public api.Target <init>(I)V
+            public-f api.Target value
+            """;
+        Path mod = jar("mod.jar", Map.of("META-INF/accesstransformer.cfg", rules.getBytes(StandardCharsets.UTF_8)));
+        Path other = jar("other.jar", Map.of());
+        var config = new WorkspaceConfigurationSnapshot(1, Set.of("main"), Map.of(
+            "module.main.sources", directory.resolve("src").toString(),
+            "module.main.classpath", String.join("\n", api.toString(), mod.toString(), other.toString())));
+        String entry = "example/Use.java";
+        String source = "package example; class Use {}";
+        var attached = document(JavaLibrarySymbolIndex.archiveEntry(
+            jar("mod-sources.jar", Map.of(entry, source.getBytes(StandardCharsets.UTF_8))), entry), source);
+        var sibling = document(JavaLibrarySymbolIndex.archiveEntry(
+            jar("other-sources.jar", Map.of(entry, source.getBytes(StandardCharsets.UTF_8))), entry), source);
+        var consumer = document(DocumentUri.fromPath(directory.resolve("src/Use.java")), source);
+        var workspace = new WorkspaceSnapshot("access",
+            Map.of(attached.id(), attached, consumer.id(), consumer, sibling.id(), sibling), config, 0);
+        try (var provider = new JavaWorkspaceAnalysisProvider(() -> true,
+            (roots, _) -> JavaLibrarySymbolIndex.build(roots))) {
+            var view = provider.capture(workspace, attached.id()).lookupClassStub("api.Target");
+            assertTrue(Modifier.isPublic(view.methods().getFirst().modifiers()));
+            assertTrue(Modifier.isPrivate(view.methods().getLast().modifiers()));
+            assertTrue(Modifier.isPublic(view.constructors().getFirst().modifiers()));
+            assertTrue(Modifier.isPublic(view.fields().getFirst().modifiers()));
+            assertFalse(Modifier.isFinal(view.fields().getFirst().modifiers()));
+            for (var doc : List.of(sibling, consumer)) {
+                var original = provider.capture(workspace, doc.id()).lookupClassStub("api.Target");
+                assertTrue(Modifier.isPrivate(original.methods().getFirst().modifiers()));
+                assertTrue(Modifier.isPrivate(original.constructors().getFirst().modifiers()));
+                assertTrue(Modifier.isFinal(original.fields().getFirst().modifiers()));
+            }
+        }
+    }
+
     private Path jar(String name, Map<String, byte[]> entries) throws IOException {
         Path path = directory.resolve(name);
         Files.createDirectories(path.getParent());
@@ -84,10 +123,32 @@ public class JavaAttachedSourceAccessTest {
         return path;
     }
 
+    @Test
+    public void wildcardRulesRespectExistingVisibilityAndCapturedBinaryRevisions() throws IOException {
+        Path api = apiJar("api.jar", Opcodes.ACC_PUBLIC);
+        String declarations = "protected api.Target *()\npublic-f api.Target *\n";
+        Path mod = jar("mod.jar",
+            Map.of("META-INF/accesstransformer.cfg", declarations.getBytes(StandardCharsets.UTF_8)));
+        var base = JavaLibrarySymbolIndex.build(List.of(api, mod));
+        var view = base.forAttachedSource(mod, () -> {
+        }).lookupClassStub("api.Target");
+        assertTrue(Modifier.isPublic(view.methods().getFirst().modifiers()));
+        assertTrue(Modifier.isProtected(view.methods().getLast().modifiers()));
+        assertTrue(Modifier.isPublic(view.fields().getFirst().modifiers()));
+        assertFalse(Modifier.isFinal(view.fields().getFirst().modifiers()));
+
+        apiJar("api.jar", Opcodes.ACC_PRIVATE);
+        assertSame(base, base.forAttachedSource(mod, () -> {
+        }));
+    }
+
     private Path apiJar(String name, int access) throws IOException {
         var target = new ClassWriter(0);
         target.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, "api/Target", null, "java/lang/Object", null);
         target.visitMethod(access, "render", "()V", null, null).visitEnd();
+        target.visitMethod(Opcodes.ACC_PRIVATE, "render", "(I)V", null, null).visitEnd();
+        target.visitMethod(Opcodes.ACC_PRIVATE, "<init>", "(I)V", null, null).visitEnd();
+        target.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL, "value", "I", null, null).visitEnd();
         target.visitEnd();
         return jar(name, Map.of("api/Target.class", target.toByteArray()));
     }

@@ -3,6 +3,7 @@ package dev.railroadide.railroad.ide.sst.project;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 
 import java.util.*;
+import java.nio.file.Path;
 import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
@@ -67,6 +68,12 @@ public final class CompositeJavaSymbolIndex implements JavaSymbolIndex {
     @Override
     public Set<String> declaredQualifiedNames() {
         return declaredQualifiedNames;
+    }
+
+    @Override
+    public JavaSymbolIndex forAttachedSource(Path archive, Runnable check) {
+        var scoped = delegates.stream().map(delegate -> delegate.forAttachedSource(archive, check)).toList();
+        return scoped.equals(delegates) ? this : new CompositeJavaSymbolIndex(scoped);
     }
 
     @Override

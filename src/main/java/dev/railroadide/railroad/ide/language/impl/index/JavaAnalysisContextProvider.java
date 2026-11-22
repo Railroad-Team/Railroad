@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.language.impl.index;
 
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService.Session;
 import dev.railroadide.railroad.ide.sst.document.api.WorkspaceConfigurationSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -20,6 +21,7 @@ import dev.railroadide.railroad.ide.language.index.ProjectIndexContext;
 import dev.railroadide.railroad.ide.sst.project.CompositeJavaSymbolIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaJdkSymbolIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaLibrarySymbolIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaLibrarySources;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -291,6 +293,16 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         return index(resolver.resolve(project), file);
     }
 
+    /** Resolves live diagnostics using the document's source attachment when present. */
+    public @Nullable JavaSymbolIndex indexForDocument(Project project, DocumentSnapshot document) {
+        return indexForDocument(resolver.resolve(project), document);
+    }
+
+    /** Resolves a captured diagnostics document in a live indexing session. */
+    public @Nullable JavaSymbolIndex indexForDocument(ProjectIndexContext context, DocumentSnapshot document) {
+        return index(context, document.uri().filePath().orElse(null), document);
+    }
+
     /**
      * Combines the available project, library, and JDK symbol indexes for Java analysis.
      *
@@ -309,6 +321,14 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
      * @return the combined index, a single available index, or {@code null} if none exists
      */
     public @Nullable JavaSymbolIndex index(ProjectIndexContext context, @Nullable Path file) {
+        return index(context, file, null);
+    }
+
+    private @Nullable JavaSymbolIndex index(
+        ProjectIndexContext context,
+        @Nullable Path file,
+        @Nullable DocumentSnapshot document
+    ) {
         Objects.requireNonNull(context, "context");
         context.checkActive();
 
@@ -331,11 +351,20 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
 
         if (javaContext != null) {
             WorkspaceConfigurationSnapshot gradle = javaContext.gradleConfiguration();
-            List<Path> roots = gradle == null
-                ? libraryRoots(javaContext)
-                : JavaWorkspaceAnalysisProvider.classpathForFile(gradle, file);
+            List<Path> roots;
+            Path archive;
+            if (gradle != null) {
+                var scope = JavaWorkspaceAnalysisProvider.sourceContext(gradle, file, document);
+                roots = scope.classpath(gradle);
+                archive = scope.archive();
+            } else {
+                roots = libraryRoots(javaContext);
+                var sources = JavaLibrarySources.shared();
+                archive = (document == null ? sources.ownerArchive(file, roots) : sources.ownerArchive(document, roots))
+                    .orElse(null);
+            }
             Path jdk = gradle == null ? javaContext.jdkHome() : JavaWorkspaceAnalysisProvider.jdkHome(gradle);
-            JavaLibrarySymbolIndex libraryIndex = libraryIndex(roots, cache, activityCheck);
+            JavaLibrarySymbolIndex libraryIndex = libraryIndex(roots, archive, cache, activityCheck);
             if (!libraryIndex.declaredQualifiedNames().isEmpty()) {
                 delegates.add(libraryIndex);
             }
@@ -366,9 +395,16 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         return FileUtils.normalizePaths(List.copyOf(roots));
     }
 
-    private JavaLibrarySymbolIndex libraryIndex(List<Path> roots, Cache cache, Runnable activityCheck) {
-        var key = new LibraryIndexKey(roots);
+    private JavaLibrarySymbolIndex libraryIndex(
+        List<Path> roots,
+        @Nullable Path archive,
+        Cache cache,
+        Runnable activityCheck
+    ) {
+        var key = new LibraryIndexKey(roots, archive);
         return cache.load(cache.libraries, key, "railroad.activity.indexing_libraries", activityCheck, () -> {
+            if (archive != null)
+                return libraryIndex(roots, null, cache, activityCheck).forAttachedSource(archive, activityCheck);
             Railroad.LOGGER.warn(
                 "Building Java library index: roots={}, javafxBaseRoots={}, javafxGraphicsRoots={}, sampleRoots={}",
                 roots.size(),
@@ -446,9 +482,9 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
             .toList();
     }
 
-    private record LibraryIndexKey(List<Path> roots) {
-        private LibraryIndexKey(List<Path> roots) {
-            this.roots = List.copyOf(roots);
+    private record LibraryIndexKey(List<Path> roots, Path archive) {
+        private LibraryIndexKey {
+            roots = List.copyOf(roots);
         }
     }
 }

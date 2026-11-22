@@ -3,6 +3,7 @@ package dev.railroadide.railroad.ide.sst.project;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 import org.jetbrains.annotations.Nullable;
+import java.nio.file.Path;
 
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,17 @@ import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
  * Lookup contract for Java types, packages, members, and available binary class stubs.
  */
 public interface JavaSymbolIndex {
+    /**
+     * Returns the symbols visible when inspecting source attached to the given classpath archive.
+     *
+     * @param archive binary owning the source attachment
+     * @param check cancellation check
+     * @return immutable symbol index for this attachment
+     */
+    default JavaSymbolIndex forAttachedSource(Path archive, Runnable check) {
+        return this;
+    }
+
     /**
      * Returns immutable declaration and reference shards in this index's lookup order.
      *

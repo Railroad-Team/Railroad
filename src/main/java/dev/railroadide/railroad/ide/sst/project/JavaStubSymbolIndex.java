@@ -220,6 +220,11 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         return binaryLocations;
     }
 
+    /** Returns the original class paths for preserving navigation in derived library views. */
+    protected Map<String, Path> binaryOrigins() {
+        return sourceByQualifiedName;
+    }
+
     @Override
     public Set<String> declaredQualifiedNames() {
         return declaredQualifiedNames;

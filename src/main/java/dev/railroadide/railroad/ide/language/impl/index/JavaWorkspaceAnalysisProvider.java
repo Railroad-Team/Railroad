@@ -161,21 +161,15 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
             Set<Path> roots = sourceRoots(workspace.configuration());
             DocumentSnapshot document = request == null ? null : workspace.document(request).orElseThrow();
             DocumentId extra = document != null && !includedSource(document, roots) ? request : null;
-            String module = document == null
-                ? null
-                : moduleForPath(workspace.configuration(), document.uri().filePath().orElse(null));
-            if (document != null && module == null) {
-                Path archive = JavaLibrarySources.shared().ownerArchive(document, classpath(workspace.configuration()))
-                    .orElse(null);
-                if (archive != null) {
-                    module = moduleForArchive(workspace.configuration(), archive);
-                    extra = request;
-                }
+            Path file = document == null ? null : document.uri().filePath().orElse(null);
+            var scope = sourceContext(workspace.configuration(), file, document);
+            if (scope.archive() != null) {
+                extra = request;
             }
-            var key = new WorkspaceKey(workspace, extra, module);
+            var key = new WorkspaceKey(workspace, extra, scope.module());
             JavaWorkspaceAnalysis analysis = workspaces.getIfPresent(key);
             if (analysis == null) {
-                analysis = build(workspace, extra, roots, module, check);
+                analysis = build(workspace, extra, roots, scope, check);
                 publish(workspaces, key, analysis, check);
             }
             check.run();
@@ -189,13 +183,14 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
         WorkspaceSnapshot workspace,
         DocumentId request,
         Set<Path> roots,
-        String module,
+        SourceContext scope,
         Runnable check
     ) {
         WorkspaceConfigurationSnapshot configuration = workspace.configuration();
-        List<Path> classpath = classpath(configuration, module);
+        List<Path> classpath = scope.classpath(configuration);
         Path jdk = jdkHome(configuration);
-        CompletableFuture<JavaSymbolIndex> binaryLoad = loadBinaries(new BinaryKey(configuration, classpath), jdk,
+        CompletableFuture<JavaSymbolIndex> binaryLoad = loadBinaries(
+            new BinaryKey(configuration, classpath, scope.archive()), jdk,
             check);
         JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
         Map<Path, String> texts = new HashMap<>();
@@ -287,14 +282,20 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
             if (generation != cacheGeneration)
                 throw new CancellationException("Java analysis caches were cleared");
         };
-        CompletableFuture<JavaSymbolIndex> load = CompletableFuture.supplyAsync(() -> {
-            try (var _ = BackgroundActivities.shared().start("railroad.activity.indexing_libraries")) {
-                return binaryLoader == null
-                    ? new CompositeJavaSymbolIndex(List.of(JavaLibrarySymbolIndex.build(key.classpath(), loadCheck),
-                        JavaJdkSymbolIndex.build(jdk, loadCheck)))
-                    : binaryLoader.apply(key.classpath(), jdk);
-            }
-        }, BINARY_LOADS);
+        CompletableFuture<JavaSymbolIndex> load;
+        if (key.archive() == null) {
+            load = CompletableFuture.supplyAsync(() -> {
+                try (var _ = BackgroundActivities.shared().start("railroad.activity.indexing_libraries")) {
+                    return binaryLoader == null
+                        ? new CompositeJavaSymbolIndex(List.of(JavaLibrarySymbolIndex.build(key.classpath(), loadCheck),
+                            JavaJdkSymbolIndex.build(jdk, loadCheck)))
+                        : binaryLoader.apply(key.classpath(), jdk);
+                }
+            }, BINARY_LOADS);
+        } else {
+            var base = loadBinaries(new BinaryKey(key.configuration(), key.classpath(), null), jdk, loadCheck);
+            load = base.thenApplyAsync(index -> index.forAttachedSource(key.archive(), loadCheck), BINARY_LOADS);
+        }
         binaryLoads.put(key, load);
         load.whenComplete((index, failure) -> {
             synchronized (publicationLock) {
@@ -361,7 +362,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     private record WorkspaceKey(WorkspaceSnapshot workspace, DocumentId extraDocument, String module) {
     }
 
-    private record BinaryKey(WorkspaceConfigurationSnapshot configuration, List<Path> classpath) {
+    private record BinaryKey(WorkspaceConfigurationSnapshot configuration, List<Path> classpath, Path archive) {
     }
 
     private static boolean includedSource(DocumentSnapshot document, Set<Path> roots) {
@@ -438,14 +439,33 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
      * @return ordered binary roots for its module, or the workspace roots if no module owns the file
      */
     public static List<Path> classpathForFile(WorkspaceConfigurationSnapshot configuration, Path file) {
+        return sourceContext(configuration, file, null).classpath(configuration);
+    }
+
+    /** Identifies the importing module and the binary owning an attached source document, when available. */
+    public static SourceContext sourceContext(
+        WorkspaceConfigurationSnapshot configuration,
+        Path file,
+        DocumentSnapshot document
+    ) {
         String module = moduleForPath(configuration, file);
-        if (module == null && file != null) {
-            Path archive = JavaLibrarySources.shared().ownerArchive(file, classpath(configuration)).orElse(null);
-            if (archive != null) {
-                module = moduleForArchive(configuration, archive);
-            }
+        if (module != null && (document == null || document.origin().provenance() != ProvenanceKind.ATTACHED_SOURCE))
+            return new SourceContext(module, null);
+        if (document == null && file == null)
+            return new SourceContext(null, null);
+        var roots = classpath(configuration);
+        var sources = JavaLibrarySources.shared();
+        var archive = (document == null ? sources.ownerArchive(file, roots) : sources.ownerArchive(document, roots))
+            .orElse(null);
+        return new SourceContext(archive == null ? module : moduleForArchive(configuration, archive), archive);
+    }
+
+    /** Classpath ownership for a project source or an attached dependency source. */
+    public record SourceContext(String module, Path archive) {
+        /** Returns the ordered binary roots for this source. */
+        public List<Path> classpath(WorkspaceConfigurationSnapshot configuration) {
+            return JavaWorkspaceAnalysisProvider.classpath(configuration, module);
         }
-        return classpath(configuration, module);
     }
 
     private static String moduleForArchive(WorkspaceConfigurationSnapshot configuration, Path archive) {
