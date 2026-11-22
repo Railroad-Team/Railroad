@@ -261,6 +261,36 @@ public class JavaSemanticGraphExtractorTest {
     }
 
     @Test
+    public void indexesAnnotatedVarargsRecordAccessorAndCanonicalConstructor() {
+        String source = """
+            import java.lang.annotation.*;
+            @Target(ElementType.TYPE_USE) @interface Mark {}
+            record Batch<T>(T value, @Mark String[] @Mark ... conditions) { Batch {} }
+            """;
+        var shard = new JavaProjectSemanticExtractor().extract(Path.of("Batch.java"), source).semanticShard();
+        var record = JavaSymbolIds.type("Batch");
+        var accessor = shard.declarations().stream()
+            .filter(symbol -> symbol.id().equals(JavaSymbolIds.method(record, "conditions", List.of())))
+            .findFirst().orElseThrow();
+        assertEquals("String[][]", accessor.signature().returnType().displayName());
+        var constructor = shard.declarations().stream()
+            .filter(symbol -> symbol.id()
+                .equals(JavaSymbolIds.constructor(record, List.of("java.lang.Object", "java.lang.String[][]"))))
+            .findFirst().orElseThrow();
+        assertTrue(constructor.signature().parameters().getLast().varargs());
+        assertEquals("String[]", constructor.signature().parameters().getLast().type().displayName());
+    }
+
+    @Test
+    public void incompleteRecordComponentDoesNotCreateAnAccessor() {
+        var shard = new JavaProjectSemanticExtractor().extract(Path.of("Batch.java"),
+            "record Batch(int valid, String...) {}").semanticShard();
+        assertEquals(List.of("valid"), shard.declarations().stream()
+            .filter(symbol -> symbol.kind().id().equals("java:method"))
+            .map(SymbolDescriptor::simpleName).toList());
+    }
+
+    @Test
     public void compactRecordConstructorUsesCanonicalComponentSignature() {
         var shard = new JavaProjectSemanticExtractor().extract(Path.of("Box.java"), "record Box(int value) { Box {} }")
             .semanticShard();

@@ -907,7 +907,7 @@ public final class JavaGreenParser {
                 break;
             }
 
-            children.add(parseRecordComponent());
+            children.add(parseParameter(JavaSyntaxKinds.RECORD_COMPONENT));
             consumeTrivia(children);
             if (matchSignificant(JavaTokenType.COMMA, children))
                 continue;
@@ -919,28 +919,6 @@ public final class JavaGreenParser {
         }
 
         return greenNode(JavaSyntaxKinds.RECORD_HEADER, children);
-    }
-
-    private GreenNode parseRecordComponent() {
-        int marker = position;
-        List<GreenElement> children = new ArrayList<>();
-
-        consumeModifiersAndAnnotations(children, JavaGreenParser::isParameterOrLocalModifier);
-        children.add(parseTypeReference());
-        if (consumeIdentifierLike(children) == null) {
-            children.add(missingToken(JavaTokenType.IDENTIFIER));
-        }
-
-        appendOptionalDimensions(children);
-        if (position == marker) {
-            Token<JavaTokenType> token = peekSignificantToken();
-            if (token != null && !isEof(token) && token.type() != JavaTokenType.COMMA
-                && token.type() != JavaTokenType.CLOSE_PAREN) {
-                children.add(consumeToken());
-            }
-        }
-
-        return greenNode(JavaSyntaxKinds.RECORD_COMPONENT, children);
     }
 
     private GreenNode parseTypeBody(
@@ -1451,6 +1429,10 @@ public final class JavaGreenParser {
     }
 
     private GreenNode parseParameter() {
+        return parseParameter(JavaSyntaxKinds.PARAMETER);
+    }
+
+    private GreenNode parseParameter(SyntaxKind kind) {
         int marker = position;
         List<GreenElement> children = new ArrayList<>();
         consumeModifiersAndAnnotations(children, JavaGreenParser::isParameterOrLocalModifier);
@@ -1469,7 +1451,7 @@ public final class JavaGreenParser {
             }
         }
 
-        return greenNode(JavaSyntaxKinds.PARAMETER, children);
+        return greenNode(kind, children);
     }
 
     private GreenNode parseOptionalThrowsClause() {

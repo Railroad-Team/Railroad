@@ -518,6 +518,18 @@ public final class JavaSemanticAnalyzer {
             if (receiver == null || methodName == null || methodName.isBlank())
                 return;
 
+            Symbol qualifier = context.resolvedSymbol(receiver);
+            if (qualifier != null && qualifier.kind() == JavaSymbolKind.TYPE_PARAMETER) {
+                for (String bound : qualifiedTypeVariableBounds(qualifier.simpleName(), receiver)) {
+                    List<MemberCandidate> methods = findMethodCandidates(bound, methodName, false);
+                    if (!methods.isEmpty()) {
+                        context.resolve(methodReference, methods.getFirst().symbol());
+                        break;
+                    }
+                }
+                return;
+            }
+
             MemberLookup lookup = resolveMemberLookup(receiver, methodReference);
             String ownerQualifiedName = lookup == null ? null : lookup.ownerQualifiedName();
             if (ownerQualifiedName == null || ownerQualifiedName.isBlank())
@@ -562,45 +574,51 @@ public final class JavaSemanticAnalyzer {
                 return;
 
             String simpleName = lastSegment(name);
-            Scope scope = context.scopeFor(expressionNode);
-            List<Symbol> matches = scope.lookupNearest(simpleName);
+            List<Symbol> matches = visibleNameCandidates(expressionNode, simpleName);
             Symbol valueMatch = matches.stream()
                 .filter(symbol -> isValueSymbol(symbol.kind()))
                 .findFirst()
-                .orElseGet(() -> scope.lookupAll(simpleName).stream()
-                    .filter(symbol -> isValueSymbol(symbol.kind()))
-                    .findFirst()
-                    .orElse(null));
+                .orElse(null);
             if (valueMatch != null) {
                 context.resolve(expressionNode, valueMatch);
                 return;
             }
-            if (matches.isEmpty()) {
-                Symbol enclosingType = nearestEnclosingTypeSymbol(expressionNode);
-                while (enclosingType != null) {
-                    String ownerQualifiedName = enclosingType.qualifiedName().orElse(null);
-                    if (ownerQualifiedName != null) {
-                        List<MemberCandidate> fieldCandidates = new ArrayList<>();
-                        if (!isStaticContext(expressionNode)) {
-                            fieldCandidates.addAll(findFieldCandidates(
-                                ownerQualifiedName, simpleName, false));
-                        }
+            Symbol enclosingType = nearestEnclosingTypeSymbol(expressionNode);
+            while (enclosingType != null) {
+                String ownerQualifiedName = enclosingType.qualifiedName().orElse(null);
+                if (ownerQualifiedName != null) {
+                    List<MemberCandidate> fieldCandidates = new ArrayList<>();
+                    if (!isStaticContext(expressionNode)) {
                         fieldCandidates.addAll(findFieldCandidates(
-                            ownerQualifiedName, simpleName, true));
-                        MemberCandidate field = chooseFieldCandidate(fieldCandidates);
-                        if (field != null) {
-                            context.resolve(expressionNode, field.symbol());
-                            return;
-                        }
+                            ownerQualifiedName, simpleName, false));
                     }
-                    SyntaxNode declaration = enclosingType.declaration().orElse(null);
-                    enclosingType = declaration == null ? null : context.enclosingTypeSymbol(declaration);
+                    fieldCandidates.addAll(findFieldCandidates(
+                        ownerQualifiedName, simpleName, true));
+                    MemberCandidate field = chooseFieldCandidate(fieldCandidates);
+                    if (field != null) {
+                        context.resolve(expressionNode, field.symbol());
+                        return;
+                    }
                 }
+                SyntaxNode declaration = enclosingType.declaration().orElse(null);
+                enclosingType = declaration == null ? null : context.enclosingTypeSymbol(declaration);
+            }
+            if (matches.isEmpty()) {
                 resolveNameFromImports(expressionNode, simpleName);
                 return;
             }
 
             context.resolve(expressionNode, matches.getFirst());
+        }
+
+        private List<Symbol> visibleNameCandidates(SyntaxNode expression, String name) {
+            boolean methodReference = expression.parent()
+                .filter(parent -> parent.kind().equals(JavaSyntaxKinds.METHOD_REFERENCE_EXPRESSION)).isPresent();
+            return context.scopeFor(expression).lookupAll(name).stream()
+                .filter(symbol -> symbol.kind() != JavaSymbolKind.LOCAL_VARIABLE
+                    || symbol.declaration().map(node -> node.start() <= expression.start()).orElse(true))
+                .filter(symbol -> symbol.kind() != JavaSymbolKind.TYPE_PARAMETER || methodReference)
+                .toList();
         }
 
         private boolean isStaticContext(SyntaxNode usageSite) {
@@ -745,37 +763,18 @@ public final class JavaSemanticAnalyzer {
                 return;
             }
 
-            Scope scope = context.scopeFor(invocationNode);
-            MemberCandidate localChosen = selectBestCallable(localMethodCandidates(scope.lookupAll(methodName)),
-                argumentTypes);
-            if (localChosen != null) {
-                context.resolve(invocationNode, localChosen.symbol());
-                if (memberNode != null) {
-                    context.resolve(memberNode, localChosen.symbol());
-                }
-                return;
-            }
-
             Symbol enclosingType = nearestEnclosingTypeSymbol(invocationNode);
             while (enclosingType != null) {
                 String ownerQualifiedName = enclosingType.qualifiedName().orElse(null);
                 if (ownerQualifiedName != null) {
-                    MemberCandidate ownerChosen = selectBestCallable(
-                        findMethodCandidates(ownerQualifiedName, methodName, false),
-                        argumentTypes);
+                    List<MemberCandidate> candidates = new ArrayList<>(
+                        findMethodCandidates(ownerQualifiedName, methodName, false));
+                    candidates.addAll(findMethodCandidates(ownerQualifiedName, methodName, true));
+                    MemberCandidate ownerChosen = selectBestCallable(candidates, argumentTypes);
                     if (ownerChosen != null) {
                         context.resolve(invocationNode, ownerChosen.symbol());
                         if (memberNode != null) {
                             context.resolve(memberNode, ownerChosen.symbol());
-                        }
-                        return;
-                    }
-                    MemberCandidate inheritedStaticChosen = selectBestCallable(
-                        findMethodCandidates(ownerQualifiedName, methodName, true), argumentTypes);
-                    if (inheritedStaticChosen != null) {
-                        context.resolve(invocationNode, inheritedStaticChosen.symbol());
-                        if (memberNode != null) {
-                            context.resolve(memberNode, inheritedStaticChosen.symbol());
                         }
                         return;
                     }
@@ -1191,7 +1190,7 @@ public final class JavaSemanticAnalyzer {
             if (JavaSyntaxKinds.NAME_EXPRESSION.id().equals(targetNode.kind().id())) {
                 String simpleName = canonicalQualifiedName(targetNode);
                 if (simpleName != null && !simpleName.isBlank()) {
-                    List<Symbol> matches = context.scopeFor(targetNode).lookupNearest(simpleName);
+                    List<Symbol> matches = visibleNameCandidates(targetNode, simpleName);
                     if (!matches.isEmpty())
                         return matches.getFirst();
                 }
@@ -1550,7 +1549,10 @@ public final class JavaSemanticAnalyzer {
         }
 
         private List<Type> parameterTypes(SyntaxNode declarationNode) {
-            SyntaxNode parameterList = JavaSourceSymbolIds.parameterList(declarationNode);
+            return parameterListTypes(JavaSourceSymbolIds.parameterList(declarationNode));
+        }
+
+        private List<Type> parameterListTypes(@Nullable SyntaxNode parameterList) {
             if (parameterList == null)
                 return List.of();
 
@@ -1560,16 +1562,17 @@ public final class JavaSemanticAnalyzer {
                 if (!JavaSyntaxKinds.PARAMETER.id().equals(child.kind().id())
                     && !JavaSyntaxKinds.RECORD_COMPONENT.id().equals(child.kind().id()))
                     continue;
-                SyntaxNode typeRef = directChild(child, JavaSyntaxKinds.TYPE_REFERENCE.id());
-                Type parameterType = typeRef == null
-                    ? new JavaTypes.UnknownType("<unknown>")
-                    : typeFromTypeReferenceForResolution(typeRef);
-                if (hasTokenKind(child, JavaTokenType.ELLIPSIS)) {
-                    parameterType = new JavaTypes.ArrayType(parameterType);
-                }
-                types.add(parameterType);
+                types.add(parameterType(child));
             }
             return List.copyOf(types);
+        }
+
+        private Type parameterType(SyntaxNode parameter) {
+            SyntaxNode typeRef = directChild(parameter, JavaSyntaxKinds.TYPE_REFERENCE.id());
+            Type type = typeRef == null
+                ? new JavaTypes.UnknownType("<unknown>")
+                : typeFromTypeReferenceForResolution(typeRef);
+            return hasDirectTokenKind(parameter, JavaTokenType.ELLIPSIS) ? new JavaTypes.ArrayType(type) : type;
         }
 
         private Type typeOfMethodDeclaration(Symbol methodSymbol) {
@@ -1599,19 +1602,10 @@ public final class JavaSemanticAnalyzer {
                 while (parent.isPresent()) {
                     context.poll();
                     SyntaxNode candidate = parent.get();
-                    if (hasDirectTokenKind(candidate, JavaTokenType.VAR_KEYWORD)) {
-                        List<SyntaxNode> expressions = new ArrayList<>();
-                        for (SyntaxNode child : declaration.children()) {
-                            context.poll();
-                            if (isExpressionNode(child)) {
-                                expressions.add(child);
-                            }
-                        }
-                        return expressions.isEmpty()
-                            ? new JavaTypes.UnknownType("<unknown>")
-                            : inferExpressionTypeForResolution(expressions.getFirst());
-                    }
                     SyntaxNode typeRef = directChild(candidate, JavaSyntaxKinds.TYPE_REFERENCE.id());
+                    if (hasDirectTokenKind(candidate, JavaTokenType.VAR_KEYWORD)
+                        || typeRef != null && "var".equals(canonicalTypeText(typeRef)))
+                        return resolvedExpressionTypeResolver.inferredVariableType(declaration);
                     if (typeRef != null)
                         return typeFromTypeReferenceForResolution(typeRef);
                     parent = candidate.parent();
@@ -1694,16 +1688,7 @@ public final class JavaSemanticAnalyzer {
                 return new JavaTypes.UnknownType("<unknown>");
 
             SyntaxNode invocation = argumentList.parent().orElse(null);
-            if (invocation == null
-                || !JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id().equals(invocation.kind().id())
-                    && !JavaSyntaxKinds.CLASS_INSTANCE_CREATION_EXPRESSION.id().equals(invocation.kind().id()))
-                return new JavaTypes.UnknownType("<unknown>");
-
-            Symbol callable = context.resolvedSymbol(invocation);
-            if (callable == null) {
-                resolveMethodInvocation(invocation);
-                callable = context.resolvedSymbol(invocation);
-            }
+            Symbol callable = resolveContextualCallable(invocation);
             if (callable == null)
                 return new JavaTypes.UnknownType("<unknown>");
 
@@ -1853,20 +1838,7 @@ public final class JavaSemanticAnalyzer {
                     || !JavaSyntaxKinds.ARGUMENT_LIST.id().equals(outerArgumentList.kind().id()))
                     return new JavaTypes.UnknownType("<unknown>");
                 SyntaxNode outerInvocation = outerArgumentList.parent().orElse(null);
-                if (outerInvocation == null
-                    || !JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id().equals(outerInvocation.kind().id())
-                        && !JavaSyntaxKinds.CLASS_INSTANCE_CREATION_EXPRESSION.id().equals(outerInvocation.kind().id()))
-                    return new JavaTypes.UnknownType("<unknown>");
-
-                Symbol outerCallable = context.resolvedSymbol(outerInvocation);
-                if (outerCallable == null) {
-                    if (JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id().equals(outerInvocation.kind().id())) {
-                        resolveMethodInvocation(outerInvocation);
-                    } else {
-                        resolveClassInstanceCreation(outerInvocation);
-                    }
-                    outerCallable = context.resolvedSymbol(outerInvocation);
-                }
+                Symbol outerCallable = resolveContextualCallable(outerInvocation);
                 if (outerCallable == null)
                     return new JavaTypes.UnknownType("<unknown>");
 
@@ -1879,6 +1851,20 @@ public final class JavaSemanticAnalyzer {
             } finally {
                 contextualInferenceInProgress.remove(invocation);
             }
+        }
+
+        private @Nullable Symbol resolveContextualCallable(@Nullable SyntaxNode invocation) {
+            if (invocation == null)
+                return null;
+            Symbol callable = context.resolvedSymbol(invocation);
+            if (callable != null)
+                return callable;
+            if (JavaSyntaxKinds.CLASS_INSTANCE_CREATION_EXPRESSION.id().equals(invocation.kind().id())) {
+                resolveClassInstanceCreation(invocation);
+            } else if (JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id().equals(invocation.kind().id())) {
+                resolveMethodInvocation(invocation);
+            }
+            return context.resolvedSymbol(invocation);
         }
 
         private @Nullable SyntaxNode enclosingNode(SyntaxNode node, String kindId) {
@@ -2087,7 +2073,18 @@ public final class JavaSemanticAnalyzer {
                         : POLY_FUNCTIONAL_ARGUMENT + ">";
                     types.add(new JavaTypes.UnknownType(marker));
                 } else {
-                    types.add(inferExpressionTypeForResolution(child));
+                    Type type = inferExpressionTypeForResolution(child);
+                    if (type instanceof JavaTypes.TypeVariableType variable) {
+                        Symbol symbol = context.resolvedSymbol(child);
+                        SyntaxNode declaration = symbol == null ? null : symbol.declaration().orElse(null);
+                        if (declaration != null && declaration.kind().equals(JavaSyntaxKinds.PARAMETER)) {
+                            List<String> bounds = qualifiedTypeVariableBounds(variable.displayName(), declaration);
+                            if (!bounds.isEmpty() && bounds.stream().allMatch(this::isResolvableType)) {
+                                type = new BoundedArgument(variable.displayName(), bounds);
+                            }
+                        }
+                    }
+                    types.add(type);
                 }
             }
             return List.copyOf(types);
@@ -2529,29 +2526,13 @@ public final class JavaSemanticAnalyzer {
                 case JavaSymbolKind.CLASS, JavaSymbolKind.INTERFACE, JavaSymbolKind.ENUM, JavaSymbolKind.ANNOTATION,
                     JavaSymbolKind.RECORD ->
                     new JavaTypes.DeclaredType(symbol.qualifiedName().orElse(symbol.simpleName()), List.of());
+                case JavaSymbolKind.TYPE_PARAMETER -> new JavaTypes.TypeVariableType(symbol.simpleName());
                 case JavaSymbolKind.METHOD -> typeOfMethodDeclaration(symbol);
                 case JavaSymbolKind.FIELD, JavaSymbolKind.PARAMETER, JavaSymbolKind.LOCAL_VARIABLE ->
                     typeOfFieldDeclaration(symbol);
                 case JavaSymbolKind.CONSTRUCTOR -> new JavaTypes.DeclaredType(ownerQualifiedName(symbol), List.of());
                 default -> new JavaTypes.UnknownType("<unknown>");
             };
-        }
-
-        private List<MemberCandidate> localMethodCandidates(List<Symbol> symbols) {
-            List<MemberCandidate> candidates = new ArrayList<>();
-            for (Symbol symbol : symbols) {
-                context.poll();
-                if (symbol.kind() != JavaSymbolKind.METHOD)
-                    continue;
-                String ownerQualifiedName = ownerQualifiedName(symbol);
-                if (ownerQualifiedName == null)
-                    continue;
-                MemberCandidate candidate = localMethodCandidate(symbol, ownerQualifiedName);
-                if (candidate != null) {
-                    candidates.add(candidate);
-                }
-            }
-            return List.copyOf(candidates);
         }
 
         private List<MemberCandidate> findFieldCandidates(
@@ -2668,10 +2649,12 @@ public final class JavaSemanticAnalyzer {
                 candidates.addAll(local);
             }
             boolean hasExplicitLocalConstructors = localTypesWithExplicitConstructors.contains(ownerQualifiedName);
-            if (localQualifiedTypeNames.contains(ownerQualifiedName)
-                && (!hasExplicitLocalConstructors || isLocalRecordType(ownerQualifiedName))) {
-                MemberCandidate implicitLocalConstructor = implicitLocalConstructorCandidate(ownerQualifiedName);
-                if (implicitLocalConstructor != null && candidates.stream().noneMatch(
+            boolean localOwner = localQualifiedTypeNames.contains(ownerQualifiedName);
+            SyntaxNode header = localOwner ? localRecordHeader(ownerQualifiedName) : null;
+            if (localOwner && (!hasExplicitLocalConstructors || header != null)) {
+                MemberCandidate implicitLocalConstructor = implicitLocalConstructorCandidate(ownerQualifiedName,
+                    header);
+                if (candidates.stream().noneMatch(
                     candidate -> candidate.parameterTypes().equals(implicitLocalConstructor.parameterTypes()))) {
                     candidates.add(implicitLocalConstructor);
                 }
@@ -3171,6 +3154,16 @@ public final class JavaSemanticAnalyzer {
                 return 0;
             if (parameterType.kind() == JavaTypes.Kind.TYPE_VARIABLE || parameterType.kind() == JavaTypes.Kind.WILDCARD)
                 return 20;
+            if (argumentType instanceof BoundedArgument variable) {
+                Integer best = null;
+                for (String bound : variable.bounds()) {
+                    Integer cost = conversionCost(parameterType, new JavaTypes.DeclaredType(bound, List.of()));
+                    if (cost != null && (best == null || cost < best)) {
+                        best = cost;
+                    }
+                }
+                return best;
+            }
             if (argumentType.kind() == JavaTypes.Kind.TYPE_VARIABLE || argumentType.kind() == JavaTypes.Kind.WILDCARD)
                 return 0;
             if (parameterType.displayName().equals(argumentType.displayName()))
@@ -3477,9 +3470,12 @@ public final class JavaSemanticAnalyzer {
             }
         }
 
-        private @Nullable MemberCandidate implicitLocalConstructorCandidate(String ownerQualifiedName) {
+        private MemberCandidate implicitLocalConstructorCandidate(
+            String ownerQualifiedName,
+            @Nullable SyntaxNode header
+        ) {
             Type constructedType = new JavaTypes.DeclaredType(ownerQualifiedName, List.of());
-            List<Type> parameterTypes = localRecordCanonicalConstructorParameterTypes(ownerQualifiedName);
+            List<Type> parameterTypes = parameterListTypes(header);
             return new MemberCandidate(
                 new SyntheticMemberSymbol(
                     JavaSymbolKind.CONSTRUCTOR,
@@ -3492,82 +3488,35 @@ public final class JavaSemanticAnalyzer {
                 ownerQualifiedName,
                 false,
                 constructedType,
-                parameterTypes);
-        }
-
-        private List<Type> localRecordCanonicalConstructorParameterTypes(String ownerQualifiedName) {
-            for (Symbol symbol : context.allTypeSymbols()) {
-                context.poll();
-                if (!Objects.equals(symbol.qualifiedName().orElse(null), ownerQualifiedName))
-                    continue;
-                if (symbol.kind() != JavaSymbolKind.RECORD)
-                    return List.of();
-
-                SyntaxNode declaration = symbol.declaration().orElse(null);
-                if (declaration == null)
-                    return List.of();
-
-                SyntaxNode recordHeader = directChild(declaration, JavaSyntaxKinds.RECORD_HEADER.id());
-                if (recordHeader == null)
-                    return List.of();
-
-                List<Type> parameterTypes = new ArrayList<>();
-                for (SyntaxNode child : recordHeader.children()) {
-                    context.poll();
-                    if (!JavaSyntaxKinds.RECORD_COMPONENT.id().equals(child.kind().id()))
-                        continue;
-                    SyntaxNode typeRef = directChild(child, JavaSyntaxKinds.TYPE_REFERENCE.id());
-                    if (typeRef != null) {
-                        parameterTypes.add(typeFromTypeReferenceForResolution(typeRef));
-                    }
-                }
-                return List.copyOf(parameterTypes);
-            }
-            return List.of();
+                parameterTypes, header != null && hasTokenKind(header, JavaTokenType.ELLIPSIS));
         }
 
         private @Nullable MemberCandidate localRecordAccessorCandidate(String ownerQualifiedName, String methodName) {
-            for (Symbol symbol : context.allTypeSymbols()) {
-                context.poll();
-                if (!Objects.equals(symbol.qualifiedName().orElse(null), ownerQualifiedName))
-                    continue;
-                if (symbol.kind() != JavaSymbolKind.RECORD)
-                    return null;
-
-                SyntaxNode declaration = symbol.declaration().orElse(null);
-                if (declaration == null)
-                    return null;
-
-                SyntaxNode recordHeader = directChild(declaration, JavaSyntaxKinds.RECORD_HEADER.id());
-                if (recordHeader == null)
-                    return null;
-
-                for (SyntaxNode child : recordHeader.children()) {
-                    context.poll();
-                    if (!JavaSyntaxKinds.RECORD_COMPONENT.id().equals(child.kind().id()))
-                        continue;
-                    String componentName = lastIdentifierLikeTokenText(child);
-                    if (!Objects.equals(componentName, methodName))
-                        continue;
-                    SyntaxNode typeRef = directChild(child, JavaSyntaxKinds.TYPE_REFERENCE.id());
-                    Type valueType = typeRef == null
-                        ? new JavaTypes.UnknownType("<unknown>")
-                        : typeFromTypeReferenceForResolution(typeRef);
-                    return new MemberCandidate(
-                        new SyntheticMemberSymbol(
-                            JavaSymbolKind.METHOD,
-                            methodName,
-                            ownerQualifiedName + "#" + methodName + "()",
-                            null,
-                            valueType,
-                            List.of(),
-                            false),
-                        ownerQualifiedName,
-                        false,
-                        valueType,
-                        List.of());
-                }
+            SyntaxNode recordHeader = localRecordHeader(ownerQualifiedName);
+            if (recordHeader == null)
                 return null;
+
+            for (SyntaxNode child : recordHeader.children()) {
+                context.poll();
+                if (!JavaSyntaxKinds.RECORD_COMPONENT.id().equals(child.kind().id()))
+                    continue;
+                Symbol component = context.declaredSymbol(child);
+                if (component == null || !component.simpleName().equals(methodName))
+                    continue;
+                Type valueType = parameterType(child);
+                return new MemberCandidate(
+                    new SyntheticMemberSymbol(
+                        JavaSymbolKind.METHOD,
+                        methodName,
+                        ownerQualifiedName + "#" + methodName + "()",
+                        null,
+                        valueType,
+                        List.of(),
+                        false),
+                    ownerQualifiedName,
+                    false,
+                    valueType,
+                    List.of());
             }
             return null;
         }
@@ -3653,12 +3602,14 @@ public final class JavaSemanticAnalyzer {
                     context.poll();
                     if (!JavaSyntaxKinds.RECORD_COMPONENT.id().equals(child.kind().id()))
                         continue;
-                    String componentName = lastIdentifierLikeTokenText(child);
-                    if (componentName == null || componentName.isBlank())
+                    Symbol component = model.declaredSymbol(child).orElse(null);
+                    if (component == null)
                         continue;
                     SyntaxNode typeRef = directChild(child, JavaSyntaxKinds.TYPE_REFERENCE.id());
                     Type valueType = projectTypeFromTypeReference(sourceContext, typeRef);
-                    out.putIfAbsent(componentName, valueType);
+                    out.putIfAbsent(component.simpleName(), hasDirectTokenKind(child, JavaTokenType.ELLIPSIS)
+                        ? new JavaTypes.ArrayType(valueType)
+                        : valueType);
                 }
                 return;
             }
@@ -3699,14 +3650,15 @@ public final class JavaSemanticAnalyzer {
             return new MemberCandidate(field, ownerQualifiedName, false, valueType, List.of());
         }
 
-        private boolean isLocalRecordType(String ownerQualifiedName) {
+        private @Nullable SyntaxNode localRecordHeader(String ownerQualifiedName) {
             for (Symbol symbol : context.allTypeSymbols()) {
                 context.poll();
                 if (symbol.kind() == JavaSymbolKind.RECORD
                     && Objects.equals(symbol.qualifiedName().orElse(null), ownerQualifiedName))
-                    return true;
+                    return symbol.declaration().map(node -> directChild(node, JavaSyntaxKinds.RECORD_HEADER.id()))
+                        .orElse(null);
             }
-            return false;
+            return null;
         }
 
         private List<Type> projectMethodParameterTypes(JavaProjectSemanticIndex.SymbolDescriptor symbol) {
@@ -4395,33 +4347,19 @@ public final class JavaSemanticAnalyzer {
         }
 
         private List<String> qualifiedTypeVariableBounds(String variableName, SyntaxNode usageSite) {
-            SyntaxNode current = usageSite;
-            while (current != null) {
-                context.poll();
-                SyntaxNode typeParameters = directChild(current, JavaSyntaxKinds.TYPE_PARAMETERS.id());
-                if (typeParameters != null) {
-                    for (SyntaxNode typeParameter : typeParameters.children()) {
-                        context.poll();
-                        if (!JavaSyntaxKinds.TYPE_PARAMETER.id().equals(typeParameter.kind().id())
-                            || !variableName.equals(firstIdentifierLikeTokenText(typeParameter)))
-                            continue;
-                        List<SyntaxNode> boundTypes = new ArrayList<>();
-                        collectTopLevelDescendantsOfKind(
-                            typeParameter, JavaSyntaxKinds.TYPE_REFERENCE.id(), boundTypes);
-                        List<String> bounds = new ArrayList<>();
-                        for (SyntaxNode boundType : boundTypes) {
-                            context.poll();
-                            String qualified = resolveQualifiedTypeName(boundType, usageSite);
-                            if (qualified != null && !qualified.isBlank()) {
-                                bounds.add(qualified);
-                            }
-                        }
-                        return bounds.isEmpty() ? List.of("java.lang.Object") : List.copyOf(bounds);
-                    }
+            SyntaxNode parameter = lexicalTypeParameter(variableName, usageSite);
+            if (parameter == null)
+                return List.of();
+            List<SyntaxNode> boundTypes = new ArrayList<>();
+            collectTopLevelDescendantsOfKind(parameter, JavaSyntaxKinds.TYPE_REFERENCE.id(), boundTypes);
+            List<String> bounds = new ArrayList<>();
+            for (SyntaxNode boundType : boundTypes) {
+                String qualified = resolveQualifiedTypeName(boundType, parameter);
+                if (qualified != null && !qualified.isBlank()) {
+                    bounds.add(qualified);
                 }
-                current = current.parent().orElse(null);
             }
-            return List.of();
+            return bounds.isEmpty() ? List.of("java.lang.Object") : List.copyOf(bounds);
         }
 
         private List<String> qualifiedResolvedReceiverTypeVariableBounds(
@@ -4470,19 +4408,19 @@ public final class JavaSemanticAnalyzer {
             }
         }
 
-        private boolean isLexicallyDeclaredTypeVariable(String variableName, SyntaxNode usageSite) {
-            SyntaxNode current = usageSite;
-            while (current != null) {
+        private @Nullable SyntaxNode lexicalTypeParameter(String variableName, SyntaxNode usageSite) {
+            for (SyntaxNode current = usageSite; current != null; current = current.parent().orElse(null)) {
                 context.poll();
-                SyntaxNode typeParameters = directChild(current, JavaSyntaxKinds.TYPE_PARAMETERS.id());
-                if (typeParameters != null && typeParameters.children().stream()
-                    .filter(child -> JavaSyntaxKinds.TYPE_PARAMETER.id().equals(child.kind().id()))
-                    .map(JavaSemanticAnalyzer::firstIdentifierLikeTokenText)
-                    .anyMatch(variableName::equals))
-                    return true;
-                current = current.parent().orElse(null);
+                SyntaxNode parameters = directChild(current, JavaSyntaxKinds.TYPE_PARAMETERS.id());
+                if (parameters == null)
+                    continue;
+                for (SyntaxNode parameter : parameters.children()) {
+                    if (parameter.kind().equals(JavaSyntaxKinds.TYPE_PARAMETER)
+                        && variableName.equals(JavaSourceSymbolIds.declarationName(parameter)))
+                        return parameter;
+                }
             }
-            return false;
+            return null;
         }
 
         private @Nullable String resolveQualifiedTypeName(SyntaxNode typeNode, SyntaxNode usageSite) {
@@ -4974,9 +4912,7 @@ public final class JavaSemanticAnalyzer {
 
             if (Set.of("boolean", "byte", "short", "char", "int", "long", "float", "double").contains(text))
                 return new JavaTypes.PrimitiveType(text);
-            if (usageSite != null && isLexicallyDeclaredTypeVariable(text, usageSite))
-                return new JavaTypes.TypeVariableType(text);
-            if (isTypeVariableNameInScope(text))
+            if (usageSite != null && lexicalTypeParameter(text, usageSite) != null)
                 return new JavaTypes.TypeVariableType(text);
 
             String qualified = resolveQualifiedTypeName(text, usageSite);
@@ -5027,15 +4963,6 @@ public final class JavaSemanticAnalyzer {
                 parts.add(current.toString());
             }
             return List.copyOf(parts);
-        }
-
-        private boolean isTypeVariableNameInScope(String name) {
-            for (Symbol symbol : context.allDeclaredSymbols()) {
-                context.poll();
-                if (symbol.kind() == JavaSymbolKind.TYPE_PARAMETER && name.equals(symbol.simpleName()))
-                    return true;
-            }
-            return false;
         }
 
         private static boolean isSelectorNameExpression(SyntaxNode node) {
@@ -5121,6 +5048,13 @@ public final class JavaSemanticAnalyzer {
                 deduped.putIfAbsent(key, symbol);
             }
             return List.copyOf(deduped.values());
+        }
+
+        private record BoundedArgument(String displayName, List<String> bounds) implements Type {
+            @Override
+            public Type.Kind kind() {
+                return JavaTypes.Kind.TYPE_VARIABLE;
+            }
         }
 
         private record MemberLookup(@Nullable String ownerQualifiedName, boolean staticAccess) {
@@ -6347,7 +6281,7 @@ public final class JavaSemanticAnalyzer {
                 }
             }
 
-            boolean typeVariable = isLexicallyDeclaredTypeVariable(rawType, typeRef);
+            boolean typeVariable = nameResolver.lexicalTypeParameter(rawType, typeRef) != null;
             String qualifiedName = typeVariable ? null : sourceContext.resolveQualifiedTypeName(rawType);
             Type resolved = switch (rawType) {
                 case "boolean", "byte", "short", "char", "int", "long", "float", "double" ->
@@ -6688,6 +6622,7 @@ public final class JavaSemanticAnalyzer {
                 case JavaSymbolKind.CLASS, JavaSymbolKind.INTERFACE, JavaSymbolKind.ENUM, JavaSymbolKind.ANNOTATION,
                     JavaSymbolKind.RECORD ->
                     new JavaTypes.DeclaredType(symbol.simpleName(), List.of());
+                case JavaSymbolKind.TYPE_PARAMETER -> new JavaTypes.TypeVariableType(symbol.simpleName());
                 case JavaSymbolKind.METHOD -> methodReturnType(symbol);
                 case JavaSymbolKind.PARAMETER, JavaSymbolKind.LOCAL_VARIABLE, JavaSymbolKind.FIELD ->
                     variableLikeType(symbol);
@@ -6785,28 +6720,27 @@ public final class JavaSemanticAnalyzer {
             while (parent.isPresent()) {
                 context.poll();
                 SyntaxNode candidate = parent.get();
-                if (JavaSyntaxKinds.LOCAL_VARIABLE_DECLARATION_STATEMENT.id().equals(candidate.kind().id())
-                    && hasTokenKind(candidate, JavaTokenType.VAR_KEYWORD)) {
-                    List<SyntaxNode> expressions = directExpressionChildren(variableDeclarator);
-                    SyntaxNode initializer = expressions.isEmpty() ? null : expressions.getFirst();
-                    return initializer == null ? UNKNOWN_TYPE : inferType(initializer);
-                }
-
                 SyntaxNode typeRef = directChild(candidate, JavaSyntaxKinds.TYPE_REFERENCE.id());
-                if (typeRef != null) {
-                    if ("var".equals(canonicalTypeText(typeRef))) {
-                        List<SyntaxNode> expressions = directExpressionChildren(variableDeclarator);
-                        SyntaxNode initializer = expressions.isEmpty() ? null : expressions.getFirst();
-                        return initializer == null ? UNKNOWN_TYPE : inferType(initializer);
-                    }
+                if (nameResolver.hasDirectTokenKind(candidate, JavaTokenType.VAR_KEYWORD)
+                    || typeRef != null && "var".equals(canonicalTypeText(typeRef)))
+                    return inferredVariableType(variableDeclarator);
+                if (typeRef != null)
                     return typeFromTypeReference(typeRef);
-                }
                 if (JavaSyntaxKinds.LOCAL_VARIABLE_DECLARATION_STATEMENT.id().equals(candidate.kind().id()))
                     return UNKNOWN_TYPE;
 
                 parent = candidate.parent();
             }
             return UNKNOWN_TYPE;
+        }
+
+        private Type inferredVariableType(SyntaxNode declarator) {
+            List<SyntaxNode> expressions = directExpressionChildren(declarator);
+            if (expressions.isEmpty())
+                return UNKNOWN_TYPE;
+            SyntaxNode initializer = expressions.getFirst();
+            String anonymous = nameResolver.anonymousReceiverType(initializer);
+            return anonymous == null ? inferType(initializer) : new JavaTypes.DeclaredType(anonymous, List.of());
         }
 
         private Type typeFromTypeReference(SyntaxNode typeNode) {
@@ -6864,9 +6798,7 @@ public final class JavaSemanticAnalyzer {
 
             if (NUMERIC_PRIMITIVES.contains(text) || "boolean".equals(text))
                 return new JavaTypes.PrimitiveType(text);
-            if (usageSite != null && isLexicallyDeclaredTypeVariable(text, usageSite))
-                return new JavaTypes.TypeVariableType(text);
-            if (isTypeVariableNameInScope(text))
+            if (usageSite != null && nameResolver.lexicalTypeParameter(text, usageSite) != null)
                 return new JavaTypes.TypeVariableType(text);
             String qualified = resolveQualifiedTypeName(text, usageSite);
             if (isLikelyTypeVariableName(text)
@@ -6874,21 +6806,6 @@ public final class JavaSemanticAnalyzer {
                 return new JavaTypes.TypeVariableType(text);
             String declaredName = qualified == null || qualified.isBlank() ? simpleTypeName(text) : qualified;
             return declaredName.isBlank() ? UNKNOWN_TYPE : new JavaTypes.DeclaredType(declaredName, List.of());
-        }
-
-        private boolean isLexicallyDeclaredTypeVariable(String variableName, SyntaxNode usageSite) {
-            SyntaxNode current = usageSite;
-            while (current != null) {
-                context.poll();
-                SyntaxNode typeParameters = directChild(current, JavaSyntaxKinds.TYPE_PARAMETERS.id());
-                if (typeParameters != null && typeParameters.children().stream()
-                    .filter(child -> JavaSyntaxKinds.TYPE_PARAMETER.id().equals(child.kind().id()))
-                    .map(JavaSemanticAnalyzer::firstIdentifierLikeTokenText)
-                    .anyMatch(variableName::equals))
-                    return true;
-                current = current.parent().orElse(null);
-            }
-            return false;
         }
 
         private int findTopLevelTypeArgumentsStart(String text) {
@@ -6929,15 +6846,6 @@ public final class JavaSemanticAnalyzer {
                 parts.add(current.toString());
             }
             return List.copyOf(parts);
-        }
-
-        private boolean isTypeVariableNameInScope(String name) {
-            for (Symbol symbol : context.allDeclaredSymbols()) {
-                context.poll();
-                if (symbol.kind() == JavaSymbolKind.TYPE_PARAMETER && name.equals(symbol.simpleName()))
-                    return true;
-            }
-            return false;
         }
 
         private void collectImportsFromRootScope() {

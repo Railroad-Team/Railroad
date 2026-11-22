@@ -115,7 +115,7 @@ public final class JavaSemanticGraphExtractor {
                 ownerId = JavaSymbolIds.packageId("", separator < 0 ? "" : qualified.substring(0, separator));
             }
             SyntaxNode name = nameNode(node, symbol.simpleName());
-            TypeReference declaredType = declaredType(container);
+            TypeReference declaredType = variableArityType(container);
             if (isTypeKind(symbol.kind())) {
                 declaredType = new TypeReference(symbol.simpleName(), List.of(), 0, id);
             }
@@ -177,13 +177,14 @@ public final class JavaSemanticGraphExtractor {
             if (!component.kind().id().equals("JAVA_RECORD_COMPONENT"))
                 continue;
 
-            SyntaxToken identifier = lastIdentifier(component);
-            if (identifier == null)
+            Symbol declared = model.declaredSymbol(component).orElse(null);
+            if (declared == null)
                 continue;
 
-            String name = JavaUnicodeEscapes.translate(identifier.text());
+            String name = declared.simpleName();
+            SyntaxNode identifier = nameNode(component, name);
             SymbolId id = JavaSymbolIds.method(recordId, name, List.of());
-            TypeReference type = declaredType(component);
+            TypeReference type = variableArityType(component);
             declarations.put(id, new SymbolDescriptor(id, new SymbolKindId(JavaSymbolKind.METHOD.id()), name,
                 recordName + "#" + name + "()", recordId, new SymbolSignature(List.of(), List.of(), type, List.of()),
                 type, new SymbolMetadata(Set.of("public"), "public", false, List.of(), Map.of()),
@@ -631,8 +632,7 @@ public final class JavaSemanticGraphExtractor {
                 }
                 SyntaxToken identifier = lastIdentifier(parameter);
                 String name = identifier == null ? "" : JavaUnicodeEscapes.translate(identifier.text());
-                boolean varargs = parameter.children().stream()
-                    .anyMatch(part -> part instanceof SyntaxToken token && token.text().equals("..."));
+                boolean varargs = isVarargs(parameter);
                 int extraArrays = (int) parameter.children().stream()
                     .filter(part -> part instanceof SyntaxToken token && token.text().equals("[")).count();
                 if (extraArrays != 0) {
@@ -680,6 +680,18 @@ public final class JavaSemanticGraphExtractor {
                 collectTypeReferences(child, result);
             }
         }
+    }
+
+    private static boolean isVarargs(SyntaxNode parameter) {
+        return parameter.children().stream()
+            .anyMatch(part -> part instanceof SyntaxToken token && token.text().equals("..."));
+    }
+
+    private TypeReference variableArityType(SyntaxNode node) {
+        TypeReference type = declaredType(node);
+        return type != null && isVarargs(node)
+            ? new TypeReference(type.name(), type.arguments(), type.arrayDimensions() + 1, type.target())
+            : type;
     }
 
     private TypeReference declaredType(SyntaxNode node) {

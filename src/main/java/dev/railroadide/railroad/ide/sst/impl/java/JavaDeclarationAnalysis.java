@@ -485,6 +485,11 @@ public final class JavaDeclarationAnalysis {
                 visitTypeDeclaration(node, scope, JavaSymbolKind.RECORD, JavaTokenType.RECORD_KEYWORD,
                     currentTypeQualifiedName);
                 return;
+            } else if (JavaSyntaxKinds.TYPE_PARAMETER.id().equals(kindId)) {
+                String name = JavaSourceSymbolIds.declarationName(node);
+                if (!"<anonymous>".equals(name)) {
+                    declareSymbol(scope, node, JavaSymbolKind.TYPE_PARAMETER, name, null);
+                }
             } else if (JavaSyntaxKinds.FIELD_DECLARATION.id().equals(kindId)) {
                 declareFields(node, scope, currentTypeQualifiedName);
             } else if (JavaSyntaxKinds.LOCAL_VARIABLE_DECLARATION_STATEMENT.id().equals(kindId)) {
@@ -784,7 +789,11 @@ public final class JavaDeclarationAnalysis {
             Scope scope,
             @Nullable String ownerQualifiedName
         ) {
-            String componentName = lastIdentifierLikeTokenText(recordComponentNode);
+            String componentName = recordComponentNode.children().stream()
+                .filter(SyntaxToken.class::isInstance)
+                .map(JavaSemanticAnalyzer::lastIdentifierLikeTokenText)
+                .filter(Objects::nonNull)
+                .findFirst().orElse(null);
             if (componentName == null || componentName.isBlank())
                 return;
 
