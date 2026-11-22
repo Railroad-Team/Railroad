@@ -596,7 +596,7 @@ public final class JavaSemanticAnalyzer {
                     SyntaxNode declaration = enclosingType.declaration().orElse(null);
                     enclosingType = declaration == null ? null : context.enclosingTypeSymbol(declaration);
                 }
-                resolveNameFromImports(expressionNode, simpleName, name);
+                resolveNameFromImports(expressionNode, simpleName);
                 return;
             }
 
@@ -1359,15 +1359,15 @@ public final class JavaSemanticAnalyzer {
             }
         }
 
-        private void resolveNameFromImports(SyntaxNode referenceNode, String simpleName, String fullName) {
+        private void resolveNameFromImports(SyntaxNode referenceNode, String simpleName) {
             List<Symbol> candidates = new ArrayList<>();
 
-            if (singleTypeImportsBySimpleName.containsKey(simpleName)) {
-                ImportSpec importSpec = singleTypeImportsBySimpleName.get(simpleName);
-                if (isResolvableType(importSpec.qualifiedTarget())) {
-                    candidates.add(
-                        typeSymbolForQualifiedName(simpleName, importSpec.qualifiedTarget(), importSpec.targetNode()));
-                }
+            ImportSpec singleImport = singleTypeImportsBySimpleName.get(simpleName);
+            String importedType = singleImport == null
+                ? null
+                : resolvableQualifiedTypeName(singleImport.qualifiedTarget());
+            if (importedType != null) {
+                candidates.add(typeSymbolForQualifiedName(simpleName, importedType, singleImport.targetNode()));
             }
 
             if (context.currentPackageName != null && !context.currentPackageName.isBlank()) {
@@ -1411,7 +1411,7 @@ public final class JavaSemanticAnalyzer {
             if (uniqueCandidates.isEmpty())
                 return;
 
-            Symbol resolved = selectWithPrecedence(simpleName, uniqueCandidates);
+            Symbol resolved = selectWithPrecedence(importedType, uniqueCandidates);
             if (resolved != null) {
                 context.resolve(referenceNode, resolved);
             }
@@ -4749,7 +4749,7 @@ public final class JavaSemanticAnalyzer {
             return count;
         }
 
-        private Symbol selectWithPrecedence(String simpleName, List<Symbol> candidates) {
+        private Symbol selectWithPrecedence(@Nullable String importedType, List<Symbol> candidates) {
             List<Symbol> inCurrentPackage = new ArrayList<>();
             List<Symbol> inSingleImports = new ArrayList<>();
             List<Symbol> inJavaLang = new ArrayList<>();
@@ -4763,8 +4763,7 @@ public final class JavaSemanticAnalyzer {
                     && !context.currentPackageName.isBlank()
                     && qualifiedName.startsWith(context.currentPackageName + ".")) {
                     inCurrentPackage.add(candidate);
-                } else if (!qualifiedName.isBlank() && singleTypeImportsBySimpleName.containsKey(simpleName)
-                    && qualifiedName.equals(singleTypeImportsBySimpleName.get(simpleName).qualifiedTarget())) {
+                } else if (qualifiedName.equals(importedType)) {
                     inSingleImports.add(candidate);
                 } else if (!qualifiedName.isBlank() && qualifiedName.startsWith("java.lang.")) {
                     inJavaLang.add(candidate);

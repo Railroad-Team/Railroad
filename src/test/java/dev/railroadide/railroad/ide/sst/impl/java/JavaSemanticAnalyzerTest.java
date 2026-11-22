@@ -450,6 +450,31 @@ public class JavaSemanticAnalyzerTest {
     }
 
     @Test
+    public void resolvesExplicitlyImportedNestedTypesAsExpressionReceivers() {
+        String source = """
+            import java.lang.Thread.State;
+            import java.util.jar.Attributes.Name;
+            import javax.lang.model.element.*;
+
+            class Example {
+                State state = State.NEW;
+                Name name = Name.MANIFEST_VERSION;
+                Object invalid = State.MISSING;
+            }
+            """;
+
+        SemanticModel model = JavaSemanticAnalyzer.analyze(source, JavaJdkSymbolIndex.fromCurrentRuntime());
+        List<SyntaxNode> names = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.NAME_EXPRESSION.id());
+        assertEquals("java.lang.Thread$State",
+            model.resolvedSymbol(findNameExpression(names, "State")).orElseThrow().qualifiedName().orElseThrow());
+        assertEquals("java.util.jar.Attributes$Name",
+            model.resolvedSymbol(findNameExpression(names, "Name")).orElseThrow().qualifiedName().orElseThrow());
+        assertEquals(List.of("Cannot resolve member 'MISSING'"), model.diagnostics().stream()
+            .filter(diagnostic -> diagnostic.code().startsWith("SEM_UNRESOLVED_"))
+            .map(diagnostic -> diagnostic.message()).toList());
+    }
+
+    @Test
     public void resolvesSingleStaticImportsForFieldAndMethod() {
         String source = """
             import static java.lang.Math.PI;
