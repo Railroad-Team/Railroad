@@ -525,15 +525,35 @@ public class CoreInspectionRulesTest {
     }
 
     @Test
-    public void coreParameterNamedUnderscoreRuleEmitsDiagnostic() {
-        List<SemanticDiagnostic> diagnostics = runProvider(new CoreParameterNamedUnderscoreInspection(), """
+    public void underscoreIsRejectedInMethodAndConstructorParameterLists() {
+        String source = """
             class Example {
+                Example(long _) {}
                 void run(int _) {
                 }
             }
-            """);
+            """;
+        var diagnostics = runProvider(new CoreParameterNamedUnderscoreInspection(), source);
+        assertEquals(List.of("long _", "int _"), diagnostics.stream()
+            .filter(diagnostic -> "SEM_PARAMETER_NAME_UNDERSCORE".equals(diagnostic.code()))
+            .map(diagnostic -> source.substring(diagnostic.startOffset(), diagnostic.endOffset()).strip())
+            .toList());
+    }
 
-        assertTrue(diagnostics.stream().anyMatch(d -> "SEM_PARAMETER_NAME_UNDERSCORE".equals(d.code())));
+    @Test
+    public void unnamedCatchLambdaAndLoopVariablesAreAllowed() {
+        var diagnostics = runProvider(new CoreParameterNamedUnderscoreInspection(), """
+            class Example {
+                void run(java.util.List<String> values) {
+                    try {
+                        values.forEach((String _) -> {});
+                        values.forEach(_ -> {});
+                        for (String _ : values) {}
+                    } catch (IllegalArgumentException | IllegalStateException _) {}
+                }
+            }
+            """);
+        assertTrue(diagnostics.isEmpty(), diagnostics::toString);
     }
 
     @Test
