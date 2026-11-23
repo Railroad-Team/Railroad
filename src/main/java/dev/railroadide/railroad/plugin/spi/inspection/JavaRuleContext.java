@@ -21,6 +21,7 @@ import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaSourceSnapshotIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaSourceSymbolIds;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import dev.railroadide.railroad.ide.sst.semantic.api.*;
 import dev.railroadide.railroad.ide.sst.java.api.JavaTypes.*;
@@ -1305,7 +1306,9 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 return isAssignable(target, new DeclaredType("java.lang.Object", List.of()), parameter, visited);
             for (SyntaxNode typeRef : bound.children()) {
                 if (JAVA_TYPE_REFERENCE.equals(typeRef.kind().id())
-                    && isAssignable(target, semanticTypeFromTypeReference(typeRef), parameter, new HashSet<>(visited)))
+                    && isAssignable(target,
+                        inferredType(typeRef).orElseGet(() -> semanticTypeFromTypeReference(typeRef)),
+                        parameter, new HashSet<>(visited)))
                     return true;
             }
             return false;
@@ -1361,7 +1364,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 continue;
             for (SyntaxNode parameter : parameters.children()) {
                 if (JAVA_TYPE_PARAMETER.equals(parameter.kind().id())
-                    && name.equals(JavaSemanticAnalyzer.firstIdentifierLikeTokenText(parameter)))
+                    && name.equals(JavaSourceSymbolIds.declarationName(parameter)))
                     return parameter;
             }
         }
@@ -2505,18 +2508,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
     }
 
     private boolean isTypeParameterNameInScope(String name, @Nullable SyntaxNode usageSite) {
-        if (name == null || name.isBlank() || usageSite == null)
-            return false;
-
-        SyntaxNode current = usageSite;
-        while (current != null) {
-            SyntaxNode typeParameters = directChild(current, JAVA_TYPE_PARAMETERS);
-            if (typeParameters != null && typeParameterNames(typeParameters).contains(name))
-                return true;
-
-            current = current.parent().orElse(null);
-        }
-        return false;
+        return usageSite != null && name != null && lexicalTypeParameter(name, usageSite) != null;
     }
 
     private static void collectTypeParameterNames(SyntaxNode node, Set<String> out) {
@@ -2530,20 +2522,6 @@ public final class JavaRuleContext implements LanguageRuleContext {
         for (SyntaxNode child : node.children()) {
             collectTypeParameterNames(child, out);
         }
-    }
-
-    private static Set<String> typeParameterNames(SyntaxNode typeParameters) {
-        Set<String> names = new HashSet<>();
-        for (SyntaxNode child : typeParameters.children()) {
-            if (!JAVA_TYPE_PARAMETER.equals(child.kind().id()))
-                continue;
-
-            String name = JavaSemanticAnalyzer.firstIdentifierLikeTokenText(child);
-            if (name != null && !name.isBlank()) {
-                names.add(name);
-            }
-        }
-        return names;
     }
 
     private List<String> typeParameterNamesForType(String qualifiedTypeName) {

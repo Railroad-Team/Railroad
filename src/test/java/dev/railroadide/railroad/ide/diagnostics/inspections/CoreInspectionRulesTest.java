@@ -1692,6 +1692,26 @@ public class CoreInspectionRulesTest {
     }
 
     @Test
+    public void declaredExceptionTypesFollowLexicalTypeParameterBounds() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
+            @java.lang.annotation.Target(java.lang.annotation.ElementType.TYPE_PARAMETER) @interface Marker {}
+            abstract class Example<Failure extends java.io.IOException> {
+                Example() throws Failure {}
+                abstract <@Marker E extends Throwable> void direct() throws E;
+                abstract <Specific extends Failure> void chained() throws Specific;
+                abstract <E extends Exception & Runnable> void intersection() throws E;
+                abstract <T> void unbounded() throws T;
+                abstract <Failure extends Number> void shadowed() throws Failure;
+                void invalidCatch() { try {} catch (Failure problem) {} }
+            }
+            """);
+        assertEquals(List.of("declared thrown type 'T' must extend Throwable",
+            "declared thrown type 'Failure' must extend Throwable", "caught type 'Failure' must extend Throwable"),
+            diagnostics.stream().filter(issue -> issue.code().equals("SEM_INVALID_EXCEPTION_TYPE"))
+                .map(SemanticDiagnostic::message).toList());
+    }
+
+    @Test
     public void coreExceptionRuleEmitsInvalidExceptionTypeDiagnosticsAndTryResourceCloseDiagnostics() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreExceptionInspection(), """
             class Example {

@@ -32,6 +32,7 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
      */
     public static final String ID = "railroad:core-exceptions";
 
+    private static final Type THROWABLE = new JavaTypes.DeclaredType("java.lang.Throwable", List.of());
     private static final String JAVA_METHOD_DECLARATION = "JAVA_METHOD_DECLARATION";
     private static final String JAVA_CONSTRUCTOR_DECLARATION = "JAVA_CONSTRUCTOR_DECLARATION";
     private static final String JAVA_RECORD_COMPACT_CONSTRUCTOR = "JAVA_RECORD_COMPACT_CONSTRUCTOR";
@@ -154,13 +155,21 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
                 || JAVA_RECORD_COMPACT_CONSTRUCTOR.equals(kindId)) {
                 SyntaxNode throwsClause = context.directChild(node, JAVA_THROWS_CLAUSE);
                 if (throwsClause != null) {
-                    reportInvalidTypeReferences(context, reporter, throwsClause, "declared thrown type");
+                    for (SyntaxNode typeNode : directTypeNodes(throwsClause)) {
+                        Type type = context.inferredType(typeNode).orElse(null);
+                        if (type instanceof JavaTypes.TypeVariableType
+                            && context.isAssignable(THROWABLE, type, typeNode))
+                            continue;
+                        reportInvalidTypeReference(context, reporter, typeNode, "declared thrown type");
+                    }
                 }
                 return;
             }
 
             if (JAVA_CATCH_CLAUSE.equals(kindId)) {
-                reportInvalidTypeReferences(context, reporter, catchTypeNodes(node), "caught type");
+                for (SyntaxNode typeNode : catchTypeNodes(node)) {
+                    reportInvalidTypeReference(context, reporter, typeNode, "caught type");
+                }
                 return;
             }
 
@@ -411,25 +420,14 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         return false;
     }
 
-    private static void reportInvalidTypeReferences(
+    private static void reportInvalidTypeReference(
         JavaRuleContext context,
         JavaInspectionRuleReporter reporter,
-        SyntaxNode root,
+        SyntaxNode typeNode,
         String role
     ) {
-        reportInvalidTypeReferences(context, reporter, directTypeNodes(root), role);
-    }
-
-    private static void reportInvalidTypeReferences(
-        JavaRuleContext context,
-        JavaInspectionRuleReporter reporter,
-        List<SyntaxNode> typeNodes,
-        String role
-    ) {
-        for (SyntaxNode typeNode : typeNodes) {
-            String qualifiedTypeName = context.resolveQualifiedTypeName(typeNode);
-            if (qualifiedTypeName == null || context.isThrowableType(qualifiedTypeName))
-                continue;
+        String qualifiedTypeName = context.resolveQualifiedTypeName(typeNode);
+        if (qualifiedTypeName != null && !context.isThrowableType(qualifiedTypeName)) {
             reporter.reportMessage(typeNode, "%s '%s' must extend Throwable".formatted(role, qualifiedTypeName));
         }
     }
