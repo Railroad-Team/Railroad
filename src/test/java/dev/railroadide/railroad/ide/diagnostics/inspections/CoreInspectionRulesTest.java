@@ -91,8 +91,11 @@ public class CoreInspectionRulesTest {
             import java.lang.annotation.Annotation;
 
             interface Shape { int sides(); }
+            interface Listener { void changed(String before, String after); }
             @interface Marker { int value() default 0; }
             class Example {
+                Listener listener;
+                void listen() { listener = (_, _) -> listen(); Shape square = () -> 4; }
                 Class<?> type(Shape shape) { return shape.getClass(); }
                 String text(Shape shape) { return shape.toString() + shape.hashCode() + shape.equals(shape); }
                 Object marker(Marker marker) { return marker.toString() + marker.annotationType(); }

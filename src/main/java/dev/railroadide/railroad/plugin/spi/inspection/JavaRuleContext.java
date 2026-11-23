@@ -837,6 +837,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (canResolveIndexedSourceMethod(owner, methodName, argumentTypes))
                 return true;
 
+            if (!owner.staticAccess() && isInterfaceType(owner.qualifiedTypeName())
+                && methodDescriptorsForType("java.lang.Object").stream()
+                    .anyMatch(method -> method.name().equals(methodName) && Modifier.isPublic(method.modifiers())
+                        && isApplicableMethod(method, argumentTypes)))
+                return true;
+
             if (owner.staticAccess())
                 return methods.stream().anyMatch(method -> method.name().equals(methodName)
                     && isApplicableMethod(method, argumentTypes));
@@ -1421,7 +1427,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
         if (target.kind() == Kind.DECLARED && source.kind() == Kind.ARRAY) {
             String targetQualifiedName = resolveQualifiedTypeName(target.displayName());
-            return "java.lang.Object".equals(targetQualifiedName);
+            return "java.lang.Object".equals(targetQualifiedName) || "java.lang.Cloneable".equals(targetQualifiedName)
+                || "java.io.Serializable".equals(targetQualifiedName);
         }
 
         if (target.kind() == Kind.DECLARED && source.kind() == Kind.DECLARED) {
@@ -2695,7 +2702,9 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 List<DeclaredType> directSupers = new ArrayList<>();
                 collectDirectSuperTypes(node, JAVA_EXTENDS_CLAUSE, directSupers);
                 collectDirectSuperTypes(node, JAVA_IMPLEMENTS_CLAUSE, directSupers);
-                if (JavaDeclarationAnalysis.isEnumConstantBody(node)) {
+                if (symbol.kind() == JavaSymbolKind.ANNOTATION) {
+                    directSupers.add(new DeclaredType("java.lang.annotation.Annotation", List.of()));
+                } else if (JavaDeclarationAnalysis.isEnumConstantBody(node)) {
                     enclosingTypeSymbol(node).flatMap(Symbol::qualifiedName)
                         .ifPresent(name -> directSupers.add(new DeclaredType(name, List.of())));
                 } else if (JavaSyntaxKinds.ANONYMOUS_CLASS_BODY.id().equals(node.kind().id())) {

@@ -3402,6 +3402,8 @@ public final class JavaSemanticAnalyzer {
                 collectDirectSuperTypes(declaration, JavaSyntaxKinds.IMPLEMENTS_CLAUSE.id(), directSupers);
                 if (symbol.kind() == JavaSymbolKind.ENUM) {
                     directSupers.addFirst("java.lang.Enum");
+                } else if (symbol.kind() == JavaSymbolKind.ANNOTATION) {
+                    directSupers.add("java.lang.annotation.Annotation");
                 }
                 return List.copyOf(directSupers);
             }
