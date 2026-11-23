@@ -144,6 +144,7 @@ public final class JavaGreenParser {
 
     private int position;
     private int pendingTypeArgumentClosers;
+    private int recoveries;
 
     /**
      * Creates a parser that reads from the supplied lexer's current position.
@@ -716,6 +717,7 @@ public final class JavaGreenParser {
             return parseClassOrInterfaceTypeReference(children);
 
         if (!isTypeReferenceFollowToken(tokenType) && tokenType != JavaTokenType.EOF) {
+            recoveries++;
             children.add(consumeToken());
         } else {
             children.add(missingToken(JavaTokenType.IDENTIFIER));
@@ -1401,6 +1403,7 @@ public final class JavaGreenParser {
         List<GreenElement> children = new ArrayList<>();
 
         expectSignificant(JavaTokenType.OPEN_PAREN, children);
+        boolean first = true;
         while (hasMoreTokens()) {
             consumeTrivia(children);
             Token<JavaTokenType> next = peekSignificantToken();
@@ -1414,7 +1417,8 @@ public final class JavaGreenParser {
                 break;
             }
 
-            children.add(parseParameter());
+            children.add(parseParameter(JavaSyntaxKinds.PARAMETER, first));
+            first = false;
             consumeTrivia(children);
             if (matchSignificant(JavaTokenType.COMMA, children))
                 continue;
@@ -1433,13 +1437,17 @@ public final class JavaGreenParser {
     }
 
     private GreenNode parseParameter(SyntaxKind kind) {
+        return parseParameter(kind, false);
+    }
+
+    private GreenNode parseParameter(SyntaxKind kind, boolean allowReceiver) {
         int marker = position;
         List<GreenElement> children = new ArrayList<>();
         consumeModifiersAndAnnotations(children, JavaGreenParser::isParameterOrLocalModifier);
         children.add(parseTypeReference());
         consumeTypeUseAnnotations(children);
         matchSignificant(JavaTokenType.ELLIPSIS, children);
-        if (kind == JavaSyntaxKinds.PARAMETER && isReceiverNameStart()) {
+        if (allowReceiver && isReceiverNameStart()) {
             while (!matchSignificant(JavaTokenType.THIS_KEYWORD, children)) {
                 consumeIdentifierLike(children);
                 matchSignificant(JavaTokenType.DOT, children);
@@ -2390,7 +2398,17 @@ public final class JavaGreenParser {
     private boolean isPatternStart() {
         ParserCheckpoint checkpoint = mark();
         int marker = checkpoint.position();
-        boolean recovered = componentsNeedRecovery(parsePattern());
+        boolean recovered;
+        if (peekSignificantType() == JavaTokenType.OPEN_PAREN) {
+            matchSignificant(JavaTokenType.OPEN_PAREN, new ArrayList<>());
+            int before = recoveries;
+            parsePattern();
+            recovered = recoveries != before || !matchSignificant(JavaTokenType.CLOSE_PAREN, new ArrayList<>());
+        } else {
+            int before = recoveries;
+            parsePattern();
+            recovered = recoveries != before;
+        }
         boolean consumed = position > marker;
         int significantTokens = 0;
         for (int index = marker; index < position; index++) {
@@ -2432,37 +2450,6 @@ public final class JavaGreenParser {
 
         rollback(checkpoint);
         return looksLikePattern;
-    }
-
-    /**
-     * Checks a probed pattern for recovery beyond its leading type. A missing record type, as in the removed
-     * parenthesized pattern {@code (String s)}, still reads as a pattern; a case constant such as
-     * {@code (a == 5 ? 1 : 2)} only fits the pattern grammar by recovering inside the parentheses.
-     */
-    private boolean componentsNeedRecovery(GreenNode pattern) {
-        var pending = new ArrayDeque<GreenElement>();
-        boolean skippedType = false;
-        for (GreenElement child : pattern.children()) {
-            if (!skippedType && child.kind().equals(JavaSyntaxKinds.TYPE_REFERENCE)) {
-                skippedType = true;
-            } else {
-                pending.push(child);
-            }
-        }
-        while (!pending.isEmpty()) {
-            ActivityCheckpoint.poll(activityCheck);
-
-            GreenElement element = pending.pop();
-            SyntaxKind kind = element.kind();
-            if (kind.equals(JavaSyntaxKinds.ERROR) || kind.equals(SyntaxKind.MISSING_TOKEN)
-                || kind.id().startsWith("JAVA_MISSING_"))
-                return true;
-
-            if (element instanceof GreenNode child) {
-                child.children().forEach(pending::push);
-            }
-        }
-        return false;
     }
 
     private GreenNode parseAnonymousClassBody() {
@@ -3285,6 +3272,7 @@ public final class JavaGreenParser {
     }
 
     private GreenElement missingToken(JavaTokenType expected) {
+        recoveries++;
         return greenToken(JavaSyntaxKinds.missingTokenKind(expected), "");
     }
 
@@ -3467,6 +3455,9 @@ public final class JavaGreenParser {
             }
         }
 
+        if (consumedSignificant) {
+            recoveries++;
+        }
         return consumedSignificant;
     }
 

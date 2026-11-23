@@ -200,6 +200,9 @@ public class JavaSyntaxParserTest {
         }
         assertEquals(4, countKind(kinds, JavaSyntaxKinds.RECEIVER_PARAMETER.id()));
         assertEquals(1, countKind(kinds, JavaSyntaxKinds.PARAMETER.id()));
+
+        var misplaced = JavaSyntaxParser.parseWithDiagnostics("class Example { void later(int a, Example this) {} }");
+        assertFalse(misplaced.diagnostics().isEmpty(), "Only the first parameter can be a receiver");
     }
 
     @Test
@@ -211,6 +214,8 @@ public class JavaSyntaxParserTest {
                     switch (value) {
                         case (true ? 0 : 1):
                         case (one == 5 ? 1 : 2):
+                        case ((3)):
+                        case (4):
                     }
                 }
             }

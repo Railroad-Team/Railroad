@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectionTestSupport.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -81,6 +82,34 @@ public class CoreInspectionRulesTest {
             diagnostics.stream().map(SemanticDiagnostic::code).toList(), diagnostics::toString);
         int wrong = source.indexOf("wrong");
         assertTrue(diagnostics.getFirst().startOffset() <= wrong && wrong < diagnostics.getFirst().endOffset());
+    }
+
+    @Test
+    public void implicitSupertypesProvideTheirMembersAndConversions() {
+        String source = """
+            import java.io.Serializable;
+            import java.lang.annotation.Annotation;
+
+            interface Shape { int sides(); }
+            @interface Marker { int value() default 0; }
+            class Example {
+                Class<?> type(Shape shape) { return shape.getClass(); }
+                String text(Shape shape) { return shape.toString() + shape.hashCode() + shape.equals(shape); }
+                Object marker(Marker marker) { return marker.toString() + marker.annotationType(); }
+                Annotation widen(Marker marker) { Annotation annotation = marker; return annotation; }
+                Object arrays(int[] values, String[] names) {
+                    Serializable serializable = values;
+                    Cloneable cloneable = names;
+                    Object[] objects = names;
+                    return serializable.toString() + cloneable + objects.length;
+                }
+            }
+            """;
+        var diagnostics = Stream.of(new CoreCallResolutionInspection(), new CoreAssignmentInspection(),
+            new CoreMemberResolutionInspection(), new CoreTypeResolutionInspection())
+            .flatMap(provider -> runProvider(provider, source).stream()).toList();
+
+        assertEquals(List.of(), diagnostics, diagnostics::toString);
     }
 
     @Test
