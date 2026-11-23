@@ -61,6 +61,48 @@ public class CoreInspectionRulesTest {
     }
 
     @Test
+    public void arrayDimensionsAfterTheNameBelongToTheDeclaredType() {
+        String source = """
+            class Example {
+                int values[] = new int[2];
+                int matrix[][] = new int[1][1], plain = 0;
+                int count(String args[]) {
+                    Integer boxes[] = { 1 }, box = boxes[0];
+                    int copy[] = values;
+                    return copy.length + args.length + matrix[0].length + boxes.length + box + plain;
+                }
+                int wrong[] = 1;
+            }
+            """;
+        var diagnostics = runProviders(List.of(new CoreAssignmentInspection(), new CoreMemberResolutionInspection()),
+            Path.of("Example.java"), source, JavaProjectSemanticIndex.empty());
+
+        assertEquals(List.of("SEM_INCOMPATIBLE_ASSIGNMENT"),
+            diagnostics.stream().map(SemanticDiagnostic::code).toList(), diagnostics::toString);
+        int wrong = source.indexOf("wrong");
+        assertTrue(diagnostics.getFirst().startOffset() <= wrong && wrong < diagnostics.getFirst().endOffset());
+    }
+
+    @Test
+    public void receiverParametersAreNotFormalParameters() {
+        String source = """
+            class Example {
+                void run(Example this) {}
+                void run(Example this, int value) {}
+                void call() { run(); run(1); new Inner(); }
+                class Inner {
+                    Inner(Example Example.this) {}
+                }
+            }
+            """;
+        var diagnostics = runProviders(List.of(new CoreCallResolutionInspection(), new CoreNameResolutionInspection(),
+            new CoreTypeResolutionInspection(), new CoreDuplicateDeclarationInspection()),
+            Path.of("Example.java"), source, JavaProjectSemanticIndex.empty());
+
+        assertEquals(List.of(), diagnostics, diagnostics::toString);
+    }
+
+    @Test
     public void coreProvidersExposeExpectedRuleIds() {
         assertRuleIds(new CoreDuplicateDeclarationInspection(), Set.of("SEM_DUPLICATE_DECLARATION"));
         assertRuleIds(new CoreImportInspection(),

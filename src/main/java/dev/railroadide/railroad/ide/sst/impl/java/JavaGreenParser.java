@@ -1439,6 +1439,13 @@ public final class JavaGreenParser {
         children.add(parseTypeReference());
         consumeTypeUseAnnotations(children);
         matchSignificant(JavaTokenType.ELLIPSIS, children);
+        if (kind == JavaSyntaxKinds.PARAMETER && isReceiverNameStart()) {
+            while (!matchSignificant(JavaTokenType.THIS_KEYWORD, children)) {
+                consumeIdentifierLike(children);
+                matchSignificant(JavaTokenType.DOT, children);
+            }
+            return greenNode(JavaSyntaxKinds.RECEIVER_PARAMETER, children);
+        }
         if (consumeIdentifierLike(children) == null) {
             children.add(missingToken(JavaTokenType.IDENTIFIER));
         }
@@ -2517,6 +2524,18 @@ public final class JavaGreenParser {
         }
 
         return false;
+    }
+
+    /**
+     * Checks for a receiver parameter name, {@code this} or a qualified {@code Outer.this}, after its type.
+     */
+    private boolean isReceiverNameStart() {
+        int offset = 0;
+        while (isIdentifierLike(peekSignificantTypeAfter(offset))
+            && peekSignificantTypeAfter(offset + 1) == JavaTokenType.DOT) {
+            offset += 2;
+        }
+        return peekSignificantTypeAfter(offset) == JavaTokenType.THIS_KEYWORD;
     }
 
     private JavaTokenType peekSignificantTypeAfter(int offset) {

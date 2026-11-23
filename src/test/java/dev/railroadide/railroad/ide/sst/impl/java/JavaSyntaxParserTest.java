@@ -8,11 +8,14 @@ import dev.railroadide.railroad.ide.sst.document.api.ProvenanceKind;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -172,6 +175,31 @@ public class JavaSyntaxParserTest {
             """;
 
         JavaSyntaxAssertions.assertParsesWithoutRecovery(source);
+    }
+
+    @Test
+    public void parsesReceiverParametersSeparatelyFromFormalParameters() {
+        String source = """
+            class Example<T> {
+                void plain(Example<T> this) {}
+                void annotated(@A Example<T> this, int value) {}
+                class Inner {
+                    Inner(final Example<T> Example.this) {}
+                    void nested(Example<T>.Inner this) {}
+                }
+            }
+            """;
+
+        JavaSyntaxAssertions.assertParsesWithoutRecovery(source);
+        var kinds = new ArrayList<String>();
+        var pending = new ArrayDeque<SyntaxNode>(List.of(JavaSyntaxParser.parse(source).root()));
+        while (!pending.isEmpty()) {
+            SyntaxNode node = pending.pop();
+            kinds.add(node.kind().id());
+            node.children().forEach(pending::push);
+        }
+        assertEquals(4, countKind(kinds, JavaSyntaxKinds.RECEIVER_PARAMETER.id()));
+        assertEquals(1, countKind(kinds, JavaSyntaxKinds.PARAMETER.id()));
     }
 
     @Test

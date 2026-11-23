@@ -154,6 +154,11 @@ public final class JavaSyntaxKinds {
      */
     public static final SyntaxKind PARAMETER = SyntaxKind.of("JAVA_PARAMETER");
     /**
+     * Syntax kind for Java receiver parameter nodes, such as {@code Example this} or {@code Outer.this}, which
+     * only annotate the receiver type and are not formal parameters.
+     */
+    public static final SyntaxKind RECEIVER_PARAMETER = SyntaxKind.of("JAVA_RECEIVER_PARAMETER");
+    /**
      * Syntax kind for Java throws clause nodes.
      */
     public static final SyntaxKind THROWS_CLAUSE = SyntaxKind.of("JAVA_THROWS_CLAUSE");

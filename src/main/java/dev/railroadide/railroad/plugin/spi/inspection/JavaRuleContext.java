@@ -1292,9 +1292,10 @@ public final class JavaRuleContext implements LanguageRuleContext {
                         : inferredType(initializer).orElse(new UnknownType("<unknown>"));
                 }
                 Type inferred = inferredType(typeRef).orElse(null);
-                return inferred == null || inferred.kind() == Kind.UNKNOWN
+                Type written = inferred == null || inferred.kind() == Kind.UNKNOWN
                     ? semanticTypeFromTypeReference(typeRef)
                     : inferred;
+                return JavaSemanticAnalyzer.withDeclaratorDimensions(written, variableDeclarator);
             }
             if (JAVA_LOCAL_VARIABLE_DECLARATION_STATEMENT.equals(candidate.kind().id()))
                 return new UnknownType("<unknown>");

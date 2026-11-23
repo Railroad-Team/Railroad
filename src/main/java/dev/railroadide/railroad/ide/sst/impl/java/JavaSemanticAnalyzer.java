@@ -1626,7 +1626,7 @@ public final class JavaSemanticAnalyzer {
                         || typeRef != null && "var".equals(canonicalTypeText(typeRef)))
                         return resolvedExpressionTypeResolver.inferredVariableType(declaration);
                     if (typeRef != null)
-                        return typeFromTypeReferenceForResolution(typeRef);
+                        return withDeclaratorDimensions(typeFromTypeReferenceForResolution(typeRef), declaration);
                     parent = candidate.parent();
                 }
             }
@@ -1636,7 +1636,8 @@ public final class JavaSemanticAnalyzer {
                 || JavaSyntaxKinds.PATTERN.id().equals(declaration.kind().id())) {
                 SyntaxNode typeRef = directChild(declaration, JavaSyntaxKinds.TYPE_REFERENCE.id());
                 if (typeRef != null) {
-                    Type parameterType = typeFromTypeReferenceForResolution(typeRef);
+                    Type parameterType = withDeclaratorDimensions(typeFromTypeReferenceForResolution(typeRef),
+                        declaration);
                     if (JavaSyntaxKinds.PARAMETER.id().equals(declaration.kind().id())
                         && "var".equals(canonicalTypeText(typeRef))) {
                         Type elementType = enhancedForElementType(declaration);
@@ -6682,7 +6683,7 @@ public final class JavaSemanticAnalyzer {
                 SyntaxNode typeRef = directChild(declaration, JavaSyntaxKinds.TYPE_REFERENCE.id());
                 if (typeRef == null)
                     return UNKNOWN_TYPE;
-                Type parameterType = typeFromTypeReference(typeRef);
+                Type parameterType = withDeclaratorDimensions(typeFromTypeReference(typeRef), declaration);
                 if (JavaSyntaxKinds.PARAMETER.id().equals(declaration.kind().id())
                     && "var".equals(canonicalTypeText(typeRef))) {
                     Type elementType = enhancedForElementType(declaration);
@@ -6746,7 +6747,7 @@ public final class JavaSemanticAnalyzer {
                     || typeRef != null && "var".equals(canonicalTypeText(typeRef)))
                     return inferredVariableType(variableDeclarator);
                 if (typeRef != null)
-                    return typeFromTypeReference(typeRef);
+                    return withDeclaratorDimensions(typeFromTypeReference(typeRef), variableDeclarator);
                 if (JavaSyntaxKinds.LOCAL_VARIABLE_DECLARATION_STATEMENT.id().equals(candidate.kind().id()))
                     return UNKNOWN_TYPE;
 
@@ -7466,6 +7467,25 @@ public final class JavaSemanticAnalyzer {
                 throw new CancellationException("Runtime library indexing interrupted");
             }
         }
+    }
+
+    /**
+     * Applies array dimensions written after a declared name, as in {@code int values[]}, to the declared type.
+     *
+     * @param type the type written before the name
+     * @param declarator the variable declarator or parameter that names the variable
+     * @return the declared type with the trailing dimensions applied
+     */
+    public static Type withDeclaratorDimensions(Type type, SyntaxNode declarator) {
+        if (type.kind() == JavaTypes.Kind.UNKNOWN)
+            return type;
+
+        for (SyntaxNode child : declarator.children()) {
+            if (JavaSyntaxKinds.ARRAY_DIMENSION.id().equals(child.kind().id())) {
+                type = new JavaTypes.ArrayType(type);
+            }
+        }
+        return type;
     }
 
     /**
