@@ -164,6 +164,7 @@ test {
 }
 
 apply from: 'gradle/sst-self-analysis.gradle'
+apply from: 'gradle/sst-javac.gradle'
 
 spotless {
     if (!providers.gradleProperty('formatAll').isPresent())

@@ -6,6 +6,7 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,12 +35,9 @@ public final class JavaParserTestSupport {
     }
 
     public static String syntaxText(SyntaxNode node) {
-        if (node instanceof SyntaxToken token)
-            return token.text();
-
-        var builder = new StringBuilder();
-        for (SyntaxNode child : node.children()) {
-            builder.append(syntaxText(child));
+        var builder = new StringBuilder(node.width());
+        for (SyntaxToken token : collectSyntaxTokens(node)) {
+            builder.append(token.text());
         }
         return builder.toString();
     }
@@ -50,7 +48,19 @@ public final class JavaParserTestSupport {
 
     public static List<SyntaxToken> collectSyntaxTokens(SyntaxNode root) {
         List<SyntaxToken> tokens = new ArrayList<>();
-        collectSyntaxTokens(root, tokens);
+        var pending = new ArrayDeque<SyntaxNode>();
+        pending.push(root);
+        while (!pending.isEmpty()) {
+            SyntaxNode node = pending.pop();
+            if (node instanceof SyntaxToken token) {
+                tokens.add(token);
+            } else {
+                List<SyntaxNode> children = node.children();
+                for (int index = children.size() - 1; index >= 0; index--) {
+                    pending.push(children.get(index));
+                }
+            }
+        }
         return List.copyOf(tokens);
     }
 
@@ -62,14 +72,4 @@ public final class JavaParserTestSupport {
         return token.kind().id().equals(JavaSyntaxKinds.tokenKind(JavaTokenType.EOF).id());
     }
 
-    private static void collectSyntaxTokens(SyntaxNode node, List<SyntaxToken> out) {
-        if (node instanceof SyntaxToken token) {
-            out.add(token);
-            return;
-        }
-
-        for (SyntaxNode child : node.children()) {
-            collectSyntaxTokens(child, out);
-        }
-    }
 }

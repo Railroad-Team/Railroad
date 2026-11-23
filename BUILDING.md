@@ -110,6 +110,38 @@ This is parser validation, not a complete runtime style check: unknown property 
 looked-up colors, selector matches, image availability, and control-specific conversions may require
 applying styles to a live scene. Validator regression tests run with `./gradlew cssValidationTest`.
 
+## Running the OpenJDK javac suite against SST
+
+`sstJavacTest` runs headlessly against a local OpenJDK Git checkout. The default Railroad test suite has no OpenJDK
+checkout dependency. Use a checkout outside Railroad and keep its working tree clean for reproducible results. The
+recommended baseline is OpenJDK `jdk-25+36`, which matches Railroad's Java 25 toolchain. A sparse checkout is enough.
+
+```sh
+git clone --depth 1 --filter=blob:none --sparse --branch jdk-25+36 https://github.com/openjdk/jdk.git ../openjdk-25
+git -C ../openjdk-25 sparse-checkout set test/langtools test/lib
+./gradlew sstJavacTest -PopenJdkCheckout=../openjdk-25
+```
+
+On Windows use `./gradlew.bat`. Use `-PsstJavacFilter=path` to select a file or directory relative to
+`test/langtools/tools/javac`. Append `#id` to select one description in a file, for example
+`'-PsstJavacFilter=Example.java#id0'`. A file selection without an ID runs all its descriptions.
+
+The harness discovers tagged test descriptions and runs `@compile`, `@run compile` and source-based `@build` actions
+in order. It resolves explicitly named sources and build dependencies, including `@library` source roots. Each Java
+input must round-trip through SST exactly and agree with the Java 25 javac parser on whether it has syntax errors.
+Supported compile actions check SST errors against the expected compile outcome. Negative actions with `/ref`
+compare mapped diagnostic categories and source locations from the reference file.
+
+The harness reads source and reference files in place and never executes test programs or annotation processors.
+Runtime assertions, bytecode checks, generated sources, module setups, other source levels, and unmapped reference
+diagnostics receive an unsupported reason. A tagged Java driver can still be checked as on-disk parser input.
+SST requests share a 30-second deadline per case. A separate worker JVM has a 45-second watchdog. The runner records
+timeouts and analysis crashes as case errors, then replaces the worker when needed.
+
+The console summary and `build/reports/sst-javac/results.json` record the checkout revision, toolchain, case IDs, and
+results. A mismatch or harness error fails the Gradle task. Unsupported checks are reported separately, with any
+completed syntax and compile checks counted in the same case record.
+
 ## Formatting code
 
 Run the formatter before committing Java, CSS, Groovy, or Gradle script changes:

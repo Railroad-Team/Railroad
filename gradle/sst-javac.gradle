@@ -1,0 +1,26 @@
+def checkoutPath = providers.gradleProperty('openJdkCheckout')
+def selection = providers.gradleProperty('sstJavacFilter')
+def report = layout.buildDirectory.file('reports/sst-javac/results.json')
+
+tasks.register('sstJavacTest', JavaExec) {
+    group = 'verification'
+    description = 'Checks Railroad SST against the javac tests in a local OpenJDK checkout.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.railroadide.railroad.ide.sst.javac.OpenJdkJavacRunner'
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    maxHeapSize = '4g'
+
+    argumentProviders.add({
+        if (!checkoutPath.isPresent()) {
+            throw new GradleException('Set -PopenJdkCheckout to the root of a local OpenJDK Git checkout.')
+        }
+        def arguments = [
+            file(checkoutPath.get()).absolutePath,
+            report.get().asFile.absolutePath
+        ]
+        if (selection.isPresent() && !selection.get().isBlank()) {
+            arguments.add(selection.get())
+        }
+        arguments
+    } as CommandLineArgumentProvider)
+}
