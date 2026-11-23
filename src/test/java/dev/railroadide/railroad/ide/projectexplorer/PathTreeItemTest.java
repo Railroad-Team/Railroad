@@ -146,6 +146,45 @@ public class PathTreeItemTest {
         assertSame(dev, dev.getChildren().getFirst().getParent());
     }
 
+    @Test
+    public void expandingCascadesThroughSingleChildDirectoriesOnly() throws IOException {
+        createFile("a/b/c/First.txt");
+        createFile("a/b/c/Second.txt");
+        createFile("a/b/d/Third.txt");
+        var root = new PathTreeItem(new PathItem(project), false);
+        TreeItem<PathItem> a = PathTreeItem.find(root, project.resolve("a"));
+        TreeItem<PathItem> b = PathTreeItem.find(root, project.resolve("a/b"));
+        TreeItem<PathItem> c = PathTreeItem.find(root, project.resolve("a/b/c"));
+
+        a.setExpanded(true);
+
+        assertTrue(b.isExpanded());
+        assertFalse(c.isExpanded());
+    }
+
+    @Test
+    public void doesNotCascadeIntoASingleFile() throws IOException {
+        Path file = createFile("a/Only.txt");
+        var root = new PathTreeItem(new PathItem(project), false);
+        TreeItem<PathItem> a = PathTreeItem.find(root, file.getParent());
+
+        a.setExpanded(true);
+
+        assertFalse(PathTreeItem.find(root, file).isExpanded());
+    }
+
+    @Test
+    public void restoringExpansionKeepsSingleChildDirectoryCollapsed() throws IOException {
+        createFile("a/b/Only.txt");
+        var root = new PathTreeItem(new PathItem(project), false);
+        var a = (PathTreeItem) PathTreeItem.find(root, project.resolve("a"));
+
+        a.restoreExpanded();
+
+        assertTrue(a.isExpanded());
+        assertFalse(PathTreeItem.find(root, project.resolve("a/b")).isExpanded());
+    }
+
     private Path createFile(String relative) throws IOException {
         Path path = project.resolve(relative);
         Files.createDirectories(path.getParent());

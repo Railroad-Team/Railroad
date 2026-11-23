@@ -21,6 +21,7 @@ public class PathTreeItem extends TreeItem<PathItem> {
     private boolean isLeaf = false;
     private boolean isFirstTimeChildren = true;
     private boolean isFirstTimeLeft = true;
+    private boolean restoringExpansion;
 
     /**
      * Creates a tree item whose children will be loaded lazily.
@@ -41,6 +42,30 @@ public class PathTreeItem extends TreeItem<PathItem> {
         super(pathItem);
         firstPath = pathItem.getPath();
         this.compactMiddlePackages = compactMiddlePackages;
+        expandedProperty().addListener((_, _, expanded) -> {
+            if (expanded && !restoringExpansion) {
+                expandSingleChildDirectory();
+            }
+        });
+    }
+
+    /**
+     * Expands this row without cascading into a single child directory, so restored state keeps collapsed rows.
+     */
+    public void restoreExpanded() {
+        restoringExpansion = true;
+        try {
+            setExpanded(true);
+        } finally {
+            restoringExpansion = false;
+        }
+    }
+
+    private void expandSingleChildDirectory() {
+        ObservableList<TreeItem<PathItem>> children = getChildren();
+        if (children.size() == 1 && !children.getFirst().isLeaf()) {
+            children.getFirst().setExpanded(true);
+        }
     }
 
     /**

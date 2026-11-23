@@ -519,16 +519,24 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         Path selected = selectedTreeItem().map(item -> item.getValue().getPath()).orElse(null);
         treeView
             .setRoot(new PathTreeItem(new PathItem(project.getPath()), Settings.COMPACT_MIDDLE_PACKAGES.getValue()));
-        treeView.getRoot().setExpanded(true);
-        for (Path path : expanded) {
-            TreeItem<PathItem> item = PathTreeItem.find(treeView.getRoot(), path);
-            while (item != null) {
-                item.setExpanded(true);
-                item = item.getParent();
-            }
-        }
+        ((PathTreeItem) treeView.getRoot()).restoreExpanded();
+        restoreExpandedPaths(treeView.getRoot(), expanded);
         if (selected != null) {
             revealPath(selected);
+        }
+    }
+
+    private static void restoreExpandedPaths(TreeItem<PathItem> root, List<Path> expanded) {
+        for (Path path : expanded) {
+            TreeItem<PathItem> item = PathTreeItem.find(root, path);
+            while (item != null) {
+                if (item instanceof PathTreeItem pathTreeItem) {
+                    pathTreeItem.restoreExpanded();
+                } else {
+                    item.setExpanded(true);
+                }
+                item = item.getParent();
+            }
         }
     }
 
@@ -580,13 +588,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             collectExpandedPaths(treeView.getRoot(), expanded);
             TreeItem<PathItem> selected = treeView.getSelectionModel().getSelectedItem();
             ((PathTreeItem) treeView.getRoot()).refresh(path);
-            for (Path expandedPath : expanded) {
-                TreeItem<PathItem> item = PathTreeItem.find(treeView.getRoot(), expandedPath);
-                while (item != null) {
-                    item.setExpanded(true);
-                    item = item.getParent();
-                }
-            }
+            restoreExpandedPaths(treeView.getRoot(), expanded);
             if (selected != null) {
                 treeView.getSelectionModel()
                     .select(PathTreeItem.find(treeView.getRoot(), selected.getValue().getPath()));
