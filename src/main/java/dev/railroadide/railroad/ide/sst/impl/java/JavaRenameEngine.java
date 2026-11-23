@@ -105,7 +105,7 @@ public final class JavaRenameEngine {
         this.context = Objects.requireNonNull(context, "context");
         this.workspace = context.workspaceSnapshot();
         this.capture = Objects.requireNonNull(capture, "capture");
-        this.graph = capture.apply(context).resolvedGraph(context::checkActive);
+        this.graph = capture.apply(context).renameGraph(context::checkActive);
         for (SemanticIndexShard shard : graph.shards().values()) {
             if (workspace.document(shard.documentId()).orElse(null) instanceof TextDocumentSnapshot snapshot
                 && snapshot.version().equals(shard.documentVersion()) && snapshot.uri().equals(shard.uri())
@@ -323,7 +323,7 @@ public final class JavaRenameEngine {
     private List<InheritedImplementation> implementations() {
         if (implementations == null) {
             implementations = JavaOverrideGraphExtractor.inheritedImplementations(graph.shards().values(),
-                sources.keySet(), context::checkActive);
+                sources.keySet(), analysis(), context::checkActive);
         }
         return implementations;
     }
@@ -1347,12 +1347,13 @@ public final class JavaRenameEngine {
         DocumentSnapshot requester = documents.get(context.documentSnapshot().id());
         var request = new FeatureRequestContext(renamedWorkspace, requester, context.cancellationToken(),
             context.deadline());
-        WorkspaceSymbolGraph after = capture.apply(request).resolvedGraph(context::checkActive);
+        var renamedAnalysis = capture.apply(request);
+        WorkspaceSymbolGraph after = renamedAnalysis.renameGraph(context::checkActive);
 
         compareReferences(after, rename, plan, renamedDocuments, conflicts);
         compareEdges(after, rename, conflicts);
         if (target.kind().equals(METHOD) || TYPE_KINDS.contains(target.kind())) {
-            compareImplementations(after, rename, conflicts);
+            compareImplementations(after, renamedAnalysis, rename, conflicts);
         }
     }
 
@@ -1569,6 +1570,7 @@ public final class JavaRenameEngine {
     }
     private void compareImplementations(
         WorkspaceSymbolGraph after,
+        JavaWorkspaceAnalysis renamedAnalysis,
         Function<SymbolId, SymbolId> rename,
         Conflicts conflicts
     ) {
@@ -1578,7 +1580,8 @@ public final class JavaRenameEngine {
                 rename.apply(pair.method()), rename.apply(pair.type())));
         }
         Set<InheritedImplementation> actual = new LinkedHashSet<>(JavaOverrideGraphExtractor
-            .inheritedImplementations(after.shards().values(), sources.keySet(), context::checkActive));
+            .inheritedImplementations(after.shards().values(), sources.keySet(), renamedAnalysis,
+                context::checkActive));
         for (InheritedImplementation pair : expected) {
             if (!actual.contains(pair)) {
                 conflicts.add(error(describeSymbol(after, pair.implementation()) + " would no longer implement "

@@ -1,19 +1,20 @@
 package dev.railroadide.railroad.ide.sst.project;
 
-import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 import dev.railroadide.railroad.ide.language.index.LanguageFileIndex;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndex;
-import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
 import dev.railroadide.railroad.ide.sst.graph.api.WorkspaceSymbolGraph;
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolIds;
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolSignature;
 import dev.railroadide.railroad.utility.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.*;
-import dev.railroadide.railroad.ide.sst.semantic.api.SymbolSignature;
 
 /**
  * Immutable source index with defensively copied file and descriptor collections.
@@ -68,9 +69,23 @@ public final class JavaProjectSemanticIndex
         return graph;
     }
 
-    @Override
+    /**
+     * @return the declaration and reference shards of the indexed source files
+     */
     public List<SemanticIndexShard> semanticShards() {
         return filesByPath.values().stream().map(SourceFileIndex::semanticShard).filter(Objects::nonNull).toList();
+    }
+
+    @Override
+    public @Nullable SemanticIndexShard declarationShard(String binaryName, Runnable activityCheck) {
+        activityCheck.run();
+        for (var symbol : graph.symbols(JavaSymbolIds.type(binaryName))) {
+            for (var location : symbol.locations()) {
+                if (location.declaration() != null)
+                    return graph.shard(location.declaration().documentId()).orElse(null);
+            }
+        }
+        return null;
     }
 
     /**

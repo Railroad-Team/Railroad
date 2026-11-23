@@ -1,12 +1,11 @@
 package dev.railroadide.railroad.ide.sst.project;
 
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
-
-import java.util.*;
-import java.nio.file.Path;
 import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
-import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
-import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
+import org.jetbrains.annotations.Nullable;
+
+import java.nio.file.Path;
+import java.util.*;
 
 /**
  * Combines symbol indexes, deduplicating lookup results and preferring earlier delegates for binary class stubs.
@@ -54,30 +53,14 @@ public final class CompositeJavaSymbolIndex implements JavaSymbolIndex {
     }
 
     @Override
-    public List<SemanticIndexShard> semanticShards() {
-        return semanticShards(ActivityCheckpoint::checkInterrupted);
-    }
-
-    @Override
-    public List<SemanticIndexShard> semanticShards(Runnable activityCheck) {
-        Objects.requireNonNull(activityCheck, "activityCheck").run();
-        Set<SymbolId> seen = new HashSet<>();
-        List<SemanticIndexShard> result = new ArrayList<>();
-        for (JavaSymbolIndex delegate : delegates) {
-            for (var shard : delegate.semanticShards(activityCheck)) {
-                activityCheck.run();
-                var declarations = shard.declarations().stream().filter(symbol -> {
-                    activityCheck.run();
-                    return seen.add(symbol.id());
-                }).toList();
-                if (!declarations.isEmpty()) {
-                    result.add(new SemanticIndexShard(shard.documentId(),
-                        shard.documentVersion(), shard.uri(), declarations, shard.references(), shard.edges()));
-                }
-            }
-        }
+    public @Nullable SemanticIndexShard declarationShard(String binaryName, Runnable activityCheck) {
         activityCheck.run();
-        return List.copyOf(result);
+        for (JavaSymbolIndex delegate : delegates) {
+            var shard = delegate.declarationShard(binaryName, activityCheck);
+            if (shard != null)
+                return shard;
+        }
+        return null;
     }
 
     @Override
@@ -119,6 +102,12 @@ public final class CompositeJavaSymbolIndex implements JavaSymbolIndex {
             .flatMap(delegate -> delegate.lookupSimpleName(simpleName).stream())
             .distinct()
             .toList();
+    }
+
+    @Override
+    public List<String> qualifiedTypeNames(String simpleName) {
+        return delegates.stream().flatMap(delegate -> delegate.qualifiedTypeNames(simpleName).stream())
+            .distinct().toList();
     }
 
     @Override

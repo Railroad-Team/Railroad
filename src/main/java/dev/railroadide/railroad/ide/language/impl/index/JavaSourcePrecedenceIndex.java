@@ -1,11 +1,13 @@
 package dev.railroadide.railroad.ide.language.impl.index;
 
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
-import dev.railroadide.railroad.ide.sst.project.*;
+import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
+import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.*;
 import java.util.stream.Stream;
-import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
-import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 
 /** Prevents an older binary declaration from supplying members for a captured source type. */
 public final class JavaSourcePrecedenceIndex implements JavaSymbolIndex {
@@ -79,38 +81,23 @@ public final class JavaSourcePrecedenceIndex implements JavaSymbolIndex {
             && (symbol.qualifiedName() == null || !hiddenBinaries.contains(symbol.qualifiedName()));
     }
 
-    private String sourceName(String name) {
-        if (name == null)
+    @Override
+    public @Nullable SemanticIndexShard declarationShard(String binaryName, Runnable activityCheck) {
+        activityCheck.run();
+        if (sourceNames.containsKey(binaryName))
+            return sources.declarationShard(binaryName, activityCheck);
+        if (hiddenBinaries.contains(binaryName))
             return null;
-        int member = name.indexOf('#');
-        if (member >= 0)
-            return sourceNames.getOrDefault(name.substring(0, member), name.substring(0, member))
-                + name.substring(member);
-        return sourceNames.getOrDefault(name, name);
-    }
-
-    @Override
-    public List<SemanticIndexShard> semanticShards() {
-        return semanticShards(ActivityCheckpoint::checkInterrupted);
-    }
-
-    @Override
-    public List<SemanticIndexShard> semanticShards(Runnable activityCheck) {
-        Objects.requireNonNull(activityCheck, "activityCheck").run();
-        var result = new ArrayList<>(sources.semanticShards(activityCheck));
-        for (var shard : binaries.semanticShards(activityCheck)) {
-            activityCheck.run();
-            boolean hidden = shard.declarations().stream()
-                .anyMatch(symbol -> {
-                    activityCheck.run();
-                    return symbol.qualifiedName() != null && hiddenBinaries.contains(symbol.qualifiedName());
-                });
-            if (!hidden) {
-                result.add(shard);
+        var shard = binaries.declarationShard(binaryName, activityCheck);
+        // One source-only attachment shard can also declare a type shadowed by workspace source.
+        if (shard != null && binaries.lookupClassStub(binaryName) == null) {
+            for (var symbol : shard.declarations()) {
+                activityCheck.run();
+                if (symbol.qualifiedName() != null && hiddenBinaries.contains(symbol.qualifiedName()))
+                    return null;
             }
         }
-        activityCheck.run();
-        return List.copyOf(result);
+        return shard;
     }
 
     @Override
@@ -134,9 +121,25 @@ public final class JavaSourcePrecedenceIndex implements JavaSymbolIndex {
         return Stream.concat(sources.lookupSimpleName(name).stream(),
             binaries.lookupSimpleName(name).stream().filter(this::visible)).toList();
     }
+
+    @Override
+    public List<String> qualifiedTypeNames(String simpleName) {
+        return Stream.concat(sources.qualifiedTypeNames(simpleName).stream(),
+            binaries.qualifiedTypeNames(simpleName).stream().filter(name -> !hiddenBinaries.contains(name)))
+            .distinct().toList();
+    }
     @Override
     public List<JavaProjectSemanticIndex.SymbolDescriptor> lookupQualifiedName(String name) {
-        return Stream.concat(sources.lookupQualifiedName(sourceName(name)).stream(),
+        if (name == null)
+            return List.of();
+        int separator = name.indexOf('#');
+        String owner = separator < 0 ? name : name.substring(0, separator);
+        String source = sourceNames.get(owner);
+        if (source != null)
+            return sources.lookupQualifiedName(separator < 0 ? source : source + name.substring(separator));
+        if (hiddenBinaries.contains(owner))
+            return List.of();
+        return Stream.concat(sources.lookupQualifiedName(name).stream(),
             binaries.lookupQualifiedName(name).stream().filter(this::visible)).toList();
     }
     @Override
@@ -144,7 +147,7 @@ public final class JavaSourcePrecedenceIndex implements JavaSymbolIndex {
         if (owner == null)
             return List.of();
         if (sourceNames.containsKey(owner))
-            return sources.lookupMembers(sourceName(owner));
+            return sources.lookupMembers(sourceNames.get(owner));
         return hiddenBinaries.contains(owner) ? List.of() : binaries.lookupMembers(owner);
     }
     @Override
@@ -152,7 +155,7 @@ public final class JavaSourcePrecedenceIndex implements JavaSymbolIndex {
         if (owner == null)
             return List.of();
         if (sourceNames.containsKey(owner))
-            return sources.lookupMember(sourceName(owner), name);
+            return sources.lookupMember(sourceNames.get(owner), name);
         return hiddenBinaries.contains(owner) ? List.of() : binaries.lookupMember(owner, name);
     }
 }

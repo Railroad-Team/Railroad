@@ -44,6 +44,13 @@ public class JavaStubSymbolIndexTest {
     }
 
     @Test
+    public void typeNameLookupSkipsClassesWhoseMembersHaveTheSameName() {
+        var index = index(stub("Box", List.of(), List.of()), stub("Other", List.of(), List.of(method("Box"))));
+        assertEquals(List.of("sample.Box"), index.qualifiedTypeNames("Box"));
+        assertEquals(2, index.lookupSimpleName("Box").size());
+    }
+
+    @Test
     public void bridgeMethodsAreNotIndexedBySimpleName() {
         var bridge = new MethodStub("bridged", VOID, List.of(), Opcodes.ACC_PUBLIC | Opcodes.ACC_BRIDGE, List.of(),
             List.of(), List.of());

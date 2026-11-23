@@ -1,29 +1,28 @@
 package dev.railroadide.railroad.ide.sst.project;
 
-import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
-import dev.railroadide.railroad.ide.classparser.stub.*;
-import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
-
-import java.nio.file.Path;
+import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
+import dev.railroadide.railroad.ide.classparser.stub.FieldStub;
+import dev.railroadide.railroad.ide.classparser.stub.MethodStub;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolIds;
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
+import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolLocation;
-import java.util.*;
-import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolIds;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
+
+import java.nio.file.Path;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Builds Java type and member lookup tables from binary class stubs and their origins.
  */
 public class JavaStubSymbolIndex implements JavaSymbolIndex {
     private final Map<SymbolId, List<SymbolLocation>> alternateLocations;
-    private final ReentrantLock graphLock = new ReentrantLock();
-    private volatile List<SemanticIndexShard> semanticShards;
+    private final ConcurrentHashMap<String, SemanticIndexShard> shardsByOwner;
     private final Map<String, DocumentUri> binaryLocations;
     private final Set<String> declaredQualifiedNames;
     private final Set<String> typeNames;
@@ -45,7 +44,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     protected JavaStubSymbolIndex(JavaStubSymbolIndex source, Map<String, String> aliases) {
         this.aliases = Map.copyOf(aliases);
         alternateLocations = source.alternateLocations;
-        semanticShards = source.semanticShards;
+        shardsByOwner = source.shardsByOwner;
         binaryLocations = source.binaryLocations;
         if (aliases.equals(source.aliases)) {
             visibleStubs = source.visibleStubs;
@@ -163,6 +162,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         this.sourceByQualifiedName = Map.copyOf(sourceByQualifiedName);
         this.declaredQualifiedNames = this.classStubsByQualifiedName.keySet();
         declarationsByOwner = new ConcurrentHashMap<>();
+        shardsByOwner = new ConcurrentHashMap<>();
         typeReferences = new JavaBinarySymbolExtractor.TypeReferences();
 
         Set<String> typeNames = new HashSet<>();
@@ -204,40 +204,14 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     }
 
     @Override
-    public List<SemanticIndexShard> semanticShards() {
-        return semanticShards(ActivityCheckpoint::checkInterrupted);
-    }
-
-    @Override
-    public List<SemanticIndexShard> semanticShards(Runnable activityCheck) {
-        Objects.requireNonNull(activityCheck, "activityCheck").run();
-        var completed = semanticShards;
-        if (completed != null)
-            return completed;
-        try {
-            while (!graphLock.tryLock(25, TimeUnit.MILLISECONDS)) {
-                activityCheck.run();
-            }
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            throw new CancellationException("Binary graph enrichment interrupted");
-        }
-        try {
-            activityCheck.run();
-            if (semanticShards == null) {
-                List<SemanticIndexShard> enriched = new ArrayList<>(classStubsByQualifiedName.size());
-                for (String owner : classStubsByQualifiedName.keySet()) {
-                    enriched.add(JavaBinarySymbolExtractor.withParameters(declarations(owner, activityCheck).shard(),
-                        alternateLocations,
-                        activityCheck));
-                }
-                activityCheck.run();
-                semanticShards = List.copyOf(enriched);
-            }
-            return semanticShards;
-        } finally {
-            graphLock.unlock();
-        }
+    public @Nullable SemanticIndexShard declarationShard(String binaryName, Runnable activityCheck) {
+        activityCheck.run();
+        if (!classStubsByQualifiedName.containsKey(binaryName))
+            return null;
+        var shard = shardsByOwner.computeIfAbsent(binaryName, name -> JavaBinarySymbolExtractor.withParameters(
+            declarations(name, activityCheck).shard(), alternateLocations, activityCheck));
+        activityCheck.run();
+        return shard;
     }
 
     /**
@@ -289,6 +263,15 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
             }
         }
         return List.copyOf(matches);
+    }
+
+    @Override
+    public List<String> qualifiedTypeNames(String simpleName) {
+        if (simpleName == null || simpleName.isBlank())
+            return List.of();
+        String name = simpleName.trim();
+        return owners(name).stream().filter(owner -> classStubsByQualifiedName.get(owner).name().equals(name))
+            .toList();
     }
 
     @Override

@@ -3366,19 +3366,8 @@ public final class JavaSemanticAnalyzer {
             if (projectIndex == null)
                 return null;
 
-            String match = null;
-            for (JavaProjectSemanticIndex.SymbolDescriptor symbol : projectIndex.lookupSimpleName(simpleName)) {
-                context.poll();
-                if (!isTypeSymbol(symbol.kind()))
-                    continue;
-                String qualifiedName = symbol.qualifiedName();
-                if (qualifiedName == null || qualifiedName.isBlank())
-                    continue;
-                if (match != null && !match.equals(qualifiedName))
-                    return null;
-                match = qualifiedName;
-            }
-            return match;
+            List<String> names = projectIndex.qualifiedTypeNames(simpleName);
+            return names.size() == 1 ? names.getFirst() : null;
         }
 
         private List<String> directSuperTypesFromCurrentFile(String qualifiedTypeName) {
@@ -7129,19 +7118,8 @@ public final class JavaSemanticAnalyzer {
             if (projectIndex == null)
                 return null;
 
-            String match = null;
-            for (JavaProjectSemanticIndex.SymbolDescriptor symbol : projectIndex.lookupSimpleName(simpleName)) {
-                context.poll();
-                if (!isTypeSymbol(symbol.kind()))
-                    continue;
-                String qualifiedName = symbol.qualifiedName();
-                if (qualifiedName == null || qualifiedName.isBlank())
-                    continue;
-                if (match != null && !match.equals(qualifiedName))
-                    return null;
-                match = qualifiedName;
-            }
-            return match;
+            List<String> names = projectIndex.qualifiedTypeNames(simpleName);
+            return names.size() == 1 ? names.getFirst() : null;
         }
 
         private boolean isResolvableType(String qualifiedTypeName) {

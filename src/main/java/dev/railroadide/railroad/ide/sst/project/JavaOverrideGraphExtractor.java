@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.sst.project;
 
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.graph.api.*;
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolIds;
 import dev.railroadide.railroad.ide.sst.semantic.api.*;
 import java.util.*;
 
@@ -16,9 +17,12 @@ public final class JavaOverrideGraphExtractor {
     private final Map<SymbolId, List<Binding>> bindings = new HashMap<>();
     private final Map<SymbolId, Map<String, List<SymbolDescriptor>>> methodNames = new HashMap<>();
     private final Runnable check;
+    private final JavaSymbolIndex symbols;
+    private final JavaBinarySymbolExtractor.TypeReferences binaryTypes = new JavaBinarySymbolExtractor.TypeReferences();
 
-    private JavaOverrideGraphExtractor(Collection<SemanticIndexShard> shards, Runnable check) {
+    private JavaOverrideGraphExtractor(Collection<SemanticIndexShard> shards, JavaSymbolIndex symbols, Runnable check) {
         this.check = check;
+        this.symbols = symbols;
         for (var shard : shards) {
             check.run();
             for (var symbol : shard.declarations()) {
@@ -51,7 +55,23 @@ public final class JavaOverrideGraphExtractor {
      * @return shards enriched with confirmed override relations
      */
     public static List<SemanticIndexShard> extract(Collection<SemanticIndexShard> shards, Runnable check) {
-        return new JavaOverrideGraphExtractor(shards, check).extract(shards);
+        return extract(shards, null, check);
+    }
+
+    /**
+     * Derives overrides using class stubs to check covariant returns whose types have no declaration in the graph.
+     *
+     * @param shards declarations and subtype edges in the graph
+     * @param symbols captured lookup for additional binary supertypes
+     * @param check cancellation check
+     * @return shards enriched with override relations
+     */
+    public static List<SemanticIndexShard> extract(
+        Collection<SemanticIndexShard> shards,
+        JavaSymbolIndex symbols,
+        Runnable check
+    ) {
+        return new JavaOverrideGraphExtractor(shards, symbols, check).extract(shards);
     }
 
     /**
@@ -61,15 +81,17 @@ public final class JavaOverrideGraphExtractor {
      *
      * @param shards captured document shards with unique document identities
      * @param documents documents whose declared types are examined as the inheriting subclass
+     * @param symbols captured lookup for additional binary supertypes
      * @param check callback invoked to check cancellation or interruption; may throw to abort
      * @return pairs found, in declaration order
      */
     public static List<InheritedImplementation> inheritedImplementations(
         Collection<SemanticIndexShard> shards,
         Set<DocumentId> documents,
+        JavaSymbolIndex symbols,
         Runnable check
     ) {
-        var extractor = new JavaOverrideGraphExtractor(shards, check);
+        var extractor = new JavaOverrideGraphExtractor(shards, symbols, check);
         Set<InheritedImplementation> found = new LinkedHashSet<>();
         for (var shard : shards) {
             if (!documents.contains(shard.documentId()))
@@ -222,7 +244,7 @@ public final class JavaOverrideGraphExtractor {
         while (!queue.isEmpty()) {
             check.run();
             var current = queue.removeFirst();
-            for (var edge : parents.getOrDefault(current.type(), List.of())) {
+            for (var edge : parents.computeIfAbsent(current.type(), this::binaryParents)) {
                 if (!seen.add(edge.target()))
                     continue;
                 var target = declarations.get(edge.target());
@@ -245,6 +267,16 @@ public final class JavaOverrideGraphExtractor {
             }
         }
         return result;
+    }
+
+    private List<SymbolEdge> binaryParents(SymbolId type) {
+        if (symbols == null || declarations.containsKey(type))
+            return List.of();
+        String name = JavaSymbolIds.owningTypeName(type);
+        if (name == null || !type.equals(JavaSymbolIds.type(name)))
+            return List.of();
+        var stub = symbols.lookupClassStub(name);
+        return stub == null ? List.of() : JavaBinarySymbolExtractor.supertypeEdges(stub, type, binaryTypes);
     }
 
     private static Map<String, TypeReference> variables(

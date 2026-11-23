@@ -2,8 +2,13 @@ package dev.railroadide.railroad.ide.sst.project;
 
 import dev.railroadide.railroad.ide.classparser.Type;
 import dev.railroadide.railroad.ide.classparser.stub.*;
-import dev.railroadide.railroad.ide.sst.document.api.*;
-import dev.railroadide.railroad.ide.sst.graph.api.*;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentOrigin;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
+import dev.railroadide.railroad.ide.sst.graph.api.EdgeKindId;
+import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
+import dev.railroadide.railroad.ide.sst.graph.api.SymbolEdge;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolIds;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.sst.semantic.api.*;
@@ -103,7 +108,6 @@ public final class JavaBinarySymbolExtractor {
         SymbolId owner = JavaSymbolIds.type(fullName);
         var location = List.of(new SymbolLocation(uri, DocumentOrigin.original(uri), null, null, true));
         List<SymbolDescriptor> declarations = new ArrayList<>();
-        List<SymbolEdge> edges = new ArrayList<>();
         Map<String, Type> bounds = bounds(stub.typeParameters(), Map.of());
         JavaSymbolKind kind = (stub.modifiers() & Opcodes.ACC_ANNOTATION) != 0
             ? JavaSymbolKind.ANNOTATION
@@ -118,16 +122,6 @@ public final class JavaBinarySymbolExtractor {
                 : JavaSymbolIds.type(stub.enclosingClassName()),
             new SymbolSignature(typeParameters(stub.typeParameters(), types), List.of(), null, List.of()),
             types.resolved(fullName), stub.modifiers(), stub.annotations(), location, alternates, types));
-        List<Type> supers = new ArrayList<>(stub.interfaces());
-        if (stub.superClass() != null) {
-            supers.add(stub.superClass());
-        }
-        for (Type base : supers) {
-            if (base instanceof Type.ClassType named) {
-                TypeReference reference = types.type(named);
-                edges.add(new SymbolEdge(owner, reference.target(), EdgeKindId.SUBTYPE, reference.arguments()));
-            }
-        }
         for (FieldStub field : stub.fields()) {
             check.run();
             declarations.add(descriptor(JavaSymbolIds.field(owner, field.name()), JavaSymbolKind.FIELD, field.name(),
@@ -173,9 +167,34 @@ public final class JavaBinarySymbolExtractor {
                 signature, null, constructor.modifiers(), constructor.annotations(), location, alternates, types));
         }
         check.run();
+        // Some stub providers identify only the containing archive, so several classes can share the same URI.
+        var documentId = new DocumentId(
+            UUID.nameUUIDFromBytes((uri + "\0" + fullName).getBytes(StandardCharsets.UTF_8)));
         return new SemanticIndexShard(
-            new DocumentId(UUID.nameUUIDFromBytes(uri.toString().getBytes(StandardCharsets.UTF_8))),
-            DocumentVersion.initial(), uri, declarations, List.of(), edges);
+            documentId, DocumentVersion.initial(), uri, declarations, List.of(), supertypeEdges(stub, owner, types));
+    }
+
+    /**
+     * Reads only the direct superclass and interfaces, preserving their generic arguments.
+     *
+     * @param stub immutable class metadata
+     * @param owner identity of the class
+     * @param types shared type references
+     * @return direct subtype edges from the class
+     */
+    public static List<SymbolEdge> supertypeEdges(ClassStub stub, SymbolId owner, TypeReferences types) {
+        List<Type> supers = new ArrayList<>(stub.interfaces());
+        if (stub.superClass() != null) {
+            supers.add(stub.superClass());
+        }
+        List<SymbolEdge> edges = new ArrayList<>();
+        for (Type base : supers) {
+            if (base instanceof Type.ClassType named) {
+                TypeReference reference = types.type(named);
+                edges.add(new SymbolEdge(owner, reference.target(), EdgeKindId.SUBTYPE, reference.arguments()));
+            }
+        }
+        return edges;
     }
 
     /**

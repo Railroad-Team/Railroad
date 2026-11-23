@@ -2,13 +2,10 @@ package dev.railroadide.railroad.ide.sst.java.api;
 
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -71,6 +68,30 @@ public final class JavaSymbolIds {
      */
     public static SymbolId type(String moduleName, String qualifiedName) {
         return new SymbolId(module(moduleName).value() + "/type/" + part(requireName(qualifiedName).replace('/', '.')));
+    }
+
+    /**
+     * Reads the type component without decoding the rest of a member signature.
+     *
+     * @param symbol declaration identity
+     * @return the owning class's binary name, or null for identities without a Java type
+     */
+    public static @Nullable String owningTypeName(SymbolId symbol) {
+        String value = symbol.value();
+        if (!value.startsWith(NAMESPACE + "module/"))
+            return null;
+        int moduleEnd = value.indexOf('/', (NAMESPACE + "module/").length());
+        if (moduleEnd < 0 || !value.startsWith("/type/", moduleEnd))
+            return null;
+        int start = moduleEnd + "/type/".length();
+        int end = value.indexOf('/', start);
+        try {
+            var name = new String(Base64.getUrlDecoder().decode(value.substring(start, end < 0 ? value.length() : end)),
+                StandardCharsets.UTF_8);
+            return name.isBlank() ? null : name;
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
     }
 
     /**

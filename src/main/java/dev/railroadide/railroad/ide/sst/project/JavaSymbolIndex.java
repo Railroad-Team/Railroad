@@ -1,16 +1,13 @@
 package dev.railroadide.railroad.ide.sst.project;
 
-import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
-import org.jetbrains.annotations.Nullable;
-import java.nio.file.Path;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.LinkedHashSet;
-import java.util.Objects;
 import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
+import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
+import org.jetbrains.annotations.Nullable;
+
+import java.nio.file.Path;
+import java.util.*;
 
 /**
  * Lookup contract for Java types, packages, members, and available binary class stubs.
@@ -33,27 +30,25 @@ public interface JavaSymbolIndex {
     }
 
     /**
-     * Returns immutable declaration and reference shards in this index's lookup order.
+     * Looks up one type's declaring document with thread-interruption checks.
      *
-     * @return node-free source and binary facts
+     * @param binaryName physical name of the type, with dollars for nested types
+     * @return the visible declaration shard, or null when unavailable
      */
-    default List<SemanticIndexShard> semanticShards() {
-        return List.of();
+    default @Nullable SemanticIndexShard declarationShard(String binaryName) {
+        return declarationShard(binaryName, ActivityCheckpoint::checkInterrupted);
     }
 
     /**
-     * Returns immutable facts while honoring request cancellation during lazy materialization.
-     * Implementations doing substantial work must propagate the callback through that work.
-     * The callback belongs only to this invocation and must not be retained by published facts.
+     * Returns the declaring document for one JVM binary type name, including member and parameter declarations.
      *
-     * @param activityCheck current request's activity check
-     * @return complete available source and binary facts
+     * @param binaryName physical name of the type, with dollars for nested types
+     * @param activityCheck cancellation check for this lookup
+     * @return the visible declaration shard, or null when unavailable
      */
-    default List<SemanticIndexShard> semanticShards(Runnable activityCheck) {
-        Objects.requireNonNull(activityCheck, "activityCheck").run();
-        List<SemanticIndexShard> result = semanticShards();
+    default @Nullable SemanticIndexShard declarationShard(String binaryName, Runnable activityCheck) {
         activityCheck.run();
-        return result;
+        return null;
     }
 
     /**
@@ -122,6 +117,20 @@ public interface JavaSymbolIndex {
      * @return the matching symbol descriptors, or an empty list
      */
     List<JavaProjectSemanticIndex.SymbolDescriptor> lookupSimpleName(String simpleName);
+
+    /**
+     * Looks up type names without requiring member declarations from classes with a same-named member.
+     *
+     * @param simpleName unqualified type name
+     * @return distinct qualified names of matching type declarations
+     */
+    default List<String> qualifiedTypeNames(String simpleName) {
+        return lookupSimpleName(simpleName).stream().filter(symbol -> switch (symbol.kind()) {
+            case JavaSymbolKind.CLASS, JavaSymbolKind.INTERFACE, JavaSymbolKind.ENUM, JavaSymbolKind.RECORD,
+                JavaSymbolKind.ANNOTATION -> true;
+            default -> false;
+        }).map(JavaProjectSemanticIndex.SymbolDescriptor::qualifiedName).filter(Objects::nonNull).distinct().toList();
+    }
 
     /**
      * Finds indexed symbols sharing a qualified name.

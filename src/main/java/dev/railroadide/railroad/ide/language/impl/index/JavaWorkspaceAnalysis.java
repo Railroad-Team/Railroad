@@ -1,7 +1,9 @@
 package dev.railroadide.railroad.ide.language.impl.index;
 
+import dev.railroadide.railroad.ide.classparser.Type;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.sst.graph.api.ReferenceKindId;
 import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
 import dev.railroadide.railroad.ide.sst.graph.api.WorkspaceSymbolGraph;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
@@ -26,7 +28,6 @@ import java.util.*;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Stream;
 
 /**
  * Immutable Java analysis inputs derived from one workspace capture. Source lookup never
@@ -105,19 +106,24 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         return jdkHome;
     }
 
-    @Override
-    public List<SemanticIndexShard> semanticShards() {
-        return symbols.semanticShards();
+    private static boolean extendsAny(ClassStub stub, Set<String> names) {
+        if (stub.superClass() instanceof Type.ClassType parent && names.contains(parent.name()))
+            return true;
+        for (var type : stub.interfaces()) {
+            if (type instanceof Type.ClassType parent && names.contains(parent.name()))
+                return true;
+        }
+        return false;
     }
 
     @Override
-    public List<SemanticIndexShard> semanticShards(Runnable activityCheck) {
-        return symbols.semanticShards(activityCheck);
+    public @Nullable SemanticIndexShard declarationShard(String binaryName, Runnable activityCheck) {
+        return symbols.declarationShard(binaryName, activityCheck);
     }
 
     /**
-     * Captures declaration and binary graph facts. Source references require {@link #resolvedGraph(Runnable)};
-     * constructing completion inputs never triggers whole-workspace body resolution.
+     * Captures source declarations and the library owners of resolved header references.
+     * Body references require {@link #resolvedGraph(Runnable)}.
      *
      * @return immutable declaration graph for this capture
      */
@@ -129,7 +135,8 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         lockGraph(ActivityCheckpoint::checkInterrupted);
         try {
             if (declarationGraph == null) {
-                var result = WorkspaceSymbolGraph.of(semanticShards());
+                var result = WorkspaceSymbolGraph.of(withReferencedDeclarations(sourceIndex.semanticShards(),
+                    ActivityCheckpoint::checkInterrupted));
                 ActivityCheckpoint.checkInterrupted();
                 declarationGraph = result;
             }
@@ -139,11 +146,22 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         }
     }
 
+    private void lockGraph(Runnable check) {
+        try {
+            while (!graphLock.tryLock(25, TimeUnit.MILLISECONDS)) {
+                check.run();
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new CancellationException("Java graph capture interrupted while waiting for resolution");
+        }
+    }
+
     /**
      * Resolves all captured source bodies against these captured source and binary declarations.
      * Runs on a language worker, with cooperative cancellation and no live filesystem reads.
-     * The returned immutable graph has complete available facts, including partial-program omissions;
-     * cancellation throws without publishing or retaining a partially enriched graph. Successful
+     * The graph includes referenced library declarations and their supertypes.
+     * Cancellation throws without publishing or retaining a partially enriched graph. Successful
      * construction is single-flight and retained by this captured analysis until its owner releases it.
      *
      * @param activityCheck callback invoked to check cancellation or interruption; may throw to abort
@@ -171,33 +189,110 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         }
     }
 
-    private void lockGraph(Runnable check) {
-        try {
-            while (!graphLock.tryLock(25, TimeUnit.MILLISECONDS)) {
-                check.run();
-            }
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            throw new CancellationException("Java graph capture interrupted while waiting for resolution");
-        }
-    }
-
     private WorkspaceSymbolGraph buildResolvedGraph(Runnable activityCheck) {
-        Map<DocumentId, SemanticIndexShard> shards = new LinkedHashMap<>();
-        for (var shard : semanticShards(activityCheck)) {
-            activityCheck.run();
-            shards.put(shard.documentId(), shard);
-        }
+        List<SemanticIndexShard> sources = new ArrayList<>();
         var extractor = new JavaProjectSemanticExtractor();
         for (var file : sourceIndex.files().values()) {
             activityCheck.run();
-            var resolved = resolveShard(extractor, file, activityCheck);
-            shards.put(resolved.documentId(), resolved);
+            sources.add(resolveShard(extractor, file, activityCheck));
         }
-        var result = WorkspaceSymbolGraph.of(JavaOverrideGraphExtractor.extract(shards.values(), activityCheck),
+        var shards = withReferencedDeclarations(sources, activityCheck);
+        var result = WorkspaceSymbolGraph.of(JavaOverrideGraphExtractor.extract(shards, symbols, activityCheck),
             activityCheck);
         activityCheck.run();
         return result;
+    }
+
+    private Collection<SemanticIndexShard> withReferencedDeclarations(
+        List<SemanticIndexShard> sources,
+        Runnable check
+    ) {
+        Map<DocumentId, SemanticIndexShard> shards = new LinkedHashMap<>();
+        for (var source : sources) {
+            check.run();
+            shards.put(source.documentId(), source);
+        }
+        var pending = new ArrayDeque<>(sources);
+        Set<String> owners = new HashSet<>();
+        while (!pending.isEmpty()) {
+            check.run();
+            var shard = pending.removeFirst();
+            for (var reference : shard.references()) {
+                check.run();
+                if (!reference.kind().equals(ReferenceKindId.DECLARATION)) {
+                    addOwner(reference.target(), owners, shards, pending, check);
+                }
+            }
+            for (var edge : shard.edges()) {
+                check.run();
+                addOwner(edge.target(), owners, shards, pending, check);
+            }
+        }
+        return shards.values();
+    }
+
+    /**
+     * Includes compiled subclasses of workspace types so a rename cannot break a library override, even when
+     * no workspace file mentions that subclass.
+     *
+     * @param check checks request activity
+     * @return the resolved graph with any additional binary descendants needed for rename checks
+     */
+    public WorkspaceSymbolGraph renameGraph(Runnable check) {
+        var graph = resolvedGraph(check);
+        Set<String> parents = new HashSet<>();
+        for (String name : sourceIndex.declaredQualifiedNames()) {
+            check.run();
+            for (var type : sourceIndex.lookupQualifiedName(name)) {
+                if (type.descriptor() != null) {
+                    parents.add(JavaSymbolIds.owningTypeName(type.descriptor().id()));
+                }
+            }
+        }
+        List<SemanticIndexShard> additional = new ArrayList<>();
+        Set<String> descendants = new HashSet<>();
+        while (!parents.isEmpty()) {
+            Set<String> next = new HashSet<>();
+            for (var stub : symbols.classStubsByQualifiedName().values()) {
+                check.run();
+                if (!extendsAny(stub, parents))
+                    continue;
+                String name = stub.getFullName();
+                if (descendants.add(name)) {
+                    next.add(name);
+                    if (graph.symbols(JavaSymbolIds.type(name)).isEmpty()) {
+                        var shard = symbols.declarationShard(name, check);
+                        if (shard != null) {
+                            additional.add(shard);
+                        }
+                    }
+                }
+            }
+            parents = next;
+        }
+        if (additional.isEmpty())
+            return graph;
+        additional.addAll(graph.shards().values());
+        return WorkspaceSymbolGraph.of(JavaOverrideGraphExtractor.extract(withReferencedDeclarations(additional, check),
+            symbols, check), check);
+    }
+
+    private void addOwner(
+        SymbolId target,
+        Set<String> owners,
+        Map<DocumentId, SemanticIndexShard> shards,
+        Deque<SemanticIndexShard> pending,
+        Runnable check
+    ) {
+        if (!sourceIndex.graph().symbols(target).isEmpty())
+            return;
+        String owner = JavaSymbolIds.owningTypeName(target);
+        if (owner == null || !owners.add(owner))
+            return;
+        var declaration = symbols.declarationShard(owner, check);
+        if (declaration != null && shards.putIfAbsent(declaration.documentId(), declaration) == null) {
+            pending.addLast(declaration);
+        }
     }
 
     /**
@@ -305,7 +400,11 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
             declaration = declarationIn(caretShard, symbol);
         }
         if (declaration == null) {
-            declaration = binaryDeclaration(symbol);
+            String owner = JavaSymbolIds.owningTypeName(symbol);
+            var shard = owner == null ? null : symbols.declarationShard(owner, activityCheck);
+            if (shard != null) {
+                declaration = declarationIn(shard, symbol);
+            }
         }
         String requiredName = declaration != null && (declaration.kind().id().equals(JavaSymbolKind.METHOD.id())
             || declaration.kind().id().equals(JavaSymbolKind.FIELD.id())) ? declaration.simpleName() : null;
@@ -338,24 +437,6 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
             ? symbol.value()
             : Objects.requireNonNullElse(declaration.qualifiedName(), declaration.simpleName());
         return new UsageSearch(symbol, name, usages);
-    }
-
-    private @Nullable SymbolDescriptor binaryDeclaration(SymbolId symbol) {
-        List<JavaSymbolIds.Component> components;
-        try {
-            components = JavaSymbolIds.components(symbol);
-        } catch (IllegalArgumentException exception) {
-            return null;
-        }
-        for (var component : components) {
-            if (component.kind().equals("type")) {
-                String owner = component.value();
-                return Stream.concat(symbols.lookupQualifiedName(owner).stream(), symbols.lookupMembers(owner).stream())
-                    .map(JavaProjectSemanticIndex.SymbolDescriptor::descriptor).filter(Objects::nonNull)
-                    .filter(candidate -> candidate.id().equals(symbol)).findFirst().orElse(null);
-            }
-        }
-        return null;
     }
 
     private Optional<DefinitionTarget> libraryDefinition(
@@ -523,6 +604,11 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
     @Override
     public List<JavaProjectSemanticIndex.SymbolDescriptor> lookupSimpleName(String name) {
         return symbols.lookupSimpleName(name);
+    }
+
+    @Override
+    public List<String> qualifiedTypeNames(String simpleName) {
+        return symbols.qualifiedTypeNames(simpleName);
     }
     @Override
     public List<JavaProjectSemanticIndex.SymbolDescriptor> lookupQualifiedName(String name) {
