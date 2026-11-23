@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.ide.sst.javac;
 
 import com.sun.source.util.JavacTask;
+import com.sun.source.util.TaskEvent;
+import com.sun.source.util.TaskListener;
 import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRegistries;
 import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRuleEngine;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
@@ -26,8 +28,10 @@ import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
+import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 import java.io.IOException;
+import java.io.Writer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -35,6 +39,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -99,9 +104,13 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
         for (var action : plan.actions()) {
             String label = "Action " + (actions + 1) + " (@" + action.name() + ")";
             var sources = new LinkedHashMap<Path, TextDocumentSnapshot>();
+            var implicit = new LinkedHashMap<Path, TextDocumentSnapshot>();
             try {
                 for (Path file : action.sources()) {
                     sources.put(file, readSource(file, action.encoding()));
+                }
+                for (Path file : implicitSources(checkout, plan.sourcePath(), action, sources, previous.keySet())) {
+                    implicit.put(file, readSource(file, action.encoding()));
                 }
             } catch (CharacterCodingException exception) {
                 unsupported.add(label + " has source bytes that cannot be decoded as " + action.encoding());
@@ -109,6 +118,7 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
             }
             actions++;
             var visible = new LinkedHashMap<>(previous);
+            visible.putAll(implicit);
             visible.putAll(sources);
             WorkspaceSnapshot workspace = workspace(test, visible, actions);
             Map<Path, ParsedSource> parsed = checkSyntax(sources, workspace, action.preview(), deadline, label,
@@ -191,6 +201,55 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
             .anyMatch(diagnostic -> diagnostic.getKind() == Diagnostic.Kind.ERROR && diagnostic.getSource() == null))
             throw new IOException("javac could not initialize its parser: " + diagnostics.getDiagnostics());
         return parsed;
+    }
+
+    /**
+     * Finds the sources javac compiles implicitly for an action. jtreg passes the test directory and its libraries
+     * as {@code -sourcepath}, so javac loads any type it cannot otherwise find from there. SST needs those files as
+     * workspace documents to resolve the same names, but they are not checked themselves.
+     */
+    private List<Path> implicitSources(
+        Path checkout,
+        List<Path> sourcePath,
+        OpenJdkCompilePlan.Action action,
+        Map<Path, TextDocumentSnapshot> sources,
+        Set<Path> known
+    ) throws IOException {
+        if (sourcePath.isEmpty())
+            return List.of();
+
+        var loaded = new LinkedHashSet<Path>();
+        var options = new ArrayList<>(List.of("-proc:none"));
+        if (action.preview()) {
+            options.addAll(List.of("--enable-preview", "--source", Integer.toString(Runtime.version().feature())));
+        }
+        try (var fileManager = compiler.getStandardFileManager(null, Locale.ROOT, action.encoding())) {
+            fileManager.setLocationFromPaths(StandardLocation.SOURCE_PATH, sourcePath);
+            fileManager.setLocationFromPaths(StandardLocation.CLASS_PATH, List.of());
+            var inputs = sources.values().stream().map(SourceFile::new).toList();
+            var diagnostics = new DiagnosticCollector<JavaFileObject>();
+            var task = (JavacTask) compiler.getTask(Writer.nullWriter(), fileManager, diagnostics, options, null,
+                inputs);
+            task.addTaskListener(new TaskListener() {
+                @Override
+                public void finished(TaskEvent event) {
+                    if (event.getKind() == TaskEvent.Kind.PARSE) {
+                        loaded.add(Path.of(event.getSourceFile().toUri()).toAbsolutePath().normalize());
+                    }
+                }
+            });
+            task.parse();
+            // Semantics are never checked after a syntax error, and javac can fail assertions attributing such trees.
+            if (diagnostics.getDiagnostics().stream()
+                .anyMatch(diagnostic -> diagnostic.getKind() == Diagnostic.Kind.ERROR))
+                return List.of();
+            task.analyze();
+        }
+
+        Path testRoot = checkout.resolve("test").toAbsolutePath().normalize();
+        return loaded.stream()
+            .filter(path -> path.startsWith(testRoot) && !sources.containsKey(path) && !known.contains(path))
+            .toList();
     }
 
     private void checkSemantics(

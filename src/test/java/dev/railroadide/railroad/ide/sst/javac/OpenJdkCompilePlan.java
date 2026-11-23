@@ -12,7 +12,14 @@ import java.util.regex.Pattern;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public record OpenJdkCompilePlan(List<Action> actions, String unsupported) {
+/**
+ * The jtreg actions SST can mirror for one test.
+ *
+ * @param actions the declarative compile and build actions, in order
+ * @param sourcePath the roots jtreg passes to javac as {@code -sourcepath}: the test directory, then its libraries
+ * @param unsupported why the remaining actions cannot be mirrored, or {@code null}
+ */
+public record OpenJdkCompilePlan(List<Action> actions, List<Path> sourcePath, String unsupported) {
     private static final String JDK_VERSION = Integer.toString(Runtime.version().feature());
     private static final Pattern CLASS_NAME = Pattern.compile("[\\w$]+(?:\\.[\\w$]+)*");
     private static final Set<String> INFORMATION_TAGS = Set.of("test", "bug", "summary", "author", "key", "comment",
@@ -22,11 +29,12 @@ public record OpenJdkCompilePlan(List<Action> actions, String unsupported) {
         boolean hasCompile = test.tags().stream().map(OpenJdkCompilePlan::actionTag)
             .anyMatch(tag -> tag.name().equals("compile") || tag.name().startsWith("compile/"));
         if (!hasCompile)
-            return new OpenJdkCompilePlan(List.of(),
+            return new OpenJdkCompilePlan(List.of(), List.of(),
                 "No declarative compile action. The jtreg driver requires an adapter.");
 
         boolean preview = test.tags().stream().anyMatch(tag -> tag.name().equals("enablePreview"));
         var actions = new ArrayList<Action>();
+        List<Path> libraries = List.of();
         try {
             for (var tag : test.tags()) {
                 if (!INFORMATION_TAGS.contains(tag.name()) && !isAction(tag.name()))
@@ -34,7 +42,7 @@ public record OpenJdkCompilePlan(List<Action> actions, String unsupported) {
             }
             Path testRoot = checkout.resolve("test");
             Path testDir = test.file().getParent();
-            List<Path> libraries = libraryRoots(test, testRoot, testDir);
+            libraries = libraryRoots(test, testRoot, testDir);
             for (var original : test.tags()) {
                 var tag = actionTag(original);
                 if (INFORMATION_TAGS.contains(tag.name()) || tag.name().equals("clean") && actions.isEmpty())
@@ -46,9 +54,9 @@ public record OpenJdkCompilePlan(List<Action> actions, String unsupported) {
                 }
             }
         } catch (Unsupported exception) {
-            return new OpenJdkCompilePlan(List.copyOf(actions), exception.getMessage());
+            return new OpenJdkCompilePlan(List.copyOf(actions), libraries, exception.getMessage());
         }
-        return new OpenJdkCompilePlan(List.copyOf(actions), null);
+        return new OpenJdkCompilePlan(List.copyOf(actions), libraries, null);
     }
 
     private static boolean isAction(String name) {

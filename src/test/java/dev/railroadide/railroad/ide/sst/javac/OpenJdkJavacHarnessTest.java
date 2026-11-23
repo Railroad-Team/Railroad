@@ -83,6 +83,33 @@ public class OpenJdkJavacHarnessTest {
     }
 
     @Test
+    public void resolvesSourcesJavacLoadsImplicitlyFromTheTestDirectory() throws IOException {
+        write("implicit/Main.java", """
+            /*
+             * @test
+             * @compile Main.java
+             */
+            import p.Helper;
+
+            class Main extends Helper {
+                Sibling sibling = new Sibling();
+                int value = Helper.VALUE;
+            }
+            """);
+        write("implicit/p/Helper.java", "package p; public class Helper { public static final int VALUE = 1; }\n");
+        write("implicit/Sibling.java", "class Sibling {}\n");
+        // javac never loads this file, so its conflicting declaration must stay invisible to SST.
+        write("implicit/Unrelated.java", "class Main {}\nclass Sibling {}\n");
+
+        var suite = new OpenJdkJavacSuite(checkout);
+        try (var checks = new OpenJdkJavacChecks(suite.root())) {
+            var result = checks.check(suite.root(), suite.discover("implicit/Main.java").getFirst());
+            assertEquals(OpenJdkJavacChecks.Status.PASS, result.status(), result::toString);
+            assertEquals(1, result.syntaxFiles());
+        }
+    }
+
+    @Test
     public void matchesJavacSelectorAnchorToTheSstIdentifier() throws IOException {
         write("Selector.java", """
             /*
