@@ -3,3 +3,53 @@
     -fx-fill: -color-fg-default;
     -fx-font-size: 20px;
 }
+
+.rr-activity-pane {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0 4px;
+    -fx-cursor: hand;
+}
+
+.rr-activity-pane:hover,
+.rr-activity-pane:selected {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.rr-activity-pane:focused {
+    -fx-border-color: -color-accent-emphasis;
+}
+
+.rr-activity-arrow {
+    -fx-shape: "M0 5 L5 0 L10 5 L9 6 L5 2 L1 6 Z";
+    -fx-min-width: 10px;
+    -fx-pref-width: 10px;
+    -fx-pref-height: 6px;
+    -fx-max-height: 6px;
+    -fx-background-color: -color-fg-default;
+}
+
+.rr-activity-pane:selected .rr-activity-arrow {
+    -fx-rotate: 180;
+}
+
+.rr-activity-list {
+    -fx-background-color: -color-surface-panel;
+    -fx-border-color: -color-border-subtle;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-padding: 6px 10px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 10, 0, 0, 2);
+}
+
+.rr-activity-list > .viewport {
+    -fx-background-color: transparent;
+}
+
+.rr-activity-row {
+    -fx-padding: 5px 4px;
+}
+
+.rr-activity-row .rr-activity-title {
+    -fx-font-weight: bold;
+}

@@ -15,7 +15,6 @@ import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.ui.RRBorderPane;
-import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.id.UIId;
 import dev.railroadide.railroad.ui.id.UIIds;
 import dev.railroadide.railroad.utility.javafx.JavaFXUtils;
@@ -111,11 +110,12 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             mainSplit.getStyleClass().add("ide-dock-split");
             mainSplit.setOrientation(Orientation.HORIZONTAL);
             mainSplit.setDividerPositions(0.15);
-            setCenter(mainSplit);
+            var activityPane = new IDEActivityPane();
+            setCenter(new StackPane(mainSplit, activityPane.getTaskOverlay()));
 
             configureGradlePane(rightPane, mainSplit);
             setLeft(createLeftIconBar(leftPane, mainSplit));
-            setBottom(createBottomBar(bottomPane, centerBottomSplit));
+            setBottom(createBottomBar(bottomPane, centerBottomSplit, activityPane));
             installLayoutTracking();
             installFocusTracking();
             installModeAvailabilityTracking();
@@ -1441,15 +1441,17 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             0);
     }
 
-    private static RRHBox createBottomBar(DetachableTabPane consolePane, SplitPane centerBottomSplit) {
-        var bottomBar = new RRHBox();
+    private static IDEStatusBarPane createBottomBar(
+        DetachableTabPane consolePane,
+        SplitPane centerBottomSplit,
+        IDEActivityPane activityPane
+    ) {
         var bottomIcons = PaneIconBarFactory.create(
             consolePane,
             centerBottomSplit,
             Orientation.HORIZONTAL,
             1);
-        bottomBar.getChildren().addAll(bottomIcons, new IDEStatusBarPane());
-        return bottomBar;
+        return new IDEStatusBarPane(bottomIcons, activityPane);
     }
 
     private <T extends Node> void assignWhileAttached(UIId<T> id, T node) {
