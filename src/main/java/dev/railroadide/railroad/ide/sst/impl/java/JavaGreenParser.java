@@ -846,7 +846,7 @@ public final class JavaGreenParser {
     }
 
     private void consumeTypeUseAnnotations(List<GreenElement> children) {
-        while (peekSignificantType() == JavaTokenType.AT) {
+        while (pendingTypeArgumentClosers == 0 && peekSignificantType() == JavaTokenType.AT) {
             children.add(parseAnnotation());
             consumeTrivia(children);
         }
@@ -1254,7 +1254,7 @@ public final class JavaGreenParser {
     }
 
     private GreenNode parseOptionalMemberDeclaration(String ownerName, boolean allowConstructors) {
-        int marker = position;
+        ParserCheckpoint checkpoint = mark();
         List<GreenElement> prefix = parseMemberPrefix();
         int afterPrefix = position;
 
@@ -1270,7 +1270,7 @@ public final class JavaGreenParser {
         if (fieldOrMethodDeclaration != null)
             return fieldOrMethodDeclaration;
 
-        position = marker;
+        rollback(checkpoint);
         return null;
     }
 
@@ -2073,14 +2073,16 @@ public final class JavaGreenParser {
         }
 
         children.add(parseTypeReference());
-        if (peekSignificantType() == JavaTokenType.OPEN_BRACKET || peekSignificantType() == JavaTokenType.OPEN_BRACE) {
-            while (matchSignificant(JavaTokenType.OPEN_BRACKET, children)) {
-                if (peekSignificantType() != JavaTokenType.CLOSE_BRACKET) {
-                    children.add(parseExpression());
-                }
-                expectSignificant(JavaTokenType.CLOSE_BRACKET, children);
+        boolean hasDimensions = false;
+        while (matchArrayCreationDimensionStart(children)) {
+            hasDimensions = true;
+            if (peekSignificantType() != JavaTokenType.CLOSE_BRACKET) {
+                children.add(parseExpression());
             }
+            expectSignificant(JavaTokenType.CLOSE_BRACKET, children);
+        }
 
+        if (hasDimensions || peekSignificantType() == JavaTokenType.OPEN_BRACE) {
             if (peekSignificantType() == JavaTokenType.OPEN_BRACE) {
                 children.add(parseArrayInitializerExpression());
             }
@@ -2098,6 +2100,23 @@ public final class JavaGreenParser {
         }
 
         return greenNode(JavaSyntaxKinds.CLASS_INSTANCE_CREATION_EXPRESSION, children);
+    }
+
+    private boolean matchArrayCreationDimensionStart(List<GreenElement> children) {
+        JavaTokenType next = peekSignificantType();
+        if (next != JavaTokenType.AT)
+            return next == JavaTokenType.OPEN_BRACKET && matchSignificant(JavaTokenType.OPEN_BRACKET, children);
+
+        ParserCheckpoint checkpoint = mark();
+        List<GreenElement> start = new ArrayList<>();
+        consumeTypeUseAnnotations(start);
+        if (!matchSignificant(JavaTokenType.OPEN_BRACKET, start)) {
+            rollback(checkpoint);
+            return false;
+        }
+
+        children.addAll(start);
+        return true;
     }
 
     private GreenNode parseArrayInitializerExpression() {
@@ -2355,7 +2374,8 @@ public final class JavaGreenParser {
     }
 
     private boolean isPatternStart() {
-        int marker = position;
+        ParserCheckpoint checkpoint = mark();
+        int marker = checkpoint.position();
         parsePattern();
         boolean consumed = position > marker;
         int significantTokens = 0;
@@ -2396,7 +2416,7 @@ public final class JavaGreenParser {
             }
         }
 
-        position = marker;
+        rollback(checkpoint);
         return looksLikePattern;
     }
 
@@ -2405,10 +2425,10 @@ public final class JavaGreenParser {
     }
 
     private boolean isCastExpressionStart() {
-        int marker = position;
+        ParserCheckpoint checkpoint = mark();
         List<GreenElement> probe = new ArrayList<>();
         if (!matchSignificant(JavaTokenType.OPEN_PAREN, probe)) {
-            position = marker;
+            rollback(checkpoint);
             return false;
         }
 
@@ -2424,7 +2444,7 @@ public final class JavaGreenParser {
 
         JavaTokenType next = peekSignificantType();
         boolean canStartTarget = hasClosingParen && canStartUnaryExpression(next);
-        position = marker;
+        rollback(checkpoint);
         return canStartTarget;
     }
 
@@ -2473,9 +2493,9 @@ public final class JavaGreenParser {
     }
 
     private boolean isClassLiteralStart() {
-        int marker = position;
+        ParserCheckpoint checkpoint = mark();
         parseTypeReference();
-        boolean consumedType = position > marker;
+        boolean consumedType = position > checkpoint.position();
         int currentIndex = nextSignificantIndex(position);
         JavaTokenType currentType = currentIndex < 0 ? null : tokens.get(currentIndex).type();
         int previousIndex = currentIndex < 0 ? -1 : previousSignificantIndex(currentIndex - 1);
@@ -2486,7 +2506,7 @@ public final class JavaGreenParser {
         boolean isClassLiteral = consumedType
             && ((currentType == JavaTokenType.DOT && classAfterDotType == JavaTokenType.CLASS_KEYWORD) ||
                 (currentType == JavaTokenType.CLASS_KEYWORD && previousType == JavaTokenType.DOT));
-        position = marker;
+        rollback(checkpoint);
         return isClassLiteral;
     }
 

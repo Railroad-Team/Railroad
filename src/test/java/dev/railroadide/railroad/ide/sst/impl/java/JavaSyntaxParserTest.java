@@ -134,6 +134,46 @@ public class JavaSyntaxParserTest {
     }
 
     @Test
+    public void typeLookaheadPreservesShiftOperatorsBeforeAnnotatedCreation() {
+        String source = """
+            class Example {
+                boolean compare(int left, int right) {
+                    return left < right >> new @A Box().value;
+                }
+
+                boolean compareUnsigned(int left, int right) {
+                    return (left < right >>> new @A Box().value);
+                }
+            }
+            """;
+        var checkpoints = new AtomicInteger();
+        SyntaxTree tree = JavaSyntaxParser.parse(source,
+            () -> assertTrue(checkpoints.incrementAndGet() < 1000, "Parser stalled after type lookahead"));
+
+        assertEquals(source, JavaParserTestSupport.syntaxText(tree));
+        var result = JavaSyntaxParser.parseWithDiagnostics(source);
+        assertTrue(result.diagnostics().isEmpty(), result.diagnostics()::toString);
+        var tokenKinds = JavaParserTestSupport.collectSyntaxTokens(tree).stream().map(token -> token.kind()).toList();
+        assertTrue(tokenKinds.contains(JavaSyntaxKinds.tokenKind(JavaTokenType.RIGHT_SHIFT)));
+        assertTrue(tokenKinds.contains(JavaSyntaxKinds.tokenKind(JavaTokenType.UNSIGNED_RIGHT_SHIFT)));
+    }
+
+    @Test
+    public void parsesTypeAnnotationsOnArrayCreationDimensions() {
+        String source = """
+            class Example {
+                int[][] sized = new @A int @B [1] @C [2];
+                int[][] mixed = new int[1] @A [];
+                int[] initialized = new int @A [] {1};
+
+                int[] make() { return new int @A(value = 1) [1]; }
+            }
+            """;
+
+        JavaSyntaxAssertions.assertParsesWithoutRecovery(source);
+    }
+
+    @Test
     public void includesExpectedTopLevelStructureKinds() {
         String source = """
             package demo;
