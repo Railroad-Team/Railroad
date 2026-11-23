@@ -13,31 +13,78 @@ import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.OperatingSystem;
 import javafx.application.Platform;
 import javafx.beans.property.StringProperty;
+import javafx.css.PseudoClass;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeRegular;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.EnumMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * An editable project explorer cell with file icons and rename support.
  */
 public class PathTreeCell extends TreeCell<PathItem> {
+    private static final Map<ProjectStructure.Role, PseudoClass> ROLE_PSEUDO_CLASSES = new EnumMap<>(
+        ProjectStructure.Role.class);
+
+    static {
+        for (ProjectStructure.Role role : ProjectStructure.Role.values()) {
+            ROLE_PSEUDO_CLASSES.put(role,
+                PseudoClass.getPseudoClass(role.name().toLowerCase(Locale.ROOT).replace('_', '-')));
+        }
+    }
+
     private final StringProperty messageProperty;
+    private final Supplier<ProjectStructure> structure;
     private TextField textField;
     private Path editingPath;
+
     /**
      * Creates an editable file cell that publishes operation messages.
      *
      * @param messageProperty property receiving file operation messages
+     * @param structure current build roles used to decorate module and source directories
      */
-    public PathTreeCell(StringProperty messageProperty) {
+    public PathTreeCell(StringProperty messageProperty, Supplier<ProjectStructure> structure) {
         super();
 
         this.messageProperty = messageProperty;
+        this.structure = structure;
+    }
+
+    private static Node createIcon(Path path, ProjectStructure.Role role) {
+        if (role == null)
+            return FileUtils.getIcon(path);
+        return new FontIcon(switch (role) {
+            case MODULE -> FontAwesomeSolid.CUBE;
+            case SOURCE_SET -> FontAwesomeSolid.LAYER_GROUP;
+            case SOURCES, TEST_SOURCES, GENERATED_SOURCES -> FontAwesomeSolid.FOLDER;
+            case RESOURCES, TEST_RESOURCES -> FontAwesomeSolid.ARCHIVE;
+            case EXCLUDED -> FontAwesomeRegular.FOLDER;
+        });
+    }
+
+    private ProjectStructure.Role role(Path path) {
+        return structure.get().roleOf(path);
+    }
+
+    private Node icon(Path path) {
+        return createIcon(path, role(path));
+    }
+
+    private void updateRole(ProjectStructure.Role role) {
+        ROLE_PSEUDO_CLASSES.forEach((candidate, pseudoClass) -> pseudoClassStateChanged(pseudoClass,
+            candidate == role));
     }
 
     @Override
@@ -97,6 +144,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
     protected void updateItem(PathItem item, boolean empty) {
         super.updateItem(item, empty);
 
+        updateRole(empty || item == null ? null : role(item.getPath()));
         if (empty) {
             setContextMenu(null);
             setText(null);
@@ -106,7 +154,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
         } else {
             String text = getString();
             setTooltip(new Tooltip(item.getPath().toString()));
-            Node image = FileUtils.getIcon(item.getPath());
+            Node image = icon(item.getPath());
             if (isEditing()) {
                 if (textField != null) {
                     textField.setText(item.toString());
@@ -165,7 +213,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
             setText(null);
 
             var hbox = new RRHBox();
-            hbox.getChildren().addAll(FileUtils.getIcon(getItem().getPath()), textField);
+            hbox.getChildren().addAll(icon(getItem().getPath()), textField);
             setGraphic(hbox);
             textField.selectAll();
 
@@ -214,7 +262,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
 
         super.commitEdit(newValue);
         setText(getString());
-        setGraphic(FileUtils.getIcon(newValue.getPath()));
+        setGraphic(icon(newValue.getPath()));
     }
 
     /**
@@ -224,7 +272,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
     public void cancelEdit() {
         super.cancelEdit();
         setText(getString());
-        setGraphic(getItem() == null ? null : FileUtils.getIcon(getItem().getPath()));
+        setGraphic(getItem() == null ? null : icon(getItem().getPath()));
     }
 
     private String getString() {

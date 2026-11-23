@@ -14,6 +14,9 @@ import dev.railroadide.railroad.command.CommandButtons;
 import dev.railroadide.railroad.command.CommandContext;
 import dev.railroadide.railroad.command.Commands;
 import dev.railroadide.railroad.command.ExplorerTarget;
+import dev.railroadide.railroad.gradle.model.GradleBuildModel;
+import dev.railroadide.railroad.gradle.model.GradleModelListener;
+import dev.railroadide.railroad.gradle.service.GradleModelService;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexCoordinator;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CopyModalDialog;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
@@ -22,6 +25,7 @@ import dev.railroadide.railroad.ide.projectexplorer.task.FileCopyTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.SearchTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.WatchTask;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
@@ -83,6 +87,22 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     private final TextField searchField;
     private final ShutdownHooks.Registration shutdownRegistration;
     private boolean closed;
+    private volatile ProjectStructure structure = ProjectStructure.EMPTY;
+    private GradleModelService gradleModels;
+    private final GradleModelListener gradleModelListener = new GradleModelListener() {
+        @Override
+        public void modelReloadStarted() {
+        }
+
+        @Override
+        public void modelReloadSucceeded(GradleBuildModel model) {
+            updateStructure(ProjectStructure.fromGradle(model));
+        }
+
+        @Override
+        public void modelReloadFailed(Throwable error) {
+        }
+    };
     private final BiConsumer<Boolean, Boolean> compactPackagesListener = (_, _) -> Platform.runLater(() -> {
         if (!closed) {
             refreshProjectExplorer();
@@ -124,7 +144,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             this.treeView.setEditable(true);
             this.treeView.getStyleClass().add("rr-tree-view");
             this.treeView.setCellFactory(_ -> {
-                var cell = new PathTreeCell(messageProperty);
+                var cell = new PathTreeCell(messageProperty, () -> structure);
                 handleDragDrop(cell);
                 return cell;
             });
@@ -143,6 +163,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             sortTreeItems(this.treeView.getRoot());
 
             handleSearchEvents(rootPath);
+            trackProjectStructure(rootPath);
 
             var watchTask = new WatchTask(rootPath, this);
             this.executorService.submit(watchTask);
@@ -161,6 +182,29 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 cause.addSuppressed(cleanup);
             }
             throw failure;
+        }
+    }
+
+    private void trackProjectStructure(Path rootPath) {
+        if (!project.hasFacet(FacetManager.GRADLE)) {
+            structure = ProjectStructure.conventional(rootPath);
+            return;
+        }
+        gradleModels = project.getGradleManager().getGradleModelService();
+        gradleModels.addListener(gradleModelListener);
+        gradleModels.getCachedModel().ifPresent(model -> updateStructure(ProjectStructure.fromGradle(model)));
+    }
+
+    private void updateStructure(ProjectStructure updated) {
+        structure = updated;
+        if (Platform.isFxApplicationThread()) {
+            treeView.refresh();
+        } else {
+            Platform.runLater(() -> {
+                if (!closed) {
+                    treeView.refresh();
+                }
+            });
         }
     }
 
@@ -183,6 +227,9 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         closed = true;
         Settings.COMPACT_MIDDLE_PACKAGES.removeListener(compactPackagesListener);
+        if (gradleModels != null) {
+            gradleModels.removeListener(gradleModelListener);
+        }
         shutdownRegistration.close();
         indexRequests.close();
         projectLanguageIndexCoordinator.cancel(true);

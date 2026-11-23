@@ -52,3 +52,34 @@
 .project-explorer-drag-target {
     -fx-background-color: -color-accent-4;
 }
+
+/* Build structure roles of project explorer directories */
+.rr-project-explorer .rr-tree-view .tree-cell:module {
+    -fx-font-weight: bold;
+}
+
+.rr-project-explorer .rr-tree-view .tree-cell:module .ikonli-font-icon,
+.rr-project-explorer .rr-tree-view .tree-cell:sources .ikonli-font-icon {
+    -fx-icon-color: -color-accent-emphasis;
+}
+
+.rr-project-explorer .rr-tree-view .tree-cell:test-sources .ikonli-font-icon,
+.rr-project-explorer .rr-tree-view .tree-cell:test-resources .ikonli-font-icon {
+    -fx-icon-color: -color-success-emphasis;
+}
+
+.rr-project-explorer .rr-tree-view .tree-cell:resources .ikonli-font-icon {
+    -fx-icon-color: -color-warning-emphasis;
+}
+
+.rr-project-explorer .rr-tree-view .tree-cell:generated-sources {
+    -fx-font-style: italic;
+}
+
+.rr-project-explorer .rr-tree-view .tree-cell:excluded {
+    -fx-text-fill: -color-fg-subtle;
+}
+
+.rr-project-explorer .rr-tree-view .tree-cell:excluded .ikonli-font-icon {
+    -fx-icon-color: -color-fg-subtle;
+}
