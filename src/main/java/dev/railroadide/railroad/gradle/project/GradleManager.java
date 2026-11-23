@@ -5,6 +5,7 @@ import dev.railroadide.railroad.DefaultGradleEnvironment;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.gradle.GradleEnvironment;
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
 import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.gradle.GradleSettings;
 import dev.railroadide.railroad.gradle.model.PersistedGradleModelStore;
@@ -219,7 +220,7 @@ public final class GradleManager {
         var activity = BackgroundActivities.shared().start("railroad.activity.downloading_sources");
         GradleTaskExecutionHandle handle;
         try {
-            handle = execService.runTask(request);
+            handle = ScopedValue.where(ActivityProgress.CURRENT, activity).call(() -> execService.runTask(request));
         } catch (Exception exception) {
             activity.close();
             deleteIfExists(initScriptPath);

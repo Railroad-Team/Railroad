@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.language.impl.index;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
 import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
@@ -287,11 +288,11 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
         CompletableFuture<JavaSymbolIndex> load;
         if (key.archive() == null) {
             load = CompletableFuture.supplyAsync(() -> {
-                try (var _ = BackgroundActivities.shared().start("railroad.activity.indexing_libraries")) {
-                    return binaryLoader == null
+                try (var activity = BackgroundActivities.shared().start("railroad.activity.indexing_libraries")) {
+                    return ScopedValue.where(ActivityProgress.CURRENT, activity).call(() -> binaryLoader == null
                         ? new CompositeJavaSymbolIndex(List.of(JavaLibrarySymbolIndex.build(key.classpath(), loadCheck),
                             JavaJdkSymbolIndex.build(jdk, loadCheck)))
-                        : binaryLoader.apply(key.classpath(), jdk);
+                        : binaryLoader.apply(key.classpath(), jdk));
                 }
             }, BINARY_LOADS);
         } else {

@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.ide;
 
 import dev.railroadide.railroad.ide.language.LanguageSupports;
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
+import java.util.concurrent.LinkedBlockingQueue;
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -15,6 +17,33 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ProjectDocumentSynchronizerTest {
     @TempDir
     public Path directory;
+
+    @Test
+    public void initialScanCountsPublicationsAfterDiscovery() throws Exception {
+        LanguageSupports.initialize();
+        Files.writeString(directory.resolve("one.txt"), "one");
+        Files.writeString(directory.resolve("two.txt"), "two");
+        var publications = new LinkedBlockingQueue<Runnable>();
+        var registry = BackgroundActivities.shared();
+        var store = new DefaultDocumentStore("scan", new WorkspaceConfigurationSnapshot(0, Set.of()));
+        try (var sync = new ProjectDocumentSynchronizer(directory, store, new DocumentIdentityRegistry(),
+            _ -> false, publications::add)) {
+            var first = publications.poll(10, TimeUnit.SECONDS);
+            var second = publications.poll(10, TimeUnit.SECONDS);
+            assertNotNull(first);
+            assertNotNull(second);
+            var scan = registry.running().stream().filter(a -> a.titleKey().equals("railroad.activity.scanning_files"))
+                .findFirst().orElseThrow();
+            assertEquals(2, scan.total());
+            assertEquals(0, scan.completed());
+            first.run();
+            assertEquals(1,
+                registry.running().stream().filter(a -> a.id() == scan.id()).findFirst().orElseThrow().completed());
+            second.run();
+            sync.initialScan().get(10, TimeUnit.SECONDS);
+            assertTrue(registry.running().stream().noneMatch(a -> a.id() == scan.id()));
+        }
+    }
 
     @Test
     public void buildOutputsAreSkippedExceptGeneratedSourcesAndSourcePackages() throws Exception {

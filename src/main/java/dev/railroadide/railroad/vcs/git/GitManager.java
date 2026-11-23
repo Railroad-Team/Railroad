@@ -13,7 +13,6 @@ import dev.railroadide.railroad.vcs.git.commit.GitCommitData;
 import dev.railroadide.railroad.vcs.git.commit.GitCommitPage;
 import dev.railroadide.railroad.vcs.git.diff.GitAdditionsDeletions;
 import dev.railroadide.railroad.vcs.git.execution.GitOutputListener;
-import dev.railroadide.railroad.vcs.git.execution.progress.GitProgressEvent;
 import dev.railroadide.railroad.vcs.git.identity.GitAuthor;
 import dev.railroadide.railroad.vcs.git.identity.GitIdentity;
 import dev.railroadide.railroad.vcs.git.remote.GitRemote;
@@ -34,6 +33,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import dev.railroadide.railroad.ide.activity.BackgroundActivities;
+import dev.railroadide.railroad.vcs.git.execution.progress.GitProgressEvent;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -358,8 +358,8 @@ public class GitManager {
     public void commitChanges(GitCommitData commit, boolean pushAfterCommit) {
         this.executorService.submit(() -> {
             if (pushAfterCommit) {
-                try (var _ = BackgroundActivities.shared().start("railroad.activity.git_push")) {
-                    gitClient.commitChanges(this.gitRepository.get(), commit, true);
+                try (var activity = BackgroundActivities.shared().start("railroad.activity.git_push")) {
+                    gitClient.commitChanges(this.gitRepository.get(), commit, true, GitListeners.activity(activity));
                 }
             } else {
                 gitClient.commitChanges(this.gitRepository.get(), commit, false);
@@ -465,14 +465,8 @@ public class GitManager {
         if (repository == null)
             return;
 
-        try (var _ = BackgroundActivities.shared().start("railroad.activity.git_fetch")) {
-            this.gitClient.fetch(repository, GitOutputListener.NO_OP, event -> {
-                if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
-                    GitLog.LOGGER.debug("Git Fetch Progress - {}: {}%", phase, percent);
-                } else if (event instanceof GitProgressEvent.Message(String message)) {
-                    GitLog.LOGGER.debug("Git Fetch Message - {}", message);
-                }
-            });
+        try (var activity = BackgroundActivities.shared().start("railroad.activity.git_fetch")) {
+            this.gitClient.fetch(repository, GitOutputListener.NO_OP, GitListeners.activity(activity));
         }
         String remoteName = this.gitClient.getUpstream(repository).map(GitUpstream::remoteName).orElse("");
         JavaFXUtils
@@ -507,14 +501,8 @@ public class GitManager {
         this.executorService.submit(() -> {
             GitRepository repository = this.gitRepository.get();
             if (repository != null) {
-                try (var _ = BackgroundActivities.shared().start("railroad.activity.git_push")) {
-                    this.gitClient.push(repository, GitOutputListener.NO_OP, event -> {
-                        if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
-                            GitLog.LOGGER.debug("Git Push Progress - {}: {}%", phase, percent);
-                        } else if (event instanceof GitProgressEvent.Message(String message)) {
-                            GitLog.LOGGER.debug("Git Push Message - {}", message);
-                        }
-                    });
+                try (var activity = BackgroundActivities.shared().start("railroad.activity.git_push")) {
+                    this.gitClient.push(repository, GitOutputListener.NO_OP, GitListeners.activity(activity));
                 }
                 refreshStatusInternal();
             }
@@ -528,14 +516,8 @@ public class GitManager {
         this.executorService.submit(() -> {
             GitRepository repository = this.gitRepository.get();
             if (repository != null) {
-                try (var _ = BackgroundActivities.shared().start("railroad.activity.git_pull")) {
-                    this.gitClient.pull(repository, GitOutputListener.NO_OP, event -> {
-                        if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
-                            GitLog.LOGGER.debug("Git Pull Progress - {}: {}%", phase, percent);
-                        } else if (event instanceof GitProgressEvent.Message(String message)) {
-                            GitLog.LOGGER.debug("Git Pull Message - {}", message);
-                        }
-                    });
+                try (var activity = BackgroundActivities.shared().start("railroad.activity.git_pull")) {
+                    this.gitClient.pull(repository, GitOutputListener.NO_OP, GitListeners.activity(activity));
                 }
                 refreshStatusInternal();
             }
@@ -1512,14 +1494,9 @@ public class GitManager {
         this.executorService.submit(() -> {
             GitRepository repository = this.gitRepository.get();
             if (repository != null) {
-                try (var _ = BackgroundActivities.shared().start("railroad.activity.git_fetch")) {
-                    this.gitClient.fetchAllRemotes(repository, GitOutputListener.NO_OP, event -> {
-                        if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
-                            GitLog.LOGGER.debug("Git Fetch All Remotes Progress - {}: {}%", phase, percent);
-                        } else if (event instanceof GitProgressEvent.Message(String message)) {
-                            GitLog.LOGGER.debug("Git Fetch All Remotes Message - {}", message);
-                        }
-                    });
+                try (var activity = BackgroundActivities.shared().start("railroad.activity.git_fetch")) {
+                    this.gitClient.fetchAllRemotes(repository, GitOutputListener.NO_OP,
+                        GitListeners.activity(activity));
                 }
                 refreshStatusInternal();
                 for (GitRemote remote : getRemotes()) {
@@ -1538,8 +1515,9 @@ public class GitManager {
             GitRepository repository = this.gitRepository.get();
             if (repository != null) {
                 this.gitClient.pruneAllRemotes(repository, GitOutputListener.NO_OP, event -> {
-                    if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
-                        GitLog.LOGGER.debug("Git Prune All Remotes Progress - {}: {}%", phase, percent);
+                    if (event instanceof GitProgressEvent.Percentage percentage) {
+                        GitLog.LOGGER.debug("Git Prune All Remotes Progress - {}: {}%", percentage.phase(),
+                            percentage.percent());
                     } else if (event instanceof GitProgressEvent.Message(String message)) {
                         GitLog.LOGGER.debug("Git Prune All Remotes Message - {}", message);
                     }
@@ -1557,8 +1535,8 @@ public class GitManager {
             GitRepository repository = this.gitRepository.get();
             if (repository != null) {
                 this.gitClient.gc(repository, GitOutputListener.NO_OP, event -> {
-                    if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
-                        GitLog.LOGGER.debug("Git Prune Progress - {}: {}%", phase, percent);
+                    if (event instanceof GitProgressEvent.Percentage percentage) {
+                        GitLog.LOGGER.debug("Git Prune Progress - {}: {}%", percentage.phase(), percentage.percent());
                     } else if (event instanceof GitProgressEvent.Message(String message)) {
                         GitLog.LOGGER.debug("Git Prune Message - {}", message);
                     }

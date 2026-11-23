@@ -792,6 +792,7 @@ public class EditorTabManagerDocumentStoreTest {
 
     @Test
     public void projectStateTransitionDisposesLanguageSessionsEvenWhenProviderCleanupFails() throws Exception {
+        var opened = new AtomicInteger();
         var disposed = new AtomicInteger();
         var resource = new CapabilityKey<>("test:project-close-resource", AutoCloseable.class);
         LanguageContribution contribution = new LanguageContribution() {
@@ -817,6 +818,7 @@ public class EditorTabManagerDocumentStoreTest {
 
             @Override
             public LanguageSession openSession(LanguageSessionContext context) {
+                opened.incrementAndGet();
                 return new LanguageSession(CapabilityRegistry.builder().add(resource, () -> {
                     disposed.incrementAndGet();
                     throw new IllegalStateException("Provider cleanup failure");
@@ -827,6 +829,8 @@ public class EditorTabManagerDocumentStoreTest {
         runtime.register("project-close-test", contribution);
         try {
             onFxThread(() -> {
+                assertFalse(Services.PROJECT_LANGUAGE_INDEX_SERVICE.hasIndexer(project, contribution.id().value()));
+                assertEquals(0, opened.get(), "Checking index support must not open a provider session");
                 var session = runtime.session(project, contribution.id(), "");
                 assertDoesNotThrow(() -> Services.IDE_STATE.setCurrentProject(null));
                 assertTrue(session.isClosed());

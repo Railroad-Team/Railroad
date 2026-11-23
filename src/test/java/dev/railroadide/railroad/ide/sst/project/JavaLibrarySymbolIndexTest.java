@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.ide.sst.project;
 
 import com.google.gson.Gson;
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -15,6 +17,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
@@ -27,6 +30,22 @@ public class JavaLibrarySymbolIndexTest {
 
     @TempDir
     public Path temp;
+
+    @Test
+    public void countsUniqueRootsAndStopsReportingScanProgressWhileMerging() throws IOException {
+        var registry = new BackgroundActivities();
+        var samples = new ConcurrentLinkedQueue<BackgroundActivities.Activity>();
+        Path first = jar("one.jar", "sample/One", "one");
+        Path second = jar("two.jar", "sample/Two", "two");
+        try (var activity = registry.start("index");
+            var observation = registry.observe(() -> samples.add(registry.running().getFirst()))) {
+            ScopedValue.where(ActivityProgress.CURRENT, activity)
+                .run(() -> JavaLibrarySymbolIndex.build(List.of(first, second, first), ACTIVE, null));
+            assertTrue(samples.stream().anyMatch(sample -> sample.total() == 2 && sample.completed() == 2));
+            assertEquals("railroad.activity.finalizing", registry.running().getFirst().phase());
+            assertEquals(-1, registry.running().getFirst().fraction());
+        }
+    }
 
     @Test
     public void cachedBuildsMatchUncachedBuild() throws Exception {

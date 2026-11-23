@@ -126,6 +126,10 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
      * @param messageArgs optional arguments for the message
      */
     public void updateState(GradleTaskState newState, String messageKey, Object... messageArgs) {
+        updateProgress(newState, -1, messageKey, messageArgs);
+    }
+
+    public void updateProgress(GradleTaskState newState, double fraction, String messageKey, Object... messageArgs) {
         this.state = newState;
 
         var progressEvent = new GradleTaskProgressEvent(
@@ -133,7 +137,7 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
             newState,
             messageKey,
             messageArgs,
-            -1.0, // unknown progress for now
+            fraction,
             Instant.now());
         for (Consumer<GradleTaskProgressEvent> listener : progressListeners) {
             listener.accept(progressEvent);

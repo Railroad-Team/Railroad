@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.indexing;
 
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import java.util.concurrent.CancellationException;
@@ -69,7 +70,9 @@ public class Indexes {
         Path rtJar = javaHome.resolve("lib").resolve("rt.jar");
         try (var jar = new JarFile(rtJar.toFile())) {
             Enumeration<JarEntry> entries = jar.entries();
-            while (entries.hasMoreElements()) {
+            var processed = ActivityProgress.current().count("railroad.activity.archive_entries",
+                ActivityProgress.Unit.COUNT, jar.size());
+            for (; entries.hasMoreElements(); processed.run()) {
                 activityCheck.run();
                 JarEntry entry = entries.nextElement();
                 String className = entry.getName();
@@ -90,12 +93,13 @@ public class Indexes {
     private static void scanJMods(Path javaHome, List<ClassStub> stubs, Runnable activityCheck) {
         Path jmods = javaHome.resolve("jmods");
         try (var paths = Files.list(jmods)) {
-            for (Path jmodPath : paths
-                .filter(path -> path.getFileName().toString().endsWith(".jmod"))
-                .sorted()
-                .toList()) {
+            var modules = paths.filter(path -> path.getFileName().toString().endsWith(".jmod")).sorted().toList();
+            var processed = ActivityProgress.current().count("railroad.activity.jdk_modules",
+                ActivityProgress.Unit.COUNT, modules.size());
+            for (Path jmodPath : modules) {
                 activityCheck.run();
                 scanJMod(jmodPath, stubs, activityCheck);
+                processed.run();
             }
         } catch (IOException exception) {
             Railroad.LOGGER.error("Failed to scan standard library modules", exception);
@@ -133,14 +137,23 @@ public class Indexes {
             }
 
             Path modules = fileSystem.getPath("/modules");
-            try (var paths = Files.walk(modules)) {
-                paths.peek(_ -> activityCheck.run()).filter(Files::isRegularFile)
-                    .filter(path -> path.getFileName().toString().endsWith(".class"))
-                    .filter(path -> {
-                        String name = path.getFileName().toString();
-                        return !name.equals("module-info.class") && !name.equals("package-info.class");
-                    })
-                    .forEach(path -> parseRuntimeClass(path, stubs, activityCheck));
+            try (var children = Files.list(modules)) {
+                var moduleRoots = children.filter(Files::isDirectory).toList();
+                var indexed = ActivityProgress.current().count("railroad.activity.jdk_modules",
+                    ActivityProgress.Unit.COUNT, moduleRoots.size());
+                for (Path module : moduleRoots) {
+                    activityCheck.run();
+                    try (var paths = Files.walk(module)) {
+                        paths.peek(_ -> activityCheck.run()).filter(Files::isRegularFile)
+                            .filter(path -> path.getFileName().toString().endsWith(".class"))
+                            .filter(path -> {
+                                String name = path.getFileName().toString();
+                                return !name.equals("module-info.class") && !name.equals("package-info.class");
+                            })
+                            .forEach(path -> parseRuntimeClass(path, stubs, activityCheck));
+                    }
+                    indexed.run();
+                }
             }
         } catch (CancellationException exception) {
             throw exception;

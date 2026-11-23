@@ -12,7 +12,7 @@ import java.util.UUID;
  * @param state the current task state
  * @param messageKey an optional message describing the progress, identified by a localization key
  * @param messageArgs optional arguments for the progress message
- * @param progress a fraction between {@code 0.0} and {@code 1.0}
+ * @param progress a fraction between {@code 0.0} and {@code 1.0}, or {@code -1} when unknown
  * @param timestamp when the progress event was emitted
  */
 public record GradleTaskProgressEvent(

@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.language.impl.index;
 
+import coursierapi.CacheLogger;
 import coursierapi.Fetch;
 import coursierapi.MavenRepository;
 import coursierapi.Repository;
@@ -8,6 +9,8 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.gradle.service.GradleModelService;
 import dev.railroadide.railroad.ide.ProjectWorkspaceConfiguration;
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
+import dev.railroadide.railroad.ide.activity.DownloadProgress;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.language.index.LanguageIndexContext;
 import dev.railroadide.railroad.ide.language.index.LanguageIndexContextContributor;
@@ -236,6 +239,26 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
             .addRepositories(Repository.central())
             .addDependencies(coursierDependencies);
 
+        var progress = ActivityProgress.current();
+        if (progress != ActivityProgress.NONE) {
+            var downloads = new DownloadProgress(progress);
+            fetch.getCache().withLogger(new CacheLogger() {
+                @Override
+                public void downloadLength(String url, long totalLength, long alreadyDownloaded, boolean watching) {
+                    downloads.update(url, alreadyDownloaded, totalLength);
+                }
+
+                @Override
+                public void downloadProgress(String url, long downloaded) {
+                    downloads.update(url, downloaded, -1);
+                }
+
+                @Override
+                public void downloadedArtifact(String url, boolean success) {
+                    downloads.finish(url);
+                }
+            });
+        }
         try {
             for (File jar : fetch.fetch()) {
                 addReadableFile(roots, jar.toPath());

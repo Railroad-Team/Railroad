@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.classparser.ClassScanException;
 import dev.railroadide.railroad.ide.classparser.ClassStubParser;
@@ -80,12 +81,27 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         Runnable activityCheck,
         @Nullable JavaLibraryStubCache cache
     ) {
+        return build(roots, activityCheck, cache, "railroad.activity.libraries");
+    }
+
+    /** Builds an index using the specified phase label for its root scan, including JDK module scans. */
+    public static JavaLibrarySymbolIndex build(
+        List<Path> roots,
+        Runnable activityCheck,
+        @Nullable JavaLibraryStubCache cache,
+        String phase
+    ) {
         Objects.requireNonNull(activityCheck, "activityCheck").run();
         Map<String, ClassStub> stubsByQualifiedName = new LinkedHashMap<>();
         Map<String, Path> sourceByQualifiedName = new LinkedHashMap<>();
         Map<String, DocumentUri> locations = new LinkedHashMap<>();
         List<Path> uniqueRoots = List.copyOf(new LinkedHashSet<>(roots));
-        for (List<ScannedClass> scannedRoot : scanRoots(uniqueRoots, activityCheck, cache)) {
+        var progress = ActivityProgress.current();
+        Runnable processed = progress.count(phase, ActivityProgress.Unit.COUNT, uniqueRoots.size());
+        var scannedRoots = scanRoots(uniqueRoots, activityCheck, cache, processed,
+            uniqueRoots.size() == 1 ? progress : ActivityProgress.NONE);
+        progress.indeterminate("railroad.activity.finalizing");
+        for (List<ScannedClass> scannedRoot : scannedRoots) {
             for (ScannedClass scanned : scannedRoot) {
                 ActivityCheckpoint.poll(activityCheck);
                 String qualifiedName = scanned.stub().getFullName();
@@ -126,7 +142,9 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
     private static List<List<ScannedClass>> scanRoots(
         List<Path> roots,
         Runnable activityCheck,
-        @Nullable JavaLibraryStubCache cache
+        @Nullable JavaLibraryStubCache cache,
+        Runnable processed,
+        ActivityProgress entriesProgress
     ) {
         if (roots.isEmpty())
             return List.of();
@@ -140,7 +158,11 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         });
         try {
             List<Future<List<ScannedClass>>> scans = roots.stream()
-                .map(root -> executor.submit(() -> scanRoot(root, cache, cancelled)))
+                .map(root -> executor.submit(() -> {
+                    var scanned = scanRoot(root, cache, cancelled, entriesProgress);
+                    processed.run();
+                    return scanned;
+                }))
                 .toList();
             List<List<ScannedClass>> results = new ArrayList<>(scans.size());
             for (Future<List<ScannedClass>> scan : scans) {
@@ -176,7 +198,8 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
     private static List<ScannedClass> scanRoot(
         Path root,
         @Nullable JavaLibraryStubCache cache,
-        AtomicBoolean cancelled
+        AtomicBoolean cancelled,
+        ActivityProgress entriesProgress
     ) {
         if (root == null || Files.notExists(root) || !Files.isReadable(root))
             return List.of();
@@ -186,7 +209,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
 
         String fileName = root.getFileName() == null ? "" : root.getFileName().toString().toLowerCase();
         if (fileName.endsWith(".jar") || fileName.endsWith(".jmod"))
-            return scanArchive(root, cache, cancelled);
+            return scanArchive(root, cache, cancelled, entriesProgress);
 
         return List.of();
     }
@@ -216,7 +239,8 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
     private static List<ScannedClass> scanArchive(
         Path archive,
         @Nullable JavaLibraryStubCache cache,
-        AtomicBoolean cancelled
+        AtomicBoolean cancelled,
+        ActivityProgress entriesProgress
     ) {
         long size;
         long lastModified;
@@ -241,7 +265,9 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         List<JavaLibraryStubCache.ArchiveClass> parsed = new ArrayList<>();
         try (JarFile jarFile = new JarFile(archive.toFile())) {
             Enumeration<JarEntry> entries = jarFile.entries();
-            while (entries.hasMoreElements()) {
+            var processed = entriesProgress.count("railroad.activity.archive_entries", ActivityProgress.Unit.COUNT,
+                jarFile.size());
+            for (; entries.hasMoreElements(); processed.run()) {
                 checkCancelled(cancelled);
                 JarEntry entry = entries.nextElement();
                 if (entry.isDirectory())

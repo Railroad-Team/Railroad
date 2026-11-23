@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
@@ -73,7 +74,9 @@ public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
         if (roots.isEmpty())
             return fromCurrentRuntime(activityCheck);
 
-        JavaLibrarySymbolIndex index = JavaLibrarySymbolIndex.build(roots, activityCheck);
+        JavaLibrarySymbolIndex index = JavaLibrarySymbolIndex.build(roots, activityCheck,
+            JavaLibraryStubCache.shared().orElse(null),
+            Files.isRegularFile(rtJar) ? "railroad.activity.jdk_runtime" : "railroad.activity.jdk_modules");
         activityCheck.run();
         return new JavaJdkSymbolIndex(index);
     }
@@ -95,8 +98,10 @@ public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
      */
     public static JavaJdkSymbolIndex fromCurrentRuntime(Runnable activityCheck) {
         activityCheck.run();
+        ActivityProgress.current().indeterminate("railroad.activity.jdk_runtime");
         Map<String, ClassStub> classStubsByQualifiedName = JavaSemanticAnalyzer
             .loadJdkClassStubsByQualifiedName(activityCheck);
+        ActivityProgress.current().indeterminate("railroad.activity.finalizing");
         Map<String, Path> sourceByQualifiedName = new LinkedHashMap<>();
         Map<String, DocumentUri> locations = new LinkedHashMap<>();
         Path runtimeHome = Path.of(System.getProperty("java.home")).toAbsolutePath().normalize();

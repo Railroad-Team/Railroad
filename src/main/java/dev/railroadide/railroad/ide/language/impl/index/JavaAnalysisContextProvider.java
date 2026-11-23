@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
 import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
@@ -97,8 +98,8 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
                 try {
                     value = cache.getIfPresent(key);
                     if (value == null) {
-                        try (var _ = BackgroundActivities.shared().start(activityKey)) {
-                            value = loader.get();
+                        try (var activity = BackgroundActivities.shared().start(activityKey)) {
+                            value = ScopedValue.where(ActivityProgress.CURRENT, activity).call(loader::get);
                         }
                         synchronized (this) {
                             activityCheck.run();

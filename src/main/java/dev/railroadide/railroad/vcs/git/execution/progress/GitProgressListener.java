@@ -76,8 +76,8 @@ public final class GitProgressListener implements GitOutputListener {
                 currentPhase = name;
             }
 
-            if (event instanceof GitProgressEvent.Percentage(String phase, int _)) {
-                currentPhase = phase;
+            if (event instanceof GitProgressEvent.Percentage percentage) {
+                currentPhase = percentage.phase();
             }
 
             if (sink != null) {

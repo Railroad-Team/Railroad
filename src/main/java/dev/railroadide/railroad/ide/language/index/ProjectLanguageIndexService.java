@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.language.index;
 
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.utility.FileUtils;
 import org.jetbrains.annotations.Nullable;
@@ -50,8 +51,12 @@ public final class ProjectLanguageIndexService {
         this.runtime = Objects.requireNonNull(runtime, "runtime");
     }
 
+    private static LanguageId qualifiedId(String languageId) {
+        return new LanguageId(languageId.contains(":") ? languageId : "railroad:" + languageId);
+    }
+
     private LanguageSession languageSession(Project project, String languageId) {
-        var id = new LanguageId(languageId.contains(":") ? languageId : "railroad:" + languageId);
+        var id = qualifiedId(languageId);
         return runtime.get(id).isEmpty() ? null : runtime.session(project, id, "");
     }
 
@@ -302,8 +307,11 @@ public final class ProjectLanguageIndexService {
      * @return the session indexer, or null if the language or capability is unavailable
      */
     public @Nullable ProjectLanguageIndexer<?, ?> getIndexer(Project project, String languageId) {
-        LanguageSession provider = languageSession(project, languageId);
-        return provider == null ? null : provider.capability(LanguageCapabilities.INDEXER).orElse(null);
+        var id = qualifiedId(languageId);
+        var contribution = runtime.get(id).orElse(null);
+        if (contribution == null || !contribution.supportedCapabilities().contains(LanguageCapabilities.INDEXER))
+            return null;
+        return runtime.session(project, id, "").capability(LanguageCapabilities.INDEXER).orElse(null);
     }
 
     /**
@@ -513,16 +521,20 @@ public final class ProjectLanguageIndexService {
             ProjectLanguageIndexer<?, ?> indexer = getIndexer(context.project(), languageId);
             if (indexer == null)
                 return null;
+            ActivityProgress.current().indeterminate("");
             Collection<Path> files = collectFiles(languageContext, operationContext).stream()
                 .filter(file -> ownsFile(languageId, file) && indexer.supports(file)).toList();
             ProjectLanguageKey key = key(projectRoot, languageId);
+            ActivityProgress.current().indeterminate("railroad.activity.loading_index");
             ProjectLanguageIndex<?> result = loadPersisted(key, files, operationContext);
             boolean built = result == null;
             if (built) {
+                ActivityProgress.current().indeterminate("");
                 result = buildUnchecked(indexer, operationContext, files);
             }
             publish(context, entry, generation, result);
             if (built) {
+                ActivityProgress.current().indeterminate("railroad.activity.saving_index");
                 savePersisted(context, entry, generation, key, result);
             }
             return result;
@@ -837,7 +849,7 @@ public final class ProjectLanguageIndexService {
     }
 
     private boolean ownsFile(String languageId, Path file) {
-        var id = new LanguageId(languageId.contains(":") ? languageId : "railroad:" + languageId);
+        var id = qualifiedId(languageId);
         return runtime.find(file).map(contribution -> contribution.id().equals(id)).orElse(false);
     }
 

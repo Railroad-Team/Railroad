@@ -130,6 +130,15 @@ public class GitClient {
      * @throws GitExecutionException when command execution fails
      */
     public void commitChanges(GitRepository repo, GitCommitData commit, boolean pushAfterCommit) {
+        commitChanges(repo, commit, pushAfterCommit, event -> GitLog.LOGGER.debug("Git push: {}", event));
+    }
+
+    public void commitChanges(
+        GitRepository repo,
+        GitCommitData commit,
+        boolean pushAfterCommit,
+        Consumer<GitProgressEvent> progress
+    ) {
         GitCommand commitCmd = GitCommands.commit(repo, commit);
         GitResult commitResult = runner.run(commitCmd, null, null, GitResultCaptureMode.TEXT_LINES);
 
@@ -143,14 +152,7 @@ public class GitClient {
             throw new GitExecutionException("git commit failed: " + String.join("\n", commitResult.stderr()));
 
         if (pushAfterCommit) {
-            // TODO: Allow passing listeners from higher up
-            push(repo, GitOutputListener.NO_OP, event -> {
-                if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
-                    GitLog.LOGGER.debug("Git Push Progress - {}: {}%", phase, percent);
-                } else if (event instanceof GitProgressEvent.Message(String message)) {
-                    GitLog.LOGGER.debug("Git Push Message - {}", message);
-                }
-            });
+            push(repo, GitOutputListener.NO_OP, progress);
         }
     }
 

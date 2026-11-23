@@ -7,6 +7,7 @@ import dev.railroadide.railroad.gradle.model.GradleBuildModel;
 import dev.railroadide.railroad.gradle.model.GradleModelListener;
 import dev.railroadide.railroad.gradle.model.PersistedGradleModelStore;
 import dev.railroadide.railroad.gradle.service.GradleModelService;
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
 import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.utility.function.ThrowingSupplier;
@@ -109,22 +110,29 @@ public class ToolingGradleModelService implements GradleModelService {
         try (ProjectConnection connection = connector.connect()) {
             initScriptPath = writeInitScript();
             String[] initScriptArgs = {"--init-script", initScriptPath.toAbsolutePath().toString()};
+            var step = ActivityProgress.current().count("railroad.activity.import_steps", ActivityProgress.Unit.STEPS,
+                5);
             configureJvm(connection.newBuild(), environment)
                 .withArguments(initScriptArgs)
                 .run();
 
+            step.run();
             BuildEnvironment buildEnvironment = configureJvm(connection.model(BuildEnvironment.class), environment)
                 .withArguments(initScriptArgs)
                 .get();
+            step.run();
             GradleBuild gradleBuild = configureJvm(connection.model(GradleBuild.class), environment)
                 .withArguments(initScriptArgs)
                 .get();
+            step.run();
             RailroadProject gradleProject = configureJvm(connection.action(new RailroadProjectAction()), environment)
                 .withArguments(initScriptArgs)
                 .run();
+            step.run();
             FabricDataModel fabricDataModel = requestOptionalModel(
                 connection, FabricDataModel.class, initScriptArgs, environment);
 
+            step.run();
             String gradleVersion = buildEnvironment.getGradle().getGradleVersion();
             Path rootDir = gradleBuild.getRootProject().getProjectDirectory().toPath();
 
@@ -230,9 +238,11 @@ public class ToolingGradleModelService implements GradleModelService {
 
             refresh = CompletableFuture.supplyAsync(
                 safely(() -> {
-                    try (var _ = BackgroundActivities.shared().start("railroad.activity.importing_gradle")) {
+                    try (var activity = BackgroundActivities.shared().start("railroad.activity.importing_gradle")) {
                         Instant importStarted = Instant.now();
-                        GradleBuildModel model = ToolingGradleModelService.loadModel(this.project, this.environment);
+                        GradleBuildModel model = ScopedValue.where(ActivityProgress.CURRENT, activity)
+                            .call(() -> loadModel(project, environment));
+                        activity.indeterminate("railroad.activity.saving_model");
                         persist(model, importStarted);
                         return model;
                     }

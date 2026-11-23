@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.language.index;
 
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.sst.provider.api.LanguageContribution;
@@ -126,6 +127,7 @@ public final class ProjectLanguageIndexCoordinator {
             }
 
             try {
+                ActivityProgress.current().indeterminate("railroad.activity.auxiliary");
                 runProvider(support, request, "auxiliary", operation,
                     child -> indexService.warmAdditionalIndexes(operation.project(), languageId, child));
             } catch (CancellationException exception) {
@@ -224,9 +226,10 @@ public final class ProjectLanguageIndexCoordinator {
             work.accept(inputs);
             return;
         }
+        var scope = ScopedValue.where(ActivityProgress.CURRENT, ActivityProgress.current());
         providers.executeWithContext("project-index:" + indexService.indexLanguageId(inputs.project(), support) + ":"
             + support.getClass().getName() + ":" + operation, request, providerBudget, child -> {
-                work.accept(withRequest(inputs, child));
+                scope.run(() -> work.accept(withRequest(inputs, child)));
                 return null;
             });
     }

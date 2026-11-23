@@ -513,6 +513,20 @@ railroad.activity.downloading_sources=Downloading library sources
 railroad.activity.git_fetch=Fetching from Git remote
 railroad.activity.git_push=Pushing to Git remote
 railroad.activity.git_pull=Pulling from Git remote
+railroad.activity.archive_entries=Archive entries
+railroad.activity.files=Files
+railroad.activity.libraries=Libraries
+railroad.activity.jdk_modules=JDK modules
+railroad.activity.jdk_runtime=Reading JDK runtime
+railroad.activity.finalizing=Finalizing index
+railroad.activity.loading_index=Checking saved index
+railroad.activity.saving_index=Saving index
+railroad.activity.auxiliary=Building auxiliary indexes
+railroad.activity.import_steps=Import steps
+railroad.activity.saving_model=Saving Gradle model
+railroad.activity.eta.seconds=~%ds left
+railroad.activity.eta.minutes=~%dm left
+railroad.activity.eta.hours=~%dh %dm left
 
 
 # =============================================================================

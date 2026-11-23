@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide;
 
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
 import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.ide.language.index.ProjectIndexContext;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexCoordinator;
@@ -358,8 +359,8 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         CompletableFuture<Void> task = backgroundRequests.submit(key, RequestPriority.BACKGROUND_INDEXING, context,
             cancellation, () -> ProviderExecutor.shared().executeWithContext("project-configuration:" + key,
                 context, budget, child -> {
-                    try (var _ = BackgroundActivities.shared().start(activityKey)) {
-                        operation.accept(child);
+                    try (var activity = BackgroundActivities.shared().start(activityKey)) {
+                        ScopedValue.where(ActivityProgress.CURRENT, activity).run(() -> operation.accept(child));
                     }
                     return null;
                 }));
