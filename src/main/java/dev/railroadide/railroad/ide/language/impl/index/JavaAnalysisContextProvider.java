@@ -74,7 +74,14 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
             this.epoch = epoch;
             this.generation = session.configurationGeneration();
             this.active = active;
-            workspace = new JavaWorkspaceAnalysisProvider(active);
+            workspace = new JavaWorkspaceAnalysisProvider(active, this::binaries);
+        }
+
+        /** Lets workspace captures reuse this session's binary indexes instead of scanning and holding their own. */
+        private JavaSymbolIndex binaries(List<Path> classpath, Path jdk) {
+            Runnable check = this::checkActive;
+            return new CompositeJavaSymbolIndex(List.of(libraryIndex(classpath, null, this, check),
+                jdkIndex(jdk, this, check)));
         }
 
         private void checkActive() {
@@ -396,7 +403,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         return FileUtils.normalizePaths(List.copyOf(roots));
     }
 
-    private JavaSymbolIndex libraryIndex(
+    private static JavaSymbolIndex libraryIndex(
         List<Path> roots,
         @Nullable Path archive,
         Cache cache,
@@ -424,7 +431,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         });
     }
 
-    private JavaJdkSymbolIndex jdkIndex(Path jdkHome, Cache cache, Runnable activityCheck) {
+    private static JavaJdkSymbolIndex jdkIndex(Path jdkHome, Cache cache, Runnable activityCheck) {
         Path cacheKey = jdkHome == null
             ? Path.of(System.getProperty("java.home")).toAbsolutePath().normalize()
             : FileUtils.normalizePath(jdkHome);

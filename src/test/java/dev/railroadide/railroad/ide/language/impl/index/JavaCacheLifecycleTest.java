@@ -152,6 +152,32 @@ public class JavaCacheLifecycleTest {
         }
     }
 
+    @Test
+    public void workspaceCapturesAndLiveLookupsShareBinaryIndexes() throws Exception {
+        Path jar = root.resolve("library.jar");
+        Path jdk = root.resolve("jdk");
+        archive(jar, "demo/Library", "value");
+        archive(jdk.resolve("lib/rt.jar"), "demo/Runtime", "runtime");
+        var raw = configuration(jar, jdk);
+        Project project = project();
+        var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
+        var session = service.openProject(project);
+        try (var provider = new JavaAnalysisContextProvider()) {
+            var prepared = provider.prepareConfiguration(session, raw);
+            provider.adoptConfiguration(session, prepared);
+            var captured = provider.index(new DefaultDocumentStore("test", prepared).capture()).symbols();
+            var language = new JavaLanguageIndexContext(List.of(), List.of(), List.of(), List.of(), List.of(), null,
+                raw);
+            var live = provider.index(new ProjectIndexContext(project, root, Map.of("java", language), session));
+
+            assertNotNull(captured.lookupClassStub("demo.Library"));
+            assertSame(captured.lookupClassStub("demo.Library"), live.lookupClassStub("demo.Library"));
+            assertSame(captured.lookupClassStub("demo.Runtime"), live.lookupClassStub("demo.Runtime"));
+        } finally {
+            service.closeProject(session);
+        }
+    }
+
     private static boolean inFrame(String className, String methodName) {
         return StackWalker.getInstance().walk(frames -> frames.anyMatch(frame -> frame.getClassName().equals(className)
             && (methodName == null || frame.getMethodName().equals(methodName))));

@@ -286,13 +286,15 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
                 throw new CancellationException("Java analysis caches were cleared");
         };
         CompletableFuture<JavaSymbolIndex> load;
-        if (key.archive() == null) {
+        if (key.archive() == null && binaryLoader != null) {
+            load = CompletableFuture.supplyAsync(() -> binaryLoader.apply(key.classpath(), jdk), BINARY_LOADS);
+        } else if (key.archive() == null) {
             load = CompletableFuture.supplyAsync(() -> {
                 try (var activity = BackgroundActivities.shared().start("railroad.activity.indexing_libraries")) {
-                    return ScopedValue.where(ActivityProgress.CURRENT, activity).call(() -> binaryLoader == null
-                        ? new CompositeJavaSymbolIndex(List.of(JavaLibrarySymbolIndex.build(key.classpath(), loadCheck),
-                            JavaJdkSymbolIndex.build(jdk, loadCheck)))
-                        : binaryLoader.apply(key.classpath(), jdk));
+                    return ScopedValue.where(ActivityProgress.CURRENT, activity)
+                        .call(() -> new CompositeJavaSymbolIndex(
+                            List.of(JavaLibrarySymbolIndex.build(key.classpath(), loadCheck),
+                                JavaJdkSymbolIndex.build(jdk, loadCheck))));
                 }
             }, BINARY_LOADS);
         } else {
