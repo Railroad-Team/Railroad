@@ -239,14 +239,10 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                 inheritedBySignature.computeIfAbsent(inherited.signatureKey(), _ -> new ArrayList<>()).add(inherited);
             }
 
-            for (List<JavaRuleContext.MethodDescriptor> inheritedGroup : inheritedBySignature.values()) {
-                if (hasConflictingInheritedMethods(context, inheritedGroup)) {
-                    reporter.report(declarationNode, inheritedGroup.getFirst().name());
-                }
-            }
-
+            Set<String> declaredSignatures = new HashSet<>();
             for (JavaRuleContext.MethodDescriptor declaredMethod : context
                 .declaredMethodDescriptors(ownerQualifiedName)) {
+                declaredSignatures.add(declaredMethod.signatureKey());
                 List<JavaRuleContext.MethodDescriptor> overridden = inheritedBySignature
                     .get(declaredMethod.signatureKey());
                 if (overridden == null || overridden.isEmpty())
@@ -268,7 +264,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                         break;
                     }
 
-                    if (!isReturnTypeCompatible(context, inherited.returnType(), declaredMethod.returnType())) {
+                    if (!isReturnTypeCompatible(context, inherited, declaredMethod)) {
                         reporter.report(nodeFor(declaredMethod, declarationNode), declaredMethod.name());
                         break;
                     }
@@ -277,6 +273,13 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                         reporter.report(nodeFor(declaredMethod, declarationNode), declaredMethod.name());
                         break;
                     }
+                }
+            }
+
+            for (var entry : inheritedBySignature.entrySet()) {
+                if (!declaredSignatures.contains(entry.getKey())
+                    && hasConflictingInheritedMethods(context, entry.getValue())) {
+                    reporter.report(declarationNode, entry.getValue().getFirst().name());
                 }
             }
         }
@@ -408,7 +411,15 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
         return 1;
     }
 
-    private static boolean isReturnTypeCompatible(JavaRuleContext context, Type inherited, Type declared) {
+    private static boolean isReturnTypeCompatible(
+        JavaRuleContext context,
+        JavaRuleContext.MethodDescriptor base,
+        JavaRuleContext.MethodDescriptor candidate
+    ) {
+        if (!candidate.typeParameters().isEmpty() && !candidate.hasEquivalentTypeParameters(base))
+            return false;
+        Type inherited = base.overrideReturnType();
+        Type declared = candidate.overrideReturnType();
         if (Objects.equals(inherited.displayName(), declared.displayName()))
             return true;
         if (inherited.kind() == JavaTypes.Kind.DECLARED && declared.kind() == JavaTypes.Kind.DECLARED)
@@ -446,23 +457,11 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
         JavaRuleContext context,
         List<JavaRuleContext.MethodDescriptor> inheritedGroup
     ) {
-        for (int i = 0; i < inheritedGroup.size(); i++) {
-            JavaRuleContext.MethodDescriptor left = inheritedGroup.get(i);
-            if (Modifier.isStatic(left.modifiers()))
-                continue;
-            for (int j = i + 1; j < inheritedGroup.size(); j++) {
-                JavaRuleContext.MethodDescriptor right = inheritedGroup.get(j);
-                if (Modifier.isStatic(right.modifiers()))
-                    continue;
-                if (!areReturnTypesMutuallyCompatible(context, left.returnType(), right.returnType()))
-                    return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean areReturnTypesMutuallyCompatible(JavaRuleContext context, Type left, Type right) {
-        return isReturnTypeCompatible(context, left, right) || isReturnTypeCompatible(context, right, left);
+        if (inheritedGroup.size() < 2)
+            return false;
+        var methods = inheritedGroup.stream().filter(method -> !Modifier.isStatic(method.modifiers())).toList();
+        return methods.size() > 1 && methods.stream().noneMatch(candidate -> methods.stream()
+            .allMatch(base -> base == candidate || isReturnTypeCompatible(context, base, candidate)));
     }
 
     private static SyntaxNode nodeFor(JavaRuleContext.MethodDescriptor descriptor, SyntaxNode fallback) {

@@ -37,6 +37,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.objectweb.asm.Opcodes;
+import dev.railroadide.railroad.ide.classparser.stub.TypeParameter;
 
 /**
  * Stable rule evaluation context with semantic model access and Java-specific helpers.
@@ -2693,6 +2694,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                     ownerQualifiedName,
                     componentName,
                     List.of(),
+                    List.of(),
                     semanticTypeFromTypeReference(typeRef),
                     List.of(),
                     Modifier.PUBLIC,
@@ -2775,6 +2777,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             methods.add(new MethodDescriptor(
                 field.ownerQualifiedName(),
                 methodName,
+                List.of(),
                 List.of(),
                 field.type(),
                 List.of(),
@@ -3157,6 +3160,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             constructors.add(new MethodDescriptor(
                 ownerQualifiedTypeName,
                 "<init>",
+                binaryTypeParameters(constructor.typeParameters()),
                 parameterTypes,
                 new DeclaredType(ownerQualifiedTypeName, List.of()),
                 thrownTypeNames(constructor.thrownTypes()),
@@ -3190,6 +3194,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return new MethodDescriptor(
             ownerQualifiedName,
             "<init>",
+            methodTypeParameters(declaration),
             List.copyOf(parameterTypes),
             new DeclaredType(ownerQualifiedName, List.of()),
             declaredThrownTypeNames(declaration),
@@ -3213,6 +3218,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return new MethodDescriptor(
             ownerQualifiedName,
             "<init>",
+            List.of(),
             List.copyOf(parameterTypes),
             new DeclaredType(ownerQualifiedName, List.of()),
             List.of(),
@@ -3647,11 +3653,17 @@ public final class JavaRuleContext implements LanguageRuleContext {
     private MethodDescriptor substituteMethodDescriptor(MethodDescriptor method, Map<String, Type> substitutions) {
         if (substitutions.isEmpty())
             return method;
+        Map<String, Type> ownerArguments = new HashMap<>(substitutions);
+        method.typeParameters().forEach(parameter -> ownerArguments.remove(parameter.name()));
+        if (ownerArguments.isEmpty())
+            return method;
         return new MethodDescriptor(
             method.ownerQualifiedName(),
             method.name(),
-            method.parameterTypes().stream().map(type -> substituteType(type, substitutions)).toList(),
-            substituteType(method.returnType(), substitutions),
+            method.typeParameters().stream().map(parameter -> new MethodTypeParameter(parameter.name(),
+                parameter.bounds().stream().map(bound -> substituteType(bound, ownerArguments)).toList())).toList(),
+            method.parameterTypes().stream().map(type -> substituteType(type, ownerArguments)).toList(),
+            substituteType(method.returnType(), ownerArguments),
             method.thrownTypes(),
             method.modifiers(),
             method.declaration(),
@@ -3712,12 +3724,15 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
         List<MethodDescriptor> methods = new ArrayList<>();
         for (var method : stub.methods()) {
+            if ((method.modifiers() & Opcodes.ACC_BRIDGE) != 0)
+                continue;
             List<Type> parameterTypes = method.parameters().stream()
                 .map(parameter -> toSemanticType(parameter.type()))
                 .toList();
             methods.add(new MethodDescriptor(
                 ownerQualifiedTypeName,
                 method.name(),
+                binaryTypeParameters(method.typeParameters()),
                 parameterTypes,
                 toSemanticType(method.returnType()),
                 thrownTypeNames(method.thrownTypes()),
@@ -3754,6 +3769,34 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return List.copyOf(fields);
     }
 
+    private List<MethodTypeParameter> methodTypeParameters(SyntaxNode declaration) {
+        SyntaxNode parameters = directChild(declaration, JAVA_TYPE_PARAMETERS);
+        if (parameters == null)
+            return List.of();
+        List<MethodTypeParameter> result = new ArrayList<>();
+        for (SyntaxNode parameter : parameters.children()) {
+            if (!JAVA_TYPE_PARAMETER.equals(parameter.kind().id()))
+                continue;
+            String name = JavaSourceSymbolIds.declarationName(parameter);
+            if (name == null)
+                continue;
+            SyntaxNode bound = directChild(parameter, "JAVA_TYPE_BOUND");
+            result.add(new MethodTypeParameter(name, bound == null
+                ? List.of()
+                : bound.children().stream()
+                    .filter(child -> JAVA_TYPE_REFERENCE.equals(child.kind().id()))
+                    .map(this::semanticTypeFromTypeReference).toList()));
+        }
+        return List.copyOf(result);
+    }
+
+    private List<MethodTypeParameter> binaryTypeParameters(
+        List<TypeParameter> parameters
+    ) {
+        return parameters.stream().map(parameter -> new MethodTypeParameter(parameter.name(),
+            parameter.bounds().stream().map(bound -> toSemanticType(bound)).toList())).toList();
+    }
+
     private MethodDescriptor sourceMethodDescriptor(String ownerQualifiedName, Symbol symbol, SyntaxNode declaration) {
         List<Type> parameterTypes = new ArrayList<>();
         SyntaxNode parameterList = directChild(declaration, JAVA_PARAMETER_LIST);
@@ -3788,6 +3831,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return new MethodDescriptor(
             ownerQualifiedName,
             symbol.simpleName(),
+            methodTypeParameters(declaration),
             List.copyOf(parameterTypes),
             returnType,
             declaredThrownTypeNames(declaration),
@@ -4218,10 +4262,20 @@ public final class JavaRuleContext implements LanguageRuleContext {
     }
 
     /**
+     * A method type parameter and its ordered upper bounds.
+     */
+    public record MethodTypeParameter(String name, List<Type> bounds) {
+        public MethodTypeParameter {
+            bounds = bounds.isEmpty() ? List.of(new DeclaredType("java.lang.Object", List.of())) : List.copyOf(bounds);
+        }
+    }
+
+    /**
      * Describes a source or external method for resolution and inheritance checks.
      *
      * @param ownerQualifiedName the qualified name of the owning type
      * @param name the simple member name
+     * @param typeParameters the method type parameters in declaration order
      * @param parameterTypes the parameter types in declaration order
      * @param returnType the method return type
      * @param thrownTypes the declared exception type names
@@ -4232,6 +4286,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
     public record MethodDescriptor(
         String ownerQualifiedName,
         String name,
+        List<MethodTypeParameter> typeParameters,
         List<Type> parameterTypes,
         Type returnType,
         List<String> thrownTypes,
@@ -4239,6 +4294,42 @@ public final class JavaRuleContext implements LanguageRuleContext {
         @Nullable SyntaxNode declaration,
         @Nullable Symbol symbol
     ) {
+        private Map<String, Type> overrideVariables() {
+            Map<String, Type> result = new HashMap<>();
+            for (int i = 0; i < typeParameters.size(); i++) {
+                result.put(typeParameters.get(i).name(), new TypeVariableType("~" + i));
+            }
+            return result;
+        }
+
+        /**
+         * Returns this method's return type with method variables identified by declaration position.
+         */
+        public Type overrideReturnType() {
+            return typeParameters.isEmpty() ? returnType : substituteType(returnType, overrideVariables());
+        }
+
+        /**
+         * Compares method type parameter bounds after adapting their names to a common signature.
+         */
+        public boolean hasEquivalentTypeParameters(MethodDescriptor other) {
+            if (typeParameters.size() != other.typeParameters.size())
+                return false;
+            if (typeParameters.isEmpty())
+                return true;
+            var ownVariables = overrideVariables();
+            var otherVariables = other.overrideVariables();
+            for (int i = 0; i < typeParameters.size(); i++) {
+                var ownBounds = typeParameters.get(i).bounds().stream()
+                    .map(bound -> substituteType(bound, ownVariables)).toList();
+                var otherBounds = other.typeParameters.get(i).bounds().stream()
+                    .map(bound -> substituteType(bound, otherVariables)).toList();
+                if (!ownBounds.equals(otherBounds))
+                    return false;
+            }
+            return true;
+        }
+
         /**
          * Builds a method signature key from its name and parameter type display names. Nested type names use their
          * source spelling, so a binary {@code Outer$Inner} and a source {@code Outer.Inner} produce the same key.

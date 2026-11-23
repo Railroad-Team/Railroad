@@ -11,6 +11,7 @@ import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import javax.tools.ToolProvider;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -1081,6 +1082,57 @@ public class CoreInspectionRulesTest {
             """);
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_INVALID_OVERRIDE".equals(d.code())));
+    }
+
+    @Test
+    public void overridesAdaptMethodVariablesAcrossCompiledSupertypes(@TempDir Path root) throws Exception {
+        Path api = root.resolve("Parent.java");
+        Files.writeString(api, """
+            package api;
+            public interface Parent<T> {
+                <T extends Number> T read(Class<T> key);
+                <A, B> A choose(Class<A> key, Class<B> other);
+                <A extends Number> A bounded();
+            }
+            """);
+        assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
+            "-proc:none", "-d", root.toString(), api.toString()));
+        var index = new CompositeJavaSymbolIndex(List.of(JavaLibrarySymbolIndex.build(List.of(root)),
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
+        var diagnostics = runProvider(new CoreInheritanceInspection(), root.resolve("Child.java"), """
+            import api.Parent;
+            abstract class Child implements Parent<String> {
+                public abstract <V extends Number> V read(Class<V> key);
+                public abstract <X, Y> Y choose(Class<X> key, Class<Y> other);
+                public abstract <V extends CharSequence> V bounded();
+            }
+            """, index).stream().filter(d -> d.code().equals("SEM_INVALID_OVERRIDE")).toList();
+        assertEquals(Set.of("Invalid override for 'choose'", "Invalid override for 'bounded'"),
+            diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void covariantOverrideReconcilesMultipleInheritedReturns(@TempDir Path root) throws Exception {
+        Path api = root.resolve("Both.java");
+        Files.writeString(api, """
+            package api;
+            interface Left { Left copy(); }
+            interface Right { Right copy(); }
+            public interface Both extends Left, Right { Both copy(); }
+            """);
+        assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
+            "-proc:none", "-d", root.toString(), api.toString()));
+        var index = JavaLibrarySymbolIndex.build(List.of(root));
+        String source = """
+            import api.Both;
+            abstract class Child implements Both {}
+            """;
+        var diagnostics = runProvider(new CoreInheritanceInspection(), root.resolve("Child.java"), source, index);
+        assertFalse(diagnostics.stream().anyMatch(d -> d.code().equals("SEM_INVALID_OVERRIDE")), diagnostics::toString);
+        var context = new JavaRuleContext(root.resolve("Child.java"), source,
+            JavaSemanticAnalyzer.analyzeFacts(source, index), index);
+        assertEquals(1, context.inheritedMethodDescriptors("Child").stream()
+            .filter(method -> method.ownerQualifiedName().equals("api.Both") && method.name().equals("copy")).count());
     }
 
     @Test
