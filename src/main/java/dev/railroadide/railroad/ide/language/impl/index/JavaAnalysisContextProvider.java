@@ -194,6 +194,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         if (previous != null) {
             previous.dispose();
         }
+        workspaceAnalysis.clearCaches();
         if (closed || session.isClosed()) {
             sessions.remove(session.id(), cache);
             cache.dispose();

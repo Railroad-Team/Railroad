@@ -18,8 +18,11 @@ import dev.railroadide.railroad.ide.sst.semantic.api.SemanticNavigationResolver;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * Session-owned Java implementations of the neutral semantic, declaration, navigation, rename and code action
@@ -34,8 +37,9 @@ public final class JavaSstServices
         NavigationProvider,
         RenameProvider,
         CodeActionProvider {
-    private final JavaWorkspaceAnalysisProvider workspaces = new JavaWorkspaceAnalysisProvider();
     private final JavaLibrarySources librarySources;
+    private final Function<RequestContext, JavaWorkspaceAnalysis> captures;
+    private final @Nullable JavaWorkspaceAnalysisProvider ownedWorkspaces;
 
     /**
      * Creates services that open library and JDK classes through the application's shared library sources.
@@ -45,12 +49,31 @@ public final class JavaSstServices
     }
 
     /**
-     * Creates services that open library and JDK classes through the given library sources.
+     * Creates services that open library and JDK classes through the given library sources and own their analysis
+     * caches.
      *
      * @param librarySources provider of readable views of compiled classes
      */
     public JavaSstServices(JavaLibrarySources librarySources) {
         this.librarySources = Objects.requireNonNull(librarySources, "librarySources");
+        ownedWorkspaces = new JavaWorkspaceAnalysisProvider();
+        captures = ownedWorkspaces::capture;
+    }
+
+    /**
+     * Creates services that capture Java analysis through a shared owner, such as the project's analysis context,
+     * so features reuse its library and JDK indexes. Closing these services does not close that owner.
+     *
+     * @param librarySources provider of readable views of compiled classes
+     * @param captures captures the Java analysis for a request
+     */
+    public JavaSstServices(
+        JavaLibrarySources librarySources,
+        Function<RequestContext, JavaWorkspaceAnalysis> captures
+    ) {
+        this.librarySources = Objects.requireNonNull(librarySources, "librarySources");
+        this.captures = Objects.requireNonNull(captures, "captures");
+        ownedWorkspaces = null;
     }
 
     /**
@@ -60,7 +83,7 @@ public final class JavaSstServices
      * @return the Java analysis bound to the captured workspace
      */
     public JavaWorkspaceAnalysis capture(RequestContext context) {
-        return workspaces.capture(context);
+        return captures.apply(context);
     }
 
     @Override
@@ -196,6 +219,8 @@ public final class JavaSstServices
 
     @Override
     public void close() {
-        workspaces.close();
+        if (ownedWorkspaces != null) {
+            ownedWorkspaces.close();
+        }
     }
 }

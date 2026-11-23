@@ -6,6 +6,7 @@ import dev.railroadide.railroad.ide.language.BaseLanguageSupport;
 import dev.railroadide.railroad.ide.language.EditorOpenView;
 import dev.railroadide.railroad.ide.language.LanguageCapabilities;
 import dev.railroadide.railroad.ide.language.impl.index.JavaAnalysisContextProvider;
+import dev.railroadide.railroad.ide.sst.project.JavaLibrarySources;
 import dev.railroadide.railroad.ide.language.impl.index.JavaLanguageIndexContextContributor;
 import dev.railroadide.railroad.ide.language.impl.index.JavaProjectLanguageIndexer;
 import dev.railroadide.railroad.ide.signature.JavaSignatureSourceCache;
@@ -70,7 +71,7 @@ public final class JavaLanguageSupport extends BaseLanguageSupport {
     @Override
     public LanguageSession openSession(LanguageSessionContext context) {
         Project project = context.services().find(LanguageCapabilities.PROJECT).orElseThrow();
-        var semantics = new JavaSstServices();
+        var semantics = new JavaSstServices(JavaLibrarySources.shared(), ANALYSIS_CONTEXT_PROVIDER::index);
         return new LanguageSession(CapabilityRegistry.builder()
             .add(LanguageCapabilities.HIGHLIGHTING, TreeSitterJavaSyntaxHighlighting::computeHighlighting)
             .add(SstCapabilities.DIAGNOSTICS, new JavaDiagnosticsProvider(project, null, semantics::capture))

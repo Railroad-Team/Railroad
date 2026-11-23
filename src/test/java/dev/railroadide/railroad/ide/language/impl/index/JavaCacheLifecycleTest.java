@@ -19,7 +19,11 @@ import java.util.*;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.*;
 import java.util.jar.*;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaSstServices;
+import dev.railroadide.railroad.ide.sst.project.JavaLibrarySources;
 import dev.railroadide.railroad.ide.sst.project.JavaStubSymbolIndex;
+import dev.railroadide.railroad.ide.sst.request.api.Deadline;
+import dev.railroadide.railroad.ide.sst.request.api.WorkspaceRequestContext;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -153,7 +157,7 @@ public class JavaCacheLifecycleTest {
     }
 
     @Test
-    public void workspaceCapturesAndLiveLookupsShareBinaryIndexes() throws Exception {
+    public void languageServicesAndLiveLookupsShareBinaryIndexes() throws Exception {
         Path jar = root.resolve("library.jar");
         Path jdk = root.resolve("jdk");
         archive(jar, "demo/Library", "value");
@@ -165,7 +169,11 @@ public class JavaCacheLifecycleTest {
         try (var provider = new JavaAnalysisContextProvider()) {
             var prepared = provider.prepareConfiguration(session, raw);
             provider.adoptConfiguration(session, prepared);
-            var captured = provider.index(new DefaultDocumentStore("test", prepared).capture()).symbols();
+            var services = new JavaSstServices(new JavaLibrarySources(root.resolve("views")), provider::index);
+            var captured = services.capture(new WorkspaceRequestContext(
+                new DefaultDocumentStore("test", prepared).capture(), CancellationToken.none(), Deadline.none()))
+                .symbols();
+            services.close();
             var language = new JavaLanguageIndexContext(List.of(), List.of(), List.of(), List.of(), List.of(), null,
                 raw);
             var live = provider.index(new ProjectIndexContext(project, root, Map.of("java", language), session));
