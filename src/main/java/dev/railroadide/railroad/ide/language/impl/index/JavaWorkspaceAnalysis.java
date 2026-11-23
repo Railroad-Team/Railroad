@@ -1,23 +1,32 @@
 package dev.railroadide.railroad.ide.language.impl.index;
 
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
-import dev.railroadide.railroad.ide.sst.project.*;
-import dev.railroadide.railroad.ide.sst.graph.api.*;
 import dev.railroadide.railroad.ide.sst.document.api.*;
-import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxParser;
+import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
+import dev.railroadide.railroad.ide.sst.graph.api.WorkspaceSymbolGraph;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxParser;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaUnicodeEscapes;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolIds;
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
+import dev.railroadide.railroad.ide.sst.project.*;
+import dev.railroadide.railroad.ide.sst.provider.api.UsageQuery;
+import dev.railroadide.railroad.ide.sst.provider.api.UsageSearch;
+import dev.railroadide.railroad.ide.sst.provider.api.UsageSink;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import dev.railroadide.railroad.ide.sst.semantic.api.DefinitionTarget;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticNavigationResolver;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolDescriptor;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
+import org.jspecify.annotations.Nullable;
+
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Stream;
 
 /**
  * Immutable Java analysis inputs derived from one workspace capture. Source lookup never
@@ -241,6 +250,114 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         return libraryDefinition(workspace, symbol, librarySources, activityCheck).map(List::of).orElseGet(List::of);
     }
 
+    private static @Nullable SymbolDescriptor declarationIn(SemanticIndexShard shard, SymbolId symbol) {
+        return shard.declarations().stream().filter(candidate -> candidate.id().equals(symbol)).findFirst()
+            .orElse(null);
+    }
+
+    /**
+     * Searches captured source files for references to one symbol. Resolves the caret file first and publishes
+     * results as each candidate file is checked against the captured source and binary declarations.
+     *
+     * @param workspace workspace capture this analysis was built from
+     * @param document requesting revision for an offset query
+     * @param query position or stable identity of the target symbol
+     * @param sink receiver for usage batches and candidate file counts
+     * @param activityCheck checks cancellation and the request deadline
+     * @return complete ordered results, or null when the symbol cannot be resolved
+     */
+    public @Nullable UsageSearch usages(
+        WorkspaceSnapshot workspace,
+        DocumentSnapshot document,
+        UsageQuery query,
+        UsageSink sink,
+        Runnable activityCheck
+    ) {
+        activityCheck.run();
+        var extractor = new JavaProjectSemanticExtractor();
+        var files = sourceIndex.files().values();
+        SemanticIndexShard caretShard = null;
+        SymbolId symbol;
+        if (query instanceof UsageQuery.AtOffset(int offset)) {
+            if (!(document instanceof TextDocumentSnapshot source))
+                return null;
+            var requested = files.stream().filter(file -> file.semanticShard().documentId().equals(source.id()))
+                .findFirst().orElse(null);
+            if (requested == null)
+                return null;
+            caretShard = resolveShard(extractor, requested, activityCheck);
+            symbol = SemanticNavigationResolver.symbolAt(caretShard, source, offset).orElse(null);
+            String text = source.text();
+            if (symbol == null && offset > 0 && offset <= text.length()
+                && Character.isJavaIdentifierPart(text.codePointBefore(offset))
+                && (offset == text.length() || !Character.isJavaIdentifierPart(text.codePointAt(offset)))) {
+                symbol = SemanticNavigationResolver.symbolAt(caretShard, source, offset - 1).orElse(null);
+            }
+            if (symbol == null)
+                return null;
+        } else {
+            symbol = ((UsageQuery.OfSymbol) query).symbol();
+        }
+
+        var graph = resolvedGraph == null ? sourceIndex.graph() : resolvedGraph;
+        SymbolDescriptor declaration = graph.symbols(symbol).stream().findFirst().orElse(null);
+        if (declaration == null && caretShard != null) {
+            declaration = declarationIn(caretShard, symbol);
+        }
+        if (declaration == null) {
+            declaration = binaryDeclaration(symbol);
+        }
+        String requiredName = declaration != null && (declaration.kind().id().equals(JavaSymbolKind.METHOD.id())
+            || declaration.kind().id().equals(JavaSymbolKind.FIELD.id())) ? declaration.simpleName() : null;
+        var candidates = files.stream().filter(file -> {
+            activityCheck.run();
+            return requiredName == null
+                || JavaUnicodeEscapes.translate(sourceTexts.get(file.path())).contains(requiredName);
+        }).sorted(Comparator.comparing(file -> file.semanticShard().uri().toString())).toList();
+
+        var usages = new ArrayList<Location<?>>();
+        int searched = 0;
+        sink.accept(List.of(), searched, candidates.size());
+        for (var file : candidates) {
+            activityCheck.run();
+            var shard = caretShard != null && caretShard.documentId().equals(file.semanticShard().documentId())
+                ? caretShard
+                : resolveShard(extractor, file, activityCheck);
+            if (declaration == null) {
+                declaration = declarationIn(shard, symbol);
+            }
+            var batch = List.<Location<?>>copyOf(SemanticNavigationResolver.usagesOf(shard, workspace, symbol));
+            activityCheck.run();
+            usages.addAll(batch);
+            sink.accept(batch, ++searched, candidates.size());
+        }
+        activityCheck.run();
+        if (query instanceof UsageQuery.OfSymbol && declaration == null && usages.isEmpty())
+            return null;
+        String name = declaration == null
+            ? symbol.value()
+            : Objects.requireNonNullElse(declaration.qualifiedName(), declaration.simpleName());
+        return new UsageSearch(symbol, name, usages);
+    }
+
+    private @Nullable SymbolDescriptor binaryDeclaration(SymbolId symbol) {
+        List<JavaSymbolIds.Component> components;
+        try {
+            components = JavaSymbolIds.components(symbol);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+        for (var component : components) {
+            if (component.kind().equals("type")) {
+                String owner = component.value();
+                return Stream.concat(symbols.lookupQualifiedName(owner).stream(), symbols.lookupMembers(owner).stream())
+                    .map(JavaProjectSemanticIndex.SymbolDescriptor::descriptor).filter(Objects::nonNull)
+                    .filter(candidate -> candidate.id().equals(symbol)).findFirst().orElse(null);
+            }
+        }
+        return null;
+    }
+
     private Optional<DefinitionTarget> libraryDefinition(
         WorkspaceSnapshot workspace,
         SymbolId symbol,
@@ -357,6 +474,10 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         var shard = file.semanticShard();
         if (shard == null)
             throw new IllegalStateException("Captured source has no semantic shard: " + file.path());
+        if (resolvedGraph != null) {
+            activityCheck.run();
+            return resolvedGraph.shard(shard.documentId()).orElseThrow();
+        }
         var origin = shard.declarations().stream().flatMap(symbol -> symbol.locations().stream())
             .filter(location -> location.uri().equals(shard.uri())).map(location -> location.origin())
             .findFirst().orElseGet(() -> DocumentOrigin.unspecified(shard.uri()));

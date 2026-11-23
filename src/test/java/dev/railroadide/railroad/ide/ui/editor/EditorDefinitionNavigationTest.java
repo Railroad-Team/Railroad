@@ -7,41 +7,39 @@ import dev.railroadide.railroad.command.Commands;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
 import dev.railroadide.railroad.ide.sst.document.api.*;
-import dev.railroadide.railroad.ide.ui.IDEDockItem;
-import dev.railroadide.railroad.ide.ui.IDEPane;
-import dev.railroadide.railroad.ide.ui.MarkdownPreviewPane;
-import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
-import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorConfig;
 import dev.railroadide.railroad.ide.sst.provider.api.NavigationProvider;
 import dev.railroadide.railroad.ide.sst.provider.api.UsageQuery;
 import dev.railroadide.railroad.ide.sst.provider.api.UsageSearch;
 import dev.railroadide.railroad.ide.sst.provider.api.UsageSink;
-import dev.railroadide.railroad.ide.sst.semantic.api.DefinitionTarget;
-import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
-import dev.railroadide.railroad.ide.ui.navigation.UsagesPane;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureResult;
-import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.ide.sst.semantic.api.DefinitionTarget;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
+import dev.railroadide.railroad.ide.ui.IDEDockItem;
+import dev.railroadide.railroad.ide.ui.IDEPane;
+import dev.railroadide.railroad.ide.ui.MarkdownPreviewPane;
+import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorConfig;
+import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
+import dev.railroadide.railroad.ide.ui.navigation.UsagesPane;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.editor.TextSelection;
 import dev.railroadide.railroad.plugin.spi.events.ProjectEvent;
 import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.theme.ThemeManager;
 import javafx.application.Platform;
+import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.image.WritableImage;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.util.stream.Stream;
-import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.TestFactory;
-
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.util.concurrent.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
-import javafx.scene.Group;
+import java.util.concurrent.*;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -484,12 +482,13 @@ public class EditorDefinitionNavigationTest {
                     UsageQuery query,
                     UsageSink sink
                 ) {
-                    assertEquals(new UsageQuery.AtOffset(1), query);
+                    assertEquals(new UsageQuery.AtOffset("reference".length() - 1), query);
                     sink.accept(List.of(usage), 1, 1);
                     return new FeatureResult<>(context, new UsageSearch(new SymbolId("test:usage"), "usage",
                         List.of(usage)));
                 }
             });
+            sourceEditor.selectRange(0, "reference".length());
             sourceEditor.findUsages();
             return null;
         });
@@ -511,6 +510,32 @@ public class EditorDefinitionNavigationTest {
             var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
             assertEquals(destination.id(), tab.documentId());
             assertEquals(new TextSelection(4, 9), tab.view().textEditor().orElseThrow().selection());
+            return null;
+        });
+    }
+
+    @Test
+    public void findUsagesAtTheEndOfALibraryMethodNameUsesTheActiveJavaEditor() throws Exception {
+        String text = "class Main { String format(int value) { return Integer.toHexString(value); } }";
+        int start = text.indexOf("toHexString");
+        int end = text.indexOf('(', start);
+        UsagesPane usages = onFx(() -> {
+            var source = publish("Main.java", text);
+            Services.EDITOR_TAB_MANAGER.open(source.uri().filePath().orElseThrow());
+            CodeEditorPane editor = Commands.activeCodeEditor();
+            assertNotNull(editor);
+            editor.moveTo(end);
+            assertEquals(0, editor.getSelection().getLength());
+            assertTrue(Commands.FIND_USAGES.execute(CommandContext.withArgument(project, editor, editor)));
+            pane.applyCss();
+            pane.layout();
+            return (UsagesPane) pane.lookup(".usages-pane");
+        });
+        assertNotNull(usages);
+        usages.completion().get(30, TimeUnit.SECONDS);
+        onFx(() -> {
+            assertEquals(UsagesPane.State.COMPLETE, usages.state(), usages.statusText());
+            assertEquals(List.of(new TextRange(start, end)), usages.usages().stream().map(Location::range).toList());
             return null;
         });
     }

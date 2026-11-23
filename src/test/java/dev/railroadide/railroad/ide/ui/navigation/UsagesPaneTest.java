@@ -6,11 +6,19 @@ import dev.railroadide.railroad.ide.sst.provider.api.UsageQuery;
 import dev.railroadide.railroad.ide.sst.provider.api.UsageSearch;
 import dev.railroadide.railroad.ide.sst.provider.api.UsageSink;
 import dev.railroadide.railroad.ide.sst.request.api.CancellationToken;
+import dev.railroadide.railroad.ide.sst.request.api.DeadlineExceededException;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureResult;
 import dev.railroadide.railroad.ide.sst.semantic.api.DefinitionTarget;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
+import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.localization.Languages;
 import javafx.application.Platform;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TreeView;
+import javafx.scene.layout.HBox;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -37,6 +45,7 @@ public class UsagesPaneTest {
     public static void initializeFx() throws Exception {
         startFx();
         onFx(() -> {
+            L18n.loadLanguage(Languages.EN_US);
             Platform.setImplicitExit(false);
             return null;
         });
@@ -50,6 +59,72 @@ public class UsagesPaneTest {
                 return null;
             });
         }
+    }
+
+    @Test
+    public void streamedGroupsKeepTheirCountsAndExpansionWhenTheSearchFinishes() throws Exception {
+        var finish = new CountDownLatch(1);
+        var firstUsage = usage(first, 0);
+        var secondUsage = usage(first, 8);
+        start(provider((context, query, sink) -> {
+            sink.accept(List.of(firstUsage), 1, 2);
+            sink.accept(List.of(secondUsage), 2, 2);
+            await(finish);
+            return search(context, firstUsage, secondUsage);
+        }), new UsageQuery.AtOffset(0));
+
+        try {
+            waitUntil(() -> pane.usages().size() == 2);
+            onFx(() -> {
+                new Scene(pane, 800, 300);
+                pane.applyCss();
+                pane.layout();
+                assertEquals("2", ((Label) pane.lookup(".usages-file-count")).getText());
+                assertFalse(pane.lookup(".usages-empty").isVisible());
+                groupButton("railroad.generic.collapse_all").fire();
+                assertFalse(
+                    ((TreeView<?>) pane.lookup(".usages-tree")).getRoot().getChildren().getFirst().isExpanded());
+                return null;
+            });
+        } finally {
+            finish.countDown();
+        }
+        waitUntil(() -> pane.state() == UsagesPane.State.COMPLETE);
+        onFx(() -> {
+            var group = ((TreeView<?>) pane.lookup(".usages-tree")).getRoot().getChildren().getFirst();
+            assertFalse(group.isExpanded());
+            groupButton("railroad.generic.expand_all").fire();
+            assertTrue(group.isExpanded());
+            assertEquals("2 usages in 1 file", pane.statusText());
+            return null;
+        });
+    }
+
+    private Button groupButton(String key) {
+        return pane.lookupAll(".toolbar-button").stream()
+            .map(Button.class::cast)
+            .filter(button -> L18n.localize(key).equals(button.getAccessibleText()))
+            .findFirst().orElseThrow();
+    }
+
+    @Test
+    public void previewHighlightsTheReturnedRangeWithinTheLine() throws Exception {
+        var source = document("Repeated.java", "header\n    use(use);");
+        store.publishBacking(source);
+        start(provider((context, query, sink) -> search(context, usage(source, source.text().lastIndexOf("use")))),
+            new UsageQuery.AtOffset(0));
+        waitUntil(() -> pane.state() == UsagesPane.State.COMPLETE);
+        onFx(() -> {
+            new Scene(pane, 800, 300);
+            pane.applyCss();
+            pane.layout();
+            var snippet = (HBox) pane.lookup(".usages-snippet");
+            assertEquals(List.of("use(", "use", ");"), snippet.getChildren().stream()
+                .map(Label.class::cast).map(Label::getText).toList());
+            assertSame(snippet.getChildren().get(1), pane.lookup(".usages-match"));
+            assertEquals("2:9", ((Label) pane.lookup(".usages-position")).getText());
+            return null;
+        });
     }
 
     @Test
@@ -198,8 +273,32 @@ public class UsagesPaneTest {
         onFx(() -> null);
         onFx(() -> {
             assertEquals(UsagesPane.State.FAILED, pane.state());
+            assertTrue(pane.statusText().contains("Provider failed"));
+            assertTrue(pane.lookup(".usages-empty").isVisible());
+            assertEquals("Provider failed", ((Label) pane.lookup(".usages-empty-detail")).getText());
+            assertFalse(pane.lookup(".usages-tree").isVisible());
             return null;
         });
+    }
+
+    @Test
+    public void preparationProgressAndTimeoutAreVisibleAndKeepPartialResults() throws Exception {
+        var ready = new CountDownLatch(1);
+        var finish = new CountDownLatch(1);
+        start(provider((context, query, sink) -> {
+            await(ready);
+            sink.accept(List.of(usage(first, 0)), 1, 2);
+            await(finish);
+            throw new DeadlineExceededException();
+        }), new UsageQuery.AtOffset(0));
+        assertEquals(L18n.localize("railroad.ide.usages.preparing"), onFx(pane::statusText));
+        ready.countDown();
+        waitUntil(() -> pane.usages().size() == 1);
+        assertEquals("Scanned 1 of 2 files · 1 usage", onFx(pane::statusText));
+        finish.countDown();
+        waitUntil(() -> pane.state() == UsagesPane.State.TIMED_OUT);
+        assertEquals("Search timed out · 1 usage", onFx(pane::statusText));
+        assertEquals(List.of(usage(first, 0)), onFx(pane::usages));
     }
 
     @Test

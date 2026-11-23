@@ -2,6 +2,8 @@ package dev.railroadide.railroad.ide.sst.impl.java;
 
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.project.JavaLibrarySources;
+import dev.railroadide.railroad.ide.sst.provider.api.UsageQuery;
+import dev.railroadide.railroad.ide.sst.provider.api.UsageSink;
 import dev.railroadide.railroad.ide.sst.request.api.CancellationToken;
 import dev.railroadide.railroad.ide.sst.request.api.Deadline;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
@@ -17,9 +19,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -130,6 +133,43 @@ public class JavaLibraryNavigationTest {
                         .contains(target.snapshot().origin().provenance()));
                 }
             }));
+    }
+
+    @Test
+    public void usagesFindTheExactLibraryMethodAcrossCandidateFilesAndRefreshByIdentity() throws Exception {
+        var store = store(library(Layout.NONE));
+        var main = document(directory.resolve("src/Main.java"), SOURCE);
+        var other = document(directory.resolve("src/Other.java"),
+            "import lib.Greeter; class Other { String s = Greeter.gr\\u0065et(\"b\"); }");
+        var unrelated = document(directory.resolve("src/Unrelated.java"), "class Unrelated {}");
+        store.publishBacking(main);
+        store.publishBacking(other);
+        store.publishBacking(unrelated);
+        var request = context(store.capture(), main);
+        int offset = SOURCE.indexOf("greet(");
+        try (var services = new JavaSstServices(new JavaLibrarySources(directory.resolve("views")))) {
+            var result = services
+                .usages(request, new UsageQuery.AtOffset(offset), (batch, searched, total) -> assertEquals(2, total))
+                .value();
+
+            assertNotNull(result);
+            assertTrue(result.displayName().contains("greet"));
+            assertEquals(List.of(main.id(), other.id()), result.usages().stream().map(Location::documentId).toList());
+            assertEquals(offset, result.usages().getFirst().range().start);
+            assertEquals(other.text().indexOf("gr\\u0065et"), result.usages().getLast().range().start);
+            assertEquals(result,
+                services.usages(request, new UsageQuery.OfSymbol(result.symbol()), UsageSink.NONE).value());
+            int endOfName = offset + "greet".length();
+            assertEquals(result, services.usages(request, new UsageQuery.AtOffset(endOfName), UsageSink.NONE).value());
+            assertNull(services.usages(request, new UsageQuery.AtOffset(endOfName + 1), UsageSink.NONE).value());
+
+            var target = services.definitions(request, offset).value().getFirst();
+            store.publishBacking(target.snapshot());
+            var fromDeclaration = services.usages(context(store.capture(), target.snapshot()),
+                new UsageQuery.AtOffset(target.location().range().start), UsageSink.NONE).value();
+            assertEquals(result.symbol(), fromDeclaration.symbol());
+            assertEquals(result.usages(), fromDeclaration.usages());
+        }
     }
 
     @Test

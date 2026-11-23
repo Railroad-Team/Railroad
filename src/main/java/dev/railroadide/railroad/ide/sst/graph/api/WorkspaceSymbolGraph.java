@@ -1,9 +1,10 @@
 package dev.railroadide.railroad.ide.sst.graph.api;
 
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolDescriptor;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
-import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
+
 import java.util.*;
 import java.util.function.Function;
 
@@ -109,6 +110,13 @@ public final class WorkspaceSymbolGraph {
         var result = new HashMap<>(disk);
         result.putAll(overlays);
         return Map.copyOf(result);
+    }
+
+    /**
+     * Returns the visible facts for one document, including its overlay when present.
+     */
+    public Optional<SemanticIndexShard> shard(DocumentId id) {
+        return Optional.ofNullable(overlays.getOrDefault(id, disk.get(id)));
     }
 
     /**

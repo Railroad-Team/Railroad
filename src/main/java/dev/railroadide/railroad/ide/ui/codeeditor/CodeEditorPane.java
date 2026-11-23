@@ -2,34 +2,19 @@ package dev.railroadide.railroad.ide.ui.codeeditor;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
-import dev.railroadide.railroad.command.Command;
-import dev.railroadide.railroad.command.CommandContext;
-import dev.railroadide.railroad.command.CommandMenuItems;
-import dev.railroadide.railroad.command.Commands;
-import dev.railroadide.railroad.command.EditCommands;
+import dev.railroadide.railroad.command.*;
 import dev.railroadide.railroad.ide.completion.CompletionItem;
 import dev.railroadide.railroad.ide.completion.CompletionProvider;
 import dev.railroadide.railroad.ide.completion.CompletionResult;
+import dev.railroadide.railroad.ide.diagnostics.DiagnosticSeverity;
 import dev.railroadide.railroad.ide.diagnostics.DiagnosticsProvider;
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic;
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagnostic;
 import dev.railroadide.railroad.ide.signature.SignatureHelp;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
 import dev.railroadide.railroad.ide.sst.document.api.*;
-import dev.railroadide.railroad.ide.sst.provider.api.CodeActionProvider;
-import dev.railroadide.railroad.ide.sst.provider.api.CodeActionRequest;
-import dev.railroadide.railroad.ide.sst.provider.api.NavigationProvider;
-import dev.railroadide.railroad.ide.sst.provider.api.RenamePreparation;
-import dev.railroadide.railroad.ide.sst.provider.api.RenameProvider;
-import dev.railroadide.railroad.ide.sst.provider.api.UsageQuery;
-import dev.railroadide.railroad.ide.sst.request.api.CancellationTokenSource;
-import dev.railroadide.railroad.ide.sst.request.api.CancellationToken;
-import dev.railroadide.railroad.ide.sst.request.api.Deadline;
-import dev.railroadide.railroad.ide.sst.request.api.DeadlineExceededException;
-import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
-import dev.railroadide.railroad.ide.sst.request.api.RequestPriority;
-import dev.railroadide.railroad.ide.sst.request.api.SstScheduler;
-import dev.railroadide.railroad.ide.sst.provider.api.ProviderExecutor;
+import dev.railroadide.railroad.ide.sst.provider.api.*;
+import dev.railroadide.railroad.ide.sst.request.api.*;
 import dev.railroadide.railroad.ide.sst.semantic.api.DefinitionTarget;
 import dev.railroadide.railroad.ide.ui.DiagnosticPane;
 import dev.railroadide.railroad.ide.ui.codeaction.CodeActionController;
@@ -50,18 +35,8 @@ import javafx.beans.value.ChangeListener;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.IndexRange;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.SeparatorMenuItem;
-import javafx.scene.control.Tooltip;
-import javafx.scene.input.ContextMenuEvent;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.control.*;
+import javafx.scene.input.*;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
@@ -76,11 +51,13 @@ import org.fxmisc.richtext.model.StyleSpansBuilder;
 import org.jspecify.annotations.Nullable;
 import org.reactfx.Subscription;
 
-import dev.railroadide.railroad.ide.diagnostics.DiagnosticSeverity;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -496,8 +473,13 @@ public abstract class CodeEditorPane extends TextEditorPane {
             || !snapshot.text().equals(getText()))
             return Optional.empty();
 
+        int offset = getCaretPosition();
+        IndexRange selection = getSelection();
+        if (selection.getLength() > 0 && offset == selection.getEnd()) {
+            offset--;
+        }
         return Optional.of(new UsagesPane.Request(provider, providerLifetime, store, workspace, snapshot,
-            new UsageQuery.AtOffset(getCaretPosition())));
+            new UsageQuery.AtOffset(offset)));
     }
 
     private void requestNavigation(NavigationKind kind) {

@@ -5,21 +5,26 @@ import dev.railroadide.railroad.ide.language.impl.index.JavaWorkspaceAnalysisPro
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.provider.api.UsageQuery;
 import dev.railroadide.railroad.ide.sst.provider.api.UsageSink;
-import dev.railroadide.railroad.ide.sst.request.api.*;
+import dev.railroadide.railroad.ide.sst.request.api.CancellationToken;
+import dev.railroadide.railroad.ide.sst.request.api.CancellationTokenSource;
+import dev.railroadide.railroad.ide.sst.request.api.Deadline;
+import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticNavigationResolver;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
-import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CancellationException;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -216,7 +221,7 @@ public class JavaNavigationServiceTest {
                 (batch, searched, total) -> {
                     batches.add(batch);
                     progress.add(searched);
-                    assertEquals(2, total);
+                    assertEquals(3, total);
                 });
             assertTrue(result.belongsTo(context));
             var search = result.value();
@@ -224,8 +229,8 @@ public class JavaNavigationServiceTest {
             assertEquals(List.of(main.id(), main.id(), other.id()),
                 search.usages().stream().map(Location::documentId).toList());
             assertEquals(edited.version(), search.usages().getLast().documentVersion());
-            assertEquals(List.of(0, 1, 2), progress);
-            assertEquals(List.of(0, 2, 1), batches.stream().map(List::size).toList());
+            assertEquals(List.of(0, 1, 2, 3), progress);
+            assertEquals(List.of(0, 0, 2, 1), batches.stream().map(List::size).toList());
             assertTrue(search.displayName().contains("run"));
 
             var refreshed = services.usages(context(store.capture(), main), new UsageQuery.OfSymbol(search.symbol()),

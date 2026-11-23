@@ -2,11 +2,9 @@ package dev.railroadide.railroad.ide.sst.impl.java;
 
 import dev.railroadide.railroad.ide.language.impl.index.JavaWorkspaceAnalysis;
 import dev.railroadide.railroad.ide.language.impl.index.JavaWorkspaceAnalysisProvider;
-import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
 import dev.railroadide.railroad.ide.sst.document.api.Location;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
-import dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot;
 import dev.railroadide.railroad.ide.sst.graph.api.WorkspaceSymbolGraph;
 import dev.railroadide.railroad.ide.sst.project.JavaLibrarySources;
 import dev.railroadide.railroad.ide.sst.provider.api.*;
@@ -149,33 +147,10 @@ public final class JavaSstServices
         Objects.requireNonNull(sink, "sink");
         context.checkActive();
 
-        WorkspaceSnapshot workspace = context.workspaceSnapshot();
-        WorkspaceSymbolGraph graph = capture(context).resolvedGraph(context::checkActive);
-        Optional<SymbolId> symbol = switch (query) {
-            case UsageQuery.OfSymbol(SymbolId id) -> graph.symbols(id).isEmpty() ? Optional.empty() : Optional.of(id);
-            case UsageQuery.AtOffset(int offset) -> context.documentSnapshot() instanceof TextDocumentSnapshot source
-                ? SemanticNavigationResolver.symbolAt(graph, source, offset)
-                : Optional.empty();
-        };
-        if (symbol.isEmpty())
-            return new FeatureResult<>(context, null);
-
-        List<Location.TextLocation> usages = SemanticNavigationResolver.usagesOf(graph, workspace, symbol.get());
-        Map<DocumentId, List<Location<?>>> byDocument = new LinkedHashMap<>();
-        for (Location.TextLocation usage : usages) {
-            byDocument.computeIfAbsent(usage.documentId(), _ -> new ArrayList<>()).add(usage);
-        }
-
-        int searched = 0;
-        sink.accept(List.of(), searched, byDocument.size());
-        for (List<Location<?>> batch : byDocument.values()) {
-            context.checkActive();
-            sink.accept(List.copyOf(batch), ++searched, byDocument.size());
-        }
-
+        UsageSearch search = capture(context).usages(context.workspaceSnapshot(), context.documentSnapshot(), query,
+            sink, context::checkActive);
         context.checkActive();
-        return new FeatureResult<>(context, new UsageSearch(symbol.get(),
-            SemanticNavigationResolver.displayName(graph, symbol.get()), List.<Location<?>>copyOf(usages)));
+        return new FeatureResult<>(context, search);
     }
 
     @Override
