@@ -64,19 +64,23 @@ processResources {
     }
 }
 
+def railroadJvmArgs = [
+    '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
+    '-Dslf4j.internal.report.stream=stdout',
+    '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED',
+    // Symbol indexes hold many equal strings; G1 can share their backing arrays.
+    '-XX:+UseStringDeduplication',
+    // Lets G1 return unused heap to the OS while the IDE is idle.
+    '-XX:G1PeriodicGCInterval=60000'
+]
+
 application {
     mainClass = 'dev.railroadide.railroad.RailroadLauncher'
-    applicationDefaultJvmArgs = [
-        '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
-        '-Dslf4j.internal.report.stream=stdout',
-        '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
-    ]
+    applicationDefaultJvmArgs = railroadJvmArgs
 }
 
 tasks.named("run") {
-    jvmArgs '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
-    '-Dslf4j.internal.report.stream=stdout',
-    '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
+    jvmArgs railroadJvmArgs
 }
 
 javafx {
@@ -309,11 +313,7 @@ runtime {
     modules = ['ALL-MODULE-PATH']
 
     launcher {
-        jvmArgs = [
-            '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
-            '-Dslf4j.internal.report.stream=stdout',
-            '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
-        ]
+        jvmArgs = railroadJvmArgs
     }
 
     jpackage {

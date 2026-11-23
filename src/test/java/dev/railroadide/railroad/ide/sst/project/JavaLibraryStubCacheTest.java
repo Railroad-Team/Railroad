@@ -105,6 +105,28 @@ public class JavaLibraryStubCacheTest {
     }
 
     @Test
+    public void restoredArchivesShareNamesPrimitivesAndEmptyLists() throws IOException {
+        var stub = new ClassStub("sample", "Box", List.of(), null, List.of(), List.of(),
+            List.of(new MethodStub("get", new Type.PrimitiveType("int"), List.of(), 1, List.of(), List.of(),
+                List.of())),
+            List.of(), 1, List.of());
+        Path other = Files.writeString(temp.resolve("other.jar"), "jar");
+        var classes = List.of(new JavaLibraryStubCache.ArchiveClass("sample/Box.class", stub));
+        cache.save(archive, 1, 2, classes);
+        cache.save(other, 1, 2, classes);
+
+        MethodStub first = cache.load(archive, 1, 2).orElseThrow().getFirst().stub().methods().getFirst();
+        MethodStub second = cache.load(other, 1, 2).orElseThrow().getFirst().stub().methods().getFirst();
+
+        assertSame(first.name(), second.name());
+        assertSame(Type.PrimitiveType.of("int"), first.returnType());
+        assertSame(first.returnType(), second.returnType());
+        assertSame(List.of(), first.parameters());
+        assertSame(List.of(), first.annotations());
+        assertSame(List.of(), first.thrownTypes());
+    }
+
+    @Test
     public void changedArchiveIsNotReused() throws IOException {
         cache.save(archive, 1, 2, List.of());
 

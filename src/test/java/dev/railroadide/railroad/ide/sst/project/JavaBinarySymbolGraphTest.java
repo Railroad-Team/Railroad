@@ -1,6 +1,10 @@
 package dev.railroadide.railroad.ide.sst.project;
 
 import dev.railroadide.railroad.ide.classparser.ClassStubParser;
+import dev.railroadide.railroad.ide.classparser.Type;
+import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
+import dev.railroadide.railroad.ide.classparser.stub.FieldStub;
+import dev.railroadide.railroad.ide.classparser.stub.MethodStub;
 import dev.railroadide.railroad.ide.language.impl.index.JavaWorkspaceAnalysis;
 import dev.railroadide.railroad.ide.language.impl.index.JavaSourcePrecedenceIndex;
 import dev.railroadide.railroad.ide.sst.document.api.*;
@@ -23,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Collections;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.Callable;
@@ -133,6 +138,41 @@ public class JavaBinarySymbolGraphTest {
     }
 
     @Test
+    public void classesOfOneIndexShareRepeatedDeclarationValues() {
+        var types = new JavaBinarySymbolExtractor.TypeReferences();
+        var string = new Type.ClassType("java.lang.String", List.of());
+        List<SemanticIndexShard> shards = new ArrayList<>();
+        for (String name : List.of("First", "Second")) {
+            var stub = new ClassStub("sample", name, List.of(), null, List.of(),
+                List.of(new FieldStub("label", string, Opcodes.ACC_PUBLIC, List.of())),
+                List.of(new MethodStub("describe", string, List.of(), Opcodes.ACC_PUBLIC, List.of(), List.of(),
+                    List.of())),
+                List.of(), Opcodes.ACC_PUBLIC, List.of());
+            shards.add(JavaBinarySymbolExtractor.extractDeclarations(stub,
+                DocumentUri.virtual("binary", name + ".class"), Map.of(), types, () -> {
+                }));
+        }
+
+        SymbolDescriptor firstField = declaration(shards.getFirst(), "label");
+        SymbolDescriptor secondField = declaration(shards.getLast(), "label");
+        SymbolDescriptor firstMethod = declaration(shards.getFirst(), "describe");
+        SymbolDescriptor secondMethod = declaration(shards.getLast(), "describe");
+        assertSame(firstField.declaredType(), secondField.declaredType());
+        assertSame(firstField.declaredType(), firstMethod.signature().returnType());
+        assertEquals(JavaSymbolIds.type("java.lang.String"), firstField.declaredType().target());
+        assertSame(firstMethod.metadata(), secondMethod.metadata());
+        assertEquals(Set.of("public"), firstMethod.metadata().modifiers());
+        assertEquals("public", firstMethod.metadata().visibility());
+        assertSame(firstMethod.kind(), secondMethod.kind());
+        assertSame(firstField.locations(), firstMethod.locations());
+    }
+
+    private static SymbolDescriptor declaration(SemanticIndexShard shard, String name) {
+        return shard.declarations().stream().filter(symbol -> symbol.simpleName().equals(name)).findFirst()
+            .orElseThrow();
+    }
+
+    @Test
     public void genericArrayAndVariadicMethodIdsMatchSourceAndKeepStructuredDetail() {
         var stub = ClassStubParser.parse(new ClassReader(classBytes("sample/Box", true)));
         var uri = DocumentUri.virtual("binary", "Box.class");
@@ -168,8 +208,9 @@ public class JavaBinarySymbolGraphTest {
     public void graphEnrichmentReusesLookupDeclarationsAndPublishesOnlyCompleteResults() {
         var stub = ClassStubParser.parse(new ClassReader(classBytes("sample/Box", true)));
         var uri = DocumentUri.virtual("binary", "Box.class");
-        var minimal = JavaBinarySymbolExtractor.extractDeclarations(stub, uri, Map.of(), () -> {
-        });
+        var minimal = JavaBinarySymbolExtractor.extractDeclarations(stub, uri, Map.of(),
+            new JavaBinarySymbolExtractor.TypeReferences(), () -> {
+            });
         assertTrue(minimal.declarations().stream().noneMatch(symbol -> symbol.kind().id().equals("java:parameter")));
         var checks = new AtomicInteger();
         assertThrows(CancellationException.class,

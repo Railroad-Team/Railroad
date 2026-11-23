@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.ui.localized;
 
 import dev.railroadide.railroad.localization.L18n;
+import javafx.beans.InvalidationListener;
+import javafx.beans.WeakInvalidationListener;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -25,6 +27,7 @@ public class LocalizedTextProperty extends StringPropertyBase {
 
     private final StringProperty translationKey;
     private final ListProperty<Object> translationArgs;
+    private final InvalidationListener languageListener = _ -> updateTranslation(false);
     private String translated;
 
     /**
@@ -56,8 +59,7 @@ public class LocalizedTextProperty extends StringPropertyBase {
      * translation after a direct text assignment; language changes preserve that inactive state.
      */
     protected void initialize() {
-        L18n.currentLanguageProperty()
-            .addListener(_ -> updateTranslation(false));
+        L18n.currentLanguageProperty().addListener(new WeakInvalidationListener(languageListener));
 
         translationKey.addListener(_ -> updateTranslation(true));
         translationArgs.addListener((ListChangeListener<Object>) _ -> updateTranslation(true));

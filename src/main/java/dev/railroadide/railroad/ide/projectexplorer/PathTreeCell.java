@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -48,6 +49,8 @@ public class PathTreeCell extends TreeCell<PathItem> {
     private final Supplier<ProjectStructure> structure;
     private TextField textField;
     private Path editingPath;
+    private ContextMenu contextMenu;
+    private List<MenuItem> directoryItems;
 
     /**
      * Creates an editable file cell that publishes operation messages.
@@ -99,6 +102,19 @@ public class PathTreeCell extends TreeCell<PathItem> {
         }
     }
 
+    /** Builds the menu once per cell; its commands read the cell's current item when they run. */
+    private ContextMenu contextMenu(boolean directory) {
+        if (contextMenu == null) {
+            directoryItems = List.of(new SeparatorMenuItem(),
+                commandItem("railroad.project_explorer.menu.expand_all", Commands.EXPAND_EXPLORER, this),
+                commandItem("railroad.project_explorer.menu.collapse_all", Commands.COLLAPSE_EXPLORER, this));
+            contextMenu = createContextMenu(this);
+            contextMenu.getItems().addAll(directoryItems);
+        }
+        directoryItems.forEach(item -> item.setVisible(directory));
+        return contextMenu;
+    }
+
     private static ContextMenu createContextMenu(PathTreeCell cell) {
         var newMenu = new LocalizedMenu("railroad.project_explorer.menu.new");
         newMenu.getItems().addAll(
@@ -117,18 +133,12 @@ public class PathTreeCell extends TreeCell<PathItem> {
                 Commands.REVEAL_PROJECT_EXPLORER_ITEM, cell),
             commandItem("railroad.project_explorer.menu.terminal", Commands.OPEN_PROJECT_EXPLORER_ITEM_IN_TERMINAL,
                 cell));
-        var menu = new ContextMenu(newMenu,
+        return new ContextMenu(newMenu,
             commandItem("railroad.project_explorer.menu.cut", Commands.CUT_PROJECT_EXPLORER_ITEM, cell),
             commandItem("railroad.project_explorer.menu.copy", Commands.COPY_PROJECT_EXPLORER_ITEM, cell),
             commandItem("railroad.project_explorer.menu.paste", Commands.PASTE_PROJECT_EXPLORER_ITEM, cell),
             commandItem("railroad.project_explorer.menu.rename", Commands.RENAME_PROJECT_EXPLORER_ITEM, cell),
             commandItem("railroad.project_explorer.menu.delete", Commands.DELETE_PROJECT_EXPLORER_ITEM, cell), openIn);
-        if (Files.isDirectory(cell.getItem().getPath())) {
-            menu.getItems().addAll(new SeparatorMenuItem(),
-                commandItem("railroad.project_explorer.menu.expand_all", Commands.EXPAND_EXPLORER, cell),
-                commandItem("railroad.project_explorer.menu.collapse_all", Commands.COLLAPSE_EXPLORER, cell));
-        }
-        return menu;
     }
 
     private static MenuItem commandItem(String labelKey, Command<ExplorerTarget> command, PathTreeCell cell) {
@@ -170,7 +180,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
                 setText(text);
                 setGraphic(image);
 
-                setContextMenu(createContextMenu(this));
+                setContextMenu(contextMenu(Files.isDirectory(item.getPath())));
 
                 // Double-click to open, not rename
                 setOnMouseClicked(event -> {

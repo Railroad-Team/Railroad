@@ -12,9 +12,16 @@ import org.objectweb.asm.Opcodes;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** Projects immutable class metadata into the same node-free declarations used by source shards. */
 public final class JavaBinarySymbolExtractor {
+    /**
+     * Metadata without annotations depends only on the access flags and declaration kind, and a classpath only uses a
+     * few hundred distinct combinations, so every such declaration shares one instance.
+     */
+    private static final Map<Long, SymbolMetadata> PLAIN_METADATA = new ConcurrentHashMap<>();
+
     private JavaBinarySymbolExtractor() {
     }
 
@@ -70,7 +77,8 @@ public final class JavaBinarySymbolExtractor {
         Map<SymbolId, List<SymbolLocation>> alternates,
         Runnable check
     ) {
-        return withParameters(extractDeclarations(stub, uri, alternates, check), alternates, check);
+        return withParameters(extractDeclarations(stub, uri, alternates, new TypeReferences(), check), alternates,
+            check);
     }
 
     /**
@@ -79,6 +87,7 @@ public final class JavaBinarySymbolExtractor {
      * @param stub immutable class metadata to project
      * @param uri exact document address, including any archive entry
      * @param alternates additional source or decompiled locations keyed by declaration identity
+     * @param types type references shared with the other classes of the same index
      * @param check callback invoked to check cancellation or interruption; may throw to abort
      * @return binary shard containing type and member declarations without parameter declarations
      */
@@ -86,11 +95,13 @@ public final class JavaBinarySymbolExtractor {
         ClassStub stub,
         DocumentUri uri,
         Map<SymbolId, List<SymbolLocation>> alternates,
+        TypeReferences types,
         Runnable check
     ) {
         check.run();
-        SymbolId owner = JavaSymbolIds.type(stub.getFullName());
-        var location = new SymbolLocation(uri, DocumentOrigin.original(uri), null, null, true);
+        String fullName = stub.getFullName();
+        SymbolId owner = JavaSymbolIds.type(fullName);
+        var location = List.of(new SymbolLocation(uri, DocumentOrigin.original(uri), null, null, true));
         List<SymbolDescriptor> declarations = new ArrayList<>();
         List<SymbolEdge> edges = new ArrayList<>();
         Map<String, Type> bounds = bounds(stub.typeParameters(), Map.of());
@@ -101,28 +112,27 @@ public final class JavaBinarySymbolExtractor {
                 : (stub.modifiers() & Opcodes.ACC_RECORD) != 0
                     ? JavaSymbolKind.RECORD
                     : Modifier.isInterface(stub.modifiers()) ? JavaSymbolKind.INTERFACE : JavaSymbolKind.CLASS;
-        declarations.add(descriptor(owner, kind, stub.name(), stub.getFullName(),
+        declarations.add(descriptor(owner, kind, stub.name(), fullName,
             stub.enclosingClassName() == null
                 ? JavaSymbolIds.packageId("", stub.packageName())
                 : JavaSymbolIds.type(stub.enclosingClassName()),
-            new SymbolSignature(typeParameters(stub.typeParameters()), List.of(), null, List.of()),
-            type(new Type.ClassType(stub.getFullName(), List.of())), stub.modifiers(), stub.annotations(), location,
-            alternates));
+            new SymbolSignature(typeParameters(stub.typeParameters(), types), List.of(), null, List.of()),
+            types.resolved(fullName), stub.modifiers(), stub.annotations(), location, alternates, types));
         List<Type> supers = new ArrayList<>(stub.interfaces());
         if (stub.superClass() != null) {
             supers.add(stub.superClass());
         }
         for (Type base : supers) {
             if (base instanceof Type.ClassType named) {
-                edges.add(new SymbolEdge(owner, JavaSymbolIds.type(named.name()), EdgeKindId.SUBTYPE,
-                    type(base).arguments()));
+                TypeReference reference = types.type(named);
+                edges.add(new SymbolEdge(owner, reference.target(), EdgeKindId.SUBTYPE, reference.arguments()));
             }
         }
         for (FieldStub field : stub.fields()) {
             check.run();
             declarations.add(descriptor(JavaSymbolIds.field(owner, field.name()), JavaSymbolKind.FIELD, field.name(),
-                stub.getFullName() + "#" + field.name(), owner, null, type(field.type()), field.modifiers(),
-                field.annotations(), location, alternates));
+                fullName + "#" + field.name(), owner, null, types.type(field.type()), field.modifiers(),
+                field.annotations(), location, alternates, types));
         }
         Map<SymbolId, Set<String>> methodReturns = new HashMap<>();
         for (MethodStub method : stub.methods()) {
@@ -134,12 +144,13 @@ public final class JavaBinarySymbolExtractor {
             methodReturns.computeIfAbsent(id, _ -> new HashSet<>())
                 .add(erased(method.returnType(), methodBounds, new HashSet<>()));
         }
+        Map<String, String> methodNames = new HashMap<>();
         for (MethodStub method : stub.methods()) {
             check.run();
             if ((method.modifiers() & Opcodes.ACC_BRIDGE) != 0)
                 continue;
             SymbolSignature signature = signature(method.parameters(), method.typeParameters(), method.returnType(),
-                method.thrownTypes(), method.modifiers());
+                method.thrownTypes(), method.modifiers(), types);
             Map<String, Type> methodBounds = bounds(method.typeParameters(), bounds);
             List<String> parameterTypes = erased(method.parameters(), methodBounds);
             SymbolId id = JavaSymbolIds.method(owner, method.name(), parameterTypes);
@@ -147,18 +158,19 @@ public final class JavaBinarySymbolExtractor {
                 id = JavaSymbolIds.binaryMethod(owner, method.name(), parameterTypes,
                     erased(method.returnType(), methodBounds, new HashSet<>()));
             }
-            declarations
-                .add(descriptor(id, JavaSymbolKind.METHOD, method.name(), stub.getFullName() + "#" + method.name(),
-                    owner, signature, type(method.returnType()), method.modifiers(), method.annotations(), location,
-                    alternates));
+            String qualified = methodNames.computeIfAbsent(method.name(), name -> fullName + "#" + name);
+            declarations.add(descriptor(id, JavaSymbolKind.METHOD, method.name(), qualified, owner, signature,
+                types.type(method.returnType()), method.modifiers(), method.annotations(), location, alternates,
+                types));
         }
+        String constructorName = fullName + "#<init>";
         for (ConstructorStub constructor : stub.constructors()) {
             check.run();
             SymbolSignature signature = signature(constructor.parameters(), constructor.typeParameters(), null,
-                constructor.thrownTypes(), constructor.modifiers());
+                constructor.thrownTypes(), constructor.modifiers(), types);
             SymbolId id = constructorId(stub, constructor);
-            declarations.add(descriptor(id, JavaSymbolKind.CONSTRUCTOR, stub.name(), stub.getFullName() + "#<init>",
-                owner, signature, null, constructor.modifiers(), constructor.annotations(), location, alternates));
+            declarations.add(descriptor(id, JavaSymbolKind.CONSTRUCTOR, stub.name(), constructorName, owner,
+                signature, null, constructor.modifiers(), constructor.annotations(), location, alternates, types));
         }
         check.run();
         return new SemanticIndexShard(
@@ -183,8 +195,9 @@ public final class JavaBinarySymbolExtractor {
         for (var declaration : shard.declarations()) {
             check.run();
             if (declaration.signature() != null) {
-                parameters(declarations, declaration.id(), declaration.signature(), declaration.locations().getFirst(),
-                    alternates, check);
+                List<SymbolLocation> locations = declaration.locations();
+                parameters(declarations, declaration.id(), declaration.signature(),
+                    locations.size() == 1 ? locations : List.of(locations.getFirst()), alternates, check);
             }
         }
         check.run();
@@ -198,7 +211,7 @@ public final class JavaBinarySymbolExtractor {
         List<SymbolDescriptor> output,
         SymbolId owner,
         SymbolSignature signature,
-        SymbolLocation location,
+        List<SymbolLocation> location,
         Map<SymbolId, List<SymbolLocation>> alternates,
         Runnable check
     ) {
@@ -207,15 +220,20 @@ public final class JavaBinarySymbolExtractor {
             var parameter = signature.parameters().get(i);
             output.add(descriptor(JavaSymbolIds.parameter(owner, i), JavaSymbolKind.PARAMETER,
                 parameter.name().isBlank() ? "arg" + i : parameter.name(), null, owner, null, parameter.type(),
-                0, List.of(), location, alternates));
+                0, List.of(), location, alternates, null));
         }
         for (int i = 0; i < signature.typeParameters().size(); i++) {
             check.run();
             output.add(descriptor(JavaSymbolIds.typeParameter(owner, i), JavaSymbolKind.TYPE_PARAMETER,
-                signature.typeParameters().get(i).name(), null, owner, null, null, 0, List.of(), location, alternates));
+                signature.typeParameters().get(i).name(), null, owner, null, null, 0, List.of(), location, alternates,
+                null));
         }
     }
 
+    /**
+     * @param location the declaring class location, shared by every declaration without alternate locations
+     * @param types shared type references; may be {@code null} when {@code annotations} is empty
+     */
     private static SymbolDescriptor descriptor(
         SymbolId id,
         JavaSymbolKind kind,
@@ -226,42 +244,67 @@ public final class JavaBinarySymbolExtractor {
         TypeReference type,
         int flags,
         List<AnnotationStub> annotations,
-        SymbolLocation location,
-        Map<SymbolId, List<SymbolLocation>> alternates
+        List<SymbolLocation> location,
+        Map<SymbolId, List<SymbolLocation>> alternates,
+        TypeReferences types
     ) {
-        List<SymbolLocation> locations = new ArrayList<>();
-        locations.add(location);
-        locations.addAll(alternates.getOrDefault(id, List.of()));
-        Set<String> modifiers = new LinkedHashSet<>();
-        int modifierMask = switch (kind) {
+        List<SymbolLocation> locations = location;
+        List<SymbolLocation> extra = alternates.get(id);
+        if (extra != null && !extra.isEmpty()) {
+            locations = new ArrayList<>(location);
+            locations.addAll(extra);
+        }
+        boolean hasSignature = signature != null;
+        SymbolMetadata metadata = annotations.isEmpty()
+            ? PLAIN_METADATA.computeIfAbsent(metadataKey(kind, flags, hasSignature),
+                _ -> metadata(kind, flags, hasSignature, List.of()))
+            : metadata(kind, flags, hasSignature, annotations.stream()
+                .map(annotation -> types.resolved(annotation.name()))
+                .toList());
+        return new SymbolDescriptor(id, SymbolKindId.from(kind), name, qualified, owner, signature, type, metadata,
+            locations);
+    }
+
+    private static long metadataKey(JavaSymbolKind kind, int flags, boolean hasSignature) {
+        return (long) modifierMask(kind) << 33 | (hasSignature ? 1L << 32 : 0) | Integer.toUnsignedLong(flags);
+    }
+
+    private static int modifierMask(JavaSymbolKind kind) {
+        return switch (kind) {
             case METHOD -> Modifier.methodModifiers();
             case CONSTRUCTOR -> Modifier.constructorModifiers();
             case FIELD -> Modifier.fieldModifiers();
             default -> Modifier.classModifiers();
         };
-        String standard = Modifier.toString(flags & modifierMask);
+    }
+
+    private static SymbolMetadata metadata(
+        JavaSymbolKind kind,
+        int flags,
+        boolean hasSignature,
+        List<TypeReference> annotations
+    ) {
+        Set<String> modifiers = new LinkedHashSet<>();
+        String standard = Modifier.toString(flags & modifierMask(kind));
         if (!standard.isBlank()) {
             modifiers.addAll(List.of(standard.split(" ")));
         }
         if ((flags & Opcodes.ACC_SYNTHETIC) != 0) {
             modifiers.add("synthetic");
         }
-        if ((flags & Opcodes.ACC_VARARGS) != 0 && signature != null) {
+        if ((flags & Opcodes.ACC_VARARGS) != 0 && hasSignature) {
             modifiers.remove("transient");
             modifiers.add("varargs");
         }
-        List<TypeReference> annotationTypes = annotations.stream().map(annotation -> type(
-            new Type.ClassType(annotation.name(), List.of()))).toList();
         String visibility = Modifier.isPublic(flags)
             ? "public"
             : Modifier.isProtected(flags)
                 ? "protected"
                 : Modifier.isPrivate(flags) ? "private" : "package";
-        var metadata = new SymbolMetadata(modifiers, visibility, (flags & Opcodes.ACC_DEPRECATED) != 0
-            || annotations.stream().anyMatch(annotation -> annotation.name().equals("java.lang.Deprecated")),
-            annotationTypes, Map.of("java:jvmAccess", Integer.toString(flags)));
-        return new SymbolDescriptor(id, SymbolKindId.from(kind), name, qualified, owner, signature, type, metadata,
-            locations);
+        boolean deprecated = (flags & Opcodes.ACC_DEPRECATED) != 0
+            || annotations.stream().anyMatch(annotation -> annotation.name().equals("java.lang.Deprecated"));
+        return new SymbolMetadata(modifiers, visibility, deprecated, annotations,
+            Map.of("java:jvmAccess", Integer.toString(flags)));
     }
 
     private static SymbolSignature signature(
@@ -269,7 +312,8 @@ public final class JavaBinarySymbolExtractor {
         List<TypeParameter> typeParameters,
         Type result,
         List<Type> thrown,
-        int flags
+        int flags,
+        TypeReferences types
     ) {
         List<SymbolSignature.Parameter> values = new ArrayList<>();
         for (int i = 0; i < parameters.size(); i++) {
@@ -279,15 +323,18 @@ public final class JavaBinarySymbolExtractor {
                 ? array.componentType()
                 : parameter.type();
             values.add(new SymbolSignature.Parameter(parameter.name() == null ? "arg" + i : parameter.name(),
-                type(parameterType), varargs));
+                types.type(parameterType), varargs));
         }
-        return new SymbolSignature(typeParameters(typeParameters), values, result == null ? null : type(result),
-            thrown.stream().map(JavaBinarySymbolExtractor::type).toList());
+        return new SymbolSignature(typeParameters(typeParameters, types), values, types.type(result),
+            thrown.stream().map(types::type).toList());
     }
 
-    private static List<SymbolSignature.TypeParameter> typeParameters(List<TypeParameter> parameters) {
+    private static List<SymbolSignature.TypeParameter> typeParameters(
+        List<TypeParameter> parameters,
+        TypeReferences types
+    ) {
         return parameters.stream().map(parameter -> new SymbolSignature.TypeParameter(parameter.name(),
-            parameter.bounds().stream().map(JavaBinarySymbolExtractor::type).toList())).toList();
+            parameter.bounds().stream().map(types::type).toList())).toList();
     }
 
     private static Map<String, Type> bounds(List<TypeParameter> parameters, Map<String, Type> inherited) {
@@ -320,21 +367,42 @@ public final class JavaBinarySymbolExtractor {
         };
     }
 
-    private static TypeReference type(Type value) {
-        return switch (value) {
-            case Type.ClassType named -> new TypeReference(named.name(), named.typeArguments().stream()
-                .map(JavaBinarySymbolExtractor::type).toList(), 0, JavaSymbolIds.type(named.name()));
-            case Type.PrimitiveType primitive -> new TypeReference(primitive.name());
-            case Type.TypeVariable variable -> new TypeReference(variable.name());
-            case Type.ArrayType array -> {
-                TypeReference component = type(array.componentType());
-                yield new TypeReference(component.name(), component.arguments(), component.arrayDimensions() + 1,
-                    component.target());
-            }
-            case Type.WildcardType wildcard -> wildcard.bound() == null
-                ? new TypeReference("?")
-                : new TypeReference(wildcard.isUpperBound() ? "? extends" : "? super", List.of(type(wildcard.bound())),
-                    0, null);
-        };
+    /**
+     * Shares the type references that recur across the classes of one binary index. Raw class types, primitives and
+     * type variables make up most references and are shared; parameterized and array types are built per use.
+     * Safe for concurrent use.
+     */
+    public static final class TypeReferences {
+        private final Map<String, TypeReference> resolved = new ConcurrentHashMap<>();
+        private final Map<String, TypeReference> unresolved = new ConcurrentHashMap<>();
+
+        private TypeReference resolved(String name) {
+            return resolved.computeIfAbsent(name, _ -> new TypeReference(name, List.of(), 0, JavaSymbolIds.type(name)));
+        }
+
+        private TypeReference unresolved(String name) {
+            return unresolved.computeIfAbsent(name, TypeReference::new);
+        }
+
+        private TypeReference type(Type value) {
+            return switch (value) {
+                case null -> null;
+                case Type.ClassType named -> named.typeArguments().isEmpty()
+                    ? resolved(named.name())
+                    : new TypeReference(named.name(), named.typeArguments().stream().map(this::type).toList(), 0,
+                        resolved(named.name()).target());
+                case Type.PrimitiveType primitive -> unresolved(primitive.name());
+                case Type.TypeVariable variable -> unresolved(variable.name());
+                case Type.ArrayType array -> {
+                    TypeReference component = type(array.componentType());
+                    yield new TypeReference(component.name(), component.arguments(), component.arrayDimensions() + 1,
+                        component.target());
+                }
+                case Type.WildcardType wildcard -> wildcard.bound() == null
+                    ? unresolved("?")
+                    : new TypeReference(wildcard.isUpperBound() ? "? extends" : "? super",
+                        List.of(type(wildcard.bound())), 0, null);
+            };
+        }
     }
 }

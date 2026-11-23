@@ -442,7 +442,8 @@ public final class JavaLibraryStubCache {
             if (index == -2) {
                 byte[] bytes = new byte[count()];
                 input.readFully(bytes);
-                var value = new String(bytes, StandardCharsets.UTF_8);
+                // Names recur across archives; interning lets every restored archive share one copy.
+                var value = new String(bytes, StandardCharsets.UTF_8).intern();
                 strings.add(value);
                 return value;
             }
@@ -483,8 +484,7 @@ public final class JavaLibraryStubCache {
             int modifiers = input.readInt();
             List<AnnotationStub> annotations = annotations();
             return new ClassStub(packageName, name, typeParameters, superClass, interfaces,
-                Collections.unmodifiableList(fields), Collections.unmodifiableList(methods),
-                Collections.unmodifiableList(constructors), modifiers, annotations, string());
+                immutable(fields), immutable(methods), immutable(constructors), modifiers, annotations, string());
         }
 
         private List<Parameter> parameters() throws IOException {
@@ -494,7 +494,7 @@ public final class JavaLibraryStubCache {
                 parameters.add(new Parameter(string(), type(), annotations()));
             }
 
-            return Collections.unmodifiableList(parameters);
+            return immutable(parameters);
         }
 
         private List<TypeParameter> typeParameters() throws IOException {
@@ -504,7 +504,7 @@ public final class JavaLibraryStubCache {
                 typeParameters.add(new TypeParameter(string(), types()));
             }
 
-            return Collections.unmodifiableList(typeParameters);
+            return immutable(typeParameters);
         }
 
         private List<Type> types() throws IOException {
@@ -514,7 +514,7 @@ public final class JavaLibraryStubCache {
                 types.add(type());
             }
 
-            return Collections.unmodifiableList(types);
+            return immutable(types);
         }
 
         private @Nullable Type type() throws IOException {
@@ -522,7 +522,7 @@ public final class JavaLibraryStubCache {
             return switch (tag) {
                 case 0 -> null;
                 case 1 -> new Type.ClassType(string(), types());
-                case 2 -> new Type.PrimitiveType(string());
+                case 2 -> Type.PrimitiveType.of(string());
                 case 3 -> new Type.ArrayType(type());
                 case 4 -> new Type.TypeVariable(string());
                 case 5 -> new Type.WildcardType(type(), input.readBoolean());
@@ -544,7 +544,12 @@ public final class JavaLibraryStubCache {
                 annotations.add(new AnnotationStub(name, Map.copyOf(values)));
             }
 
-            return Collections.unmodifiableList(annotations);
+            return immutable(annotations);
+        }
+
+        /** Most stub lists are empty; sharing {@link List#of()} for them keeps restored stubs small. */
+        private static <T> List<T> immutable(List<T> values) {
+            return values.isEmpty() ? List.of() : values.stream().toList();
         }
 
         private Object annotationValue() throws IOException {

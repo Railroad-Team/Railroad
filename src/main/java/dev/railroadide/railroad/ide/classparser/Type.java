@@ -1,6 +1,10 @@
 package dev.railroadide.railroad.ide.classparser;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Represents a type appearing in parsed class metadata or generic signatures.
@@ -16,15 +20,15 @@ public sealed interface Type
      */
     static Type fromAsmType(org.objectweb.asm.Type asmType) {
         return switch (asmType.getSort()) {
-            case org.objectweb.asm.Type.VOID -> new PrimitiveType("void");
-            case org.objectweb.asm.Type.BOOLEAN -> new PrimitiveType("boolean");
-            case org.objectweb.asm.Type.CHAR -> new PrimitiveType("char");
-            case org.objectweb.asm.Type.BYTE -> new PrimitiveType("byte");
-            case org.objectweb.asm.Type.SHORT -> new PrimitiveType("short");
-            case org.objectweb.asm.Type.INT -> new PrimitiveType("int");
-            case org.objectweb.asm.Type.FLOAT -> new PrimitiveType("float");
-            case org.objectweb.asm.Type.LONG -> new PrimitiveType("long");
-            case org.objectweb.asm.Type.DOUBLE -> new PrimitiveType("double");
+            case org.objectweb.asm.Type.VOID -> PrimitiveType.of("void");
+            case org.objectweb.asm.Type.BOOLEAN -> PrimitiveType.of("boolean");
+            case org.objectweb.asm.Type.CHAR -> PrimitiveType.of("char");
+            case org.objectweb.asm.Type.BYTE -> PrimitiveType.of("byte");
+            case org.objectweb.asm.Type.SHORT -> PrimitiveType.of("short");
+            case org.objectweb.asm.Type.INT -> PrimitiveType.of("int");
+            case org.objectweb.asm.Type.FLOAT -> PrimitiveType.of("float");
+            case org.objectweb.asm.Type.LONG -> PrimitiveType.of("long");
+            case org.objectweb.asm.Type.DOUBLE -> PrimitiveType.of("double");
             case org.objectweb.asm.Type.ARRAY -> {
                 Type componentType = fromAsmType(asmType.getElementType());
                 for (int dimension = 0; dimension < asmType.getDimensions(); dimension++) {
@@ -57,6 +61,20 @@ public sealed interface Type
      * @param name the primitive keyword or void
      */
     record PrimitiveType(String name) implements Type {
+        private static final Map<String, PrimitiveType> SHARED = Stream
+            .of("void", "boolean", "char", "byte", "short", "int", "float", "long", "double")
+            .collect(Collectors.toUnmodifiableMap(Function.identity(), PrimitiveType::new));
+
+        /**
+         * Returns the shared instance for a primitive keyword or void, so parsed stubs don't repeat them.
+         *
+         * @param name the primitive keyword or void
+         * @return the shared instance, or a new one for any other name
+         */
+        public static PrimitiveType of(String name) {
+            PrimitiveType shared = SHARED.get(name);
+            return shared != null ? shared : new PrimitiveType(name);
+        }
     }
 
     // Array type

@@ -34,6 +34,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     private final Map<String, ClassStub> visibleStubs;
     private final Map<String, Object> ownersBySimpleName;
     private final ConcurrentHashMap<String, ClassDeclarations> declarationsByOwner;
+    private final JavaBinarySymbolExtractor.TypeReferences typeReferences;
 
     /** Reuses fully immutable lookup storage when wrapping an already published binary index. */
     protected JavaStubSymbolIndex(JavaStubSymbolIndex source) {
@@ -69,6 +70,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         sourceByQualifiedName = source.sourceByQualifiedName;
         ownersBySimpleName = source.ownersBySimpleName;
         declarationsByOwner = source.declarationsByOwner;
+        typeReferences = source.typeReferences;
     }
 
     /**
@@ -161,6 +163,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         this.sourceByQualifiedName = Map.copyOf(sourceByQualifiedName);
         this.declaredQualifiedNames = this.classStubsByQualifiedName.keySet();
         declarationsByOwner = new ConcurrentHashMap<>();
+        typeReferences = new JavaBinarySymbolExtractor.TypeReferences();
 
         Set<String> typeNames = new HashSet<>();
         Set<String> packages = new HashSet<>();
@@ -362,7 +365,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         activityCheck.run();
         ClassDeclarations result = declarationsByOwner.computeIfAbsent(owner, name -> {
             var shard = JavaBinarySymbolExtractor.extractDeclarations(classStubsByQualifiedName.get(name),
-                binaryLocations.get(name), alternateLocations, activityCheck);
+                binaryLocations.get(name), alternateLocations, typeReferences, activityCheck);
             List<JavaProjectSemanticIndex.SymbolDescriptor> symbols = new ArrayList<>();
             List<JavaProjectSemanticIndex.SymbolDescriptor> members = new ArrayList<>();
             SymbolId typeId = JavaSymbolIds.type(name);

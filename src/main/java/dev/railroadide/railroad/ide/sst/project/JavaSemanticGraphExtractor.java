@@ -126,7 +126,7 @@ public final class JavaSemanticGraphExtractor {
                     declaredType.arrayDimensions() + extraArrays,
                     declaredType.target());
             }
-            var descriptor = new SymbolDescriptor(id, new SymbolKindId(symbol.kind().id()), symbol.simpleName(),
+            var descriptor = new SymbolDescriptor(id, SymbolKindId.from(symbol.kind()), symbol.simpleName(),
                 symbol.qualifiedName().orElse(null), ownerId, signature(container, symbol.kind()), declaredType,
                 metadata(container, symbol.kind()), List.of(new SymbolLocation(snapshot.uri(), snapshot.origin(),
                     location(container), location(name), true)));
@@ -151,7 +151,7 @@ public final class JavaSemanticGraphExtractor {
                 SymbolId id = JavaSymbolIds.typeParameter(ownerId, index);
                 String name = JavaSourceSymbolIds.declarationName(node);
                 declarations.put(id,
-                    new SymbolDescriptor(id, new SymbolKindId(JavaSymbolKind.TYPE_PARAMETER.id()), name,
+                    new SymbolDescriptor(id, SymbolKindId.from(JavaSymbolKind.TYPE_PARAMETER), name,
                         null, ownerId, null, null, SymbolMetadata.EMPTY, List.of(new SymbolLocation(snapshot.uri(),
                             snapshot.origin(), location(node), location(nameNode(node, name)), true))));
             }
@@ -185,7 +185,7 @@ public final class JavaSemanticGraphExtractor {
             SyntaxNode identifier = nameNode(component, name);
             SymbolId id = JavaSymbolIds.method(recordId, name, List.of());
             TypeReference type = variableArityType(component);
-            declarations.put(id, new SymbolDescriptor(id, new SymbolKindId(JavaSymbolKind.METHOD.id()), name,
+            declarations.put(id, new SymbolDescriptor(id, SymbolKindId.from(JavaSymbolKind.METHOD), name,
                 recordName + "#" + name + "()", recordId, new SymbolSignature(List.of(), List.of(), type, List.of()),
                 type, new SymbolMetadata(Set.of("public"), "public", false, List.of(), Map.of()),
                 List.of(new SymbolLocation(snapshot.uri(), snapshot.origin(), location(component), location(identifier),
