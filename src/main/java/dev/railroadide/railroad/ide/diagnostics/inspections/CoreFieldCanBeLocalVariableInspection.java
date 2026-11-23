@@ -6,7 +6,6 @@ import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
-import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleReporter;
@@ -60,7 +59,7 @@ public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRule
             }
 
             if (callableOrLambda.kind().id().equals(JavaSyntaxKinds.LAMBDA_EXPRESSION.id())
-                && isWriteTarget(context, node)) {
+                && context.isWriteTarget(node)) {
                 symbolsWrittenInLambdas.add(symbol);
             }
 
@@ -101,31 +100,6 @@ public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRule
         }
     }
 
-    private static boolean isWriteTarget(JavaRuleContext context, SyntaxNode expression) {
-        SyntaxNode target = expression;
-        SyntaxNode parent = target.parent().orElse(null);
-
-        if (parent != null && JavaSyntaxKinds.FIELD_ACCESS_EXPRESSION.id().equals(parent.kind().id())
-            && context.selectorNameNode(parent) == expression) {
-            target = parent;
-            parent = target.parent().orElse(null);
-        }
-
-        if (parent == null)
-            return false;
-
-        if (JavaSyntaxKinds.ASSIGNMENT_EXPRESSION.id().equals(parent.kind().id())) {
-            List<SyntaxNode> expressions = context.directExpressionChildren(parent);
-            return !expressions.isEmpty() && expressions.getFirst() == target;
-        }
-
-        if (JavaSyntaxKinds.UNARY_EXPRESSION.id().equals(parent.kind().id())
-            || JavaSyntaxKinds.POSTFIX_EXPRESSION.id().equals(parent.kind().id()))
-            return isIncrementOrDecrement(parent);
-
-        return false;
-    }
-
     private static SyntaxNode enclosingNonLambdaCallable(JavaRuleContext context, SyntaxNode callableOrLambda) {
         SyntaxNode current = callableOrLambda;
         while (current.kind().id().equals(JavaSyntaxKinds.LAMBDA_EXPRESSION.id())) {
@@ -137,15 +111,4 @@ public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRule
         return current;
     }
 
-    private static boolean isIncrementOrDecrement(SyntaxNode node) {
-        for (SyntaxNode child : node.children()) {
-            if (child instanceof SyntaxToken token) {
-                String text = token.text();
-                if ("++".equals(text) || "--".equals(text))
-                    return true;
-            }
-        }
-
-        return false;
-    }
 }

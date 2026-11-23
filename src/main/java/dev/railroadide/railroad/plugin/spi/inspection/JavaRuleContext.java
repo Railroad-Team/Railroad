@@ -879,6 +879,85 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return owner != null && !owner.isBlank() && isTypeHierarchyKnown(owner, new HashSet<>());
     }
 
+    /**
+     * Checks whether an unresolved field selection has a receiver whose fields we can check.
+     * An attachment-local relocation provides positive member matches, but a repackaged class can omit
+     * static constants inlined into the library. Its missing fields do not establish a missing source constant.
+     */
+    public boolean hasKnownFieldOwner(SyntaxNode access) {
+        SyntaxNode receiver = unwrapTransparentExpression(explicitReceiver(access));
+        if (receiver == null)
+            return false;
+        Symbol symbol = resolvedSymbol(receiver).orElse(null);
+        if (symbol != null && isTypeSymbol(symbol.kind())) {
+            String owner = symbol.qualifiedName().orElse(null);
+            return owner != null && isResolvableType(owner)
+                && (isWriteTarget(access) || !isRelocatedSourceReference(receiver, owner));
+        }
+
+        Type type = inferredType(receiver).orElse(null);
+        if (type == null || type.kind() == Kind.UNKNOWN)
+            return false;
+        return type.kind() != Kind.DECLARED || isResolvableType(resolveQualifiedTypeName(type.displayName(), receiver));
+    }
+
+    private boolean isRelocatedSourceReference(SyntaxNode receiver, String owner) {
+        if (symbolIndex == null || !"jar".equals(documentUri.value().getScheme()))
+            return false;
+        String spelling = canonicalQualifiedName(receiver);
+        if (spelling == null || spelling.isBlank())
+            return false;
+        String sourceName = spelling;
+        if (!isResolvableType(spelling)) {
+            int dot = spelling.indexOf('.');
+            String first = dot < 0 ? spelling : spelling.substring(0, dot);
+            for (ImportEntry entry : importEntries()) {
+                if (!entry.isWildcard() && first.equals(entry.importedName()))
+                    return isAliasForOwner(entry.ownerName() + "." + spelling, owner);
+            }
+            sourceName = currentPackageName() + "." + spelling;
+            if (!isResolvableType(sourceName)) {
+                for (ImportEntry entry : importEntries()) {
+                    if (entry.isWildcard() && isAliasForOwner(entry.ownerName() + "." + spelling, owner))
+                        return true;
+                }
+            }
+        }
+        return isAliasForOwner(sourceName, owner);
+    }
+
+    private boolean isAliasForOwner(String spelling, String owner) {
+        return !spelling.replace('$', '.').equals(owner.replace('$', '.'))
+            && owner.equals(resolvableQualifiedTypeName(spelling, availableQualifiedTypeNames()));
+    }
+
+    /** Returns whether the expression is assigned to or incremented/decremented. */
+    public boolean isWriteTarget(SyntaxNode expression) {
+        SyntaxNode target = expression;
+        SyntaxNode parent = target.parent().orElse(null);
+
+        if (parent != null && JavaSyntaxKinds.FIELD_ACCESS_EXPRESSION.id().equals(parent.kind().id())
+            && selectorNameNode(parent) == expression) {
+            target = parent;
+            parent = target.parent().orElse(null);
+        }
+
+        if (parent == null)
+            return false;
+
+        if (JavaSyntaxKinds.ASSIGNMENT_EXPRESSION.id().equals(parent.kind().id())) {
+            List<SyntaxNode> expressions = directExpressionChildren(parent);
+            return !expressions.isEmpty() && expressions.getFirst() == target;
+        }
+
+        if (JavaSyntaxKinds.UNARY_EXPRESSION.id().equals(parent.kind().id())
+            || JavaSyntaxKinds.POSTFIX_EXPRESSION.id().equals(parent.kind().id()))
+            return hasOperatorToken(parent, JavaTokenType.PLUS_PLUS)
+                || hasOperatorToken(parent, JavaTokenType.MINUS_MINUS);
+
+        return false;
+    }
+
     private boolean isTypeHierarchyKnown(String qualifiedTypeName, Set<String> visited) {
         if (!visited.add(qualifiedTypeName))
             return true;

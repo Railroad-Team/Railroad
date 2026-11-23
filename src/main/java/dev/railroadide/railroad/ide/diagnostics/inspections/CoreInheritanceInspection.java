@@ -90,7 +90,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
             if (extendsClause != null) {
                 for (SyntaxNode typeRef : directTypeReferences(extendsClause)) {
                     String inheritedType = context.resolveQualifiedTypeName(typeRef);
-                    if (inheritedType == null || inheritedType.isBlank())
+                    if (!hasKnownSupertype(context, typeRef, inheritedType))
                         continue;
 
                     if (JAVA_CLASS_DECLARATION.equals(declarationNode.kind().id())
@@ -115,7 +115,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
 
             for (SyntaxNode typeRef : directTypeReferences(implementsClause)) {
                 String implementedType = context.resolveQualifiedTypeName(typeRef);
-                if (implementedType == null || implementedType.isBlank())
+                if (!hasKnownSupertype(context, typeRef, implementedType))
                     continue;
                 if (!context.isInterfaceType(implementedType)) {
                     reporter.report(typeRef,
@@ -123,6 +123,15 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                 }
             }
         }
+    }
+
+    private static boolean hasKnownSupertype(JavaRuleContext context, SyntaxNode reference, String name) {
+        if (name == null || name.isBlank())
+            return false;
+        return context.isResolvableType(name) || context.inferredType(reference).map(type -> switch (type.kind()) {
+            case JavaTypes.Kind.PRIMITIVE, JavaTypes.Kind.ARRAY, JavaTypes.Kind.TYPE_VARIABLE -> true;
+            default -> false;
+        }).orElse(false);
     }
 
     private static void reportMissingImplementation(JavaRuleContext context, JavaInspectionRuleReporter reporter) {

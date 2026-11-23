@@ -1,6 +1,10 @@
 package dev.railroadide.railroad.ide.language.impl.index;
 
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRuleEngine;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
+import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
+import dev.railroadide.railroad.plugin.spi.inspection.JavaRuleContext;
 import dev.railroadide.railroad.ide.diagnostics.inspections.CoreCallResolutionInspection;
 import dev.railroadide.railroad.ide.diagnostics.inspections.CoreImportInspection;
 import dev.railroadide.railroad.ide.diagnostics.inspections.CoreMemberResolutionInspection;
@@ -18,6 +22,7 @@ import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -69,7 +74,13 @@ public class JavaAttachedSourceAccessTest {
             import unrelated.Other;
             public class Adapter {
                 Reader reader;
-                void use() { Format.name(); }
+                void use() {
+                    Format.name();
+                    int version = Format.VERSION;
+                    Format.missingWrite = 1;
+                    int direct = internal.codec.util.Format.missingDirect;
+                    int instance = reader.missingInstance;
+                }
             }
             """;
         var adapter = new ClassWriter(0);
@@ -104,6 +115,13 @@ public class JavaAttachedSourceAccessTest {
         }).lookupClassStub("vendor.codec.api.Reader"));
         assertNull(view.forAttachedSource(separate, () -> {
         }).lookupClassStub("vendor.codec.api.Reader"));
+        DocumentUri uri = JavaLibrarySymbolIndex.archiveEntry(directory.resolve("adapter-sources.jar"),
+            "example/Adapter.java");
+        var context = new JavaRuleContext(uri, source, JavaSemanticAnalyzer.analyzeFacts(source, view), view);
+        List<SemanticDiagnostic> members = new ArrayList<>();
+        JavaInspectionRuleEngine.runRules(new CoreMemberResolutionInspection(), context, members::add);
+        assertEquals(List.of("Cannot resolve member 'missingWrite'", "Cannot resolve member 'missingDirect'",
+            "Cannot resolve member 'missingInstance'"), members.stream().map(SemanticDiagnostic::message).toList());
         var diagnostics = JavaInspectionTestSupport.runProviders(List.of(new CoreImportInspection(),
             new CoreCallResolutionInspection()), Path.of("Adapter.java"), source, view);
         assertEquals(List.of("Cannot resolve import 'unrelated.Other'"), diagnostics.stream()

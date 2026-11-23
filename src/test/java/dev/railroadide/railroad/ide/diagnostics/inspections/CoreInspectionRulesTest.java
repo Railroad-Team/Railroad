@@ -913,6 +913,34 @@ public class CoreInspectionRulesTest {
     }
 
     @Test
+    public void unresolvedReceiversAndSupertypesOnlyReportTheUnderlyingErrors() {
+        String source = """
+            import missing.MissingLaunchApi;
+            interface Child extends MissingLaunchApi {}
+            class Wrong {}
+            class Example implements MissingLaunchApi, Wrong {
+                void read(MissingLaunchApi value, String text) {
+                    int a = MissingLaunchApi.FIRST;
+                    int b = value.second;
+                    int c = text.missing.next;
+                }
+            }
+            """;
+        var diagnostics = runProviders(List.of(new CoreInheritanceInspection(), new CoreMemberResolutionInspection(),
+            new CoreNameResolutionInspection(), new CoreTypeResolutionInspection(), new CoreImportInspection()),
+            Path.of("Example.java"), source, JavaJdkSymbolIndex.fromCurrentRuntime());
+        assertEquals(List.of("Invalid inheritance: type cannot implement non-interface 'Wrong'"), diagnostics.stream()
+            .filter(issue -> issue.code().equals("SEM_INVALID_INHERITANCE")).map(SemanticDiagnostic::message).toList());
+        assertEquals(List.of("Cannot resolve member 'missing'"), diagnostics.stream()
+            .filter(issue -> issue.code().equals("SEM_UNRESOLVED_MEMBER")).map(SemanticDiagnostic::message).toList());
+        assertTrue(diagnostics.stream().anyMatch(issue -> issue.code().equals("SEM_UNRESOLVED_NAME")
+            && issue.message().contains("MissingLaunchApi")));
+        assertTrue(diagnostics.stream().anyMatch(issue -> issue.code().equals("SEM_UNRESOLVED_TYPE")
+            && issue.message().contains("MissingLaunchApi")));
+        assertTrue(diagnostics.stream().anyMatch(issue -> issue.code().equals("SEM_UNRESOLVED_IMPORT")));
+    }
+
+    @Test
     public void coreMemberRuleResolvesQualifiedEnclosingInstanceFields() {
         String source = """
             class Outer {
