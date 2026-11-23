@@ -5113,6 +5113,7 @@ public final class JavaSemanticAnalyzer {
         private final Map<String, ImportSpec> singleTypeImportsBySimpleName = new LinkedHashMap<>();
         private final List<ImportSpec> onDemandTypeImports = new ArrayList<>();
         private final Map<SyntaxNode, Type> cache = new IdentityHashMap<>();
+        private final Set<SyntaxNode> variableInferenceInProgress = Collections.newSetFromMap(new IdentityHashMap<>());
         private final Set<SyntaxNode> contextualInferenceInProgress = Collections
             .newSetFromMap(new IdentityHashMap<>());
         private final Map<String, List<SourceTypeParameterInfo>> sourceTypeParameters = new HashMap<>();
@@ -6736,12 +6737,20 @@ public final class JavaSemanticAnalyzer {
         }
 
         private Type inferredVariableType(SyntaxNode declarator) {
-            List<SyntaxNode> expressions = directExpressionChildren(declarator);
-            if (expressions.isEmpty())
+            if (!variableInferenceInProgress.add(declarator))
                 return UNKNOWN_TYPE;
-            SyntaxNode initializer = expressions.getFirst();
-            String anonymous = nameResolver.anonymousReceiverType(initializer);
-            return anonymous == null ? inferType(initializer) : new JavaTypes.DeclaredType(anonymous, List.of());
+
+            try {
+                List<SyntaxNode> expressions = directExpressionChildren(declarator);
+                if (expressions.isEmpty())
+                    return UNKNOWN_TYPE;
+
+                SyntaxNode initializer = expressions.getFirst();
+                String anonymous = nameResolver.anonymousReceiverType(initializer);
+                return anonymous == null ? inferType(initializer) : new JavaTypes.DeclaredType(anonymous, List.of());
+            } finally {
+                variableInferenceInProgress.remove(declarator);
+            }
         }
 
         private Type typeFromTypeReference(SyntaxNode typeNode) {

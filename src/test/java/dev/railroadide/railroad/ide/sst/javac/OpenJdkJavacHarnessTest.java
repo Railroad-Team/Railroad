@@ -103,6 +103,32 @@ public class OpenJdkJavacHarnessTest {
     }
 
     @Test
+    public void matchesSelfReferenceWithinJavacLocalInferenceErrors() throws IOException {
+        write("SelfReference.java", """
+            /*
+             * @test
+             * @compile/fail/ref=SelfReference.out -XDrawDiagnostics SelfReference.java
+             */
+            class SelfReference {
+                void run() { var x = x = 1; }
+            }
+            """);
+        String reference = "SelfReference.java:6:22: compiler.err.cant.infer.local.var.type: x, (%s)\n1 error\n";
+        write("SelfReference.out", reference.formatted("compiler.misc.local.self.ref"));
+        var suite = new OpenJdkJavacSuite(checkout);
+        var test = suite.discover("").getFirst();
+        try (var checks = new OpenJdkJavacChecks(suite.root())) {
+            var matching = checks.check(suite.root(), test);
+            assertEquals(OpenJdkJavacChecks.Status.PASS, matching.status(), matching::toString);
+
+            write("SelfReference.out", reference.formatted("compiler.misc.local.missing.init"));
+            var otherInferenceError = checks.check(suite.root(), test);
+            assertEquals(OpenJdkJavacChecks.Status.UNSUPPORTED, otherInferenceError.status(),
+                otherInferenceError::toString);
+        }
+    }
+
+    @Test
     public void reportsUnsupportedChecksWithoutTreatingThemAsPasses() throws IOException {
         write("Driver.java", """
             /*

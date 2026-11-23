@@ -270,7 +270,7 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
             String code = diagnostic.group(4);
             var javacSyntaxError = result.javacErrors().stream().filter(error -> error.getCode().equals(code)
                 && error.getLineNumber() == row && error.getColumnNumber() == column).findFirst();
-            Set<String> expected = javacSyntaxError.isPresent() ? SYNTAX_CODES : SEMANTIC_CODES.get(code);
+            Set<String> expected = javacSyntaxError.isPresent() ? SYNTAX_CODES : semanticCodes(code, text);
             if (expected == null) {
                 unsupported.add(label + " has no SST diagnostic mapping for " + text);
                 continue;
@@ -293,6 +293,13 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
         if (action.fails() && !hasOutput) {
             unsupported.add(label + " has no diagnostic details in " + action.reference().getFileName());
         }
+    }
+
+    private static Set<String> semanticCodes(String code, String referenceLine) {
+        if ("compiler.err.cant.infer.local.var.type".equals(code)
+            && referenceLine.endsWith("(compiler.misc.local.self.ref)"))
+            return Set.of("SEM_SELF_REFERENCING_VAR");
+        return SEMANTIC_CODES.get(code);
     }
 
     private static boolean coversReference(ReportedError error, String source, int offset) {

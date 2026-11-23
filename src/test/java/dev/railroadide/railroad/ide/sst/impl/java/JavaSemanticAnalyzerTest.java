@@ -377,6 +377,55 @@ public class JavaSemanticAnalyzerTest {
     }
 
     @Test
+    public void reportsSelfReferencingVarInitializers() {
+        String source = """
+            class Example {
+                void run(boolean condition) {
+                    var read = condition ? read : read;
+                    var written = written = 1;
+                    var captured = (Runnable) () -> consume(captured);
+                }
+
+                void consume(Object value) {}
+            }
+            """;
+
+        SemanticModel model = JavaSemanticAnalyzer.analyze(source);
+        List<String> names = model.diagnostics().stream()
+            .filter(diagnostic -> "SEM_SELF_REFERENCING_VAR".equals(diagnostic.code()))
+            .map(diagnostic -> {
+                assertEquals(SemanticDiagnostic.Severity.ERROR, diagnostic.severity());
+                return source.substring(diagnostic.startOffset(), diagnostic.endOffset());
+            })
+            .sorted()
+            .toList();
+        assertEquals(List.of("captured", "read", "written"), names);
+    }
+
+    @Test
+    public void infersVarFromEarlierDeclarationsAndRespectsShadowing() {
+        String source = """
+            class Example {
+                void run() {
+                    int seed = seed = 1;
+                    var first = seed;
+                    var second = first;
+                    var instance = new Object() {
+                        int instance = second;
+                        int read() { return instance; }
+                    };
+                }
+            }
+            """;
+
+        SemanticModel model = JavaSemanticAnalyzer.analyze(source);
+        List<SyntaxNode> references = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.NAME_EXPRESSION.id());
+        assertEquals("int", model.inferredType(findNameExpression(references, "second")).orElseThrow().displayName());
+        assertFalse(
+            model.diagnostics().stream().anyMatch(diagnostic -> "SEM_SELF_REFERENCING_VAR".equals(diagnostic.code())));
+    }
+
+    @Test
     public void reportsUnresolvedImportForUnknownNonPlatformType() {
         String source = """
             package demo;
