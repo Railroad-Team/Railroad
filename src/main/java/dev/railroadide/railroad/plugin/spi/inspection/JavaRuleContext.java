@@ -2934,7 +2934,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         }
 
         List<MethodDescriptor> methods = Stream.concat(
-            declaredMethodDescriptors(qualifiedTypeName).stream(),
+            methodDescriptorsForType(qualifiedTypeName).stream(),
             inheritedMethodDescriptors(qualifiedTypeName).stream()).toList();
         Set<String> concreteSignatures = methods.stream()
             .filter(method -> !method.isAbstract())

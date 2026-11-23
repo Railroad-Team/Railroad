@@ -441,6 +441,9 @@ public final class JavaSemanticAnalyzer {
     private static final class NameResolver {
         private static final String POLY_FUNCTIONAL_ARGUMENT = "<poly-functional";
 
+        private final Map<Integer, SyntaxNode> lambdaArgumentsByStart = new HashMap<>();
+        private final Map<SyntaxNode, String> lambdaResultShapes = new IdentityHashMap<>();
+
         private final JavaDeclarationAnalysis.Context context;
         private final @Nullable JavaSymbolIndex projectIndex;
         private final Set<String> localQualifiedTypeNames;
@@ -2088,9 +2091,12 @@ public final class JavaSemanticAnalyzer {
                     continue;
                 if (JavaSyntaxKinds.LAMBDA_EXPRESSION.id().equals(child.kind().id())
                     || JavaSyntaxKinds.METHOD_REFERENCE_EXPRESSION.id().equals(child.kind().id())) {
-                    String marker = JavaSyntaxKinds.LAMBDA_EXPRESSION.id().equals(child.kind().id())
-                        ? POLY_FUNCTIONAL_ARGUMENT + ":" + lambdaParameterNodes(child).size() + ">"
-                        : POLY_FUNCTIONAL_ARGUMENT + ">";
+                    String marker = POLY_FUNCTIONAL_ARGUMENT + ">";
+                    if (JavaSyntaxKinds.LAMBDA_EXPRESSION.id().equals(child.kind().id())) {
+                        lambdaArgumentsByStart.put(child.start(), child);
+                        marker = POLY_FUNCTIONAL_ARGUMENT + ":" + lambdaParameterNodes(child).size() + "@"
+                            + child.start() + ">";
+                    }
                     types.add(new JavaTypes.UnknownType(marker));
                 } else {
                     Type type = inferExpressionTypeForResolution(child);
@@ -3024,7 +3030,9 @@ public final class JavaSemanticAnalyzer {
                     }
 
                     int comparison = compareCost(cost, bestCost);
-                    if (comparison < 0 || comparison == 0 && returnCost < bestReturnCost) {
+                    if (comparison < 0 || comparison == 0 && returnCost < bestReturnCost
+                        || comparison == 0 && returnCost == bestReturnCost
+                            && fitsLambdaResultsBetter(candidate, best, argumentTypes)) {
                         best = candidate;
                         bestCost = cost;
                         bestReturnCost = returnCost;
@@ -3158,16 +3166,14 @@ public final class JavaSemanticAnalyzer {
         private @Nullable Integer conversionCost(Type parameterType, Type argumentType) {
             if (argumentType.kind() == JavaTypes.Kind.UNKNOWN
                 && argumentType.displayName().startsWith(POLY_FUNCTIONAL_ARGUMENT)) {
-                Integer targetArity = functionalInterfaceArity(parameterType, new HashSet<>());
-                if (targetArity == null)
+                FunctionalShape target = functionalShape(parameterType, new HashSet<>());
+                if (target == null)
                     return null;
-                int separator = argumentType.displayName().indexOf(':');
-                if (separator >= 0) {
-                    int end = argumentType.displayName().indexOf('>', separator);
-                    int lambdaArity = Integer.parseInt(argumentType.displayName().substring(separator + 1, end));
-                    if (lambdaArity != targetArity)
-                        return null;
-                }
+                String marker = argumentType.displayName();
+                int separator = marker.indexOf(':');
+                if (separator >= 0 && Integer.parseInt(marker.substring(separator + 1, marker.indexOf('@'))) != target
+                    .arity())
+                    return null;
                 return 0;
             }
             if (argumentType.kind() == JavaTypes.Kind.UNKNOWN || parameterType.kind() == JavaTypes.Kind.UNKNOWN)
@@ -3783,10 +3789,77 @@ public final class JavaSemanticAnalyzer {
         }
 
         private boolean isFunctionalInterfaceParameter(Type parameterType) {
-            return functionalInterfaceArity(parameterType, new HashSet<>()) != null;
+            return functionalShape(parameterType, new HashSet<>()) != null;
         }
 
-        private @Nullable Integer functionalInterfaceArity(Type parameterType, Set<String> visited) {
+        /**
+         * Breaks a tie between equally applicable candidates by their lambda arguments' results. Following
+         * JLS 15.12.2.5, a lambda whose body yields a value prefers a non-void functional method, and a lambda
+         * whose body is a void call fits only a void one. Lambda bodies are only inferred for such ties.
+         *
+         * @return whether the candidate fits the lambda arguments better than the current best
+         */
+        private boolean fitsLambdaResultsBetter(
+            MemberCandidate candidate,
+            MemberCandidate best,
+            List<Type> argumentTypes
+        ) {
+            int count = Math.min(argumentTypes.size(),
+                Math.min(candidate.parameterTypes().size(), best.parameterTypes().size()));
+            for (int index = 0; index < count; index++) {
+                context.poll();
+                String marker = argumentTypes.get(index).displayName();
+                int at = marker.indexOf('@');
+                if (!marker.startsWith(POLY_FUNCTIONAL_ARGUMENT) || at < 0)
+                    continue;
+                FunctionalShape candidateShape = functionalShape(candidate.parameterTypes().get(index),
+                    new HashSet<>());
+                FunctionalShape bestShape = functionalShape(best.parameterTypes().get(index), new HashSet<>());
+                if (candidateShape == null || bestShape == null || candidateShape.returnsVoid() == null
+                    || bestShape.returnsVoid() == null || candidateShape.returnsVoid().equals(bestShape.returnsVoid()))
+                    continue;
+
+                SyntaxNode lambda = lambdaArgumentsByStart.get(Integer.parseInt(marker.substring(at + 1,
+                    marker.indexOf('>', at))));
+                String result = lambda == null
+                    ? "any"
+                    : lambdaResultShapes.computeIfAbsent(lambda,
+                        this::lambdaResultShape);
+                if ("value".equals(result) || "valueOnly".equals(result))
+                    return !candidateShape.returnsVoid();
+                if ("void".equals(result))
+                    return candidateShape.returnsVoid();
+            }
+            return false;
+        }
+
+        /**
+         * Classifies a lambda's result as {@code void}, {@code value} for a statement expression that yields a
+         * value, {@code valueOnly} for any other value expression, or {@code any} for a block or an unknown type.
+         */
+        private String lambdaResultShape(SyntaxNode lambda) {
+            SyntaxNode body = directChild(lambda, JavaSyntaxKinds.LAMBDA_BODY.id());
+            SyntaxNode expression = body == null
+                ? null
+                : body.children().stream().filter(JavaSemanticAnalyzer::isExpressionNode).findFirst().orElse(null);
+            if (expression == null)
+                return "any";
+
+            Type result = inferExpressionTypeForResolution(expression);
+            if (result.kind() == JavaTypes.Kind.UNKNOWN)
+                return "any";
+            if ("void".equals(result.displayName()))
+                return "void";
+            String kind = expression.kind().id();
+            boolean statementExpression = JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id().equals(kind)
+                || JavaSyntaxKinds.CLASS_INSTANCE_CREATION_EXPRESSION.id().equals(kind)
+                || JavaSyntaxKinds.ASSIGNMENT_EXPRESSION.id().equals(kind)
+                || JavaSyntaxKinds.UNARY_EXPRESSION.id().equals(kind)
+                || JavaSyntaxKinds.POSTFIX_EXPRESSION.id().equals(kind);
+            return statementExpression ? "value" : "valueOnly";
+        }
+
+        private @Nullable FunctionalShape functionalShape(Type parameterType, Set<String> visited) {
             if (!(parameterType instanceof JavaTypes.DeclaredType declared))
                 return null;
             String qualifiedTypeName = resolveQualifiedTypeNameForCallMatching(declared.displayName());
@@ -3795,7 +3868,7 @@ public final class JavaSemanticAnalyzer {
 
             ClassStub stub = binaryClassStubsByQualifiedName.get(qualifiedTypeName);
             if (stub != null) {
-                Map<String, Integer> abstractMethods = new LinkedHashMap<>();
+                Map<String, FunctionalShape> abstractMethods = new LinkedHashMap<>();
                 for (MethodStub method : stub.methods()) {
                     context.poll();
                     if (!Modifier.isAbstract(method.modifiers())
@@ -3805,7 +3878,8 @@ public final class JavaSemanticAnalyzer {
                     List<Type> parameterTypes = method.parameters().stream()
                         .map(parameter -> toSemanticType(parameter.type()))
                         .toList();
-                    abstractMethods.put(method.name() + signatureSuffix(parameterTypes), parameterTypes.size());
+                    abstractMethods.put(method.name() + signatureSuffix(parameterTypes), new FunctionalShape(
+                        parameterTypes.size(), "void".equals(toSemanticType(method.returnType()).displayName())));
                 }
                 if (abstractMethods.size() == 1)
                     return abstractMethods.values().iterator().next();
@@ -3826,9 +3900,9 @@ public final class JavaSemanticAnalyzer {
                         Type qualifiedParent = parentQualifiedType == null
                             ? parentDeclared
                             : new JavaTypes.DeclaredType(parentQualifiedType, parentDeclared.typeArguments());
-                        Integer parentArity = functionalInterfaceArity(qualifiedParent, visited);
-                        if (parentArity != null)
-                            return parentArity;
+                        FunctionalShape parentShape = functionalShape(qualifiedParent, visited);
+                        if (parentShape != null)
+                            return parentShape;
                     }
                 }
             }
@@ -3839,13 +3913,17 @@ public final class JavaSemanticAnalyzer {
                 .anyMatch(symbol -> isProjectSourceSymbol(symbol) && symbol.kind() == JavaSymbolKind.INTERFACE);
             if (!sourceInterface)
                 return null;
-            Map<String, Integer> sourceMethods = new LinkedHashMap<>();
+            Map<String, FunctionalShape> sourceMethods = new LinkedHashMap<>();
             for (JavaProjectSemanticIndex.SymbolDescriptor symbol : projectIndex.lookupMembers(qualifiedTypeName)) {
                 context.poll();
                 if (isProjectSourceSymbol(symbol) && symbol.kind() == JavaSymbolKind.METHOD && !symbol.isStatic()) {
+                    SymbolSignature signature = symbol.structuredSignature();
+                    Boolean returnsVoid = signature == null || signature.returnType() == null
+                        ? null
+                        : "void".equals(signature.returnType().name()) && signature.returnType().arrayDimensions() == 0;
                     sourceMethods.put(
                         symbol.simpleName() + Objects.toString(symbol.signature(), ""),
-                        parameterTypesFromProjectSignature(symbol).size());
+                        new FunctionalShape(parameterTypesFromProjectSignature(symbol).size(), returnsVoid));
                 }
             }
             return sourceMethods.size() == 1 ? sourceMethods.values().iterator().next() : null;
@@ -5113,6 +5191,12 @@ public final class JavaSemanticAnalyzer {
         Path sourceFile = symbol.sourceFile();
         return sourceFile != null && sourceFile.getFileName() != null
             && sourceFile.getFileName().toString().endsWith(".java");
+    }
+
+    /**
+     * A functional interface method's arity, and whether it returns {@code void} when that is known.
+     */
+    private record FunctionalShape(int arity, @Nullable Boolean returnsVoid) {
     }
 
     private record SourceTypeParameterInfo(String name, int index, List<Type> bounds) {

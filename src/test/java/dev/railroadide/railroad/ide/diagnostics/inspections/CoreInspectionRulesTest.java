@@ -2,6 +2,7 @@ package dev.railroadide.railroad.ide.diagnostics.inspections;
 
 import dev.railroadide.railroad.ide.diagnostics.JavaInspectionRuleEngine;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
+import dev.railroadide.railroad.ide.language.impl.index.JavaWorkspaceAnalysis;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.project.*;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
@@ -17,7 +18,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -111,6 +114,50 @@ public class CoreInspectionRulesTest {
         var diagnostics = Stream.of(new CoreCallResolutionInspection(), new CoreAssignmentInspection(),
             new CoreMemberResolutionInspection(), new CoreTypeResolutionInspection())
             .flatMap(provider -> runProvider(provider, source).stream()).toList();
+
+        assertEquals(List.of(), diagnostics, diagnostics::toString);
+    }
+
+    @Test
+    public void lambdasTargetFunctionalInterfacesAndPreferValueResultsAcrossFiles() {
+        Map<Path, String> sources = new LinkedHashMap<>();
+        sources.put(Path.of("demo/Store.java").toAbsolutePath().normalize(), """
+            package demo;
+            public class Store {
+                public interface Listener { void changed(String path, String kind); }
+            }
+            """);
+        sources.put(Path.of("demo/Type.java").toAbsolutePath().normalize(), """
+            package demo;
+            public interface Type {
+                interface Kind { String id(); }
+            }
+            """);
+        Path examplePath = Path.of("demo/Example.java").toAbsolutePath().normalize();
+        String example = """
+            package demo;
+            class Example {
+                private Store.Listener listener;
+                void listen() { listener = (_, _) -> listen(); Type.Kind kind = () -> "demo:kind"; }
+                byte[] bytes() { return null; }
+                private static <T> T io(String uri, Supplier<T> supplier) { return null; }
+                private static void io(String uri, Action action) {}
+                private interface Supplier<T> { T get() throws Exception; }
+                private interface Action { void run() throws Exception; }
+                byte[] copy() { byte[] copied = io("uri", () -> bytes()); io("uri", () -> listen()); return copied; }
+            }
+            """;
+        sources.put(examplePath, example);
+        var builder = JavaProjectSemanticIndex.builder();
+        sources.forEach((path, text) -> builder.putFile(new JavaProjectSemanticExtractor().extract(path, text)));
+        var sourceIndex = builder.build();
+        var symbols = new CompositeJavaSymbolIndex(List.of(sourceIndex, JavaJdkSymbolIndex.fromCurrentRuntime()));
+        var index = new JavaWorkspaceAnalysis(sourceIndex, symbols, sources, List.of(),
+            Path.of(System.getProperty("java.home")));
+        var model = JavaSemanticAnalyzer.analyzeFacts(example, index);
+        var context = new JavaRuleContext(examplePath, example, model, index);
+
+        var diagnostics = JavaInspectionRuleEngine.collectDiagnostics(new CoreAssignmentInspection(), context);
 
         assertEquals(List.of(), diagnostics, diagnostics::toString);
     }
