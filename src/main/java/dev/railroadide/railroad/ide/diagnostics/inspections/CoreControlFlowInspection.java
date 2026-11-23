@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.diagnostics.inspections;
 
 import dev.railroadide.railroad.ide.sst.impl.java.JavaUnicodeEscapes;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
@@ -383,7 +384,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
                 yield block != null && definitelyReturnsOrThrows(context, block);
             }
             case JAVA_WHILE_STATEMENT, JAVA_DO_WHILE_STATEMENT ->
-                hasConstantTrueCondition(node) && !containsBreakThatCanExit(node, node);
+                hasConstantTrueCondition(node) && !containsBreakThatCanExit(context, node, node);
             case JAVA_TRY_STATEMENT -> tryDefinitelyReturnsOrThrows(context, node);
             case JAVA_SWITCH_STATEMENT -> switchDefinitelyReturnsOrThrows(context, node);
             default -> false;
@@ -405,22 +406,30 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         return false;
     }
 
-    private static boolean containsBreakThatCanExit(SyntaxNode node, SyntaxNode loop) {
+    private static boolean containsBreakThatCanExit(JavaRuleContext context, SyntaxNode node, SyntaxNode target) {
         if (JAVA_BREAK_STATEMENT.equals(node.kind().id()))
-            return breakCanExitLoop(node, loop);
+            return breakCanExit(node, target);
+        if (CONTROL_FLOW_BARRIER_KINDS.contains(node.kind().id()))
+            return false;
+        if (JAVA_TRY_STATEMENT.equals(node.kind().id())) {
+            SyntaxNode finallyClause = context.directChild(node, JAVA_FINALLY_CLAUSE);
+            SyntaxNode block = finallyClause == null ? null : context.directChild(finallyClause, JAVA_BLOCK);
+            if (block != null && definitelyReturnsOrThrows(context, block))
+                return containsBreakThatCanExit(context, block, target);
+        }
 
         for (SyntaxNode child : node.children()) {
-            if (containsBreakThatCanExit(child, loop))
+            if (containsBreakThatCanExit(context, child, target))
                 return true;
         }
         return false;
     }
 
-    private static boolean breakCanExitLoop(SyntaxNode breakStatement, SyntaxNode loop) {
+    private static boolean breakCanExit(SyntaxNode breakStatement, SyntaxNode statement) {
         List<String> labels = identifierLikeTokens(breakStatement);
         if (!labels.isEmpty()) {
             SyntaxNode target = findLabeledTarget(breakStatement, labels.getFirst());
-            return target != null && isAncestorOrSame(target, loop);
+            return target != null && isAncestorOrSame(target, statement);
         }
 
         SyntaxNode current = breakStatement;
@@ -431,7 +440,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
             current = parent.get();
             String kindId = current.kind().id();
             if (LOOP_KINDS.contains(kindId) || JAVA_SWITCH_STATEMENT.equals(kindId))
-                return current == loop;
+                return current == statement;
             if (CONTROL_FLOW_BARRIER_KINDS.contains(kindId))
                 return false;
         }
@@ -503,7 +512,10 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
             if (label != null && labelContainsDefault(label)) {
                 hasDefault = true;
             }
-            if (!switchRuleDefinitelyReturnsOrThrows(context, rule))
+            if (containsBreakThatCanExit(context, rule, switchStatement))
+                return false;
+            boolean canFallThrough = rule != rules.getLast() && context.hasOperatorToken(rule, JavaTokenType.COLON);
+            if (!canFallThrough && !switchRuleDefinitelyReturnsOrThrows(context, rule))
                 return false;
         }
         return hasDefault;

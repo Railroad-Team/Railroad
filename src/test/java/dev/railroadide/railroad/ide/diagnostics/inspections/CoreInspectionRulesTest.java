@@ -1507,6 +1507,40 @@ public class CoreInspectionRulesTest {
     }
 
     @Test
+    public void switchReturnAnalysisFollowsFallThroughAndBreakTargets() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreControlFlowInspection(), """
+            class Example {
+                int grouped(int n) {
+                    switch (n) {
+                        case 1:
+                        default: n++;
+                        case 2: return n;
+                    }
+                }
+                int nested(int n) {
+                    switch (n) {
+                        case 0: while (n > 0) { break; }
+                        case 1: switch (n) { default: break; }
+                        default: throw new IllegalStateException();
+                    }
+                }
+                int masked(int n) {
+                    switch (n) { case 0: try { break; } finally { return n; } default: return 1; }
+                }
+                int exits(int n) {
+                    switch (n) { case 0: if (n == 0) break; default: return n; }
+                }
+                int trailing(int n) { switch (n) { default: return n; case 1: } }
+                int arrow(int n) { switch (n) { case 0 -> n++; default -> { return n; } } }
+                int unmatched(int n) { switch (n) { case 0: case 1: return n; } }
+            }
+            """);
+        assertEquals(List.of("exits", "trailing", "arrow", "unmatched"), diagnostics.stream()
+            .filter(diagnostic -> "SEM_MISSING_RETURN".equals(diagnostic.code()))
+            .map(diagnostic -> diagnostic.message().split("'")[1]).toList());
+    }
+
+    @Test
     public void coreInheritanceRuleSubstitutesGenericInterfaceTypesWithoutInheritingTypeArguments() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreInheritanceInspection(), """
             interface Builder<R, SELF extends Builder<R, SELF>> {
