@@ -4519,10 +4519,11 @@ public final class JavaSemanticAnalyzer {
                 return null;
 
             String owner = resolveQualifiedTypeName(text.substring(0, dot), usageSite);
-            if (owner == null || owner.isBlank())
+            if (owner == null || !isResolvableType(owner))
                 return null;
 
-            return resolvableQualifiedTypeName(owner + "." + text.substring(dot + 1));
+            return JavaMemberTypeScope.resolveQualifiedMember(owner, text.substring(dot + 1),
+                this::resolvableQualifiedTypeName, this::directSuperTypeNames);
         }
 
         private @Nullable Symbol outerTypeSymbol(Symbol type) {
@@ -6997,10 +6998,11 @@ public final class JavaSemanticAnalyzer {
                 return null;
 
             String owner = resolveQualifiedTypeName(text.substring(0, dot), usageSite);
-            if (owner == null || owner.isBlank())
+            if (owner == null || !isResolvableType(owner))
                 return null;
 
-            return resolvableQualifiedTypeName(owner + "." + text.substring(dot + 1));
+            return JavaMemberTypeScope.resolveQualifiedMember(owner, text.substring(dot + 1),
+                this::resolvableQualifiedTypeName, nameResolver::directSuperTypeNames);
         }
 
         private @Nullable Symbol outerTypeSymbol(Symbol type) {

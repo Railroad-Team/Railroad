@@ -3,6 +3,7 @@ package dev.railroadide.railroad.ide.sst.impl.java;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import org.jspecify.annotations.Nullable;
 
+import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -57,6 +58,39 @@ public final class JavaMemberTypeScope {
             }
         }
         return null;
+    }
+
+    /**
+     * Resolves a member type named through an explicit type qualifier. A declaration on one branch hides its
+     * ancestors on that branch. Multiple paths to the same declaration still denote a single type.
+     */
+    public static @Nullable String resolveQualifiedMember(
+        String owner,
+        String simpleName,
+        Function<String, @Nullable String> resolveType,
+        @Nullable Function<String, List<String>> directSuperTypes
+    ) {
+        String declared = resolveType.apply(owner + "." + simpleName);
+        if (declared != null || directSuperTypes == null)
+            return declared;
+
+        Set<String> visited = new HashSet<>();
+        visited.add(owner);
+        var pending = new ArrayDeque<>(directSuperTypes.apply(owner));
+        String match = null;
+        while (!pending.isEmpty()) {
+            String parent = pending.removeFirst();
+            if (!visited.add(parent))
+                continue;
+            String member = resolveType.apply(parent + "." + simpleName);
+            if (member == null) {
+                pending.addAll(directSuperTypes.apply(parent));
+            } else if (match == null || match.equals(member)) {
+                match = member;
+            } else
+                return null;
+        }
+        return match;
     }
 
     private static @Nullable String resolveInHierarchy(

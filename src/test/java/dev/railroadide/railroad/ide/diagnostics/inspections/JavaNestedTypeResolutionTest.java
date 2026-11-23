@@ -52,6 +52,13 @@ public class JavaNestedTypeResolutionTest {
                 protected abstract void onRender(S state, int light);
             }
             """));
+        arguments.add(write(sources, "Transactions.java", """
+            package lib;
+            interface Context { interface Close { void close(); } }
+            interface Inner extends Context {}
+            interface Outer extends Context {}
+            public interface Transactions extends Inner, Outer {}
+            """));
         var output = new ByteArrayOutputStream();
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, output, output,
             arguments.toArray(String[]::new)), output::toString);
@@ -71,6 +78,34 @@ public class JavaNestedTypeResolutionTest {
                 public Type<Message> type() { return TYPE; }
             }
             """);
+    }
+
+    @Test
+    public void qualifiedInheritedCallbackResolvesToItsDeclaringInterface() {
+        assertClean("""
+            package app;
+            import lib.Transactions;
+            class Participant implements Transactions.Close {
+                static class Close {}
+                @Override public void close() {}
+                void notifyClosed(Transactions.Close listener) { listener.close(); }
+            }
+            """);
+    }
+
+    @Test
+    public void qualifiedMemberDeclaredOnChildHidesInheritedInterface() {
+        String source = """
+            package app;
+            import lib.Transactions;
+            interface Child extends Transactions { class Close {} }
+            class Invalid implements Child.Close {}
+            """;
+        var errors = JavaInspectionTestSupport.runProvider(new CoreInheritanceInspection(),
+            Path.of("app/Invalid.java"), source, index);
+        assertEquals(List.of("Invalid inheritance: type cannot implement non-interface 'Close'"),
+            errors.stream().filter(d -> d.code().equals("SEM_INVALID_INHERITANCE"))
+                .map(SemanticDiagnostic::message).toList());
     }
 
     @Test

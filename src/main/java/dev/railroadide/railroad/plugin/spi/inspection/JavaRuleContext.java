@@ -1514,8 +1514,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 return currentPackageType;
         }
 
+        if (text.indexOf('.') > 0)
+            return text;
+
         String simpleName = simpleTypeName(text);
-        if (usageSite != null && text.indexOf('.') < 0) {
+        if (usageSite != null) {
             String memberType = JavaMemberTypeScope.resolve(simpleName, enclosingTypeSymbol(usageSite).orElse(null),
                 type -> type.declaration().flatMap(this::enclosingTypeSymbol).orElse(null),
                 candidate -> resolvableQualifiedTypeName(candidate, availableQualifiedTypeNames),
@@ -1600,10 +1603,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return null;
 
         String owner = resolveQualifiedTypeName(text.substring(0, dot), usageSite);
-        if (owner == null || owner.isBlank())
+        if (owner == null || resolvableQualifiedTypeName(owner, availableQualifiedTypeNames) == null)
             return null;
 
-        return resolvableQualifiedTypeName(owner + "$" + text.substring(dot + 1), availableQualifiedTypeNames);
+        return JavaMemberTypeScope.resolveQualifiedMember(owner, text.substring(dot + 1),
+            candidate -> resolvableQualifiedTypeName(candidate, availableQualifiedTypeNames),
+            collectingDirectSuperTypes ? null : this::directSuperTypeNamesInternal);
     }
 
     private @Nullable String resolveInheritedMemberType(
