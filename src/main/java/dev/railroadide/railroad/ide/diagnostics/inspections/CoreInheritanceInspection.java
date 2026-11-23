@@ -273,7 +273,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                         break;
                     }
 
-                    if (!isReturnTypeCompatible(context, inherited, declaredMethod)) {
+                    if (!isReturnTypeCompatible(context, declarationNode, inherited, declaredMethod)) {
                         reporter.report(nodeFor(declaredMethod, declarationNode), declaredMethod.name());
                         break;
                     }
@@ -287,7 +287,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
 
             for (var entry : inheritedBySignature.entrySet()) {
                 if (!declaredSignatures.contains(entry.getKey())
-                    && hasConflictingInheritedMethods(context, entry.getValue())) {
+                    && hasConflictingInheritedMethods(context, declarationNode, entry.getValue())) {
                     reporter.report(declarationNode, entry.getValue().getFirst().name());
                 }
             }
@@ -422,6 +422,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
 
     private static boolean isReturnTypeCompatible(
         JavaRuleContext context,
+        SyntaxNode ownerDeclaration,
         JavaRuleContext.MethodDescriptor base,
         JavaRuleContext.MethodDescriptor candidate
     ) {
@@ -429,11 +430,18 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
             return false;
         Type inherited = base.overrideReturnType();
         Type declared = candidate.overrideReturnType();
+        while (inherited instanceof JavaTypes.ArrayType baseArray
+            && declared instanceof JavaTypes.ArrayType candidateArray) {
+            inherited = baseArray.componentType();
+            declared = candidateArray.componentType();
+        }
         if (Objects.equals(inherited.displayName(), declared.displayName()))
             return true;
+        if (inherited.kind() == JavaTypes.Kind.PRIMITIVE || declared.kind() == JavaTypes.Kind.PRIMITIVE)
+            return false;
         if (inherited.kind() == JavaTypes.Kind.DECLARED && declared.kind() == JavaTypes.Kind.DECLARED)
             return context.isSubtype(declared.displayName(), inherited.displayName());
-        return context.isAssignable(inherited, declared);
+        return context.isAssignable(inherited, declared, ownerDeclaration);
     }
 
     private static boolean areThrownTypesCompatible(
@@ -464,13 +472,14 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
 
     private static boolean hasConflictingInheritedMethods(
         JavaRuleContext context,
+        SyntaxNode ownerDeclaration,
         List<JavaRuleContext.MethodDescriptor> inheritedGroup
     ) {
         if (inheritedGroup.size() < 2)
             return false;
         var methods = inheritedGroup.stream().filter(method -> !Modifier.isStatic(method.modifiers())).toList();
         return methods.size() > 1 && methods.stream().noneMatch(candidate -> methods.stream()
-            .allMatch(base -> base == candidate || isReturnTypeCompatible(context, base, candidate)));
+            .allMatch(base -> base == candidate || isReturnTypeCompatible(context, ownerDeclaration, base, candidate)));
     }
 
     private static SyntaxNode nodeFor(JavaRuleContext.MethodDescriptor descriptor, SyntaxNode fallback) {

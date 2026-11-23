@@ -1140,6 +1140,54 @@ public class CoreInspectionRulesTest {
     }
 
     @Test
+    public void overrideReturnsUseClassBoundsAfterSpecializingCompiledSupertypes(@TempDir Path root) throws Exception {
+        Path parent = root.resolve("Reference.java");
+        Files.writeString(parent, """
+            package api;
+            public abstract class Reference<R> { public abstract R value(); }
+            """);
+        Path holder = root.resolve("Holder.java");
+        String holderSource = """
+            package api;
+            public abstract class Holder<R, T extends R> extends Reference<R> {
+                @Override public abstract T value();
+            }
+            """;
+        Files.writeString(holder, holderSource);
+        assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
+            "-proc:none", "-d", root.toString(), parent.toString(), holder.toString()));
+        var index = new CompositeJavaSymbolIndex(List.of(JavaLibrarySymbolIndex.build(List.of(root)),
+            JavaJdkSymbolIndex.fromCurrentRuntime()));
+
+        var direct = runProvider(new CoreInheritanceInspection(), holder, holderSource, index);
+        assertFalse(direct.stream().anyMatch(issue -> issue.code().equals("SEM_INVALID_OVERRIDE")), direct::toString);
+        var subclasses = runProvider(new CoreInheritanceInspection(), root.resolve("Children.java"), """
+            import api.Holder;
+            abstract class Numbers<N extends Number> extends Holder<Number, N> {}
+            abstract class Texts<B extends CharSequence, S extends B> extends Holder<CharSequence, S> {}
+            """, index);
+        assertFalse(subclasses.stream().anyMatch(issue -> issue.code().equals("SEM_INVALID_OVERRIDE")),
+            subclasses::toString);
+
+        var invalid = runProvider(new CoreInheritanceInspection(), root.resolve("Invalid.java"), """
+            import api.Reference;
+            abstract class Wrong<R, S> extends Reference<R> {
+                @Override public abstract S value();
+            }
+            abstract class Primitive { abstract int count(); abstract int[] counts(); }
+            abstract class Boxed<T extends Integer> extends Primitive {
+                abstract T count();
+                abstract T[] counts();
+            }
+            """, index);
+        assertEquals(
+            List.of("Invalid override for 'value'", "Invalid override for 'count'", "Invalid override for 'counts'"),
+            invalid.stream()
+                .filter(issue -> issue.code().equals("SEM_INVALID_OVERRIDE")).map(SemanticDiagnostic::message)
+                .toList());
+    }
+
+    @Test
     public void covariantOverrideReconcilesMultipleInheritedReturns(@TempDir Path root) throws Exception {
         Path api = root.resolve("Both.java");
         Files.writeString(api, """
