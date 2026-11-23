@@ -109,6 +109,26 @@ public class LanguageInspectionRuleEngineTest {
         assertEquals("keep me", reported.getFirst().message());
     }
 
+    @Test
+    public void stackOverflowSkipsTheProvidersRemainingRulesForTheDocument() {
+        var root = JavaSyntaxParser.parse("class Example {}").root();
+        var executed = new ArrayList<String>();
+        var earlier = new TestRule("earlier", (_, reporter) -> reporter.reportMessage(root, "keep me"));
+        var overflowing = new TestRule("overflowing", (_, reporter) -> {
+            reporter.reportMessage(root, "discard me");
+            executed.add("overflowing");
+            throw new StackOverflowError();
+        });
+        var later = new TestRule("later", _ -> executed.add("later"));
+
+        var reported = assertDoesNotThrow(() -> LanguageInspectionRuleEngine.collectDiagnostics(
+            new TestProvider(List.of(earlier, overflowing, later)), new PathOnlyContext(Path.of("Example.java")),
+            enabledSettings()));
+
+        assertEquals(List.of("overflowing"), executed);
+        assertEquals(List.of("keep me"), reported.stream().map(SemanticDiagnostic::message).toList());
+    }
+
     private static InspectionSettingsAccess enabledSettings() {
         return new InspectionSettingsAccess() {
             @Override

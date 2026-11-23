@@ -35,6 +35,15 @@ public class JavaSemanticAnalyzerTest {
     public Path tempDir;
 
     @Test
+    public void skipsSemanticChecksForTreesNestedDeeperThanTheThreadStack() {
+        String source = "class Example { String text = " + "\"a\" + ".repeat(32_000) + "\"a\"; }\n";
+
+        SemanticModel model = assertDoesNotThrow(() -> JavaSemanticAnalyzer.analyze(JavaSyntaxParser.parse(source)));
+
+        assertTrue(model.diagnostics().isEmpty(), model.diagnostics()::toString);
+    }
+
+    @Test
     public void resolvesNamesWrittenWithUnicodeEscapes() {
         String source = """
             import java.util.List;

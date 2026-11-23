@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaUnicodeEscapes;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
@@ -186,11 +187,21 @@ public final class JavaProjectSemanticExtractor {
 
         String packageName = extractPackageName(root);
         List<JavaProjectSemanticIndex.ImportDescriptor> imports = extractImports(root);
-        SemanticIndexShard shard = projectDeclarationsOnly
-            ? JavaSemanticGraphExtractor.extractProjectDeclarations(model, symbolIndex, activityCheck)
-            : JavaSemanticGraphExtractor.extract(model, symbolIndex, activityCheck);
+        SemanticIndexShard shard;
         List<JavaProjectSemanticIndex.SymbolDescriptor> symbols = new ArrayList<>();
-        collectSymbols(path, root, model, symbols, shard, projectDeclarationsOnly);
+        try {
+            shard = projectDeclarationsOnly
+                ? JavaSemanticGraphExtractor.extractProjectDeclarations(model, symbolIndex, activityCheck)
+                : JavaSemanticGraphExtractor.extract(model, symbolIndex, activityCheck);
+            collectSymbols(path, root, model, symbols, shard, projectDeclarationsOnly);
+        } catch (StackOverflowError error) {
+            // Very deep trees, such as long string concatenations, outgrow the recursive extraction passes.
+            Railroad.LOGGER.warn("Indexed no declarations for {}: its syntax tree is nested too deeply", path);
+            var snapshot = model.syntaxTree().documentSnapshot();
+            shard = new SemanticIndexShard(snapshot.id(), snapshot.version(), snapshot.uri(), List.of(), List.of(),
+                List.of());
+            symbols.clear();
+        }
         activityCheck.run();
 
         return new JavaProjectSemanticIndex.SourceFileIndex(path, packageName, imports, symbols, null, shard);

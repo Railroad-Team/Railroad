@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.impl.java;
 
+import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolIds;
@@ -384,6 +385,24 @@ public final class JavaSemanticAnalyzer {
     }
 
     private static SemanticModel performAnalysis(
+        SyntaxTree syntaxTree,
+        boolean includeResolutionAndTypes,
+        boolean projectDeclarationsOnly,
+        @Nullable JavaSymbolIndex projectIndex,
+        Runnable activityCheck
+    ) {
+        try {
+            return analyzeTree(syntaxTree, includeResolutionAndTypes, projectDeclarationsOnly, projectIndex,
+                activityCheck);
+        } catch (StackOverflowError error) {
+            // Very deep trees, such as long string concatenations, outgrow the recursive analysis passes.
+            Railroad.LOGGER.warn("Skipped semantic analysis of {}: its syntax tree is nested too deeply",
+                syntaxTree.documentUri());
+            return SemanticModel.builder(syntaxTree, Scope.root()).build();
+        }
+    }
+
+    private static SemanticModel analyzeTree(
         SyntaxTree syntaxTree,
         boolean includeResolutionAndTypes,
         boolean projectDeclarationsOnly,

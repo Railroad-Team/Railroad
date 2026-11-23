@@ -12,6 +12,7 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -171,6 +172,34 @@ public class JavaSyntaxParserTest {
             """;
 
         JavaSyntaxAssertions.assertParsesWithoutRecovery(source);
+    }
+
+    @Test
+    public void parsesParenthesizedConditionalCaseConstantsWithoutLooping() {
+        String source = """
+            class Example {
+                static final int one = 0;
+                void run(int value) {
+                    switch (value) {
+                        case (true ? 0 : 1):
+                        case (one == 5 ? 1 : 2):
+                    }
+                }
+            }
+            """;
+
+        assertTimeoutPreemptively(Duration.ofSeconds(10),
+            () -> JavaSyntaxAssertions.assertParsesWithoutRecovery(source));
+    }
+
+    @Test
+    public void parsesConcatenationsDeeperThanTheThreadStack() {
+        String source = "class Example { String text = " + "\"a\" + ".repeat(32_000) + "\"a\"; }\n";
+
+        var result = JavaSyntaxParser.parseWithDiagnostics(source);
+
+        assertTrue(result.diagnostics().isEmpty(), result.diagnostics()::toString);
+        assertEquals(source, JavaParserTestSupport.syntaxText(result.tree()));
     }
 
     @Test

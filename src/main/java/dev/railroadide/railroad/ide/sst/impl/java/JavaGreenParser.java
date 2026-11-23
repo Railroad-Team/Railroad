@@ -2356,7 +2356,14 @@ public final class JavaGreenParser {
                     break;
                 }
 
-                children.add(parsePattern());
+                ParserCheckpoint checkpoint = mark();
+                GreenNode component = parsePattern();
+                if (!madeProgress(checkpoint)) {
+                    children.add(missingToken(JavaTokenType.CLOSE_PAREN));
+                    break;
+                }
+
+                children.add(component);
                 consumeTrivia(children);
                 if (matchSignificant(JavaTokenType.COMMA, children))
                     continue;
@@ -2376,7 +2383,7 @@ public final class JavaGreenParser {
     private boolean isPatternStart() {
         ParserCheckpoint checkpoint = mark();
         int marker = checkpoint.position();
-        parsePattern();
+        boolean recovered = componentsNeedRecovery(parsePattern());
         boolean consumed = position > marker;
         int significantTokens = 0;
         for (int index = marker; index < position; index++) {
@@ -2389,7 +2396,7 @@ public final class JavaGreenParser {
         }
 
         JavaTokenType terminator = peekSignificantType();
-        boolean looksLikePattern = consumed && significantTokens > 1 &&
+        boolean looksLikePattern = consumed && !recovered && significantTokens > 1 &&
             (terminator == JavaTokenType.WHEN_KEYWORD ||
                 terminator == JavaTokenType.COMMA ||
                 terminator == JavaTokenType.COLON ||
@@ -2418,6 +2425,37 @@ public final class JavaGreenParser {
 
         rollback(checkpoint);
         return looksLikePattern;
+    }
+
+    /**
+     * Checks a probed pattern for recovery beyond its leading type. A missing record type, as in the removed
+     * parenthesized pattern {@code (String s)}, still reads as a pattern; a case constant such as
+     * {@code (a == 5 ? 1 : 2)} only fits the pattern grammar by recovering inside the parentheses.
+     */
+    private boolean componentsNeedRecovery(GreenNode pattern) {
+        var pending = new ArrayDeque<GreenElement>();
+        boolean skippedType = false;
+        for (GreenElement child : pattern.children()) {
+            if (!skippedType && child.kind().equals(JavaSyntaxKinds.TYPE_REFERENCE)) {
+                skippedType = true;
+            } else {
+                pending.push(child);
+            }
+        }
+        while (!pending.isEmpty()) {
+            ActivityCheckpoint.poll(activityCheck);
+
+            GreenElement element = pending.pop();
+            SyntaxKind kind = element.kind();
+            if (kind.equals(JavaSyntaxKinds.ERROR) || kind.equals(SyntaxKind.MISSING_TOKEN)
+                || kind.id().startsWith("JAVA_MISSING_"))
+                return true;
+
+            if (element instanceof GreenNode child) {
+                child.children().forEach(pending::push);
+            }
+        }
+        return false;
     }
 
     private GreenNode parseAnonymousClassBody() {

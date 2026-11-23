@@ -48,6 +48,20 @@ public class JavaProjectSemanticExtractorTest {
     }
 
     @Test
+    public void indexesNoDeclarationsForTreesNestedDeeperThanTheThreadStack() {
+        String source = "package demo;\nimport java.util.List;\nclass Example { String text = "
+            + "\"a\" + ".repeat(32_000) + "\"a\"; }\n";
+
+        var fileIndex = assertDoesNotThrow(() -> new JavaProjectSemanticExtractor()
+            .extract(Path.of("src/main/java/demo/Example.java"), source));
+
+        assertEquals("demo", fileIndex.packageName());
+        assertEquals(1, fileIndex.imports().size());
+        assertTrue(fileIndex.declaredSymbols().isEmpty());
+        assertTrue(fileIndex.semanticShard().declarations().isEmpty());
+    }
+
+    @Test
     public void extractsPackageImportsAndProjectSymbolsFromSource() {
         String source = """
             package demo.sample;

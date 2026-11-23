@@ -4,6 +4,8 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -48,10 +50,21 @@ public final class SyntaxTreeValidator {
         if (root.start() != 0)
             throw new IllegalStateException("syntax root must start at 0, got " + root.start());
 
-        validateNode(root, null, activityCheck);
+        // An explicit stack, because long expression chains nest deeper than the thread stack allows.
+        var pending = new ArrayDeque<PendingNode>();
+        pending.push(new PendingNode(root, null));
+        while (!pending.isEmpty()) {
+            PendingNode next = pending.pop();
+            validateNode(next.node(), next.expectedParent(), activityCheck, pending);
+        }
     }
 
-    private static void validateNode(SyntaxNode node, SyntaxNode expectedParent, Runnable activityCheck) {
+    private static void validateNode(
+        SyntaxNode node,
+        SyntaxNode expectedParent,
+        Runnable activityCheck,
+        Deque<PendingNode> pending
+    ) {
         ActivityCheckpoint.poll(activityCheck);
 
         if (node.start() < 0)
@@ -85,12 +98,18 @@ public final class SyntaxTreeValidator {
                 throw new IllegalStateException("child start mismatch in node " + node.kind().id() +
                     ": expected " + childCursor + ", got " + child.start());
 
-            validateNode(child, node, activityCheck);
             childCursor = child.end();
         }
 
         if (childCursor != node.end())
             throw new IllegalStateException("child range mismatch in node " + node.kind().id() +
                 ": expected end " + node.end() + ", got " + childCursor);
+
+        for (int index = children.size() - 1; index >= 0; index--) {
+            pending.push(new PendingNode(children.get(index), node));
+        }
+    }
+
+    private record PendingNode(SyntaxNode node, SyntaxNode expectedParent) {
     }
 }

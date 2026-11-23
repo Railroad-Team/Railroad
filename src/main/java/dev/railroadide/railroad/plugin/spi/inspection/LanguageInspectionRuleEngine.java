@@ -19,7 +19,9 @@ public final class LanguageInspectionRuleEngine {
     /**
      * Runs a provider's enabled, nonnull rules in list order.
      * Exceptions from individual rule evaluations are logged so subsequent rules can run.
-     * A failed rule's partial diagnostics are discarded. Cancellation propagates immediately,
+     * A failed rule's partial diagnostics are discarded. A rule that overflows the stack on a deeply nested
+     * document is treated the same way, and the provider's remaining rules are skipped for that document.
+     * Cancellation propagates immediately,
      * and request activity is checked before each rule and before publishing its diagnostics.
      *
      * @param <C> context type accepted by the provider's rules
@@ -56,6 +58,11 @@ public final class LanguageInspectionRuleEngine {
                 pending.forEach(reporter::report);
             } catch (CancellationException exception) {
                 throw exception;
+            } catch (StackOverflowError error) {
+                // The document is nested too deeply for recursive rules, so the remaining rules are skipped too.
+                Railroad.LOGGER.warn("Skipped inspection rules of '{}' for {}: its syntax tree is nested too deeply",
+                    provider.id(), context.documentUri());
+                break;
             } catch (Exception exception) {
                 ProviderExecutor.shared().reportFailure("inspection:" + provider.languageId() + ":" + provider.id(),
                     exception);
