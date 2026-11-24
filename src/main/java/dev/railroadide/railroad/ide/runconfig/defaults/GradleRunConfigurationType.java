@@ -9,6 +9,7 @@ import dev.railroadide.railroad.debug.source.ProjectSourceResolver;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.GradleRunConfigurationData;
+import dev.railroadide.railroad.ide.runconfig.session.RunSession;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -18,7 +19,9 @@ import org.gradle.tooling.*;
 import org.jetbrains.annotations.UnknownNullability;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.ServerSocket;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -80,6 +83,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         if (executions.putIfAbsent(configuration.uuid(), execution) != null)
             return CompletableFuture
                 .failedFuture(new IllegalStateException("This Gradle configuration is already running"));
+        execution.session = project.getRunSessions().start(configuration, debug);
         CompletableFuture.runAsync(() -> {
             try {
                 executeGradleBuild(project, configuration, execution, debug);
@@ -97,6 +101,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         GradleExecutionHandle execution = executions.get(configuration.uuid());
         if (execution == null)
             return CompletableFuture.completedFuture(null);
+        execution.session.requestStop();
         execution.cancel();
         finish(configuration, execution, new CancellationException("Gradle execution stopped"));
         return execution.cleaned;
@@ -132,6 +137,9 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         private final CompletableFuture<Void> setupComplete = new CompletableFuture<>();
         private volatile boolean ended;
         private boolean finishing;
+        private volatile RunSession session;
+        private OutputStream stdout;
+        private OutputStream stderr;
         private ProjectConnection connection;
         private volatile CancellationTokenSource cancellation;
         private Path script;
@@ -225,6 +233,9 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
                     }
                 }
             }
+            closeQuietly(execution.stdout);
+            closeQuietly(execution.stderr);
+            execution.session.finish(null, outcome);
             executions.remove(configuration.uuid(), execution);
             if (outcome == null) {
                 execution.completion.complete(null);
@@ -273,16 +284,22 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
             .forProjectDirectory(gradleProjectPath.toFile()).connect();
         if (execution.ended)
             return;
+        RunSession runSession = execution.session;
+        Charset charset = Charset.defaultCharset();
+        execution.stdout = runSession.stdout(charset);
+        execution.stderr = runSession.stderr(charset);
+        runSession.appendSystemLine("gradle " + task);
+        // Colour output switches Gradle to its rich console, whose progress bar redraws lines with cursor movement.
         BuildLauncher launcher = execution.connection.newBuild()
             .forTasks(task)
             .setJvmArguments(vmOptions)
             .setEnvironmentVariables(environmentVariables)
             .setJavaHome(javaHome.path().toFile())
-            .setColorOutput(true)
+            .setColorOutput(false)
             .withCancellationToken(execution.cancellation.token())
-            .setStandardOutput(System.out) // TODO: Redirect to IDE console
-            .setStandardError(System.err)
-            .setStandardInput(System.in);
+            .setStandardOutput(execution.stdout)
+            .setStandardError(execution.stderr)
+            .setStandardInput(runSession.input(charset));
         if (debug) {
             launcher.withArguments("--init-script", execution.script.toString(), "--no-configuration-cache");
         }
@@ -316,6 +333,17 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
                     finish(configuration, execution, failure);
                 }
             });
+        }
+    }
+
+    private static void closeQuietly(OutputStream stream) {
+        if (stream == null)
+            return;
+
+        try {
+            stream.close();
+        } catch (IOException exception) {
+            Railroad.LOGGER.debug("Failed to flush Gradle run output", exception);
         }
     }
 

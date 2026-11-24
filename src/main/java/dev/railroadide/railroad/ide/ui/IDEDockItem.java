@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.gradle.ui.GradleToolsPane;
+import dev.railroadide.railroad.ide.ui.console.ConsolePane;
 import dev.railroadide.railroad.ide.ui.debugger.DebuggerPane;
 import dev.railroadide.railroad.ide.WorkspaceMode;
 import dev.railroadide.railroad.ide.WorkspaceModes;
@@ -144,7 +145,7 @@ public enum IDEDockItem {
         DockPosition.BOTTOM,
         null,
         InitializationPolicy.EAGER,
-        _ -> new ConsolePane()),
+        ConsolePane::new),
     /**
      * Terminal pane created on first selection.
      */

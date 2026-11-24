@@ -154,7 +154,6 @@ railroad.runconfig.shell_script.configuration.envVariables.invalid=Environment v
 railroad.runconfig.shell_script.configuration.interpreterPath.label=Interpreter path
 railroad.runconfig.shell_script.configuration.interpreterArgs.label=Interpreter arguments
 railroad.runconfig.shell_script.configuration.interpreterArgs.prompt=Arguments separated by spaces
-railroad.runconfig.shell_script.configuration.executeInTerminal.label=Run in terminal
 
 # =============================================================================
 # Gradle Tools
@@ -1371,6 +1370,18 @@ railroad.ide.usages.unresolved=No symbol at the caret
 railroad.ide.usages.timed_out=Search timed out · %s
 railroad.ide.usages.failed=Find Usages failed. %s
 railroad.ide.usages.outdated_target=That file changed since the search. Refresh to update the results.
+railroad.ide.console.empty=Run a configuration to see its output here.
+railroad.ide.console.rerun=Rerun
+railroad.ide.console.stop=Stop
+railroad.ide.console.follow=Scroll to end on new output
+railroad.ide.console.wrap=Soft-wrap lines
+railroad.ide.console.clear=Clear output
+railroad.ide.console.input.prompt=Send input to the process
+railroad.ide.console.exited=Process finished with exit code %d
+railroad.ide.console.stopped=Process stopped
+railroad.ide.console.finished=Run finished
+railroad.ide.console.failed=Run failed: %s
+railroad.ide.console.failed_without_reason=Run failed
 railroad.editor.navigation.timed_out=Navigation timed out while analysing the workspace
 railroad.menu.refactor=Refactor
 railroad.menu.refactor.rename=Rename...

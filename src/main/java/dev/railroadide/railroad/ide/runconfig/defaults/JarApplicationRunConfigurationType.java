@@ -3,6 +3,7 @@ package dev.railroadide.railroad.ide.runconfig.defaults;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.JarApplicationRunConfigurationData;
+import dev.railroadide.railroad.ide.runconfig.session.RunSession;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -15,13 +16,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Launches executable JARs with configured Java runtime options and tracks their processes.
  */
 public class JarApplicationRunConfigurationType extends RunConfigurationType<JarApplicationRunConfigurationData> {
-    private final Map<RunConfiguration<?>, Process> runningProcesses = new ConcurrentHashMap<>();
+    private final Map<RunConfiguration<?>, Running> runningProcesses = new ConcurrentHashMap<>();
 
     /**
      * Creates the JAR application type with its localized label and JAR icon.
@@ -35,7 +37,10 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
         Project project,
         RunConfiguration<JarApplicationRunConfigurationData> configuration
     ) {
-        return CompletableFuture.runAsync(() -> {
+        RunSession session = project.getRunSessions().start(configuration, false);
+        var running = new Running(session);
+        runningProcesses.put(configuration, running);
+        return CompletableFuture.supplyAsync(() -> {
             JarApplicationRunConfigurationData data = configuration.data();
             JDK jre = requireJre(data);
             Path jarPath = requireJarPath(data);
@@ -47,25 +52,40 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
                 : data.getEnvironmentVariables();
 
             try {
+                String[] command = buildCommand(jre, jarPath, vmOptions, programArguments);
                 var builder = new ProcessBuilder()
-                    .command(buildCommand(jre, jarPath, vmOptions, programArguments))
-                    .directory(workingDirectory.toFile())
-                    .inheritIO(); // TODO: Delegate to IDE console
+                    .command(command)
+                    .directory(workingDirectory.toFile());
                 if (!environmentVariables.isEmpty()) {
                     builder.environment().putAll(environmentVariables);
                 }
-                Process process = builder.start();
-                runningProcesses.put(configuration, process);
+                Process process;
+                synchronized (running) {
+                    if (session.isStopRequested())
+                        return null;
+                    session.appendSystemLine(String.join(" ", command));
+                    process = builder.start();
+                    running.process = process;
+                }
+                CompletableFuture<Void> drained = session.connect(process, RunSession.processCharset());
                 int exitCode = process.waitFor();
-                runningProcesses.remove(configuration);
-                if (exitCode != 0)
-                    throw new IllegalStateException("Jar Application process exited with code: " + exitCode);
+                drained.join();
+                return exitCode;
             } catch (IOException exception) {
                 throw new IllegalStateException("Failed to start Jar Application process", exception);
             } catch (InterruptedException exception) {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Jar Application process was interrupted", exception);
             }
+        }).handle((exitCode, failure) -> {
+            runningProcesses.remove(configuration, running);
+            session.finish(exitCode, failure);
+            if (failure != null)
+                throw failure instanceof CompletionException completion ? completion : new CompletionException(failure);
+            if (exitCode != null && exitCode != 0 && !session.isStopRequested())
+                throw new IllegalStateException("Jar Application process exited with code: " + exitCode);
+
+            return null;
         });
     }
 
@@ -98,10 +118,9 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
         Project project,
         RunConfiguration<JarApplicationRunConfigurationData> configuration
     ) {
-        Process process = runningProcesses.get(configuration);
-        if (process != null && process.isAlive()) {
-            process.destroy();
-            runningProcesses.remove(configuration);
+        Running running = runningProcesses.get(configuration);
+        if (running != null) {
+            running.stop();
         }
 
         return CompletableFuture.completedFuture(null);
@@ -109,8 +128,7 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
 
     @Override
     public boolean isRunning(Project project, RunConfiguration<JarApplicationRunConfigurationData> configuration) {
-        Process process = runningProcesses.get(configuration);
-        return process != null && process.isAlive();
+        return runningProcesses.containsKey(configuration);
     }
 
     @Override
@@ -158,5 +176,21 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
                 "Working directory does not exist or is not a directory: " + workingDirectory);
 
         return workingDirectory;
+    }
+
+    private static final class Running {
+        private final RunSession session;
+        private Process process;
+
+        private Running(RunSession session) {
+            this.session = session;
+        }
+
+        private synchronized void stop() {
+            session.requestStop();
+            if (process != null) {
+                process.destroy();
+            }
+        }
     }
 }

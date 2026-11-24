@@ -1,7 +1,7 @@
 package dev.railroadide.railroad.gradle.service.impl;
 
 import dev.railroadide.railroad.gradle.GradleEnvironment;
-import dev.railroadide.railroad.gradle.GradleOutputStream;
+import dev.railroadide.railroad.utility.DecodingOutputStream;
 import dev.railroadide.railroad.gradle.service.GradleExecutionService;
 import dev.railroadide.railroad.gradle.service.task.GradleTaskExecutionHandle;
 import dev.railroadide.railroad.gradle.service.task.GradleTaskExecutionRequest;
@@ -18,6 +18,7 @@ import org.gradle.tooling.events.download.FileDownloadFinishEvent;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -149,8 +150,8 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
 
             build.withCancellationToken(tokenSource.token());
 
-            build.setStandardOutput(new GradleOutputStream(handle::emitOutput));
-            build.setStandardError(new GradleOutputStream(handle::emitError));
+            build.setStandardOutput(new DecodingOutputStream(Charset.defaultCharset(), handle::emitOutput));
+            build.setStandardError(new DecodingOutputStream(Charset.defaultCharset(), handle::emitError));
             var downloads = new DownloadProgress(progress);
             build.addProgressListener((ProgressListener) event -> {
                 String msg = event.getDescriptor() != null

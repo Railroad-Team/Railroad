@@ -3,6 +3,7 @@ package dev.railroadide.railroad.plugin.spi.dto;
 import com.google.gson.JsonObject;
 import dev.railroadide.railroad.gradle.project.GradleManager;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
+import dev.railroadide.railroad.ide.runconfig.session.RunSessionManager;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationManager;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.project.License;
@@ -19,6 +20,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 /**
  * Represents a project in the Railroad plugin API.
@@ -107,9 +109,11 @@ public interface Project extends JsonSerializable<JsonObject> {
      * Build the project using the specified JDK.
      *
      * @param jdk the JDK to use for building the project
+     * @param output receiver of the build's standard output as it is written
+     * @param error receiver of the build's standard error as it is written
      * @return a CompletableFuture that completes with a Runnable to execute after the build is finished
      */
-    CompletableFuture<Runnable> build(JDK jdk);
+    CompletableFuture<Runnable> build(JDK jdk, Consumer<String> output, Consumer<String> error);
 
     /**
      * Get a description of the project.
@@ -159,6 +163,13 @@ public interface Project extends JsonSerializable<JsonObject> {
      * @return the DebuggingManager for the project
      */
     DebuggingManager getDebuggingManager();
+
+    /**
+     * Get the run sessions launched from the project's run configurations.
+     *
+     * @return the RunSessionManager for the project
+     */
+    RunSessionManager getRunSessions();
 
     /**
      * Get the ProjectDataStore for the project.

@@ -4,6 +4,10 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
+import dev.railroadide.railroad.ide.runconfig.session.RunOutput;
+import dev.railroadide.railroad.ide.runconfig.session.RunSession;
+import dev.railroadide.railroad.ide.runconfig.session.RunSessionManager;
+import dev.railroadide.railroad.ide.runconfig.session.RunSessionState;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.GradleRunConfigurationData;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -19,6 +23,7 @@ import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -36,6 +41,64 @@ public class GradleRunConfigurationLifecycleTest {
             Platform.runLater(ready::countDown);
         }
         assertTrue(ready.await(10, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void buildOutputIsRecordedInRunSession() throws Exception {
+        Files.writeString(directory.resolve("settings.gradle"), "rootProject.name = 'output'");
+        Files.writeString(directory.resolve("build.gradle"), """
+            tasks.register('speak') {
+                doLast {
+                    println 'hello from the build'
+                    System.err.println 'warning from the build'
+                }
+            }
+            """);
+        var type = type();
+        var configuration = configuration(type, "speak");
+        Project project = project();
+
+        type.run(project, configuration).get(60, TimeUnit.SECONDS);
+
+        RunSession session = project.getRunSessions().sessions().getLast();
+        assertSame(configuration, session.configuration());
+        assertEquals(RunSessionState.SUCCEEDED, session.state());
+        String stdout = text(session, RunOutput.Kind.STDOUT);
+        String stderr = text(session, RunOutput.Kind.STDERR);
+        assertTrue(stdout.contains("hello from the build"), stdout);
+        assertTrue(stderr.contains("warning from the build") || stdout.contains("warning from the build"),
+            stdout + stderr);
+        assertEquals("gradle speak\n", text(session, RunOutput.Kind.SYSTEM));
+    }
+
+    @Test
+    public void stoppedBuildEndsSessionAsStopped() throws Exception {
+        Files.writeString(directory.resolve("settings.gradle"), "rootProject.name = 'stopped'");
+        Files.writeString(directory.resolve("build.gradle"), """
+            tasks.register('wait') {
+                doLast {
+                    file('started').text = 'ready'
+                    Thread.sleep(30000)
+                }
+            }
+            """);
+        var type = type();
+        var configuration = configuration(type, "wait");
+        Project project = project();
+        var completion = type.run(project, configuration);
+        try {
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(60);
+            while (!Files.exists(directory.resolve("started")) && !completion.isDone()
+                && System.nanoTime() < deadline) {
+                Thread.sleep(50);
+            }
+            assertTrue(Files.exists(directory.resolve("started")));
+            type.stop(project, configuration).get(15, TimeUnit.SECONDS);
+
+            assertEquals(RunSessionState.STOPPED, project.getRunSessions().sessions().getLast().state());
+        } finally {
+            type.stop(project, configuration).get(30, TimeUnit.SECONDS);
+        }
     }
 
     @Test
@@ -149,11 +212,13 @@ public class GradleRunConfigurationLifecycleTest {
 
     private Project project() {
         var manager = new DebuggingManager[1];
+        var sessions = new RunSessionManager();
         Project project = (Project) Proxy.newProxyInstance(Project.class.getClassLoader(),
             new Class<?>[]{Project.class},
             (proxy, method, args) -> switch (method.getName()) {
                 case "getPath" -> directory;
                 case "getDebuggingManager" -> manager[0];
+                case "getRunSessions" -> sessions;
                 default -> throw new UnsupportedOperationException(method.getName());
             });
         manager[0] = new DebuggingManager(project);
@@ -164,6 +229,13 @@ public class GradleRunConfigurationLifecycleTest {
         var flushed = new CompletableFuture<Void>();
         Platform.runLater(() -> flushed.complete(null));
         flushed.get(10, TimeUnit.SECONDS);
+    }
+
+    private static String text(RunSession session, RunOutput.Kind kind) {
+        return session.retainedOutput().stream()
+            .filter(output -> output.kind() == kind)
+            .map(RunOutput::text)
+            .collect(Collectors.joining());
     }
 
     private static String messages(Throwable failure) {

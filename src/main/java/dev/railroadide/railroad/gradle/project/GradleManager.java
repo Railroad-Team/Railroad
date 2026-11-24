@@ -33,6 +33,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -142,11 +143,21 @@ public final class GradleManager {
      *
      * @param taskName the name of the task to run
      * @param jdk the JDK to use for execution
+     * @param output receiver of the task's standard output as it is written
+     * @param error receiver of the task's standard error as it is written
      * @param future the future to complete when done
      */
-    public void runBuildTaskAsync(String taskName, JDK jdk, CompletableFuture<Runnable> future) {
+    public void runBuildTaskAsync(
+        String taskName,
+        JDK jdk,
+        Consumer<String> output,
+        Consumer<String> error,
+        CompletableFuture<Runnable> future
+    ) {
         Objects.requireNonNull(taskName, "taskName");
         Objects.requireNonNull(jdk, "jdk");
+        Objects.requireNonNull(output, "output");
+        Objects.requireNonNull(error, "error");
 
         try {
             ensureIsGradleProject();
@@ -166,9 +177,11 @@ public final class GradleManager {
             prefs.offlineMode(),
             false,
             false,
-            GradleConsoleMode.RICH);
+            GradleConsoleMode.PLAIN);
 
         GradleTaskExecutionHandle handle = execService.runTask(request);
+        handle.onOutputReceived(event -> output.accept(event.output()));
+        handle.onErrorReceived(event -> error.accept(event.errorMessage()));
         handle.completionFuture().whenComplete((result, throwable) -> {
             if (throwable != null) {
                 future.completeExceptionally(throwable);

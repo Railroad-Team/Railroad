@@ -755,10 +755,22 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             if (dockTab == null || !(dockTab.getContent() instanceof UsagesPane usages))
                 return;
 
-            if (!isDockItemActive(IDEDockItem.USAGES)) {
-                toggleDockItem(IDEDockItem.USAGES);
-            }
+            revealDockItem(IDEDockItem.USAGES);
             usages.search(request);
+        });
+    }
+
+    /**
+     * Brings a dock item to the front if it is available and not already showing.
+     *
+     * @param dockItem the dock item to show
+     */
+    public void revealDockItem(IDEDockItem dockItem) {
+        Objects.requireNonNull(dockItem, "Dock item cannot be null");
+        JavaFXUtils.runOnApplicationThread(() -> {
+            if (isDockItemAvailable(dockItem) && !isDockItemActive(dockItem)) {
+                toggleDockItem(dockItem);
+            }
         });
     }
 

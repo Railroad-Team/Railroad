@@ -4,6 +4,7 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.debug.model.*;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
+import dev.railroadide.railroad.ide.runconfig.session.RunSessionManager;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.JavaApplicationRunConfigurationData;
 import dev.railroadide.railroad.java.JDK;
@@ -146,11 +147,13 @@ public class JavaApplicationDebugIntegrationTest {
         data.setJdk(new JDK(Path.of(System.getProperty("java.home")), "Test JDK",
             JavaVersion.fromMajor(Runtime.version().feature())));
         var manager = new DebuggingManager[1];
+        var sessions = new RunSessionManager();
         Project project = (Project) Proxy.newProxyInstance(Project.class.getClassLoader(),
             new Class<?>[]{Project.class},
             (_, method, _) -> switch (method.getName()) {
                 case "getPath" -> directory;
                 case "getDebuggingManager" -> manager[0];
+                case "getRunSessions" -> sessions;
                 default -> throw new UnsupportedOperationException(method.getName());
             });
         manager[0] = new DebuggingManager(project);

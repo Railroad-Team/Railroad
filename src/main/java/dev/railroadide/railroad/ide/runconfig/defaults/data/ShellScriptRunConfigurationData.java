@@ -31,7 +31,6 @@ public class ShellScriptRunConfigurationData extends RunConfigurationData {
     private Map<String, String> environmentVariables = new HashMap<>();
     private String interpreterPath;
     private String[] interpreterArgs = new String[0];
-    private boolean executeInTerminal = true;
 
     /**
      * Initializes the interpreter to PowerShell on Windows, Bash on macOS or Linux, or an empty path on other systems.
@@ -126,11 +125,6 @@ public class ShellScriptRunConfigurationData extends RunConfigurationData {
                     .textField("interpreterArgs", "railroad.runconfig.shell_script.configuration.interpreterArgs.label")
                     .text(() -> StringUtils.stringArrayToString(interpreterArgsValue, " "))
                     .promptText("railroad.runconfig.shell_script.configuration.interpreterArgs.prompt")
-                    .build())
-                .appendComponent(FormComponent
-                    .checkBox("executeInTerminal",
-                        "railroad.runconfig.shell_script.configuration.executeInTerminal.label")
-                    .selected(this.executeInTerminal)
                     .build()))
             .build();
     }
@@ -148,7 +142,6 @@ public class ShellScriptRunConfigurationData extends RunConfigurationData {
             .stringToEnvironmentVariables(formData.get("environmentVariables", String.class));
         this.interpreterPath = formData.get("interpreterPath", String.class);
         this.interpreterArgs = StringUtils.stringToStringArray(formData.get("interpreterArgs", String.class), " ");
-        this.executeInTerminal = formData.get("executeInTerminal", Boolean.class);
     }
 
     /**

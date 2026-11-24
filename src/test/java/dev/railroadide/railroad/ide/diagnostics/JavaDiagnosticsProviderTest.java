@@ -5,6 +5,7 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.gradle.project.GradleManager;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
+import dev.railroadide.railroad.ide.runconfig.session.RunSessionManager;
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagnostic;
 import dev.railroadide.railroad.ide.diagnostics.inspections.CoreNameResolutionInspection;
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
@@ -42,6 +43,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import dev.railroadide.railroad.ide.sst.document.api.WorkspaceConfigurationSnapshot;
 import java.util.Set;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
@@ -346,7 +348,7 @@ public class JavaDiagnosticsProviderTest {
         }
 
         @Override
-        public CompletableFuture<Runnable> build(JDK jdk) {
+        public CompletableFuture<Runnable> build(JDK jdk, Consumer<String> output, Consumer<String> error) {
             throw unsupported();
         }
 
@@ -382,6 +384,11 @@ public class JavaDiagnosticsProviderTest {
 
         @Override
         public DebuggingManager getDebuggingManager() {
+            throw unsupported();
+        }
+
+        @Override
+        public RunSessionManager getRunSessions() {
             throw unsupported();
         }
 

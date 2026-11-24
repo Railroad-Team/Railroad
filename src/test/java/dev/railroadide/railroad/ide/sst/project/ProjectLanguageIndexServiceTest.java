@@ -4,6 +4,7 @@ import dev.railroadide.railroad.ide.language.index.IndexTestProviders;
 import com.google.gson.JsonObject;
 import dev.railroadide.railroad.gradle.project.GradleManager;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
+import dev.railroadide.railroad.ide.runconfig.session.RunSessionManager;
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.language.impl.index.JavaProjectLanguageIndexer;
@@ -28,6 +29,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.HashMap;
 import java.util.Map;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
@@ -386,7 +388,7 @@ public class ProjectLanguageIndexServiceTest {
             }
 
             @Override
-            public CompletableFuture<Runnable> build(JDK jdk) {
+            public CompletableFuture<Runnable> build(JDK jdk, Consumer<String> output, Consumer<String> error) {
                 throw unsupported();
             }
 
@@ -422,6 +424,11 @@ public class ProjectLanguageIndexServiceTest {
 
             @Override
             public DebuggingManager getDebuggingManager() {
+                throw unsupported();
+            }
+
+            @Override
+            public RunSessionManager getRunSessions() {
                 throw unsupported();
             }
 

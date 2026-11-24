@@ -149,7 +149,6 @@ railroad.runconfig.shell_script.configuration.envVariables.invalid=Переме�
 railroad.runconfig.shell_script.configuration.interpreterPath.label=Путь к интерпретатору
 railroad.runconfig.shell_script.configuration.interpreterArgs.label=Аргументы интерпретатора
 railroad.runconfig.shell_script.configuration.interpreterArgs.prompt=Аргументы через пробел
-railroad.runconfig.shell_script.configuration.executeInTerminal.label=Запустить в терминале
 
 
 # =============================================================================

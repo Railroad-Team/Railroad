@@ -1,0 +1,163 @@
+.console-pane,
+.run-session-view {
+    -fx-background-color: -color-surface-panel;
+}
+
+.console-empty {
+    -fx-text-fill: -color-fg-muted;
+}
+
+.console-toolbar {
+    -fx-alignment: center-left;
+    -fx-spacing: 0.25em;
+    -fx-padding: 0.2em 0.5em;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.console-output {
+    -fx-background-color: -color-surface-editor;
+    -fx-padding: 0.25em 0.5em;
+}
+
+.console-output .paragraph-text .text {
+    -fx-font-family: "JetBrains Mono";
+    -fx-fill: -color-fg-default;
+}
+
+.console-input {
+    -fx-font-family: "JetBrains Mono";
+    -fx-background-radius: 0;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1px 0 0 0;
+}
+
+.console-output .paragraph-text .text.console-stderr {
+    -fx-fill: -color-danger-fg;
+}
+
+.console-output .paragraph-text .text.console-system {
+    -fx-fill: -color-fg-muted;
+    -fx-font-style: italic;
+}
+
+.console-output .paragraph-text .text.console-user-input {
+    -fx-fill: -color-success-fg;
+}
+
+/* ANSI colours come after the stream colours so that explicit colours win. */
+.console-output .paragraph-text .text.ansi-fg-0 {
+    -fx-fill: -color-fg-subtle;
+}
+
+.console-output .paragraph-text .text.ansi-fg-1 {
+    -fx-fill: -color-danger-fg;
+}
+
+.console-output .paragraph-text .text.ansi-fg-2 {
+    -fx-fill: -color-success-fg;
+}
+
+.console-output .paragraph-text .text.ansi-fg-3 {
+    -fx-fill: -color-warning-fg;
+}
+
+.console-output .paragraph-text .text.ansi-fg-4 {
+    -fx-fill: -color-accent-fg;
+}
+
+.console-output .paragraph-text .text.ansi-fg-5 {
+    -fx-fill: -color-chart-6;
+}
+
+.console-output .paragraph-text .text.ansi-fg-6 {
+    -fx-fill: -color-chart-4;
+}
+
+.console-output .paragraph-text .text.ansi-fg-7 {
+    -fx-fill: -color-fg-default;
+}
+
+.console-output .paragraph-text .text.ansi-fg-8 {
+    -fx-fill: -color-fg-muted;
+}
+
+.console-output .paragraph-text .text.ansi-fg-9 {
+    -fx-fill: -color-danger-emphasis;
+}
+
+.console-output .paragraph-text .text.ansi-fg-10 {
+    -fx-fill: -color-success-emphasis;
+}
+
+.console-output .paragraph-text .text.ansi-fg-11 {
+    -fx-fill: -color-warning-emphasis;
+}
+
+.console-output .paragraph-text .text.ansi-fg-12 {
+    -fx-fill: -color-accent-emphasis;
+}
+
+.console-output .paragraph-text .text.ansi-fg-13 {
+    -fx-fill: -color-chart-6;
+}
+
+.console-output .paragraph-text .text.ansi-fg-14 {
+    -fx-fill: -color-chart-4;
+}
+
+.console-output .paragraph-text .text.ansi-fg-15 {
+    -fx-fill: -color-fg-emphasis;
+}
+
+.console-output .paragraph-text .text.ansi-bg-0,
+.console-output .paragraph-text .text.ansi-bg-8 {
+    -rtfx-background-color: -color-border-subtle;
+}
+
+.console-output .paragraph-text .text.ansi-bg-1,
+.console-output .paragraph-text .text.ansi-bg-9 {
+    -rtfx-background-color: -color-danger-muted;
+}
+
+.console-output .paragraph-text .text.ansi-bg-2,
+.console-output .paragraph-text .text.ansi-bg-10 {
+    -rtfx-background-color: -color-success-muted;
+}
+
+.console-output .paragraph-text .text.ansi-bg-3,
+.console-output .paragraph-text .text.ansi-bg-11 {
+    -rtfx-background-color: -color-warning-muted;
+}
+
+.console-output .paragraph-text .text.ansi-bg-4,
+.console-output .paragraph-text .text.ansi-bg-12 {
+    -rtfx-background-color: -color-accent-muted;
+}
+
+.console-output .paragraph-text .text.ansi-bg-5,
+.console-output .paragraph-text .text.ansi-bg-13 {
+    -rtfx-background-color: -color-chart-6-alpha70;
+}
+
+.console-output .paragraph-text .text.ansi-bg-6,
+.console-output .paragraph-text .text.ansi-bg-14 {
+    -rtfx-background-color: -color-chart-4-alpha70;
+}
+
+.console-output .paragraph-text .text.ansi-bg-7,
+.console-output .paragraph-text .text.ansi-bg-15 {
+    -rtfx-background-color: -color-fg-subtle;
+}
+
+.console-output .paragraph-text .text.ansi-bold {
+    -fx-font-weight: bold;
+}
+
+.console-output .paragraph-text .text.ansi-italic {
+    -fx-font-style: italic;
+}
+
+.console-output .paragraph-text .text.ansi-underline {
+    -fx-underline: true;
+}

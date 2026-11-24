@@ -10,6 +10,7 @@ import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.gradle.project.GradleManager;
 import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
+import dev.railroadide.railroad.ide.runconfig.session.RunSessionManager;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationManager;
 import dev.railroadide.railroad.ide.ui.IDEPane;
 import dev.railroadide.railroad.ide.ui.editor.EditorTabSessionState;
@@ -50,6 +51,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 /**
  * Represents a project managed by Railroad, including its path, metadata,
@@ -78,6 +80,8 @@ public class RailroadProject implements Project {
     private final GitManager gitManager;
     @Getter
     private final DebuggingManager debuggingManager;
+    @Getter
+    private final RunSessionManager runSessions = new RunSessionManager();
 
     /**
      * Creates a project using the final path component as its alias.
@@ -693,13 +697,15 @@ public class RailroadProject implements Project {
      * </p>
      *
      * @param jdk the JDK to use for the build
+     * @param output receiver of the build's standard output as it is written
+     * @param error receiver of the build's standard error as it is written
      * @return a future completed with the build task, or exceptionally when the project cannot be built
      */
-    public CompletableFuture<Runnable> build(JDK jdk) {
+    public CompletableFuture<Runnable> build(JDK jdk, Consumer<String> output, Consumer<String> error) {
         CompletableFuture<Runnable> future = new CompletableFuture<>();
         CompletableFuture.runAsync(() -> {
             if (hasFacet(FacetManager.GRADLE)) {
-                gradleManager.runBuildTaskAsync("build", jdk, future);
+                gradleManager.runBuildTaskAsync("build", jdk, output, error, future);
             } else if (hasFacet(FacetManager.MAVEN)) {
                 // TODO: Implement Maven build support
                 future.completeExceptionally(
