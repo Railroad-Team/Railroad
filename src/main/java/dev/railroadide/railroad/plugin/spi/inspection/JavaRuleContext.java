@@ -1587,7 +1587,14 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return resolveQualifiedTypeName(typeText, null);
     }
 
-    private @Nullable String resolveQualifiedTypeName(@Nullable String typeText, @Nullable SyntaxNode usageSite) {
+    /**
+     * Resolves a type spelling as it would be resolved at a usage site, including member types in scope there.
+     *
+     * @param typeText the type spelling, or {@code null}
+     * @param usageSite the node where the spelling appears, or {@code null} to ignore lexical scope
+     * @return the resolved or normalized type name, or {@code null} for absent or blank type text
+     */
+    public @Nullable String resolveQualifiedTypeName(@Nullable String typeText, @Nullable SyntaxNode usageSite) {
         if (typeText == null || typeText.isBlank())
             return null;
 
