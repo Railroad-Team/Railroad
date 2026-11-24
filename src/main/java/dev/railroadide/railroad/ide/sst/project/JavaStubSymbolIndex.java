@@ -116,13 +116,34 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         Map<SymbolId, List<SymbolLocation>> alternateLocations,
         Runnable activityCheck
     ) {
-        this(classStubsByQualifiedName, sourceByQualifiedName, binaryLocations, alternateLocations, activityCheck,
-            true);
+        this(classStubsByQualifiedName, sourceByQualifiedName,
+            completeLocations(classStubsByQualifiedName.keySet(), sourceByQualifiedName, binaryLocations,
+                activityCheck),
+            alternateLocations, activityCheck, true);
+    }
+
+    private static Map<String, DocumentUri> completeLocations(
+        Set<String> names,
+        Map<String, Path> origins,
+        Map<String, DocumentUri> exactLocations,
+        Runnable activityCheck
+    ) {
+        Map<String, DocumentUri> locations = new HashMap<>();
+        Map<Path, DocumentUri> originLocations = new HashMap<>();
+        for (String name : names) {
+            ActivityCheckpoint.poll(activityCheck);
+            DocumentUri location = exactLocations.get(name);
+            if (location == null) {
+                location = originLocations.computeIfAbsent(origins.get(name), DocumentUri::fromPath);
+            }
+            locations.put(name, location);
+        }
+        return Map.copyOf(locations);
     }
 
     /**
      * Constructs lookup storage, optionally reusing stubs from an already deeply immutable publication.
-     * The trusted path is restricted to internal subclasses; external mutable inputs must be copied.
+     * The supplied location map must be immutable and cover every binary name. Its values may be resolved on demand.
      */
     protected JavaStubSymbolIndex(
         Map<String, ClassStub> classStubsByQualifiedName,
@@ -136,17 +157,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         Map<SymbolId, List<SymbolLocation>> alternatives = new LinkedHashMap<>();
         alternateLocations.forEach((id, entries) -> alternatives.put(id, List.copyOf(entries)));
         this.alternateLocations = Map.copyOf(alternatives);
-        Map<String, DocumentUri> locations = new LinkedHashMap<>();
-        Map<Path, DocumentUri> originLocations = new HashMap<>();
-        classStubsByQualifiedName.forEach((name, stub) -> {
-            ActivityCheckpoint.poll(activityCheck);
-            DocumentUri location = binaryLocations.get(name);
-            if (location == null) {
-                location = originLocations.computeIfAbsent(sourceByQualifiedName.get(name), DocumentUri::fromPath);
-            }
-            locations.put(name, location);
-        });
-        this.binaryLocations = Map.copyOf(locations);
+        this.binaryLocations = binaryLocations;
         Objects.requireNonNull(classStubsByQualifiedName, "classStubsByQualifiedName");
         Map<String, ClassStub> published = classStubsByQualifiedName;
         if (copyStubs) {
@@ -215,7 +226,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     }
 
     /**
-     * Returns exact class-entry addresses retained by the scanner.
+     * Returns an immutable lookup of exact binary addresses. Reading an archive value resolves its entry URI.
      *
      * @return immutable mapping of qualified class names to exact binary entry addresses
      */

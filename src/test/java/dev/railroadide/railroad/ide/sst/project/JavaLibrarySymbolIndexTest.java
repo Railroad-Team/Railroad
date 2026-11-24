@@ -88,7 +88,13 @@ public class JavaLibrarySymbolIndexTest {
             var right = indexes.getLast().get(10, TimeUnit.SECONDS);
             assertNotNull(left.lookupClassStub("sample.Shared"));
             assertSame(left.lookupClassStub("sample.Shared"), right.lookupClassStub("sample.Shared"));
-            assertSame(left.binaryLocations().get("sample.Shared"), right.binaryLocations().get("sample.Shared"));
+            var locations = List.of(left, right).stream().map(index -> workers.submit(() -> {
+                start.await(5, TimeUnit.SECONDS);
+                return index.binaryLocations().get("sample.Shared");
+            })).toList();
+            var location = locations.getFirst().get(10, TimeUnit.SECONDS);
+            assertEquals(JavaLibrarySymbolIndex.archiveEntry(shared, "sample/Shared.class"), location);
+            assertSame(location, locations.getLast().get(10, TimeUnit.SECONDS));
             assertEquals("firstMethod", left.lookupClassStub("sample.Duplicate").methods().getFirst().name());
             assertEquals("secondMethod", right.lookupClassStub("sample.Duplicate").methods().getFirst().name());
             assertEquals(JavaLibrarySymbolIndex.archiveEntry(second, "sample/Duplicate.class"),
@@ -178,6 +184,25 @@ public class JavaLibrarySymbolIndexTest {
         assertTrue(Thread.getAllStackTraces().keySet().stream()
             .filter(thread -> thread.getName().equals("railroad-library-index"))
             .allMatch(thread -> waitForExit(thread)));
+    }
+
+    @Test
+    public void firstLocationLookupUsesTheScannedEntryAfterArchiveRemoval() throws IOException {
+        Path archive = temp.resolve("with space.jmod");
+        try (var output = new JarOutputStream(Files.newOutputStream(archive));
+            var bytes = ClassReader.class.getResourceAsStream("ClassReader.class")) {
+            output.putNextEntry(new JarEntry("classes/odd path/#%/Reader.class"));
+            bytes.transferTo(output);
+        }
+        var index = JavaLibrarySymbolIndex.build(List.of(archive), ACTIVE, new JavaLibraryStubCache(temp));
+        DocumentUri expected = DocumentUri.parse("jar:" + archive.toUri().toASCIIString()
+            + "!/classes/odd%20path/%23%25/Reader.class");
+        Files.delete(archive);
+
+        String name = ClassReader.class.getName();
+        var declaration = index.declarationShard(name).declarations().getFirst();
+        assertEquals(expected, declaration.locations().getFirst().uri());
+        assertSame(declaration.locations().getFirst().uri(), index.binaryLocations().get(name));
     }
 
     @Test

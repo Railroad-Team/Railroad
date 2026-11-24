@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import com.google.common.collect.Maps;
 import dev.railroadide.railroad.ide.classparser.Type;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 import dev.railroadide.railroad.ide.classparser.stub.FieldStub;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Opcodes;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -66,6 +68,29 @@ public class JavaStubSymbolIndexTest {
         assertTrue(index.typeNames().containsAll(Set.of("sample.First", "First", "sample.Second", "Second")));
         assertTrue(index.containsPackage("sample"));
         assertThrows(UnsupportedOperationException.class, () -> index.declaredQualifiedNames().clear());
+    }
+
+    @Test
+    public void readingClassNamesAndStubsLeavesBinaryLocationsUnresolved() {
+        var first = stub("First", List.of(), List.of());
+        var second = stub("Second", List.of(), List.of());
+        var stubs = Map.of(first.getFullName(), first, second.getFullName(), second);
+        Path archive = Path.of("library.jar");
+        var requests = new ArrayList<String>();
+        var locations = Maps.asMap(stubs.keySet(), name -> {
+            requests.add(name);
+            return JavaLibrarySymbolIndex.archiveEntry(archive, name.replace('.', '/') + ".class");
+        });
+        var index = new JavaStubSymbolIndex(stubs, Map.of(first.getFullName(), archive, second.getFullName(), archive),
+            locations, Map.of(), () -> {
+            }, false);
+
+        assertEquals(stubs.keySet(), index.binaryLocations().keySet());
+        assertSame(first, index.lookupClassStub(first.getFullName()));
+        assertTrue(requests.isEmpty());
+        assertNotNull(index.declarationShard(first.getFullName()));
+        assertNotNull(index.declarationShard(first.getFullName()));
+        assertEquals(List.of(first.getFullName()), requests);
     }
 
     @Test

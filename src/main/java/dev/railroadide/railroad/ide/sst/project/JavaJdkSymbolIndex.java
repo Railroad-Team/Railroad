@@ -31,7 +31,7 @@ public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
         Map<String, DocumentUri> locations,
         Runnable activityCheck
     ) {
-        super(classStubsByQualifiedName, sourceByQualifiedName, locations, Map.of(), activityCheck, false);
+        super(classStubsByQualifiedName, sourceByQualifiedName, Map.copyOf(locations), Map.of(), activityCheck, false);
         archiveIndex = null;
     }
 
@@ -110,15 +110,15 @@ public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
         Map<String, Path> sourceByQualifiedName = new LinkedHashMap<>();
         Map<String, DocumentUri> locations = new LinkedHashMap<>();
         Path runtimeHome = Path.of(System.getProperty("java.home")).toAbsolutePath().normalize();
+        DocumentUri runtimeLocation = DocumentUri.fromPath(runtimeHome);
         classStubsByQualifiedName.keySet()
             .forEach(qualifiedName -> {
                 ActivityCheckpoint.poll(activityCheck);
                 sourceByQualifiedName.put(qualifiedName, runtimeHome);
                 String entry = qualifiedName.replace('.', '/') + ".class";
                 var resource = ClassLoader.getSystemResource(entry);
-                if (resource != null) {
-                    locations.put(qualifiedName, DocumentUri.parse(resource.toExternalForm()));
-                }
+                locations.put(qualifiedName,
+                    resource == null ? runtimeLocation : DocumentUri.parse(resource.toExternalForm()));
             });
         return new JavaJdkSymbolIndex(classStubsByQualifiedName, sourceByQualifiedName, locations, activityCheck);
     }

@@ -1,7 +1,9 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import com.google.common.base.Suppliers;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Striped;
 import dev.railroadide.railroad.ide.activity.ActivityProgress;
 import dev.railroadide.railroad.Railroad;
@@ -25,6 +27,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
+import java.util.function.Supplier;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -42,11 +45,13 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
     private JavaLibrarySymbolIndex(
         Map<String, ClassStub> classStubsByQualifiedName,
         Map<String, Path> sourceByQualifiedName,
-        Map<String, DocumentUri> locations,
+        Map<String, Supplier<DocumentUri>> locations,
         List<ScannedRoot> archives,
         Runnable activityCheck
     ) {
-        super(classStubsByQualifiedName, sourceByQualifiedName, locations, Map.of(), activityCheck, false);
+        super(classStubsByQualifiedName, sourceByQualifiedName,
+            Collections.unmodifiableMap(Maps.transformValues(Map.copyOf(locations), Supplier::get)),
+            Map.of(), activityCheck, false);
         unscoped = this;
         this.archives = List.copyOf(archives);
     }
@@ -108,7 +113,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         Objects.requireNonNull(activityCheck, "activityCheck").run();
         Map<String, ClassStub> stubsByQualifiedName = new LinkedHashMap<>();
         Map<String, Path> sourceByQualifiedName = new LinkedHashMap<>();
-        Map<String, DocumentUri> locations = new LinkedHashMap<>();
+        Map<String, Supplier<DocumentUri>> locations = new LinkedHashMap<>();
         List<Path> uniqueRoots = List.copyOf(new LinkedHashSet<>(roots));
         var progress = ActivityProgress.current();
         Runnable processed = progress.count(phase, ActivityProgress.Unit.COUNT, uniqueRoots.size());
@@ -249,7 +254,8 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
                 .forEach(path -> {
                     try {
                         ClassStub stub = BinaryStubPublication.copy(ClassStubParser.parse(path));
-                        classes.add(new ScannedClass(stub.getFullName(), stub, path, DocumentUri.fromPath(path)));
+                        classes.add(new ScannedClass(stub.getFullName(), stub, path,
+                            Suppliers.ofInstance(DocumentUri.fromPath(path))));
                     } catch (ClassScanException exception) {
                         Railroad.LOGGER.warn("Ignoring unreadable class file {}", path, exception);
                     }
@@ -368,8 +374,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         for (JavaLibraryStubCache.ArchiveClass archiveClass : classes) {
             checkCancelled(cancelled);
             var stub = archiveClass.stub();
-            scanned.add(
-                new ScannedClass(stub.getFullName(), stub, archive, archiveEntry(prefix, archiveClass.entryName())));
+            scanned.add(ScannedClass.inArchive(stub, archive, prefix, archiveClass.entryName()));
         }
 
         return List.copyOf(scanned);
@@ -425,7 +430,11 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         return name.endsWith("module-info.class") || name.endsWith("package-info.class");
     }
 
-    private record ScannedClass(String qualifiedName, ClassStub stub, Path origin, DocumentUri location) {
+    private record ScannedClass(String qualifiedName, ClassStub stub, Path origin, Supplier<DocumentUri> location) {
+        private static ScannedClass inArchive(ClassStub stub, Path archive, String prefix, String entry) {
+            return new ScannedClass(stub.getFullName(), stub, archive,
+                Suppliers.memoize(() -> archiveEntry(prefix, entry)));
+        }
     }
 
     private record ScannedRoot(List<ScannedClass> classes, @Nullable Path archive, @Nullable SharedArchive shared) {
@@ -522,7 +531,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
                 throw new IOException("Missing class entry " + name);
             try (var input = jar.getInputStream(entry)) {
                 var stub = BinaryStubPublication.copy(ClassStubParser.parse(new ClassReader(input)));
-                var result = new ScannedClass(stub.getFullName(), stub, path, archiveEntry(prefix, name));
+                var result = ScannedClass.inArchive(stub, path, prefix, name);
                 scanned = new WeakReference<>(result);
                 return result;
             }
