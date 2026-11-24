@@ -67,6 +67,27 @@ public class EditorGutterTest {
     }
 
     @Test
+    public void trailingColumnsRemainAfterLaterMarkers() throws Exception {
+        onFxThread(() -> {
+            var editor = new CodeArea("first");
+            try {
+                var gutter = new EditorGutter(editor);
+                gutter.addTrailingColumn(new GutterColumn("fold", 16, _ -> new Text("fold")));
+                gutter.addColumn(new GutterColumn("diagnostics", 12, _ -> new Text("diagnostic")));
+                gutter.addColumn(new GutterColumn("breakpoints", 12, _ -> new Text("breakpoint")));
+                var row = (GridPane) editor.getParagraphGraphicFactory().apply(0);
+                assertEquals("diagnostic", markerText(row, 1));
+                assertEquals("breakpoint", markerText(row, 2));
+                assertEquals("fold", markerText(row, 3));
+                gutter.removeColumn("fold");
+                assertEquals(3, ((GridPane) editor.getParagraphGraphicFactory().apply(0)).getChildren().size());
+            } finally {
+                editor.dispose();
+            }
+        });
+    }
+
+    @Test
     public void replacingAndRemovingColumnsPreservesOtherMarkers() throws Exception {
         onFxThread(() -> {
             var editor = new CodeArea("first");

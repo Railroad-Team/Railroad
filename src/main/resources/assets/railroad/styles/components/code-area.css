@@ -71,6 +71,47 @@
     -fx-font-weight: normal;
 }
 
+.code-area .editor-fold-marker {
+    -fx-background-radius: 3px;
+}
+
+.code-area .editor-fold-chevron {
+    -fx-icon-color: -color-fg-subtle;
+}
+
+.code-area .editor-fold-marker:hover {
+    -fx-background-color: -color-neutral-subtle;
+}
+
+.code-area .editor-fold-marker:hover .editor-fold-chevron {
+    -fx-icon-color: -color-fg-default;
+}
+
+.code-area .editor-fold-placeholder {
+    -fx-background-color: -color-surface-editor;
+    -fx-background-insets: 2px 0 1px;
+    -fx-font-family: "JetBrains Mono";
+}
+
+.code-area .editor-fold-placeholder:has-caret {
+    -fx-background-color: -color-neutral-subtle;
+}
+
+.code-area .editor-fold-placeholder .label {
+    -fx-padding: 0;
+    -fx-text-fill: -color-fg-default;
+}
+
+.code-area .editor-fold-placeholder-action {
+    -fx-background-color: -color-neutral-subtle;
+    -fx-background-radius: 3px;
+    -fx-underline: true;
+}
+
+.code-area .editor-fold-placeholder-action:hover {
+    -fx-background-color: -color-neutral-muted;
+}
+
 .code-area .paragraph-box:has-caret .editor-line-number {
     -fx-text-fill: -color-fg-default;
 }

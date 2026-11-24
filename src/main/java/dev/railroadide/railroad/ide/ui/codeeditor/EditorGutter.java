@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.IntFunction;
+import java.util.ArrayList;
 
 /**
  * Owns an editor's paragraph graphics, combining line numbers with independent marker columns.
@@ -22,6 +23,7 @@ import java.util.function.IntFunction;
 public final class EditorGutter {
     private final CodeArea editor;
     private final Map<String, GutterColumn> columns = new LinkedHashMap<>();
+    private final Map<String, GutterColumn> trailingColumns = new LinkedHashMap<>();
     private IntFunction<Node> lineNumberFactory;
 
     /**
@@ -31,7 +33,7 @@ public final class EditorGutter {
      */
     public EditorGutter(CodeArea editor) {
         this.editor = Objects.requireNonNull(editor, "editor");
-        IntFunction<Node> defaultFactory = LineNumberFactory.get(editor);
+        IntFunction<Node> defaultFactory = LineNumberFactory.get(editor, digits -> "%1$" + digits + "s", null, null);
         lineNumberFactory = line -> defaultFactory.apply(line - 1);
         refresh();
     }
@@ -47,13 +49,20 @@ public final class EditorGutter {
         refresh();
     }
 
+    /** Registers a column after the ordinary marker columns. */
+    public void addTrailingColumn(GutterColumn column) {
+        Objects.requireNonNull(column, "column");
+        trailingColumns.put(column.id(), column);
+        refresh();
+    }
+
     /**
      * Removes a registered column and refreshes the gutter if it was present.
      *
      * @param id identifier of the column to remove
      */
     public void removeColumn(String id) {
-        if (columns.remove(id) != null) {
+        if (columns.remove(id) != null | trailingColumns.remove(id) != null) {
             refresh();
         }
     }
@@ -77,6 +86,11 @@ public final class EditorGutter {
         editor.setParagraphGraphicFactory(new IntFunction<>() {
             @Override
             public Node apply(int paragraphIndex) {
+                if (editor.isFolded(paragraphIndex)) {
+                    var hidden = new StackPane();
+                    hidden.setVisible(false);
+                    return hidden;
+                }
                 return createGraphic(paragraphIndex + 1);
             }
         });
@@ -84,7 +98,7 @@ public final class EditorGutter {
 
     private Node createGraphic(int line) {
         Node number = lineNumberFactory.apply(line);
-        if (columns.isEmpty())
+        if (columns.isEmpty() && trailingColumns.isEmpty())
             return number;
 
         var grid = new GridPane();
@@ -97,7 +111,9 @@ public final class EditorGutter {
         grid.add(number, 0, 0);
 
         int columnIndex = 1;
-        for (GutterColumn column : columns.values()) {
+        var orderedColumns = new ArrayList<>(columns.values());
+        orderedColumns.addAll(trailingColumns.values());
+        for (GutterColumn column : orderedColumns) {
             var constraints = new ColumnConstraints(column.width(), column.width(), column.width());
             constraints.setHgrow(Priority.NEVER);
             grid.getColumnConstraints().add(constraints);
