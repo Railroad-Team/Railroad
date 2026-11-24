@@ -144,6 +144,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     private @Nullable CancellationTokenSource activeSignatureCancellation;
     private @Nullable FeatureRequestContext activeSignatureContext;
+    private boolean manualSignatureHelp;
+    private boolean signatureEditPending;
     // endregion
 
     /**
@@ -220,6 +222,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         signaturePopup.setAutoHide(false);
         signaturePopup.setAutoFix(true);
         signaturePopup.setHideOnEscape(true);
+        signaturePopup.setOnHidden(_ -> resetSignatureHelp());
         signaturePopupContainer.getStyleClass().add("signature-help-container");
         signatureScroll.getStyleClass().add("signature-help-scroll");
         signatureScroll.setFitToWidth(true);
@@ -246,7 +249,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
             visibleDiagnostics = List.of();
             recomputeLineDecorations();
             diagnosticPopup.hide();
-            hideSignatureHelp();
+            signatureEditPending = true;
+            invalidateSignatureRequest();
         }));
         installSyntaxHighlighting();
         if (supportsDiagnostics()) {
@@ -1759,11 +1763,26 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (!supportsSignatureHelp())
             return;
 
-        caretPositionProperty().addListener((obs, oldPos, newPos) -> requestSignatureHelp(false));
+        caretPositionProperty().addListener((obs, oldPos, newPos) -> {
+            if (!signatureEditPending) {
+                requestSignatureHelp(false);
+            }
+        });
 
         subscriptions.add(plainTextChanges()
             .successionEnds(Duration.ofMillis(120))
-            .subscribe(change -> requestSignatureHelp(true)));
+            .subscribe(change -> {
+                if (!signatureEditPending)
+                    return;
+                signatureEditPending = false;
+                requestSignatureHelp(true);
+            }));
+
+        addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ESCAPE) {
+                hideSignatureHelp();
+            }
+        });
 
         focusedProperty().addListener((obs, oldValue, newValue) -> {
             if (!newValue) {
@@ -1773,17 +1792,13 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
 
     private void requestSignatureHelp(boolean textChanged) {
-        if (!Settings.AUTOMATIC_PARAMETER_HINTS.getOrDefaultValue()) {
-            if (!textChanged) {
-                hideSignatureHelp();
-            }
+        if (!manualSignatureHelp && !Settings.AUTOMATIC_PARAMETER_HINTS.getOrDefaultValue())
             return;
-        }
         if (!supportsSignatureHelp() || !shouldRequestSignatureHelp(getText(), getCaretPosition(), textChanged)) {
             hideSignatureHelp();
             return;
         }
-        requestSignatureHelpAtCaret(INTERACTIVE_BUDGET, false);
+        requestSignatureHelpAtCaret(manualSignatureHelp ? NAVIGATION_BUDGET : INTERACTIVE_BUDGET, textChanged);
     }
 
     /** Shows parameter information at the current caret, including after automatic help was dismissed. */
@@ -1791,10 +1806,12 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (!supportsSignatureHelp())
             return;
         hideAutoComplete();
-        requestSignatureHelpAtCaret(NAVIGATION_BUDGET, true);
+        manualSignatureHelp = true;
+        signatureEditPending = false;
+        requestSignatureHelpAtCaret(NAVIGATION_BUDGET, false);
     }
 
-    private void requestSignatureHelpAtCaret(Duration budget, boolean includeOverloads) {
+    private void requestSignatureHelpAtCaret(Duration budget, boolean retainOnEmpty) {
         invalidateSignatureRequest();
         int caret = getCaretPosition();
         int generation = signatureGeneration.incrementAndGet();
@@ -1807,6 +1824,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         var context = new FeatureRequestContext(workspace, snapshot, activeSignatureCancellation.token(),
             Deadline.after(budget));
         activeSignatureContext = context;
+        boolean includeOverloads = manualSignatureHelp;
 
         featureRequests.submit("signature", RequestPriority.SIGNATURE_HELP, context,
             activeSignatureCancellation, () -> ProviderExecutor.shared().execute(
@@ -1818,10 +1836,11 @@ public abstract class CodeEditorPane extends TextEditorPane {
                     || !result.belongsTo(context)
                     || context.cancellationToken().isCancellationRequested()
                     || context.deadline().isExpired()
+                    || getCaretPosition() != caret
                     || !isCurrent(context.workspaceSnapshot()))
                     return;
 
-                applySignatureHelp(generation, result.value());
+                applySignatureHelp(generation, result.value(), retainOnEmpty);
             }))
             .exceptionally(throwable -> {
                 Throwable cause = throwable;
@@ -1838,12 +1857,16 @@ public abstract class CodeEditorPane extends TextEditorPane {
             });
     }
 
-    private void applySignatureHelp(int generation, List<SignatureHelp> signatures) {
+    private void applySignatureHelp(int generation, List<SignatureHelp> signatures, boolean retainOnEmpty) {
         if (signatureGeneration.get() != generation)
             return;
 
         if (signatures.isEmpty()) {
-            hideSignatureHelp();
+            if (!retainOnEmpty || !signaturePopup.isShowing()) {
+                hideSignatureHelp();
+            } else {
+                positionSignaturePopup();
+            }
             return;
         }
 
@@ -1961,11 +1984,18 @@ public abstract class CodeEditorPane extends TextEditorPane {
      * Cancels pending signature work and releases the displayed help on the JavaFX thread.
      */
     private void hideSignatureHelp() {
-        invalidateSignatureRequest();
-        activeSignatureHelp.set(List.of());
         if (signaturePopup.isShowing()) {
             signaturePopup.hide();
+        } else {
+            resetSignatureHelp();
         }
+    }
+
+    private void resetSignatureHelp() {
+        invalidateSignatureRequest();
+        manualSignatureHelp = false;
+        signatureEditPending = false;
+        activeSignatureHelp.set(List.of());
     }
 
     protected abstract boolean shouldRequestSignatureHelp(String text, int caret, boolean textChanged);

@@ -69,6 +69,64 @@ public class CodeEditorSignatureRequestTest {
     }
 
     @Test
+    public void manuallyOpenedOverloadsStayVisibleAndFollowArgumentEditsWithAutomaticHintsOff() throws Exception {
+        var parameters = List.of(new SignatureHelp.ParameterInfo("int", "first", false),
+            new SignatureHelp.ParameterInfo("int", "second", false));
+        try (Fixture fixture = open(context -> {
+            String text = ((TextDocumentSnapshot) context.documentSnapshot()).text();
+            var help = new SignatureHelp("Example", "Example", "call", parameters,
+                text.contains("call(1, ") ? 1 : 0, false, "void", false);
+            return new FeatureResult<>(context, text.contains("call(x") ? null : help);
+        })) {
+            var editor = fixture.editor;
+            var overload = new SignatureHelp("Example", "Example", "call", List.of(parameters.getFirst()),
+                0, false, "void", false);
+            fixture.provider.overloads = List.of(overload);
+            int arguments = onFx(() -> editor.getText().indexOf("call(") + "call(".length());
+            onFx(() -> {
+                Settings.AUTOMATIC_PARAMETER_HINTS.setValue(false);
+                editor.eligible = true;
+                editor.replaceText(arguments, arguments + "1, 2".length(), "");
+                editor.moveTo(arguments);
+                editor.showParameterInfo();
+                return null;
+            });
+            var initial = fixture.nextRequest();
+            awaitRequests(editor.featureRequests);
+            onFx(() -> {
+                assertTrue(editor.signaturePopup.isShowing());
+                assertEquals(2, editor.signatureRows.getChildren().size());
+                editor.insertText(arguments, "x");
+                assertTrue(initial.context().cancellationToken().isCancellationRequested());
+                assertTrue(editor.signaturePopup.isShowing());
+                return null;
+            });
+            fixture.nextRequest();
+            awaitRequests(editor.featureRequests);
+            onFx(() -> {
+                assertTrue(editor.signaturePopup.isShowing());
+                editor.replaceText(arguments, arguments + 1, "1, ");
+                assertTrue(editor.signaturePopup.isShowing());
+                return null;
+            });
+            fixture.nextRequest();
+            awaitRequests(editor.featureRequests);
+            onFx(() -> {
+                assertEquals(2, editor.signatureRows.getChildren().size());
+                var primary = editor.signatureRows.getChildren().getFirst();
+                assertEquals("int second", ((Text) primary.lookup(".signature-param-active")).getText());
+                editor.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.ESCAPE,
+                    false, false, false, false));
+                assertFalse(editor.signaturePopup.isShowing());
+                editor.moveTo(arguments);
+                return null;
+            });
+            awaitRequests(editor.featureRequests);
+            assertTrue(fixture.provider.requests.isEmpty());
+        }
+    }
+
+    @Test
     public void controlPShowsAndReopensParameterInfoWithoutTypingOrMovingTheCaret() throws Exception {
         try (Fixture fixture = open(context -> new FeatureResult<>(context, new SignatureHelp("Example", "Example",
             "call", List.of(new SignatureHelp.ParameterInfo("int", "first", false),
@@ -642,7 +700,7 @@ public class CodeEditorSignatureRequestTest {
             boolean includeOverloads
         ) {
             var result = SignatureHelpProvider.super.compute(context, caretPosition, includeOverloads);
-            if (!includeOverloads || overloads.isEmpty())
+            if (!includeOverloads || overloads.isEmpty() || result.value().isEmpty())
                 return result;
             var signatures = new ArrayList<>(result.value());
             signatures.addAll(overloads);
