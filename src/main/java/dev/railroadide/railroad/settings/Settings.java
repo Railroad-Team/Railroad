@@ -73,6 +73,17 @@ public final class Settings {
             .defaultValue(false)
             .build());
 
+    /** Preferred side of the caret for the parameter information popup. */
+    public static final Setting<ParameterPopupPosition> PARAMETER_POPUP_POSITION = registerSetting(
+        Setting.builder(ParameterPopupPosition.class, "railroad:parameter_popup_position")
+            .treePath("editor")
+            .category(SettingCategory.simple("railroad:editor.typing"))
+            .title("railroad.settings.editor.parameter_popup_position.title")
+            .description("railroad.settings.editor.parameter_popup_position.description")
+            .codec(SettingCodecs.PARAMETER_POPUP_POSITION)
+            .defaultValue(ParameterPopupPosition.BELOW)
+            .build());
+
     /** Maximum number of simultaneously open editor tabs. */
     public static final Setting<Integer> EDITOR_TAB_LIMIT = registerSetting(
         Setting.builder(Integer.class, "railroad:editor_tab_limit")

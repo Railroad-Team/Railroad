@@ -83,6 +83,18 @@ public class SettingCodecs {
         })
         .build();
 
+    /** Stores the preferred side of the caret for parameter information. */
+    public static final SettingCodec<ParameterPopupPosition, ComboBox<ParameterPopupPosition>> PARAMETER_POPUP_POSITION = DefaultSettingCodecs
+        .ofEnum("railroad:parameter_popup_position", ParameterPopupPosition.class,
+            ParameterPopupPosition::name, ParameterPopupPosition::valueOf,
+            new ComboBoxConverter<>(
+                position -> L18n.localize(position == ParameterPopupPosition.ABOVE
+                    ? "railroad.settings.editor.parameter_popup_position.above"
+                    : "railroad.settings.editor.parameter_popup_position.below"),
+                label -> label.equals(L18n.localize("railroad.settings.editor.parameter_popup_position.above"))
+                    ? ParameterPopupPosition.ABOVE
+                    : ParameterPopupPosition.BELOW));
+
     /** Stores the selected installed terminal font family. */
     public static final SettingCodec<String, InstalledFontPane> INSTALLED_FONT = SettingCodec
         .<String, InstalledFontPane>builder("railroad:installed_font")

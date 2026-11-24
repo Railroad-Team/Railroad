@@ -6,6 +6,9 @@ import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.request.api.*;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.localization.L18n;
+import dev.railroadide.railroad.localization.Languages;
+import dev.railroadide.railroad.settings.ParameterPopupPosition;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.keybinds.Keybinds;
 import javafx.application.Platform;
@@ -48,6 +51,7 @@ public class CodeEditorSignatureRequestTest {
         startFx();
         onFx(() -> {
             Platform.setImplicitExit(false);
+            L18n.loadLanguage(Languages.EN_US);
             Keybinds.initialize();
             return null;
         });
@@ -97,7 +101,8 @@ public class CodeEditorSignatureRequestTest {
                 onFx(() -> {
                     assertTrue(editor.signaturePopup.isShowing());
                     assertEquals(
-                        List.of(List.of("int first", ", ", "int second"), List.of("long count"), List.of("()")),
+                        List.of(List.of("int first", ", ", "int second"), List.of("long count"),
+                            List.of("<no parameters>")),
                         editor.signatureRows.getChildren().stream().map(node -> ((TextFlow) node).getChildren()
                             .stream().map(part -> ((Text) part).getText()).toList()).toList());
                     assertEquals(1, editor.signatureRows.lookupAll(".signature-param-active").size());
@@ -148,7 +153,7 @@ public class CodeEditorSignatureRequestTest {
     }
 
     @Test
-    public void hidesParameterInfoWhenTheCallHasNoParameters() throws Exception {
+    public void showsAnExplicitMessageWhenTheCallHasNoParameters() throws Exception {
         var calls = new AtomicInteger();
         try (Fixture fixture = open(context -> calls.getAndIncrement() == 0
             ? help(context, "withParameters")
@@ -160,7 +165,46 @@ public class CodeEditorSignatureRequestTest {
 
             fixture.request();
             awaitRequests(fixture.editor.featureRequests);
-            assertFalse(onFx(fixture.editor.signaturePopup::isShowing));
+            onFx(() -> {
+                assertTrue(fixture.editor.signaturePopup.isShowing());
+                var row = (TextFlow) fixture.editor.signatureRows.getChildren().getFirst();
+                assertEquals("<no parameters>", ((Text) row.getChildren().getFirst()).getText());
+                assertTrue(row.lookupAll(".signature-param-active").isEmpty());
+                return null;
+            });
+        }
+    }
+
+    @Test
+    public void placesParameterInfoAboveOrBelowTheCaretAccordingToTheSetting() throws Exception {
+        var previous = Settings.PARAMETER_POPUP_POSITION.getValue();
+        try (Fixture fixture = open(context -> help(context, "call"))) {
+            onFx(() -> {
+                fixture.stage.centerOnScreen();
+                fixture.editor.moveTo(fixture.editor.getText().indexOf("call(") + "call(".length());
+                return null;
+            });
+            for (var position : ParameterPopupPosition.values()) {
+                onFx(() -> {
+                    Settings.PARAMETER_POPUP_POSITION.setValue(position);
+                    return null;
+                });
+                fixture.request();
+                awaitRequests(fixture.editor.featureRequests);
+                onFx(() -> {
+                    var caret = fixture.editor.getCaretBounds().orElseThrow();
+                    var popup = fixture.editor.signaturePopup;
+                    assertTrue(popup.isShowing());
+                    if (position == ParameterPopupPosition.ABOVE) {
+                        assertTrue(popup.getY() + popup.getHeight() <= caret.getMinY());
+                    } else {
+                        assertTrue(popup.getY() >= caret.getMaxY());
+                    }
+                    return null;
+                });
+            }
+        } finally {
+            Settings.PARAMETER_POPUP_POSITION.setValue(previous);
         }
     }
 

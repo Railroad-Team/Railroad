@@ -23,6 +23,7 @@ import dev.railroadide.railroad.ide.ui.navigation.UsagesPane;
 import dev.railroadide.railroad.ide.ui.refactor.RenameDialog;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.settings.ParameterPopupPosition;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
@@ -1841,7 +1842,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (signatureGeneration.get() != generation)
             return;
 
-        if (signatures.isEmpty() || signatures.size() == 1 && signatures.getFirst().parameters().isEmpty()) {
+        if (signatures.isEmpty()) {
             hideSignatureHelp();
             return;
         }
@@ -1874,7 +1875,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         row.getStyleClass().add("signature-help-text");
         List<SignatureHelp.ParameterInfo> parameters = help.parameters();
         if (parameters.isEmpty()) {
-            row.getChildren().add(new Text("()"));
+            row.getChildren().add(new Text(L18n.localize("railroad.ide.signature.no_parameters")));
         }
         int parameterCount = parameters.size();
         int highlightIndex = help.activeParameter();
@@ -1906,30 +1907,54 @@ public abstract class CodeEditorPane extends TextEditorPane {
     private void positionSignaturePopup() {
         Optional<Bounds> caretBounds = getCaretBounds();
         double x;
-        double y;
+        double top;
+        double bottom;
         if (caretBounds.isPresent()) {
             Bounds bounds = caretBounds.get();
             x = bounds.getMinX();
-            y = bounds.getMaxY() + 6;
+            top = bounds.getMinY();
+            bottom = bounds.getMaxY();
         } else {
-            Point2D screen = localToScreen(0, 0);
-            x = screen.getX();
-            y = screen.getY();
+            Point2D editorOrigin = localToScreen(0, 0);
+            if (editorOrigin == null)
+                return;
+            x = editorOrigin.getX();
+            top = editorOrigin.getY();
+            bottom = top;
         }
 
-        double caretY = caretBounds.map(Bounds::getMinY).orElse(y);
-        var screen = Screen.getScreensForRectangle(x, caretY, 1, 1).stream().findFirst().orElse(Screen.getPrimary());
+        var screen = Screen.getScreensForRectangle(x, top, 1, 1).stream().findFirst().orElse(Screen.getPrimary());
         var available = screen.getVisualBounds();
         double maxContentWidth = Math.max(1, available.getWidth() - 24);
         signatureRows.setMaxWidth(maxContentWidth);
         signatureScroll.setMaxWidth(maxContentWidth);
 
+        double aboveY = top - 6;
+        double belowY = bottom + 6;
+        boolean above = Settings.PARAMETER_POPUP_POSITION.getOrDefaultValue() == ParameterPopupPosition.ABOVE;
+        setSignaturePopupAnchor(above);
+        double y = above ? aboveY : belowY;
         if (!signaturePopup.isShowing()) {
             signaturePopup.show(this, x, y);
         } else {
-            signaturePopup.setX(x);
-            signaturePopup.setY(y);
+            signaturePopup.setAnchorX(x);
+            signaturePopup.setAnchorY(y);
         }
+
+        double roomAbove = aboveY - available.getMinY();
+        double roomBelow = available.getMaxY() - belowY;
+        double preferredRoom = above ? roomAbove : roomBelow;
+        double otherRoom = above ? roomBelow : roomAbove;
+        if (signaturePopup.getHeight() > preferredRoom && otherRoom > preferredRoom) {
+            setSignaturePopupAnchor(!above);
+            signaturePopup.setAnchorY(above ? belowY : aboveY);
+        }
+    }
+
+    private void setSignaturePopupAnchor(boolean above) {
+        signaturePopup.setAnchorLocation(above
+            ? PopupWindow.AnchorLocation.WINDOW_BOTTOM_LEFT
+            : PopupWindow.AnchorLocation.WINDOW_TOP_LEFT);
     }
 
     /**
