@@ -4,6 +4,7 @@ import dev.railroadide.railroad.ide.activity.ActivityProgress;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
@@ -18,8 +19,11 @@ import java.util.Map;
  * Binary symbol index for a selected JDK or the currently running Java runtime.
  */
 public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
+    private final @Nullable JavaLibrarySymbolIndex archiveIndex;
+
     private JavaJdkSymbolIndex(JavaLibrarySymbolIndex index) {
         super(index);
+        archiveIndex = index;
     }
     private JavaJdkSymbolIndex(
         Map<String, ClassStub> classStubsByQualifiedName,
@@ -28,6 +32,7 @@ public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
         Runnable activityCheck
     ) {
         super(classStubsByQualifiedName, sourceByQualifiedName, locations, Map.of(), activityCheck, false);
+        archiveIndex = null;
     }
 
     /**

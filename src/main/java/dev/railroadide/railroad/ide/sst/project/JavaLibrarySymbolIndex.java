@@ -1,5 +1,8 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.util.concurrent.Striped;
 import dev.railroadide.railroad.ide.activity.ActivityProgress;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.ide.classparser.ClassScanException;
@@ -12,13 +15,16 @@ import org.objectweb.asm.ClassReader;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -26,16 +32,23 @@ import java.util.jar.JarFile;
  * Binary symbol index built from class directories, JAR archives, and JMOD archives.
  */
 public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
+    private static final Cache<ArchiveVersion, SharedArchive> LOADED_ARCHIVES = CacheBuilder.newBuilder()
+        .weakValues().build();
+    private static final Striped<Lock> ARCHIVE_LOCKS = Striped.lazyWeakLock(256);
+
     private final JavaLibrarySymbolIndex unscoped;
+    private final List<ScannedRoot> archives;
 
     private JavaLibrarySymbolIndex(
         Map<String, ClassStub> classStubsByQualifiedName,
         Map<String, Path> sourceByQualifiedName,
         Map<String, DocumentUri> locations,
+        List<ScannedRoot> archives,
         Runnable activityCheck
     ) {
         super(classStubsByQualifiedName, sourceByQualifiedName, locations, Map.of(), activityCheck, false);
         unscoped = this;
+        this.archives = List.copyOf(archives);
     }
 
     private JavaLibrarySymbolIndex(
@@ -44,6 +57,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
     ) {
         super(unscoped, aliases);
         this.unscoped = unscoped;
+        this.archives = unscoped.archives;
     }
 
     /**
@@ -58,7 +72,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
 
     /**
      * Scans captured binary roots with cooperative cancellation and deadline checks. Roots are scanned in parallel,
-     * and archives are read from the {@linkplain JavaLibraryStubCache#shared() shared stub cache} when it is enabled.
+     * and indexes using the same enabled stub cache share immutable archive entries.
      *
      * @param roots binary roots in lookup order
      * @param activityCheck request activity check, run on the calling thread
@@ -101,21 +115,32 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         var scannedRoots = scanRoots(uniqueRoots, activityCheck, cache, processed,
             uniqueRoots.size() == 1 ? progress : ActivityProgress.NONE);
         progress.indeterminate("railroad.activity.finalizing");
-        for (List<ScannedClass> scannedRoot : scannedRoots) {
-            for (ScannedClass scanned : scannedRoot) {
+        List<ScannedRoot> archives = new ArrayList<>();
+        for (ScannedRoot root : scannedRoots) {
+            List<ScannedClass> retained = new ArrayList<>();
+            for (ScannedClass scanned : root.visible(stubsByQualifiedName.keySet(), activityCheck)) {
                 ActivityCheckpoint.poll(activityCheck);
-                String qualifiedName = scanned.stub().getFullName();
+                String qualifiedName = scanned.qualifiedName();
                 if (qualifiedName == null || qualifiedName.isBlank())
                     continue;
 
-                stubsByQualifiedName.putIfAbsent(qualifiedName, scanned.stub());
-                sourceByQualifiedName.putIfAbsent(qualifiedName, scanned.origin());
-                locations.putIfAbsent(qualifiedName, scanned.location());
+                if (stubsByQualifiedName.putIfAbsent(qualifiedName, scanned.stub()) == null) {
+                    sourceByQualifiedName.put(qualifiedName,
+                        root.archive() == null ? scanned.origin() : root.archive());
+                    locations.put(qualifiedName, scanned.location());
+                    if (root.shared() != null) {
+                        retained.add(scanned);
+                    }
+                }
+            }
+            if (!retained.isEmpty()) {
+                archives.add(new ScannedRoot(List.copyOf(retained), root.archive(), root.shared()));
             }
         }
 
         activityCheck.run();
-        return new JavaLibrarySymbolIndex(stubsByQualifiedName, sourceByQualifiedName, locations, activityCheck);
+        return new JavaLibrarySymbolIndex(stubsByQualifiedName, sourceByQualifiedName, locations, archives,
+            activityCheck);
     }
 
     @Override
@@ -139,7 +164,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
     }
 
     /** Scans roots in parallel and returns their classes in root order, so earlier roots keep precedence. */
-    private static List<List<ScannedClass>> scanRoots(
+    private static List<ScannedRoot> scanRoots(
         List<Path> roots,
         Runnable activityCheck,
         @Nullable JavaLibraryStubCache cache,
@@ -157,15 +182,15 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
             return thread;
         });
         try {
-            List<Future<List<ScannedClass>>> scans = roots.stream()
+            List<Future<ScannedRoot>> scans = roots.stream()
                 .map(root -> executor.submit(() -> {
                     var scanned = scanRoot(root, cache, cancelled, entriesProgress);
                     processed.run();
                     return scanned;
                 }))
                 .toList();
-            List<List<ScannedClass>> results = new ArrayList<>(scans.size());
-            for (Future<List<ScannedClass>> scan : scans) {
+            List<ScannedRoot> results = new ArrayList<>(scans.size());
+            for (Future<ScannedRoot> scan : scans) {
                 results.add(await(scan, activityCheck));
             }
 
@@ -195,23 +220,23 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         }
     }
 
-    private static List<ScannedClass> scanRoot(
+    private static ScannedRoot scanRoot(
         Path root,
         @Nullable JavaLibraryStubCache cache,
         AtomicBoolean cancelled,
         ActivityProgress entriesProgress
     ) {
         if (root == null || Files.notExists(root) || !Files.isReadable(root))
-            return List.of();
+            return ScannedRoot.EMPTY;
 
         if (Files.isDirectory(root))
-            return scanDirectory(root, cancelled);
+            return new ScannedRoot(scanDirectory(root, cancelled), null, null);
 
         String fileName = root.getFileName() == null ? "" : root.getFileName().toString().toLowerCase();
         if (fileName.endsWith(".jar") || fileName.endsWith(".jmod"))
             return scanArchive(root, cache, cancelled, entriesProgress);
 
-        return List.of();
+        return ScannedRoot.EMPTY;
     }
 
     private static List<ScannedClass> scanDirectory(Path root, AtomicBoolean cancelled) {
@@ -224,7 +249,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
                 .forEach(path -> {
                     try {
                         ClassStub stub = BinaryStubPublication.copy(ClassStubParser.parse(path));
-                        classes.add(new ScannedClass(stub, path, DocumentUri.fromPath(path)));
+                        classes.add(new ScannedClass(stub.getFullName(), stub, path, DocumentUri.fromPath(path)));
                     } catch (ClassScanException exception) {
                         Railroad.LOGGER.warn("Ignoring unreadable class file {}", path, exception);
                     }
@@ -236,32 +261,75 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         return classes;
     }
 
-    private static List<ScannedClass> scanArchive(
+    private static ScannedRoot scanArchive(
         Path archive,
         @Nullable JavaLibraryStubCache cache,
         AtomicBoolean cancelled,
         ActivityProgress entriesProgress
     ) {
-        long size;
-        long lastModified;
         try {
-            size = Files.size(archive);
-            lastModified = Files.getLastModifiedTime(archive).toMillis();
+            if (cache == null)
+                return new ScannedRoot(toScannedClasses(archive, parseArchive(archive, cancelled, entriesProgress),
+                    cancelled), archive, null);
+
+            Path path = archive.toAbsolutePath().normalize();
+            var lock = ARCHIVE_LOCKS.get(path);
+            lock.lockInterruptibly();
+            try {
+                checkCancelled(cancelled);
+                var attributes = Files.readAttributes(path, BasicFileAttributes.class);
+                var version = new ArchiveVersion(cache, path, attributes.size(),
+                    attributes.lastModifiedTime().toMillis());
+                var existing = LOADED_ARCHIVES.getIfPresent(version);
+                if (existing != null)
+                    return new ScannedRoot(List.of(), archive, existing);
+                var entries = readArchive(version, cancelled, entriesProgress);
+                if (entries.isEmpty())
+                    return ScannedRoot.EMPTY;
+                var classes = toScannedClasses(path, entries, cancelled);
+                var shared = new SharedArchive(version, entries, classes);
+                LOADED_ARCHIVES.put(version, shared);
+                return new ScannedRoot(classes, archive, shared);
+            } finally {
+                lock.unlock();
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new CancellationException("Interrupted waiting for library archive " + archive);
         } catch (IOException exception) {
             Railroad.LOGGER.error("Error scanning library archive {}", archive, exception);
-            return List.of();
+            return ScannedRoot.EMPTY;
         }
+    }
 
-        if (cache != null) {
-            try {
-                Optional<List<JavaLibraryStubCache.ArchiveClass>> cached = cache.load(archive, size, lastModified);
-                if (cached.isPresent())
-                    return toScannedClasses(archive, cached.get(), cancelled);
-            } catch (IOException exception) {
-                Railroad.LOGGER.warn("Ignoring unreadable library stub cache for {}", archive, exception);
-            }
+    private static List<JavaLibraryStubCache.ArchiveClass> readArchive(
+        ArchiveVersion version,
+        AtomicBoolean cancelled,
+        ActivityProgress entriesProgress
+    ) throws IOException {
+        var cache = version.cache();
+        Path archive = version.path();
+        try {
+            var cached = cache.load(archive, version.size(), version.lastModified());
+            if (cached.isPresent())
+                return cached.get();
+        } catch (IOException exception) {
+            Railroad.LOGGER.warn("Ignoring unreadable library stub cache for {}", archive, exception);
         }
+        var parsed = parseArchive(archive, cancelled, entriesProgress);
+        try {
+            cache.save(archive, version.size(), version.lastModified(), parsed);
+        } catch (IOException | RuntimeException exception) {
+            Railroad.LOGGER.warn("Failed to cache library stubs for {}", archive, exception);
+        }
+        return parsed;
+    }
 
+    private static List<JavaLibraryStubCache.ArchiveClass> parseArchive(
+        Path archive,
+        AtomicBoolean cancelled,
+        ActivityProgress entriesProgress
+    ) throws IOException {
         List<JavaLibraryStubCache.ArchiveClass> parsed = new ArrayList<>();
         try (JarFile jarFile = new JarFile(archive.toFile())) {
             Enumeration<JarEntry> entries = jarFile.entries();
@@ -286,20 +354,8 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
                     Railroad.LOGGER.warn("Ignoring unreadable class entry {} in {}", entryName, archive, exception);
                 }
             }
-        } catch (IOException exception) {
-            Railroad.LOGGER.error("Error scanning library archive {}", archive, exception);
-            return List.of();
         }
-
-        if (cache != null) {
-            try {
-                cache.save(archive, size, lastModified, parsed);
-            } catch (IOException | RuntimeException exception) {
-                Railroad.LOGGER.warn("Failed to cache library stubs for {}", archive, exception);
-            }
-        }
-
-        return toScannedClasses(archive, parsed, cancelled);
+        return parsed;
     }
 
     private static List<ScannedClass> toScannedClasses(
@@ -311,10 +367,12 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         List<ScannedClass> scanned = new ArrayList<>(classes.size());
         for (JavaLibraryStubCache.ArchiveClass archiveClass : classes) {
             checkCancelled(cancelled);
-            scanned.add(new ScannedClass(archiveClass.stub(), archive, archiveEntry(prefix, archiveClass.entryName())));
+            var stub = archiveClass.stub();
+            scanned.add(
+                new ScannedClass(stub.getFullName(), stub, archive, archiveEntry(prefix, archiveClass.entryName())));
         }
 
-        return scanned;
+        return List.copyOf(scanned);
     }
 
     private static void checkCancelled(AtomicBoolean cancelled) {
@@ -367,6 +425,107 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         return name.endsWith("module-info.class") || name.endsWith("package-info.class");
     }
 
-    private record ScannedClass(ClassStub stub, Path origin, DocumentUri location) {
+    private record ScannedClass(String qualifiedName, ClassStub stub, Path origin, DocumentUri location) {
+    }
+
+    private record ScannedRoot(List<ScannedClass> classes, @Nullable Path archive, @Nullable SharedArchive shared) {
+        private static final ScannedRoot EMPTY = new ScannedRoot(List.of(), null, null);
+
+        private List<ScannedClass> visible(Set<String> shadowed, Runnable activityCheck) {
+            return shared != null && classes.isEmpty() ? shared.visible(shadowed, activityCheck) : classes;
+        }
+    }
+
+    private record ArchiveVersion(JavaLibraryStubCache cache, Path path, long size, long lastModified) {
+    }
+
+    private static final class SharedArchive {
+        private final ArchiveVersion version;
+        private final List<ArchiveEntry> entries;
+
+        private SharedArchive(
+            ArchiveVersion version,
+            List<JavaLibraryStubCache.ArchiveClass> parsed,
+            List<ScannedClass> classes
+        ) {
+            this.version = version;
+            Set<String> names = new HashSet<>();
+            List<ArchiveEntry> entries = new ArrayList<>(classes.size());
+            for (int i = 0; i < classes.size(); i++) {
+                ScannedClass scanned = classes.get(i);
+                if (names.add(scanned.qualifiedName())) {
+                    entries.add(new ArchiveEntry(parsed.get(i).entryName(), scanned));
+                }
+            }
+            this.entries = List.copyOf(entries);
+        }
+
+        private List<ScannedClass> visible(Set<String> shadowed, Runnable activityCheck) {
+            List<ScannedClass> visible = new ArrayList<>();
+            Map<Integer, ArchiveEntry> missing = new LinkedHashMap<>();
+            for (ArchiveEntry entry : entries) {
+                ActivityCheckpoint.poll(activityCheck);
+                if (!shadowed.contains(entry.qualifiedName)) {
+                    var scanned = entry.scanned.get();
+                    if (scanned == null) {
+                        missing.put(visible.size(), entry);
+                    }
+                    visible.add(scanned);
+                }
+            }
+            if (missing.isEmpty())
+                return visible;
+
+            Path path = version.path();
+            try (var jar = new JarFile(path.toFile())) {
+                var attributes = Files.readAttributes(path, BasicFileAttributes.class);
+                if (attributes.size() != version.size()
+                    || attributes.lastModifiedTime().toMillis() != version.lastModified())
+                    throw new CancellationException("Library archive changed during indexing: " + path);
+                String prefix = archivePrefix(path);
+                for (var item : missing.entrySet()) {
+                    activityCheck.run();
+                    var entry = item.getValue();
+                    try {
+                        visible.set(item.getKey(), entry.restore(jar, path, prefix));
+                    } catch (CancellationException exception) {
+                        throw exception;
+                    } catch (IOException | RuntimeException exception) {
+                        Railroad.LOGGER.warn("Ignoring unreadable class entry {} in {}", entry.name, path, exception);
+                    }
+                }
+            } catch (IOException exception) {
+                Railroad.LOGGER.error("Error scanning library archive {}", path, exception);
+            }
+            visible.removeIf(Objects::isNull);
+            return visible;
+        }
+    }
+
+    private static final class ArchiveEntry {
+        private final String name;
+        private final String qualifiedName;
+        private volatile WeakReference<ScannedClass> scanned;
+
+        private ArchiveEntry(String name, ScannedClass scanned) {
+            this.name = name;
+            this.qualifiedName = scanned.qualifiedName();
+            this.scanned = new WeakReference<>(scanned);
+        }
+
+        private synchronized ScannedClass restore(JarFile jar, Path path, String prefix) throws IOException {
+            var existing = scanned.get();
+            if (existing != null)
+                return existing;
+            var entry = jar.getJarEntry(name);
+            if (entry == null)
+                throw new IOException("Missing class entry " + name);
+            try (var input = jar.getInputStream(entry)) {
+                var stub = BinaryStubPublication.copy(ClassStubParser.parse(new ClassReader(input)));
+                var result = new ScannedClass(stub.getFullName(), stub, path, archiveEntry(prefix, name));
+                scanned = new WeakReference<>(result);
+                return result;
+            }
+        }
     }
 }
