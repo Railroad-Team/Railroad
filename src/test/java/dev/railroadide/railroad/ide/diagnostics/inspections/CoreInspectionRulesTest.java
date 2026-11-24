@@ -1513,6 +1513,21 @@ public class CoreInspectionRulesTest {
     }
 
     @Test
+    public void coreModifierRuleRejectsMemberOnlyModifiersOnTypes() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreModifierInspection(), """
+            public synchronized class First {}
+            transient volatile class Second {}
+            native interface Third {}
+            """);
+
+        assertEquals(4, diagnostics.size(), diagnostics::toString);
+        assertEquals(Set.of("synchronized", "transient", "volatile", "native").stream()
+            .map(modifier -> "Illegal modifier usage: '" + modifier + "' is not allowed on type declarations")
+            .collect(Collectors.toSet()),
+            diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.toSet()));
+    }
+
+    @Test
     public void coreModifierRuleAllowsExplicitFinalRecords() {
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreModifierInspection(), """
             final record TopLevel(int value) {

@@ -5,6 +5,7 @@ import dev.railroadide.railroad.ide.sst.lexer.Token;
 import dev.railroadide.railroad.ide.sst.lexer.TokenChannel;
 import dev.railroadide.railroad.ide.sst.lexer.TokenFlag;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -22,6 +23,8 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
     private final CharSequence input;
     private final int length;
+    private final CharSequence rawInput;
+    private final int @Nullable [] rawOffsets;
     private final String sourceId;
 
     private int pos;
@@ -61,8 +64,10 @@ public class JavaLexer implements Lexer<JavaTokenType> {
      * @throws NullPointerException if the input or activity check is {@code null}
      */
     public JavaLexer(CharSequence input, String sourceId, Runnable activityCheck) {
-        this.input = Objects.requireNonNull(input, "Input cannot be null");
-        this.length = input.length();
+        this.rawInput = Objects.requireNonNull(input, "Input cannot be null");
+        this.rawOffsets = translatedRawOffsets(input);
+        this.input = rawOffsets == null ? input : JavaUnicodeEscapes.translate(input);
+        this.length = this.input.length();
         this.sourceId = sourceId;
         this.pos = 0;
         this.line = 1;
@@ -112,7 +117,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
     @Override
     public int offset() {
-        return pos;
+        return rawOffset(pos);
     }
 
     @Override
@@ -127,7 +132,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
     @Override
     public Optional<Integer> totalLength() {
-        return Optional.of(length);
+        return Optional.of(rawInput.length());
     }
 
     @Override
@@ -348,9 +353,8 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         if (current == '.' && isDecimalDigit(peek(1)))
             return readNumber();
 
-        char translatedChar = translatedAt(pos);
-        if (JavaTokenType.MULTI_CHAR_TOKENS.containsKey(translatedChar))
-            return readOperator(translatedChar);
+        if (JavaTokenType.MULTI_CHAR_TOKENS.containsKey(current))
+            return readOperator(current);
 
         if (JavaTokenType.SINGLE_CHAR_TOKENS.containsKey(current)) {
             if (current == '@') {
@@ -368,21 +372,13 @@ public class JavaLexer implements Lexer<JavaTokenType> {
             return token(JavaTokenType.SINGLE_CHAR_TOKENS.get(current), startOffset, startLine, startCol);
         }
 
-        if (Character.isJavaIdentifierStart(translatedChar)) {
-            StringBuilder translated = null;
+        if (Character.isJavaIdentifierStart(Character.codePointAt(input, pos))) {
             do {
-                int escape = JavaUnicodeEscapes.escapeEnd(input, pos);
-                if (escape > 0 && translated == null) {
-                    translated = new StringBuilder(slice(startOffset, pos));
-                }
-                if (translated != null) {
-                    translated.append(translatedAt(pos));
-                }
-                consume(escape > 0 ? escape - pos : 1);
-            } while (hasNext() && Character.isJavaIdentifierPart(translatedAt(pos)));
+                consume(Character.charCount(Character.codePointAt(input, pos)));
+            } while (hasNext() && Character.isJavaIdentifierPart(Character.codePointAt(input, pos)));
 
-            // Escaped identifiers keep their raw text; only their keyword status depends on the translation.
-            String lexeme = translated == null ? slice(startOffset, pos) : translated.toString();
+            // The translated spelling decides keyword status; the token keeps its raw text.
+            String lexeme = input.subSequence(startOffset, pos).toString();
             JavaTokenType type = JavaTokenType.listKeywords().getOrDefault(lexeme, JavaTokenType.IDENTIFIER);
             if ("true".equals(lexeme) || "false".equals(lexeme)) {
                 type = JavaTokenType.BOOLEAN_LITERAL;
@@ -393,11 +389,12 @@ public class JavaLexer implements Lexer<JavaTokenType> {
             return token(type, startOffset, startLine, startCol);
         }
 
-        if (Character.isDigit(current))
+        if (isDecimalDigit(current))
             return readNumber();
 
         consume();
-        diagnostics.add(new LexError("Unexpected character: '" + current + "'", startOffset, startLine, startCol));
+        diagnostics.add(new LexError("Unexpected character: '" + current + "'", rawOffset(startOffset), startLine,
+            startCol));
         return token(JavaTokenType.UNKNOWN, startOffset, startLine, startCol, TokenChannel.DEFAULT,
             EnumSet.of(TokenFlag.ERROR));
     }
@@ -476,13 +473,13 @@ public class JavaLexer implements Lexer<JavaTokenType> {
             .sorted((a, b) -> Integer.compare(b.getKey().length(), a.getKey().length()))
             .toList();
 
-        int afterFirst = translatedCharEnd(pos);
+        int afterFirst = pos + 1;
         for (Map.Entry<CharSequence, JavaTokenType> possibleToken : possibleTokens) {
             CharSequence spelling = possibleToken.getKey();
             int end = afterFirst;
             int matched = 1;
-            while (matched < spelling.length() && end < length && translatedAt(end) == spelling.charAt(matched)) {
-                end = translatedCharEnd(end);
+            while (matched < spelling.length() && end < length && charAt(end) == spelling.charAt(matched)) {
+                end++;
                 matched++;
             }
             if (matched == spelling.length()) {
@@ -493,11 +490,6 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
         consume(afterFirst - pos);
         return token(JavaTokenType.SINGLE_CHAR_TOKENS.get(current), startOffset, line, column);
-    }
-
-    private int translatedCharEnd(int offset) {
-        int escape = JavaUnicodeEscapes.escapeEnd(input, offset);
-        return escape > 0 ? escape : offset + 1;
     }
 
     /**
@@ -674,7 +666,8 @@ public class JavaLexer implements Lexer<JavaTokenType> {
             consume();
         }
 
-        diagnostics.add(new LexError(problem + ": " + slice(startOffset, pos), startOffset, startLine, startColumn));
+        diagnostics.add(new LexError(problem + ": " + slice(startOffset, pos), rawOffset(startOffset), startLine,
+            startColumn));
         return token(type, startOffset, startLine, startColumn, TokenChannel.DEFAULT, TokenFlag.ERROR);
     }
 
@@ -753,11 +746,6 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         return this.input.charAt(pos);
     }
 
-    private char translatedAt(int pos) {
-        int escape = JavaUnicodeEscapes.escapeEnd(input, pos);
-        return escape > 0 ? JavaUnicodeEscapes.decoded(input, escape) : charAt(pos);
-    }
-
     private char peek(int offset) {
         int pos = this.pos + offset;
         return (pos >= 0 && pos < length) ? charAt(pos) : '\0';
@@ -800,7 +788,40 @@ public class JavaLexer implements Lexer<JavaTokenType> {
     }
 
     private String slice(int start, int end) {
-        return input.subSequence(start, end).toString();
+        return rawInput.subSequence(rawOffset(start), rawOffset(end)).toString();
+    }
+
+    private int rawOffset(int position) {
+        return rawOffsets == null ? position : rawOffsets[position];
+    }
+
+    /**
+     * Maps each position of the translated source to its raw offset, or returns {@code null} when the source has no
+     * Unicode escape and the positions coincide.
+     */
+    private static int @Nullable [] translatedRawOffsets(CharSequence raw) {
+        List<Integer> offsets = null;
+        for (int index = 0; index < raw.length(); index++) {
+            int end = JavaUnicodeEscapes.escapeEnd(raw, index);
+            if (end < 0) {
+                if (offsets != null) {
+                    offsets.add(index);
+                }
+                continue;
+            }
+            if (offsets == null) {
+                offsets = new ArrayList<>(raw.length());
+                for (int previous = 0; previous < index; previous++) {
+                    offsets.add(previous);
+                }
+            }
+            offsets.add(index);
+            index = end - 1;
+        }
+        if (offsets == null)
+            return null;
+        offsets.add(raw.length());
+        return offsets.stream().mapToInt(Integer::intValue).toArray();
     }
 
     private Token<JavaTokenType> token(JavaTokenType type, int startOff, int startLine, int startCol) {
@@ -836,23 +857,25 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         TokenChannel channel,
         Set<TokenFlag> flags
     ) {
-        return new Token.SimpleToken<>(type, slice(startOff, pos), startOff, pos, startLine, startCol, channel, flags);
+        return new Token.SimpleToken<>(type, slice(startOff, pos), rawOffset(startOff), rawOffset(pos), startLine,
+            startCol, channel, flags);
     }
 
     private Token<JavaTokenType> errorToken(String message) {
-        diagnostics.add(new LexError(message, pos, line, column));
-        return new Token.SimpleToken<>(JavaTokenType.IDENTIFIER, "", pos, pos, line, column, TokenChannel.DEFAULT,
-            EnumSet.of(TokenFlag.ERROR));
+        diagnostics.add(new LexError(message, rawOffset(pos), line, column));
+        return new Token.SimpleToken<>(JavaTokenType.IDENTIFIER, "", rawOffset(pos), rawOffset(pos), line, column,
+            TokenChannel.DEFAULT, EnumSet.of(TokenFlag.ERROR));
     }
 
     private Token<JavaTokenType> unterminated(int startOff, int startLine, int startCol, String message) {
-        diagnostics.add(new LexError(message, startOff, startLine, startCol));
-        return new Token.SimpleToken<>(JavaTokenType.STRING_LITERAL, slice(startOff, pos), startOff, pos, startLine,
-            startCol, TokenChannel.DEFAULT, EnumSet.of(TokenFlag.INCOMPLETE, TokenFlag.ERROR));
+        diagnostics.add(new LexError(message, rawOffset(startOff), startLine, startCol));
+        return new Token.SimpleToken<>(JavaTokenType.STRING_LITERAL, slice(startOff, pos), rawOffset(startOff),
+            rawOffset(pos), startLine, startCol, TokenChannel.DEFAULT,
+            EnumSet.of(TokenFlag.INCOMPLETE, TokenFlag.ERROR));
     }
 
     private Token<JavaTokenType> createEofToken() {
-        return new Token.SimpleToken<>(JavaTokenType.EOF, "", pos, pos, line, column, TokenChannel.DEFAULT,
-            EnumSet.of(TokenFlag.EOF));
+        return new Token.SimpleToken<>(JavaTokenType.EOF, "", rawOffset(pos), rawOffset(pos), line, column,
+            TokenChannel.DEFAULT, EnumSet.of(TokenFlag.EOF));
     }
 }

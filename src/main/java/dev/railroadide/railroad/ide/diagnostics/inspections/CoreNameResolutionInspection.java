@@ -107,6 +107,16 @@ public final class CoreNameResolutionInspection implements JavaInspectionRulePro
             || kind == JavaSymbolKind.RECORD;
     }
 
+    /**
+     * A name selected through an explicit qualifier never refers to a statically imported member.
+     */
+    private static boolean isQualifiedSelector(JavaRuleContext context, SyntaxNode node) {
+        if (!context.isSelectorNameExpression(node))
+            return false;
+        SyntaxNode parent = node.parent().orElseThrow();
+        return "JAVA_FIELD_ACCESS_EXPRESSION".equals(parent.kind().id()) || context.invocationReceiver(parent) != null;
+    }
+
     private static void reportAmbiguousNames(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
         context.traverse(node -> {
             if (!JAVA_NAME_EXPRESSION.equals(node.kind().id()))
@@ -116,7 +126,7 @@ public final class CoreNameResolutionInspection implements JavaInspectionRulePro
             if (qualifiedName == null || qualifiedName.isBlank())
                 return;
 
-            if (context.isSelectorNameExpression(node))
+            if (isQualifiedSelector(context, node))
                 return;
 
             String simpleName = context.lastSegment(qualifiedName);

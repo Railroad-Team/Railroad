@@ -9,11 +9,13 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxKind;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 import dev.railroadide.railroad.ide.sst.syntax.internal.GreenElement;
 import dev.railroadide.railroad.ide.sst.syntax.internal.GreenNode;
+import dev.railroadide.railroad.ide.sst.syntax.internal.GreenToken;
 import dev.railroadide.railroad.ide.sst.syntax.internal.SyntaxInternalFactory;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Parses Java lexer tokens into immutable green syntax nodes, retaining trivia and
@@ -51,7 +53,15 @@ public final class JavaGreenParser {
         JavaTokenType.STATIC_KEYWORD,
         JavaTokenType.STRICTFP_KEYWORD,
         JavaTokenType.SEALED_KEYWORD,
-        JavaTokenType.NON_SEALED_KEYWORD);
+        JavaTokenType.NON_SEALED_KEYWORD,
+        JavaTokenType.SYNCHRONIZED_KEYWORD,
+        JavaTokenType.NATIVE_KEYWORD,
+        JavaTokenType.TRANSIENT_KEYWORD,
+        JavaTokenType.VOLATILE_KEYWORD);
+
+    private static final Set<JavaTokenType> RESTRICTED_TYPE_NAMES = Set.of(JavaTokenType.VAR_KEYWORD,
+        JavaTokenType.YIELD_KEYWORD, JavaTokenType.RECORD_KEYWORD, JavaTokenType.SEALED_KEYWORD,
+        JavaTokenType.PERMITS_KEYWORD);
 
     private static final Set<JavaTokenType> COMPACT_CONSTRUCTOR_MODIFIERS = Set.of(
         JavaTokenType.PUBLIC_KEYWORD,
@@ -144,6 +154,7 @@ public final class JavaGreenParser {
 
     private int position;
     private int pendingTypeArgumentClosers;
+    private boolean lambdaOperandsAllowed = true;
     private int recoveries;
 
     /**
@@ -252,10 +263,33 @@ public final class JavaGreenParser {
                 continue;
             }
 
+            GreenNode memberDeclaration = isCompactMemberStart() ? parseOptionalMemberDeclaration(null, false) : null;
+            if (memberDeclaration != null) {
+                children.add(memberDeclaration);
+                continue;
+            }
+
             children.add(parseTopLevelRemainder(JavaSyntaxKinds.ERROR));
         }
 
         return greenNode(JavaSyntaxKinds.COMPILATION_UNIT, children);
+    }
+
+    /**
+     * Reports whether a field or method of a compact compilation unit starts here: a type or {@code void} followed by
+     * a name, or the type parameters of a generic method.
+     */
+    private boolean isCompactMemberStart() {
+        ParserCheckpoint checkpoint = mark();
+        parseMemberPrefix();
+        JavaTokenType next = peekSignificantType();
+        boolean member = next == JavaTokenType.LEFT_ANGLED_BRACKET || next == JavaTokenType.VOID_KEYWORD;
+        if (!member && (isIdentifierLike(next) || isPrimitiveTypeToken(next))) {
+            parseTypeReference();
+            member = isIdentifierLike(peekSignificantType());
+        }
+        rollback(checkpoint);
+        return member;
     }
 
     private GreenNode parseOptionalPackageDeclaration() {
@@ -477,7 +511,7 @@ public final class JavaGreenParser {
             return parseEnumDeclaration(prefix);
         if (tokenType == JavaTokenType.AT_INTERFACE_KEYWORD)
             return parseAnnotationTypeDeclaration(prefix);
-        if (tokenType == JavaTokenType.RECORD_KEYWORD)
+        if (tokenType == JavaTokenType.RECORD_KEYWORD && isIdentifierLike(peekSignificantTypeAfter(1)))
             return parseRecordDeclaration(prefix);
 
         position = marker;
@@ -488,10 +522,7 @@ public final class JavaGreenParser {
         List<GreenElement> children = new ArrayList<>(prefix);
 
         expectSignificant(JavaTokenType.CLASS_KEYWORD, children);
-        Token<JavaTokenType> classNameToken = consumeIdentifierLike(children);
-        if (classNameToken == null) {
-            children.add(missingToken(JavaTokenType.IDENTIFIER));
-        }
+        Token<JavaTokenType> classNameToken = consumeTypeName(children);
 
         GreenNode typeParameters = parseOptionalTypeParameters();
         if (typeParameters != null) {
@@ -525,9 +556,7 @@ public final class JavaGreenParser {
         List<GreenElement> children = new ArrayList<>(prefix);
 
         expectSignificant(JavaTokenType.INTERFACE_KEYWORD, children);
-        if (consumeIdentifierLike(children) == null) {
-            children.add(missingToken(JavaTokenType.IDENTIFIER));
-        }
+        consumeTypeName(children);
 
         GreenNode typeParameters = parseOptionalTypeParameters();
         if (typeParameters != null) {
@@ -554,10 +583,7 @@ public final class JavaGreenParser {
         List<GreenElement> children = new ArrayList<>(prefix);
 
         expectSignificant(JavaTokenType.ENUM_KEYWORD, children);
-        Token<JavaTokenType> enumNameToken = consumeIdentifierLike(children);
-        if (enumNameToken == null) {
-            children.add(missingToken(JavaTokenType.IDENTIFIER));
-        }
+        Token<JavaTokenType> enumNameToken = consumeTypeName(children);
 
         GreenNode implementsClause = parseOptionalTypeClause(JavaTokenType.IMPLEMENTS_KEYWORD,
             JavaSyntaxKinds.IMPLEMENTS_CLAUSE);
@@ -574,8 +600,16 @@ public final class JavaGreenParser {
         List<GreenElement> children = new ArrayList<>(prefix);
 
         expectSignificant(JavaTokenType.AT_INTERFACE_KEYWORD, children);
-        if (consumeIdentifierLike(children) == null) {
-            children.add(missingToken(JavaTokenType.IDENTIFIER));
+        consumeTypeName(children);
+
+        GreenNode typeParameters = parseOptionalTypeParameters();
+        if (typeParameters != null) {
+            children.add(typeParameters);
+        }
+        GreenNode extendsClause = parseOptionalTypeClause(JavaTokenType.EXTENDS_KEYWORD,
+            JavaSyntaxKinds.EXTENDS_CLAUSE);
+        if (extendsClause != null) {
+            children.add(extendsClause);
         }
 
         children.add(parseTypeBody(JavaSyntaxKinds.ANNOTATION_TYPE_BODY, JavaSyntaxKinds.ANNOTATION_TYPE_MEMBER, null,
@@ -587,10 +621,7 @@ public final class JavaGreenParser {
         List<GreenElement> children = new ArrayList<>(prefix);
 
         expectSignificant(JavaTokenType.RECORD_KEYWORD, children);
-        Token<JavaTokenType> recordNameToken = consumeIdentifierLike(children);
-        if (recordNameToken == null) {
-            children.add(missingToken(JavaTokenType.IDENTIFIER));
-        }
+        Token<JavaTokenType> recordNameToken = consumeTypeName(children);
 
         GreenNode typeParameters = parseOptionalTypeParameters();
         if (typeParameters != null) {
@@ -770,9 +801,7 @@ public final class JavaGreenParser {
         consumeTrivia(children);
         consumeTypeUseAnnotations(children);
 
-        if (consumeIdentifierLike(children) == null) {
-            children.add(missingToken(JavaTokenType.IDENTIFIER));
-        }
+        consumeTypeName(children);
 
         if (matchSignificant(JavaTokenType.EXTENDS_KEYWORD, children)) {
             children.add(parseTypeBound());
@@ -1645,7 +1674,7 @@ public final class JavaGreenParser {
     private GreenNode parseExpression() {
         ParserCheckpoint checkpoint = mark();
         GreenNode expression;
-        if (isLambdaHeader()) {
+        if (isLambdaHeader() && !isBlockBodiedLambdaStart()) {
             expression = parseLambdaExpression();
         } else {
             expression = parseAssignmentExpression();
@@ -1938,10 +1967,17 @@ public final class JavaGreenParser {
                     continue;
                 }
 
+                GreenNode typedInvocation = parseOptionalTypedConstructorInvocationTarget(children);
+                if (typedInvocation != null) {
+                    expression = typedInvocation;
+                    continue;
+                }
+
                 GreenNode typeArguments = parseOptionalTypeArguments();
                 if (typeArguments != null) {
                     children.add(typeArguments);
                 }
+                consumeTypeUseAnnotations(children);
 
                 List<GreenElement> nameChildren = new ArrayList<>();
                 if (consumeIdentifierLike(nameChildren) == null) {
@@ -1999,6 +2035,58 @@ public final class JavaGreenParser {
         return expression;
     }
 
+    /**
+     * Parses the target of an explicit constructor invocation with type arguments, such as {@code <T>super} or the
+     * {@code <T>this} after a qualifier (JLS 8.8.7.1). The invocation's arguments follow as a postfix. Returns
+     * {@code null} without consuming input when the type arguments do not precede {@code this} or {@code super}.
+     */
+    private GreenNode parseOptionalTypedConstructorInvocationTarget(List<GreenElement> children) {
+        ParserCheckpoint checkpoint = mark();
+        int childCount = children.size();
+        GreenNode typeArguments = parseOptionalTypeArguments();
+        JavaTokenType target = peekSignificantType();
+        if (typeArguments != null
+            && (target == JavaTokenType.THIS_KEYWORD || target == JavaTokenType.SUPER_KEYWORD)) {
+            children.add(typeArguments);
+            expectSignificant(target, children);
+            return greenNode(target == JavaTokenType.THIS_KEYWORD
+                ? JavaSyntaxKinds.THIS_EXPRESSION
+                : JavaSyntaxKinds.SUPER_EXPRESSION, children);
+        }
+        rollback(checkpoint);
+        children.subList(childCount, children.size()).clear();
+        return null;
+    }
+
+    /**
+     * Reports whether a method reference starts here whose receiver is a type that an expression cannot spell, such
+     * as {@code List<String>::size} or {@code int[]::clone} (JLS 15.13).
+     */
+    private boolean isTypeMethodReferenceStart() {
+        JavaTokenType first = peekSignificantType();
+        if (!isIdentifierLike(first) && !isPrimitiveTypeToken(first) && first != JavaTokenType.AT)
+            return false;
+
+        boolean typeSyntax = false;
+        for (int index = nextSignificantIndex(position); index >= 0; index = nextSignificantIndex(index + 1)) {
+            ActivityCheckpoint.poll(activityCheck);
+            JavaTokenType type = tokens.get(index).type();
+            if (type == JavaTokenType.DOUBLE_COLON)
+                return typeSyntax;
+            if (type == JavaTokenType.LEFT_ANGLED_BRACKET || type == JavaTokenType.OPEN_BRACKET
+                || type == JavaTokenType.AT) {
+                typeSyntax = true;
+            } else if (!isIdentifierLike(type) && !isPrimitiveTypeToken(type) && type != JavaTokenType.DOT
+                && type != JavaTokenType.COMMA && type != JavaTokenType.QUESTION_MARK
+                && type != JavaTokenType.AMPERSAND && type != JavaTokenType.EXTENDS_KEYWORD
+                && type != JavaTokenType.SUPER_KEYWORD && type != JavaTokenType.RIGHT_ANGLED_BRACKET
+                && type != JavaTokenType.RIGHT_SHIFT && type != JavaTokenType.UNSIGNED_RIGHT_SHIFT
+                && type != JavaTokenType.CLOSE_BRACKET)
+                return false;
+        }
+        return false;
+    }
+
     private boolean isArrayConstructorMethodReferenceStart() {
         int index = nextSignificantIndex(position);
         boolean foundDimension = false;
@@ -2043,6 +2131,8 @@ public final class JavaGreenParser {
 
         if (isLiteralToken(tokenType))
             return parseLiteral();
+        if (isBlockBodiedLambdaStart())
+            return parseLambdaExpression();
         if (tokenType == JavaTokenType.OPEN_PAREN)
             return parseParenthesizedExpression();
         if (tokenType == JavaTokenType.NEW_KEYWORD)
@@ -2051,6 +2141,18 @@ public final class JavaGreenParser {
             return parseSwitchExpression();
         if (isClassLiteralStart())
             return parseClassLiteralExpression();
+        if (tokenType == JavaTokenType.LEFT_ANGLED_BRACKET) {
+            GreenNode invocation = parseOptionalTypedConstructorInvocationTarget(new ArrayList<>());
+            if (invocation != null)
+                return invocation;
+        }
+        if (isTypeMethodReferenceStart()) {
+            ParserCheckpoint checkpoint = mark();
+            GreenNode type = parseTypeReference();
+            if (peekSignificantType() == JavaTokenType.DOUBLE_COLON)
+                return parseMethodReferenceExpression(type);
+            rollback(checkpoint);
+        }
 
         if (isIdentifierLike(tokenType)) {
             List<GreenElement> nameChildren = new ArrayList<>();
@@ -2355,8 +2457,13 @@ public final class JavaGreenParser {
         if (matchSignificant(JavaTokenType.UNDERSCORE_KEYWORD, children))
             return greenNode(JavaSyntaxKinds.PATTERN, children);
 
+        int prefixStart = children.size();
         consumeModifiersAndAnnotations(children, JavaGreenParser::isParameterOrLocalModifier);
+        int typeIndex = children.size();
         children.add(parseTypeReference());
+        if (peekSignificantType() == JavaTokenType.OPEN_PAREN) {
+            rejectRecordPatternAnnotations(children, prefixStart, typeIndex);
+        }
         if (matchSignificant(JavaTokenType.OPEN_PAREN, children)) {
             while (hasMoreTokens()) {
                 consumeTrivia(children);
@@ -2393,6 +2500,19 @@ public final class JavaGreenParser {
         }
 
         return greenNode(JavaSyntaxKinds.PATTERN, children);
+    }
+
+    /**
+     * javac's parser rejects annotations on a record pattern, including those in its type arguments.
+     */
+    private void rejectRecordPatternAnnotations(List<GreenElement> children, int prefixStart, int typeIndex) {
+        for (int index = prefixStart; index <= typeIndex; index++) {
+            GreenElement element = children.get(index);
+            if (element.kind().equals(JavaSyntaxKinds.ANNOTATION)
+                || index == typeIndex && containsKind(element, JavaSyntaxKinds.ANNOTATION)) {
+                children.set(index, errorNode(element));
+            }
+        }
     }
 
     private boolean isPatternStart() {
@@ -2464,20 +2584,59 @@ public final class JavaGreenParser {
             return false;
         }
 
+        boolean primitiveType = isPrimitiveTypeToken(peekSignificantType())
+            && peekSignificantTypeAfter(1) == JavaTokenType.CLOSE_PAREN;
         parseTypeReference();
         while (matchSignificant(JavaTokenType.AMPERSAND, probe)) {
             parseTypeReference();
         }
 
-        boolean hasClosingParen = peekSignificantType() == JavaTokenType.CLOSE_PAREN;
-        if (hasClosingParen) {
-            consumeToken();
-        }
+        boolean hasClosingParen = matchSignificant(JavaTokenType.CLOSE_PAREN, probe);
 
         JavaTokenType next = peekSignificantType();
-        boolean canStartTarget = hasClosingParen && canStartUnaryExpression(next);
+        boolean signedOperand = next == JavaTokenType.PLUS || next == JavaTokenType.MINUS
+            || next == JavaTokenType.PLUS_PLUS || next == JavaTokenType.MINUS_MINUS;
+        boolean canStartTarget = hasClosingParen && canStartUnaryExpression(next) && (primitiveType || !signedOperand);
         rollback(checkpoint);
         return canStartTarget;
+    }
+
+    /**
+     * Parses a switch label or guard, where the rule arrow follows the expression. As in javac, a lambda can still
+     * appear inside the expression's arguments, which {@link #parseExpression()} parses.
+     */
+    private GreenNode parseWithoutLambdaOperands(Supplier<GreenNode> parser) {
+        boolean previous = lambdaOperandsAllowed;
+        lambdaOperandsAllowed = false;
+        try {
+            return parser.get();
+        } finally {
+            lambdaOperandsAllowed = previous;
+        }
+    }
+
+    private boolean isBlockBodiedLambdaStart() {
+        if (!lambdaOperandsAllowed || !isLambdaHeader())
+            return false;
+
+        int index = nextSignificantIndex(position);
+        if (tokens.get(index).type() == JavaTokenType.OPEN_PAREN) {
+            int depth = 0;
+            for (; index >= 0; index = nextSignificantIndex(index + 1)) {
+                JavaTokenType type = tokens.get(index).type();
+                if (type == JavaTokenType.OPEN_PAREN) {
+                    depth++;
+                } else if (type == JavaTokenType.CLOSE_PAREN && --depth == 0)
+                    break;
+            }
+            if (index < 0)
+                return false;
+        }
+        int arrow = nextSignificantIndex(index + 1);
+        if (arrow < 0 || tokens.get(arrow).type() != JavaTokenType.ARROW)
+            return false;
+        int body = nextSignificantIndex(arrow + 1);
+        return body >= 0 && tokens.get(body).type() == JavaTokenType.OPEN_BRACE;
     }
 
     private boolean isLambdaHeader() {
@@ -2594,6 +2753,7 @@ public final class JavaGreenParser {
 
         if (tokenType == JavaTokenType.CLASS_KEYWORD || tokenType == JavaTokenType.INTERFACE_KEYWORD
             || tokenType == JavaTokenType.ENUM_KEYWORD || tokenType == JavaTokenType.RECORD_KEYWORD
+            || tokenType == JavaTokenType.AT_INTERFACE_KEYWORD
             || tokenType == JavaTokenType.AT || tokenType == JavaTokenType.ABSTRACT_KEYWORD
             || tokenType == JavaTokenType.FINAL_KEYWORD || tokenType == JavaTokenType.STRICTFP_KEYWORD) {
             GreenNode localType = parseOptionalTopLevelTypeDeclaration();
@@ -2647,8 +2807,8 @@ public final class JavaGreenParser {
 
     private boolean isLocalVariableDeclarationStart() {
         JavaTokenType tokenType = peekSignificantType();
-        if (tokenType == JavaTokenType.VAR_KEYWORD || tokenType == JavaTokenType.AT
-            || isParameterOrLocalModifier(tokenType))
+        if (tokenType == JavaTokenType.VAR_KEYWORD && isIdentifierLike(peekSignificantTypeAfter(1))
+            || tokenType == JavaTokenType.AT || isParameterOrLocalModifier(tokenType))
             return true;
 
         // Prevent expression starters (e.g. 'new') from being misclassified as
@@ -2682,20 +2842,30 @@ public final class JavaGreenParser {
         List<GreenElement> children = new ArrayList<>();
         consumeModifiersAndAnnotations(children, JavaGreenParser::isParameterOrLocalModifier);
 
-        if (peekSignificantType() == JavaTokenType.VAR_KEYWORD) {
+        boolean varType = peekSignificantType() == JavaTokenType.VAR_KEYWORD
+            && isIdentifierLike(peekSignificantTypeAfter(1));
+        if (varType) {
             expectSignificant(JavaTokenType.VAR_KEYWORD, children);
         } else {
-            children.add(parseTypeReference());
+            GreenNode type = parseTypeReference();
+            boolean varArray = startsWithVar(type)
+                && containsKind(type, JavaSyntaxKinds.tokenKind(JavaTokenType.OPEN_BRACKET));
+            children.add(varArray ? errorNode(type) : type);
         }
 
         List<GreenElement> nameTokens = new ArrayList<>();
         if (consumeIdentifierLike(nameTokens) == null) {
             nameTokens.add(missingToken(JavaTokenType.IDENTIFIER));
         }
-        children.add(parseVariableDeclaratorFromNameTokens(nameTokens));
+        JavaTokenType afterName = peekSignificantType();
+        boolean varDimensions = varType
+            && (afterName == JavaTokenType.OPEN_BRACKET || afterName == JavaTokenType.AT);
+        GreenNode declarator = parseVariableDeclaratorFromNameTokens(nameTokens);
+        children.add(varDimensions ? errorNode(declarator) : declarator);
 
         while (matchSignificant(JavaTokenType.COMMA, children)) {
-            children.add(parseVariableDeclarator());
+            GreenNode next = parseVariableDeclarator();
+            children.add(varType ? errorNode(next) : next);
         }
 
         if (requireSemicolon) {
@@ -2874,7 +3044,7 @@ public final class JavaGreenParser {
     private GreenNode parseBasicForStatement() {
         List<GreenElement> children = new ArrayList<>();
         if (peekSignificantType() == JavaTokenType.SEMICOLON) {
-            children.add(consumeToken());
+            expectSignificant(JavaTokenType.SEMICOLON, children);
         } else if (isLocalVariableDeclarationStart()) {
             children.add(parseLocalVariableDeclarationStatement(true));
         } else {
@@ -3055,7 +3225,7 @@ public final class JavaGreenParser {
             // A single identifier followed by the rule arrow is an enum/name case
             // constant, not a lambda header. Case constants cannot be assignment or
             // lambda expressions, so stop at the conditional-expression grammar here.
-            children.add(parseConditionalExpression());
+            children.add(parseWithoutLambdaOperands(this::parseConditionalExpression));
         }
 
         if (matchSignificant(JavaTokenType.WHEN_KEYWORD, children)) {
@@ -3067,7 +3237,7 @@ public final class JavaGreenParser {
 
     private GreenNode parsePatternGuard() {
         List<GreenElement> children = new ArrayList<>();
-        children.add(parseExpression());
+        children.add(parseWithoutLambdaOperands(this::parseConditionalExpression));
         return greenNode(JavaSyntaxKinds.PATTERN_GUARD, children);
     }
 
@@ -3237,6 +3407,43 @@ public final class JavaGreenParser {
                 consumed = true;
             }
         } while (consumed);
+    }
+
+    /**
+     * Consumes the name of a type or type parameter. javac's parser rejects a restricted identifier there (JLS 3.9).
+     */
+    private Token<JavaTokenType> consumeTypeName(List<GreenElement> children) {
+        Token<JavaTokenType> name = consumeIdentifierLike(children);
+        if (name == null) {
+            children.add(missingToken(JavaTokenType.IDENTIFIER));
+        } else if (RESTRICTED_TYPE_NAMES.contains(name.type())) {
+            children.add(errorNode(children.removeLast()));
+        }
+        return name;
+    }
+
+    private GreenNode errorNode(GreenElement element) {
+        return greenNode(JavaSyntaxKinds.ERROR, new ArrayList<>(List.of(element)));
+    }
+
+    private static boolean containsKind(GreenElement element, SyntaxKind kind) {
+        if (element.kind().equals(kind))
+            return true;
+        return element instanceof GreenNode node
+            && node.children().stream().anyMatch(child -> containsKind(child, kind));
+    }
+
+    private static boolean startsWithVar(GreenElement element) {
+        if (element instanceof GreenToken token)
+            return "var".equals(token.text());
+        if (!(element instanceof GreenNode node))
+            return false;
+        for (GreenElement child : node.children()) {
+            if (child instanceof GreenToken token && (token.text().isBlank() || token.text().startsWith("/")))
+                continue;
+            return startsWithVar(child);
+        }
+        return false;
     }
 
     private Token<JavaTokenType> consumeIdentifierLike(List<GreenElement> children) {
