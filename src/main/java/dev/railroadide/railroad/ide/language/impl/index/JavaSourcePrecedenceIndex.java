@@ -26,6 +26,14 @@ public final class JavaSourcePrecedenceIndex implements JavaSymbolIndex {
      * @param binaries pinned library and JDK declarations
      */
     public JavaSourcePrecedenceIndex(JavaProjectSemanticIndex sources, JavaSymbolIndex binaries) {
+        this(sources, binaries, null);
+    }
+
+    private JavaSourcePrecedenceIndex(
+        JavaProjectSemanticIndex sources,
+        JavaSymbolIndex binaries,
+        @Nullable JavaSourcePrecedenceIndex previous
+    ) {
         this.sources = sources;
         this.binaries = binaries;
         Map<String, String> names = new HashMap<>();
@@ -39,6 +47,15 @@ public final class JavaSourcePrecedenceIndex implements JavaSymbolIndex {
                     names.putIfAbsent(prefix + name.substring(prefix.length()).replace('.', '$'), name);
                 }
             }
+        }
+        if (previous != null && names.equals(previous.sourceNames)
+            && sources.typeNames().equals(previous.sources.typeNames())) {
+            sourceNames = previous.sourceNames;
+            hiddenBinaries = previous.hiddenBinaries;
+            classStubs = previous.classStubs;
+            qualifiedNames = previous.qualifiedNames;
+            typeNames = previous.typeNames;
+            return;
         }
         sourceNames = Map.copyOf(names);
         Set<String> hidden = new HashSet<>();
@@ -63,6 +80,17 @@ public final class JavaSourcePrecedenceIndex implements JavaSymbolIndex {
         simple.addAll(qualified);
         qualifiedNames = Set.copyOf(qualified);
         typeNames = Set.copyOf(simple);
+    }
+
+    /**
+     * Combines updated source declarations with the same binaries, sharing binary lookups when
+     * the visible type names are unchanged.
+     *
+     * @param updated source declarations for the new revision
+     * @return the combined index for that revision
+     */
+    public JavaSourcePrecedenceIndex withSources(JavaProjectSemanticIndex updated) {
+        return new JavaSourcePrecedenceIndex(updated, binaries, this);
     }
 
     private boolean ownedBySource(String name) {

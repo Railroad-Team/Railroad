@@ -71,7 +71,9 @@ def railroadJvmArgs = [
     // Symbol indexes hold many equal strings; G1 can share their backing arrays.
     '-XX:+UseStringDeduplication',
     // Lets G1 return unused heap to the OS while the IDE is idle.
-    '-XX:G1PeriodicGCInterval=60000'
+    '-XX:G1PeriodicGCInterval=60000',
+    '-XX:MinHeapFreeRatio=10',
+    '-XX:MaxHeapFreeRatio=30'
 ]
 
 application {

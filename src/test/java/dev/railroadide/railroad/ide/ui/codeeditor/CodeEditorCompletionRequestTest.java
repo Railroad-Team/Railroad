@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 import dev.railroadide.railroad.ui.RRListView;
 import dev.railroadide.railroad.ide.sst.provider.api.CapabilityRegistry;
 import dev.railroadide.railroad.ide.sst.provider.api.LanguageSession;
+import javafx.scene.Node;
 
 import static dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorRequestTestSupport.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -344,6 +345,124 @@ public class CodeEditorCompletionRequestTest {
     }
 
     @Test
+    public void typingAndBackspacingFilterTheDisplayedMembersAndEnterAcceptsTheSelection() throws Exception {
+        try (Fixture fixture = open(context -> new FeatureResult<>(context, new CompletionResult(5, List.of(
+            new CompletionItem("leaf", "leaf"), new CompletionItem("length", "length"),
+            new CompletionItem("size", "size")))), "this", text -> text.endsWith("."))) {
+            TestEditor editor = fixture.editor;
+            onFx(() -> {
+                editor.appendText(".");
+                return null;
+            });
+            assertNotNull(fixture.provider.requests.poll(10, TimeUnit.SECONDS));
+            awaitRequests(editor.featureRequests);
+            onFx(() -> {
+                var list = editor.activeCompletionList.get();
+                assertNotNull(list);
+                editor.appendText("len");
+                assertEquals(List.of(new CompletionItem("length", "length")), list.getItems());
+                editor.deleteText(7, 8);
+                assertSame(list, editor.activeCompletionList.get());
+                assertEquals(2, list.getItems().size());
+                editor.appendText("x");
+                assertNull(editor.activeCompletionList.get());
+                editor.deleteText(7, 8);
+                assertEquals(2, editor.activeCompletionList.get().getItems().size());
+                editor.press(KeyCode.DOWN, false);
+                editor.activeCompletionList.get().fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.ENTER,
+                    false, false, false, false));
+                assertEquals("this.length", editor.getText());
+                assertNull(editor.activeCompletionList.get());
+                return null;
+            });
+            assertTrue(fixture.provider.requests.isEmpty());
+        }
+    }
+
+    @Test
+    public void prefixTypedDuringARequestUsesTheCurrentRevisionAndCanBeRequestedAgain() throws Exception {
+        var release = new CountDownLatch(1);
+        try (Fixture fixture = open(context -> {
+            if (((TextDocumentSnapshot) context.documentSnapshot()).text().equals("this.")) {
+                await(release);
+            }
+            return new FeatureResult<>(context, new CompletionResult(5, List.of(
+                new CompletionItem("length", "length"), new CompletionItem("size", "size"))));
+        }, "this.", text -> text.endsWith("."))) {
+            TestEditor editor = fixture.editor;
+            try {
+                var old = fixture.request();
+                onFx(() -> {
+                    editor.appendText("le");
+                    return null;
+                });
+                assertTrue(old.cancellationToken().isCancellationRequested());
+                var replacement = fixture.provider.requests.poll(10, TimeUnit.SECONDS);
+                assertNotNull(replacement);
+                assertEquals("this.le", ((TextDocumentSnapshot) replacement.documentSnapshot()).text());
+            } finally {
+                release.countDown();
+            }
+            awaitRequests(editor.featureRequests);
+            onFx(() -> {
+                assertEquals(List.of(new CompletionItem("length", "length")),
+                    editor.activeCompletionList.get().getItems());
+                editor.escape();
+                assertNull(editor.activeCompletionList.get());
+                return null;
+            });
+            onFx(() -> {
+                assertEquals("this.le", editor.getText());
+                assertEquals(editor.getLength(), editor.getCaretPosition());
+                editor.press(KeyCode.SPACE, true);
+                return null;
+            });
+            assertNotNull(fixture.provider.requests.poll(10, TimeUnit.SECONDS));
+            awaitRequests(editor.featureRequests);
+            onFx(() -> {
+                editor.press(KeyCode.ENTER, false);
+                assertEquals("this.length", editor.getText());
+                return null;
+            });
+        }
+    }
+
+    @Test
+    public void popupFitsFilteredRowsAndKeepsTheFullSignatureAccessible() throws Exception {
+        var method = CompletionItem.method("length", "", "int", false);
+        var field = CompletionItem.field("limit", "long", true);
+        var text = new CompletionItem("size", "Size from provider");
+        try (Fixture fixture = open(context -> new FeatureResult<>(context,
+            new CompletionResult(5, List.of(method, field, text))), "this.", inserted -> inserted.endsWith("."))) {
+            fixture.request();
+            awaitRequests(fixture.editor.featureRequests);
+            onFx(() -> {
+                var list = fixture.editor.activeCompletionList.get();
+                assertEquals(3 * list.getFixedCellSize(), list.prefHeight(-1));
+                list.applyCss();
+                list.layout();
+                var labels = list.lookupAll(".list-cell").stream().map(Node::getAccessibleText).toList();
+                assertTrue(labels.contains("length() : int"));
+                assertTrue(labels.contains("static limit : long"));
+                assertTrue(labels.contains("Size from provider"));
+                fixture.editor.appendText("len");
+                assertEquals(List.of(method), list.getItems());
+                assertEquals(list.getFixedCellSize(), list.prefHeight(-1));
+                list.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.SPACE,
+                    false, true, false, false));
+                return null;
+            });
+            assertNotNull(fixture.provider.requests.poll(10, TimeUnit.SECONDS));
+            awaitRequests(fixture.editor.featureRequests);
+            onFx(() -> {
+                fixture.editor.press(KeyCode.ENTER, false);
+                assertEquals("this.length", fixture.editor.getText());
+                return null;
+            });
+        }
+    }
+
+    @Test
     public void providerCanCompleteAfterColonWithoutEditorLanguageRules() throws Exception {
         assertCustomCompletion("name", ":", 5, "name:value", text -> text.endsWith(":"));
     }
@@ -372,9 +491,6 @@ public class CodeEditorCompletionRequestTest {
             awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertEquals(List.of("value"), fixture.editor.candidates());
-                var filter = CodeEditorPane.class.getDeclaredMethod("filterAutoComplete", String.class);
-                filter.setAccessible(true);
-                filter.invoke(fixture.editor, fixture.editor.getText());
                 assertNotNull(fixture.editor.activeCompletionList.get());
                 var accept = CodeEditorPane.class.getDeclaredMethod("completeFromSelection",
                     RRListView.class);
@@ -542,8 +658,11 @@ public class CodeEditorCompletionRequestTest {
         }
 
         private void escape() {
-            fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.ESCAPE,
-                false, false, false, false));
+            press(KeyCode.ESCAPE, false);
+        }
+
+        private void press(KeyCode code, boolean control) {
+            fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", code, false, control, false, false));
         }
 
         private List<String> candidates() {

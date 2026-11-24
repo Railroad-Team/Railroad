@@ -28,6 +28,23 @@ public class JavaWorkspaceAnalysisTest {
     public Path directory;
 
     @Test
+    public void binaryCompletionShowsAccessibleOverloadsOnceWithTheirReturnTypes() {
+        var store = store();
+        var use = source("Use.java", "package demo; class Use { void run(String value) { value. } }");
+        store.publishBacking(use);
+        try (var provider = new JavaWorkspaceAnalysisProvider()) {
+            var context = provider.capture(store.capture(), use.id());
+            var result = JavaSemanticCompletionEngine.compute(use.text(), use.text().indexOf("value.") + 5, context);
+            assertNotNull(result);
+            var items = result.items();
+            assertEquals(List.of("length() : int"), items.stream().filter(item -> item.insertText().equals("length"))
+                .map(CompletionItem::displayText).toList());
+            assertEquals(2, items.stream().filter(item -> item.insertText().equals("substring")).count());
+            assertFalse(items.stream().anyMatch(item -> item.insertText().equals("coder")));
+        }
+    }
+
+    @Test
     public void capturedSourceShadowsAnOlderBinaryOfTheSameType() throws Exception {
         DefaultDocumentStore store = store();
         Path binary = library("old-classes", "binaryOnly");

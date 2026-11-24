@@ -195,8 +195,12 @@ public final class JavaSemanticCompletionEngine {
             return;
 
         collectLocalMembers(model, ownerQualifiedName, staticContext, out);
-        collectProjectMembers(projectIndex, ownerQualifiedName, staticContext, out);
-        collectJdkMembers(ownerQualifiedName, staticContext, currentPackage, out, projectIndex);
+        ClassStub binary = lookupBinaryClassStub(ownerQualifiedName, projectIndex);
+        if (binary == null) {
+            collectProjectMembers(projectIndex, ownerQualifiedName, staticContext, out);
+        } else {
+            collectBinaryMembers(binary, staticContext, currentPackage, out);
+        }
 
         for (String superType : directSuperTypes(ownerQualifiedName, model, projectIndex)) {
             ActivityCheckpoint.poll(activityCheck);
@@ -287,17 +291,12 @@ public final class JavaSemanticCompletionEngine {
         }
     }
 
-    private void collectJdkMembers(
-        String ownerQualifiedName,
+    private void collectBinaryMembers(
+        ClassStub stub,
         boolean staticContext,
         String currentPackage,
-        Map<String, CompletionItem> out,
-        @Nullable JavaSymbolIndex projectIndex
+        Map<String, CompletionItem> out
     ) {
-        ClassStub stub = lookupBinaryClassStub(ownerQualifiedName, projectIndex);
-        if (stub == null)
-            return;
-
         for (FieldStub field : stub.fields()) {
             ActivityCheckpoint.poll(activityCheck);
             boolean isStatic = Modifier.isStatic(field.modifiers());
@@ -323,8 +322,7 @@ public final class JavaSemanticCompletionEngine {
     }
 
     private void addFieldItem(Map<String, CompletionItem> out, String name, String type, boolean isStatic) {
-        String prefix = isStatic ? "static " : "";
-        out.putIfAbsent("F:" + name, new CompletionItem(name, prefix + name + " : " + type));
+        out.putIfAbsent("F:" + name, CompletionItem.field(name, type, isStatic));
     }
 
     private void addMethodItem(
@@ -334,15 +332,13 @@ public final class JavaSemanticCompletionEngine {
         String returnType,
         boolean isStatic
     ) {
-        String prefix = isStatic ? "static " : "";
         String parameters = String.join(", ", parameterTypes);
-        String display = prefix + name + "(" + parameters + ") : " + returnType;
-        out.putIfAbsent("M:" + display, new CompletionItem(name, display));
+        var item = CompletionItem.method(name, parameters, returnType, isStatic);
+        out.putIfAbsent("M:" + item.label() + item.suffix(), item);
     }
 
     private void addTypeItem(Map<String, CompletionItem> out, String name, boolean isStatic) {
-        String prefix = isStatic ? "static " : "";
-        out.putIfAbsent("T:" + name, new CompletionItem(name, prefix + name + " (type)"));
+        out.putIfAbsent("T:" + name, CompletionItem.type(name, isStatic));
     }
 
     private Type typeOfFieldSymbol(Symbol symbol, SemanticModel model) {

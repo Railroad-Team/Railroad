@@ -183,7 +183,7 @@ public record JdtCompletionProvider(@Nullable Path filePath, String[] systemModu
             return;
 
         if (working.isArray()) {
-            results.add(new CompletionItem("length", "length : int"));
+            results.add(CompletionItem.field("length", "int", false));
             addMembers(working.getSuperclass(), staticContext, currentPackage, results, visited);
             return;
         }
@@ -263,24 +263,21 @@ public record JdtCompletionProvider(@Nullable Path filePath, String[] systemModu
     private CompletionItem createFieldItem(IVariableBinding field) {
         String name = field.getName();
         String type = renderType(field.getType());
-        String prefix = Modifier.isStatic(field.getModifiers()) ? "static " : "";
-        return new CompletionItem(name, prefix + name + " : " + type);
+        return CompletionItem.field(name, type, Modifier.isStatic(field.getModifiers()));
     }
 
     private CompletionItem createMethodItem(IMethodBinding method) {
         String name = method.getName();
-        String prefix = Modifier.isStatic(method.getModifiers()) ? "static " : "";
         String parameters = Arrays.stream(method.getParameterTypes())
             .map(JdtCompletionProvider::renderType)
             .collect(Collectors.joining(", "));
         String returnType = renderType(method.getReturnType());
-        return new CompletionItem(name, prefix + name + "(" + parameters + ") : " + returnType);
+        return CompletionItem.method(name, parameters, returnType, Modifier.isStatic(method.getModifiers()));
     }
 
     private CompletionItem createTypeItem(ITypeBinding type) {
         String name = type.getName();
-        String prefix = Modifier.isStatic(type.getModifiers()) ? "static " : "";
-        return new CompletionItem(name, prefix + name + " (type)");
+        return CompletionItem.type(name, Modifier.isStatic(type.getModifiers()));
     }
 
     /**

@@ -46,6 +46,32 @@ public class JavaBoundedAnalysisCacheTest {
     }
 
     @Test
+    public void bodyEditsReuseOtherFilesAndTypeNameChangesRebuildDependentDeclarations() {
+        try (var provider = new JavaWorkspaceAnalysisProvider(() -> true, (_, _) -> emptyIndex())) {
+            var store = store();
+            var type = source(DocumentId.create(), 0, "package api; class Value { int count() { return 0; } }");
+            var client = source(DocumentId.create(), 0,
+                "package app; import api.*; class Client { void use(Value v) {} }");
+            store.publishBacking(type);
+            store.publishBacking(client);
+            var original = provider.capture(store.capture()).sourceIndex();
+            var clientPath = original.lookupQualifiedName("app.Client").getFirst().sourceFile();
+            var typePath = original.lookupQualifiedName("api.Value").getFirst().sourceFile();
+            store.publishOverlay(source(type.id(), 1, type.text().replace("return 0", "return 1")));
+            var edited = provider.capture(store.capture()).sourceIndex();
+            assertSame(original.getFileIndex(clientPath), edited.getFileIndex(clientPath));
+            assertNotSame(original.getFileIndex(typePath), edited.getFileIndex(typePath));
+
+            store.publishOverlay(source(type.id(), 2, "package api; class Other {}"));
+            var renamed = provider.capture(store.capture()).sourceIndex();
+            assertNotSame(edited.getFileIndex(clientPath), renamed.getFileIndex(clientPath));
+            assertFalse(renamed.declaredQualifiedNames().contains("api.Value"));
+            assertTrue(renamed.declaredQualifiedNames().contains("api.Other"));
+            assertTrue(original.declaredQualifiedNames().contains("api.Value"));
+        }
+    }
+
+    @Test
     public void revisionAndConfigurationChurnRemainBoundedAndEvictedResultsStayUsable() {
         try (var provider = new JavaWorkspaceAnalysisProvider(() -> true, (_, _) -> emptyIndex(), 2, 3, 1)) {
             var store = store();

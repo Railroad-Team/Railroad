@@ -31,7 +31,6 @@ import io.github.palexdev.mfxresources.fonts.MFXFontIcon;
 import io.github.palexdev.mfxresources.fonts.fontawesome.FontAwesomeSolid;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
@@ -43,6 +42,8 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.text.TextFlow;
 import javafx.stage.Popup;
+import javafx.stage.PopupWindow;
+import javafx.stage.Screen;
 import org.fxmisc.richtext.event.MouseOverTextEvent;
 import org.fxmisc.richtext.model.PlainTextChange;
 import org.fxmisc.richtext.model.StyleSpan;
@@ -63,7 +64,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Provides a text editor with configurable highlighting, completion, diagnostics, and signature help.
@@ -80,6 +80,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     protected final SstScheduler.Scope featureRequests = SstScheduler.shared().newScope();
     private static final Duration INTERACTIVE_BUDGET = Duration.ofSeconds(2);
+    private static final Duration COMPLETION_BUDGET = Duration.ofSeconds(8);
     private static final Duration NAVIGATION_BUDGET = Duration.ofSeconds(15);
     private static final double NAVIGATION_CHOICE_HEIGHT = 36;
     private static final Duration HIGHLIGHT_BUDGET = Duration.ofSeconds(5);
@@ -123,7 +124,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
     protected final AtomicInteger completionGeneration = new AtomicInteger();
     protected final AtomicReference<Popup> activeCompletionPopup = new AtomicReference<>(null);
     protected final AtomicReference<RRListView<CompletionItem>> activeCompletionList = new AtomicReference<>(null);
-    protected volatile ChangeListener<String> completionFilterListener = null;
+    private int completionTriggerOffset = -1;
+    private int completionPrefixEnd = -1;
 
     private @Nullable CancellationTokenSource activeCompletionCancellation;
     private @Nullable FeatureRequestContext activeCompletionContext;
@@ -228,18 +230,15 @@ public abstract class CodeEditorPane extends TextEditorPane {
         subscriptions.add(plainTextChanges().subscribe(_ -> {
             highlightGeneration.incrementAndGet();
             diagnosticsGeneration.incrementAndGet();
-            completionGeneration.incrementAndGet();
             signatureGeneration.incrementAndGet();
             invalidateHighlightRequest();
             invalidateDiagnosticsRequest();
-            invalidateCompletionRequest();
             invalidateNavigationRequest();
             invalidateRenameRequest();
             invalidateCodeActions();
             visibleDiagnostics = List.of();
             recomputeLineDecorations();
             diagnosticPopup.hide();
-            hideAutoComplete();
             hideSignatureHelp();
         }));
         installSyntaxHighlighting();
@@ -1429,16 +1428,64 @@ public abstract class CodeEditorPane extends TextEditorPane {
         });
 
         caretPositionProperty().addListener((obs, oldPos, newPos) -> {
-            if (completionReplacementStart >= 0 && newPos < completionReplacementStart) {
-                hideAutoComplete();
+            if (completionTriggerOffset >= 0 && newPos != completionPrefixEnd) {
+                Platform.runLater(() -> {
+                    if (completionTriggerOffset >= 0 && getCaretPosition() != completionPrefixEnd) {
+                        hideAutoComplete();
+                    }
+                });
             }
         });
 
-        addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            if (event.getCode() == KeyCode.ESCAPE) {
-                hideAutoComplete();
+        addEventFilter(KeyEvent.KEY_PRESSED, this::handleCompletionKey);
+    }
+
+    private void handleCompletionKey(KeyEvent event) {
+        if (event.getCode() == KeyCode.ESCAPE) {
+            hideAutoComplete();
+            return;
+        }
+        if (event.getCode() == KeyCode.SPACE && event.isControlDown() && !event.isAltDown() && !event.isShiftDown()) {
+            requestCompletionAtCaret();
+            event.consume();
+            return;
+        }
+        var list = activeCompletionList.get();
+        if (list == null || !activeCompletionPopup.get().isShowing() || event.isShortcutDown()
+            || event.isAltDown() || event.isShiftDown())
+            return;
+        switch (event.getCode()) {
+            case DOWN -> list.getSelectionModel().selectNext();
+            case UP -> list.getSelectionModel().selectPrevious();
+            case ENTER -> completeFromSelection(list);
+            default -> {
+                return;
             }
-        });
+        }
+        list.scrollTo(list.getSelectionModel().getSelectedIndex());
+        event.consume();
+    }
+
+    private void requestCompletionAtCaret() {
+        if (codeEditorClosed || providerLifetime.isCancellationRequested())
+            return;
+        int caret = getCaretPosition();
+        String text = getText();
+        try {
+            for (int offset = caret - 1; offset >= 0; offset--) {
+                if (completionProvider.shouldTrigger(text.substring(offset, offset + 1))) {
+                    hideAutoComplete();
+                    triggerCompletion(offset, caret);
+                    return;
+                }
+                if (!Character.isJavaIdentifierPart(text.charAt(offset)))
+                    return;
+            }
+        } catch (CancellationException _) {
+            // The session may close during the trigger check.
+        } catch (RuntimeException exception) {
+            Railroad.LOGGER.error("Completion trigger policy failed", exception);
+        }
     }
 
     /**
@@ -1449,6 +1496,10 @@ public abstract class CodeEditorPane extends TextEditorPane {
      * @param triggerAt zero-based UTF-16 completion trigger offset in the captured document
      */
     private void triggerCompletion(int triggerAt) {
+        triggerCompletion(triggerAt, triggerAt + 1);
+    }
+
+    private void triggerCompletion(int triggerAt, int prefixEnd) {
         invalidateCompletionRequest();
 
         if (codeEditorClosed || providerLifetime.isCancellationRequested() || !supportsCompletion())
@@ -1460,20 +1511,22 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
         activeCompletionCancellation = new CancellationTokenSource(providerLifetime);
         var context = new FeatureRequestContext(workspace, workspace.document(documentId).get(),
-            activeCompletionCancellation.token(), Deadline.after(INTERACTIVE_BUDGET));
+            activeCompletionCancellation.token(), Deadline.after(COMPLETION_BUDGET));
         activeCompletionContext = context;
+        completionTriggerOffset = triggerAt;
+        completionPrefixEnd = prefixEnd;
 
         int generation = completionGeneration.incrementAndGet();
         featureRequests.submit("completion", RequestPriority.COMPLETION, context,
             activeCompletionCancellation, () -> ProviderExecutor.shared().execute(
-                context.documentSnapshot().languageId() + ":completion", context, INTERACTIVE_BUDGET,
+                context.documentSnapshot().languageId() + ":completion", context, COMPLETION_BUDGET,
                 () -> completionProvider.compute(context, triggerAt)))
             .thenAccept(result -> Platform.runLater(() -> {
                 if (completionGeneration.get() != generation
                     || activeCompletionContext != context
                     || !result.belongsTo(context)
                     || context.cancellationToken().isCancellationRequested()
-                    || context.deadline().isExpired()
+                    || context.deadline().isExpired() || getCaretPosition() != completionPrefixEnd
                     || !isCurrent(context.workspaceSnapshot()))
                     return;
 
@@ -1509,32 +1562,42 @@ public abstract class CodeEditorPane extends TextEditorPane {
         completionCandidates.clear();
         completionCandidates.addAll(result.items());
         completionReplacementStart = result.replacementStart();
-        showAutoComplete();
+        filterAutoComplete();
     }
 
-    private void showAutoComplete() {
-        hideAutoComplete(false);
-
+    private void showAutoComplete(List<CompletionItem> items) {
         RRListView<CompletionItem> listView = new RRListView<>();
-        listView.setCellFactory(view -> new CompletionItemListCell());
-        listView.getItems().setAll(completionCandidates);
+        var content = new CompletionPopupContent(listView);
+        listView.getItems().setAll(items);
         listView.getSelectionModel().selectFirst();
         listView.setOnMouseClicked(event -> completeFromSelection(listView));
 
         var popup = new Popup();
         popup.setAutoHide(true);
-        popup.getContent().add(listView);
+        popup.addEventFilter(KeyEvent.KEY_PRESSED, this::handleCompletionKey);
+        popup.setOnHidden(_ -> {
+            if (activeCompletionPopup.get() == popup) {
+                hideAutoComplete();
+            }
+        });
+        popup.getContent().add(content);
 
         activeCompletionList.set(listView);
         activeCompletionPopup.set(popup);
 
-        completionFilterListener = (obs, oldText, newText) -> filterAutoComplete(newText);
-        textProperty().addListener(completionFilterListener);
-
         Optional<Bounds> caretBounds = getCaretBounds();
         if (caretBounds.isPresent()) {
             Bounds bounds = caretBounds.get();
-            popup.show(this, bounds.getMaxX(), bounds.getMaxY());
+            double x = bounds.getMinX();
+            double below = bounds.getMaxY() + 3;
+            popup.show(this, x, below);
+            var screen = Screen.getScreensForRectangle(bounds.getMinX(), bounds.getMinY(),
+                Math.max(1, bounds.getWidth()), bounds.getHeight()).stream().findFirst().orElse(Screen.getPrimary());
+            if (below + popup.getHeight() > screen.getVisualBounds().getMaxY()
+                && bounds.getMinY() - popup.getHeight() - 3 >= screen.getVisualBounds().getMinY()) {
+                popup.setAnchorLocation(PopupWindow.AnchorLocation.WINDOW_BOTTOM_LEFT);
+                popup.setAnchorY(bounds.getMinY() - 3);
+            }
         } else {
             Point2D screen = localToScreen(0, 0);
             popup.show(this, screen.getX(), screen.getY());
@@ -1551,41 +1614,30 @@ public abstract class CodeEditorPane extends TextEditorPane {
             return;
 
         int caret = getCaretPosition();
-        if (completionReplacementStart < 0 || completionReplacementStart > caret) {
+        if (completionReplacementStart < 0 || completionReplacementStart > caret || caret != completionPrefixEnd
+            || getSelection().getLength() != 0) {
             hideAutoComplete();
             return;
         }
         int start = completionReplacementStart;
         String insert = selected.insertText();
+        hideAutoComplete();
         replaceText(start, caret, insert);
         moveTo(start + insert.length());
         hideAutoComplete();
     }
 
-    private void filterAutoComplete(String text) {
-        Popup popup = activeCompletionPopup.get();
-        RRListView<CompletionItem> listView = activeCompletionList.get();
-        if (popup == null || listView == null || !popup.isShowing())
-            return;
-
-        int caret = getCaretPosition();
-        if (completionReplacementStart < 0 || completionReplacementStart > text.length()) {
-            hideAutoComplete();
-            return;
-        }
-
-        if (caret < completionReplacementStart) {
-            hideAutoComplete();
-            return;
-        }
-
-        String prefix = text.substring(completionReplacementStart, Math.min(caret, text.length()));
+    private void filterAutoComplete() {
+        String prefix = getText(completionReplacementStart, completionPrefixEnd);
         List<CompletionItem> filtered = completionCandidates.stream()
             .filter(item -> item.insertText().startsWith(prefix))
-            .collect(Collectors.toList());
+            .toList();
 
+        RRListView<CompletionItem> listView = activeCompletionList.get();
         if (filtered.isEmpty()) {
-            hideAutoComplete();
+            hideAutoComplete(false);
+        } else if (listView == null) {
+            showAutoComplete(filtered);
         } else {
             listView.getItems().setAll(filtered);
             listView.getSelectionModel().selectFirst();
@@ -1598,7 +1650,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     /**
      * Releases popup controls and optionally dismisses the request and its completion state.
-     * The non-clearing path is used while rebuilding a popup for an accepted result.
+     * When a prefix has no matches, keep the candidates so backspacing can show them again.
      *
      * @param clearState whether to cancel the request and clear its candidates and trigger
      */
@@ -1610,15 +1662,12 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
         activeCompletionList.set(null);
 
-        if (completionFilterListener != null) {
-            textProperty().removeListener(completionFilterListener);
-            completionFilterListener = null;
-        }
-
         if (clearState) {
             invalidateCompletionRequest();
             completionCandidates.clear();
             completionReplacementStart = -1;
+            completionTriggerOffset = -1;
+            completionPrefixEnd = -1;
         }
     }
 
@@ -1626,17 +1675,29 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (codeEditorClosed || providerLifetime.isCancellationRequested())
             return;
         String inserted = change.getInserted();
-        if (inserted == null || inserted.isEmpty())
-            return;
-
         try {
-            if (completionProvider.shouldTrigger(inserted)) {
-                int triggerAt = change.getPosition() + inserted.length() - 1;
-                triggerCompletion(triggerAt);
+            int end = change.getPosition() + inserted.length();
+            if (!inserted.isEmpty() && completionProvider.shouldTrigger(inserted)) {
+                hideAutoComplete();
+                triggerCompletion(end - 1);
+            } else if (completionTriggerOffset >= 0 && change.getPosition() > completionTriggerOffset
+                && change.getPosition() >= completionReplacementStart
+                && change.getRemovalEnd() == completionPrefixEnd
+                && inserted.codePoints().allMatch(Character::isJavaIdentifierPart)) {
+                completionPrefixEnd = end;
+                if (completionCandidates.isEmpty()) {
+                    triggerCompletion(completionTriggerOffset, end);
+                } else {
+                    filterAutoComplete();
+                }
+            } else {
+                hideAutoComplete();
             }
         } catch (CancellationException _) {
             // The session can close before its editor notification reaches the UI thread.
+            hideAutoComplete();
         } catch (RuntimeException exception) {
+            hideAutoComplete();
             Railroad.LOGGER.error("Completion trigger policy failed", exception);
         }
     }
@@ -2152,11 +2213,4 @@ public abstract class CodeEditorPane extends TextEditorPane {
         restoreBracketHighlight();
     }
 
-    private static final class CompletionItemListCell extends ListCell<CompletionItem> {
-        @Override
-        protected void updateItem(CompletionItem item, boolean empty) {
-            super.updateItem(item, empty);
-            setText(empty || item == null ? null : item.displayText());
-        }
-    }
 }

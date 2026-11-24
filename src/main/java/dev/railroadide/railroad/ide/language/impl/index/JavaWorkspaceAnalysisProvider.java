@@ -30,7 +30,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     private static final Path RUNNING_JDK = Path.of(System.getProperty("java.home")).toAbsolutePath().normalize();
     private static final ExecutorService BINARY_LOADS = Executors.newThreadPerTaskExecutor(
         Thread.ofVirtual().name("railroad-java-binaries-", 0).factory());
-    private final Cache<WorkspaceKey, JavaWorkspaceAnalysis> workspaces;
+    private final Cache<WorkspaceKey, WorkspaceBuild> workspaces;
     private final Cache<TextDocumentSnapshot, JavaProjectSemanticIndex.SourceFileIndex> files;
     private final Cache<BinaryKey, JavaSymbolIndex> binaries;
     private final Map<BinaryKey, CompletableFuture<JavaSymbolIndex>> binaryLoads = new HashMap<>();
@@ -169,23 +169,28 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
                 extra = request;
             }
             var key = new WorkspaceKey(workspace, extra, scope.module());
-            JavaWorkspaceAnalysis analysis = workspaces.getIfPresent(key);
-            if (analysis == null) {
-                analysis = build(workspace, extra, roots, scope, check);
-                publish(workspaces, key, analysis, check);
+            WorkspaceBuild result = workspaces.getIfPresent(key);
+            if (result == null) {
+                WorkspaceBuild previous = workspaces.asMap().entrySet().stream()
+                    .filter(entry -> key.sameScope(entry.getKey()))
+                    .max(Comparator.comparingLong(entry -> entry.getKey().workspace().revision()))
+                    .map(Map.Entry::getValue).orElse(null);
+                result = build(workspace, extra, roots, scope, previous, check);
+                publish(workspaces, key, result, check);
             }
             check.run();
-            return analysis;
+            return result.analysis();
         } finally {
             analysisLock.unlock();
         }
     }
 
-    private JavaWorkspaceAnalysis build(
+    private WorkspaceBuild build(
         WorkspaceSnapshot workspace,
         DocumentId request,
         Set<Path> roots,
         SourceContext scope,
+        WorkspaceBuild previous,
         Runnable check
     ) {
         WorkspaceConfigurationSnapshot configuration = workspace.configuration();
@@ -196,7 +201,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
             check);
         JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
         Map<Path, String> texts = new HashMap<>();
-        Map<Path, TextDocumentSnapshot> snapshots = new HashMap<>();
+        Map<Path, DiscoveredSource> inputs = new HashMap<>();
         var extractor = new JavaProjectSemanticExtractor();
         for (DocumentSnapshot document : workspace.documents().values()) {
             check.run();
@@ -206,24 +211,37 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
                 continue;
             Path path = text.uri().filePath().orElseGet(() -> Path.of(".railroad", "virtual", text.id().toString(),
                 text.uri().fileName().orElse("Snapshot.java")).toAbsolutePath().normalize());
-            JavaProjectSemanticIndex.SourceFileIndex indexed = files.getIfPresent(text);
-            if (indexed == null) {
-                indexed = extractor.discoverTypes(path, text, check);
-                publish(files, text, indexed, check);
+            DiscoveredSource input = previous == null ? null : previous.inputs().get(path);
+            if (input == null || input.snapshot() != text) {
+                var indexed = files.getIfPresent(text);
+                if (indexed == null) {
+                    indexed = extractor.discoverTypes(path, text, check);
+                    publish(files, text, indexed, check);
+                }
+                input = new DiscoveredSource(text, indexed);
             }
-            builder.putFile(indexed);
-            texts.put(indexed.path(), text.text());
-            snapshots.put(indexed.path(), text);
+            builder.putFile(input.types());
+            texts.put(input.types().path(), text.text());
+            inputs.put(input.types().path(), input);
         }
         JavaProjectSemanticIndex sources = builder.build();
         JavaSymbolIndex binary = awaitBinaries(binaryLoad, check);
         binary.attachedSourceTexts().forEach(texts::putIfAbsent);
         check.run();
-        JavaSymbolIndex discovered = new JavaSourcePrecedenceIndex(sources, binary);
+        boolean sameBinaries = previous != null && previous.binary() == binary;
+        var discovered = sameBinaries
+            ? previous.symbols().withSources(sources)
+            : new JavaSourcePrecedenceIndex(sources, binary);
+        boolean reuse = sameBinaries && inputs.size() == previous.inputs().size()
+            && inputs.entrySet().stream().allMatch(e -> e.getValue().sameTypes(previous.inputs().get(e.getKey())));
         JavaProjectSemanticIndex.Builder canonical = JavaProjectSemanticIndex.builder();
-        for (var entry : snapshots.entrySet()) {
+        for (var entry : inputs.entrySet()) {
             check.run();
-            var tree = JavaSyntaxParser.parse(entry.getValue(), check);
+            if (reuse && previous.inputs().get(entry.getKey()) == entry.getValue()) {
+                canonical.putFile(previous.analysis().sourceIndex().getFileIndex(entry.getKey()));
+                continue;
+            }
+            var tree = JavaSyntaxParser.parse(entry.getValue().snapshot(), check);
             var model = JavaSemanticAnalyzer.analyzeProjectDeclarations(tree, discovered, check);
             var indexed = extractor.extractProjectDeclarations(entry.getKey(), model, discovered, check);
             canonical.putFile(new JavaProjectSemanticIndex.SourceFileIndex(indexed.path(), indexed.packageName(),
@@ -232,8 +250,9 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
         }
         sources = canonical.build();
         check.run();
-        return new JavaWorkspaceAnalysis(sources, new JavaSourcePrecedenceIndex(sources, binary), texts,
-            classpath, jdk);
+        var symbols = discovered.withSources(sources);
+        var analysis = new JavaWorkspaceAnalysis(sources, symbols, texts, classpath, jdk);
+        return new WorkspaceBuild(analysis, Map.copyOf(inputs), binary, symbols);
     }
 
     /**
@@ -365,6 +384,26 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     }
 
     private record WorkspaceKey(WorkspaceSnapshot workspace, DocumentId extraDocument, String module) {
+        private boolean sameScope(WorkspaceKey other) {
+            return workspace.projectId().equals(other.workspace.projectId())
+                && workspace.configuration().equals(other.workspace.configuration())
+                && Objects.equals(extraDocument, other.extraDocument) && Objects.equals(module, other.module);
+        }
+    }
+
+    private record WorkspaceBuild(
+        JavaWorkspaceAnalysis analysis,
+        Map<Path, DiscoveredSource> inputs,
+        JavaSymbolIndex binary,
+        JavaSourcePrecedenceIndex symbols
+    ) {
+    }
+
+    private record DiscoveredSource(TextDocumentSnapshot snapshot, JavaProjectSemanticIndex.SourceFileIndex types) {
+        private boolean sameTypes(DiscoveredSource other) {
+            return this == other || other != null && Objects.equals(types.packageName(), other.types.packageName())
+                && types.declaredSymbols().equals(other.types.declaredSymbols());
+        }
     }
 
     private record BinaryKey(WorkspaceConfigurationSnapshot configuration, List<Path> classpath, Path archive) {
