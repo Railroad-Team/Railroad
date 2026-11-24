@@ -1,0 +1,85 @@
+.open-project-dialog {
+    -fx-background-color: -color-surface-panel;
+    -fx-padding: 20px;
+    -fx-spacing: 14px;
+    -fx-pref-width: 460px;
+}
+
+.open-project-icon {
+    -fx-background-color: -color-accent-subtle;
+    -fx-background-radius: 5px;
+}
+
+.open-project-icon .ikonli-font-icon {
+    -fx-icon-size: 18px;
+    -fx-icon-color: -color-accent-fg;
+}
+
+.open-project-name {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-size: 1.15em;
+    -fx-font-weight: bold;
+}
+
+.open-project-path,
+.open-project-prompt,
+.open-project-choice-description {
+    -fx-text-fill: -color-fg-muted;
+}
+
+.open-project-prompt {
+    -fx-padding: 4px 0 0 0;
+}
+
+.open-project-choice {
+    -fx-background-color: -color-surface-editor;
+    -fx-background-radius: 6px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-radius: 6px;
+    -fx-border-width: 1px;
+    -fx-padding: 10px 12px;
+    -fx-cursor: hand;
+}
+
+.open-project-choice:hover {
+    -fx-background-color: -color-accent-subtle;
+}
+
+.open-project-choice:focused {
+    -fx-border-color: -color-accent-emphasis;
+}
+
+.open-project-choice:pressed {
+    -fx-background-color: -color-accent-muted;
+}
+
+.open-project-choice-tile {
+    -fx-background-color: -color-accent-subtle;
+    -fx-background-radius: 5px;
+    -fx-min-width: 2.15em;
+    -fx-min-height: 2.15em;
+    -fx-max-width: 2.15em;
+    -fx-max-height: 2.15em;
+}
+
+.open-project-choice:hover .open-project-choice-tile {
+    -fx-background-color: -color-accent-muted;
+}
+
+.open-project-choice-icon {
+    -fx-icon-size: 15px;
+    -fx-icon-color: -color-accent-fg;
+}
+
+.open-project-choice-title {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-weight: bold;
+}
+
+.open-project-error {
+    -fx-text-fill: -color-danger-fg;
+}
+
+.open-project-footer {
+    -fx-padding: 4px 0 0 0;
+}

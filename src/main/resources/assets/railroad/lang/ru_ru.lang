@@ -664,3 +664,13 @@ railroad.mapping_channel.mcp=MCP
 railroad.mapping_channel.yarn=Yarn
 railroad.mapping_channel.official=Официальные (Mojmaps)
 railroad.mapping_channel.parchment=Parchment
+
+railroad.open_project.title=Открыть проект
+railroad.open_project.prompt=Где открыть проект?
+railroad.open_project.this_window.title=В этом окне
+railroad.open_project.this_window.description=Открывает проект в этом окне.
+railroad.open_project.this_window.replaces=Закрывает %s и открывает этот проект вместо него.
+railroad.open_project.new_window.title=В новом окне
+railroad.open_project.new_window.description=Открывает проект в отдельном окне Railroad.
+railroad.open_project.new_window.keeps=Оставляет %s открытым и открывает этот проект в отдельном окне.
+railroad.open_project.new_window.failed=Railroad не удалось открыть новое окно: %s

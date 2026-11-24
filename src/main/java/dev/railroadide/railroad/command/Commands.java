@@ -15,6 +15,7 @@ import dev.railroadide.railroad.ide.ui.editor.EditorTab;
 import dev.railroadide.railroad.ide.ui.editor.EditorTabManager;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.project.OpenProjectDialog;
 import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.settings.keybinds.KeybindData;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
@@ -95,7 +96,7 @@ public final class Commands {
         "railroad:open_recent_project",
         "railroad.menu.file.recent_projects",
         context -> context.argument() != null,
-        context -> showOpenProjectDialog(context.argument()),
+        context -> OpenProjectDialog.show(context.argument()),
         List.of(),
         Project.class));
 
@@ -1013,32 +1014,7 @@ public final class Commands {
             return;
 
         Project createdProject = Railroad.PROJECT_MANAGER.newProject(new RailroadProject(directory.toPath()));
-        showOpenProjectDialog(createdProject);
-    }
-
-    private static void showOpenProjectDialog(Project project) {
-        var thisWindowButton = new RRButton("railroad.recent_projects.dialog.this_window_button");
-        var newWindowButton = new RRButton("railroad.recent_projects.dialog.new_window_button");
-        var cancelButton = new RRButton("railroad.recent_projects.dialog.cancel_button");
-
-        Stage dialog = WindowBuilder.createDialog("railroad.recent_projects.dialog.title", new DialogBuilder()
-            .title("railroad.recent_projects.dialog.title")
-            .content(L18n.localize("railroad.recent_projects.dialog.description", project.getAlias()), false)
-            .buttons(thisWindowButton, newWindowButton, cancelButton));
-
-        thisWindowButton.setOnAction(_ -> {
-            dialog.close();
-            project.open(Railroad.WINDOW_MANAGER.getPrimaryStage());
-        });
-        newWindowButton.setOnAction(_ -> {
-            try {
-                RailroadProcessLauncher.openProject(project.getPath());
-                dialog.close();
-            } catch (IOException exception) {
-                Railroad.LOGGER.error("An error occurred trying to start a new Railroad process", exception);
-            }
-        });
-        cancelButton.setOnAction(_ -> dialog.close());
+        OpenProjectDialog.show(createdProject);
     }
 
     private static void exitApplication() {

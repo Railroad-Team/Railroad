@@ -72,6 +72,9 @@ public class IDESetup {
             try {
                 Stage ideStage = stage == null ? Railroad.WINDOW_MANAGER.getPrimaryStage() : stage;
                 Scene previousScene = ideStage.getScene();
+                boolean wasShowing = ideStage.isShowing();
+                boolean keepWindowBounds = wasShowing && previousScene != null
+                    && previousScene.getRoot() instanceof IDEPane;
                 var idePane = constructProjectView(Railroad.PROJECT_MANAGER, project, () -> new IDEPane(project));
                 if (idePane == null)
                     return;
@@ -79,19 +82,23 @@ public class IDESetup {
                 disposePreviousScene(previousScene);
                 var ideScene = new Scene(idePane);
 
-                ideStage.setTitle(Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion()
-                    + " - " + project.getAlias());
+                String title = Services.APPLICATION_INFO.getName() + " " + Services.APPLICATION_INFO.getVersion()
+                    + " - " + project.getAlias();
+                ideStage.setTitle(title);
                 ideStage.setResizable(true);
-                ideStage.setMaximized(true);
+                if (!keepWindowBounds && !wasShowing) {
+                    ideStage.setMaximized(true);
+                }
 
-                if (stage == null) {
-                    ThemeManager.prepareSceneTransition(previousScene, ideScene);
-                    ideStage.setScene(ideScene);
+                ThemeManager.prepareSceneTransition(previousScene, ideScene);
+                ideStage.setScene(ideScene);
+                if (stage == null || keepWindowBounds) {
                     Railroad.WINDOW_MANAGER.setPrimaryStage(ideStage);
                 } else {
-                    ThemeManager.prepareSceneTransition(previousScene, ideScene);
-                    ideStage.setScene(ideScene);
-                    Railroad.WINDOW_MANAGER.showPrimary(stage, ideScene, stage.getTitle());
+                    Railroad.WINDOW_MANAGER.showPrimary(stage, ideScene, title);
+                }
+                if (!keepWindowBounds && wasShowing) {
+                    ideStage.setMaximized(true);
                 }
                 ThemeManager.release(previousScene);
             } finally {

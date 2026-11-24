@@ -1208,11 +1208,15 @@ railroad.git.commit.details.unknown=Unknown
 # =============================================================================
 # Recent Projects
 # =============================================================================
-railroad.recent_projects.dialog.title=Open Project
-railroad.recent_projects.dialog.this_window_button=This Window
-railroad.recent_projects.dialog.new_window_button=New Window
-railroad.recent_projects.dialog.cancel_button=Cancel
-railroad.recent_projects.dialog.description=Where would you like to open the project '%s'?
+railroad.open_project.title=Open Project
+railroad.open_project.prompt=Where do you want to open it?
+railroad.open_project.this_window.title=This window
+railroad.open_project.this_window.description=Opens the project in this window.
+railroad.open_project.this_window.replaces=Closes %s and opens this project in its place.
+railroad.open_project.new_window.title=New window
+railroad.open_project.new_window.description=Opens the project in a separate Railroad window.
+railroad.open_project.new_window.keeps=Keeps %s open and opens this project in a separate window.
+railroad.open_project.new_window.failed=Railroad could not start a new window: %s
 
 # =============================================================================
 # Markdown
