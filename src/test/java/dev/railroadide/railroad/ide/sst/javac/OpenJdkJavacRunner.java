@@ -106,7 +106,7 @@ public final class OpenJdkJavacRunner {
         } catch (IOException | RuntimeException | StackOverflowError | AssertionError exception) {
             var trace = new StringWriter();
             exception.printStackTrace(new PrintWriter(trace));
-            return new OpenJdkJavacChecks.Result(test.id(), OpenJdkJavacChecks.Status.ERROR, 0, 0,
+            return new OpenJdkJavacChecks.Result(test.id(), OpenJdkJavacChecks.Status.ERROR, 0, 0, 0,
                 List.of(trace.toString()), List.of());
         }
     }

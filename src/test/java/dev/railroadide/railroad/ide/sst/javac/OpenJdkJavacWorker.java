@@ -62,7 +62,8 @@ public final class OpenJdkJavacWorker implements AutoCloseable {
             failure = "SST worker communication failed: " + exception;
         }
         stop();
-        return new OpenJdkJavacChecks.Result(id, OpenJdkJavacChecks.Status.ERROR, 0, 0, List.of(failure), List.of());
+        return new OpenJdkJavacChecks.Result(id, OpenJdkJavacChecks.Status.ERROR, 0, 0, 0, List.of(failure),
+            List.of());
     }
 
     private void start() throws IOException, InterruptedException {

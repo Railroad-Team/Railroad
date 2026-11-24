@@ -160,7 +160,7 @@ public class OpenJdkJavacHarnessTest {
         write("Driver.java", """
             /*
              * @test
-             * @run main Driver
+             * @run testng Driver
              */
             class Driver { int value = missing; }
             """);
@@ -187,6 +187,200 @@ public class OpenJdkJavacHarnessTest {
                 assertEquals(1, result.syntaxFiles());
                 assertFalse(result.unsupported().isEmpty());
             }
+        }
+    }
+
+    @Test
+    public void buildsTheMainClassOnceAndAppliesTheDefaultAction() throws IOException {
+        write("Run.java", """
+            /*
+             * @test
+             * @modules jdk.compiler/com.sun.tools.javac.util
+             * @compile Run.java
+             * @run main/othervm -Dflag=true Run
+             */
+            import com.sun.tools.javac.util.Context;
+
+            class Run { Context context; }
+            """);
+        write("Default.java", """
+            /*
+             * @test
+             */
+            class Default { int value = missing; }
+            """);
+        var suite = new OpenJdkJavacSuite(checkout);
+        try (var checks = new OpenJdkJavacChecks(suite.root())) {
+            var run = checks.check(suite.root(), suite.discover("Run.java").getFirst());
+            assertEquals(OpenJdkJavacChecks.Status.PASS, run.status(), run::toString);
+            assertEquals(1, run.compileActions());
+
+            var fallback = checks.check(suite.root(), suite.discover("Default.java").getFirst());
+            assertEquals(OpenJdkJavacChecks.Status.MISMATCH, fallback.status(), fallback::toString);
+            assertTrue(fallback.findings().getFirst().startsWith("Action 1 (@build) should succeed"),
+                fallback::toString);
+        }
+    }
+
+    @Test
+    public void checksWerrorCompilesExpectedToSucceedAndSkipsReferenceWarnings() throws IOException {
+        write("Strict.java", """
+            /*
+             * @test
+             * @compile/ref=Strict.out -XDrawDiagnostics -Werror -Xlint:all Strict.java
+             */
+            class Strict { int value = missing; }
+            """);
+        write("Strict.out", """
+            - compiler.note.unchecked.filename: Strict.java
+            Strict.java:5:5: compiler.warn.possible.loss.of.precision: int, long
+            1 warning
+            """);
+        var suite = new OpenJdkJavacSuite(checkout);
+        try (var checks = new OpenJdkJavacChecks(suite.root())) {
+            var result = checks.check(suite.root(), suite.discover("").getFirst());
+            assertEquals(OpenJdkJavacChecks.Status.MISMATCH, result.status(), result::toString);
+            assertTrue(result.findings().getFirst().contains("should succeed"), result::toString);
+            assertEquals(2, result.skippedWarnings());
+            assertTrue(result.unsupported().isEmpty(), result::toString);
+        }
+    }
+
+    @Test
+    public void readsHyphenatedJavacKeysAndMapsProblemDetails() throws IOException {
+        write("Keys.java", """
+            /*
+             * @test
+             * @compile/fail/ref=Keys.out -XDrawDiagnostics Keys.java
+             */
+            class Keys {
+                int field;
+                static int read() { return field; }
+                void assign() { int value = "text"; }
+                Object create() { return new Keys(1); }
+            }
+            """);
+        write("Keys.out", """
+            Keys.java:7:32: compiler.err.non-static.cant.be.ref: kindname.variable, field
+            Keys.java:8:33: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: java.lang.String, int)
+            Keys.java:9:30: compiler.err.cant.apply.symbol: kindname.constructor, Keys, , int, kindname.class, Keys, \
+            (compiler.misc.arg.length.mismatch)
+            3 errors
+            """);
+        var suite = new OpenJdkJavacSuite(checkout);
+        try (var checks = new OpenJdkJavacChecks(suite.root())) {
+            var result = checks.check(suite.root(), suite.discover("").getFirst());
+            assertEquals(OpenJdkJavacChecks.Status.UNSUPPORTED, result.status(), result::toString);
+            assertEquals(1, result.unsupported().size(), result::toString);
+            assertTrue(result.unsupported().getFirst().contains("no SST diagnostic mapping for Keys.java:7:32"),
+                result::toString);
+        }
+    }
+
+    @Test
+    public void reportsErrorsJavacDoesNotReport() throws IOException {
+        write("Surplus.java", """
+            /*
+             * @test
+             * @compile/fail/ref=Surplus.out -XDrawDiagnostics Surplus.java
+             */
+            class Surplus {
+                int x;
+                int x;
+                int y = missing;
+            }
+            """);
+        write("Surplus.out", "Surplus.java:7:9: compiler.err.already.defined: kindname.variable, x\n1 error\n");
+        var suite = new OpenJdkJavacSuite(checkout);
+        try (var checks = new OpenJdkJavacChecks(suite.root())) {
+            var result = checks.check(suite.root(), suite.discover("").getFirst());
+            assertEquals(OpenJdkJavacChecks.Status.MISMATCH, result.status(), result::toString);
+            assertEquals(1, result.findings().size(), result::toString);
+            assertTrue(result.findings().getFirst().contains("reported errors javac does not: [Surplus.java@"),
+                result::toString);
+            assertTrue(result.findings().getFirst().endsWith("SEM_UNRESOLVED_NAME]"), result::toString);
+        }
+    }
+
+    @Test
+    public void ignoresFlowErrorsWhereJavacSkippedFlowAnalysis() throws IOException {
+        write("Flow.java", """
+            /*
+             * @test
+             * @compile/fail/ref=Flow.out -XDrawDiagnostics Flow.java
+             */
+            class Flow {
+                int value() { int unused = missing; }
+            }
+            class Later {
+                int value() { }
+            }
+            """);
+        write("Flow.out", "Flow.java:6:32: compiler.err.cant.resolve.location: kindname.variable, missing\n1 error\n");
+        var suite = new OpenJdkJavacSuite(checkout);
+        var test = suite.discover("").getFirst();
+        try (var checks = new OpenJdkJavacChecks(suite.root())) {
+            var result = checks.check(suite.root(), test);
+            assertEquals(OpenJdkJavacChecks.Status.PASS, result.status(), result::toString);
+
+            write("Flow.java", """
+                /*
+                 * @test
+                 * @compile/fail/ref=Flow.out -XDrawDiagnostics Flow.java
+                 */
+                class Earlier {
+                    int value() { }
+                }
+                class Flow {
+                    int value = missing;
+                }
+                """);
+            write("Flow.out", "Flow.java:9:17: compiler.err.cant.resolve.location: kindname.variable, missing\n"
+                + "1 error\n");
+            result = checks.check(suite.root(), test);
+            assertEquals(OpenJdkJavacChecks.Status.PASS, result.status(), result::toString);
+
+            write("Flow.java", """
+                /*
+                 * @test
+                 * @compile/fail/ref=Flow.out -XDrawDiagnostics Flow.java
+                 */
+                class Flow {
+                    int first() { }
+                    int second() { }
+                }
+                class Later {
+                    int value() { }
+                }
+                """);
+            write("Flow.out", "Flow.java:6:19: compiler.err.missing.ret.stmt\n1 error\n");
+            result = checks.check(suite.root(), test);
+            assertEquals(OpenJdkJavacChecks.Status.MISMATCH, result.status(), result::toString);
+            assertEquals(1, result.findings().size(), result::toString);
+            assertTrue(result.findings().getFirst().contains("reported errors javac does not: [Flow.java@"),
+                result::toString);
+            assertEquals(1, result.findings().getFirst().split("SEM_MISSING_RETURN", -1).length - 1,
+                result::toString);
+        }
+    }
+
+    @Test
+    public void separatesMisplacedErrorsFromMissedErrors() throws IOException {
+        write("Place.java", """
+            /*
+             * @test
+             * @compile/fail/ref=Place.out -XDrawDiagnostics Place.java
+             */
+            class Place { int x; int x; }
+            """);
+        write("Place.out", "Place.java:5:1: compiler.err.already.defined: kindname.variable, x\n1 error\n");
+        var suite = new OpenJdkJavacSuite(checkout);
+        try (var checks = new OpenJdkJavacChecks(suite.root())) {
+            var result = checks.check(suite.root(), suite.discover("").getFirst());
+            assertEquals(OpenJdkJavacChecks.Status.MISMATCH, result.status(), result::toString);
+            assertEquals(1, result.findings().size(), result::toString);
+            assertTrue(result.findings().getFirst().startsWith("Action 1 (@compile/fail/ref=Place.out) misplaced"),
+                result::toString);
         }
     }
 
