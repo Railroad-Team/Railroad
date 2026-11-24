@@ -1620,11 +1620,44 @@ public abstract class CodeEditorPane extends TextEditorPane {
             return;
         }
         int start = completionReplacementStart;
-        String insert = selected.insertText();
         hideAutoComplete();
-        replaceText(start, caret, insert);
-        moveTo(start + insert.length());
+        if (selected.kind() == CompletionItem.Kind.METHOD) {
+            insertMethodCompletion(selected, start, caret);
+        } else {
+            replaceText(start, caret, selected.insertText());
+            moveTo(start + selected.insertText().length());
+        }
         hideAutoComplete();
+    }
+
+    private void insertMethodCompletion(CompletionItem method, int start, int caret) {
+        String line = getParagraph(getCurrentParagraph()).getText();
+        int column = getCaretColumn();
+        int nameEnd = column;
+        while (nameEnd < line.length() && Character.isJavaIdentifierPart(line.codePointAt(nameEnd))) {
+            nameEnd += Character.charCount(line.codePointAt(nameEnd));
+        }
+
+        int replaceEnd = caret + (nameEnd - column);
+        int open = skipHorizontalWhitespace(line, nameEnd);
+        String name = method.insertText();
+        if (line.startsWith("(", open)) {
+            int inside = open + 1;
+            int close = skipHorizontalWhitespace(line, inside);
+            int target = !method.hasParameters() && line.startsWith(")", close) ? close + 1 : inside;
+            replaceText(start, replaceEnd, name);
+            moveTo(start + name.length() + (target - nameEnd));
+        } else {
+            replaceText(start, replaceEnd, name + "()");
+            moveTo(start + name.length() + (method.hasParameters() ? 1 : 2));
+        }
+    }
+
+    private static int skipHorizontalWhitespace(String text, int offset) {
+        while (offset < text.length() && (text.charAt(offset) == ' ' || text.charAt(offset) == '\t')) {
+            offset++;
+        }
+        return offset;
     }
 
     private void filterAutoComplete() {

@@ -10,6 +10,8 @@ import javafx.scene.Scene;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -456,7 +458,56 @@ public class CodeEditorCompletionRequestTest {
             awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 fixture.editor.press(KeyCode.ENTER, false);
-                assertEquals("this.length", fixture.editor.getText());
+                assertEquals("this.length()", fixture.editor.getText());
+                assertEquals("this.length()".length(), fixture.editor.getCaretPosition());
+                return null;
+            });
+        }
+    }
+
+    @Test
+    public void pickingTheOverloadWithParametersPlacesTheCaretInsideItsOwnCall() throws Exception {
+        assertCompletionEdit("outer(value.ge|)", "outer(value.get(|))",
+            CompletionItem.method("get", "", "String", false),
+            CompletionItem.method("get", "int", "String", false));
+    }
+
+    @Test
+    public void pickingAMethodReusesExistingParenthesesAndPreservesArguments() throws Exception {
+        assertCompletionEdit("value.su|b (offset, limit);", "value.substring (|offset, limit);",
+            CompletionItem.method("substring", "int, int", "String", false));
+        assertCompletionEdit("value.le| ( );", "value.length ( )|;",
+            CompletionItem.method("length", "", "int", false));
+    }
+
+    @Test
+    public void pickingTheArrayLengthFieldInsertsOnlyItsName() throws Exception {
+        assertCompletionEdit("array.le|;", "array.length|;", CompletionItem.field("length", "int", false));
+    }
+
+    private void assertCompletionEdit(String before, String after, CompletionItem... suggestions) throws Exception {
+        String original = before.replace("|", "");
+        try (Fixture fixture = open(context -> new FeatureResult<>(context,
+            new CompletionResult(original.indexOf('.') + 1, List.of(suggestions))), original, "."::equals)) {
+            TestEditor editor = fixture.editor;
+            onFx(() -> {
+                editor.moveTo(before.indexOf('|'));
+                editor.press(KeyCode.SPACE, true);
+                return null;
+            });
+            assertNotNull(fixture.provider.requests.poll(10, TimeUnit.SECONDS));
+            awaitRequests(editor.featureRequests);
+            onFx(() -> {
+                var list = editor.activeCompletionList.get();
+                assertEquals(List.of(suggestions), list.getItems());
+                list.getSelectionModel().selectLast();
+                list.fireEvent(new MouseEvent(MouseEvent.MOUSE_CLICKED, 0, 0, 0, 0, MouseButton.PRIMARY, 1,
+                    false, false, false, false, false, false, false, false, false, true, null));
+                assertEquals(after.replace("|", ""), editor.getText());
+                assertEquals(after.indexOf('|'), editor.getCaretPosition());
+                assertNull(editor.activeCompletionPopup.get());
+                editor.undo();
+                assertEquals(original, editor.getText());
                 return null;
             });
         }
