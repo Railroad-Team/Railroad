@@ -659,6 +659,8 @@ railroad.project.creation.sources.error.invalid_url=Недействительн
 railroad.project.creation.error.title=Ошибка создания проекта
 railroad.project.creation.error.header=Произошла ошибка при создании проекта.
 
+railroad.menu.code.parameter_info=Информация о параметрах
+
 railroad.mapping_channel.mcp=MCP
 railroad.mapping_channel.yarn=Yarn
 railroad.mapping_channel.official=Официальные (Mojmaps)

@@ -387,6 +387,14 @@ public final class Commands {
         CodeEditorPane::showCodeActions,
         new KeybindData(KeyCode.ENTER, new KeyCombination.Modifier[]{KeyCombination.ALT_DOWN}));
 
+    /** Shows the parameters of the call at the caret. */
+    public static final Command<CodeEditorPane> PARAMETER_INFO = registerCodeEditorCommand(
+        "railroad:parameter_info",
+        "railroad.menu.code.parameter_info",
+        CodeEditorPane::supportsSignatureHelp,
+        CodeEditorPane::showParameterInfo,
+        new KeybindData(KeyCode.P, new KeyCombination.Modifier[]{KeyCombination.CONTROL_DOWN}));
+
     /**
      * Resolves the code editor shown by the active editor tab.
      *

@@ -12,6 +12,7 @@ import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.sst.semantic.api.*;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
+import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -614,6 +615,17 @@ public final class JavaSemanticGraphExtractor {
                     location(target), enclosing));
             }
         }
+    }
+
+    /** Reads the signature of a single source declaration from an analyzed model. */
+    public static @Nullable SymbolSignature declarationSignature(
+        SemanticModel model,
+        Symbol symbol,
+        @Nullable JavaSymbolIndex index,
+        Runnable check
+    ) {
+        var extractor = new JavaSemanticGraphExtractor(model, index, check, false);
+        return symbol.declaration().map(node -> extractor.signature(container(node), symbol.kind())).orElse(null);
     }
 
     private SymbolSignature signature(SyntaxNode node, SymbolKind kind) {

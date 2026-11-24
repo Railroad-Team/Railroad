@@ -2873,7 +2873,7 @@ public class CoreInspectionRulesTest {
             sourceRoot.resolve("dev/railroadide/railroad/ide/language/impl/index/JavaAnalysisContextProvider.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/language/index/ProjectLanguageIndexService.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/projectexplorer/dialog/CreateFileDialog.java"),
-            sourceRoot.resolve("dev/railroadide/railroad/ide/signature/JdtJavaSignatureHelpProvider.java"),
+            sourceRoot.resolve("dev/railroadide/railroad/ide/signature/JavaSignatureHelpProvider.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/ui/setup/PaneIconBarFactory.java"),
             sourceRoot.resolve("dev/railroadide/railroad/ide/ui/setup/RunControlsPane.java"),
             sourceRoot.resolve("dev/railroadide/railroad/plugin/spi/inspection/JavaRuleContext.java"),

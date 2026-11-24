@@ -13,6 +13,8 @@ import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaSourceSnapshotIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaSourceSymbolIds;
 import dev.railroadide.railroad.ide.sst.project.JavaBinarySymbolExtractor;
+import dev.railroadide.railroad.ide.sst.project.JavaSemanticGraphExtractor;
+import dev.railroadide.railroad.ide.signature.SignatureHelp;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import dev.railroadide.railroad.ide.sst.semantic.api.*;
@@ -423,19 +425,66 @@ public final class JavaSemanticAnalyzer {
         }
 
         if (includeResolutionAndTypes) {
-            var nameResolver = new NameResolver(context);
-            checkpoint.run();
-            nameResolver.resolveCompilationUnit(syntaxTree.root());
-            checkpoint.run();
-            new TypeResolver(nameResolver).resolveCompilationUnit(syntaxTree.root());
-            checkpoint.run();
-            nameResolver.resolveDeferredCallables(syntaxTree.root());
+            resolveNamesAndTypes(context, syntaxTree.root());
         }
 
         checkpoint.run();
         SemanticModel result = builder.build();
         checkpoint.run();
         return result;
+    }
+
+    private static NameResolver resolveNamesAndTypes(JavaDeclarationAnalysis.Context context, SyntaxNode root) {
+        var resolver = new NameResolver(context);
+        context.poll();
+        resolver.resolveCompilationUnit(root);
+        context.poll();
+        new TypeResolver(resolver).resolveCompilationUnit(root);
+        context.poll();
+        resolver.resolveDeferredCallables(root);
+        return resolver;
+    }
+
+    /** Resolves the callable and active parameter for an argument list in the supplied Java syntax tree. */
+    public static @Nullable SignatureHelp signatureHelp(
+        SyntaxTree tree,
+        SyntaxNode arguments,
+        int caret,
+        JavaSymbolIndex index,
+        Runnable check
+    ) {
+        SyntaxNode call = arguments.parent().orElse(null);
+        if (call == null || !call.kind().equals(JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION)
+            && !call.kind().equals(JavaSyntaxKinds.CLASS_INSTANCE_CREATION_EXPRESSION))
+            return null;
+        var scope = Scope.root();
+        var builder = SemanticModel.builder(tree, scope);
+        var context = new JavaDeclarationAnalysis.Context(tree.root(), scope, builder, index,
+            new ActivityCheckpoint(check));
+        JavaDeclarationAnalysis.collect(context, tree.root());
+        var resolver = resolveNamesAndTypes(context, tree.root());
+        var model = builder.build();
+        int active = 0;
+        int minimum = 0;
+        int separators = 0;
+        for (SyntaxNode child : arguments.children()) {
+            if (child.kind().equals(JavaSyntaxKinds.tokenKind(JavaTokenType.COMMA))) {
+                separators++;
+                minimum = separators + 1;
+                if (child.end() <= caret) {
+                    active++;
+                }
+            } else if (isExpressionNode(child)) {
+                minimum = separators + 1;
+            }
+        }
+        Symbol resolved = context.resolvedSymbol(call);
+        SignatureHelp help = resolved == null ? null : resolver.describeSignature(model, resolved, active);
+        if (help != null && (help.varargs() || help.parameters().size() >= minimum))
+            return help;
+        // A call being edited can have fewer arguments than any valid overload.
+        var candidate = resolver.partialCallable(call, arguments, minimum);
+        return candidate == null ? null : resolver.describeSignature(model, candidate.symbol(), active);
     }
 
     private static final class NameResolver {
@@ -806,7 +855,7 @@ public final class JavaSemanticAnalyzer {
             }
 
             MemberCandidate importedChosen = selectBestCallable(
-                staticImportedMethodCandidates(methodName, argumentTypes),
+                staticImportedMethodCandidates(methodName),
                 argumentTypes,
                 directlyContextualFunctionalType(invocationNode));
             if (importedChosen != null) {
@@ -815,6 +864,124 @@ public final class JavaSemanticAnalyzer {
                     context.resolve(memberNode, importedChosen.symbol());
                 }
             }
+        }
+
+        private @Nullable SignatureHelp describeSignature(SemanticModel model, Symbol symbol, int active) {
+            boolean constructor = symbol.kind() == JavaSymbolKind.CONSTRUCTOR;
+            String owner = ownerQualifiedName(symbol);
+            if (owner == null || !constructor && symbol.kind() != JavaSymbolKind.METHOD)
+                return null;
+            SymbolSignature signature = null;
+            if (symbol.declaration().isPresent()) {
+                signature = JavaSemanticGraphExtractor.declarationSignature(model, symbol, projectIndex, context::poll);
+            } else if (projectIndex != null) {
+                SymbolId id = JavaSourceSymbolIds.deriveSymbolId(symbol, projectIndex).orElse(null);
+                if (id != null) {
+                    String binaryName = JavaSymbolIds.owningTypeName(id);
+                    var shard = binaryName == null ? null : projectIndex.declarationShard(binaryName, context::poll);
+                    if (shard != null) {
+                        for (var descriptor : shard.declarations()) {
+                            context.poll();
+                            if (id.equals(descriptor.id())) {
+                                signature = descriptor.signature();
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            List<SignatureHelp.ParameterInfo> parameters = new ArrayList<>();
+            String result;
+            if (signature != null) {
+                for (var parameter : signature.parameters()) {
+                    parameters.add(new SignatureHelp.ParameterInfo(parameter.type().displayName()
+                        + (parameter.varargs() ? "..." : ""), parameter.name(), parameter.varargs()));
+                }
+                result = signature.returnType() == null ? owner : signature.returnType().displayName();
+            } else if (symbol instanceof SyntheticMemberSymbol member) {
+                for (Type type : member.parameterTypes()) {
+                    parameters
+                        .add(new SignatureHelp.ParameterInfo(type.displayName(), "arg" + parameters.size(), false));
+                }
+                result = member.valueType().displayName();
+            } else
+                return null;
+            String display = simpleTypeName(owner);
+            return new SignatureHelp(owner, display, constructor ? display : symbol.simpleName(), parameters,
+                Math.min(active, parameters.size() - 1), constructor, result,
+                !parameters.isEmpty() && parameters.getLast().varargs());
+        }
+
+        private @Nullable MemberCandidate partialCallable(SyntaxNode call, SyntaxNode arguments, int minimum) {
+            List<Type> typed = inferArgumentTypes(arguments);
+            List<Integer> bestCost = null;
+            MemberCandidate best = null;
+            for (MemberCandidate candidate : signatureCandidates(call)) {
+                context.poll();
+                List<Type> parameters = candidate.parameterTypes();
+                if (parameters.size() < minimum && !candidate.variableArity())
+                    continue;
+                List<Integer> cost;
+                if (candidate.variableArity() && typed.size() >= parameters.size()) {
+                    cost = applicabilityCost(parameters, typed, true);
+                } else if (typed.size() <= parameters.size()) {
+                    cost = applicabilityCost(parameters.subList(0, typed.size()), typed, false);
+                } else
+                    continue;
+                if (cost == null)
+                    continue;
+                int comparison = bestCost == null ? -1 : compareCost(cost, bestCost);
+                if (comparison < 0 || comparison == 0 && parameters.size() < best.parameterTypes().size()) {
+                    best = candidate;
+                    bestCost = cost;
+                }
+            }
+            return best;
+        }
+
+        private List<MemberCandidate> signatureCandidates(SyntaxNode call) {
+            if (call.kind().equals(JavaSyntaxKinds.CLASS_INSTANCE_CREATION_EXPRESSION)) {
+                SyntaxNode type = directChild(call, JavaSyntaxKinds.TYPE_REFERENCE.id());
+                String owner = type == null ? null : resolveQualifiedTypeName(type, call);
+                return owner == null
+                    ? List.of()
+                    : findConstructorCandidates(owner).stream()
+                        .filter(candidate -> isConstructorCandidateAccessible(owner, candidate, call)).toList();
+            }
+            SyntaxNode member = selectorNameNode(call);
+            String name = member == null
+                ? identifierBeforeChildKind(call, JavaSyntaxKinds.ARGUMENT_LIST.id())
+                : lastIdentifierLikeTokenText(member);
+            SyntaxNode receiver = explicitReceiver(call);
+            if (receiver != null) {
+                MemberLookup lookup = resolveMemberLookup(receiver, call);
+                return name == null || lookup == null || lookup.ownerQualifiedName() == null
+                    ? List.of()
+                    : findMethodCandidates(lookup.ownerQualifiedName(), name, lookup.staticAccess());
+            }
+            Symbol enclosing = nearestEnclosingTypeSymbol(call);
+            for (SyntaxNode child : call.children()) {
+                if (enclosing != null && (child.kind().equals(JavaSyntaxKinds.THIS_EXPRESSION)
+                    || child.kind().equals(JavaSyntaxKinds.SUPER_EXPRESSION))) {
+                    String owner = child.kind().equals(JavaSyntaxKinds.THIS_EXPRESSION)
+                        ? enclosing.qualifiedName().orElse(null)
+                        : directSuperclassName(enclosing);
+                    return owner == null ? List.of() : findConstructorCandidates(owner);
+                }
+            }
+            if (name == null)
+                return List.of();
+            var candidates = new ArrayList<MemberCandidate>();
+            while (enclosing != null) {
+                String owner = enclosing.qualifiedName().orElse(null);
+                if (owner != null) {
+                    candidates.addAll(findMethodCandidates(owner, name, false));
+                    candidates.addAll(findMethodCandidates(owner, name, true));
+                }
+                enclosing = enclosing.declaration().map(context::enclosingTypeSymbol).orElse(null);
+            }
+            candidates.addAll(staticImportedMethodCandidates(name));
+            return candidates;
         }
 
         private boolean resolveExplicitConstructorInvocation(SyntaxNode invocationNode, SyntaxNode argumentList) {
@@ -4254,30 +4421,19 @@ public final class JavaSemanticAnalyzer {
             return Integer.compare(left.size(), right.size());
         }
 
-        private List<MemberCandidate> staticImportedMethodCandidates(String methodName, List<Type> argumentTypes) {
-            int argumentCount = argumentTypes.size();
+        private List<MemberCandidate> staticImportedMethodCandidates(String methodName) {
             List<MemberCandidate> candidates = new ArrayList<>();
             List<ImportSpec> singleStaticImports = staticSingleImportsByMemberName.get(methodName);
             if (singleStaticImports != null) {
                 for (ImportSpec importSpec : singleStaticImports) {
                     context.poll();
-                    for (MemberCandidate candidate : findMethodCandidates(importSpec.ownerName(), methodName, true)) {
-                        context.poll();
-                        if (isArityCompatible(candidate, argumentCount)) {
-                            candidates.add(candidate);
-                        }
-                    }
+                    candidates.addAll(findMethodCandidates(importSpec.ownerName(), methodName, true));
                 }
             }
 
             for (ImportSpec onDemandImport : onDemandStaticImports) {
                 context.poll();
-                for (MemberCandidate candidate : findMethodCandidates(onDemandImport.ownerName(), methodName, true)) {
-                    context.poll();
-                    if (isArityCompatible(candidate, argumentCount)) {
-                        candidates.add(candidate);
-                    }
-                }
+                candidates.addAll(findMethodCandidates(onDemandImport.ownerName(), methodName, true));
             }
 
             return List.copyOf(candidates);

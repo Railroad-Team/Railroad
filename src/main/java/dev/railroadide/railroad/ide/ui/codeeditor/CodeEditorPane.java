@@ -251,6 +251,10 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (supportsSignatureHelp()) {
             installSignatureHelp();
         }
+        if (navigationProvider != null || renameProvider != null || codeActions != null
+            || signatureHelpProvider != null) {
+            KeybindHandler.registerCapture(KeybindContexts.of(KEYBIND_CONTEXT), this);
+        }
         installNavigation();
         installRename();
         installCodeActions();
@@ -403,7 +407,6 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (navigationProvider == null)
             return;
 
-        KeybindHandler.registerCapture(KeybindContexts.of(KEYBIND_CONTEXT), this);
         caretPositionProperty().addListener(
             (observable, previous, current) -> invalidateNavigationRequest());
         addEventFilter(MouseEvent.MOUSE_CLICKED, event -> {
@@ -725,9 +728,6 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (renameProvider == null)
             return;
 
-        if (navigationProvider == null) {
-            KeybindHandler.registerCapture(KeybindContexts.of(KEYBIND_CONTEXT), this);
-        }
         caretPositionProperty().addListener((observable, previous, current) -> invalidateRenameRequest());
     }
 
@@ -844,9 +844,6 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (codeActions == null)
             return;
 
-        if (navigationProvider == null && renameProvider == null) {
-            KeybindHandler.registerCapture(KeybindContexts.of(KEYBIND_CONTEXT), this);
-        }
         codeActionBulbDelay.setOnFinished(_ -> refreshCodeActionBulb());
         caretPositionProperty().addListener((observable, previous, current) -> {
             closeCodeActionMenu();
@@ -1768,28 +1765,25 @@ public abstract class CodeEditorPane extends TextEditorPane {
         });
     }
 
-    /**
-     * Supersedes the previous signature request and captures inputs for the current caret.
-     * The JavaFX publication validates identity, activity, generation, and workspace state
-     * before applying the possibly unsupported payload. Cancellation is an expected outcome.
-     *
-     * @param textChanged whether a text edit, rather than caret movement, triggered the request
-     */
     private void requestSignatureHelp(boolean textChanged) {
+        if (!supportsSignatureHelp() || !shouldRequestSignatureHelp(getText(), getCaretPosition(), textChanged)) {
+            hideSignatureHelp();
+            return;
+        }
+        requestSignatureHelpAtCaret(INTERACTIVE_BUDGET);
+    }
+
+    /** Shows parameter information at the current caret, including after automatic help was dismissed. */
+    public void showParameterInfo() {
+        if (!supportsSignatureHelp())
+            return;
+        hideAutoComplete();
+        requestSignatureHelpAtCaret(NAVIGATION_BUDGET);
+    }
+
+    private void requestSignatureHelpAtCaret(Duration budget) {
         invalidateSignatureRequest();
-
-        if (codeEditorClosed || providerLifetime.isCancellationRequested() || !supportsSignatureHelp()) {
-            hideSignatureHelp();
-            return;
-        }
-
-        String text = getText();
         int caret = getCaretPosition();
-        if (!shouldRequestSignatureHelp(text, caret, textChanged)) {
-            hideSignatureHelp();
-            return;
-        }
-
         int generation = signatureGeneration.incrementAndGet();
         WorkspaceSnapshot workspace = captureFeatureWorkspace();
         if (workspace == null
@@ -1798,12 +1792,12 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
         activeSignatureCancellation = new CancellationTokenSource(providerLifetime);
         var context = new FeatureRequestContext(workspace, snapshot, activeSignatureCancellation.token(),
-            Deadline.after(INTERACTIVE_BUDGET));
+            Deadline.after(budget));
         activeSignatureContext = context;
 
         featureRequests.submit("signature", RequestPriority.SIGNATURE_HELP, context,
             activeSignatureCancellation, () -> ProviderExecutor.shared().execute(
-                context.documentSnapshot().languageId() + ":signature", context, INTERACTIVE_BUDGET,
+                context.documentSnapshot().languageId() + ":signature", context, budget,
                 () -> signatureHelpProvider.compute(context, caret)))
             .thenAccept(result -> Platform.runLater(() -> {
                 if (signatureGeneration.get() != generation
@@ -2233,8 +2227,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
         return completionProvider != null;
     }
 
-    protected boolean supportsSignatureHelp() {
-        return signatureHelpProvider != null;
+    /** @return whether the editor can request parameter information from its language provider */
+    public boolean supportsSignatureHelp() {
+        return signatureHelpProvider != null && !codeEditorClosed && !providerLifetime.isCancellationRequested();
     }
 
     protected void onEditorStylesApplied() {

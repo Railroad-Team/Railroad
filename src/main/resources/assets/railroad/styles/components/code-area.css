@@ -196,11 +196,11 @@
 }
 
 .signature-help-container {
-    -fx-background-color: rgba(40, 40, 40, 0.95);
+    -fx-background-color: -color-surface-panel;
     -fx-padding: 6px 8px;
     -fx-background-radius: 6px;
     -fx-border-radius: 6px;
-    -fx-border-color: rgba(255, 255, 255, 0.25);
+    -fx-border-color: -color-border-default;
 }
 
 .navigation-message {
@@ -213,15 +213,15 @@
 }
 
 .signature-help-text {
-    -fx-text-fill: white;
+    -fx-font-family: "JetBrains Mono";
 }
 
-.signature-param {
-    -fx-text-fill: #d0d0d0;
+.signature-help-text > Text {
+    -fx-fill: -color-fg-muted;
 }
 
-.signature-param-active {
-    -fx-text-fill: #ffffff;
+.signature-help-text > .signature-param-active {
+    -fx-fill: -color-accent-fg;
     -fx-font-weight: bold;
 }
 

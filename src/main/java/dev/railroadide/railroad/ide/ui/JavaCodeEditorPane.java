@@ -1,6 +1,5 @@
 package dev.railroadide.railroad.ide.ui;
 
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.ui.codeeditor.BreakpointGutterBinding;
@@ -8,11 +7,9 @@ import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorConfig;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * Adds Java call-context detection for signature help to the configured code editor.
@@ -50,29 +47,6 @@ public class JavaCodeEditorPane extends CodeEditorPane {
         if (isEditorClosed()) {
             breakpointBinding.close();
         }
-    }
-
-    /**
-     * Lists entries in the running JDK's jmods directory for Java analysis.
-     *
-     * @return module paths, or an empty array if the directory cannot be resolved
-     */
-    public static String[] resolveSystemModules() {
-        try {
-            Path javaHome = Path.of(System.getProperty("java.home"));
-            Path jmods = javaHome.resolve("jmods");
-            if (Files.isDirectory(jmods)) {
-                try (Stream<Path> stream = Files.list(jmods)) {
-                    return stream
-                        .map(Path::toString)
-                        .toArray(String[]::new);
-                }
-            }
-        } catch (Exception exception) {
-            Railroad.LOGGER.warn("Unable to resolve system modules for Java analysis", exception);
-        }
-
-        return new String[0];
     }
 
     @Override

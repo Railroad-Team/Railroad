@@ -65,7 +65,7 @@ public final class SignatureHelpArchiveProbe {
         var request = new TextDocumentSnapshot(DocumentId.create(), DocumentUri.virtual("test", "/Example.java"),
             DocumentVersion.initial(), "java", arguments[2], StandardCharsets.UTF_8);
         store.publishBacking(request);
-        SignatureHelp help = new JdtJavaSignatureHelpProvider(new String[0]).compute(store.capture(), request.id(),
+        SignatureHelp help = new JavaSignatureHelpProvider().compute(store.capture(), request.id(),
             Integer.parseInt(arguments[3]));
         assertNotNull(help);
         assertEquals(arguments[4], help.ownerQualified());

@@ -25,7 +25,7 @@ import dev.railroadide.railroad.ide.sst.project.JavaJdkSymbolIndex;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class JdtJavaSignatureHelpProviderTest {
+public class JavaSignatureHelpProviderTest {
     private static final String SOURCE = """
         class Example {
             int combine(int count, boolean enabled) { return count; }
@@ -47,7 +47,7 @@ public class JdtJavaSignatureHelpProviderTest {
             new DocumentOrigin(BackingKind.VIRTUAL, ProvenanceKind.GENERATED),
             SOURCE,
             StandardCharsets.UTF_8);
-        SignatureHelpProvider provider = new JdtJavaSignatureHelpProvider(new String[0]);
+        SignatureHelpProvider provider = new JavaSignatureHelpProvider();
 
         assertTrue(snapshot.uri().filePath().isEmpty());
 
@@ -58,14 +58,80 @@ public class JdtJavaSignatureHelpProviderTest {
         assertEquals("combine", help.methodName());
         assertEquals(List.of("int", "boolean"),
             help.parameters().stream().map(SignatureHelp.ParameterInfo::type).toList());
+        assertEquals(List.of("count", "enabled"),
+            help.parameters().stream().map(SignatureHelp.ParameterInfo::name).toList());
         assertEquals(1, help.activeParameter());
         assertEquals("int", help.returnType());
         assertFalse(help.constructor());
     }
 
     @Test
+    public void showsExpectedParametersInsideAnEmptyCallBeforeArgumentsAreTyped() {
+        String text = SOURCE.replace("combine(1, true)", "combine()");
+        var snapshot = snapshot(DocumentUri.virtual("generated", "/demo/Example.java"), text);
+        SignatureHelpProvider provider = new JavaSignatureHelpProvider();
+        int inside = text.lastIndexOf("combine(") + "combine(".length();
+        SignatureHelp help = provider.compute(snapshot, inside);
+        assertNotNull(help);
+        assertEquals(List.of("int", "boolean"),
+            help.parameters().stream().map(SignatureHelp.ParameterInfo::type).toList());
+        assertEquals(0, help.activeParameter());
+        assertNull(provider.compute(snapshot, inside + 1));
+    }
+
+    @Test
+    public void tracksTheArgumentAcrossTheCommaInAPartialCall() {
+        String text = SOURCE.replace("combine(1, true)", "combine(1 /* , ) */ , )");
+        var snapshot = snapshot(DocumentUri.virtual("generated", "/demo/Example.java"), text);
+        SignatureHelpProvider provider = new JavaSignatureHelpProvider();
+        int comma = text.lastIndexOf(',');
+        assertEquals(0, provider.compute(snapshot, comma).activeParameter());
+        assertEquals(1, provider.compute(snapshot, comma + 1).activeParameter());
+    }
+
+    @Test
+    public void usesTheInnermostCallAndIgnoresParenthesesInAChainedReceiver() {
+        String text = "class Example { Example next() { return this; } int read(int i) { return i; }"
+            + " int inner(int i) { return i; } void run() { next().read(inner(1)); } }";
+        var snapshot = snapshot(DocumentUri.virtual("generated", "/demo/Example.java"), text);
+        SignatureHelpProvider provider = new JavaSignatureHelpProvider();
+        int receiver = text.lastIndexOf("next(") + "next(".length();
+        assertEquals("next", provider.compute(snapshot, receiver).methodName());
+        assertNull(provider.compute(snapshot, receiver + 1));
+        assertEquals("inner", provider.compute(snapshot, text.lastIndexOf("1)")).methodName());
+        assertEquals("read", provider.compute(snapshot, text.lastIndexOf("1)") + 2).methodName());
+    }
+
+    @Test
+    public void partialCallsChooseAnOverloadUsingAlreadyTypedArguments() {
+        String text = "class Example { void write(boolean flag, long count) {} void write(int row, String value) {}"
+            + " void run() { write(1, ); } }";
+        var provider = new JavaSignatureHelpProvider();
+        var help = provider.compute(snapshot(DocumentUri.virtual("generated", "/Example.java"), text),
+            text.lastIndexOf(", ") + 2);
+        assertNotNull(help);
+        assertEquals(List.of("row", "value"),
+            help.parameters().stream().map(SignatureHelp.ParameterInfo::name).toList());
+        assertEquals(1, help.activeParameter());
+    }
+
+    @Test
+    public void showsConstructorParametersAndKeepsTheVarargsParameterActive() {
+        String text = "class Example { Example(int first, int... rest) {} void run() { new Example(1, 2, 3); } }";
+        var help = new JavaSignatureHelpProvider().compute(
+            snapshot(DocumentUri.virtual("generated", "/Example.java"), text),
+            text.lastIndexOf("3)"));
+        assertNotNull(help);
+        assertTrue(help.constructor());
+        assertTrue(help.varargs());
+        assertEquals("int...", help.parameters().getLast().type());
+        assertEquals("rest", help.parameters().getLast().name());
+        assertEquals(1, help.activeParameter());
+    }
+
+    @Test
     public void providesSameSignatureForPhysicalArchiveAndUnnamedDocuments() {
-        SignatureHelpProvider provider = new JdtJavaSignatureHelpProvider(new String[0]);
+        SignatureHelpProvider provider = new JavaSignatureHelpProvider();
         SignatureHelp expected = provider
             .compute(snapshot(DocumentUri.virtual("generated", "/demo/Example.java"), SOURCE), CARET);
         assertNotNull(expected);
@@ -79,11 +145,11 @@ public class JdtJavaSignatureHelpProviderTest {
     }
 
     @Test
-    public void usesUnsavedSnapshotTextInsteadOfStoredFileContext() throws Exception {
-        Path file = tempDirectory.resolve("Other.java");
-        Files.writeString(file, "class Other {}");
-        SignatureHelpProvider provider = new JdtJavaSignatureHelpProvider(file, new String[0]);
-        var snapshot = snapshot(DocumentUri.fromPath(tempDirectory.resolve("Example.java")), SOURCE);
+    public void usesUnsavedSnapshotTextInsteadOfPhysicalFileContents() throws Exception {
+        Path file = tempDirectory.resolve("Example.java");
+        Files.writeString(file, "class Example {}");
+        SignatureHelpProvider provider = new JavaSignatureHelpProvider();
+        var snapshot = snapshot(DocumentUri.fromPath(file), SOURCE);
 
         SignatureHelp help = provider.compute(snapshot, CARET);
 
@@ -100,7 +166,7 @@ public class JdtJavaSignatureHelpProviderTest {
             new byte[5]);
         var nonJava = new TextDocumentSnapshot(DocumentId.create(), uri, DocumentVersion.initial(), "plaintext", SOURCE,
             StandardCharsets.UTF_8);
-        SignatureHelpProvider provider = new JdtJavaSignatureHelpProvider(new String[0]);
+        SignatureHelpProvider provider = new JavaSignatureHelpProvider();
 
         assertNull(provider.compute(binary, CARET));
         assertNull(provider.compute(nonJava, CARET));
@@ -109,7 +175,7 @@ public class JdtJavaSignatureHelpProviderTest {
     @Test
     public void returnsNoHelpForEmptyTextOrOutsideAnInvocation() {
         DocumentUri uri = DocumentUri.virtual("generated", "/demo/Example.java");
-        SignatureHelpProvider provider = new JdtJavaSignatureHelpProvider(new String[0]);
+        SignatureHelpProvider provider = new JavaSignatureHelpProvider();
 
         assertNull(provider.compute(snapshot(uri, ""), 0));
         assertNull(provider.compute(snapshot(uri, SOURCE), -1));

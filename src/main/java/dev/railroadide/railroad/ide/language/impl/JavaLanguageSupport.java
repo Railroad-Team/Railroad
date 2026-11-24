@@ -9,8 +9,7 @@ import dev.railroadide.railroad.ide.language.impl.index.JavaAnalysisContextProvi
 import dev.railroadide.railroad.ide.sst.project.JavaLibrarySources;
 import dev.railroadide.railroad.ide.language.impl.index.JavaLanguageIndexContextContributor;
 import dev.railroadide.railroad.ide.language.impl.index.JavaProjectLanguageIndexer;
-import dev.railroadide.railroad.ide.signature.JavaSignatureSourceCache;
-import dev.railroadide.railroad.ide.signature.JdtJavaSignatureHelpProvider;
+import dev.railroadide.railroad.ide.signature.JavaSignatureHelpProvider;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSstServices;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxParser;
@@ -76,9 +75,7 @@ public final class JavaLanguageSupport extends BaseLanguageSupport {
             .add(LanguageCapabilities.HIGHLIGHTING, TreeSitterJavaSyntaxHighlighting::computeHighlighting)
             .add(SstCapabilities.DIAGNOSTICS, new JavaDiagnosticsProvider(project, null, semantics::capture))
             .add(SstCapabilities.COMPLETION, new JavaCompletionProvider(project, null, semantics::capture))
-            .add(SstCapabilities.SIGNATURE_HELP,
-                new JdtJavaSignatureHelpProvider(null, JavaCodeEditorPane.resolveSystemModules(), semantics::capture,
-                    new JavaSignatureSourceCache(4)))
+            .add(SstCapabilities.SIGNATURE_HELP, new JavaSignatureHelpProvider(semantics::capture))
             .add(SstCapabilities.PARSING, request -> new FeatureResult<>(request, JavaSyntaxParser.parse(request)))
             .add(SstCapabilities.SEMANTICS, semantics)
             .add(SstCapabilities.INDEX_EXTRACTION, semantics)

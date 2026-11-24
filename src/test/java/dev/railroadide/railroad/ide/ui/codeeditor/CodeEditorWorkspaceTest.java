@@ -543,7 +543,7 @@ public class CodeEditorWorkspaceTest {
         }
 
         @Override
-        protected boolean supportsSignatureHelp() {
+        public boolean supportsSignatureHelp() {
             return enabled && super.supportsSignatureHelp();
         }
 

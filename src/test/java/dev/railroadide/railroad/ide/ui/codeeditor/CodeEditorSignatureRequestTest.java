@@ -6,9 +6,13 @@ import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.request.api.*;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.settings.keybinds.Keybinds;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.image.WritableImage;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -36,8 +40,43 @@ public class CodeEditorSignatureRequestTest {
         startFx();
         onFx(() -> {
             Platform.setImplicitExit(false);
+            Keybinds.initialize();
             return null;
         });
+    }
+
+    @Test
+    public void controlPShowsAndReopensParameterInfoWithoutTypingOrMovingTheCaret() throws Exception {
+        try (Fixture fixture = open(context -> new FeatureResult<>(context, new SignatureHelp("Example", "Example",
+            "call", List.of(new SignatureHelp.ParameterInfo("int", "first", false),
+                new SignatureHelp.ParameterInfo("int", "second", false)),
+            1, false, "void", false)))) {
+            var editor = fixture.editor;
+            String text = onFx(editor::getText);
+            int caret = text.indexOf(", ") + 2;
+            onFx(() -> {
+                editor.moveTo(caret);
+                assertFalse(editor.signaturePopup.isShowing());
+                return null;
+            });
+            for (int attempt = 0; attempt < 2; attempt++) {
+                onFx(() -> {
+                    editor.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.P, false, true, false, false));
+                    return null;
+                });
+                assertEquals(caret, fixture.nextRequest().caret());
+                awaitRequests(editor.featureRequests);
+                onFx(() -> {
+                    assertTrue(editor.signaturePopup.isShowing());
+                    assertEquals("int second",
+                        ((Text) editor.signatureTextFlow.lookup(".signature-param-active")).getText());
+                    assertEquals(text, editor.getText());
+                    assertEquals(caret, editor.getCaretPosition());
+                    editor.dismiss();
+                    return null;
+                });
+            }
+        }
     }
 
     @Test

@@ -77,11 +77,12 @@ public class JavaWorkspaceAnalysisTest {
             "package demo; class Use { void run(Library l) { l.captured(1); } }");
         store.publishBacking(dependency);
         store.publishBacking(use);
-        SignatureHelp help = new JdtJavaSignatureHelpProvider(new String[0]).compute(store.capture(), use.id(),
+        SignatureHelp help = new JavaSignatureHelpProvider().compute(store.capture(), use.id(),
             use.text().indexOf("1)") + 1);
         assertNotNull(help);
         assertEquals("captured", help.methodName());
         assertEquals("int", help.parameters().getFirst().type());
+        assertEquals("count", help.parameters().getFirst().name());
     }
 
     @BeforeAll
@@ -144,7 +145,7 @@ public class JavaWorkspaceAnalysisTest {
             .noneMatch(diagnostic -> diagnostic.code().equals("SEM_UNRESOLVED_CALL")));
         assertTrue(diagnostics.compute(store.capture(), use.id()).stream()
             .anyMatch(diagnostic -> diagnostic.code().equals("SEM_UNRESOLVED_CALL")));
-        SignatureHelpProvider signatures = new JdtJavaSignatureHelpProvider(new String[0]);
+        SignatureHelpProvider signatures = new JavaSignatureHelpProvider();
         SignatureHelp help = signatures.compute(captured, use.id(), use.text().indexOf("true") + 1);
         assertNotNull(help);
         assertEquals("demo.Dep", help.ownerQualified());
@@ -422,7 +423,7 @@ public class JavaWorkspaceAnalysisTest {
             use.uri().filePath().orElseThrow()), analysis.sourceTexts().keySet());
         assertFalse(provider.capture(workspace).sourceTexts().containsKey(use.uri().filePath().orElseThrow()));
         assertSame(analysis, provider.capture(workspace, use.id()));
-        SignatureHelp signature = new JdtJavaSignatureHelpProvider(new String[0]).compute(workspace, use.id(),
+        SignatureHelp signature = new JavaSignatureHelpProvider().compute(workspace, use.id(),
             use.text().indexOf("1)") + 1);
         assertNotNull(signature);
         assertEquals("int", signature.parameters().getFirst().type());
@@ -435,7 +436,7 @@ public class JavaWorkspaceAnalysisTest {
             DocumentUri.virtual("generated", "/demo/Virtual.java"), DocumentVersion.initial(), "java",
             "package demo; class Virtual { void run(Dep d) { d.call(1); } }", StandardCharsets.UTF_8);
         store.publishBacking(virtual);
-        assertNotNull(new JdtJavaSignatureHelpProvider(new String[0]).compute(store.capture(), virtual.id(),
+        assertNotNull(new JavaSignatureHelpProvider().compute(store.capture(), virtual.id(),
             virtual.text().indexOf("1)") + 1));
     }
 

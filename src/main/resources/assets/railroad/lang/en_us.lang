@@ -1394,6 +1394,7 @@ railroad.rename.target.disk=on disk
 railroad.preview.create_file=Create file %s
 railroad.preview.delete_file=Delete file %s
 railroad.menu.code.show_actions=Show Context Actions
+railroad.menu.code.parameter_info=Parameter Info
 railroad.code_actions.bulb=Show context actions (Alt+Enter)
 railroad.code_actions.none=No actions available here
 railroad.code_actions.timed_out=Finding actions timed out while analysing the workspace
