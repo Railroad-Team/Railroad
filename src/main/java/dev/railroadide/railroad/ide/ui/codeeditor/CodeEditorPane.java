@@ -23,6 +23,7 @@ import dev.railroadide.railroad.ide.ui.navigation.UsagesPane;
 import dev.railroadide.railroad.ide.ui.refactor.RenameDialog;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
 import dev.railroadide.railroad.ui.RRListView;
@@ -219,12 +220,10 @@ public abstract class CodeEditorPane extends TextEditorPane {
         signaturePopup.setAutoFix(true);
         signaturePopup.setHideOnEscape(true);
         signaturePopupContainer.getStyleClass().add("signature-help-container");
-        signatureRows.setMaxWidth(600);
         signatureScroll.getStyleClass().add("signature-help-scroll");
         signatureScroll.setFitToWidth(true);
         signatureScroll.setFocusTraversable(false);
         signatureScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        signatureScroll.setPrefViewportWidth(560);
         signatureScroll.setPrefViewportHeight(180);
         signaturePopup.getContent().add(signaturePopupContainer);
 
@@ -1773,6 +1772,12 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
 
     private void requestSignatureHelp(boolean textChanged) {
+        if (!Settings.AUTOMATIC_PARAMETER_HINTS.getOrDefaultValue()) {
+            if (!textChanged) {
+                hideSignatureHelp();
+            }
+            return;
+        }
         if (!supportsSignatureHelp() || !shouldRequestSignatureHelp(getText(), getCaretPosition(), textChanged)) {
             hideSignatureHelp();
             return;
@@ -1911,6 +1916,13 @@ public abstract class CodeEditorPane extends TextEditorPane {
             x = screen.getX();
             y = screen.getY();
         }
+
+        double caretY = caretBounds.map(Bounds::getMinY).orElse(y);
+        var screen = Screen.getScreensForRectangle(x, caretY, 1, 1).stream().findFirst().orElse(Screen.getPrimary());
+        var available = screen.getVisualBounds();
+        double maxContentWidth = Math.max(1, available.getWidth() - 24);
+        signatureRows.setMaxWidth(maxContentWidth);
+        signatureScroll.setMaxWidth(maxContentWidth);
 
         if (!signaturePopup.isShowing()) {
             signaturePopup.show(this, x, y);

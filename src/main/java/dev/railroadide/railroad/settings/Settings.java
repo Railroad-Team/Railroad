@@ -62,6 +62,17 @@ public final class Settings {
             .defaultValue(true)
             .build());
 
+    /** Whether moving the caret or editing a call shows its parameters automatically. */
+    public static final Setting<Boolean> AUTOMATIC_PARAMETER_HINTS = registerSetting(
+        Setting.builder(Boolean.class, "railroad:automatic_parameter_hints")
+            .treePath("editor")
+            .category(SettingCategory.simple("railroad:editor.typing"))
+            .title("railroad.settings.editor.automatic_parameter_hints.title")
+            .description("railroad.settings.editor.automatic_parameter_hints.description")
+            .codec(DefaultSettingCodecs.BOOLEAN)
+            .defaultValue(false)
+            .build());
+
     /** Maximum number of simultaneously open editor tabs. */
     public static final Setting<Integer> EDITOR_TAB_LIMIT = registerSetting(
         Setting.builder(Integer.class, "railroad:editor_tab_limit")

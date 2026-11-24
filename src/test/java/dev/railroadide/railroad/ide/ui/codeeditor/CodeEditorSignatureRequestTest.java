@@ -6,6 +6,7 @@ import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.request.api.*;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.RailroadProject;
+import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.keybinds.Keybinds;
 import javafx.application.Platform;
 import javafx.scene.Scene;
@@ -14,8 +15,11 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -29,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.ArrayList;
+import java.util.Collections;
 
 import static dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorRequestTestSupport.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -36,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class CodeEditorSignatureRequestTest {
     @TempDir
     public Path directory;
+    private Boolean previousAutomaticHints;
 
     @BeforeAll
     public static void initializeFx() throws Exception {
@@ -45,6 +51,17 @@ public class CodeEditorSignatureRequestTest {
             Keybinds.initialize();
             return null;
         });
+    }
+
+    @BeforeEach
+    public void enableAutomaticHintsForEditorLifecycleTests() {
+        previousAutomaticHints = Settings.AUTOMATIC_PARAMETER_HINTS.getValue();
+        Settings.AUTOMATIC_PARAMETER_HINTS.setValue(true);
+    }
+
+    @AfterEach
+    public void restoreAutomaticHints() {
+        Settings.AUTOMATIC_PARAMETER_HINTS.setValue(previousAutomaticHints);
     }
 
     @Test
@@ -61,10 +78,15 @@ public class CodeEditorSignatureRequestTest {
             String text = onFx(editor::getText);
             int caret = text.indexOf(", ") + 2;
             onFx(() -> {
+                assertFalse(Settings.AUTOMATIC_PARAMETER_HINTS.getDefaultValue());
+                Settings.AUTOMATIC_PARAMETER_HINTS.setValue(Settings.AUTOMATIC_PARAMETER_HINTS.getDefaultValue());
+                editor.eligible = true;
                 editor.moveTo(caret);
                 assertFalse(editor.signaturePopup.isShowing());
                 return null;
             });
+            awaitRequests(editor.featureRequests);
+            assertTrue(fixture.provider.requests.isEmpty());
             for (int attempt = 0; attempt < 2; attempt++) {
                 onFx(() -> {
                     editor.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.P, false, true, false, false));
@@ -84,6 +106,41 @@ public class CodeEditorSignatureRequestTest {
                     assertEquals(text, editor.getText());
                     assertEquals(caret, editor.getCaretPosition());
                     editor.dismiss();
+                    return null;
+                });
+            }
+        }
+    }
+
+    @Test
+    public void parameterPopupKeepsLongRowsOnOneLineWhenTheScreenHasRoom() throws Exception {
+        String name = "longParameterName".repeat(8);
+        var signature = new SignatureHelp("Example", "Example", "call",
+            List.of(new SignatureHelp.ParameterInfo("int", name, false)), 0, false, "void", false);
+        try (Fixture fixture = open(context -> new FeatureResult<>(context, signature))) {
+            for (int overloadCount : List.of(0, 8)) {
+                fixture.provider.overloads = Collections.nCopies(overloadCount, signature);
+                onFx(() -> {
+                    fixture.editor.showParameterInfo();
+                    return null;
+                });
+                fixture.nextRequest();
+                awaitRequests(fixture.editor.featureRequests);
+                onFx(() -> {
+                    var popup = fixture.editor.signaturePopup;
+                    var root = popup.getScene().getRoot();
+                    root.applyCss();
+                    root.layout();
+                    var row = (TextFlow) fixture.editor.signatureRows.getChildren().getFirst();
+                    var text = (Text) row.getChildren().getFirst();
+                    double screenWidth = Screen.getScreensForRectangle(fixture.stage.getX(), fixture.stage.getY(), 1, 1)
+                        .stream().findFirst().orElse(Screen.getPrimary()).getVisualBounds().getWidth();
+                    double textWidth = text.getLayoutBounds().getWidth();
+                    if (screenWidth > textWidth + 60) {
+                        assertTrue(row.getWidth() >= Math.floor(textWidth));
+                        assertEquals(text.getLayoutBounds().getHeight(), row.getHeight(), 2);
+                    }
+                    assertTrue(popup.getWidth() <= screenWidth);
                     return null;
                 });
             }

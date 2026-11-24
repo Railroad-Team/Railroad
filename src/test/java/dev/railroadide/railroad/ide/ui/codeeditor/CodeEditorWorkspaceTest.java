@@ -452,10 +452,7 @@ public class CodeEditorWorkspaceTest {
                 trigger.setAccessible(true);
                 trigger.invoke(pane, 0);
             } else if (feature.equals("signature")) {
-                Method trigger = CodeEditorPane.class.getDeclaredMethod("requestSignatureHelp",
-                    boolean.class);
-                trigger.setAccessible(true);
-                trigger.invoke(pane, true);
+                pane.showParameterInfo();
             }
             return pane;
         });
