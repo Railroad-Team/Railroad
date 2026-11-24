@@ -7,6 +7,7 @@ import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagn
 import dev.railroadide.railroad.ide.signature.*;
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.ide.ui.JavaCodeEditorPane;
 import dev.railroadide.railroad.project.RailroadProject;
 import javafx.application.Platform;
 import javafx.scene.image.WritableImage;
@@ -37,6 +38,41 @@ import static org.junit.jupiter.api.Assertions.*;
 public class CodeEditorWorkspaceTest {
     @TempDir
     public Path directory;
+
+    @Test
+    public void mainGutterFollowsEditsInAGradleSubproject() throws Exception {
+        Files.writeString(directory.resolve("settings.gradle"), "include 'app'");
+        Path file = Files.createDirectories(directory.resolve("app/src/main/java")).resolve("Example.java");
+        Files.writeString(file, "class Example {\n public static void main(String[] args) {}\n}");
+        var markerReady = new CountDownLatch(1);
+        var markerMoved = new CountDownLatch(1);
+        var editor = onFx(() -> {
+            var project = new RailroadProject(directory, "Main gutter", new WritableImage(1, 1));
+            var pane = new JavaCodeEditorPane(project, DocumentId.create(), file,
+                new CodeEditorConfig("java", null, null, null, null, null));
+            pane.paragraphGraphicFactoryProperty().addListener((_, _, factory) -> {
+                if (factory.apply(1).lookup(".editor-main-marker") != null) {
+                    markerReady.countDown();
+                } else if (pane.getParagraphs().size() > 3 && factory.apply(2).lookup(".editor-main-marker") != null) {
+                    markerMoved.countDown();
+                }
+            });
+            return pane;
+        });
+        try {
+            assertTrue(markerReady.await(10, TimeUnit.SECONDS));
+            onFx(() -> {
+                editor.insertText(0, "// edited\n");
+                return null;
+            });
+            assertTrue(markerMoved.await(10, TimeUnit.SECONDS));
+        } finally {
+            onFx(() -> {
+                editor.close();
+                return null;
+            });
+        }
+    }
 
     @Test
     public void workspaceChangesDebounceDiagnosticsAcrossFxTurns() throws Exception {

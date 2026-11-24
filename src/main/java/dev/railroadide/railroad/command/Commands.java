@@ -292,7 +292,7 @@ public final class Commands {
         "railroad:save_all",
         "railroad.menu.file.save_all",
         _ -> Services.EDITOR_TAB_MANAGER.hasUnsavedChanges(),
-        _ -> showSaveFailures(Services.EDITOR_TAB_MANAGER.saveAll()),
+        _ -> saveAll(),
         List.of(new KeybindData(
             KeyCode.S,
             new KeyCombination.Modifier[]{
@@ -1069,6 +1069,13 @@ public final class Commands {
         if (!Services.EDITOR_TAB_MANAGER.saveAsActive(targetFile.toPath())) {
             showSaveFailures(new EditorTabManager.SaveResult(List.of(activeTab)));
         }
+    }
+
+    /** Saves dirty editors and reports any files that prevented an operation from continuing. */
+    public static boolean saveAll() {
+        var result = Services.EDITOR_TAB_MANAGER.saveAll();
+        showSaveFailures(result);
+        return result.successful();
     }
 
     private static void showSaveFailures(EditorTabManager.SaveResult result) {

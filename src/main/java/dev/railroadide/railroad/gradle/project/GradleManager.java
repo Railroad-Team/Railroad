@@ -268,11 +268,9 @@ public final class GradleManager {
      */
     public boolean isGradleProject() {
         Path path = project.getPath();
-        Path groovyBuildFile = path.resolve("build.gradle");
-        Path kotlinBuildFile = path.resolve("build.gradle.kts");
-        boolean hasGroovyBuild = Files.isRegularFile(groovyBuildFile) && Files.isReadable(groovyBuildFile);
-        boolean hasKotlinBuild = Files.isRegularFile(kotlinBuildFile) && Files.isReadable(kotlinBuildFile);
-        return hasGradleWrapper() || hasGroovyBuild || hasKotlinBuild;
+        return hasGradleWrapper()
+            || List.of("build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts")
+                .stream().map(path::resolve).anyMatch(file -> Files.isRegularFile(file) && Files.isReadable(file));
     }
 
     private GradleSettings buildGradleSettings() {

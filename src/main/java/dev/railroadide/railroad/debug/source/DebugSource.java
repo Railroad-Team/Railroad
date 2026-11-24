@@ -1,9 +1,12 @@
 package dev.railroadide.railroad.debug.source;
 
+import dev.railroadide.railroad.utility.ProjectPathIdentityUtils;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+
 import java.util.Optional;
 
 /**
@@ -40,7 +43,7 @@ public sealed interface DebugSource {
         @Override
         public boolean matches(DebugSource other) {
             return other instanceof FileSource(Path file1) &&
-                Objects.equals(file.toAbsolutePath().normalize(), file1.toAbsolutePath().normalize());
+                ProjectPathIdentityUtils.matches(file, file1);
         }
 
         @Override

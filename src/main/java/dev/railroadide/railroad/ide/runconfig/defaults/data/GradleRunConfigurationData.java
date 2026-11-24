@@ -44,6 +44,8 @@ import java.util.concurrent.CompletableFuture;
 @Data
 public class GradleRunConfigurationData extends RunConfigurationData {
     private String task;
+    private String mainSource;
+    private String mainClass;
     private Path gradleProjectPath; // TODO: A different data type(?) that represents a Gradle project model
     private Map<String, String> environmentVariables = new HashMap<>();
     private String[] vmOptions = new String[0];
@@ -65,30 +67,38 @@ public class GradleRunConfigurationData extends RunConfigurationData {
 
         ObservableMap<Path, List<? extends RailroadGradleTask>> gradleTasksCache = FXCollections.observableHashMap();
         ObjectProperty<Path> gradleProjectPathProperty = new SimpleObjectProperty<>(this.gradleProjectPath);
-        gradleProjectPathProperty
-            .addListener((observable, oldValue, newValue) -> loadGradleTasksAsync(project, newValue, gradleTasksCache));
-        loadGradleTasksAsync(project, gradleProjectPathProperty.get(), gradleTasksCache);
+        if (mainSource == null) {
+            gradleProjectPathProperty
+                .addListener(
+                    (observable, oldValue, newValue) -> loadGradleTasksAsync(project, newValue, gradleTasksCache));
+            loadGradleTasksAsync(project, gradleProjectPathProperty.get(), gradleTasksCache);
+        }
 
         return createBaseFormBuilder(project, configuration)
             .appendSection(FormSection.create("railroad.runconfig.gradle.configuration.title")
-                .appendComponent(FormComponent.textField("task", "railroad.runconfig.gradle.configuration.task.label")
-                    .required()
-                    .text(() -> this.task != null ? this.task : "")
-                    .promptText("railroad.runconfig.gradle.configuration.task.prompt")
-                    .autoComplete(
-                        query -> filterGradleTaskSuggestions(query, gradleProjectPathProperty.get(), gradleTasksCache))
-                    .autoCompleteSuggestionCellFactory(createGradleTaskSuggestionCellFactory(
-                        gradleProjectPathProperty, gradleTasksCache))
-                    .autoCompleteShowSuggestionsOnEmpty(true)
-                    .validator(textField -> {
-                        String text = textField.getText();
-                        if (text == null || text.isBlank())
-                            return ValidationResult.error("railroad.runconfig.gradle.configuration.task.invalid");
+                .appendComponent(mainSource != null
+                    ? FormComponent
+                        .textField("mainClass", "railroad.runconfig.java_application.configuration.mainClass.label")
+                        .editable(false).text(this::getMainClass).build()
+                    : FormComponent.textField("task", "railroad.runconfig.gradle.configuration.task.label")
+                        .required()
+                        .text(() -> this.task != null ? this.task : "")
+                        .promptText("railroad.runconfig.gradle.configuration.task.prompt")
+                        .autoComplete(
+                            query -> filterGradleTaskSuggestions(query, gradleProjectPathProperty.get(),
+                                gradleTasksCache))
+                        .autoCompleteSuggestionCellFactory(createGradleTaskSuggestionCellFactory(
+                            gradleProjectPathProperty, gradleTasksCache))
+                        .autoCompleteShowSuggestionsOnEmpty(true)
+                        .validator(textField -> {
+                            String text = textField.getText();
+                            if (text == null || text.isBlank())
+                                return ValidationResult.error("railroad.runconfig.gradle.configuration.task.invalid");
 
-                        // TODO: Use a gradle project model to validate the task
-                        return ValidationResult.ok();
-                    })
-                    .build())
+                            // TODO: Use a gradle project model to validate the task
+                            return ValidationResult.ok();
+                        })
+                        .build())
                 .appendComponent(FormComponent
                     .directoryChooser("gradleProjectPath", "railroad.runconfig.gradle.configuration.projectPath.label")
                     .required()
@@ -347,7 +357,9 @@ public class GradleRunConfigurationData extends RunConfigurationData {
     @Override
     public void applyConfigurationFormData(FormData formData) {
         applyBaseFormData(formData);
-        this.task = formData.get("task", String.class);
+        if (mainSource == null) {
+            this.task = formData.get("task", String.class);
+        }
         this.gradleProjectPath = Path.of(formData.get("gradleProjectPath", String.class));
         this.environmentVariables = StringUtils
             .stringToEnvironmentVariables(formData.get("environmentVariables", String.class));

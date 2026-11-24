@@ -115,6 +115,6 @@ public class GradleTaskContextMenu extends ContextMenu {
             return false;
 
         return data.getGradleProjectPath().equals(module.getGradleProject().getProjectDirectory().toPath())
-            && data.getTask().equals(task.getName());
+            && task.getName().equals(data.getTask());
     }
 }

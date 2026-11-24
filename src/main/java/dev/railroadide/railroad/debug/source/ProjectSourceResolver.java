@@ -32,6 +32,11 @@ public final class ProjectSourceResolver {
      * @throws IOException if project directories cannot be read
      */
     public static SourceResolver create(Path projectRoot) throws IOException {
+        return create(projectRoot, null, "");
+    }
+
+    /** Prioritizes the launched class's package root, including nonstandard Gradle source directories. */
+    public static SourceResolver create(Path projectRoot, Path mainSource, String mainClass) throws IOException {
         Path root = projectRoot.toAbsolutePath().normalize();
         List<Path> sourceRoots = new ArrayList<>();
         Files.walkFileTree(root, new SimpleFileVisitor<>() {
@@ -54,6 +59,24 @@ public final class ProjectSourceResolver {
             }
         });
         sourceRoots.sort(Comparator.comparingInt(Path::getNameCount).thenComparing(Path::toString));
+        if (mainSource != null) {
+            Path preferred = mainSource.toAbsolutePath().normalize().getParent();
+            int separator = mainClass.lastIndexOf('.');
+            if (separator >= 0) {
+                Path packagePath = Path.of(mainClass.substring(0, separator).replace('.', '/'));
+                if (preferred.endsWith(packagePath)) {
+                    for (int i = 0; i < packagePath.getNameCount(); i++) {
+                        preferred = preferred.getParent();
+                    }
+                } else {
+                    preferred = null;
+                }
+            }
+            if (preferred != null) {
+                sourceRoots.remove(preferred);
+                sourceRoots.addFirst(preferred);
+            }
+        }
         return new SourceResolver(sourceRoots, DependencySourceIndex.EMPTY);
     }
 }

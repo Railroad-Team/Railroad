@@ -690,6 +690,9 @@ railroad.ide.dock_item.console=Console
 railroad.ide.dock_item.terminal=Terminal
 
 railroad.menu.run=Run
+railroad.editor.main.tooltip=Run or debug this main method
+railroad.editor.main.run=Run %s.main()
+railroad.editor.main.debug=Debug %s.main()
 railroad.menu.run.run=Run
 railroad.menu.run.debug=Debug
 railroad.menu.run.stop=Stop

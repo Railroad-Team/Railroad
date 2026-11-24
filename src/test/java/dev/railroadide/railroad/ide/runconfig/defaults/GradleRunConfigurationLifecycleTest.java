@@ -4,6 +4,9 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
+import dev.railroadide.railroad.ide.runconfig.EditorMain;
+import dev.railroadide.railroad.project.RailroadProject;
+import javafx.scene.image.WritableImage;
 import dev.railroadide.railroad.ide.runconfig.session.RunOutput;
 import dev.railroadide.railroad.ide.runconfig.session.RunSession;
 import dev.railroadide.railroad.ide.runconfig.session.RunSessionManager;
@@ -194,6 +197,71 @@ public class GradleRunConfigurationLifecycleTest {
             assertFalse(type.isRunning(project, configuration));
         } finally {
             type.stop(project, configuration).get(30, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void editorMainRunsAndDebugsWithTheOwningSourceSetsRuntimeClasspath() throws Exception {
+        Files.writeString(directory.resolve("settings.gradle"), "include 'app', 'library', 'unrelated'");
+        Path app = Files.createDirectories(directory.resolve("app/code/sample"));
+        Files.writeString(directory.resolve("app/build.gradle"), """
+            plugins { id 'java' }
+            sourceSets.main.java.setSrcDirs(['code'])
+            dependencies { runtimeOnly project(':library') }
+            """);
+        Path main = app.resolve("Main.java");
+        Files.writeString(main, """
+            package sample;
+            public class Main {
+                public static void main(String[] args) throws Exception {
+                    System.out.println(Class.forName("OnlyAtRuntime").getSimpleName());
+                    System.out.println(Main.class.getResource("/app-resource.txt") != null);
+                }
+            }
+            """);
+        Files.writeString(
+            Files.createDirectories(directory.resolve("app/src/main/resources")).resolve("app-resource.txt"),
+            "resource");
+        Files.writeString(
+            Files.createDirectories(directory.resolve("library/src/main/java")).resolve("OnlyAtRuntime.java"),
+            "public class OnlyAtRuntime {}");
+        Files.writeString(directory.resolve("library/build.gradle"), "plugins { id 'java' }");
+        Files.writeString(Files.createDirectories(directory.resolve("unrelated/src/main/java")).resolve("Broken.java"),
+            "invalid");
+        Files.writeString(directory.resolve("unrelated/build.gradle"), "plugins { id 'java' }");
+        var project = new RailroadProject(directory, "Editor launch", new WritableImage(1, 1));
+        assertTrue(EditorMain.supports(project, main));
+        var target = EditorMain.find(Files.readString(main), "Main.java").getFirst();
+        var config = target.configuration(project, main);
+        assertSame(config, target.configuration(project, main));
+        var data = assertInstanceOf(GradleRunConfigurationData.class, config.data());
+        assertEquals("app/code/sample/Main.java", data.getMainSource());
+        var type = type();
+        var configuration = new RunConfiguration<>(config.uuid(), type, data);
+        data.setJavaHome(new JDK(Path.of(System.getProperty("java.home")), "Test JDK", JavaVersion.fromMajor(25)));
+        configuration.run(project).get(60, TimeUnit.SECONDS);
+        String output = text(project.getRunSessions().sessions().getLast(), RunOutput.Kind.STDOUT);
+        assertTrue(output.contains("OnlyAtRuntime"), output);
+        assertTrue(output.contains("true"), output);
+        Services.BREAKPOINT_SERVICE.add(main, 4);
+        try {
+            var completion = configuration.debug(project);
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(60);
+            while (!project.getDebuggingManager().isPaused() && !completion.isDone() && System.nanoTime() < deadline) {
+                flushFx();
+                Thread.sleep(25);
+            }
+            if (completion.isDone()) {
+                completion.join();
+            }
+            var session = project.getRunSessions().sessions().getLast();
+            assertTrue(project.getDebuggingManager().isPaused(),
+                () -> "Debugger did not suspend: " + session.retainedOutput());
+            Platform.runLater(project.getDebuggingManager()::resume);
+            completion.get(30, TimeUnit.SECONDS);
+        } finally {
+            Services.BREAKPOINT_SERVICE.remove(main, 4);
+            configuration.stop(project).get(30, TimeUnit.SECONDS);
         }
     }
 

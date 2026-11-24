@@ -1,0 +1,26 @@
+if (gradle.parent != null) {
+    return
+}
+
+gradle.projectsEvaluated {
+    def root = gradle.rootProject
+    def source = root.file(root.property('railroadMainSource')).canonicalFile
+    def owners = []
+    root.allprojects.each { project ->
+        project.extensions.findByType(SourceSetContainer)?.each { sources ->
+            if (sources.java.contains(source)) owners << [project, sources]
+        }
+    }
+    if (owners.size() != 1) {
+        throw new GradleException("Expected one Java source set containing ${source}, found ${owners.size()}")
+    }
+    def (owner, sources) = owners.first()
+    root.tasks.register(root.property('railroadMainTask'), JavaExec) {
+        mainClass.set(root.property('railroadMainClass'))
+        classpath = sources.runtimeClasspath
+        dependsOn(owner.tasks.named(sources.classesTaskName))
+        javaLauncher.set(owner.javaToolchains.launcherFor(owner.java.toolchain))
+        workingDir(owner.projectDir)
+        standardInput = System.in
+    }
+}

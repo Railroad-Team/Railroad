@@ -13,6 +13,7 @@ import dev.railroadide.railroad.ide.runconfig.session.RunSession;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.utility.ProjectPathIdentityUtils;
 import dev.railroadide.railroad.utility.icon.RailroadBrandsIcon;
 import javafx.scene.paint.Color;
 import org.gradle.tooling.*;
@@ -22,9 +23,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -253,7 +257,10 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         boolean debug
     ) throws IOException {
         GradleRunConfigurationData data = configuration.data();
-        String task = requireTask(data).trim();
+        boolean editorMain = data.getMainSource() != null;
+        String task = editorMain
+            ? ":railroadMain" + configuration.uuid().toString().replace("-", "")
+            : requireTask(data).trim();
         if (debug && !task.startsWith(":")) {
             task = ":" + task;
         }
@@ -263,7 +270,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
             environmentVariables.putAll(data.getEnvironmentVariables());
         }
         String[] vmOptions = data.getVmOptions() == null ? new String[0] : data.getVmOptions();
-        JDK javaHome = requireJavaHome(data);
+        JDK javaHome = editorMain ? data.getJavaHome() : requireJavaHome(data);
 
         if (execution.ended)
             return;
@@ -275,8 +282,11 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
             try (var socket = new ServerSocket(0)) {
                 port = socket.getLocalPort();
             }
-            execution.script = Files.createTempFile("railroad-debug-", ".init.gradle");
-            Files.writeString(execution.script, debugInitScript(task, port));
+        }
+        if (editorMain || debug) {
+            execution.script = Files.createTempFile("railroad-launch-", ".init.gradle");
+            String init = editorMain ? loadRunMainClassInitScript() : "";
+            Files.writeString(execution.script, init + (debug ? debugInitScript(task, port) : ""));
         }
         if (execution.ended)
             return;
@@ -294,14 +304,27 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
             .forTasks(task)
             .setJvmArguments(vmOptions)
             .setEnvironmentVariables(environmentVariables)
-            .setJavaHome(javaHome.path().toFile())
             .setColorOutput(false)
             .withCancellationToken(execution.cancellation.token())
             .setStandardOutput(execution.stdout)
             .setStandardError(execution.stderr)
             .setStandardInput(runSession.input(charset));
-        if (debug) {
-            launcher.withArguments("--init-script", execution.script.toString(), "--no-configuration-cache");
+        if (javaHome != null) {
+            launcher.setJavaHome(javaHome.path().toFile());
+        }
+        if (execution.script != null) {
+            var arguments = new ArrayList<>(
+                List.of("--init-script", execution.script.toString(), "--no-configuration-cache"));
+            if (editorMain) {
+                arguments.add("--no-configure-on-demand");
+                arguments.add("-PrailroadMainSource=" + data.getMainSource());
+                arguments.add("-PrailroadMainClass=" + data.getMainClass());
+                arguments.add("-PrailroadMainTask=" + task.substring(1));
+                if (project.getGradleManager().getGradleSettings().isOfflineMode()) {
+                    arguments.add("--offline");
+                }
+            }
+            launcher.withArguments(arguments);
         }
         if (execution.ended)
             return;
@@ -317,22 +340,34 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
             }
         });
         if (debug && !execution.ended) {
-            Path root = project.getPath().toAbsolutePath().normalize();
-            var resolver = ProjectSourceResolver.create(root);
+            Path root = ProjectPathIdentityUtils.normalize(project.getPath());
+            var resolver = editorMain
+                ? ProjectSourceResolver.create(root, gradleProjectPath.resolve(data.getMainSource()),
+                    data.getMainClass())
+                : ProjectSourceResolver.create(root);
             if (execution.ended)
                 return;
             execution.attachment = project.getDebuggingManager().startSession(
                 new DebugEndpoint("127.0.0.1", port), resolver,
                 Services.BREAKPOINT_SERVICE,
                 breakpoint -> breakpoint.source() instanceof DebugSource.FileSource(Path file)
-                    && file.toAbsolutePath().normalize().startsWith(root),
+                    && ProjectPathIdentityUtils.normalize(file).startsWith(root),
                 event -> Railroad.LOGGER.debug("Gradle debugger event: {}", event),
-                Duration.ofMinutes(1), () -> execution.ended);
+                Duration.ofMinutes(editorMain ? 10 : 1), () -> execution.ended);
             execution.attachment.whenComplete((session, failure) -> {
                 if (failure != null && !execution.ended) {
                     finish(configuration, execution, failure);
                 }
             });
+        }
+    }
+
+    private static String loadRunMainClassInitScript() throws IOException {
+        try (var input = GradleRunConfigurationType.class
+            .getResourceAsStream("/assets/railroad/scripts/init-run-main-class.gradle")) {
+            if (input == null)
+                throw new IOException("Missing init-run-main-class.gradle");
+            return new String(input.readAllBytes(), StandardCharsets.UTF_8) + "\n";
         }
     }
 
@@ -358,6 +393,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         String escaped = task.replace("\\", "\\\\").replace("'", "\\'")
             .replace("\r", "\\r").replace("\n", "\\n");
         return """
+            if (gradle.parent != null) return
             def railroadTaskPath = '%s'
             gradle.projectsEvaluated {
                 def target = gradle.rootProject.tasks.findByPath(railroadTaskPath)
