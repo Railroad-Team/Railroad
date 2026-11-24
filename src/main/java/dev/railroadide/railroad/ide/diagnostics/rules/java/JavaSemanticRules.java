@@ -84,6 +84,13 @@ public final class JavaSemanticRules {
         SemanticDiagnostic.Severity.ERROR,
         "Cannot resolve call '%s'");
     /**
+     * Diagnostic rule with message template: {@code Call to '%s' is ambiguous between '%s' and '%s'}.
+     */
+    public static final JavaSemanticRule AMBIGUOUS_CALL = new JavaSemanticRule(
+        "SEM_AMBIGUOUS_CALL",
+        SemanticDiagnostic.Severity.ERROR,
+        "Call to '%s' is ambiguous between '%s' and '%s'");
+    /**
      * Diagnostic rule with message template: {@code Type '%s' is not accessible from here}.
      */
     public static final JavaSemanticRule INACCESSIBLE_TYPE = new JavaSemanticRule(

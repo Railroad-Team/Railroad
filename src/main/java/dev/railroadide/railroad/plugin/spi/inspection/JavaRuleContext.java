@@ -33,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -130,6 +131,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
     private volatile @Nullable Map<String, List<FieldDescriptor>> cachedDeclaredFieldsByOwner;
     private volatile @Nullable Map<String, List<MethodDescriptor>> cachedDeclaredMethodsByOwner;
     private volatile @Nullable Map<String, List<String>> cachedTypeParameterNamesByQualifiedName;
+    private final Map<String, List<MethodDescriptor>> binaryMethodsByOwner = new ConcurrentHashMap<>();
+    private final Map<String, List<MethodDescriptor>> inheritedMethodsByOwner = new ConcurrentHashMap<>();
     private boolean collectingDirectSuperTypes;
 
     /**
@@ -962,6 +965,16 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 || hasOperatorToken(parent, JavaTokenType.MINUS_MINUS);
 
         return false;
+    }
+
+    /**
+     * Reports whether a type and every supertype it inherits from are known to this context.
+     *
+     * @param qualifiedTypeName the qualified name of the type to inspect
+     * @return {@code true} if the whole hierarchy is known
+     */
+    public boolean isTypeHierarchyKnown(String qualifiedTypeName) {
+        return isTypeHierarchyKnown(qualifiedTypeName, new HashSet<>());
     }
 
     private boolean isTypeHierarchyKnown(String qualifiedTypeName, Set<String> visited) {
@@ -1948,9 +1961,18 @@ public final class JavaRuleContext implements LanguageRuleContext {
      * @return an immutable list of inherited method descriptors
      */
     public List<MethodDescriptor> inheritedMethodDescriptors(String ownerQualifiedTypeName) {
+        List<MethodDescriptor> cached = inheritedMethodsByOwner.get(ownerQualifiedTypeName);
+        if (cached != null)
+            return cached;
+
         List<MethodDescriptor> methods = new ArrayList<>();
         collectInheritedMethodDescriptors(ownerQualifiedTypeName, methods, new HashSet<>(), Map.of());
-        return List.copyOf(methods);
+        List<MethodDescriptor> inherited = List.copyOf(methods);
+        // Supertypes are incomplete while they are being collected.
+        if (!collectingDirectSuperTypes) {
+            inheritedMethodsByOwner.put(ownerQualifiedTypeName, inherited);
+        }
+        return inherited;
     }
 
     /**
@@ -3089,7 +3111,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
             .findFirst();
     }
 
-    private String packageNameOfType(String qualifiedTypeName) {
+    /**
+     * Finds the package that declares a type.
+     *
+     * @param qualifiedTypeName the qualified name of the type
+     * @return the declaring package, or an empty string for the unnamed package
+     */
+    public String packageNameOfType(String qualifiedTypeName) {
         Symbol localType = localTypeSymbol(qualifiedTypeName).orElse(null);
         if (localType != null)
             return currentPackageName();
@@ -3102,7 +3130,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return lastDot < 0 ? "" : qualifiedTypeName.substring(0, lastDot);
     }
 
-    private String topLevelTypeQualifiedName(String qualifiedTypeName) {
+    /**
+     * Finds the top-level type that encloses a type declared in the current file.
+     *
+     * @param qualifiedTypeName the qualified name of the type
+     * @return the enclosing top-level type, or the given name when the type is not declared in this file
+     */
+    public String topLevelTypeQualifiedName(String qualifiedTypeName) {
         Symbol localType = localTypeSymbol(qualifiedTypeName).orElse(null);
         if (localType != null && localType.declaration().isPresent())
             return topLevelEnclosingTypeSymbol(localType.declaration().orElseThrow())
@@ -3277,7 +3311,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 if (!JAVA_PARAMETER.equals(child.kind().id()))
                     continue;
                 SyntaxNode typeRef = directChild(child, JAVA_TYPE_REFERENCE);
-                Type parameterType = semanticTypeFromTypeReference(typeRef);
+                Type parameterType = withDeclaratorDimensions(semanticTypeFromTypeReference(typeRef), child);
                 if (hasTokenKind(child, JavaTokenType.ELLIPSIS)) {
                     parameterType = new JavaTypes.ArrayType(parameterType);
                 }
@@ -3319,6 +3353,19 @@ public final class JavaRuleContext implements LanguageRuleContext {
             sourceSymbolModifiers(localTypeSymbol(ownerQualifiedName).orElseThrow(), declaration),
             declaration,
             localTypeSymbol(ownerQualifiedName).orElse(null));
+    }
+
+    /**
+     * Applies the array dimensions written after a parameter's name, as in {@code String args[]}.
+     */
+    private static Type withDeclaratorDimensions(Type type, SyntaxNode parameter) {
+        Type result = type;
+        for (SyntaxNode child : parameter.children()) {
+            if (JavaSyntaxKinds.ARRAY_DIMENSION.id().equals(child.kind().id())) {
+                result = new JavaTypes.ArrayType(result);
+            }
+        }
+        return result;
     }
 
     private Type semanticTypeFromTypeReference(@Nullable SyntaxNode typeRef) {
@@ -3366,6 +3413,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
         Type resolved;
         if (Set.of("boolean", "byte", "short", "char", "int", "long", "float", "double").contains(rawType)) {
             resolved = new JavaTypes.PrimitiveType(rawType);
+        } else if (usageSite != null && isTypeParameterNameInScope(rawType, usageSite)) {
+            resolved = new TypeVariableType(rawType);
         } else if (isLikelyTypeVariableName(rawType)
             && (qualifiedName == null
                 || qualifiedName.equals(rawType) && !availableQualifiedTypeNames().contains(qualifiedName))) {
@@ -3555,7 +3604,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
         return null;
     }
 
-    private boolean isVariableArityMethod(MethodDescriptor method) {
+    /**
+     * Reports whether a method declares a variable arity parameter.
+     *
+     * @param method the method to inspect
+     * @return {@code true} if the last parameter is variable arity
+     */
+    public boolean isVariableArityMethod(MethodDescriptor method) {
         SyntaxNode declaration = method.declaration();
         if (declaration != null) {
             SyntaxNode parameters = directChild(declaration, JAVA_PARAMETER_LIST);
@@ -3801,7 +3856,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
         }
     }
 
-    private List<MethodDescriptor> methodDescriptorsForType(String ownerQualifiedTypeName) {
+    /**
+     * Looks up the methods a type declares, from this file, the project index or binary classes.
+     *
+     * @param ownerQualifiedTypeName the qualified name of the declaring type
+     * @return the known declared methods, or an empty list when the type is unknown
+     */
+    public List<MethodDescriptor> methodDescriptorsForType(String ownerQualifiedTypeName) {
         List<MethodDescriptor> source = declaredMethodsByOwner().get(ownerQualifiedTypeName);
         if (source != null)
             return source;
@@ -3811,6 +3872,10 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return indexedSource.stream()
                 .filter(method -> !"<init>".equals(method.name()))
                 .toList();
+
+        List<MethodDescriptor> cached = binaryMethodsByOwner.get(ownerQualifiedTypeName);
+        if (cached != null)
+            return cached;
 
         ClassStub stub = availableClassStubsByQualifiedName().get(ownerQualifiedTypeName);
         if (stub == null)
@@ -3834,7 +3899,9 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 null,
                 null));
         }
-        return List.copyOf(methods);
+        List<MethodDescriptor> binary = List.copyOf(methods);
+        binaryMethodsByOwner.put(ownerQualifiedTypeName, binary);
+        return binary;
     }
 
     private List<FieldDescriptor> fieldDescriptorsForType(String ownerQualifiedTypeName) {
@@ -3899,7 +3966,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 if (!JAVA_PARAMETER.equals(child.kind().id()))
                     continue;
                 SyntaxNode typeRef = directChild(child, JAVA_TYPE_REFERENCE);
-                Type parameterType = semanticTypeFromTypeReference(typeRef);
+                Type parameterType = withDeclaratorDimensions(semanticTypeFromTypeReference(typeRef), child);
                 if (hasTokenKind(child, JavaTokenType.ELLIPSIS)) {
                     parameterType = new JavaTypes.ArrayType(parameterType);
                 }

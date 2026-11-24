@@ -190,7 +190,7 @@ public class CoreInspectionRulesTest {
         assertRuleIds(new CoreNameResolutionInspection(), Set.of("SEM_UNRESOLVED_NAME", "SEM_AMBIGUOUS_NAME"));
         assertRuleIds(new CoreTypeResolutionInspection(), Set.of("SEM_UNRESOLVED_TYPE", "SEM_SELF_REFERENCING_VAR"));
         assertRuleIds(new CoreMemberResolutionInspection(), Set.of("SEM_UNRESOLVED_MEMBER"));
-        assertRuleIds(new CoreCallResolutionInspection(), Set.of("SEM_UNRESOLVED_CALL"));
+        assertRuleIds(new CoreCallResolutionInspection(), Set.of("SEM_UNRESOLVED_CALL", "SEM_AMBIGUOUS_CALL"));
         assertRuleIds(new CoreAccessibilityInspection(),
             Set.of("SEM_INACCESSIBLE_TYPE", "SEM_INACCESSIBLE_MEMBER", "SEM_INACCESSIBLE_CALL"));
         assertRuleIds(new CoreInheritanceInspection(), Set.of(

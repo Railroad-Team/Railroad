@@ -86,7 +86,8 @@ public final class JavaDiagnosticsProvider implements DiagnosticsProvider<TextEd
     }
 
     private static final Duration INSPECTION_BUDGET = Duration.ofSeconds(5);
-    private static final Set<String> RESOLUTION_CODES = Set.of("SEM_UNRESOLVED_CALL", "SEM_UNRESOLVED_IMPORT",
+    private static final Set<String> RESOLUTION_CODES = Set.of("SEM_AMBIGUOUS_CALL", "SEM_UNRESOLVED_CALL",
+        "SEM_UNRESOLVED_IMPORT",
         "SEM_UNRESOLVED_MEMBER", "SEM_UNRESOLVED_NAME", "SEM_UNRESOLVED_TYPE");
 
     @Override
