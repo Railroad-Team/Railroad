@@ -65,7 +65,8 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
      * javac's default {@code -Xmaxerrs}. A reference with this many errors may omit later ones.
      */
     private static final int JAVAC_ERROR_LIMIT = 100;
-    private static final Set<String> SYNTAX_CODES = Set.of("JAVA_ERROR_NODE", "JAVA_MISSING_TOKEN");
+    private static final Set<String> SYNTAX_CODES = Set.of("JAVA_ERROR_NODE", "JAVA_MISSING_TOKEN",
+        "JAVA_LEXICAL_ERROR");
     private static final Set<String> SELECTOR_CODES = Set.of("SEM_UNRESOLVED_MEMBER", "SEM_UNRESOLVED_CALL",
         "SEM_INACCESSIBLE_MEMBER", "SEM_INACCESSIBLE_CALL");
     private static final Set<String> FINAL_ASSIGNMENT = Set.of("SEM_ILLEGAL_FINAL_ASSIGNMENT");

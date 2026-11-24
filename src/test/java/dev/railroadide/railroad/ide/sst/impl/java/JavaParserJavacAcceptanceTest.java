@@ -103,11 +103,53 @@ public class JavaParserJavacAcceptanceTest {
                 }
             }
             """),
+        Map.entry("integer literals at the edge of their range", """
+            class A {
+                int min = -2147483648;
+                long minLong = -9223372036854775808L;
+                int hex = 0xFFFFFFFF;
+                long binary = 0b1111111111111111111111111111111111111111111111111111111111111111L;
+                int octal = 037777777777;
+            }
+            """),
         Map.entry("lambdas as binary operands", """
             class A { void m() { test((int x) -> {} + (int x) -> {}); boolean b = (int x) -> {} instanceof Object; } }
             """));
 
     private static final Map<String, String> REJECTED_CASES = Map.ofEntries(
+        Map.entry("non-ASCII digit in a number", """
+            class A { double d = 1.2\\u0663; }
+            """),
+        Map.entry("malformed number literals", """
+            class A { int a = 1_; int b = 0x; int c = 0b2; double d = 0x1.8; }
+            """),
+        Map.entry("int literal out of range", """
+            class A { int a = 2147483648; }
+            """),
+        Map.entry("long literal out of range", """
+            class A { long a = 9223372036854775809L; }
+            """),
+        Map.entry("binary int literal wider than 32 bits", """
+            class A { int a = 0b111111111111111111111111111111111; }
+            """),
+        Map.entry("unpaired supplementary identifier part", """
+            class A { int \\ud834\\udd7b; }
+            """),
+        Map.entry("unterminated string literal", """
+            class A { String s = "open; }
+            """),
+        Map.entry("illegal escape in a string", """
+            class A { String s = "\\q"; }
+            """),
+        Map.entry("empty character literal", """
+            class A { char c = ''; }
+            """),
+        Map.entry("illegal character", """
+            class A { int a = 1 # 2; }
+            """),
+        Map.entry("unterminated block comment", """
+            class A {} /* open
+            """),
         Map.entry("name without a declaration at the top level", """
             class A {}
             stray

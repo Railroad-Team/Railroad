@@ -7,6 +7,7 @@ import dev.railroadide.railroad.ide.sst.lexer.TokenFlag;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import org.jetbrains.annotations.Nullable;
 
+import java.math.BigInteger;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -30,6 +31,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
     private int pos;
     private int line;
     private int column;
+    private JavaTokenType previousSignificantType;
 
     private final Deque<Integer> modes = new ArrayDeque<>();
 
@@ -392,7 +394,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         if (isDecimalDigit(current))
             return readNumber();
 
-        consume();
+        consume(Character.charCount(Character.codePointAt(input, pos)));
         diagnostics.add(new LexError("Unexpected character: '" + current + "'", rawOffset(startOffset), startLine,
             startCol));
         return token(JavaTokenType.UNKNOWN, startOffset, startLine, startCol, TokenChannel.DEFAULT,
@@ -658,6 +660,9 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         if (problem == null && hasNext() && !doesCharacterTerminateNumber(peek(0))) {
             problem = "Unexpected character after number literal: '" + peek(0) + "'";
         }
+        if (problem == null && !fitsIntegerType(type, input.subSequence(startOffset, pos).toString())) {
+            problem = "Integer number too large";
+        }
 
         if (problem == null)
             return token(type, startOffset, startLine, startColumn);
@@ -719,6 +724,40 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                 yield false; // invalid escape like \x or \9
             }
         };
+    }
+
+    /**
+     * Checks an integer literal against the range of its type (JLS 3.10.1). A decimal literal may reach 2^31, or
+     * 2^63 with an {@code L} suffix, only as the operand of unary minus. The lexer cannot tell unary from binary minus,
+     * so it accepts that value after any minus sign.
+     */
+    private boolean fitsIntegerType(JavaTokenType type, String literal) {
+        int radix = switch (type) {
+            case NUMBER_INT_LITERAL -> 10;
+            case NUMBER_HEXADECIMAL_LITERAL -> 16;
+            case NUMBER_OCTAL_LITERAL -> 8;
+            case NUMBER_BINARY_LITERAL -> 2;
+            default -> 0;
+        };
+        if (radix == 0)
+            return true;
+
+        String digits = literal.replace("_", "");
+        boolean isLong = Character.toLowerCase(digits.charAt(digits.length() - 1)) == 'l';
+        if (isLong) {
+            digits = digits.substring(0, digits.length() - 1);
+        }
+        if (radix == 16 || radix == 2) {
+            digits = digits.substring(2);
+        }
+        int bits = isLong ? 64 : 32;
+        var value = new BigInteger(digits, radix);
+        if (radix != 10)
+            return value.bitLength() <= bits;
+
+        BigInteger limit = BigInteger.ONE.shiftLeft(bits - 1);
+        int comparison = value.compareTo(limit);
+        return comparison < 0 || comparison == 0 && previousSignificantType == JavaTokenType.MINUS;
     }
 
     private static boolean doesCharacterTerminateNumber(char character) {
@@ -857,6 +896,9 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         TokenChannel channel,
         Set<TokenFlag> flags
     ) {
+        if (channel == TokenChannel.DEFAULT) {
+            previousSignificantType = type;
+        }
         return new Token.SimpleToken<>(type, slice(startOff, pos), rawOffset(startOff), rawOffset(pos), startLine,
             startCol, channel, flags);
     }

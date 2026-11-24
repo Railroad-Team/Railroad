@@ -3463,7 +3463,10 @@ public final class JavaGreenParser {
         ActivityCheckpoint.poll(activityCheck);
 
         Token<JavaTokenType> token = tokens.get(position++);
-        return greenToken(kindForToken(token), token.lexeme());
+        GreenElement element = greenToken(kindForToken(token), token.lexeme());
+        return token.flags().contains(TokenFlag.ERROR)
+            ? greenNode(JavaSyntaxKinds.LEXICAL_ERROR, new ArrayList<>(List.of(element)))
+            : element;
     }
 
     private SyntaxKind kindForToken(Token<JavaTokenType> token) {

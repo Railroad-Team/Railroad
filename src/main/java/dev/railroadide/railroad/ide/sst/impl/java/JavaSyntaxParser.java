@@ -32,6 +32,7 @@ public final class JavaSyntaxParser {
     private static final String MISSING_TOKEN_KIND_ID = SyntaxKind.MISSING_TOKEN.id();
     private static final String MISSING_TOKEN_PREFIX = "JAVA_MISSING_";
     private static final String ERROR_NODE_KIND_ID = JavaSyntaxKinds.ERROR.id();
+    private static final String LEXICAL_ERROR_KIND_ID = JavaSyntaxKinds.LEXICAL_ERROR.id();
 
     private JavaSyntaxParser() {
     }
@@ -842,6 +843,13 @@ public final class JavaSyntaxParser {
                     "Recovered syntax error node",
                     node.start(),
                     node.end()));
+            } else if (LEXICAL_ERROR_KIND_ID.equals(kindId)) {
+                diagnostics.add(new SyntaxDiagnostic(
+                    SyntaxDiagnostic.Severity.ERROR,
+                    "JAVA_LEXICAL_ERROR",
+                    lexicalErrorMessage(node),
+                    node.start(),
+                    node.end()));
             } else if (node instanceof SyntaxToken && isMissingTokenKind(kindId)) {
                 diagnostics.add(new SyntaxDiagnostic(
                     SyntaxDiagnostic.Severity.ERROR,
@@ -858,6 +866,17 @@ public final class JavaSyntaxParser {
         }
 
         return List.copyOf(diagnostics);
+    }
+
+    private static String lexicalErrorMessage(SyntaxNode node) {
+        String tokenKind = node.children().isEmpty() ? "" : node.children().getFirst().kind().id();
+        if (tokenKind.contains("NUMBER"))
+            return "Malformed number literal";
+        if (tokenKind.contains("COMMENT"))
+            return "Unterminated comment";
+        if (tokenKind.contains("LITERAL"))
+            return "Malformed or unterminated literal";
+        return "Illegal character";
     }
 
     private static boolean isMissingTokenKind(String kindId) {

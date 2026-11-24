@@ -468,6 +468,11 @@ public final class JavaSyntaxKinds {
      * Syntax kind for a parser error node retaining unrecognized source.
      */
     public static final SyntaxKind ERROR = SyntaxKind.of("JAVA_ERROR");
+    /**
+     * Syntax kind for a node wrapping a token the lexer rejected, such as a malformed number or an unterminated
+     * literal.
+     */
+    public static final SyntaxKind LEXICAL_ERROR = SyntaxKind.of("JAVA_LEXICAL_ERROR");
 
     private static final Map<JavaTokenType, SyntaxKind> TOKEN_KINDS = createTokenKinds();
     private static final Map<JavaTokenType, SyntaxKind> MISSING_TOKEN_KINDS = createMissingTokenKinds();
