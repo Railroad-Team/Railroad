@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import dev.railroadide.railroad.debug.breakpoint.BreakpointService;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -257,6 +259,62 @@ public class TextEditorPaneSnapshotTest {
             }
         });
         assertEquals("loaded content", Files.readString(file));
+    }
+
+    @Test
+    public void savingAndClosingAnUnchangedCrlfFileLeavesItByteIdentical() throws Exception {
+        Path file = tempDirectory.resolve("Crlf.java");
+        byte[] original = "class Crlf {\r\n    int value;\r\n}\r\n".getBytes(StandardCharsets.UTF_8);
+        Files.write(file, original);
+        onFxThread(() -> {
+            var editor = new TextEditorPane(DocumentId.create(), file, "java");
+            try {
+                assertEquals("class Crlf {\n    int value;\n}\n", editor.getText());
+                assertFalse(editor.dirty());
+                assertTrue(editor.saveNow());
+                assertFalse(editor.dirty());
+            } finally {
+                editor.close();
+                editor.dispose();
+            }
+        });
+        assertArrayEquals(original, Files.readAllBytes(file));
+    }
+
+    @Test
+    public void savingAnEditedCrlfFileKeepsItsCrlfLineSeparators() throws Exception {
+        Path file = tempDirectory.resolve("CrlfEdited.java");
+        Files.writeString(file, "class CrlfEdited {\r\n}\r\n");
+        onFxThread(() -> {
+            var editor = new TextEditorPane(DocumentId.create(), file, "java");
+            try {
+                editor.insertText(editor.getText().indexOf('}'), "    int added;\n");
+                assertTrue(editor.dirty());
+                assertTrue(editor.saveNow());
+                assertFalse(editor.dirty());
+            } finally {
+                editor.close();
+                editor.dispose();
+            }
+        });
+        assertEquals("class CrlfEdited {\r\n    int added;\r\n}\r\n", Files.readString(file));
+    }
+
+    @Test
+    public void savingAnEditedLfFileKeepsItsLfLineSeparators() throws Exception {
+        Path file = tempDirectory.resolve("LfEdited.java");
+        Files.writeString(file, "class LfEdited {\n}\n");
+        onFxThread(() -> {
+            var editor = new TextEditorPane(DocumentId.create(), file, "java");
+            try {
+                editor.insertText(editor.getText().indexOf('}'), "    int added;\n");
+                assertTrue(editor.saveNow());
+            } finally {
+                editor.close();
+                editor.dispose();
+            }
+        });
+        assertEquals("class LfEdited {\n    int added;\n}\n", Files.readString(file));
     }
 
     @Test

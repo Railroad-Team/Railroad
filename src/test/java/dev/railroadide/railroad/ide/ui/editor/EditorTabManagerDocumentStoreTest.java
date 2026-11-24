@@ -773,6 +773,40 @@ public class EditorTabManagerDocumentStoreTest {
         });
     }
 
+    @Test
+    public void projectCloseLeavesUnchangedCrlfFileByteIdentical() throws Exception {
+        Path file = tempDirectory.resolve("CrlfClose.java");
+        byte[] original = "class CrlfClose {\r\n    int value;\r\n}\r\n".getBytes(StandardCharsets.UTF_8);
+        Files.write(file, original);
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            TextEditorPane editor = tab.view().activeEditor();
+            assertFalse(tab.dirty());
+            assertTrue(Services.EDITOR_TAB_MANAGER.prepareProjectClose());
+            assertTrue(editor.isEditorClosed());
+            tab = null;
+            return null;
+        });
+        assertArrayEquals(original, Files.readAllBytes(file));
+    }
+
+    @Test
+    public void projectCloseSavesEditedCrlfFileWithCrlfLineSeparators() throws Exception {
+        Path file = tempDirectory.resolve("CrlfEditedClose.java");
+        Files.writeString(file, "class CrlfEditedClose {\r\n}\r\n");
+        onFxThread(() -> {
+            tab = openInTabPane(file);
+            TextEditorPane editor = tab.view().activeEditor();
+            disableDebouncedAutosave(editor);
+            editor.insertText(editor.getText().indexOf('}'), "    int added;\n");
+            assertTrue(tab.dirty());
+            assertTrue(Services.EDITOR_TAB_MANAGER.prepareProjectClose());
+            tab = null;
+            return null;
+        });
+        assertEquals("class CrlfEditedClose {\r\n    int added;\r\n}\r\n", Files.readString(file));
+    }
+
     @BeforeEach
     public void openProject() throws Exception {
         onFxThread(() -> {

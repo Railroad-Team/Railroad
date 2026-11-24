@@ -1890,6 +1890,7 @@ public class EditorTabManager {
 
     /**
      * Closes editors through the normal save/discard policy before releasing the project store.
+     * Only dirty editors are saved, so closing never rewrites an unchanged file.
      * A failed save keeps its tab open and prevents project closure.
      *
      * @return whether all editors completed closure
@@ -1897,7 +1898,7 @@ public class EditorTabManager {
     public boolean prepareProjectClose() {
         List<EditorTab> closing = List.copyOf(openTabs.values());
         for (EditorTab editorTab : closing) {
-            if (!discardApprovedTabs.contains(editorTab) && !save(editorTab)) {
+            if (!discardApprovedTabs.contains(editorTab) && editorTab.dirty() && !save(editorTab)) {
                 TextEditorPane editor = editorTab.view().activeEditor();
                 if (editor == null || !editor.hasPendingExternalChange()) {
                     showFailedCloseDialog(editorTab);

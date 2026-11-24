@@ -84,6 +84,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     private final JavaImportFolding importFolding;
 
     private final AtomicReference<String> lastSavedText = new AtomicReference<>("");
+    private volatile String lineSeparator = "\n";
     private final AtomicReference<TextDocumentSnapshot> pendingSnapshot = new AtomicReference<>();
 
     private final ExecutorService watcherExecutor = Executors.newSingleThreadExecutor(
@@ -600,7 +601,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         pendingSnapshot.set(snapshot);
         setSaveState(backingReadFailed
             ? EditorSaveState.ERROR
-            : snapshot.version().equals(backingVersion) && snapshot.text().equals(lastSavedText.get())
+            : snapshot.version().equals(backingVersion) && matchesLastSaved(snapshot.text())
                 ? EditorSaveState.CLEAN
                 : EditorSaveState.DIRTY);
         if (stale && !backingReadFailed) {
@@ -730,18 +731,18 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             if (Files.exists(filePath)) {
                 String content = Files.readString(filePath);
                 replaceText(content);
-                lastSavedText.set(content);
+                rememberSavedDiskText(content);
                 loaded = true;
             } else {
                 replaceText("");
-                lastSavedText.set("");
+                rememberSavedDiskText("");
             }
 
             setSaveState(EditorSaveState.CLEAN);
         } catch (IOException exception) {
             Railroad.LOGGER.error("Failed to read file {}", filePath, exception);
             replaceText("");
-            lastSavedText.set("");
+            rememberSavedDiskText("");
             setSaveState(EditorSaveState.CLEAN);
         }
         return loaded;
@@ -984,8 +985,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             return false;
         }
 
-        String lastSaved = lastSavedText.get();
-        if (snapshot.equals(lastSaved)) {
+        if (matchesLastSaved(snapshot)) {
             savedVersion.set(snapshotVersion);
             acknowledgeSavedSnapshot(savedSnapshot);
             updateAfterSave(snapshotVersion, EditorSaveState.CLEAN);
@@ -999,8 +999,9 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 Files.createDirectories(parent);
             }
 
-            Files.writeString(filePath, snapshot, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            lastSavedText.set(snapshot);
+            String diskText = toDiskText(snapshot);
+            Files.writeString(filePath, diskText, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            lastSavedText.set(diskText);
             savedVersion.set(snapshotVersion);
             acknowledgeSavedSnapshot(savedSnapshot);
             updateAfterSave(snapshotVersion, EditorSaveState.CLEAN);
@@ -1160,6 +1161,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 new DocumentVersion(snapshotVersion), languageId, DocumentOrigin.original(uri), snapshot,
                 StandardCharsets.UTF_8);
             updateForVersion(snapshotVersion, EditorSaveState.SAVING);
+            String diskText = toDiskText(snapshot);
             try {
                 Path parent = normalizedPath.getParent();
                 if (parent != null) {
@@ -1167,7 +1169,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 }
                 Files.writeString(
                     normalizedPath,
-                    snapshot,
+                    diskText,
                     StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING);
 
@@ -1187,7 +1189,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             pendingExternalText = null;
             backingFileMissing = false;
             discardChangesOnClose = false;
-            lastSavedText.set(snapshot);
+            lastSavedText.set(diskText);
             pendingSnapshot.set(savedSnapshot);
             savedVersion.set(snapshotVersion);
             afterSaveAs("update save state", () -> updateAfterSave(snapshotVersion, EditorSaveState.CLEAN));
@@ -1371,9 +1373,11 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             closeExternalChangeDialog();
             backingFileMissing = false;
             String currentText = getText();
+            String disk = null;
             boolean contentDirty;
             try {
-                contentDirty = !currentText.equals(Files.readString(normalizedPath));
+                disk = Files.readString(normalizedPath);
+                contentDirty = !sameText(currentText, disk);
             } catch (IOException exception) {
                 contentDirty = true;
                 Railroad.LOGGER.warn("Failed to verify renamed editor file {}", normalizedPath, exception);
@@ -1382,7 +1386,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 editVersion.incrementAndGet();
             }
             if (!contentDirty) {
-                lastSavedText.set(currentText);
+                rememberSavedDiskText(disk);
                 savedVersion.set(editVersion.get());
             }
             setSaveState(contentDirty ? EditorSaveState.DIRTY : EditorSaveState.CLEAN);
@@ -1664,7 +1668,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                         editVersion.set(reconciledVersion.value());
                         pendingSnapshot.set(reconciledOverlay);
                     }
-                    lastSavedText.set(disk);
+                    rememberSavedDiskText(disk);
                     pendingExternalText = null;
                     closeExternalChangeDialog();
                     saveNow();
@@ -1736,7 +1740,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         if (cleanReload && store != null) {
             store.publishBacking(snapshot);
         }
-        lastSavedText.set(disk);
+        rememberSavedDiskText(disk);
         pendingSnapshot.set(snapshot);
         pendingExternalText = null;
         backingFileMissing = false;
@@ -1754,6 +1758,40 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
 
     private boolean hasUnsavedChanges() {
         return editVersion.get() != savedVersion.get();
+    }
+
+    private void rememberSavedDiskText(String disk) {
+        lastSavedText.set(disk);
+        lineSeparator = detectLineSeparator(disk);
+    }
+
+    // RichTextFX stores every line terminator as '\n', so editor text never matches CRLF disk text exactly.
+    private boolean matchesLastSaved(String editorText) {
+        return sameText(editorText, lastSavedText.get());
+    }
+
+    private String toDiskText(String editorText) {
+        String separator = lineSeparator;
+        return separator.equals("\n") ? editorText : normalizeLineSeparators(editorText).replace("\n", separator);
+    }
+
+    private static boolean sameText(String first, String second) {
+        return first.equals(second) || normalizeLineSeparators(first).equals(normalizeLineSeparators(second));
+    }
+
+    private static String normalizeLineSeparators(String text) {
+        return text.indexOf('\r') < 0 ? text : text.replace("\r\n", "\n").replace('\r', '\n');
+    }
+
+    private static String detectLineSeparator(String text) {
+        for (int index = 0; index < text.length(); index++) {
+            char character = text.charAt(index);
+            if (character == '\n')
+                return "\n";
+            if (character == '\r')
+                return index + 1 < text.length() && text.charAt(index + 1) == '\n' ? "\r\n" : "\r";
+        }
+        return "\n";
     }
 
     private void markCurrentVersionSaved() {
