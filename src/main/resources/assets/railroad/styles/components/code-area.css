@@ -60,6 +60,12 @@
     -fx-alignment: center-left;
 }
 
+.code-area .paragraph-box > .lineno,
+.code-area .ide-code-editor-grid {
+    -fx-border-color: transparent -color-border-subtle transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+}
+
 .code-area .editor-line-number {
     -fx-text-fill: -color-fg-subtle;
     -fx-font-weight: normal;
