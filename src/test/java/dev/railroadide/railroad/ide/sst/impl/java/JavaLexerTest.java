@@ -181,6 +181,24 @@ public class JavaLexerTest {
         assertEquals(source, JavaParserTestSupport.syntaxText(JavaSyntaxParser.parse(source)));
     }
 
+    @Test
+    public void textBlockEscapesKeepTheBlockOpenUntilItsDelimiter() {
+        for (String block : List.of("\"\"\"\n    joined \\\n    line\n    \"\"\"",
+            "\"\"\"\r\n    joined \\\r\n    line\"\"\"",
+            "\"\"\"\n    tab\\t\"\"\"", "\"\"\"\n    quote\\\"\"\"\"")) {
+            try (var lexer = new JavaLexer("x = " + block + "; y")) {
+                List<Token<JavaTokenType>> tokens = JavaParserTestSupport.lexAll(lexer).stream()
+                    .filter(token -> token.channel() == TokenChannel.DEFAULT)
+                    .toList();
+
+                assertEquals(JavaTokenType.TEXT_BLOCK_LITERAL, tokens.get(2).type(), block);
+                assertEquals(block, tokens.get(2).lexeme(), block);
+                assertEquals(JavaTokenType.SEMICOLON, tokens.get(3).type(), block);
+                assertEquals(List.of(), lexer.diagnostics(), block);
+            }
+        }
+    }
+
     private static List<Token<JavaTokenType>> significant(String source) {
         return JavaParserTestSupport.lexAll(source).stream()
             .filter(token -> token.channel() == TokenChannel.DEFAULT)

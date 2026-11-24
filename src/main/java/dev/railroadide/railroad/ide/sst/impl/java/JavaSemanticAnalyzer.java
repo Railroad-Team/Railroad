@@ -781,8 +781,11 @@ public final class JavaSemanticAnalyzer {
                 }
             }
 
-            List<MemberCandidate> fieldCandidates = findFieldCandidates(
-                lookup.ownerQualifiedName(), fieldName, lookup.staticAccess());
+            List<MemberCandidate> fieldCandidates = new ArrayList<>(findFieldCandidates(
+                lookup.ownerQualifiedName(), fieldName, lookup.staticAccess()));
+            if (!lookup.staticAccess()) {
+                fieldCandidates.addAll(findFieldCandidates(lookup.ownerQualifiedName(), fieldName, true));
+            }
             MemberCandidate chosen = chooseFieldCandidate(fieldCandidates);
             if (chosen == null)
                 return;
@@ -1502,6 +1505,9 @@ public final class JavaSemanticAnalyzer {
             if (candidates.isEmpty() && staticAccess) {
                 // Some project and binary symbol sources still lose static metadata.
                 candidates = findMethodCandidates(ownerQualifiedName, callableName, false);
+            } else if (!staticAccess) {
+                candidates = new ArrayList<>(candidates);
+                candidates.addAll(findMethodCandidates(ownerQualifiedName, callableName, true));
             }
             return candidates;
         }
@@ -1547,8 +1553,9 @@ public final class JavaSemanticAnalyzer {
         }
 
         private void classifyImports() {
-            for (ImportSpec importSpec : imports) {
+            for (ImportSpec declared : imports) {
                 context.poll();
+                ImportSpec importSpec = declared.isStatic() ? withBinaryOwnerName(declared) : declared;
                 if (importSpec.isWildcard()) {
                     if (importSpec.isStatic()) {
                         onDemandStaticImports.add(importSpec);
@@ -1566,6 +1573,18 @@ public final class JavaSemanticAnalyzer {
                     singleTypeImportsBySimpleName.putIfAbsent(importSpec.importedName(), importSpec);
                 }
             }
+        }
+
+        /**
+         * Members are indexed under the binary {@code $} name of their owner, while a static import may spell a
+         * nested owner with dots.
+         */
+        private ImportSpec withBinaryOwnerName(ImportSpec importSpec) {
+            String owner = resolvableQualifiedTypeName(importSpec.ownerName());
+            if (owner == null || owner.equals(importSpec.ownerName()))
+                return importSpec;
+            return new ImportSpec(importSpec.declarationNode(), importSpec.targetNode(), importSpec.qualifiedTarget(),
+                owner, importSpec.importedName(), true, importSpec.isWildcard());
         }
 
         private void indexLocalStaticMembers() {
@@ -1612,11 +1631,9 @@ public final class JavaSemanticAnalyzer {
                 candidates.add(typeSymbolForQualifiedName(simpleName, importedType, singleImport.targetNode()));
             }
 
-            if (context.currentPackageName != null && !context.currentPackageName.isBlank()) {
-                String packageType = context.currentPackageName + "." + simpleName;
-                if (isResolvableType(packageType)) {
-                    candidates.add(typeSymbolForQualifiedName(simpleName, packageType, referenceNode));
-                }
+            String packageType = currentPackageTypeName(context.currentPackageName, simpleName);
+            if (isResolvableType(packageType)) {
+                candidates.add(typeSymbolForQualifiedName(simpleName, packageType, referenceNode));
             }
 
             String javaLangType = "java.lang." + simpleName;
@@ -1631,8 +1648,8 @@ public final class JavaSemanticAnalyzer {
 
             for (ImportSpec onDemandImport : onDemandTypeImports) {
                 context.poll();
-                String qualified = onDemandImport.ownerName() + "." + simpleName;
-                if (isResolvableType(qualified)) {
+                String qualified = resolvableQualifiedTypeName(onDemandImport.ownerName() + "." + simpleName);
+                if (qualified != null) {
                     candidates.add(typeSymbolForQualifiedName(simpleName, qualified, onDemandImport.targetNode()));
                 }
             }
@@ -3539,18 +3556,16 @@ public final class JavaSemanticAnalyzer {
             }
             if (singleTypeImportsBySimpleName.containsKey(simpleName))
                 return singleTypeImportsBySimpleName.get(simpleName).qualifiedTarget();
-            if (context.currentPackageName != null && !context.currentPackageName.isBlank()) {
-                String inCurrentPackage = context.currentPackageName + "." + simpleName;
-                if (isResolvableType(inCurrentPackage))
-                    return inCurrentPackage;
-            }
+            String inCurrentPackage = currentPackageTypeName(context.currentPackageName, simpleName);
+            if (isResolvableType(inCurrentPackage))
+                return inCurrentPackage;
             String javaLangType = "java.lang." + simpleName;
             if (isResolvableType(javaLangType))
                 return javaLangType;
             for (ImportSpec onDemandImport : onDemandTypeImports) {
                 context.poll();
-                String imported = onDemandImport.ownerName() + "." + simpleName;
-                if (isResolvableType(imported))
+                String imported = resolvableQualifiedTypeName(onDemandImport.ownerName() + "." + simpleName);
+                if (imported != null)
                     return imported;
             }
             String projectQualifiedType = uniqueProjectQualifiedTypeName(simpleName);
@@ -3568,7 +3583,7 @@ public final class JavaSemanticAnalyzer {
 
             try {
                 List<String> directSupers = directSuperTypesFromCurrentFile(qualifiedTypeName);
-                if (directSupers.isEmpty()) {
+                if (directSupers == null) {
                     directSupers = directSuperTypesFromIndexedSource(qualifiedTypeName);
                 }
                 if (directSupers.isEmpty()) {
@@ -3591,7 +3606,12 @@ public final class JavaSemanticAnalyzer {
             return names.size() == 1 ? names.getFirst() : null;
         }
 
-        private List<String> directSuperTypesFromCurrentFile(String qualifiedTypeName) {
+        /**
+         * Returns the direct supertypes a type in the current file declares, or {@code null} when the current file
+         * does not declare the type. The current file is authoritative for its own types, including those without an
+         * explicit supertype.
+         */
+        private @Nullable List<String> directSuperTypesFromCurrentFile(String qualifiedTypeName) {
             for (Symbol symbol : context.allTypeSymbols()) {
                 context.poll();
                 if (!Objects.equals(symbol.qualifiedName().orElse(null), qualifiedTypeName))
@@ -3623,7 +3643,7 @@ public final class JavaSemanticAnalyzer {
                 }
                 return List.copyOf(directSupers);
             }
-            return List.of();
+            return null;
         }
 
         private List<String> directSuperTypesFromIndexedSource(String qualifiedTypeName) {
@@ -4756,8 +4776,7 @@ public final class JavaSemanticAnalyzer {
                 return text;
 
             String simpleName = simpleTypeName(text);
-            String memberType = JavaMemberTypeScope.resolve(simpleName, context.enclosingTypeSymbol(usageSite),
-                this::outerTypeSymbol, this::resolvableQualifiedTypeName, this::directSuperTypeNames);
+            String memberType = resolveScopedTypeName(simpleName, usageSite);
             if (memberType != null)
                 return memberType;
             for (String localQualifiedTypeName : localQualifiedTypeNames) {
@@ -4771,12 +4790,10 @@ public final class JavaSemanticAnalyzer {
                 if (imported != null)
                     return imported;
             }
-            if (context.currentPackageName != null && !context.currentPackageName.isBlank()) {
-                String inCurrentPackage = context.currentPackageName + "." + simpleName;
-                String currentPackageType = resolvableQualifiedTypeName(inCurrentPackage);
-                if (currentPackageType != null)
-                    return currentPackageType;
-            }
+            String currentPackageType = resolvableQualifiedTypeName(
+                currentPackageTypeName(context.currentPackageName, simpleName));
+            if (currentPackageType != null)
+                return currentPackageType;
             String javaLangType = "java.lang." + simpleName;
             String javaLangResolved = resolvableQualifiedTypeName(javaLangType);
             if (javaLangResolved != null)
@@ -4810,6 +4827,39 @@ public final class JavaSemanticAnalyzer {
                 dot = candidate.lastIndexOf('.', dot - 1);
             }
             return null;
+        }
+
+        /**
+         * Resolves a simple type name against the local classes and member types in scope at a usage site. A local
+         * class shadows the member types of every class enclosing its block (JLS 6.4.1).
+         */
+        private @Nullable String resolveScopedTypeName(String simpleName, @Nullable SyntaxNode usageSite) {
+            Symbol innermost = context.enclosingTypeSymbol(usageSite);
+            Symbol local = usageSite == null ? null : localTypeInScope(simpleName, usageSite);
+            if (local == null)
+                return JavaMemberTypeScope.resolve(simpleName, innermost, this::outerTypeSymbol,
+                    this::resolvableQualifiedTypeName, this::directSuperTypeNames);
+
+            String blockOwner = local.declaration().map(context::enclosingTypeSymbol)
+                .flatMap(Symbol::qualifiedName).orElse(null);
+            Function<Symbol, @Nullable Symbol> outerInsideBlock = type -> {
+                Symbol outer = outerTypeSymbol(type);
+                return outer == null || outer.qualifiedName().orElse("").equals(blockOwner) ? null : outer;
+            };
+            Symbol start = innermost == null || innermost.qualifiedName().orElse("").equals(blockOwner)
+                ? null
+                : innermost;
+            String memberType = JavaMemberTypeScope.resolve(simpleName, start, outerInsideBlock,
+                this::resolvableQualifiedTypeName, this::directSuperTypeNames);
+            return memberType != null ? memberType : local.qualifiedName().orElse(null);
+        }
+
+        private @Nullable Symbol localTypeInScope(String simpleName, SyntaxNode usageSite) {
+            return context.scopeFor(usageSite).lookupAll(simpleName).stream()
+                .filter(symbol -> isTypeSymbol(symbol.kind())
+                    && symbol.qualifiedName().map(name -> name.contains("$local$")).orElse(false))
+                .findFirst()
+                .orElse(null);
         }
 
         private @Nullable String resolveNestedQualifiedTypeName(String text, SyntaxNode usageSite) {
@@ -5216,8 +5266,8 @@ public final class JavaSemanticAnalyzer {
                 return new JavaTypes.TypeVariableType(text);
 
             String qualified = resolveQualifiedTypeName(text, usageSite);
-            if (isLikelyTypeVariableName(text)
-                && (qualified == null || qualified.isBlank() || Objects.equals(qualified, text)))
+            if (isLikelyTypeVariableName(text) && (qualified == null || qualified.isBlank()
+                || Objects.equals(qualified, text) && !isResolvableType(text)))
                 return new JavaTypes.TypeVariableType(text);
             String declaredName = qualified == null || qualified.isBlank() ? text : qualified;
             if (declaredName.isBlank())
@@ -7116,8 +7166,8 @@ public final class JavaSemanticAnalyzer {
             if (usageSite != null && nameResolver.lexicalTypeParameter(text, usageSite) != null)
                 return new JavaTypes.TypeVariableType(text);
             String qualified = resolveQualifiedTypeName(text, usageSite);
-            if (isLikelyTypeVariableName(text)
-                && (qualified == null || qualified.isBlank() || Objects.equals(qualified, text)))
+            if (isLikelyTypeVariableName(text) && (qualified == null || qualified.isBlank()
+                || Objects.equals(qualified, text) && !isResolvableType(text)))
                 return new JavaTypes.TypeVariableType(text);
             String declaredName = qualified == null || qualified.isBlank() ? simpleTypeName(text) : qualified;
             return declaredName.isBlank() ? UNKNOWN_TYPE : new JavaTypes.DeclaredType(declaredName, List.of());
@@ -7249,8 +7299,7 @@ public final class JavaSemanticAnalyzer {
 
             String simpleName = simpleTypeName(text);
             if (usageSite != null) {
-                String memberType = JavaMemberTypeScope.resolve(simpleName, context.enclosingTypeSymbol(usageSite),
-                    this::outerTypeSymbol, this::resolvableQualifiedTypeName, nameResolver::directSuperTypeNames);
+                String memberType = nameResolver.resolveScopedTypeName(simpleName, usageSite);
                 if (memberType != null)
                     return memberType;
             }
@@ -7265,12 +7314,10 @@ public final class JavaSemanticAnalyzer {
                 if (imported != null)
                     return imported;
             }
-            if (context.currentPackageName != null && !context.currentPackageName.isBlank()) {
-                String inCurrentPackage = context.currentPackageName + "." + simpleName;
-                String currentPackageType = resolvableQualifiedTypeName(inCurrentPackage);
-                if (currentPackageType != null)
-                    return currentPackageType;
-            }
+            String currentPackageType = resolvableQualifiedTypeName(
+                currentPackageTypeName(context.currentPackageName, simpleName));
+            if (currentPackageType != null)
+                return currentPackageType;
             String javaLangType = "java.lang." + simpleName;
             String javaLangResolved = resolvableQualifiedTypeName(javaLangType);
             if (javaLangResolved != null)
@@ -7572,6 +7619,14 @@ public final class JavaSemanticAnalyzer {
         String leftRaw = eraseTypeArguments(left);
         String rightRaw = eraseTypeArguments(right);
         return leftRaw.equals(rightRaw) || simpleTypeName(leftRaw).equals(simpleTypeName(rightRaw));
+    }
+
+    /**
+     * Returns the qualified name a simple type name has in the current package, which is the simple name itself in the
+     * unnamed package.
+     */
+    private static String currentPackageTypeName(@Nullable String packageName, String simpleName) {
+        return packageName == null || packageName.isBlank() ? simpleName : packageName + "." + simpleName;
     }
 
     private static boolean isLikelyTypeVariableName(String displayName) {

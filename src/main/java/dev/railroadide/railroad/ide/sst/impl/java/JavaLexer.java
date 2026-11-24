@@ -250,36 +250,31 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
     private Token<JavaTokenType> readTextBlock() {
         int startOffset = pos, startLine = line, startCol = column;
-        boolean escapeNext = false;
 
         consume(3);
         while (hasNext()) {
             char current = charAt(pos);
-            if (current == '"' && peek(1) == '"' && peek(2) == '"' && !escapeNext) {
+            if (current == '"' && peek(1) == '"' && peek(2) == '"') {
                 consume(3);
                 popMode();
                 return token(JavaTokenType.TEXT_BLOCK_LITERAL, startOffset, startLine, startCol);
             }
 
-            if (current == '\\' && !escapeNext) {
-                escapeNext = true;
+            if (current != '\\') {
                 consume();
-                if (!consumeEscapeCode()) {
-                    popMode();
-                    return unterminated(startOffset, startLine, startCol, "Invalid escape sequence in text block");
-                }
-
-                // Escape handling is complete for this iteration.
-                escapeNext = false;
-            } else {
-                escapeNext = false;
+                continue;
             }
-
-            if (current == '\n' || current == '\r') {
-                newline();
+            consume();
+            char escaped = hasNext() ? charAt(pos) : '\0';
+            if (escaped == '\r' || escaped == '\n') {
+                // A backslash before a line terminator joins the lines (JLS 3.10.7).
                 consume();
-            } else {
-                consume();
+                if (escaped == '\r' && hasNext() && charAt(pos) == '\n') {
+                    consume();
+                }
+            } else if (!consumeEscapeCode()) {
+                popMode();
+                return unterminated(startOffset, startLine, startCol, "Invalid escape sequence in text block");
             }
         }
 

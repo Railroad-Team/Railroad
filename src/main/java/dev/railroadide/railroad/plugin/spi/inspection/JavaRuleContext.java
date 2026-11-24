@@ -4540,22 +4540,34 @@ public final class JavaRuleContext implements LanguageRuleContext {
          * @return {@code true} if the name identifies a known type
          */
         public boolean isResolvableType(String qualifiedTypeName) {
+            return knownTypeName(qualifiedTypeName) != null;
+        }
+
+        private @Nullable String knownTypeName(String qualifiedTypeName) {
             if (qualifiedTypeName == null || qualifiedTypeName.isBlank())
-                return false;
-            if (localQualifiedTypeNames.contains(qualifiedTypeName))
-                return true;
-            if (availableQualifiedTypeNames.contains(qualifiedTypeName))
-                return true;
+                return null;
+            if (localQualifiedTypeNames.contains(qualifiedTypeName)
+                || availableQualifiedTypeNames.contains(qualifiedTypeName))
+                return qualifiedTypeName;
 
             String binaryName = qualifiedTypeName;
             int dot = binaryName.lastIndexOf('.');
             while (dot > 0) {
                 binaryName = binaryName.substring(0, dot) + "$" + binaryName.substring(dot + 1);
                 if (availableQualifiedTypeNames.contains(binaryName))
-                    return true;
+                    return binaryName;
                 dot = binaryName.lastIndexOf('.', dot - 1);
             }
-            return false;
+            return null;
+        }
+
+        /**
+         * Returns the name under which the members of an imported type are indexed, which is the binary {@code $}
+         * name for a nested type spelled with dots.
+         */
+        private String memberOwnerName(String ownerQualifiedName) {
+            String known = knownTypeName(ownerQualifiedName);
+            return known == null ? ownerQualifiedName : known;
         }
 
         /**
@@ -4796,7 +4808,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return count;
         }
 
-        private boolean hasResolvableStaticField(String ownerQualifiedName, String fieldName) {
+        private boolean hasResolvableStaticField(String importedOwnerName, String fieldName) {
+            String ownerQualifiedName = memberOwnerName(importedOwnerName);
             Set<String> localFields = localStaticFieldsByOwner.get(ownerQualifiedName);
             if (localFields != null && localFields.contains(fieldName))
                 return true;
@@ -4808,10 +4821,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
         }
 
         private boolean hasResolvableStaticMethod(
-            String ownerQualifiedName,
+            String importedOwnerName,
             String methodName,
             int argumentCountOrUnknown
         ) {
+            String ownerQualifiedName = memberOwnerName(importedOwnerName);
             Map<String, Set<Integer>> localMethods = localStaticMethodAritiesByOwner.get(ownerQualifiedName);
             if (localMethods != null) {
                 Set<Integer> arities = localMethods.get(methodName);

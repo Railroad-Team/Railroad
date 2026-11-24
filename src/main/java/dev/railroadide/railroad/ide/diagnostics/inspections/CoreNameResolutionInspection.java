@@ -116,6 +116,9 @@ public final class CoreNameResolutionInspection implements JavaInspectionRulePro
             if (qualifiedName == null || qualifiedName.isBlank())
                 return;
 
+            if (context.isSelectorNameExpression(node))
+                return;
+
             String simpleName = context.lastSegment(qualifiedName);
             List<?> candidates = context.isMethodNameReference(node)
                 ? context.resolveStaticImportedMethods(simpleName, node, -1)

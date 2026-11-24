@@ -219,10 +219,6 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
         reportIfPresent(reporter, node, modifiers, JavaTokenType.NON_SEALED_KEYWORD,
             "'non-sealed' is not allowed on method declarations");
 
-        if (modifiers.contains(JavaTokenType.STATIC_KEYWORD) && modifiers.contains(JavaTokenType.FINAL_KEYWORD)) {
-            reporter.report(node, "'static' cannot be combined with 'final' on methods");
-        }
-
         boolean hasBody = context.directChild(node, JAVA_BLOCK) != null;
         String ownerKindId = ownerDeclarationKind(context, node);
 

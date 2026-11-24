@@ -112,7 +112,8 @@ public final class CoreImportInspection implements JavaInspectionRuleProvider {
             }
 
             if (importEntry.isWildcard()) {
-                if (!importIndex.isResolvablePackagePrefix(importEntry.ownerName())) {
+                if (!importIndex.isResolvablePackagePrefix(importEntry.ownerName())
+                    && !importIndex.isResolvableType(importEntry.ownerName())) {
                     reporter.report(importEntry.targetNode(), importEntry.ownerName() + ".*");
                 }
                 continue;
