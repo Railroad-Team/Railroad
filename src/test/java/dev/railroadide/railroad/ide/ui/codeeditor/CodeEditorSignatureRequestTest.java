@@ -13,6 +13,7 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.ArrayList;
 
 import static dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorRequestTestSupport.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -52,6 +54,10 @@ public class CodeEditorSignatureRequestTest {
                 new SignatureHelp.ParameterInfo("int", "second", false)),
             1, false, "void", false)))) {
             var editor = fixture.editor;
+            fixture.provider.overloads = List.of(
+                new SignatureHelp("Example", "Example", "call",
+                    List.of(new SignatureHelp.ParameterInfo("long", "count", false)), -1, false, "void", false),
+                new SignatureHelp("Example", "Example", "call", List.of(), -1, false, "void", false));
             String text = onFx(editor::getText);
             int caret = text.indexOf(", ") + 2;
             onFx(() -> {
@@ -68,8 +74,13 @@ public class CodeEditorSignatureRequestTest {
                 awaitRequests(editor.featureRequests);
                 onFx(() -> {
                     assertTrue(editor.signaturePopup.isShowing());
+                    assertEquals(
+                        List.of(List.of("int first", ", ", "int second"), List.of("long count"), List.of("()")),
+                        editor.signatureRows.getChildren().stream().map(node -> ((TextFlow) node).getChildren()
+                            .stream().map(part -> ((Text) part).getText()).toList()).toList());
+                    assertEquals(1, editor.signatureRows.lookupAll(".signature-param-active").size());
                     assertEquals("int second",
-                        ((Text) editor.signatureTextFlow.lookup(".signature-param-active")).getText());
+                        ((Text) editor.signatureRows.lookup(".signature-param-active")).getText());
                     assertEquals(text, editor.getText());
                     assertEquals(caret, editor.getCaretPosition());
                     editor.dismiss();
@@ -80,12 +91,29 @@ public class CodeEditorSignatureRequestTest {
     }
 
     @Test
+    public void hidesParameterInfoWhenTheCallHasNoParameters() throws Exception {
+        var calls = new AtomicInteger();
+        try (Fixture fixture = open(context -> calls.getAndIncrement() == 0
+            ? help(context, "withParameters")
+            : new FeatureResult<>(context, new SignatureHelp("Example", "Example", "noParameters", List.of(),
+                -1, false, "void", false)))) {
+            fixture.request();
+            awaitRequests(fixture.editor.featureRequests);
+            assertTrue(onFx(fixture.editor.signaturePopup::isShowing));
+
+            fixture.request();
+            awaitRequests(fixture.editor.featureRequests);
+            assertFalse(onFx(fixture.editor.signaturePopup::isShowing));
+        }
+    }
+
+    @Test
     public void acceptedHelpKeepsItsRequestActive() throws Exception {
         try (Fixture fixture = open(context -> help(context, "ACCEPTED"))) {
             Invocation invocation = fixture.request();
             awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
-                assertEquals("ACCEPTED", fixture.editor.activeSignatureHelp.get().methodName());
+                assertEquals("ACCEPTED", fixture.editor.activeSignatureHelp.get().getFirst().methodName());
                 assertTrue(fixture.editor.signaturePopup.isShowing());
                 assertFalse(invocation.context().cancellationToken().isCancellationRequested());
                 return null;
@@ -117,14 +145,14 @@ public class CodeEditorSignatureRequestTest {
                 assertTrue(old.context().cancellationToken().isCancellationRequested());
                 awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
-                    assertEquals("NEW", fixture.editor.activeSignatureHelp.get().methodName());
+                    assertEquals("NEW", fixture.editor.activeSignatureHelp.get().getFirst().methodName());
                     return null;
                 });
 
                 releaseOld.countDown();
                 awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
-                    assertEquals("NEW", fixture.editor.activeSignatureHelp.get().methodName());
+                    assertEquals("NEW", fixture.editor.activeSignatureHelp.get().getFirst().methodName());
                     return null;
                 });
             } finally {
@@ -152,7 +180,7 @@ public class CodeEditorSignatureRequestTest {
                 }
                 fixture.nextRequest();
                 onFx(() -> {
-                    assertNull(fixture.editor.activeSignatureHelp.get());
+                    assertTrue(fixture.editor.activeSignatureHelp.get().isEmpty());
                     assertTrue(old.context().cancellationToken().isCancellationRequested());
                     return null;
                 });
@@ -160,7 +188,7 @@ public class CodeEditorSignatureRequestTest {
                 returnNew.countDown();
                 awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
-                    assertEquals("NEW", fixture.editor.activeSignatureHelp.get().methodName());
+                    assertEquals("NEW", fixture.editor.activeSignatureHelp.get().getFirst().methodName());
                     return null;
                 });
             } finally {
@@ -188,7 +216,7 @@ public class CodeEditorSignatureRequestTest {
                 release.countDown();
                 awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
-                    assertNull(fixture.editor.activeSignatureHelp.get());
+                    assertTrue(fixture.editor.activeSignatureHelp.get().isEmpty());
                     assertFalse(fixture.editor.signaturePopup.isShowing());
                     return null;
                 });
@@ -214,7 +242,7 @@ public class CodeEditorSignatureRequestTest {
                 }
                 onFx(() -> {
                     assertTrue(invocation.context().cancellationToken().isCancellationRequested());
-                    assertNull(fixture.editor.activeSignatureHelp.get());
+                    assertTrue(fixture.editor.activeSignatureHelp.get().isEmpty());
                     assertFalse(fixture.editor.signaturePopup.isShowing());
                     return null;
                 });
@@ -234,8 +262,8 @@ public class CodeEditorSignatureRequestTest {
         })) {
             Invocation first = fixture.request();
             awaitRequests(fixture.editor.featureRequests);
-            SignatureHelp displayed = onFx(() -> fixture.editor.activeSignatureHelp.get());
-            Object header = onFx(() -> fixture.editor.signatureTextFlow.getChildren().getFirst());
+            SignatureHelp displayed = onFx(() -> fixture.editor.activeSignatureHelp.get().getFirst());
+            Object parameter = onFx(() -> fixture.editor.signatureRows.getChildren().getFirst());
 
             Invocation second = fixture.request();
             awaitRequests(fixture.editor.featureRequests);
@@ -244,8 +272,8 @@ public class CodeEditorSignatureRequestTest {
                 assertFalse(second.context().cancellationToken().isCancellationRequested());
                 assertNotSame(displayed, produced.get());
                 assertEquals(displayed, produced.get());
-                assertSame(displayed, fixture.editor.activeSignatureHelp.get());
-                assertSame(header, fixture.editor.signatureTextFlow.getChildren().getFirst());
+                assertSame(displayed, fixture.editor.activeSignatureHelp.get().getFirst());
+                assertSame(parameter, fixture.editor.signatureRows.getChildren().getFirst());
                 assertTrue(fixture.editor.signaturePopup.isShowing());
                 return null;
             });
@@ -261,14 +289,14 @@ public class CodeEditorSignatureRequestTest {
             fixture.request();
             awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
-                assertNotNull(fixture.editor.activeSignatureHelp.get());
+                assertFalse(fixture.editor.activeSignatureHelp.get().isEmpty());
                 return null;
             });
 
             Invocation unsupported = fixture.request();
             awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
-                assertNull(fixture.editor.activeSignatureHelp.get());
+                assertTrue(fixture.editor.activeSignatureHelp.get().isEmpty());
                 assertFalse(fixture.editor.signaturePopup.isShowing());
                 assertTrue(unsupported.context().cancellationToken().isCancellationRequested());
                 return null;
@@ -288,7 +316,7 @@ public class CodeEditorSignatureRequestTest {
             fixture.request();
             awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
-                assertNull(fixture.editor.activeSignatureHelp.get());
+                assertTrue(fixture.editor.activeSignatureHelp.get().isEmpty());
                 assertFalse(fixture.editor.signaturePopup.isShowing());
                 return null;
             });
@@ -301,13 +329,13 @@ public class CodeEditorSignatureRequestTest {
             Invocation invocation = fixture.request();
             awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
-                assertNotNull(fixture.editor.activeSignatureHelp.get());
+                assertFalse(fixture.editor.activeSignatureHelp.get().isEmpty());
                 WorkspaceSnapshot workspace = invocation.context().workspaceSnapshot();
                 var replacement = new DefaultDocumentStore(workspace.projectId(), workspace.configuration());
                 workspace.documents().values().forEach(replacement::publishBacking);
                 fixture.editor.setDocumentStore(replacement);
                 assertTrue(invocation.context().cancellationToken().isCancellationRequested());
-                assertNull(fixture.editor.activeSignatureHelp.get());
+                assertTrue(fixture.editor.activeSignatureHelp.get().isEmpty());
                 assertFalse(fixture.editor.signaturePopup.isShowing());
                 return null;
             });
@@ -320,12 +348,12 @@ public class CodeEditorSignatureRequestTest {
             Invocation invocation = fixture.request();
             awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
-                assertNotNull(fixture.editor.activeSignatureHelp.get());
+                assertFalse(fixture.editor.activeSignatureHelp.get().isEmpty());
                 fixture.editor.discardChangesOnClose();
                 fixture.editor.close();
                 assertTrue(fixture.editor.isEditorClosed());
                 assertTrue(invocation.context().cancellationToken().isCancellationRequested());
-                assertNull(fixture.editor.activeSignatureHelp.get());
+                assertTrue(fixture.editor.activeSignatureHelp.get().isEmpty());
                 assertFalse(fixture.editor.signaturePopup.isShowing());
                 return null;
             });
@@ -350,7 +378,7 @@ public class CodeEditorSignatureRequestTest {
                 release.countDown();
                 awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
-                    assertNull(fixture.editor.activeSignatureHelp.get());
+                    assertTrue(fixture.editor.activeSignatureHelp.get().isEmpty());
                     return null;
                 });
             } finally {
@@ -377,7 +405,7 @@ public class CodeEditorSignatureRequestTest {
                 release.countDown();
                 awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
-                    assertNull(fixture.editor.activeSignatureHelp.get());
+                    assertTrue(fixture.editor.activeSignatureHelp.get().isEmpty());
                     return null;
                 });
             } finally {
@@ -399,7 +427,7 @@ public class CodeEditorSignatureRequestTest {
             fixture.request();
             awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
-                assertEquals("RECOVERED", fixture.editor.activeSignatureHelp.get().methodName());
+                assertEquals("RECOVERED", fixture.editor.activeSignatureHelp.get().getFirst().methodName());
                 return null;
             });
         }
@@ -487,6 +515,7 @@ public class CodeEditorSignatureRequestTest {
     private static final class ControlledProvider implements SignatureHelpProvider {
         private final BlockingQueue<Invocation> requests = new LinkedBlockingQueue<>();
         private final Function<FeatureRequestContext, FeatureResult<SignatureHelp>> computation;
+        private List<SignatureHelp> overloads = List.of();
 
         private ControlledProvider(Function<FeatureRequestContext, FeatureResult<SignatureHelp>> computation) {
             this.computation = computation;
@@ -503,6 +532,20 @@ public class CodeEditorSignatureRequestTest {
             requests.add(new Invocation(context, caretPosition));
             // Intentionally ignore cancellation to test the editor's publication boundary.
             return computation.apply(context);
+        }
+
+        @Override
+        public FeatureResult<List<SignatureHelp>> compute(
+            FeatureRequestContext context,
+            int caretPosition,
+            boolean includeOverloads
+        ) {
+            var result = SignatureHelpProvider.super.compute(context, caretPosition, includeOverloads);
+            if (!includeOverloads || overloads.isEmpty())
+                return result;
+            var signatures = new ArrayList<>(result.value());
+            signatures.addAll(overloads);
+            return new FeatureResult<>(result.context(), List.copyOf(signatures));
         }
     }
 

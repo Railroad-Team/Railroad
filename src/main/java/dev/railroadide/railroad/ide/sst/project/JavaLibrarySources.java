@@ -80,6 +80,31 @@ public final class JavaLibrarySources {
     }
 
     /**
+     * Reads an attached source entry without materializing an editor file or rendering a stub.
+     *
+     * @param binary address of the compiled top-level class
+     * @param topLevel metadata of the top-level class
+     * @return source text and identity, if an attachment contains this class
+     */
+    public Optional<TextDocumentSnapshot> readAttachedSource(DocumentUri binary, ClassStub topLevel) {
+        String relative = topLevel.getFullName().replace('.', '/') + ".java";
+        try {
+            return attachedSource(binary, relative).map(source -> {
+                DocumentUri uri = JavaLibrarySymbolIndex.archiveEntry(source.archive(), source.entry());
+                return new TextDocumentSnapshot(
+                    new DocumentId(UUID.nameUUIDFromBytes(uri.toString().getBytes(StandardCharsets.UTF_8))), uri,
+                    DocumentVersion.initial(), "java",
+                    new DocumentOrigin(BackingKind.ARCHIVE_ENTRY, ProvenanceKind.ATTACHED_SOURCE,
+                        List.of(new OriginReference(binary))),
+                    normalize(source.text()), StandardCharsets.UTF_8);
+            });
+        } catch (IOException | UncheckedIOException | InvalidPathException exception) {
+            Railroad.LOGGER.warn("Failed to read attached source for {}", binary, exception);
+            return Optional.empty();
+        }
+    }
+
+    /**
      * Materializes the source of a compiled top-level class and captures it as a document.
      *
      * @param binary address of the compiled class, such as a {@code jar:} or {@code jrt:} entry

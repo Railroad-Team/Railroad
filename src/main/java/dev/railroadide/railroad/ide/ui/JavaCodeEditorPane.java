@@ -61,7 +61,7 @@ public class JavaCodeEditorPane extends CodeEditorPane {
         if (textChanged)
             return true;
 
-        if (activeSignatureHelp.get() != null)
+        if (!activeSignatureHelp.get().isEmpty())
             return true;
 
         if (caret == 0)

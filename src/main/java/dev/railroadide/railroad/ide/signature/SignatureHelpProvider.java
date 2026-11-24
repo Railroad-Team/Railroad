@@ -9,6 +9,7 @@ import dev.railroadide.railroad.ide.sst.request.api.FeatureResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 
@@ -66,5 +67,22 @@ public interface SignatureHelpProvider {
      */
     default @Nullable SignatureHelp compute(WorkspaceSnapshot workspace, DocumentId id, int caretPosition) {
         return compute(workspace.document(id).orElseThrow(), caretPosition);
+    }
+
+    /**
+     * Computes parameter information, with the best match first and optional overloads after it.
+     *
+     * @param context captured request context
+     * @param caretPosition caret offset in the captured document
+     * @param includeOverloads whether to include alternatives to the best match
+     * @return the available signatures and the context that produced them
+     */
+    default FeatureResult<List<SignatureHelp>> compute(
+        FeatureRequestContext context,
+        int caretPosition,
+        boolean includeOverloads
+    ) {
+        var result = compute(context, caretPosition);
+        return new FeatureResult<>(result.context(), result.value() == null ? List.of() : List.of(result.value()));
     }
 }

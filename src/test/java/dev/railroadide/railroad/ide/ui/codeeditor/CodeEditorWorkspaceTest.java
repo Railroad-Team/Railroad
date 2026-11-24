@@ -428,7 +428,8 @@ public class CodeEditorWorkspaceTest {
             public SignatureHelp compute(WorkspaceSnapshot workspace, DocumentId id, int caret) {
                 block(workspace, entered, release);
                 completedWith.complete(workspace);
-                return new SignatureHelp("Example", "Example", "old", List.of(), 0, false, "void", false);
+                return new SignatureHelp("Example", "Example", "old",
+                    List.of(new SignatureHelp.ParameterInfo("int", "value", false)), 0, false, "void", false);
             }
         };
         DocumentId id = DocumentId.create();
@@ -478,7 +479,7 @@ public class CodeEditorWorkspaceTest {
                     ((TextDocumentSnapshot) completedWith.get().document(id).orElseThrow()).text());
                 assertTrue(editor.visibleDiagnostics.isEmpty());
                 assertTrue(editor.completionCandidates.isEmpty());
-                assertNull(editor.activeSignatureHelp.get());
+                assertTrue(editor.activeSignatureHelp.get().isEmpty());
                 return null;
             });
         } finally {

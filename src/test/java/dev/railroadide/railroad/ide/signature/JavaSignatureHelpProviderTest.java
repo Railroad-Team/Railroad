@@ -8,6 +8,13 @@ import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
 import dev.railroadide.railroad.ide.sst.document.api.ProvenanceKind;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.WorkspaceConfigurationSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot;
+import dev.railroadide.railroad.ide.sst.request.api.CancellationToken;
+import dev.railroadide.railroad.ide.sst.request.api.Deadline;
+import dev.railroadide.railroad.ide.sst.request.api.FeatureRequestContext;
+import dev.railroadide.railroad.ide.language.impl.index.JavaWorkspaceAnalysisProvider;
+import dev.railroadide.railroad.ide.sst.project.JavaLibrarySymbolIndex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -15,6 +22,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import org.objectweb.asm.ClassWriter;
@@ -22,6 +31,7 @@ import org.objectweb.asm.Opcodes;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
 import dev.railroadide.railroad.ide.sst.project.JavaJdkSymbolIndex;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -36,6 +46,32 @@ public class JavaSignatureHelpProviderTest {
 
     @TempDir
     public Path tempDirectory;
+
+    @Test
+    public void returnsTheResolvedOverloadFirstAndIncludesShorterAndZeroParameterAlternatives() {
+        String source = """
+            class Example {
+                void call() {}
+                void call(long count) {}
+                void call(int row, String name) {}
+                void run() { call(1, ""); }
+            }
+            """;
+        var document = snapshot(DocumentUri.virtual("generated", "/Example.java"), source);
+        var workspace = new WorkspaceSnapshot("signature-overloads", Map.of(document.id(), document),
+            new WorkspaceConfigurationSnapshot(0, Set.of()), 0);
+        var context = new FeatureRequestContext(workspace, document, CancellationToken.none(), Deadline.none());
+        int caret = source.indexOf("call(1, ") + "call(1, ".length();
+        var provider = new JavaSignatureHelpProvider();
+        var signatures = provider.compute(context, caret, true).value();
+        assertEquals(3, signatures.size());
+        assertEquals(List.of("row", "name"),
+            signatures.getFirst().parameters().stream().map(SignatureHelp.ParameterInfo::name).toList());
+        assertEquals(1, signatures.getFirst().activeParameter());
+        assertTrue(signatures.subList(1, 3).stream().allMatch(signature -> signature.activeParameter() == -1));
+        assertTrue(signatures.stream().anyMatch(signature -> signature.parameters().isEmpty()));
+        assertEquals(List.of(signatures.getFirst()), provider.compute(context, caret, false).value());
+    }
 
     @Test
     public void providesSignatureHelpForGeneratedVirtualJavaDocument() {
@@ -202,6 +238,54 @@ public class JavaSignatureHelpProviderTest {
     private static TextDocumentSnapshot snapshot(DocumentUri uri, String text) {
         return new TextDocumentSnapshot(DocumentId.create(), uri, DocumentVersion.initial(), "java", text,
             StandardCharsets.UTF_8);
+    }
+
+    @Test
+    public void takesParameterNamesFromTheExactAttachedOverload() throws Exception {
+        Path binary = tempDirectory.resolve("library.jar");
+        var writer = new ClassWriter(0);
+        writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, "lib/Library", null, "java/lang/Object", null);
+        for (String parameter : List.of("I", "J", "Z")) {
+            writer.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_NATIVE, "read",
+                "(" + parameter + ")I", null, null).visitEnd();
+        }
+        writer.visitEnd();
+        try (var jar = new JarOutputStream(Files.newOutputStream(binary))) {
+            jar.putNextEntry(new JarEntry("lib/Library.class"));
+            jar.write(writer.toByteArray());
+        }
+
+        String source = "import lib.Library; class Example { int a = Library.read(1); int b = Library.read(true); }";
+        var document = snapshot(DocumentUri.virtual("generated", "/Example.java"), source);
+        var workspace = new WorkspaceSnapshot("signature", Map.of(document.id(), document),
+            new WorkspaceConfigurationSnapshot(0, Set.of(":"), Map.of("module.:.classpath", binary.toString())), 0);
+        try (var analysis = new JavaWorkspaceAnalysisProvider(() -> true,
+            (roots, _) -> JavaLibrarySymbolIndex.build(roots))) {
+            var provider = new JavaSignatureHelpProvider(context -> analysis.capture(context.workspaceSnapshot(),
+                document.id()));
+            int caret = source.indexOf("read(1") + "read(".length();
+            assertEquals("arg0", provider.compute(workspace, document.id(), caret).parameters().getFirst().name());
+            try (var jar = new JarOutputStream(Files.newOutputStream(tempDirectory.resolve("library-sources.jar")))) {
+                jar.putNextEntry(new JarEntry("lib/Library.java"));
+                jar.write("""
+                    package lib;
+                    public class Library {
+                        public static native int read(long byteOffset);
+                        public static native int read(int rowIndex);
+                    }
+                    """.getBytes(StandardCharsets.UTF_8));
+            }
+            var parameter = provider.compute(workspace, document.id(), caret).parameters().getFirst();
+            assertEquals("rowIndex", parameter.name());
+            assertEquals("int", parameter.type());
+            var context = new FeatureRequestContext(workspace, document, CancellationToken.none(), Deadline.none());
+            var overloads = provider.compute(context, caret, true).value();
+            assertEquals("rowIndex", overloads.getFirst().parameters().getFirst().name());
+            assertEquals(Set.of("rowIndex", "byteOffset", "arg0"), overloads.stream()
+                .map(overload -> overload.parameters().getFirst().name()).collect(Collectors.toSet()));
+            int unmatched = source.indexOf("read(true") + "read(".length();
+            assertEquals("arg0", provider.compute(workspace, document.id(), unmatched).parameters().getFirst().name());
+        }
     }
 
     @Test

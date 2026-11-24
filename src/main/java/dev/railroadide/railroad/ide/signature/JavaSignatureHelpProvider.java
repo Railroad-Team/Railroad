@@ -7,12 +7,14 @@ import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxKinds;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSyntaxParser;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaTokenType;
+import dev.railroadide.railroad.ide.sst.project.JavaLibrarySources;
 import dev.railroadide.railroad.ide.sst.request.api.*;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Function;
 import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
 /** Java parameter information from the SST argument list, semantic resolver and captured symbol index. */
@@ -39,16 +41,28 @@ public record JavaSignatureHelpProvider(Function<RequestContext, JavaWorkspaceAn
 
     @Override
     public FeatureResult<SignatureHelp> compute(FeatureRequestContext context, int caret) {
+        var result = compute(context, caret, false);
+        return new FeatureResult<>(context, result.value().isEmpty() ? null : result.value().getFirst());
+    }
+
+    @Override
+    public FeatureResult<List<SignatureHelp>> compute(
+        FeatureRequestContext context,
+        int caret,
+        boolean includeOverloads
+    ) {
         context.checkActive();
         if (!(context.documentSnapshot() instanceof TextDocumentSnapshot text) || !"java".equals(text.languageId())
             || caret <= 0 || caret > text.text().length())
-            return new FeatureResult<>(context, null);
+            return new FeatureResult<>(context, List.of());
         var tree = JavaSyntaxParser.parse(context);
         var arguments = argumentListAt(tree.root(), caret);
-        var result = arguments == null
-            ? null
-            : JavaSemanticAnalyzer.signatureHelp(tree, arguments,
-                caret, analysis.apply(context), context::checkActive);
+        if (arguments == null)
+            return new FeatureResult<>(context, List.of());
+        var workspaceAnalysis = analysis.apply(context);
+        var result = JavaSemanticAnalyzer.signatureHelp(tree, arguments, caret, workspaceAnalysis, includeOverloads,
+            workspaceAnalysis.attachedSignatures(JavaLibrarySources.shared(), context::checkActive),
+            context::checkActive);
         context.checkActive();
         return new FeatureResult<>(context, result);
     }

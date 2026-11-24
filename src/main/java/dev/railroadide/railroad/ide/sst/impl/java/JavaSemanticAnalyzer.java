@@ -445,18 +445,20 @@ public final class JavaSemanticAnalyzer {
         return resolver;
     }
 
-    /** Resolves the callable and active parameter for an argument list in the supplied Java syntax tree. */
-    public static @Nullable SignatureHelp signatureHelp(
+    /** Resolves parameter information and optional overloads for an argument list. */
+    public static List<SignatureHelp> signatureHelp(
         SyntaxTree tree,
         SyntaxNode arguments,
         int caret,
         JavaSymbolIndex index,
+        boolean includeOverloads,
+        Function<SymbolId, Optional<SymbolSignature>> attachedSignature,
         Runnable check
     ) {
         SyntaxNode call = arguments.parent().orElse(null);
         if (call == null || !call.kind().equals(JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION)
             && !call.kind().equals(JavaSyntaxKinds.CLASS_INSTANCE_CREATION_EXPRESSION))
-            return null;
+            return List.of();
         var scope = Scope.root();
         var builder = SemanticModel.builder(tree, scope);
         var context = new JavaDeclarationAnalysis.Context(tree.root(), scope, builder, index,
@@ -479,12 +481,40 @@ public final class JavaSemanticAnalyzer {
             }
         }
         Symbol resolved = context.resolvedSymbol(call);
-        SignatureHelp help = resolved == null ? null : resolver.describeSignature(model, resolved, active);
-        if (help != null && (help.varargs() || help.parameters().size() >= minimum))
-            return help;
-        // A call being edited can have fewer arguments than any valid overload.
-        var candidate = resolver.partialCallable(call, arguments, minimum);
-        return candidate == null ? null : resolver.describeSignature(model, candidate.symbol(), active);
+        SignatureHelp help = resolved == null
+            ? null
+            : resolver.describeSignature(model, resolved, active, attachedSignature);
+        boolean matched = help != null && (help.varargs() || help.parameters().size() >= minimum);
+        if (matched && !includeOverloads)
+            return List.of(help);
+
+        var candidates = resolver.signatureCandidates(call);
+        if (!matched) {
+            var candidate = resolver.partialCallable(candidates, arguments, minimum);
+            help = candidate == null
+                ? null
+                : resolver.describeSignature(model, candidate.symbol(), active,
+                    attachedSignature);
+        }
+        if (!includeOverloads)
+            return help == null ? List.of() : List.of(help);
+
+        Map<List<String>, SignatureHelp> overloads = new LinkedHashMap<>();
+        if (help != null) {
+            overloads.put(parameterTypes(help), help);
+        }
+        for (var candidate : candidates) {
+            context.poll();
+            var alternative = resolver.describeSignature(model, candidate.symbol(), active, attachedSignature);
+            if (alternative != null) {
+                overloads.putIfAbsent(parameterTypes(alternative), alternative);
+            }
+        }
+        return List.copyOf(overloads.values());
+    }
+
+    private static List<String> parameterTypes(SignatureHelp help) {
+        return help.parameters().stream().map(SignatureHelp.ParameterInfo::type).toList();
     }
 
     private static final class NameResolver {
@@ -866,16 +896,22 @@ public final class JavaSemanticAnalyzer {
             }
         }
 
-        private @Nullable SignatureHelp describeSignature(SemanticModel model, Symbol symbol, int active) {
+        private @Nullable SignatureHelp describeSignature(
+            SemanticModel model,
+            Symbol symbol,
+            int active,
+            Function<SymbolId, Optional<SymbolSignature>> attachedSignature
+        ) {
             boolean constructor = symbol.kind() == JavaSymbolKind.CONSTRUCTOR;
             String owner = ownerQualifiedName(symbol);
             if (owner == null || !constructor && symbol.kind() != JavaSymbolKind.METHOD)
                 return null;
             SymbolSignature signature = null;
+            SymbolId id = null;
             if (symbol.declaration().isPresent()) {
                 signature = JavaSemanticGraphExtractor.declarationSignature(model, symbol, projectIndex, context::poll);
             } else if (projectIndex != null) {
-                SymbolId id = JavaSourceSymbolIds.deriveSymbolId(symbol, projectIndex).orElse(null);
+                id = JavaSourceSymbolIds.deriveSymbolId(symbol, projectIndex).orElse(null);
                 if (id != null) {
                     String binaryName = JavaSymbolIds.owningTypeName(id);
                     var shard = binaryName == null ? null : projectIndex.declarationShard(binaryName, context::poll);
@@ -906,17 +942,35 @@ public final class JavaSemanticAnalyzer {
                 result = member.valueType().displayName();
             } else
                 return null;
+            if (id != null && !parameters.isEmpty()) {
+                SymbolSignature source = attachedSignature.apply(id).orElse(null);
+                if (source != null && source.parameters().size() == parameters.size()) {
+                    for (int i = 0; i < parameters.size(); i++) {
+                        String name = source.parameters().get(i).name();
+                        if (!name.isBlank()) {
+                            var parameter = parameters.get(i);
+                            parameters.set(i,
+                                new SignatureHelp.ParameterInfo(parameter.type(), name, parameter.varargs()));
+                        }
+                    }
+                }
+            }
             String display = simpleTypeName(owner);
+            boolean varargs = !parameters.isEmpty() && parameters.getLast().varargs();
+            int activeParameter = active < parameters.size() ? active : varargs ? parameters.size() - 1 : -1;
             return new SignatureHelp(owner, display, constructor ? display : symbol.simpleName(), parameters,
-                Math.min(active, parameters.size() - 1), constructor, result,
-                !parameters.isEmpty() && parameters.getLast().varargs());
+                activeParameter, constructor, result, varargs);
         }
 
-        private @Nullable MemberCandidate partialCallable(SyntaxNode call, SyntaxNode arguments, int minimum) {
+        private @Nullable MemberCandidate partialCallable(
+            List<MemberCandidate> candidates,
+            SyntaxNode arguments,
+            int minimum
+        ) {
             List<Type> typed = inferArgumentTypes(arguments);
             List<Integer> bestCost = null;
             MemberCandidate best = null;
-            for (MemberCandidate candidate : signatureCandidates(call)) {
+            for (MemberCandidate candidate : candidates) {
                 context.poll();
                 List<Type> parameters = candidate.parameterTypes();
                 if (parameters.size() < minimum && !candidate.variableArity())

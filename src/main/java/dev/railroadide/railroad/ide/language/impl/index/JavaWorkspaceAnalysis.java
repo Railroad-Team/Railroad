@@ -20,6 +20,7 @@ import dev.railroadide.railroad.ide.sst.semantic.api.DefinitionTarget;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticNavigationResolver;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolDescriptor;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolSignature;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
@@ -28,10 +29,11 @@ import java.util.*;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 
 /**
- * Immutable Java analysis inputs derived from one workspace capture. Source lookup never
- * falls back to disk; library and JDK symbols are pinned for the captured configuration.
+ * Immutable Java analysis inputs derived from one workspace capture. Workspace source comes from the
+ * captured revision, and library and JDK symbols are pinned for the captured configuration.
  */
 public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
     private final JavaProjectSemanticIndex sourceIndex;
@@ -460,12 +462,8 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         if (typeIndex < 0)
             return Optional.empty();
 
-        ClassStub topLevel = symbols.lookupClassStub(components.get(typeIndex).value());
-        Set<String> visited = new HashSet<>();
-        while (topLevel != null && topLevel.enclosingClassName() != null && visited.add(topLevel.getFullName())) {
-            topLevel = symbols.lookupClassStub(topLevel.enclosingClassName());
-        }
-        if (topLevel == null || topLevel.enclosingClassName() != null)
+        ClassStub topLevel = topLevelClass(components.get(typeIndex).value());
+        if (topLevel == null)
             return Optional.empty();
 
         DocumentUri binary = binaryLocation(topLevel.getFullName()).orElse(null);
@@ -500,6 +498,63 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
             location = Location.TextLocation.from(view, 0, 0);
         }
         return Optional.of(new DefinitionTarget(view, location));
+    }
+
+    /**
+     * Looks up the declaration of a resolved callable in the source attached to its binary.
+     *
+     * @param librarySources provider of local source attachments
+     * @param activityCheck cooperative cancellation check
+     * @return request-local lookup that parses each declaring source file once
+     */
+    public Function<SymbolId, Optional<SymbolSignature>> attachedSignatures(
+        JavaLibrarySources librarySources,
+        Runnable activityCheck
+    ) {
+        Map<String, Map<SymbolId, SymbolSignature>> bySource = new HashMap<>();
+        return callable -> {
+            activityCheck.run();
+            String owner = JavaSymbolIds.owningTypeName(callable);
+            ClassStub topLevel = owner == null ? null : topLevelClass(owner);
+            return topLevel == null
+                ? Optional.empty()
+                : Optional.ofNullable(bySource
+                    .computeIfAbsent(topLevel.getFullName(),
+                        key -> readAttachedSignatures(topLevel, librarySources, activityCheck))
+                    .get(callable));
+        };
+    }
+
+    private Map<SymbolId, SymbolSignature> readAttachedSignatures(
+        ClassStub topLevel,
+        JavaLibrarySources librarySources,
+        Runnable activityCheck
+    ) {
+        var source = binaryLocation(topLevel.getFullName())
+            .flatMap(binary -> librarySources.readAttachedSource(binary, topLevel)).orElse(null);
+        if (source == null)
+            return Map.of();
+        var tree = JavaSyntaxParser.parse(source, activityCheck);
+        var model = JavaSemanticAnalyzer.analyzeProjectDeclarations(tree, symbols, activityCheck);
+        var shard = JavaSemanticGraphExtractor.extractProjectDeclarations(model, symbols, activityCheck);
+        Map<SymbolId, SymbolSignature> signatures = new HashMap<>();
+        for (var declaration : shard.declarations()) {
+            if (declaration.signature() != null) {
+                signatures.put(declaration.id(), declaration.signature());
+            }
+        }
+        return signatures;
+    }
+
+    private @Nullable ClassStub topLevelClass(String owner) {
+        ClassStub topLevel = symbols.lookupClassStub(owner);
+        Set<String> visited = new HashSet<>();
+        while (topLevel != null && topLevel.enclosingClassName() != null) {
+            if (!visited.add(topLevel.getFullName()))
+                return null;
+            topLevel = symbols.lookupClassStub(topLevel.enclosingClassName());
+        }
+        return topLevel;
     }
 
     private Optional<DocumentUri> binaryLocation(String qualifiedName) {

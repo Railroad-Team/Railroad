@@ -216,6 +216,12 @@
     -fx-font-family: "JetBrains Mono";
 }
 
+.signature-help-scroll,
+.signature-help-scroll > .viewport {
+    -fx-background-color: -color-surface-panel;
+    -fx-padding: 0;
+}
+
 .signature-help-text > Text {
     -fx-fill: -color-fg-muted;
 }

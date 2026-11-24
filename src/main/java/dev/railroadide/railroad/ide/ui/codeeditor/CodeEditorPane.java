@@ -38,6 +38,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.*;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.text.TextFlow;
@@ -133,9 +134,11 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
     // region Signature Help state
     protected final Popup signaturePopup = new Popup();
-    protected final TextFlow signatureTextFlow = new TextFlow();
+    protected final VBox signatureRows = new VBox(3);
+    private final StackPane signaturePopupContainer = new StackPane();
+    private final ScrollPane signatureScroll = new ScrollPane();
     protected final AtomicInteger signatureGeneration = new AtomicInteger();
-    protected final AtomicReference<SignatureHelp> activeSignatureHelp = new AtomicReference<>(null);
+    protected final AtomicReference<List<SignatureHelp>> activeSignatureHelp = new AtomicReference<>(List.of());
 
     private @Nullable CancellationTokenSource activeSignatureCancellation;
     private @Nullable FeatureRequestContext activeSignatureContext;
@@ -215,10 +218,14 @@ public abstract class CodeEditorPane extends TextEditorPane {
         signaturePopup.setAutoHide(false);
         signaturePopup.setAutoFix(true);
         signaturePopup.setHideOnEscape(true);
-        signatureTextFlow.getStyleClass().add("signature-help-text");
-        var signaturePopupContainer = new StackPane();
         signaturePopupContainer.getStyleClass().add("signature-help-container");
-        signaturePopupContainer.getChildren().add(signatureTextFlow);
+        signatureRows.setMaxWidth(600);
+        signatureScroll.getStyleClass().add("signature-help-scroll");
+        signatureScroll.setFitToWidth(true);
+        signatureScroll.setFocusTraversable(false);
+        signatureScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        signatureScroll.setPrefViewportWidth(560);
+        signatureScroll.setPrefViewportHeight(180);
         signaturePopup.getContent().add(signaturePopupContainer);
 
         configureGutter();
@@ -1770,7 +1777,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             hideSignatureHelp();
             return;
         }
-        requestSignatureHelpAtCaret(INTERACTIVE_BUDGET);
+        requestSignatureHelpAtCaret(INTERACTIVE_BUDGET, false);
     }
 
     /** Shows parameter information at the current caret, including after automatic help was dismissed. */
@@ -1778,10 +1785,10 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (!supportsSignatureHelp())
             return;
         hideAutoComplete();
-        requestSignatureHelpAtCaret(NAVIGATION_BUDGET);
+        requestSignatureHelpAtCaret(NAVIGATION_BUDGET, true);
     }
 
-    private void requestSignatureHelpAtCaret(Duration budget) {
+    private void requestSignatureHelpAtCaret(Duration budget, boolean includeOverloads) {
         invalidateSignatureRequest();
         int caret = getCaretPosition();
         int generation = signatureGeneration.incrementAndGet();
@@ -1798,7 +1805,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         featureRequests.submit("signature", RequestPriority.SIGNATURE_HELP, context,
             activeSignatureCancellation, () -> ProviderExecutor.shared().execute(
                 context.documentSnapshot().languageId() + ":signature", context, budget,
-                () -> signatureHelpProvider.compute(context, caret)))
+                () -> signatureHelpProvider.compute(context, caret, includeOverloads)))
             .thenAccept(result -> Platform.runLater(() -> {
                 if (signatureGeneration.get() != generation
                     || activeSignatureContext != context
@@ -1825,49 +1832,45 @@ public abstract class CodeEditorPane extends TextEditorPane {
             });
     }
 
-    private void applySignatureHelp(int generation, SignatureHelp help) {
+    private void applySignatureHelp(int generation, List<SignatureHelp> signatures) {
         if (signatureGeneration.get() != generation)
             return;
 
-        if (help == null) {
+        if (signatures.isEmpty() || signatures.size() == 1 && signatures.getFirst().parameters().isEmpty()) {
             hideSignatureHelp();
             return;
         }
 
-        SignatureHelp previous = activeSignatureHelp.get();
-        if (previous != null && previous.equals(help)) {
+        if (activeSignatureHelp.get().equals(signatures)) {
             positionSignaturePopup();
             return;
         }
 
-        activeSignatureHelp.set(help);
-        showSignatureHelp(help);
+        activeSignatureHelp.set(signatures);
+        showSignatureHelp(signatures);
     }
 
-    private void showSignatureHelp(SignatureHelp help) {
-        signatureTextFlow.getChildren().clear();
-
-        String owner = help.ownerQualified().isBlank() ? help.ownerDisplay() : help.ownerQualified();
-        var headerBuilder = new StringBuilder();
-        if (help.constructor()) {
-            headerBuilder.append("new ");
-            if (!owner.isBlank()) {
-                headerBuilder.append(owner);
-            }
+    private void showSignatureHelp(List<SignatureHelp> signatures) {
+        signatureRows.getChildren().setAll(signatures.stream().map(this::signatureRow).toList());
+        signaturePopupContainer.getChildren().clear();
+        if (signatures.size() > 8) {
+            signatureScroll.setContent(signatureRows);
+            signatureScroll.setVvalue(signatureScroll.getVmin());
+            signaturePopupContainer.getChildren().add(signatureScroll);
         } else {
-            if (!owner.isBlank()) {
-                headerBuilder.append(owner).append(".");
-            }
-
-            headerBuilder.append(help.methodName());
+            signatureScroll.setContent(null);
+            signaturePopupContainer.getChildren().add(signatureRows);
         }
+        positionSignaturePopup();
+    }
 
-        headerBuilder.append("(");
-
-        var header = new Text(headerBuilder.toString());
-        signatureTextFlow.getChildren().add(header);
-
+    private TextFlow signatureRow(SignatureHelp help) {
+        var row = new TextFlow();
+        row.getStyleClass().add("signature-help-text");
         List<SignatureHelp.ParameterInfo> parameters = help.parameters();
+        if (parameters.isEmpty()) {
+            row.getChildren().add(new Text("()"));
+        }
         int parameterCount = parameters.size();
         int highlightIndex = help.activeParameter();
 
@@ -1885,21 +1888,14 @@ public abstract class CodeEditorPane extends TextEditorPane {
                 paramText.getStyleClass().add("signature-param");
             }
 
-            signatureTextFlow.getChildren().add(paramText);
+            row.getChildren().add(paramText);
 
             if (i < parameterCount - 1) {
-                signatureTextFlow.getChildren().add(new Text(", "));
+                row.getChildren().add(new Text(", "));
             }
         }
 
-        var closing = new Text(")");
-        signatureTextFlow.getChildren().add(closing);
-
-        if (!help.constructor()) {
-            signatureTextFlow.getChildren().add(new Text(" : " + help.returnType()));
-        }
-
-        positionSignaturePopup();
+        return row;
     }
 
     private void positionSignaturePopup() {
@@ -1929,7 +1925,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
      */
     private void hideSignatureHelp() {
         invalidateSignatureRequest();
-        activeSignatureHelp.set(null);
+        activeSignatureHelp.set(List.of());
         if (signaturePopup.isShowing()) {
             signaturePopup.hide();
         }
