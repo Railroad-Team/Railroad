@@ -6,6 +6,7 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.*;
 import dev.railroadide.railroad.ide.ui.navigation.UsagesPane;
+import dev.railroadide.railroad.ide.ui.search.ProjectSearchPane;
 import dev.railroadide.railroad.ide.ui.setup.PaneIconBarFactory;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.event.EventListener;
@@ -33,6 +34,7 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.stage.WindowEvent;
 import javafx.util.Subscription;
+import org.jspecify.annotations.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.util.*;
@@ -781,6 +783,23 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     }
 
     /**
+     * Shows the Find in Files tool and focuses its query.
+     *
+     * @param seed text to search for, such as an editor selection, or {@code null} to keep the current query
+     * @param withReplace whether the replace row is shown
+     * @return whether the tool is available
+     */
+    public boolean showProjectSearch(@Nullable String seed, boolean withReplace) {
+        IDEDockTab dockTab = dockTabs.get(IDEDockItem.FIND_IN_FILES);
+        if (dockTab == null || !(dockTab.getContent() instanceof ProjectSearchPane search))
+            return false;
+
+        revealDockItem(IDEDockItem.FIND_IN_FILES);
+        search.open(seed, withReplace);
+        return true;
+    }
+
+    /**
      * Brings a dock item to the front if it is available and not already showing.
      *
      * @param dockItem the dock item to show
@@ -1069,7 +1088,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             tabsByWindow.computeIfAbsent(window, _ -> new ArrayList<>()).add(dockTab);
         }
 
-        List<IDELayoutState.ToolWindowState> states = new ArrayList<IDELayoutState.ToolWindowState>();
+        List<IDELayoutState.ToolWindowState> states = new ArrayList<>();
         int windowIndex = 0;
         for (Map.Entry<Window, List<IDEDockTab>> entry : tabsByWindow.entrySet()) {
             Window window = entry.getKey();
@@ -1162,7 +1181,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             dockTabsByMode.computeIfAbsent(WorkspaceModes.GIT, _ -> createGitDockTabs());
         }
 
-        List<IDELayoutState.ToolWindowState> restoredStates = new ArrayList<IDELayoutState.ToolWindowState>();
+        List<IDELayoutState.ToolWindowState> restoredStates = new ArrayList<>();
         for (IDELayoutState.ToolWindowState state : pendingToolWindows) {
             List<IDEDockItem> items = state.dockItemIds().stream()
                 .map(IDEPane::dockItemById)
@@ -1452,7 +1471,8 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             createDockTab(IDEDockItem.PROBLEMS, IDEDockItem.DockPosition.BOTTOM),
             createDockTab(IDEDockItem.TERMINAL, IDEDockItem.DockPosition.BOTTOM),
             createDockTab(IDEDockItem.DEBUGGER, IDEDockItem.DockPosition.BOTTOM),
-            createDockTab(IDEDockItem.USAGES, IDEDockItem.DockPosition.BOTTOM));
+            createDockTab(IDEDockItem.USAGES, IDEDockItem.DockPosition.BOTTOM),
+            createDockTab(IDEDockItem.FIND_IN_FILES, IDEDockItem.DockPosition.BOTTOM));
         debuggerDockSubscription = project.getDebuggingManager().pausedProperty().subscribe((_, paused) -> {
             if (paused && Services.IDE_STATE.getCurrentProject() == project
                 && !isDockItemActive(IDEDockItem.DEBUGGER)) {

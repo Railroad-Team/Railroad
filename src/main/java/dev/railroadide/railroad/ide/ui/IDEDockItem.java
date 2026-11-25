@@ -14,6 +14,7 @@ import dev.railroadide.railroad.ide.ui.git.remote.GitRemotesPane;
 import dev.railroadide.railroad.ide.ui.git.stash.GitStashPane;
 import dev.railroadide.railroad.ide.ui.git.sync.GitSyncPane;
 import dev.railroadide.railroad.ide.ui.navigation.UsagesPane;
+import dev.railroadide.railroad.ide.ui.search.ProjectSearchPane;
 import dev.railroadide.railroad.ide.ui.setup.TerminalFactory;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.utility.icon.RailroadBrandsIcon;
@@ -184,7 +185,18 @@ public enum IDEDockItem {
         DockPosition.BOTTOM,
         WorkspaceModes.CODE,
         InitializationPolicy.EAGER,
-        UsagesPane::new);
+        UsagesPane::new),
+    /**
+     * Project-wide text search and replace.
+     */
+    FIND_IN_FILES(
+        "dock-item:find-in-files",
+        "railroad.ide.dock_item.find_in_files",
+        FontAwesomeSolid.FOLDER_OPEN,
+        DockPosition.BOTTOM,
+        WorkspaceModes.CODE,
+        InitializationPolicy.EAGER,
+        ProjectSearchPane::new);
 
     private final String id;
     private final String localizationKey;

@@ -4,6 +4,7 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.command.CommandContext;
 import dev.railroadide.railroad.command.Commands;
+import dev.railroadide.railroad.command.EditCommands;
 import dev.railroadide.railroad.command.RunCommands;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.defaults.GradleRunConfigurationType;
@@ -33,6 +34,8 @@ import dev.railroadide.railroad.ide.ui.MarkdownPreviewPane;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorConfig;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
 import dev.railroadide.railroad.ide.ui.navigation.UsagesPane;
+import dev.railroadide.railroad.ide.ui.search.ProjectSearchPane;
+import dev.railroadide.railroad.ide.search.ProjectTextSearch;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.plugin.spi.editor.TextSelection;
@@ -515,7 +518,7 @@ public class EditorDefinitionNavigationTest {
                 mainClass = 'Demo'
             }
             """);
-        BlockingQueue<CompletableFuture<Void>> launches = new LinkedBlockingQueue<CompletableFuture<Void>>();
+        BlockingQueue<CompletableFuture<Void>> launches = new LinkedBlockingQueue<>();
         var type = new GradleRunConfigurationType(() -> GradleConnector.newConnector()
             .useInstallation(new File(System.getProperty("railroad.test.gradleHome")))) {
             @Override
@@ -649,6 +652,41 @@ public class EditorDefinitionNavigationTest {
         onFx(() -> {
             assertEquals(UsagesPane.State.COMPLETE, usages.state(), usages.statusText());
             assertEquals(List.of(new TextRange(start, end)), usages.usages().stream().map(Location::range).toList());
+            return null;
+        });
+    }
+
+    @Test
+    public void replaceInFilesSearchesTheProjectForTheActiveEditorSelection() throws Exception {
+        String text = "class Gear { String id = \"mymod:copper_gear\"; }";
+        int start = text.indexOf("mymod:copper_gear");
+        ProjectSearchPane search = onFx(() -> {
+            TextDocumentSnapshot source = publish("Gear.java", text);
+            publish("gear.json", "{\"result\": \"mymod:copper_gear\"}");
+            publish("other.json", "{\"result\": \"mymod:tin_gear\"}");
+            Services.EDITOR_TAB_MANAGER.open(source.uri().filePath().orElseThrow());
+            CodeEditorPane editor = Commands.activeCodeEditor();
+            assertNotNull(editor);
+            editor.selectRange(start, start + "mymod:copper_gear".length());
+            assertTrue(EditCommands.REPLACE_IN_FILES.execute(CommandContext.forProject(project, editor)));
+            pane.applyCss();
+            pane.layout();
+            return (ProjectSearchPane) pane.lookup(".project-search-pane");
+        });
+
+        assertNotNull(search);
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (onFx(search::state) != ProjectSearchPane.State.COMPLETE) {
+            assertTrue(System.nanoTime() < deadline, "Project search did not complete");
+            Thread.sleep(10);
+        }
+
+        onFx(() -> {
+            assertTrue(pane.isDockItemActive(IDEDockItem.FIND_IN_FILES));
+            assertEquals("mymod:copper_gear", search.searchField().getText());
+            assertTrue(search.isReplaceVisible());
+            assertEquals(List.of(".railroad/navigation/Gear.java", ".railroad/navigation/gear.json"),
+                search.results().stream().map(ProjectTextSearch.FileMatches::relativePath).toList());
             return null;
         });
     }

@@ -1,0 +1,60 @@
+.project-search-pane {
+    -fx-background-color: -color-surface-panel;
+}
+
+.project-search-header {
+    -fx-padding: 0.4em 0.65em 0 0.65em;
+    -fx-spacing: 0.35em;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.project-search-row,
+.project-search-status-row,
+.project-search-confirm {
+    -fx-spacing: 0.35em;
+}
+
+.project-search-mask {
+    -fx-pref-width: 14em;
+    -fx-min-width: 8em;
+}
+
+.project-search-confirm {
+    -fx-background-color: -color-warning-subtle;
+    -fx-background-radius: 5px;
+    -fx-padding: 0.35em 0.5em;
+}
+
+.project-search-status-row {
+    -fx-padding: 0 0 0.2em 0;
+}
+
+.project-search-pane:warning .usages-summary,
+.project-search-pane:warning .usages-empty .ikonli-font-icon {
+    -fx-text-fill: -color-warning-fg;
+    -fx-icon-color: -color-warning-fg;
+}
+
+.project-search-pane:failed .usages-summary,
+.project-search-pane:failed .usages-empty .ikonli-font-icon {
+    -fx-text-fill: -color-danger-fg;
+    -fx-icon-color: -color-danger-fg;
+}
+
+.project-search-tree .tree-cell:replacing .usages-match .text {
+    -fx-strikethrough: true;
+}
+
+.project-search-tree .tree-cell:replacing .usages-match {
+    -fx-background-color: -color-danger-muted;
+}
+
+.project-search-replacement {
+    -fx-font-family: "JetBrains Mono";
+    -fx-font-size: 0.93em;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+    -fx-background-color: -color-success-muted;
+    -fx-background-radius: 2px;
+}

@@ -152,6 +152,14 @@ public class Keybinds {
      * Configurable shortcut for selecting the previous find match.
      */
     public static final Keybind FIND_PREVIOUS = registerIDECommand(EditCommands.FIND_PREVIOUS);
+    /**
+     * Configurable shortcut for searching text across the project.
+     */
+    public static final Keybind FIND_IN_FILES = registerIDECommand(EditCommands.FIND_IN_FILES);
+    /**
+     * Configurable shortcut for replacing text across the project.
+     */
+    public static final Keybind REPLACE_IN_FILES = registerIDECommand(EditCommands.REPLACE_IN_FILES);
 
     /**
      * Configurable shortcut for the new file command.

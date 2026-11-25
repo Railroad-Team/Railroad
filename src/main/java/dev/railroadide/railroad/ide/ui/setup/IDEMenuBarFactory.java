@@ -118,6 +118,12 @@ public final class IDEMenuBarFactory {
             () -> CommandContext.forProject(project, menuBar));
         replaceItem.setGraphic(new FontIcon(FontAwesomeSolid.SEARCH_PLUS));
 
+        var findInFilesItem = CommandMenuItems.create(EditCommands.FIND_IN_FILES,
+            () -> CommandContext.forProject(project, menuBar));
+        findInFilesItem.setGraphic(new FontIcon(FontAwesomeSolid.FOLDER_OPEN));
+        var replaceInFilesItem = CommandMenuItems.create(EditCommands.REPLACE_IN_FILES,
+            () -> CommandContext.forProject(project, menuBar));
+
         var findNextItem = CommandMenuItems.create(EditCommands.FIND_NEXT,
             () -> CommandContext.forProject(project, menuBar));
         var findPreviousItem = CommandMenuItems.create(EditCommands.FIND_PREVIOUS,
@@ -262,7 +268,10 @@ public final class IDEMenuBarFactory {
             findItem,
             replaceItem,
             findNextItem,
-            findPreviousItem);
+            findPreviousItem,
+            new SeparatorMenuItem(),
+            findInFilesItem,
+            replaceInFilesItem);
         editMenu.getStyleClass().add("rr-menu");
 
         var viewMenu = new LocalizedMenu("railroad.menu.view");

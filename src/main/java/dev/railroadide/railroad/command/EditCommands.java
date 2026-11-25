@@ -6,6 +6,7 @@ import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
 import dev.railroadide.railroad.ide.ui.codeeditor.find.EditorFindHost;
 import dev.railroadide.railroad.ide.ui.editor.EditorTab;
 import dev.railroadide.railroad.settings.keybinds.KeybindData;
+import dev.railroadide.railroad.ui.id.UIIds;
 import javafx.scene.Node;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.input.Clipboard;
@@ -65,6 +66,37 @@ public final class EditCommands {
     public static final Command<Void> FIND_PREVIOUS = registerFind("find_previous",
         host -> host.bar().findPrevious(),
         new KeybindData(KeyCode.F3, new KeyCombination.Modifier[]{KeyCombination.SHIFT_DOWN}));
+
+    /**
+     * Shows the Find in Files tool, seeded with the selection of the focused or active editor.
+     */
+    public static final Command<Void> FIND_IN_FILES = registerProjectSearch("find_in_files", false,
+        new KeybindData(KeyCode.F, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN,
+            KeyCombination.SHIFT_DOWN}));
+
+    /**
+     * Shows the Find in Files tool with its replace row, seeded with the selection of the focused or active editor.
+     */
+    public static final Command<Void> REPLACE_IN_FILES = registerProjectSearch("replace_in_files", true,
+        new KeybindData(KeyCode.R, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN,
+            KeyCombination.SHIFT_DOWN}));
+
+    private static Command<Void> registerProjectSearch(String action, boolean withReplace, KeybindData key) {
+        return CommandRegistry.register(new Command<>("railroad:edit_" + action,
+            "railroad.menu.edit." + action,
+            c -> c.project() != null && Services.UI_MANAGER.lookup(UIIds.IDE.IDE).isPresent(),
+            c -> Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
+                .ifPresent(ide -> ide.showProjectSearch(selectedText(c), withReplace)),
+            List.of(key), Void.class));
+    }
+
+    private static String selectedText(CommandContext<?> context) {
+        return switch (target(context)) {
+            case TextEditorPane editor -> editor.getSelectedText();
+            case TextInputControl text -> text.getSelectedText();
+            case null, default -> null;
+        };
+    }
 
     private static Command<Void> registerFind(String action, Consumer<EditorFindHost> handler, KeybindData key) {
         return CommandRegistry.register(new Command<>("railroad:edit_" + action,
