@@ -708,6 +708,8 @@ railroad.ide.dock_item.git_sync=Git Sync
 railroad.ide.dock_item.git_stash=Git Stash
 railroad.ide.dock_item.gradle=Gradle
 railroad.ide.dock_item.console=Console
+railroad.ide.dock_item.problems=Problems
+railroad.ide.problems.empty=No build problems.
 railroad.ide.dock_item.terminal=Terminal
 
 railroad.menu.run=Run

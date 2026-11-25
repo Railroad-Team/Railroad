@@ -9,6 +9,7 @@ import dev.railroadide.railroad.debug.source.DebugSource;
 import dev.railroadide.railroad.debug.source.LibrarySourceIndex;
 import dev.railroadide.railroad.debug.source.ProjectSourceResolver;
 import dev.railroadide.railroad.debug.source.SourceResolver;
+import dev.railroadide.railroad.ide.diagnostics.BuildProblems;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.JavaApplicationRunConfigurationData;
@@ -173,12 +174,15 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
                             return CompletableFuture.completedFuture(null);
                         });
                 } else {
+                    var problems = project.getRunSessions().buildProblems().begin(configuration.uuid().toString(),
+                        workingDirectory);
                     buildFuture = CompletableFuture.runAsync(() -> compilePlainJavaProject(
                         project,
                         jdk,
                         workingDirectory,
                         classpathEntries,
-                        session));
+                        session, problems))
+                        .whenComplete((_, failure) -> problems.finish(execution.stopped ? null : failure));
                 }
 
                 buildFuture = buildFuture.exceptionally(throwable -> {
@@ -316,7 +320,8 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
         JDK jdk,
         Path workingDirectory,
         String[] classpathEntries,
-        RunSession session
+        RunSession session,
+        BuildProblems.Report problems
     ) {
         Path sourceRoot = project.getPath().resolve("src/main/java").toAbsolutePath().normalize();
         if (!Files.isDirectory(sourceRoot))
@@ -374,7 +379,9 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
                 .redirectErrorStream(true)
                 .start();
             process.getOutputStream().close();
-            try (var input = process.getInputStream(); var output = session.stdout(RunSession.processCharset())) {
+            try (var input = process.getInputStream();
+                var output = problems.output(RunSession.processCharset(),
+                    text -> session.append(RunOutput.Kind.STDOUT, text))) {
                 input.transferTo(output);
             }
 

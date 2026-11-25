@@ -1,0 +1,40 @@
+package dev.railroadide.railroad.gradle.service.impl;
+
+import dev.railroadide.railroad.ide.diagnostics.BuildProblems;
+import org.gradle.tooling.BuildLauncher;
+import org.gradle.tooling.events.OperationType;
+import org.gradle.tooling.events.ProgressListener;
+import org.gradle.tooling.events.problems.*;
+import org.gradle.tooling.model.UnsupportedMethodException;
+
+/** Reads compiler-provided coordinates from Gradle versions supporting problem events. */
+public final class GradleBuildProblems {
+    private GradleBuildProblems() {
+    }
+
+    public static void listen(BuildLauncher launcher, BuildProblems.Report report) {
+        launcher.addProgressListener((ProgressListener) event -> {
+            if (!(event instanceof SingleProblemEvent single))
+                return;
+            var problem = single.getProblem();
+            var definition = problem.getDefinition();
+            if (definition.getSeverity().getSeverity() != Severity.ERROR.getSeverity())
+                return;
+            String message = problem.getContextualLabel() == null
+                ? null
+                : problem.getContextualLabel().getContextualLabel();
+            if (message == null || message.isBlank()) {
+                message = definition.getId().getDisplayName();
+            }
+            try {
+                for (var origin : problem.getOriginLocations()) {
+                    if (origin instanceof LineInFileLocation location) {
+                        report.location(location.getPath(), location.getLine(), location.getColumn(), message);
+                    }
+                }
+            } catch (UnsupportedMethodException _) {
+                // Gradle 8.12 emits problem events but does not expose their origin locations.
+            }
+        }, OperationType.PROBLEMS);
+    }
+}

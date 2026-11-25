@@ -2,7 +2,6 @@ package dev.railroadide.railroad.ide.ui;
 
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.command.CommandContext;
-import dev.railroadide.railroad.command.Commands;
 import dev.railroadide.railroad.command.RunCommands;
 import dev.railroadide.railroad.ide.runconfig.EditorMain;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
@@ -112,8 +111,6 @@ public class JavaCodeEditorPane extends CodeEditorPane {
             L18n.localize(debug ? "railroad.editor.main.debug" : "railroad.editor.main.run", main.className()));
         item.setOnAction(_ -> {
             if (isEditorClosed() || !mains.contains(main) || !getText().equals(parsedSource))
-                return;
-            if (!Commands.saveAll())
                 return;
             var configuration = main.configuration(project, getFilePath());
             (debug ? RunCommands.DEBUG : RunCommands.RUN)

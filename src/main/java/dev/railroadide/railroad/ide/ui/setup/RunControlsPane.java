@@ -297,7 +297,7 @@ public final class RunControlsPane extends RRHBox {
      * @param debug whether the request uses debugging
      */
     public void executeConfiguration(RunConfiguration<?> configuration, boolean debug) {
-        if (!canExecuteConfiguration(configuration, debug))
+        if (!canExecuteConfiguration(configuration, debug) || !Commands.saveAll())
             return;
         runConfigurationsComboBox.setValue(configuration);
         if (isConfigurationRunning(configuration) && !allowsMultipleInstances(configuration)) {

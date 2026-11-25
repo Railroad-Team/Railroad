@@ -179,7 +179,8 @@ public final class GradleManager {
             false,
             GradleConsoleMode.PLAIN);
 
-        GradleTaskExecutionHandle handle = execService.runTask(request);
+        var problems = project.getRunSessions().buildProblems().begin(taskName, project.getPath());
+        GradleTaskExecutionHandle handle = execService.runTask(request, problems);
         handle.onOutputReceived(event -> output.accept(event.output()));
         handle.onErrorReceived(event -> error.accept(event.errorMessage()));
         handle.completionFuture().whenComplete((result, throwable) -> {

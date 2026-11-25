@@ -1,6 +1,7 @@
 package dev.railroadide.railroad.ide.runconfig.session;
 
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
+import dev.railroadide.railroad.ide.diagnostics.BuildProblems;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -15,6 +16,12 @@ import java.util.Objects;
  * thread-safe.
  */
 public final class RunSessionManager {
+    private final BuildProblems buildProblems = new BuildProblems();
+
+    public BuildProblems buildProblems() {
+        return buildProblems;
+    }
+
     private final Object lock = new Object();
     private final List<RunSession> sessions = new ArrayList<>();
     private final List<Listener> listeners = new ArrayList<>();

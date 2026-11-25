@@ -274,3 +274,24 @@
 .ide-welcome-root .ikonli-font-icon {
     -fx-icon-size: 16px;
 }
+
+.build-problems-pane .list-view {
+    -fx-background-color: -color-surface-panel;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+
+.build-problems-pane .list-cell {
+    -fx-text-fill: -color-fg-default;
+    -fx-padding: 3px 8px;
+    -fx-cell-size: 28px;
+}
+
+.build-problems-pane .list-cell:filled:hover {
+    -fx-background-color: -color-bg-subtle !important;
+}
+
+.build-problems-pane .list-cell:filled:selected {
+    -fx-background-color: -color-accent-subtle !important;
+}

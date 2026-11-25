@@ -146,6 +146,10 @@ public enum IDEDockItem {
         null,
         InitializationPolicy.EAGER,
         ConsolePane::new),
+    /** Errors reported by project builds. */
+    PROBLEMS(
+        "dock-item:problems", "railroad.ide.dock_item.problems", FontAwesomeSolid.EXCLAMATION_CIRCLE,
+        DockPosition.BOTTOM, null, InitializationPolicy.EAGER, BuildProblemsPane::new),
     /**
      * Terminal pane created on first selection.
      */

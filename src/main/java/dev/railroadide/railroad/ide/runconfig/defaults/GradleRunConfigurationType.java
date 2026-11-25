@@ -7,6 +7,9 @@ import dev.railroadide.railroad.debug.model.DebugEndpoint;
 import dev.railroadide.railroad.debug.source.DebugSource;
 import dev.railroadide.railroad.debug.source.LibrarySourceIndex;
 import dev.railroadide.railroad.debug.source.ProjectSourceResolver;
+import dev.railroadide.railroad.ide.diagnostics.BuildProblems;
+import dev.railroadide.railroad.gradle.service.impl.GradleBuildProblems;
+import dev.railroadide.railroad.ide.runconfig.session.RunOutput;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.GradleRunConfigurationData;
@@ -88,7 +91,11 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         if (executions.putIfAbsent(configuration.uuid(), execution) != null)
             return CompletableFuture
                 .failedFuture(new IllegalStateException("This Gradle configuration is already running"));
-        execution.session = project.getRunSessions().start(configuration, debug);
+        var sessions = project.getRunSessions();
+        execution.session = sessions.start(configuration, debug);
+        Path directory = configuration.data().getGradleProjectPath();
+        execution.problems = sessions.buildProblems().begin(configuration.uuid().toString(),
+            directory == null ? project.getPath() : directory);
         CompletableFuture.runAsync(() -> {
             try {
                 executeGradleBuild(project, configuration, execution, debug);
@@ -143,6 +150,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         private volatile boolean ended;
         private boolean finishing;
         private volatile RunSession session;
+        private BuildProblems.Report problems;
         private OutputStream stdout;
         private OutputStream stderr;
         private ProjectConnection connection;
@@ -240,6 +248,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
             }
             closeQuietly(execution.stdout);
             closeQuietly(execution.stderr);
+            execution.problems.finish(outcome instanceof BuildCancelledException ? null : outcome);
             execution.session.finish(null, outcome);
             executions.remove(configuration.uuid(), execution);
             if (outcome == null) {
@@ -297,8 +306,8 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
             return;
         RunSession runSession = execution.session;
         Charset charset = Charset.defaultCharset();
-        execution.stdout = runSession.stdout(charset);
-        execution.stderr = runSession.stderr(charset);
+        execution.stdout = execution.problems.output(charset, text -> runSession.append(RunOutput.Kind.STDOUT, text));
+        execution.stderr = execution.problems.output(charset, text -> runSession.append(RunOutput.Kind.STDERR, text));
         runSession.appendSystemLine("gradle " + task);
         // Colour output switches Gradle to its rich console, whose progress bar redraws lines with cursor movement.
         BuildLauncher launcher = execution.connection.newBuild()
@@ -310,6 +319,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
             .setStandardOutput(execution.stdout)
             .setStandardError(execution.stderr)
             .setStandardInput(runSession.input(charset));
+        GradleBuildProblems.listen(launcher, execution.problems);
         if (javaHome != null) {
             launcher.setJavaHome(javaHome.path().toFile());
         }

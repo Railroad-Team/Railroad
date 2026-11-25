@@ -105,6 +105,23 @@ public class GradleRunConfigurationLifecycleTest {
     }
 
     @Test
+    public void failedBuildScriptOpensAtItsSubprojectLine() throws Exception {
+        Files.writeString(directory.resolve("settings.gradle"), "rootProject.name = 'root'\ninclude 'app'");
+        Path build = Files.createDirectories(directory.resolve("app")).resolve("build.gradle");
+        Files.writeString(build,
+            "tasks.register('broken') {\n    doLast {\n        throw new GradleException('Missing input')\n    }\n}");
+        var type = type();
+        var project = project();
+        var config = configuration(type, ":app:broken");
+        assertThrows(ExecutionException.class, () -> type.run(project, config).get(60, TimeUnit.SECONDS));
+        var errors = project.getRunSessions().buildProblems().problems();
+        assertEquals(1, errors.size(), errors::toString);
+        assertEquals(build, errors.getFirst().file(), errors::toString);
+        assertEquals(3, errors.getFirst().line());
+        assertTrue(errors.getFirst().message().contains("Missing input"), errors::toString);
+    }
+
+    @Test
     public void buildFailurePreservesCauseAndAllowsRerun() throws Exception {
         Files.writeString(directory.resolve("settings.gradle"), "rootProject.name = 'lifecycle'");
         Files.writeString(directory.resolve("build.gradle"), "plugins { id 'java' }");

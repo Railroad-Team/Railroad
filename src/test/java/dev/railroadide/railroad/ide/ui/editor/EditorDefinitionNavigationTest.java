@@ -4,6 +4,18 @@ import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.command.CommandContext;
 import dev.railroadide.railroad.command.Commands;
+import dev.railroadide.railroad.command.RunCommands;
+import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
+import dev.railroadide.railroad.ide.runconfig.defaults.GradleRunConfigurationType;
+import dev.railroadide.railroad.ide.runconfig.defaults.data.GradleRunConfigurationData;
+import dev.railroadide.railroad.ide.ui.BuildProblemsPane;
+import dev.railroadide.railroad.java.JDK;
+import dev.railroadide.railroad.utility.JavaVersion;
+import java.io.File;
+import org.gradle.tooling.GradleConnector;
+import javafx.scene.control.ListView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
 import dev.railroadide.railroad.ide.sst.document.api.*;
@@ -463,6 +475,76 @@ public class EditorDefinitionNavigationTest {
             assertEquals(1, originEditor.getCaretPosition());
             return null;
         });
+    }
+
+    @Test
+    public void runSavesPendingSubprojectEditsAndOpensBuildProblemsAtTheReportedLine() throws Exception {
+        Path file = directory.resolve("app/src/main/java/Demo.java");
+        Files.createDirectories(file.getParent());
+        String valid = "class Demo {\n    static int value = 1;\n    public static void main(String[] args) {} }\n";
+        String invalid = valid.replace("= 1", "= missing");
+        Files.writeString(file, valid);
+        Files.writeString(directory.resolve("settings.gradle"), "rootProject.name = 'test'\ninclude 'app'");
+        Files.writeString(directory.resolve("app/build.gradle"), """
+            plugins { id 'java' }
+            tasks.register('launch', JavaExec) {
+                classpath = sourceSets.main.runtimeClasspath
+                mainClass = 'Demo'
+            }
+            """);
+        var launches = new LinkedBlockingQueue<CompletableFuture<Void>>();
+        var type = new GradleRunConfigurationType(() -> GradleConnector.newConnector()
+            .useInstallation(new File(System.getProperty("railroad.test.gradleHome")))) {
+            @Override
+            public CompletableFuture<Void> run(Project target, RunConfiguration<GradleRunConfigurationData> config) {
+                var result = super.run(target, config);
+                launches.add(result);
+                return result;
+            }
+        };
+        var config = new RunConfiguration<>(type, new GradleRunConfigurationData());
+        config.data().setName("Launch");
+        config.data().setTask(":app:launch");
+        config.data().setGradleProjectPath(directory);
+        config.data()
+            .setJavaHome(new JDK(Path.of(System.getProperty("java.home")), "Test JDK", JavaVersion.fromMajor(25)));
+        onFx(() -> {
+            Services.EDITOR_TAB_MANAGER.open(file);
+            var editor = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow().view().activeEditor();
+            editor.replaceText(invalid);
+            assertTrue(RunCommands.RUN.execute(CommandContext.withArgument(project, pane, config)));
+            assertEquals(invalid, Files.readString(file).replace("\r\n", "\n"));
+            return null;
+        });
+        var first = launches.remove();
+        assertThrows(ExecutionException.class, () -> first.get(60, TimeUnit.SECONDS));
+        var problems = project.getRunSessions().buildProblems();
+        assertEquals(1, problems.problems().size(), problems.problems()::toString);
+        var error = problems.problems().getFirst();
+        assertEquals(file, error.file());
+        assertEquals(2, error.line());
+        onFx(() -> {
+            pane.applyCss();
+            pane.layout();
+            assertTrue(pane.isDockItemActive(IDEDockItem.PROBLEMS));
+            var view = (BuildProblemsPane) pane.lookup(".build-problems-pane");
+            var rows = (ListView<?>) view.getCenter();
+            rows.getSelectionModel().select(0);
+            rows.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.ENTER, false, false, false, false));
+            return null;
+        });
+        onFx(() -> {
+            var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            assertTrue(Files.isSameFile(file, tab.path()));
+            var editor = tab.view().activeEditor();
+            assertEquals(1, editor.getCurrentParagraph());
+            editor.replaceText(valid);
+            assertTrue(RunCommands.RUN.execute(CommandContext.withArgument(project, pane, config)));
+            assertTrue(problems.problems().isEmpty());
+            return null;
+        });
+        launches.remove().get(60, TimeUnit.SECONDS);
+        assertTrue(problems.problems().isEmpty());
     }
 
     @Test

@@ -1393,6 +1393,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         trackOwnedTabs(pane);
         pane.getTabs().addAll(
             createDockTab(IDEDockItem.CONSOLE, IDEDockItem.DockPosition.BOTTOM),
+            createDockTab(IDEDockItem.PROBLEMS, IDEDockItem.DockPosition.BOTTOM),
             createDockTab(IDEDockItem.TERMINAL, IDEDockItem.DockPosition.BOTTOM),
             createDockTab(IDEDockItem.DEBUGGER, IDEDockItem.DockPosition.BOTTOM),
             createDockTab(IDEDockItem.USAGES, IDEDockItem.DockPosition.BOTTOM));
