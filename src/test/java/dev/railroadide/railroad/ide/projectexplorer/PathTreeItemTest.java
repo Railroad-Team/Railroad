@@ -128,7 +128,7 @@ public class PathTreeItemTest {
         Path file = createFile("src/main/java/dev/example/Match.java");
         createFile("src/main/java/dev/example/Other.java");
         var root = PathTreeItem.filtered(project.resolve("src/main/java"));
-        var dev = PathTreeItem.filtered(root.getValue().getPath().resolve("dev"));
+        PathTreeItem dev = PathTreeItem.filtered(root.getValue().getPath().resolve("dev"));
         var example = PathTreeItem.filtered(file.getParent());
         root.getChildren().add(dev);
         dev.getChildren().add(example);
