@@ -5,6 +5,7 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.debug.jdi.JdiDebugSession;
 import dev.railroadide.railroad.debug.model.DebugEndpoint;
 import dev.railroadide.railroad.debug.source.DebugSource;
+import dev.railroadide.railroad.debug.source.LibrarySourceIndex;
 import dev.railroadide.railroad.debug.source.ProjectSourceResolver;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
@@ -341,17 +342,22 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         });
         if (debug && !execution.ended) {
             Path root = ProjectPathIdentityUtils.normalize(project.getPath());
+            int moduleSeparator = task.lastIndexOf(':');
+            String modulePath = !editorMain && moduleSeparator > 0 ? task.substring(0, moduleSeparator) : null;
+            var dependencies = LibrarySourceIndex.forProject(project, List.of(), modulePath,
+                editorMain || modulePath != null ? null : gradleProjectPath);
             var resolver = editorMain
                 ? ProjectSourceResolver.create(root, gradleProjectPath.resolve(data.getMainSource()),
-                    data.getMainClass())
-                : ProjectSourceResolver.create(root);
+                    data.getMainClass(), dependencies)
+                : ProjectSourceResolver.create(root, dependencies);
             if (execution.ended)
                 return;
             execution.attachment = project.getDebuggingManager().startSession(
                 new DebugEndpoint("127.0.0.1", port), resolver,
                 Services.BREAKPOINT_SERVICE,
                 breakpoint -> breakpoint.source() instanceof DebugSource.FileSource(Path file)
-                    && ProjectPathIdentityUtils.normalize(file).startsWith(root),
+                    && (ProjectPathIdentityUtils.normalize(file).startsWith(root)
+                        || resolver.isDependencySource(breakpoint.source())),
                 event -> Railroad.LOGGER.debug("Gradle debugger event: {}", event),
                 Duration.ofMinutes(editorMain ? 10 : 1), () -> execution.ended);
             execution.attachment.whenComplete((session, failure) -> {

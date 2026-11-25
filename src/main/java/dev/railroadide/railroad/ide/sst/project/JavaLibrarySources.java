@@ -228,6 +228,47 @@ public final class JavaLibrarySources {
         return candidates.stream().distinct().filter(Files::isRegularFile).toList();
     }
 
+    /**
+     * Writes a source file from a library jar's attached sources into the folder that navigation uses for that jar,
+     * so the debugger and the editor refer to the same read-only file.
+     *
+     * @param binary library jar from the classpath
+     * @param relative path of the source file inside the source archive, such as {@code net/example/Thing.java}
+     * @return the materialized source file, or empty when no attached source archive contains it
+     */
+    public Optional<Path> materializeAttachedSource(Path binary, String relative) {
+        Objects.requireNonNull(binary, "binary");
+        Objects.requireNonNull(relative, "relative");
+        Path archive = binary.toAbsolutePath().normalize();
+        try {
+            Optional<AttachedSource> attached = read(sourceArchives(archive), List.of(relative));
+            if (attached.isEmpty())
+                return Optional.empty();
+
+            Path root = viewRoot(archive);
+            Path file = root.resolve(relative).normalize();
+            if (!file.startsWith(root))
+                return Optional.empty();
+
+            write(file, normalize(attached.get().text()));
+            return Optional.of(file);
+        } catch (IOException | UncheckedIOException | InvalidPathException exception) {
+            Railroad.LOGGER.warn("Failed to provide attached source {} for {}", relative, archive, exception);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Returns the folder holding the materialized attached sources of a library jar. Package directories below it
+     * mirror the source archive, so it acts as a source root.
+     *
+     * @param binary library jar from the classpath
+     * @return absolute normalized folder, which may not exist yet
+     */
+    public Path viewRoot(Path binary) {
+        return directory.resolve("sources").resolve(hash(binary.toAbsolutePath().normalize().toString()));
+    }
+
     private static Optional<AttachedSource> read(List<Path> archives, List<String> entries) throws IOException {
         for (Path archive : archives) {
             if (!Files.isRegularFile(archive))

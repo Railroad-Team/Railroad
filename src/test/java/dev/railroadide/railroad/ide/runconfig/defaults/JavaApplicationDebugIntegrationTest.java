@@ -153,6 +153,7 @@ public class JavaApplicationDebugIntegrationTest {
             (_, method, _) -> switch (method.getName()) {
                 case "getPath" -> directory;
                 case "getDebuggingManager" -> manager[0];
+                case "hasFacet" -> false;
                 case "getRunSessions" -> sessions;
                 default -> throw new UnsupportedOperationException(method.getName());
             });

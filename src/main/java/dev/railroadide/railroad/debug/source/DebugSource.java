@@ -5,16 +5,16 @@ import dev.railroadide.railroad.utility.ProjectPathIdentityUtils;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Objects;
 
 import java.util.Optional;
 
 /**
- * Identifies debugger source content in a file or archive and supplies breakpoint matching hints.
+ * Identifies debugger source content in a file and supplies breakpoint matching hints. Dependency sources are
+ * represented by the read-only files that library navigation materializes for them.
  */
 public sealed interface DebugSource {
     /**
-     * Compares this source identity with another source according to its file or archive representation.
+     * Compares this source identity with another source.
      *
      * @param other source identity to compare with this source
      * @return true when both identities refer to the same source content
@@ -23,7 +23,7 @@ public sealed interface DebugSource {
     /**
      * Returns the source filename used for runtime source-name filtering.
      *
-     * @return the file or archive-entry basename
+     * @return the file basename
      */
     String name();
     /**
@@ -69,31 +69,6 @@ public sealed interface DebugSource {
             }
 
             return Optional.empty();
-        }
-    }
-
-    /**
-     * Identifies a source entry within an archive.
-     *
-     * @param archive path to the source archive
-     * @param entry source entry path within the archive
-     */
-    record ArchiveSource(Path archive, String entry) implements DebugSource {
-        @Override
-        public boolean matches(DebugSource other) {
-            return other instanceof ArchiveSource(Path archive1, String entry1) &&
-                Objects.equals(archive, archive1) && Objects.equals(entry, entry1);
-        }
-
-        @Override
-        public String name() {
-            int slash = entry.lastIndexOf('/');
-            return slash == -1 ? entry : entry.substring(slash + 1);
-        }
-
-        @Override
-        public Optional<String> classPattern(List<Path> paths) {
-            return Optional.empty(); // TODO: Integrate gradle/maven dependency roots
         }
     }
 }

@@ -6,6 +6,7 @@ import dev.railroadide.railroad.debug.breakpoint.SourceBreakpoint;
 import dev.railroadide.railroad.debug.jdi.JdiDebugSession;
 import dev.railroadide.railroad.debug.model.DebugEndpoint;
 import dev.railroadide.railroad.debug.source.DebugSource;
+import dev.railroadide.railroad.debug.source.LibrarySourceIndex;
 import dev.railroadide.railroad.debug.source.ProjectSourceResolver;
 import dev.railroadide.railroad.debug.source.SourceResolver;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
@@ -213,13 +214,18 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
 
                     CompletableFuture<JdiDebugSession> attachment = CompletableFuture.completedFuture(null);
                     if (debug && debugPort > 0) {
-                        SourceResolver sourceResolver = ProjectSourceResolver.create(project.getPath());
+                        List<Path> launchClasspath = Arrays.stream(classpathEntries)
+                            .map(entry -> resolveClasspathPath(entry, workingDirectory))
+                            .toList();
+                        SourceResolver sourceResolver = ProjectSourceResolver.create(project.getPath(),
+                            LibrarySourceIndex.forProject(project, launchClasspath, null, null));
 
                         attachment = project.getDebuggingManager().startSession(
                             new DebugEndpoint("127.0.0.1", debugPort),
                             sourceResolver,
                             Services.BREAKPOINT_SERVICE,
-                            breakpoint -> belongsToProject(project, breakpoint),
+                            breakpoint -> belongsToProject(project, breakpoint)
+                                || sourceResolver.isDependencySource(breakpoint.source()),
                             _ -> {
                             },
                             Duration.ofSeconds(5),
