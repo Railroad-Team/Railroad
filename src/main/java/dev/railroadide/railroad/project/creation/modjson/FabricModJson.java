@@ -39,7 +39,7 @@ public class FabricModJson {
     /**
      * Initialization entrypoints grouped by their entrypoint key.
      */
-    private Map<String, List<Entrypoint>> entrypoints;
+    private EntrypointContainer entrypoints;
     /**
      * JAR resources nested inside the mod.
      */
@@ -102,7 +102,7 @@ public class FabricModJson {
     /**
      * Project contact information and links.
      */
-    private Map<String, String> contact;
+    private ContactInformation contact;
     /**
      * License identifiers or descriptions for the mod.
      */
