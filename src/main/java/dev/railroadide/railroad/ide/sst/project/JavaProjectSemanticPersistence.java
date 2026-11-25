@@ -19,7 +19,9 @@ import java.util.stream.Collectors;
 import java.util.function.Consumer;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolDescriptor;
 
-/** Persists the complete Java project semantic index as one atomic binary snapshot. */
+/**
+ * Persists the complete Java project semantic index as one atomic binary snapshot.
+ */
 public final class JavaProjectSemanticPersistence implements ProjectLanguageIndexPersistence<JavaProjectSemanticIndex> {
     private static final String CACHE_DIRECTORY = ".railroad/index/semantic";
     private static final String SNAPSHOT_FILE = "project-semantic-index.bin";
@@ -59,6 +61,7 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
             List<ManifestEntry> entries = readManifestEntries(input, fileCount, activityCheck);
             if (!matchesIndexedFiles(normalizedRoot, entries, indexedFiles, activityCheck))
                 return null;
+
             for (ManifestEntry entry : entries) {
                 activityCheck.run();
                 Path sourcePath = normalizedRoot.resolve(entry.relativePath()).normalize();
@@ -73,6 +76,7 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
                 activityCheck.run();
                 builder.putFile(readFileIndex(input, normalizedRoot, entries.get(index).contentHash(), activityCheck));
             }
+
             JavaProjectSemanticIndex result = builder.build();
             activityCheck.run();
             return result;
@@ -163,11 +167,13 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
                         activityCheck.run();
                         writeManifestEntry(output, file.manifestEntry());
                     }
+
                     for (PersistedFile file : files) {
                         activityCheck.run();
                         writeFileIndex(output, projectRoot, file.fileIndex(), activityCheck);
                     }
                 }
+
                 activityCheck.run();
                 commit.accept(() -> {
                     try {
@@ -206,11 +212,13 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
         throws IOException {
         if (fileCount < 0)
             throw new IOException("Negative semantic index file count");
+
         List<ManifestEntry> entries = new ArrayList<>(fileCount);
         for (int index = 0; index < fileCount; index++) {
             activityCheck.run();
             entries.add(new ManifestEntry(input.readUTF(), input.readLong(), input.readUTF()));
         }
+
         return entries;
     }
 
@@ -222,6 +230,7 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
     ) {
         if (indexedFiles == null)
             return true;
+
         Set<Path> expected = indexedFiles.stream().peek(_ -> activityCheck.run())
             .filter(Objects::nonNull)
             .map(FileUtils::normalizePath)
@@ -247,6 +256,7 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
             imports.add(new JavaProjectSemanticIndex.ImportDescriptor(
                 input.readUTF(), input.readBoolean(), input.readBoolean()));
         }
+
         int symbolCount = input.readInt();
         List<JavaProjectSemanticIndex.SymbolDescriptor> symbols = new ArrayList<>(symbolCount);
         for (int index = 0; index < symbolCount; index++) {
@@ -262,6 +272,7 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
                 input.readBoolean(),
                 SemanticGraphCodec.read(input, SymbolDescriptor.class)));
         }
+
         var shard = SemanticGraphCodec.read(input, SemanticIndexShard.class);
         return new JavaProjectSemanticIndex.SourceFileIndex(sourcePath, packageName, imports, symbols, sourceHash,
             shard);
@@ -282,6 +293,7 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
             output.writeBoolean(descriptor.isStatic());
             output.writeBoolean(descriptor.isWildcard());
         }
+
         output.writeInt(file.declaredSymbols().size());
         for (JavaProjectSemanticIndex.SymbolDescriptor symbol : file.declaredSymbols()) {
             activityCheck.run();
@@ -294,6 +306,7 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
             output.writeBoolean(symbol.isTopLevel());
             SemanticGraphCodec.write(output, symbol.descriptor());
         }
+
         SemanticGraphCodec.write(output, file.semanticShard());
     }
 
@@ -345,6 +358,7 @@ public final class JavaProjectSemanticPersistence implements ProjectLanguageInde
                     digest.update(buffer, 0, count);
                 }
             }
+
             activityCheck.run();
             return HexFormat.of().formatHex(digest.digest());
         } catch (NoSuchAlgorithmException exception) {

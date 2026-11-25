@@ -29,27 +29,49 @@ public record WorkspaceEditProblem(Kind kind, int changeIndex, DocumentUri uri, 
             throw new IllegalArgumentException("changeIndex must be -1 or a change index");
     }
 
-    /** Problem categories. */
+    /**
+     * Problem categories.
+     */
     public enum Kind {
-        /** A bound document changed after the edit was computed, including unobserved on-disk changes. */
+        /**
+         * A bound document changed after the edit was computed, including unobserved on-disk changes.
+         */
         STALE,
-        /** Replacements overlap, share a start offset, or fall outside the expected document. */
+        /**
+         * Replacements overlap, share a start offset, or fall outside the expected document.
+         */
         OVERLAP,
-        /** The edit is malformed, for example an invalid selection or undecodable new text file. */
+        /**
+         * The edit is malformed, for example an invalid selection or undecodable new text file.
+         */
         INVALID,
-        /** The target is read-only, generated, decompiled, attached source, or not writable on disk. */
+        /**
+         * The target is read-only, generated, decompiled, attached source, or not writable on disk.
+         */
         READ_ONLY,
-        /** The target is outside the project directory or in a directory Railroad does not manage. */
+        /**
+         * The target is outside the project directory or in a directory Railroad does not manage.
+         */
         OUTSIDE_WORKSPACE,
-        /** A bound document or file no longer exists. */
+        /**
+         * A bound document or file no longer exists.
+         */
         MISSING,
-        /** A created or renamed file's destination already exists. */
+        /**
+         * A created or renamed file's destination already exists.
+         */
         ALREADY_EXISTS,
-        /** Changes contradict each other, for example editing and deleting one document. */
+        /**
+         * Changes contradict each other, for example editing and deleting one document.
+         */
         CONFLICT,
-        /** The target is in a state the applier will not change, such as deleting a file open in an editor. */
+        /**
+         * The target is in a state the applier will not change, such as deleting a file open in an editor.
+         */
         IN_USE,
-        /** A filesystem operation failed while applying or reverting. */
+        /**
+         * A filesystem operation failed while applying or reverting.
+         */
         IO_FAILURE
     }
 }

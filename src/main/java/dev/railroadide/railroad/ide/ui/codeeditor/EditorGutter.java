@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.IntFunction;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Owns an editor's paragraph graphics, combining line numbers with independent marker columns.
@@ -49,7 +50,9 @@ public final class EditorGutter {
         refresh();
     }
 
-    /** Registers a column after the ordinary marker columns. */
+    /**
+     * Registers a column after the ordinary marker columns.
+     */
     public void addTrailingColumn(GutterColumn column) {
         Objects.requireNonNull(column, "column");
         trailingColumns.put(column.id(), column);
@@ -91,6 +94,7 @@ public final class EditorGutter {
                     hidden.setVisible(false);
                     return hidden;
                 }
+
                 return createGraphic(paragraphIndex + 1);
             }
         });
@@ -111,7 +115,7 @@ public final class EditorGutter {
         grid.add(number, 0, 0);
 
         int columnIndex = 1;
-        var orderedColumns = new ArrayList<>(columns.values());
+        List<GutterColumn> orderedColumns = new ArrayList<>(columns.values());
         orderedColumns.addAll(trailingColumns.values());
         for (GutterColumn column : orderedColumns) {
             var constraints = new ColumnConstraints(column.width(), column.width(), column.width());
@@ -129,9 +133,11 @@ public final class EditorGutter {
             if (marker != null) {
                 cell.getChildren().add(marker);
             }
+
             if (column.onClick() != null) {
                 cell.setOnMouseClicked(event -> column.onClick().accept(line, event));
             }
+
             grid.add(cell, columnIndex++, 0);
         }
 

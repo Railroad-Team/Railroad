@@ -19,7 +19,9 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.util.Locale;
 
-/** Compact suggestion list and keyboard hints displayed next to the editor caret. */
+/**
+ * Compact suggestion list and keyboard hints displayed next to the editor caret.
+ */
 public final class CompletionPopupContent extends VBox {
     private static final int VISIBLE_ROWS = 8;
 
@@ -40,8 +42,8 @@ public final class CompletionPopupContent extends VBox {
         var body = new StackPane(list);
         body.getStyleClass().add("completion-body");
 
-        var results = label(L18n.localize("railroad.ide.completion.suggestions"), "completion-caption");
-        var total = label("", "completion-count");
+        Label results = label(L18n.localize("railroad.ide.completion.suggestions"), "completion-caption");
+        Label total = label("", "completion-count");
         total.textProperty().bind(count.asString());
         var space = new Region();
         HBox.setHgrow(space, Priority.ALWAYS);
@@ -102,6 +104,7 @@ public final class CompletionPopupContent extends VBox {
                 case TYPE -> FontAwesomeSolid.CUBE;
                 case TEXT -> FontAwesomeSolid.FONT;
             });
+
             tile.getStyleClass().setAll("completion-symbol",
                 "completion-" + item.kind().name().toLowerCase(Locale.ROOT));
             name.setText(item.label());

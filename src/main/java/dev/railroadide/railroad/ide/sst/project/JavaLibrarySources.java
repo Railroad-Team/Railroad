@@ -17,6 +17,7 @@ import java.util.*;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.io.InputStream;
 
 /**
  * Provides readable Java source for compiled library and JDK classes, so that navigation can open them.
@@ -61,11 +62,13 @@ public final class JavaLibrarySources {
         JavaLibrarySources current = shared;
         if (current != null)
             return current;
+
         synchronized (JavaLibrarySources.class) {
             if (shared == null) {
                 shared = new JavaLibrarySources(
                     Path.of(System.getProperty("java.io.tmpdir"), "railroad-library-sources"));
             }
+
             return shared;
         }
     }
@@ -167,11 +170,13 @@ public final class JavaLibrarySources {
             String path = value.getPath();
             if (path == null || path.length() < 2)
                 return Optional.empty();
+
             String module = path.substring(1, path.indexOf('/', 1) < 0 ? path.length() : path.indexOf('/', 1));
             Path home = Path.of(System.getProperty("java.home"));
             return read(List.of(home.resolve("lib/src.zip"), home.resolve("src.zip")),
                 List.of(module + "/" + relative, relative));
         }
+
         if (!scheme.equals("jar"))
             return Optional.empty();
 
@@ -179,6 +184,7 @@ public final class JavaLibrarySources {
         int separator = specific.indexOf("!/");
         if (separator < 0)
             return Optional.empty();
+
         Path archive = Path.of(URI.create(specific.substring(0, separator)));
         String name = archive.getFileName().toString();
         if (name.endsWith(".jmod")) {
@@ -189,6 +195,7 @@ public final class JavaLibrarySources {
                 : read(List.of(home.resolve("lib/src.zip"), home.resolve("src.zip")),
                     List.of(module + "/" + relative, relative));
         }
+
         if (name.equals("rt.jar")) {
             List<Path> candidates = new ArrayList<>();
             for (Path ancestor = archive.getParent(); ancestor != null
@@ -196,8 +203,10 @@ public final class JavaLibrarySources {
                 candidates.add(ancestor.resolve("src.zip"));
                 candidates.add(ancestor.resolve("lib/src.zip"));
             }
+
             return read(candidates, List.of(relative));
         }
+
         return read(sourceArchives(archive), List.of(relative));
     }
 
@@ -211,6 +220,7 @@ public final class JavaLibrarySources {
     public static List<Path> sourceArchives(Path archive) throws IOException {
         if (archive.getFileName() == null || !archive.getFileName().toString().endsWith(".jar"))
             return List.of();
+
         String name = archive.getFileName().toString();
         List<String> names = sourceArchiveNames(name);
         List<Path> candidates = new ArrayList<>();
@@ -225,6 +235,7 @@ public final class JavaLibrarySources {
                 }
             }
         }
+
         return candidates.stream().distinct().filter(Files::isRegularFile).toList();
     }
 
@@ -273,68 +284,78 @@ public final class JavaLibrarySources {
         for (Path archive : archives) {
             if (!Files.isRegularFile(archive))
                 continue;
+
             try (var zip = new ZipFile(archive.toFile(), StandardCharsets.UTF_8)) {
                 for (String entryName : entries) {
                     ZipEntry entry = zip.getEntry(entryName);
                     if (entry == null || entry.isDirectory())
                         continue;
-                    try (var input = zip.getInputStream(entry)) {
+
+                    try (InputStream input = zip.getInputStream(entry)) {
                         return Optional.of(new AttachedSource(archive.toAbsolutePath().normalize(), entryName,
                             new String(input.readAllBytes(), StandardCharsets.UTF_8)));
                     }
                 }
             }
         }
+
         return Optional.empty();
     }
 
-    /** Adds declarations shipped only as source to the owning archive's analysis view. */
+    /**
+     * Adds declarations shipped only as source to the owning archive's analysis view.
+     */
     public JavaSymbolIndex withSourceOnlyTypes(
         Path binary,
         JavaSymbolIndex symbols,
         JavaSymbolIndex unscoped,
         Runnable check
-    )
-        throws IOException {
+    ) throws IOException {
         var builder = JavaProjectSemanticIndex.builder();
-        var texts = new HashMap<Path, String>();
+        Map<Path, String> texts = new HashMap<Path, String>();
         var extractor = new JavaProjectSemanticExtractor();
-        var view = directory.resolve("sources").resolve(hash(binary.toString()));
+        Path view = directory.resolve("sources").resolve(hash(binary.toString()));
         for (Path archive : sourceArchives(binary)) {
             try (var zip = new ZipFile(archive.toFile(), StandardCharsets.UTF_8)) {
-                for (var entries = zip.entries(); entries.hasMoreElements();) {
+                for (Enumeration<? extends ZipEntry> entries = zip.entries(); entries.hasMoreElements();) {
                     check.run();
-                    var entry = entries.nextElement();
+                    ZipEntry entry = entries.nextElement();
                     String name = entry.getName();
                     if (!name.endsWith(".java"))
                         continue;
+
                     String qualified = name.substring(0, name.length() - 5).replace('/', '.');
                     if (!SourceVersion.isName(qualified) || !name.equals(qualified.replace('.', '/') + ".java")
                         || symbols.declaredQualifiedNames().contains(qualified))
                         continue;
+
                     Path path = view.resolve(name);
                     if (texts.containsKey(path))
                         continue;
+
                     String text;
-                    try (var input = zip.getInputStream(entry)) {
+                    try (InputStream input = zip.getInputStream(entry)) {
                         text = normalize(new String(input.readAllBytes(), StandardCharsets.UTF_8));
                     }
+
                     var uri = JavaLibrarySymbolIndex.archiveEntry(archive, name);
                     var snapshot = new TextDocumentSnapshot(
                         new DocumentId(UUID.nameUUIDFromBytes(uri.toString().getBytes(StandardCharsets.UTF_8))), uri,
                         DocumentVersion.initial(), "java", DocumentOrigin.original(uri), text, StandardCharsets.UTF_8);
-                    var file = extractor.extract(path, snapshot, check);
+                    JavaProjectSemanticIndex.SourceFileIndex file = extractor.extract(path, snapshot, check);
                     if (file.declaredSymbols().stream().noneMatch(symbol -> qualified.equals(symbol.qualifiedName()))
                         || file.declaredSymbols().stream()
                             .anyMatch(symbol -> symbol.qualifiedName() != null
                                 && symbols.declaredQualifiedNames().contains(symbol.qualifiedName())))
                         continue;
+
                     write(path, text);
                     builder.putFile(file);
                     texts.put(path, text);
                 }
             }
         }
+
         return texts.isEmpty()
             ? symbols
             : new CompositeJavaSymbolIndex(List.of(symbols, builder.build()), unscoped, texts);
@@ -344,10 +365,12 @@ public final class JavaLibrarySources {
         URI uri = entry.value();
         if (!"jar".equalsIgnoreCase(uri.getScheme()))
             return Optional.empty();
+
         String name = uri.getRawSchemeSpecificPart();
         int end = name.indexOf("!/");
         if (end < 0)
             return Optional.empty();
+
         URI archive = URI.create(name.substring(0, end));
         return "file".equalsIgnoreCase(archive.getScheme())
             ? Optional.of(Path.of(archive).toAbsolutePath().normalize())
@@ -365,18 +388,21 @@ public final class JavaLibrarySources {
     public Optional<Path> ownerArchive(DocumentSnapshot document, List<Path> roots) {
         if (document.origin().provenance() == ProvenanceKind.ATTACHED_SOURCE) {
             for (OriginReference source : document.origin().sources()) {
-                var archive = archivePath(source.uri()).filter(roots::contains);
+                Optional<Path> archive = archivePath(source.uri()).filter(roots::contains);
                 if (archive.isPresent())
                     return archive;
             }
         }
+
         Optional<Path> attached = archivePath(document.uri());
         if (attached.isPresent()) {
             Path source = attached.get();
             if (roots.contains(source))
                 return Optional.of(source);
+
             return roots.stream().filter(root -> isSourceAttachment(source, root)).findFirst();
         }
+
         Path file = document.uri().filePath().orElse(null);
         return ownerArchive(file, roots);
     }
@@ -384,11 +410,14 @@ public final class JavaLibrarySources {
     private static boolean isSourceAttachment(Path source, Path binary) {
         if (binary.getFileName() == null || source.getFileName() == null)
             return false;
+
         String name = binary.getFileName().toString();
         if (!name.endsWith(".jar"))
             return false;
+
         if (!sourceArchiveNames(name).contains(source.getFileName().toString()))
             return false;
+
         Path parent = binary.getParent();
         Path sourceParent = source.getParent();
         return parent.equals(sourceParent) || (isCacheHash(parent) && isCacheHash(sourceParent)
@@ -407,11 +436,14 @@ public final class JavaLibrarySources {
             : List.of(sources);
     }
 
-    /** Finds the imported binary owning a materialized attached source file. */
+    /**
+     * Finds the imported binary owning a materialized attached source file.
+     */
     public Optional<Path> ownerArchive(@Nullable Path file, List<Path> roots) {
         Path views = directory.resolve("sources");
         if (file == null || !file.startsWith(views) || file.getNameCount() < views.getNameCount() + 2)
             return Optional.empty();
+
         String key = views.relativize(file).getName(0).toString();
         return roots.stream().filter(root -> hash(root.toString()).equals(key)).findFirst();
     }
@@ -420,6 +452,7 @@ public final class JavaLibrarySources {
         if (text.startsWith("﻿")) {
             text = text.substring(1);
         }
+
         return text.replace("\r\n", "\n").replace('\r', '\n');
     }
 
@@ -434,10 +467,12 @@ public final class JavaLibrarySources {
             if (Files.exists(file)) {
                 file.toFile().setWritable(true);
             }
+
             Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } finally {
             Files.deleteIfExists(temporary);
         }
+
         file.toFile().setWritable(false);
     }
 

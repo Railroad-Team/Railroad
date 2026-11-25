@@ -45,7 +45,7 @@ public class WorkspaceNavigationResolverTest {
 
     @Test
     public void rejectsMissingShardAndMismatchedRevisionOrUri() {
-        var graph = references(ref(TYPE, ReferenceKindId.TYPE_USE, 4, 8));
+        WorkspaceSymbolGraph graph = references(ref(TYPE, ReferenceKindId.TYPE_USE, 4, 8));
         assertTrue(SemanticNavigationResolver.symbolAt(WorkspaceSymbolGraph.of(List.of()), source, 4).isEmpty());
         var changed = new TextDocumentSnapshot(source.id(), source.uri(), source.version().next(), "java",
             source.origin(), source.text(), StandardCharsets.UTF_8);
@@ -57,71 +57,77 @@ public class WorkspaceNavigationResolverTest {
 
     @Test
     public void deduplicatesDifferentReferenceRolesForOneSymbol() {
-        var graph = references(ref(TYPE, ReferenceKindId.READ, 4, 8), ref(TYPE, ReferenceKindId.WRITE, 4, 8));
+        WorkspaceSymbolGraph graph = references(ref(TYPE, ReferenceKindId.READ, 4, 8),
+            ref(TYPE, ReferenceKindId.WRITE, 4, 8));
         assertEquals(TYPE, SemanticNavigationResolver.symbolAt(graph, source, 4).orElseThrow());
     }
 
     @Test
     public void constructorCallWinsOverTypeUseRegardlessOfOrdering() {
-        var type = ref(TYPE, ReferenceKindId.TYPE_USE, 4, 8);
-        var call = ref(CALL, ReferenceKindId.CALL, 4, 8);
-        for (var graph : List.of(references(type, call), references(call, type))) {
+        ReferenceOccurrence type = ref(TYPE, ReferenceKindId.TYPE_USE, 4, 8);
+        ReferenceOccurrence call = ref(CALL, ReferenceKindId.CALL, 4, 8);
+        for (WorkspaceSymbolGraph graph : List.of(references(type, call), references(call, type))) {
             assertEquals(CALL, SemanticNavigationResolver.symbolAt(graph, source, 5).orElseThrow());
         }
     }
 
     @Test
     public void overlappingButDifferentRangesRemainAmbiguous() {
-        var graph = references(ref(TYPE, ReferenceKindId.TYPE_USE, 4, 8), ref(CALL, ReferenceKindId.CALL, 0, 10));
+        WorkspaceSymbolGraph graph = references(ref(TYPE, ReferenceKindId.TYPE_USE, 4, 8),
+            ref(CALL, ReferenceKindId.CALL, 0, 10));
         assertTrue(SemanticNavigationResolver.symbolAt(graph, source, 5).isEmpty());
     }
 
     @Test
     public void multipleCallsAreNotSilentlyResolvedToTheFirst() {
-        var graph = references(ref(TYPE, ReferenceKindId.TYPE_USE, 4, 8), ref(CALL, ReferenceKindId.CALL, 4, 8),
+        WorkspaceSymbolGraph graph = references(ref(TYPE, ReferenceKindId.TYPE_USE, 4, 8),
+            ref(CALL, ReferenceKindId.CALL, 4, 8),
             ref(new SymbolId("test:otherConstructor"), ReferenceKindId.CALL, 4, 8));
         assertTrue(SemanticNavigationResolver.symbolAt(graph, source, 5).isEmpty());
     }
 
     @Test
     public void callDoesNotSuppressOtherReferenceKinds() {
-        var graph = references(ref(TYPE, ReferenceKindId.READ, 4, 8), ref(CALL, ReferenceKindId.CALL, 4, 8));
+        WorkspaceSymbolGraph graph = references(ref(TYPE, ReferenceKindId.READ, 4, 8),
+            ref(CALL, ReferenceKindId.CALL, 4, 8));
         assertTrue(SemanticNavigationResolver.symbolAt(graph, source, 5).isEmpty());
     }
 
     @Test
     public void definitionPrefersSelectionAndRetainsCapturedDestination() {
         var selection = Location.TextLocation.from(destination, 6, 10);
-        var graph = definitions(location(destination, selection, true));
-        var targets = SemanticNavigationResolver.definitionsOf(graph, workspace(destination), TYPE);
+        WorkspaceSymbolGraph graph = definitions(location(destination, selection, true));
+        List<DefinitionTarget> targets = SemanticNavigationResolver.definitionsOf(graph, workspace(destination), TYPE);
         assertEquals(1, targets.size());
-        var target = targets.getFirst();
+        DefinitionTarget target = targets.getFirst();
         assertSame(destination, target.snapshot());
         assertEquals(selection, target.location());
     }
 
     @Test
     public void definitionFallsBackToDeclarationWhenSelectionIsAbsent() {
-        var location = location(destination, null, true);
-        var target = SemanticNavigationResolver.definitionsOf(definitions(location), workspace(destination), TYPE)
+        SymbolLocation location = location(destination, null, true);
+        DefinitionTarget target = SemanticNavigationResolver
+            .definitionsOf(definitions(location), workspace(destination), TYPE)
             .getFirst();
         assertEquals(location.declaration(), target.location());
     }
 
     @Test
     public void duplicateLocationsAreOneTargetAndDistinctLocationsAreAllReturnedInRankOrder() {
-        var first = location(destination, Location.TextLocation.from(destination, 6, 10), true);
+        SymbolLocation first = location(destination, Location.TextLocation.from(destination, 6, 10), true);
         assertEquals(1, SemanticNavigationResolver.definitionsOf(definitions(first, first), workspace(destination),
             TYPE).size());
-        var second = location(destination, Location.TextLocation.from(destination, 0, 5), true);
-        var targets = SemanticNavigationResolver.definitionsOf(definitions(first, second), workspace(destination),
+        SymbolLocation second = location(destination, Location.TextLocation.from(destination, 0, 5), true);
+        List<DefinitionTarget> targets = SemanticNavigationResolver.definitionsOf(definitions(first, second),
+            workspace(destination),
             TYPE);
         assertEquals(List.of(0, 6), targets.stream().map(target -> target.location().range().start).toList());
     }
 
     @Test
     public void missingSymbolAndMissingDestinationReturnEmpty() {
-        var graph = definitions(location(destination, null, true));
+        WorkspaceSymbolGraph graph = definitions(location(destination, null, true));
         assertTrue(SemanticNavigationResolver.definitionsOf(graph, workspace(destination), CALL).isEmpty());
         assertTrue(SemanticNavigationResolver.definitionsOf(graph, workspace(source), TYPE).isEmpty());
     }
@@ -134,7 +140,7 @@ public class WorkspaceNavigationResolverTest {
     }
 
     private void invalidOrUnsupportedDestinationsAreSkipped(String kind) {
-        var uri = kind.equals("virtual") ? DocumentUri.parse("untitled:Type.java") : destination.uri();
+        DocumentUri uri = kind.equals("virtual") ? DocumentUri.parse("untitled:Type.java") : destination.uri();
         var snapshot = new TextDocumentSnapshot(destination.id(), uri, destination.version(), "java",
             DocumentOrigin.original(uri), destination.text(), StandardCharsets.UTF_8);
         Location<?> declaration = switch (kind) {
@@ -145,33 +151,37 @@ public class WorkspaceNavigationResolverTest {
             case "noRange" -> null;
             default -> Location.TextLocation.from(snapshot, 0, snapshot.text().length());
         };
+
         var location = new SymbolLocation(uri, snapshot.origin(), declaration, null, !kind.equals("notNavigable"));
-        var captured = switch (kind) {
+        TextDocumentSnapshot captured = switch (kind) {
             case "stale" -> new TextDocumentSnapshot(snapshot.id(), uri, snapshot.version().next(), "java",
                 snapshot.origin(), snapshot.text(), StandardCharsets.UTF_8);
             case "uri" -> new TextDocumentSnapshot(snapshot.id(), source.uri(), snapshot.version(), "java",
                 source.origin(), snapshot.text(), StandardCharsets.UTF_8);
             default -> snapshot;
         };
+
         assertTrue(SemanticNavigationResolver.definitionsOf(definitions(location), workspace(captured), TYPE)
             .isEmpty());
     }
 
     @Test
     public void invalidAlternativeDoesNotHideAValidDefinition() {
-        var valid = location(destination, null, true);
-        var ignored = location(destination, Location.TextLocation.from(destination, 6, 10), false);
+        SymbolLocation valid = location(destination, null, true);
+        SymbolLocation ignored = location(destination, Location.TextLocation.from(destination, 6, 10), false);
         assertEquals(List.of(valid.declaration()), SemanticNavigationResolver.definitionsOf(definitions(ignored, valid),
             workspace(destination), TYPE).stream().map(DefinitionTarget::location).toList());
     }
 
     @Test
     public void definitionAtComposesReferenceAndCrossFileDeclarationLookup() {
-        var declarationGraph = definitions(location(destination, Location.TextLocation.from(destination, 6, 10), true));
-        var shards = new ArrayList<>(declarationGraph.shards().values());
+        WorkspaceSymbolGraph declarationGraph = definitions(
+            location(destination, Location.TextLocation.from(destination, 6, 10), true));
+        List<SemanticIndexShard> shards = new ArrayList<>(declarationGraph.shards().values());
         shards.addAll(references(ref(TYPE, ReferenceKindId.TYPE_USE, 4, 8)).shards().values());
         var graph = WorkspaceSymbolGraph.of(shards);
-        var target = SemanticNavigationResolver.definitionAt(graph, workspace(source, destination), source, 5)
+        DefinitionTarget target = SemanticNavigationResolver
+            .definitionAt(graph, workspace(source, destination), source, 5)
             .getFirst();
         assertEquals(destination.id(), target.location().documentId());
         assertEquals(6, target.location().range().start);
@@ -184,7 +194,7 @@ public class WorkspaceNavigationResolverTest {
 
     @Test
     public void binaryDestinationSnapshotCannotSatisfyATextDefinition() {
-        var graph = definitions(location(destination, null, true));
+        WorkspaceSymbolGraph graph = definitions(location(destination, null, true));
         var binary = new BinaryDocumentSnapshot(destination.id(), destination.uri(), destination.version(), "binary",
             new byte[20]);
         var store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()));
@@ -194,7 +204,7 @@ public class WorkspaceNavigationResolverTest {
 
     @Test
     public void referenceOffsetsUseUtf16AcrossSurrogatePairsAndCrLf() {
-        var snapshot = document("Unicode.java", "// \uD83D\uDE00\r\nType");
+        TextDocumentSnapshot snapshot = document("Unicode.java", "// \uD83D\uDE00\r\nType");
         int start = snapshot.text().indexOf("Type");
         var occurrence = new ReferenceOccurrence(TYPE, ReferenceKindId.TYPE_USE,
             Location.TextLocation.from(snapshot, start, start + 4), null);
@@ -213,7 +223,7 @@ public class WorkspaceNavigationResolverTest {
     private WorkspaceSymbolGraph definitions(SymbolLocation... locations) {
         var descriptor = new SymbolDescriptor(TYPE, new SymbolKindId("test:type"), "Type", null, null, null, null,
             SymbolMetadata.EMPTY, List.of(locations));
-        var owner = document("Index.java", "");
+        TextDocumentSnapshot owner = document("Index.java", "");
         return WorkspaceSymbolGraph.of(List.of(new SemanticIndexShard(owner.id(), owner.version(), owner.uri(),
             List.of(descriptor), List.of(), List.of())));
     }
@@ -235,9 +245,10 @@ public class WorkspaceNavigationResolverTest {
 
     private static WorkspaceSnapshot workspace(TextDocumentSnapshot... documents) {
         var store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()));
-        for (var document : documents) {
+        for (TextDocumentSnapshot document : documents) {
             store.publishBacking(document);
         }
+
         return store.capture();
     }
 }

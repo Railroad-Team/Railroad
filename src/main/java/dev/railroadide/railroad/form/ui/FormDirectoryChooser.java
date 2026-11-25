@@ -24,8 +24,7 @@ import javafx.scene.layout.Priority;
  */
 @Getter
 public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryChooser.TextFieldWithButton>
-    implements
-        HasSetValue {
+    implements HasSetValue {
     /**
      * Constructs a new FormDirectoryChooser with the specified configuration.
      *
@@ -69,8 +68,8 @@ public class FormDirectoryChooser extends InformativeLabeledHBox<FormDirectoryCh
      */
     @Override
     public TextFieldWithButton createPrimaryComponent(Map<String, Object> params) {
-        var defaultPath = (String) params.get("defaultPath");
-        var includeButton = (boolean) params.get("includeButton");
+        String defaultPath = (String) params.get("defaultPath");
+        boolean includeButton = (boolean) params.get("includeButton");
 
         var textField = new RRTextField();
         textField.getStyleClass().add("rr-text-field");

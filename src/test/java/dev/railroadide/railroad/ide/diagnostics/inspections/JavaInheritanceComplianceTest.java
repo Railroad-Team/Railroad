@@ -122,7 +122,8 @@ public class JavaInheritanceComplianceTest {
                 return source;
             }
         };
-        var task = (JavacTask) ToolProvider.getSystemJavaCompiler()
+
+        JavacTask task = (JavacTask) ToolProvider.getSystemJavaCompiler()
             .getTask(null, null, diagnostics, List.of("-proc:none", "-XDrawDiagnostics"), null, List.of(file));
         task.analyze();
         return diagnostics.getDiagnostics().stream()

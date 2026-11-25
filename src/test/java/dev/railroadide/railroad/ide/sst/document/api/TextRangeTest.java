@@ -14,7 +14,7 @@ public class TextRangeTest {
     @Test
     public void textRangesUseUtf16Offsets() {
         String text = "A\uD83D\uDE00B";
-        var snapshot = snapshot(text);
+        TextDocumentSnapshot snapshot = snapshot(text);
         var range = new TextRange(1, 3);
 
         assertEquals(4, snapshot.text().length());
@@ -32,7 +32,7 @@ public class TextRangeTest {
 
     @Test
     public void emptyTextRangesReturnEmptyContent() {
-        var snapshot = snapshot("AB");
+        TextDocumentSnapshot snapshot = snapshot("AB");
         var range = new TextRange(1, 1);
 
         assertEquals(0, range.length());
@@ -41,7 +41,7 @@ public class TextRangeTest {
 
     @Test
     public void textRangeContentRejectsOutOfBoundsRanges() {
-        var snapshot = snapshot("AB");
+        TextDocumentSnapshot snapshot = snapshot("AB");
 
         assertThrows(IndexOutOfBoundsException.class, () -> new TextRange(1, 3).content(snapshot));
     }

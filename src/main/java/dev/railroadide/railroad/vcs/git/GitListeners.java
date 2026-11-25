@@ -15,7 +15,9 @@ public final class GitListeners {
     private GitListeners() {
     }
 
-    /** Forwards Git's per-phase counts or percentages to one running activity. */
+    /**
+     * Forwards Git's per-phase counts or percentages to one running activity.
+     */
     public static Consumer<GitProgressEvent> activity(ActivityProgress progress) {
         return new Consumer<>() {
             private String phase = "";
@@ -27,8 +29,10 @@ public final class GitListeners {
             @Override
             public synchronized void accept(GitProgressEvent event) {
                 switch (event) {
-                    case GitProgressEvent.Percentage(var name, int percent, long completed, long count) -> {
-                        var nextUnit = count > 0 ? ActivityProgress.Unit.COUNT : ActivityProgress.Unit.PERCENT;
+                    case GitProgressEvent.Percentage(String name, int percent, long completed, long count) -> {
+                        ActivityProgress.Unit nextUnit = count > 0
+                            ? ActivityProgress.Unit.COUNT
+                            : ActivityProgress.Unit.PERCENT;
                         long nextDone = count > 0 ? completed : percent;
                         long nextTotal = count > 0 ? count : 100;
                         if (!phase.equals(name) || unit != nextUnit || total != nextTotal || nextDone < done) {
@@ -39,14 +43,17 @@ public final class GitListeners {
                         } else {
                             counter.accept(nextDone);
                         }
+
                         done = nextDone;
                     }
-                    case GitProgressEvent.Phase(var name) -> {
+
+                    case GitProgressEvent.Phase(String name) -> {
                         phase = name;
                         unit = null;
                         progress.indeterminate(name);
                     }
-                    case GitProgressEvent.Message(var message) -> {
+
+                    case GitProgressEvent.Message(String message) -> {
                         GitLog.LOGGER.debug("Git progress: {}", message);
                         if (unit != null && done == total) {
                             unit = null;

@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolDescriptor;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaWorkspaceGraphTest {
@@ -29,7 +30,7 @@ public class JavaWorkspaceGraphTest {
             Map.of("module.main.sources", root + ":generated=false"));
         var workspace = new WorkspaceSnapshot("hierarchy", Map.of(document.id(), document), configuration, 0);
         try (var provider = new JavaWorkspaceAnalysisProvider(() -> true, (_, _) -> JavaProjectSemanticIndex.empty())) {
-            var graph = provider.capture(workspace).resolvedGraph();
+            WorkspaceSymbolGraph graph = provider.capture(workspace).resolvedGraph();
             var base = JavaSymbolIds.type("Base");
             var child = JavaSymbolIds.type("Child");
             var contract = JavaSymbolIds.type("Contract");
@@ -56,7 +57,7 @@ public class JavaWorkspaceGraphTest {
         var configuration = new WorkspaceConfigurationSnapshot(0, Set.of("main"),
             Map.of("module.main.sources", root + ":generated=false"));
         Map<DocumentId, DocumentSnapshot> documents = new HashMap<>();
-        for (var source : Map.of("p/Value.java", "package p; public class Value {}",
+        for (Map.Entry<String, String> source : Map.of("p/Value.java", "package p; public class Value {}",
             "p/Library.java", "package p; public class Library { public void accept(Value value) {} }",
             "q/Use.java",
             "package q; import p.*; class Use { void run(Library library, Value value) { library.accept(value); } }")
@@ -66,12 +67,14 @@ public class JavaWorkspaceGraphTest {
                 DocumentOrigin.original(uri), source.getValue(), StandardCharsets.UTF_8);
             documents.put(snapshot.id(), snapshot);
         }
+
         var workspace = new WorkspaceSnapshot("test", documents, configuration, 0);
         try (var provider = new JavaWorkspaceAnalysisProvider(() -> true, (_, _) -> JavaProjectSemanticIndex.empty())) {
-            var captured = provider.capture(workspace);
-            var method = captured.sourceIndex().lookupMember("p.Library", "accept").getFirst().descriptor();
+            JavaWorkspaceAnalysis captured = provider.capture(workspace);
+            SymbolDescriptor method = captured.sourceIndex().lookupMember("p.Library", "accept").getFirst()
+                .descriptor();
             assertNotNull(method);
-            var graph = captured.resolvedGraph();
+            WorkspaceSymbolGraph graph = captured.resolvedGraph();
             assertTrue(graph.referencesTo(method.id()).stream()
                 .anyMatch(reference -> reference.kind().equals(ReferenceKindId.CALL)));
             assertFalse(graph.symbols(method.id()).isEmpty());
@@ -80,8 +83,8 @@ public class JavaWorkspaceGraphTest {
 
     @Test
     public void repeatedQueriesReuseCompletedCapturedGraph() {
-        var analysis = analysis();
-        var first = analysis.resolvedGraph();
+        JavaWorkspaceAnalysis analysis = analysis();
+        WorkspaceSymbolGraph first = analysis.resolvedGraph();
         assertSame(first, analysis.resolvedGraph());
         assertSame(analysis.graph(), analysis.graph());
         assertTrue(first.shards().values().stream().flatMap(shard -> shard.references().stream())
@@ -92,13 +95,14 @@ public class JavaWorkspaceGraphTest {
 
     @Test
     public void cancellationDiscardsPartialConstructionAndStillChecksCachedQueries() {
-        var analysis = analysis();
+        JavaWorkspaceAnalysis analysis = analysis();
         var checks = new AtomicInteger();
         assertThrows(CancellationException.class, () -> analysis.resolvedGraph(() -> {
             if (checks.incrementAndGet() == 12)
                 throw new CancellationException();
         }));
-        var result = analysis.resolvedGraph();
+
+        WorkspaceSymbolGraph result = analysis.resolvedGraph();
         assertTrue(result.shards().values().stream().flatMap(shard -> shard.edges().stream())
             .anyMatch(edge -> edge.kind().equals(EdgeKindId.CALL)));
         assertSame(result, analysis.resolvedGraph());
@@ -109,7 +113,7 @@ public class JavaWorkspaceGraphTest {
 
     @Test
     public void concurrentQueriesShareOneSuccessfulConstruction() throws Exception {
-        var analysis = analysis();
+        JavaWorkspaceAnalysis analysis = analysis();
         try (var executor = Executors.newFixedThreadPool(2)) {
             var ready = new CountDownLatch(2);
             var go = new CountDownLatch(1);
@@ -118,8 +122,9 @@ public class JavaWorkspaceGraphTest {
                 assertTrue(go.await(10, TimeUnit.SECONDS));
                 return analysis.resolvedGraph();
             };
-            var first = executor.submit(query);
-            var second = executor.submit(query);
+
+            Future<WorkspaceSymbolGraph> first = executor.submit(query);
+            Future<WorkspaceSymbolGraph> second = executor.submit(query);
             assertTrue(ready.await(10, TimeUnit.SECONDS));
             go.countDown();
             assertSame(first.get(30, TimeUnit.SECONDS), second.get(30, TimeUnit.SECONDS));
@@ -129,7 +134,7 @@ public class JavaWorkspaceGraphTest {
     private static JavaWorkspaceAnalysis analysis() {
         Path path = Path.of("Captured.java").toAbsolutePath().normalize();
         String text = "class Captured { int value() { return 1; } int run() { return value(); } }";
-        var sources = JavaProjectSemanticIndex.builder()
+        JavaProjectSemanticIndex sources = JavaProjectSemanticIndex.builder()
             .putFile(new JavaProjectSemanticExtractor().extract(path, text)).build();
         return new JavaWorkspaceAnalysis(sources, sources, Map.of(path, text), List.of(),
             Path.of(System.getProperty("java.home")));

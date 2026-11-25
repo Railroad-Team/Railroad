@@ -154,6 +154,7 @@ public final class JavaInspectionRuleSettingsPane extends VBox {
         for (RuleDescriptor rule : collectRules()) {
             tags.addAll(rule.tags());
         }
+
         return tags.stream().sorted().toList();
     }
 
@@ -168,6 +169,7 @@ public final class JavaInspectionRuleSettingsPane extends VBox {
             for (JavaInspectionRule rule : entry.getValue().rules()) {
                 if (rule == null)
                     continue;
+
                 rules.add(new RuleDescriptor(providerId, rule));
             }
         }
@@ -225,6 +227,7 @@ public final class JavaInspectionRuleSettingsPane extends VBox {
             if (!rule.tags().isEmpty()) {
                 providerText += " | Tags: " + String.join(", ", rule.tags());
             }
+
             providerText += " | Default severity: " + rule.rule().defaultSeverity().name();
 
             var metaLabel = new Label(providerText);
@@ -284,8 +287,10 @@ public final class JavaInspectionRuleSettingsPane extends VBox {
         private static EnabledOverride from(Boolean value) {
             if (value == null)
                 return DEFAULT;
+
             return value ? ENABLED : DISABLED;
         }
+
         @Override
         public String toString() {
             return label;
@@ -314,6 +319,7 @@ public final class JavaInspectionRuleSettingsPane extends VBox {
         private static SeverityOverride from(SemanticDiagnostic.Severity value) {
             if (value == null)
                 return DEFAULT;
+
             return switch (value) {
                 case ERROR -> ERROR;
                 case WARNING -> WARNING;

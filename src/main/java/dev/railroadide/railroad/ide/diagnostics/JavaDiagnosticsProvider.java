@@ -97,11 +97,13 @@ public final class JavaDiagnosticsProvider implements DiagnosticsProvider<TextEd
         if (index == null) {
             index = indexContext == null ? analysis.apply(context) : liveIndex(context.documentSnapshot());
         }
+
         List<TextEditorDiagnostic> diagnostics = compute(context.documentSnapshot(), index, context);
         if (ProjectWorkspaceConfiguration.dependenciesPending(context.workspaceSnapshot().configuration())) {
             diagnostics = diagnostics.stream().filter(diagnostic -> !RESOLUTION_CODES.contains(diagnostic.code()))
                 .toList();
         }
+
         context.checkActive();
         return new FeatureResult<>(context, diagnostics);
     }
@@ -115,6 +117,7 @@ public final class JavaDiagnosticsProvider implements DiagnosticsProvider<TextEd
             () -> Thread.currentThread().isInterrupted(), Deadline.none());
         return compute(context).value();
     }
+
     /**
      * Creates diagnostics without project indexing; the snapshot supplies the document URI.
      */
@@ -152,6 +155,7 @@ public final class JavaDiagnosticsProvider implements DiagnosticsProvider<TextEd
     private JavaSymbolIndex liveIndex(DocumentSnapshot snapshot) {
         if (projectIndex != null || project == null)
             return projectIndex;
+
         var indexes = JavaLanguageSupport.analysisContextProvider();
         return indexContext == null
             ? indexes.indexForDocument(project, snapshot)
@@ -175,7 +179,7 @@ public final class JavaDiagnosticsProvider implements DiagnosticsProvider<TextEd
         var parsed = JavaSyntaxParser.parseWithDiagnostics(context);
         SemanticModel semanticModel = JavaSemanticAnalyzer.analyzeFacts(parsed.tree(), symbolIndex,
             context::checkActive);
-        var textSnapshot = (TextDocumentSnapshot) snapshot;
+        TextDocumentSnapshot textSnapshot = (TextDocumentSnapshot) snapshot;
         List<TextEditorDiagnostic> diagnostics = new ArrayList<>();
         parsed.diagnostics().forEach(diagnostic -> {
             context.checkActive();
@@ -189,6 +193,7 @@ public final class JavaDiagnosticsProvider implements DiagnosticsProvider<TextEd
                 diagnostic.code(), diagnostic.message(), "railroad:java-parser", DiagnosticOrigin.SYNTAX,
                 Set.of(), List.of(), null));
         });
+
         semanticModel.diagnostics().forEach(diagnostic -> diagnostics.add(toEditorDiagnostic(textSnapshot,
             diagnostic, "railroad:java-semantic", DiagnosticOrigin.SEMANTIC)));
         diagnostics.addAll(runRegisteredInspections(textSnapshot, document, semanticModel, symbolIndex, context));
@@ -207,6 +212,7 @@ public final class JavaDiagnosticsProvider implements DiagnosticsProvider<TextEd
             case WARNING -> DiagnosticSeverity.WARNING;
             case INFO -> DiagnosticSeverity.INFORMATION;
         };
+
         int start = Math.clamp(diagnostic.startOffset(), 0, snapshot.text().length());
         int end = Math.clamp(diagnostic.endOffset(), start, snapshot.text().length());
         return new TextEditorDiagnostic(TextLocation.from(snapshot, start, end), kind,
@@ -235,6 +241,7 @@ public final class JavaDiagnosticsProvider implements DiagnosticsProvider<TextEd
                             child::checkActive);
                         return JavaInspectionRuleEngine.collectDiagnostics(provider, context);
                     });
+
                 request.checkActive();
                 produced.forEach(diagnostic -> diagnostics.add(toEditorDiagnostic(snapshot, diagnostic,
                     provider.id(), DiagnosticOrigin.INSPECTION)));

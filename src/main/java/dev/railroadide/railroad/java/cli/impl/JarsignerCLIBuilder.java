@@ -687,6 +687,7 @@ public class JarsignerCLIBuilder implements CLIBuilder<Process, JarsignerCLIBuil
         if (operationMode == OperationMode.SIGN) {
             if (jarFile == null)
                 throw new IllegalStateException("A JAR file must be specified when signing.");
+
             if (signingAlias == null)
                 throw new IllegalStateException("An alias must be provided when signing.");
         } else if (operationMode == OperationMode.VERIFY) {

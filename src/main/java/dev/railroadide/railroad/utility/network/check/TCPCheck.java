@@ -5,9 +5,13 @@ import dev.railroadide.railroad.Railroad;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-/** Tests whether a host accepts TCP connections on port 53; no DNS request is sent. */
+/**
+ * Tests whether a host accepts TCP connections on port 53; no DNS request is sent.
+ */
 public class TCPCheck implements NetworkCheck {
-    /** Creates a TCP port-53 probe with failure logging enabled. */
+    /**
+     * Creates a TCP port-53 probe with failure logging enabled.
+     */
     public TCPCheck() {
     }
 
@@ -30,6 +34,7 @@ public class TCPCheck implements NetworkCheck {
             if (shouldLogFailures()) {
                 Railroad.LOGGER.error("An error occurred while trying to connect via DNS over TCP.", exception);
             }
+
             return false;
         }
     }

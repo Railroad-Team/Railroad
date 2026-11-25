@@ -116,6 +116,7 @@ public final class GoToPopup<T> {
         if (showing != null) {
             showing.hide();
         }
+
         var popup = new GoToPopup<>(contributor);
         showing = popup;
         popup.load(project);
@@ -139,6 +140,7 @@ public final class GoToPopup<T> {
                 Platform.runLater(() -> {
                     if (closed)
                         return;
+
                     items = collected;
                     placeholder.setText(L18n.localize("railroad.ide.go_to.no_matches"));
                     refresh();
@@ -178,12 +180,14 @@ public final class GoToPopup<T> {
             case PAGE_UP -> selected - VISIBLE_ROWS;
             default -> Integer.MIN_VALUE;
         };
+
         if (target != Integer.MIN_VALUE) {
             if (size > 0) {
                 int index = Math.clamp(target, 0, size - 1);
                 list.getSelectionModel().select(index);
                 list.scrollTo(Math.max(0, index - VISIBLE_ROWS / 2));
             }
+
             event.consume();
         } else if (event.getCode() == KeyCode.ENTER) {
             chooseSelected();
@@ -195,6 +199,7 @@ public final class GoToPopup<T> {
         GoToSearch.Result<T> result = list.getSelectionModel().getSelectedItem();
         if (result == null)
             return;
+
         var query = GoToSearch.Query.parse(searchField.getText());
         hide();
         contributor.open(result.item(), query);
@@ -254,7 +259,8 @@ public final class GoToPopup<T> {
     private static List<Text> highlighted(String text, NameMatcher.@Nullable Match match) {
         if (match == null || match.positions().length == 0)
             return List.of(segment(text, false));
-        var segments = new ArrayList<Text>();
+
+        List<Text> segments = new ArrayList<Text>();
         int start = 0;
         boolean matched = false;
         int next = 0;
@@ -265,13 +271,16 @@ public final class GoToPopup<T> {
                 if (index > start) {
                     segments.add(segment(text.substring(start, index), matched));
                 }
+
                 start = index;
                 matched = current;
             }
+
             if (current) {
                 next++;
             }
         }
+
         return segments;
     }
 

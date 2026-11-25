@@ -12,8 +12,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.jar.JarFile;
+import java.io.InputStream;
 
-/** Recovers shaded package names from matching declarations in a library and its source attachment. */
+/**
+ * Recovers shaded package names from matching declarations in a library and its source attachment.
+ */
 public final class JavaSourceRelocations {
     private JavaSourceRelocations() {
     }
@@ -38,13 +41,15 @@ public final class JavaSourceRelocations {
         List<Path> attachments = JavaLibrarySources.sourceArchives(archive);
         if (attachments.isEmpty())
             return Map.of();
+
         try (var sources = new JarFile(attachments.getFirst().toFile())) {
             List<ClassStub> consumers = new ArrayList<>();
             Set<String> bundled = new HashSet<>();
-            for (var entry : origins.entrySet()) {
+            for (Map.Entry<String, Path> entry : origins.entrySet()) {
                 check.run();
                 if (!archive.equals(entry.getValue()))
                     continue;
+
                 String name = entry.getKey();
                 String outer = topLevel(name);
                 if (sources.getJarEntry(sourcePath(outer)) == null) {
@@ -53,11 +58,12 @@ public final class JavaSourceRelocations {
                     consumers.add(stubs.get(name));
                 }
             }
+
             if (bundled.isEmpty())
                 return Map.of();
 
             Set<PackagePair> pairs = new HashSet<>();
-            for (var consumer : consumers) {
+            for (ClassStub consumer : consumers) {
                 check.run();
                 List<String> supers = new ArrayList<>();
                 addBundled(supers, consumer.superClass(), bundled);
@@ -68,9 +74,12 @@ public final class JavaSourceRelocations {
                         fields.put(field.name(), type.name());
                     }
                 });
+
                 if (fields.isEmpty() && supers.isEmpty())
                     continue;
-                try (var input = sources.getInputStream(sources.getJarEntry(sourcePath(consumer.getFullName())))) {
+
+                try (InputStream input = sources
+                    .getInputStream(sources.getJarEntry(sourcePath(consumer.getFullName())))) {
                     var tree = JavaSyntaxParser.parse(new String(input.readAllBytes(), StandardCharsets.UTF_8), check);
                     collectPairs(consumer, tree.root(), fields, supers, stubs.keySet(), pairs);
                 }
@@ -89,33 +98,39 @@ public final class JavaSourceRelocations {
     ) {
         if (pairs.isEmpty())
             return Map.of();
+
         Set<String> ambiguous = new HashSet<>();
         Map<String, String> targets = new HashMap<>();
-        for (var pair : pairs) {
+        for (PackagePair pair : pairs) {
             String previous = targets.putIfAbsent(pair.original, pair.binary);
             if (previous != null && !previous.equals(pair.binary)) {
                 ambiguous.add(pair.original);
             }
         }
+
         Map<String, String> aliases = new HashMap<>();
         for (String binary : bundled) {
             check.run();
             String original = null;
-            for (var pair : pairs) {
+            for (PackagePair pair : pairs) {
                 if (!binary.startsWith(pair.binary))
                     continue;
+
                 String candidate = pair.original + binary.substring(pair.binary.length());
                 if (ambiguous.contains(pair.original) || original != null && !original.equals(candidate)) {
                     original = null;
                     break;
                 }
+
                 original = candidate;
             }
+
             if (original != null && !known.contains(original)
                 && sources.getJarEntry(sourcePath(topLevel(original))) == null) {
                 aliases.merge(original, binary, (left, right) -> left.equals(right) ? left : "");
             }
         }
+
         aliases.values().removeIf(String::isEmpty);
         return Map.copyOf(aliases);
     }
@@ -144,19 +159,21 @@ public final class JavaSourceRelocations {
         Set<PackagePair> pairs
     ) {
         Map<String, String> imports = new HashMap<>();
-        for (var entry : JavaImports.imports(root)) {
+        for (JavaImports.ImportDeclaration entry : JavaImports.imports(root)) {
             if (!entry.isWildcard() && !entry.isStatic()) {
                 imports.merge(entry.importedName(), entry.target(), (left, right) -> left.equals(right) ? left : "");
             }
         }
-        for (var declaration : root.children()) {
+
+        for (SyntaxNode declaration : root.children()) {
             if (!declaration.kind().id().endsWith("_DECLARATION")
                 || !JavaSourceSymbolIds.declarationName(declaration).equals(consumer.name()))
                 continue;
-            for (var child : declaration.children()) {
+
+            for (SyntaxNode child : declaration.children()) {
                 switch (child.kind().id()) {
                     case "JAVA_EXTENDS_CLAUSE", "JAVA_IMPLEMENTS_CLAUSE" -> {
-                        for (var ref : child.children()) {
+                        for (SyntaxNode ref : child.children()) {
                             if (ref.kind().id().equals("JAVA_TYPE_REFERENCE")) {
                                 for (String binary : supers) {
                                     match(ref, binary, imports, known, pairs);
@@ -164,6 +181,7 @@ public final class JavaSourceRelocations {
                             }
                         }
                     }
+
                     case "JAVA_CLASS_BODY", "JAVA_INTERFACE_BODY", "JAVA_ENUM_BODY", "JAVA_RECORD_BODY" ->
                         matchFields(child, fields, imports, known, pairs);
                 }
@@ -178,13 +196,15 @@ public final class JavaSourceRelocations {
         Set<String> known,
         Set<PackagePair> pairs
     ) {
-        for (var field : body.children()) {
+        for (SyntaxNode field : body.children()) {
             if (!field.kind().id().equals("JAVA_FIELD_DECLARATION"))
                 continue;
+
             var ref = JavaSourceSymbolIds.child(field, "JAVA_TYPE_REFERENCE");
             if (ref == null)
                 continue;
-            for (var variable : field.children()) {
+
+            for (SyntaxNode variable : field.children()) {
                 if (variable.kind().id().equals("JAVA_VARIABLE_DECLARATOR")) {
                     match(ref, fields.get(JavaSourceSymbolIds.declarationName(variable)), imports, known, pairs);
                 }
@@ -201,10 +221,12 @@ public final class JavaSourceRelocations {
     ) {
         if (binary == null)
             return;
+
         String simple = JavaSemanticAnalyzer.eraseTypeArguments(JavaSemanticAnalyzer.canonicalTypeText(ref));
         String original = imports.get(simple);
         if (original == null || original.indexOf('.') < 0 || known.contains(original) || !binary.endsWith("." + simple))
             return;
+
         String sourcePackage = original.substring(0, original.lastIndexOf('.'));
         String binaryPackage = binary.substring(0, binary.lastIndexOf('.'));
         // Keep the first shared package segment as the anchor, e.g. org.lib.api -> internal.lib.api.
@@ -213,14 +235,17 @@ public final class JavaSourceRelocations {
             int bin = binaryPackage.lastIndexOf('.');
             if (src < 0 || bin < 0 || !sourcePackage.substring(src).equals(binaryPackage.substring(bin)))
                 break;
+
             String sourceParent = sourcePackage.substring(0, src);
             String binaryParent = binaryPackage.substring(0, bin);
             if (sourceParent.indexOf('.') < 0 || !sourceParent.substring(sourceParent.lastIndexOf('.') + 1)
                 .equals(binaryParent.substring(binaryParent.lastIndexOf('.') + 1)))
                 break;
+
             sourcePackage = sourceParent;
             binaryPackage = binaryParent;
         }
+
         pairs.add(new PackagePair(sourcePackage + ".", binaryPackage + "."));
     }
 

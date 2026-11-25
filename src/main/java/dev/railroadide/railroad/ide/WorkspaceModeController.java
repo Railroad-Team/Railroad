@@ -80,6 +80,7 @@ public final class WorkspaceModeController implements AutoCloseable {
         if (!availability.test(initialMode)) {
             initialMode = WorkspaceMode.defaultMode();
         }
+
         this.currentViewMode = new ReadOnlyObjectWrapper<>(initialMode);
         stateProperty.addListener(stateListener);
         restoreStateProperty(initialMode);
@@ -120,6 +121,7 @@ public final class WorkspaceModeController implements AutoCloseable {
                 transitionTo(resolvedMode);
             }
         });
+
         return true;
     }
 
@@ -140,6 +142,7 @@ public final class WorkspaceModeController implements AutoCloseable {
                 listener.accept(getCurrentViewMode());
             }
         });
+
         return new Registration(() -> listeners.remove(listener));
     }
 
@@ -165,6 +168,7 @@ public final class WorkspaceModeController implements AutoCloseable {
         if (stateProperty.get() != viewMode) {
             restoreStateProperty(viewMode);
         }
+
         if (currentViewMode.get() == viewMode)
             return;
 

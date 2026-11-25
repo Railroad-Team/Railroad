@@ -97,6 +97,7 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
             reportIfPresent(reporter, node, modifiers, JavaTokenType.STATIC_KEYWORD,
                 "'static' is not allowed on top-level type declarations");
         }
+
         String ownerKindId = ownerDeclarationKind(context, node);
         if (JAVA_INTERFACE_DECLARATION.equals(ownerKindId) || JAVA_ANNOTATION_TYPE_DECLARATION.equals(ownerKindId)) {
             reportIfPresent(reporter, node, modifiers, JavaTokenType.PRIVATE_KEYWORD,
@@ -120,12 +121,15 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
         if (modifiers.contains(JavaTokenType.ABSTRACT_KEYWORD) && modifiers.contains(JavaTokenType.FINAL_KEYWORD)) {
             reporter.report(node, "'abstract' cannot be combined with 'final'");
         }
+
         if (modifiers.contains(JavaTokenType.SEALED_KEYWORD) && modifiers.contains(JavaTokenType.NON_SEALED_KEYWORD)) {
             reporter.report(node, "'sealed' cannot be combined with 'non-sealed'");
         }
+
         if (modifiers.contains(JavaTokenType.FINAL_KEYWORD) && modifiers.contains(JavaTokenType.SEALED_KEYWORD)) {
             reporter.report(node, "'final' cannot be combined with 'sealed'");
         }
+
         if (modifiers.contains(JavaTokenType.FINAL_KEYWORD) && modifiers.contains(JavaTokenType.NON_SEALED_KEYWORD)) {
             reporter.report(node, "'final' cannot be combined with 'non-sealed'");
         }
@@ -147,6 +151,7 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
                 reportIfPresent(reporter, node, modifiers, JavaTokenType.FINAL_KEYWORD,
                     "'final' is not allowed on enum declarations");
             }
+
             reportIfPresent(reporter, node, modifiers, JavaTokenType.SEALED_KEYWORD,
                 "'sealed' is not allowed on %s declarations".formatted(typeKindDisplayName(kindId)));
             reportIfPresent(reporter, node, modifiers, JavaTokenType.NON_SEALED_KEYWORD,
@@ -240,6 +245,7 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
             if (hasBody) {
                 reporter.report(node, "'abstract' methods cannot have a body");
             }
+
             String ownerQualifiedName = context.enclosingTypeSymbol(node).flatMap(symbol -> symbol.qualifiedName())
                 .orElse(null);
             if (ownerQualifiedName != null
@@ -247,6 +253,7 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
                 && !context.isAbstractType(ownerQualifiedName)) {
                 reporter.report(node, "'abstract' methods are only allowed in abstract classes and interfaces");
             }
+
             if (JAVA_RECORD_DECLARATION.equals(ownerKindId)) {
                 reporter.report(node, "'abstract' methods are not allowed in record types");
             }
@@ -278,6 +285,7 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
             if (modifiers.contains(JavaTokenType.PRIVATE_KEYWORD) && !hasBody) {
                 reporter.report(node, "'private' interface methods must have a body");
             }
+
             if (modifiers.contains(JavaTokenType.STATIC_KEYWORD) && !hasBody) {
                 reporter.report(node, "'static' interface methods must have a body");
             }
@@ -307,6 +315,7 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
             if (!JAVA_INTERFACE_DECLARATION.equals(ownerKindId)) {
                 reporter.report(node, "'default' is only allowed on interface methods");
             }
+
             reportIfPresent(reporter, node, modifiers, JavaTokenType.STATIC_KEYWORD,
                 "'default' cannot be combined with 'static'");
             reportIfPresent(reporter, node, modifiers, JavaTokenType.PRIVATE_KEYWORD,
@@ -360,9 +369,11 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
         if (JAVA_INTERFACE_DECLARATION.equals(ownerKindId)) {
             reporter.report(node, "interfaces cannot declare constructors");
         }
+
         if (JAVA_ANNOTATION_TYPE_DECLARATION.equals(ownerKindId)) {
             reporter.report(node, "annotation types cannot declare constructors");
         }
+
         if (JAVA_ENUM_DECLARATION.equals(ownerKindId)) {
             reportIfPresent(reporter, node, modifiers, JavaTokenType.PUBLIC_KEYWORD,
                 "'public' is not allowed on enum constructors");
@@ -446,12 +457,15 @@ public final class CoreModifierInspection implements JavaInspectionRuleProvider 
         if (modifiers.contains(JavaTokenType.PUBLIC_KEYWORD)) {
             accessModifiers.add("public");
         }
+
         if (modifiers.contains(JavaTokenType.PROTECTED_KEYWORD)) {
             accessModifiers.add("protected");
         }
+
         if (modifiers.contains(JavaTokenType.PRIVATE_KEYWORD)) {
             accessModifiers.add("private");
         }
+
         if (accessModifiers.size() > 1) {
             reporter.report(node, "conflicting access modifiers: %s".formatted(String.join(", ", accessModifiers)));
         }

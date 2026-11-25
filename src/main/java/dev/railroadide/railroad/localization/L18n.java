@@ -67,6 +67,7 @@ public class L18n {
                 try (var reader = new InputStreamReader(langFileStream, StandardCharsets.UTF_8)) {
                     LANG_CACHE.load(reader);
                 }
+
                 LOGGER.debug("Language file {} loaded for plugin {}", langFileName, descriptor.getId());
 
                 CURRENT_LANG.setValue(language);
@@ -118,6 +119,7 @@ public class L18n {
         if (appBase != null) {
             streams.add(appBase);
         }
+
         List<InputStream> pluginBaseResources = PluginManager.loadResourcesFromAllPlugins(base);
         streams.addAll(pluginBaseResources);
 
@@ -126,6 +128,7 @@ public class L18n {
         if (appCurrent != null) {
             streams.add(appCurrent);
         }
+
         streams.addAll(pluginResources);
 
         return mergeLanguageFiles(streams.toArray(InputStream[]::new));
@@ -138,13 +141,13 @@ public class L18n {
     }
 
     private static Properties mergeLanguageFiles(InputStream... streams) throws IOException {
-        var mergedProperties = new Properties();
+        Properties mergedProperties = new Properties();
         for (InputStream stream : streams) {
             if (stream == null)
                 continue;
 
             try (Reader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
-                var tempProperties = new Properties();
+                Properties tempProperties = new Properties();
                 tempProperties.load(reader);
                 mergedProperties.putAll(tempProperties);
             }

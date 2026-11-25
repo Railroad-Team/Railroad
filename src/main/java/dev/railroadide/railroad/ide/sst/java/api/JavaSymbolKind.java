@@ -84,6 +84,7 @@ public enum JavaSymbolKind implements SymbolKind {
             if (kind.id().equals(id))
                 return kind;
         }
+
         throw new IllegalArgumentException("Unknown Java symbol kind: " + id);
     }
 }

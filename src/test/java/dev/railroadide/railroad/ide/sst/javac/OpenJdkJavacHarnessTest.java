@@ -63,9 +63,9 @@ public class OpenJdkJavacHarnessTest {
         write("Negative.out", "Negative.java:1:46: compiler.err.already.defined: kindname.variable, x\n1 error\n");
 
         var suite = new OpenJdkJavacSuite(checkout);
-        var test = suite.discover("Positive.java").getFirst();
+        OpenJdkJavacSuite.TestCase test = suite.discover("Positive.java").getFirst();
         try (var checks = new OpenJdkJavacChecks(suite.root())) {
-            var result = checks.check(suite.root(), test);
+            OpenJdkJavacChecks.Result result = checks.check(suite.root(), test);
             assertEquals(OpenJdkJavacChecks.Status.PASS, result.status(), result::toString);
             assertEquals(3, result.compileActions());
             assertEquals(3, result.syntaxFiles());
@@ -103,7 +103,8 @@ public class OpenJdkJavacHarnessTest {
 
         var suite = new OpenJdkJavacSuite(checkout);
         try (var checks = new OpenJdkJavacChecks(suite.root())) {
-            var result = checks.check(suite.root(), suite.discover("implicit/Main.java").getFirst());
+            OpenJdkJavacChecks.Result result = checks.check(suite.root(),
+                suite.discover("implicit/Main.java").getFirst());
             assertEquals(OpenJdkJavacChecks.Status.PASS, result.status(), result::toString);
             assertEquals(1, result.syntaxFiles());
         }
@@ -124,7 +125,7 @@ public class OpenJdkJavacHarnessTest {
             + "1 error\n");
         var suite = new OpenJdkJavacSuite(checkout);
         try (var checks = new OpenJdkJavacChecks(suite.root())) {
-            var result = checks.check(suite.root(), suite.discover("").getFirst());
+            OpenJdkJavacChecks.Result result = checks.check(suite.root(), suite.discover("").getFirst());
             assertEquals(OpenJdkJavacChecks.Status.PASS, result.status(), result::toString);
         }
     }
@@ -143,13 +144,13 @@ public class OpenJdkJavacHarnessTest {
         String reference = "SelfReference.java:6:22: compiler.err.cant.infer.local.var.type: x, (%s)\n1 error\n";
         write("SelfReference.out", reference.formatted("compiler.misc.local.self.ref"));
         var suite = new OpenJdkJavacSuite(checkout);
-        var test = suite.discover("").getFirst();
+        OpenJdkJavacSuite.TestCase test = suite.discover("").getFirst();
         try (var checks = new OpenJdkJavacChecks(suite.root())) {
-            var matching = checks.check(suite.root(), test);
+            OpenJdkJavacChecks.Result matching = checks.check(suite.root(), test);
             assertEquals(OpenJdkJavacChecks.Status.PASS, matching.status(), matching::toString);
 
             write("SelfReference.out", reference.formatted("compiler.misc.local.missing.init"));
-            var otherInferenceError = checks.check(suite.root(), test);
+            OpenJdkJavacChecks.Result otherInferenceError = checks.check(suite.root(), test);
             assertEquals(OpenJdkJavacChecks.Status.UNSUPPORTED, otherInferenceError.status(),
                 otherInferenceError::toString);
         }
@@ -181,8 +182,8 @@ public class OpenJdkJavacHarnessTest {
         write("Reference.out", "- compiler.err.warnings.and.werror\n1 error\n");
         var suite = new OpenJdkJavacSuite(checkout);
         try (var checks = new OpenJdkJavacChecks(suite.root())) {
-            for (var test : suite.discover("")) {
-                var result = checks.check(suite.root(), test);
+            for (OpenJdkJavacSuite.TestCase test : suite.discover("")) {
+                OpenJdkJavacChecks.Result result = checks.check(suite.root(), test);
                 assertEquals(OpenJdkJavacChecks.Status.UNSUPPORTED, result.status(), result::toString);
                 assertEquals(1, result.syntaxFiles());
                 assertFalse(result.unsupported().isEmpty());
@@ -211,11 +212,11 @@ public class OpenJdkJavacHarnessTest {
             """);
         var suite = new OpenJdkJavacSuite(checkout);
         try (var checks = new OpenJdkJavacChecks(suite.root())) {
-            var run = checks.check(suite.root(), suite.discover("Run.java").getFirst());
+            OpenJdkJavacChecks.Result run = checks.check(suite.root(), suite.discover("Run.java").getFirst());
             assertEquals(OpenJdkJavacChecks.Status.PASS, run.status(), run::toString);
             assertEquals(1, run.compileActions());
 
-            var fallback = checks.check(suite.root(), suite.discover("Default.java").getFirst());
+            OpenJdkJavacChecks.Result fallback = checks.check(suite.root(), suite.discover("Default.java").getFirst());
             assertEquals(OpenJdkJavacChecks.Status.MISMATCH, fallback.status(), fallback::toString);
             assertTrue(fallback.findings().getFirst().startsWith("Action 1 (@build) should succeed"),
                 fallback::toString);
@@ -238,7 +239,7 @@ public class OpenJdkJavacHarnessTest {
             """);
         var suite = new OpenJdkJavacSuite(checkout);
         try (var checks = new OpenJdkJavacChecks(suite.root())) {
-            var result = checks.check(suite.root(), suite.discover("").getFirst());
+            OpenJdkJavacChecks.Result result = checks.check(suite.root(), suite.discover("").getFirst());
             assertEquals(OpenJdkJavacChecks.Status.MISMATCH, result.status(), result::toString);
             assertTrue(result.findings().getFirst().contains("should succeed"), result::toString);
             assertEquals(2, result.skippedWarnings());
@@ -269,7 +270,7 @@ public class OpenJdkJavacHarnessTest {
             """);
         var suite = new OpenJdkJavacSuite(checkout);
         try (var checks = new OpenJdkJavacChecks(suite.root())) {
-            var result = checks.check(suite.root(), suite.discover("").getFirst());
+            OpenJdkJavacChecks.Result result = checks.check(suite.root(), suite.discover("").getFirst());
             assertEquals(OpenJdkJavacChecks.Status.UNSUPPORTED, result.status(), result::toString);
             assertEquals(1, result.unsupported().size(), result::toString);
             assertTrue(result.unsupported().getFirst().contains("no SST diagnostic mapping for Keys.java:7:32"),
@@ -293,7 +294,7 @@ public class OpenJdkJavacHarnessTest {
         write("Surplus.out", "Surplus.java:7:9: compiler.err.already.defined: kindname.variable, x\n1 error\n");
         var suite = new OpenJdkJavacSuite(checkout);
         try (var checks = new OpenJdkJavacChecks(suite.root())) {
-            var result = checks.check(suite.root(), suite.discover("").getFirst());
+            OpenJdkJavacChecks.Result result = checks.check(suite.root(), suite.discover("").getFirst());
             assertEquals(OpenJdkJavacChecks.Status.MISMATCH, result.status(), result::toString);
             assertEquals(1, result.findings().size(), result::toString);
             assertTrue(result.findings().getFirst().contains("reported errors javac does not: [Surplus.java@"),
@@ -318,9 +319,9 @@ public class OpenJdkJavacHarnessTest {
             """);
         write("Flow.out", "Flow.java:6:32: compiler.err.cant.resolve.location: kindname.variable, missing\n1 error\n");
         var suite = new OpenJdkJavacSuite(checkout);
-        var test = suite.discover("").getFirst();
+        OpenJdkJavacSuite.TestCase test = suite.discover("").getFirst();
         try (var checks = new OpenJdkJavacChecks(suite.root())) {
-            var result = checks.check(suite.root(), test);
+            OpenJdkJavacChecks.Result result = checks.check(suite.root(), test);
             assertEquals(OpenJdkJavacChecks.Status.PASS, result.status(), result::toString);
 
             write("Flow.java", """
@@ -376,7 +377,7 @@ public class OpenJdkJavacHarnessTest {
         write("Place.out", "Place.java:5:1: compiler.err.already.defined: kindname.variable, x\n1 error\n");
         var suite = new OpenJdkJavacSuite(checkout);
         try (var checks = new OpenJdkJavacChecks(suite.root())) {
-            var result = checks.check(suite.root(), suite.discover("").getFirst());
+            OpenJdkJavacChecks.Result result = checks.check(suite.root(), suite.discover("").getFirst());
             assertEquals(OpenJdkJavacChecks.Status.MISMATCH, result.status(), result::toString);
             assertEquals(1, result.findings().size(), result::toString);
             assertTrue(result.findings().getFirst().startsWith("Action 1 (@compile/fail/ref=Place.out) misplaced"),
@@ -395,7 +396,7 @@ public class OpenJdkJavacHarnessTest {
             """);
         var suite = new OpenJdkJavacSuite(checkout);
         try (var checks = new OpenJdkJavacChecks(suite.root())) {
-            var result = checks.check(suite.root(), suite.discover("").getFirst());
+            OpenJdkJavacChecks.Result result = checks.check(suite.root(), suite.discover("").getFirst());
             assertEquals(OpenJdkJavacChecks.Status.PASS, result.status(), result::toString);
             assertEquals(1, result.syntaxFiles());
             assertEquals(1, result.compileActions());
@@ -407,7 +408,7 @@ public class OpenJdkJavacHarnessTest {
         write("Broken.java", "/*\n * @test\n * @compile Missing.java\n */\nclass Broken {}\n");
         write("Valid.java", "/*\n * @test\n * @compile Valid.java\n */\nclass Valid {}\n");
         var suite = new OpenJdkJavacSuite(checkout);
-        var tests = suite.discover("");
+        List<OpenJdkJavacSuite.TestCase> tests = suite.discover("");
         try (var checks = new OpenJdkJavacChecks(suite.root())) {
             var error = OpenJdkJavacRunner.runCase(checks, suite.root(), tests.getFirst());
             assertEquals(OpenJdkJavacChecks.Status.ERROR, error.status());

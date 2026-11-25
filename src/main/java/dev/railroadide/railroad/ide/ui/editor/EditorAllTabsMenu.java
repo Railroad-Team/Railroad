@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.List;
 
 /**
  * Provides a searchable popup for selecting tabs from an editor group.
@@ -79,6 +80,7 @@ public final class EditorAllTabsMenu implements AutoCloseable {
                 activateSelectedTab();
             }
         });
+
         filteredTabs.addListener((InvalidationListener) _ -> updateListHeight());
         updateListHeight();
 
@@ -126,7 +128,7 @@ public final class EditorAllTabsMenu implements AutoCloseable {
     }
 
     private void refreshTabs() {
-        var tabs = tabPane.getTabs().stream()
+        List<EditorTab> tabs = tabPane.getTabs().stream()
             .map(editorTabResolver)
             .filter(Objects::nonNull)
             .toList();
@@ -148,8 +150,10 @@ public final class EditorAllTabsMenu implements AutoCloseable {
                 if (!searchableText.contains(term))
                     return false;
             }
+
             return true;
         });
+
         selectCurrentTab();
     }
 
@@ -175,6 +179,7 @@ public final class EditorAllTabsMenu implements AutoCloseable {
             if (tabsList.getSelectionModel().isEmpty()) {
                 tabsList.getSelectionModel().selectFirst();
             }
+
             tabsList.requestFocus();
             event.consume();
         } else if (event.getCode() == KeyCode.ENTER) {
@@ -313,6 +318,7 @@ public final class EditorAllTabsMenu implements AutoCloseable {
             } else {
                 name.getStyleClass().remove("preview");
             }
+
             updateDirtyIcon(editorTab.saveState());
             setAccessibleText(editorTab.displayTitle() + ", " + editorTab.languageDisplayName() + ", " + absolutePath
                 + (editorTab.dirty() ? ", unsaved changes" : "")

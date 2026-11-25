@@ -101,7 +101,7 @@ public class JavaNestedTypeResolutionTest {
             interface Child extends Transactions { class Close {} }
             class Invalid implements Child.Close {}
             """;
-        var errors = JavaInspectionTestSupport.runProvider(new CoreInheritanceInspection(),
+        List<SemanticDiagnostic> errors = JavaInspectionTestSupport.runProvider(new CoreInheritanceInspection(),
             Path.of("app/Invalid.java"), source, index);
         assertEquals(List.of("Invalid inheritance: type cannot implement non-interface 'Close'"),
             errors.stream().filter(d -> d.code().equals("SEM_INVALID_INHERITANCE"))
@@ -242,6 +242,7 @@ public class JavaNestedTypeResolutionTest {
         for (Map.Entry<String, String> sibling : siblings.entrySet()) {
             arguments.add(write(app, sibling.getKey(), sibling.getValue()));
         }
+
         Path file = Path.of(write(app, fileName, source));
         arguments.add(file.toString());
         var output = new ByteArrayOutputStream();

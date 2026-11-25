@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import java.util.stream.Stream;
+import java.lang.reflect.Field;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -55,6 +56,7 @@ public class WorkspaceEditAdversarialTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
         onFx(() -> {
             LanguageSupports.initialize();
@@ -77,6 +79,7 @@ public class WorkspaceEditAdversarialTest {
                 editor.close();
                 editor.dispose();
             }
+
             return null;
         });
     }
@@ -200,6 +203,7 @@ public class WorkspaceEditAdversarialTest {
             editor.getUndoManager().preventMerge();
             return null;
         });
+
         assertEquals("EDITOR", onFx(editor::getText));
         WorkspaceEditResult undone = onFx(service::undo);
         assertEquals(Status.APPLIED, undone.status(), undone.problems()::toString);
@@ -247,8 +251,10 @@ public class WorkspaceEditAdversarialTest {
             if (operation.equals("overwrite")) {
                 overwrites.incrementAndGet();
             }
+
             return false;
         };
+
         WorkspaceEdit edit = WorkspaceEdit.builder("Split pair")
             .replace(first, replacement(0, 5, "FIRST"))
             .replace(second, replacement(1, 2, "x"))
@@ -269,7 +275,7 @@ public class WorkspaceEditAdversarialTest {
         assertEquals(Status.APPLIED, apply(WorkspaceEdit.builder("Create").createText(created, "created").build())
             .status());
         DocumentId id = identities.findIdentity(created).orElseThrow().id();
-        var current = (TextDocumentSnapshot) store.current(id).orElseThrow();
+        TextDocumentSnapshot current = (TextDocumentSnapshot) store.current(id).orElseThrow();
         store.publishOverlay(new TextDocumentSnapshot(id, current.uri(), current.version().next(),
             current.languageId(), current.origin(), "bad\uD800", StandardCharsets.UTF_8));
 
@@ -345,6 +351,7 @@ public class WorkspaceEditAdversarialTest {
                     assertEquals(Status.APPLIED, result.status(), label + ": " + result.problems());
                     break;
                 }
+
                 applyOutcomes.add(label + " -> " + result.status());
                 assertTrue(result.status() == Status.REJECTED || result.status() == Status.ROLLED_BACK,
                     label + ": " + result.status() + " " + result.problems());
@@ -353,6 +360,7 @@ public class WorkspaceEditAdversarialTest {
                 assertFalse(onFx(service::canUndo), label);
             }
         }
+
         for (String operation : List.of("read", "overwrite", "create", "mkdir", "delete", "move")) {
             for (int occurrence = 1; occurrence < 40; occurrence++) {
                 resetService(Files.createDirectories(root.resolve("undo" + run++)));
@@ -375,18 +383,21 @@ public class WorkspaceEditAdversarialTest {
                     assertEquivalent(documentsBefore, store.capture().documents(), label);
                     break;
                 }
+
                 undoOutcomes.add(label + " -> " + result.status());
                 if (result.status() == Status.APPLIED) {
                     assertEquals(withoutDirectories(treeBefore), withoutDirectories(tree(base)), label);
                     assertEquivalent(documentsBefore, store.capture().documents(), label);
                     continue;
                 }
+
                 assertTrue(result.status() == Status.REJECTED || result.status() == Status.ROLLED_BACK,
                     label + ": " + result.status() + " " + result.problems());
                 assertEquals(treeApplied, tree(base), label);
                 assertEquivalent(documentsApplied, store.capture().documents(), label);
                 if (result.status() == Status.REJECTED)
                     continue;
+
                 assertTrue(onFx(service::canUndo), label);
                 WorkspaceEditResult retried = onFx(service::undo);
                 assertEquals(Status.APPLIED, retried.status(), label + " retry: " + retried.problems());
@@ -394,6 +405,7 @@ public class WorkspaceEditAdversarialTest {
                 assertEquivalent(documentsBefore, store.capture().documents(), label + " retry");
             }
         }
+
         assertTrue(applyOutcomes.size() > 10, applyOutcomes::toString);
         assertTrue(undoOutcomes.size() > 10, undoOutcomes::toString);
     }
@@ -446,6 +458,7 @@ public class WorkspaceEditAdversarialTest {
             editor.undo();
             return null;
         });
+
         assertEquals("class Old {}", onFx(editor::getText));
         assertEquals(root.resolve("Old.txt").toAbsolutePath().normalize(), editor.getFilePath());
         assertTrue(Files.exists(root.resolve("Old.txt")));
@@ -457,6 +470,7 @@ public class WorkspaceEditAdversarialTest {
             editor.redo();
             return null;
         });
+
         assertEquals("class New {}", onFx(editor::getText));
         assertEquals(destination.toAbsolutePath().normalize(), editor.getFilePath());
         assertEquals("New", Files.readString(root.resolve("Closed.txt")));
@@ -492,7 +506,7 @@ public class WorkspaceEditAdversarialTest {
         TextDocumentSnapshot document = disk("Doc.txt", "a");
         assertEquals(Status.APPLIED, apply(WorkspaceEdit.builder("To b")
             .replace(document, replacement(0, 1, "b")).build()).status());
-        var second = (TextDocumentSnapshot) store.current(document.id()).orElseThrow();
+        TextDocumentSnapshot second = (TextDocumentSnapshot) store.current(document.id()).orElseThrow();
         assertEquals(Status.APPLIED, apply(WorkspaceEdit.builder("To c")
             .replace(second, replacement(0, 1, "c")).build()).status());
 
@@ -538,6 +552,7 @@ public class WorkspaceEditAdversarialTest {
             WorkspaceEditResult result = apply(WorkspaceEdit.builder("Stale").change(change).build());
             assertEquals(List.of(Kind.STALE), kinds(result), change::toString);
         }
+
         assertEquals("same", Files.readString(root.resolve("Versioned.txt")));
         assertEquals("real", Files.readString(root.resolve("Forged.txt")));
         assertEquals("two", Files.readString(root.resolve("Unobserved.txt")));
@@ -577,6 +592,7 @@ public class WorkspaceEditAdversarialTest {
         try (Stream<Path> listing = Files.list(root)) {
             assertEquals(List.of("CASE.txt"), listing.map(path -> path.getFileName().toString()).toList());
         }
+
         assertEquals(uri("CASE.txt"), store.current(document.id()).orElseThrow().uri());
         assertEquals(Status.APPLIED, onFx(service::undo).status());
         try (Stream<Path> listing = Files.list(root)) {
@@ -615,11 +631,13 @@ public class WorkspaceEditAdversarialTest {
         store.onChange(() -> {
             if (calls.getAndIncrement() > 0)
                 return;
+
             try {
                 service.apply(WorkspaceEdit.builder("Nested").replace(inner, replacement(0, 5, "INNER")).build());
             } catch (Throwable throwable) {
                 nested.set(throwable);
             }
+
             try {
                 service.undo();
             } catch (Throwable throwable) {
@@ -660,6 +678,7 @@ public class WorkspaceEditAdversarialTest {
     @Test
     public void binaryDeleteAndCreateUndoAndRedoRestoreExactBytes() throws Exception {
         byte[] bytes = {(byte) 0x89, 'P', 'N', 'G', 0, (byte) 0xff, (byte) 0xfe};
+
         Path image = root.resolve("image.png");
         Files.write(image, bytes);
         DocumentId id = identities.getOrCreate(image);
@@ -726,6 +745,7 @@ public class WorkspaceEditAdversarialTest {
             editor.undo();
             return null;
         });
+
         files.failure = (_, _) -> false;
 
         assertEquals("EDITOR", onFx(editor::getText));
@@ -737,6 +757,7 @@ public class WorkspaceEditAdversarialTest {
             editor.undo();
             return null;
         });
+
         assertEquals("editor", onFx(editor::getText));
         assertEquals("CLOSED", Files.readString(root.resolve("Closed.txt")));
     }
@@ -762,9 +783,11 @@ public class WorkspaceEditAdversarialTest {
         files.failure = (candidate, _) -> {
             if (!candidate.equals(operation) || count.incrementAndGet() != occurrence)
                 return false;
+
             fired.set(true);
             return true;
         };
+
         return fired;
     }
 
@@ -775,6 +798,7 @@ public class WorkspaceEditAdversarialTest {
                 return null;
             });
         }
+
         base = projectRoot;
         store = new DefaultDocumentStore("workspace-edits", new WorkspaceConfigurationSnapshot(0, Set.of()));
         identities = new DocumentIdentityRegistry();
@@ -788,10 +812,12 @@ public class WorkspaceEditAdversarialTest {
             for (Path path : walk.toList()) {
                 if (path.equals(directory))
                     continue;
+
                 String name = directory.relativize(path).toString().replace('\\', '/');
                 entries.put(name, Files.isDirectory(path) ? "<dir>" : Files.readString(path));
             }
         }
+
         return entries;
     }
 
@@ -888,7 +914,8 @@ public class WorkspaceEditAdversarialTest {
             protected void showExternalChangeDialog(String disk) {
             }
         };
-        var field = TextEditorPane.class.getDeclaredField("changeSubscription");
+
+        Field field = TextEditorPane.class.getDeclaredField("changeSubscription");
         field.setAccessible(true);
         ((Subscription) field.get(editor)).unsubscribe();
         return editor;
@@ -901,6 +928,7 @@ public class WorkspaceEditAdversarialTest {
     private static <T> T onFx(Callable<T> action) throws Exception {
         if (Platform.isFxApplicationThread())
             return action.call();
+
         var task = new FutureTask<>(action);
         Platform.runLater(task);
         return task.get(10, TimeUnit.SECONDS);
@@ -925,6 +953,7 @@ public class WorkspaceEditAdversarialTest {
         public void relocate(DocumentIdentity identity, Path newPath) {
             if (relocationFailure != null)
                 throw relocationFailure;
+
             DocumentUri uri = DocumentUri.fromPath(newPath);
             identities.rebind(identity.id(), identity.uri(), uri);
             store.relocate(identity.id(), uri);

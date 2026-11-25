@@ -34,6 +34,7 @@ public record TypeReference(
         Objects.requireNonNull(name, "name");
         if (name.isBlank())
             throw new IllegalArgumentException("Type name cannot be blank");
+
         arguments = List.copyOf(arguments);
         if (arrayDimensions < 0)
             throw new IllegalArgumentException("Array rank cannot be negative");

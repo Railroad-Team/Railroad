@@ -47,11 +47,13 @@ public final class BreakpointService {
                 if (line == 0)
                     break;
             }
+
             if (line == 0 || updated.containsKey(line)) {
                 // Joining marked lines keeps the first breakpoint at the resulting line.
                 events.add(new BreakpointEvent.Removed(breakpoint));
                 continue;
             }
+
             SourceBreakpoint moved = line == breakpoint.line()
                 ? breakpoint
                 : new SourceBreakpoint(breakpoint.id(), breakpoint.source(), line, breakpoint.enabled());
@@ -60,16 +62,21 @@ public final class BreakpointService {
                 events.add(new BreakpointEvent.Changed(moved));
             }
         }
+
         if (updated.isEmpty()) {
             breakpoints.remove(file);
         } else {
             breakpoints.put(file, updated);
         }
+
         // Publish only after the complete remapping, so listeners never see partial moves.
+
         events.forEach(this::fire);
     }
 
-    /** An open view's handle to the file's shared breakpoint position tracking. */
+    /**
+     * An open view's handle to the file's shared breakpoint position tracking.
+     */
     public final class DocumentTracking implements AutoCloseable {
         private final Path file;
         private final TrackedDocument document;
@@ -103,6 +110,7 @@ public final class BreakpointService {
             synchronized (BreakpointService.this) {
                 if (closed || document.text.equals(text))
                     return;
+
                 List<BreakpointLineMapping> mappings = new ArrayList<>();
                 if (breakpoints.containsKey(file)) {
                     if (document.text.equals(before)) {
@@ -114,31 +122,38 @@ public final class BreakpointService {
                                 mappings.clear();
                                 break;
                             }
+
                             String next = snapshot.substring(0, change.position()) + change.inserted()
                                 + snapshot.substring(end);
                             mappings.add(new BreakpointLineMapping(snapshot, next, change.position(),
                                 change.removed().length(), change.inserted().length()));
                             snapshot = next;
                         }
+
                         if (!snapshot.equals(text)) {
                             mappings.clear();
                         }
                     }
+
                     if (mappings.isEmpty()) {
                         mappings.add(new BreakpointLineMapping(document.text, text));
                     }
                 }
+
                 document.text = text;
                 moveBreakpoints(file, mappings);
             }
         }
 
-        /** Releases this view's tracking state. */
+        /**
+         * Releases this view's tracking state.
+         */
         @Override
         public void close() {
             synchronized (BreakpointService.this) {
                 if (closed)
                     return;
+
                 closed = true;
                 if (--document.views == 0) {
                     documents.remove(file);
@@ -167,6 +182,7 @@ public final class BreakpointService {
         public TextChange {
             if (position < 0)
                 throw new IllegalArgumentException("Text change position must be non-negative");
+
             Objects.requireNonNull(removed, "removed");
             Objects.requireNonNull(inserted, "inserted");
         }
@@ -232,6 +248,7 @@ public final class BreakpointService {
     public synchronized SourceBreakpoint add(Path file, int line) {
         if (line < 1)
             throw new IllegalArgumentException("Breakpoint lines must be positive");
+
         file = normalize(file);
         SourceBreakpoint existing = breakpoints.getOrDefault(file, Map.of()).get(line);
         if (existing != null)

@@ -20,8 +20,10 @@ import java.util.Objects;
 public class DialogBuilder extends AlertBuilder<DialogBuilder> {
     private Runnable onConfirm = () -> {
     };
+
     private Runnable onCancel = () -> {
     };
+
     private Node customContent;
     private List<Node> customButtons;
     private boolean buttonsOverridden;
@@ -95,6 +97,7 @@ public class DialogBuilder extends AlertBuilder<DialogBuilder> {
                 .filter(Objects::nonNull)
                 .toList();
         }
+
         return this;
     }
 
@@ -121,6 +124,7 @@ public class DialogBuilder extends AlertBuilder<DialogBuilder> {
             if (customButtons != null && !customButtons.isEmpty()) {
                 buttonsBox.getChildren().addAll(customButtons);
             }
+
             return scene;
         }
 

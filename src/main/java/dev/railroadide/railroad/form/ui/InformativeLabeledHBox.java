@@ -167,6 +167,7 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
                 if (newArgs.length > 0) {
                     newArgs[0] = newVal;
                 }
+
                 informationLabel.setKey(informativeText, newArgs);
             });
         }
@@ -193,13 +194,21 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
      * The type of the information label.
      */
     public enum InformationType {
-        /** General informational message. */
+        /**
+         * General informational message.
+         */
         INFO,
-        /** Informational note or hint. */
+        /**
+         * Informational note or hint.
+         */
         NOTE,
-        /** Warning that does not make the value invalid. */
+        /**
+         * Warning that does not make the value invalid.
+         */
         WARNING,
-        /** Error indicating that the value is invalid. */
+        /**
+         * Error indicating that the value is invalid.
+         */
         ERROR
     }
 
@@ -228,19 +237,22 @@ public abstract class InformativeLabeledHBox<T extends Node> extends RRVBox {
                 case ERROR -> {
                     getStyleClass().addAll("field-error", "rr-info-label", "information-label-bold");
                 }
+
                 case WARNING -> {
                     getStyleClass().addAll("field-warning", "rr-info-label");
                 }
+
                 case NOTE -> {
                     getStyleClass().addAll("field-info", "rr-info-label");
                     setTextFill(Color.SLATEGRAY);
                 }
+
                 case INFO -> {
                     getStyleClass().addAll("field-info", "rr-info-label");
                 }
             }
 
-            var fontIcon = createFontIcon(informationType);
+            FontIcon fontIcon = createFontIcon(informationType);
             setGraphic(fontIcon);
         }
     }

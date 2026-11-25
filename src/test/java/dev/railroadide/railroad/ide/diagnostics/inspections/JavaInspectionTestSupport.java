@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import dev.railroadide.railroad.ide.sst.semantic.api.SemanticModel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -41,7 +42,7 @@ public final class JavaInspectionTestSupport {
         JavaSymbolIndex symbolIndex
     ) {
         JavaInspectionRuleSettings.resetAll();
-        var model = symbolIndex == null
+        SemanticModel model = symbolIndex == null
             ? JavaSemanticAnalyzer.analyzeFacts(document)
             : JavaSemanticAnalyzer.analyzeFacts(document, symbolIndex);
         var context = new JavaRuleContext(filePath, document, model, symbolIndex);

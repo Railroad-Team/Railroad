@@ -133,6 +133,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
             if (methodName == null || methodName.isBlank()) {
                 methodName = "<method>";
             }
+
             reporter.report(node,
                 "method '%s' must return '%s' on all paths".formatted(methodName, context.simpleTypeName(returnType)));
         });
@@ -148,6 +149,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
             if (!hasBreakTarget(node)) {
                 reporter.report(node, "'break' is only allowed inside loops or switch statements");
             }
+
             return;
         }
 
@@ -167,6 +169,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
             if (!hasContinueTarget(node)) {
                 reporter.report(node, "'continue' is only allowed inside loops");
             }
+
             return;
         }
 
@@ -203,6 +206,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
             if (hasValue) {
                 reporter.report(node, "constructors cannot return a value");
             }
+
             return;
         }
 
@@ -217,6 +221,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
             if (methodName == null || methodName.isBlank()) {
                 methodName = "<method>";
             }
+
             reporter.report(node, "non-void method '%s' must return a value".formatted(methodName));
         }
     }
@@ -238,6 +243,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
             String kindId = current.kind().id();
             if (LOOP_KINDS.contains(kindId) || JAVA_SWITCH_STATEMENT.equals(kindId))
                 return true;
+
             if (CONTROL_FLOW_BARRIER_KINDS.contains(kindId))
                 return false;
         }
@@ -254,6 +260,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
             String kindId = current.kind().id();
             if (LOOP_KINDS.contains(kindId))
                 return true;
+
             if (CONTROL_FLOW_BARRIER_KINDS.contains(kindId))
                 return false;
         }
@@ -270,6 +277,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
             String kindId = current.kind().id();
             if (JAVA_SWITCH_EXPRESSION.equals(kindId))
                 return true;
+
             if (JAVA_SWITCH_STATEMENT.equals(kindId) || CONTROL_FLOW_BARRIER_KINDS.contains(kindId))
                 return false;
         }
@@ -289,6 +297,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
                 if (label.equals(candidate))
                     return current;
             }
+
             if (CONTROL_FLOW_BARRIER_KINDS.contains(kindId))
                 return null;
         }
@@ -300,6 +309,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
                 && !JAVA_LABELED_STATEMENT.equals(child.kind().id()))
                 return child;
         }
+
         return null;
     }
 
@@ -312,6 +322,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         List<String> identifiers = identifierLikeTokens(node);
         if (identifiers.isEmpty())
             return null;
+
         return context.lastIdentifierLikeTokenText(node);
     }
 
@@ -319,6 +330,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         Symbol declared = context.declaredSymbol(callableNode).orElse(null);
         if (declared != null && declared.kind() == JavaSymbolKind.METHOD)
             return declared.simpleName();
+
         return context.lastIdentifierLikeTokenText(callableNode);
     }
 
@@ -336,6 +348,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
                 && !Set.of("break", "continue", "return").contains(text)) {
                 out.add(text);
             }
+
             return;
         }
 
@@ -348,8 +361,10 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         for (SyntaxNode child : returnStatement.children()) {
             if (child instanceof SyntaxToken)
                 continue;
+
             return child;
         }
+
         return null;
     }
 
@@ -379,10 +394,12 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
                 SyntaxNode target = labeledStatementTarget(node);
                 yield target != null && definitelyReturnsOrThrows(context, target);
             }
+
             case JAVA_SYNCHRONIZED_STATEMENT -> {
                 SyntaxNode block = context.directChild(node, JAVA_BLOCK);
                 yield block != null && definitelyReturnsOrThrows(context, block);
             }
+
             case JAVA_WHILE_STATEMENT, JAVA_DO_WHILE_STATEMENT ->
                 hasConstantTrueCondition(node) && !containsBreakThatCanExit(context, node, node);
             case JAVA_TRY_STATEMENT -> tryDefinitelyReturnsOrThrows(context, node);
@@ -396,6 +413,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         for (SyntaxNode child : loop.children()) {
             if (!"JAVA_PARENTHESIZED_EXPRESSION".equals(child.kind().id()))
                 continue;
+
             collectLeafTokenTexts(child, tokens);
             List<String> significant = tokens.stream()
                 .map(String::trim)
@@ -403,14 +421,17 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
                 .toList();
             return significant.equals(List.of("true"));
         }
+
         return false;
     }
 
     private static boolean containsBreakThatCanExit(JavaRuleContext context, SyntaxNode node, SyntaxNode target) {
         if (JAVA_BREAK_STATEMENT.equals(node.kind().id()))
             return breakCanExit(node, target);
+
         if (CONTROL_FLOW_BARRIER_KINDS.contains(node.kind().id()))
             return false;
+
         if (JAVA_TRY_STATEMENT.equals(node.kind().id())) {
             SyntaxNode finallyClause = context.directChild(node, JAVA_FINALLY_CLAUSE);
             SyntaxNode block = finallyClause == null ? null : context.directChild(finallyClause, JAVA_BLOCK);
@@ -422,6 +443,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
             if (containsBreakThatCanExit(context, child, target))
                 return true;
         }
+
         return false;
     }
 
@@ -437,10 +459,12 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
             Optional<SyntaxNode> parent = current.parent();
             if (parent.isEmpty())
                 return false;
+
             current = parent.get();
             String kindId = current.kind().id();
             if (LOOP_KINDS.contains(kindId) || JAVA_SWITCH_STATEMENT.equals(kindId))
                 return current == statement;
+
             if (CONTROL_FLOW_BARRIER_KINDS.contains(kindId))
                 return false;
         }
@@ -451,8 +475,10 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         while (current != null) {
             if (current == ancestor)
                 return true;
+
             current = current.parent().orElse(null);
         }
+
         return false;
     }
 
@@ -460,9 +486,11 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         for (SyntaxNode child : block.children()) {
             if (child instanceof SyntaxToken)
                 continue;
+
             if (definitelyReturnsOrThrows(context, child))
                 return true;
         }
+
         return false;
     }
 
@@ -470,6 +498,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         List<SyntaxNode> statements = directNonTokenChildrenExcluding(ifStatement, "JAVA_PARENTHESIZED_EXPRESSION");
         if (statements.size() < 2)
             return false;
+
         return definitelyReturnsOrThrows(context, statements.get(0))
             && definitelyReturnsOrThrows(context, statements.get(1));
     }
@@ -498,6 +527,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
             if (catchBlock == null || !definitelyReturnsOrThrows(context, catchBlock))
                 return false;
         }
+
         return true;
     }
 
@@ -512,12 +542,15 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
             if (label != null && labelContainsDefault(label)) {
                 hasDefault = true;
             }
+
             if (containsBreakThatCanExit(context, rule, switchStatement))
                 return false;
+
             boolean canFallThrough = rule != rules.getLast() && context.hasOperatorToken(rule, JavaTokenType.COLON);
             if (!canFallThrough && !switchRuleDefinitelyReturnsOrThrows(context, rule))
                 return false;
         }
+
         return hasDefault;
     }
 
@@ -525,11 +558,14 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         for (SyntaxNode child : rule.children()) {
             if (child instanceof SyntaxToken)
                 continue;
+
             if (JAVA_SWITCH_LABEL.equals(child.kind().id()))
                 continue;
+
             if (definitelyReturnsOrThrows(context, child))
                 return true;
         }
+
         return false;
     }
 
@@ -546,6 +582,7 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
                 matches.add(child);
             }
         }
+
         return List.copyOf(matches);
     }
 
@@ -554,10 +591,13 @@ public final class CoreControlFlowInspection implements JavaInspectionRuleProvid
         for (SyntaxNode child : node.children()) {
             if (child instanceof SyntaxToken)
                 continue;
+
             if (excludedKindId.equals(child.kind().id()))
                 continue;
+
             children.add(child);
         }
+
         return List.copyOf(children);
     }
 

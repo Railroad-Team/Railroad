@@ -18,11 +18,15 @@ import java.util.function.Function;
  * version and is registered in {@link MappingChannel#REGISTRY}.
  */
 public class MappingChannelRegistry {
-    /** The legacy MCP community mappings. */
+    /**
+     * The legacy MCP community mappings.
+     */
     public static final MappingChannel MCP = register("mcp", MappingChannel.builder()
         .versionLister(fromRepository("railroad:switchboard/mcp", SwitchboardRepositories.MCP::getVersionsForSync)));
 
-    /** The official mappings published by Mojang. */
+    /**
+     * The official mappings published by Mojang.
+     */
     public static final MappingChannel MOJMAP = register("official", MappingChannel.builder()
         .versionLister(minecraftVersion -> {
             try {
@@ -38,11 +42,15 @@ public class MappingChannelRegistry {
             return Collections.singletonList(minecraftVersion.id());
         }));
 
-    /** The Yarn mappings maintained by the Fabric community. */
+    /**
+     * The Yarn mappings maintained by the Fabric community.
+     */
     public static final MappingChannel YARN = register("yarn", MappingChannel.builder()
         .versionLister(fromRepository("railroad:switchboard/yarn", SwitchboardRepositories.YARN::getVersionsForSync)));
 
-    /** The Parchment mappings, which supplement the official Minecraft mappings. */
+    /**
+     * The Parchment mappings, which supplement the official Minecraft mappings.
+     */
     public static final MappingChannel PARCHMENT = register("parchment", MappingChannel.builder()
         .versionLister(fromRepository(
             "railroad:switchboard/parchment",

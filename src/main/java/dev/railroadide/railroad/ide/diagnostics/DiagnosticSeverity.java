@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.ide.diagnostics;
 
-/** Language-neutral diagnostic severity, ordered from most to least severe. */
+/**
+ * Language-neutral diagnostic severity, ordered from most to least severe.
+ */
 public enum DiagnosticSeverity {
     /**
      * Indicates an error requiring correction.

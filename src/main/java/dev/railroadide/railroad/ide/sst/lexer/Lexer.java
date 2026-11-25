@@ -149,7 +149,9 @@ public interface Lexer<T extends Enum<T>> extends Closeable {
         // Default implementation does nothing.
     }
 
-    /** Marker for implementation-specific restorable lexer state. */
+    /**
+     * Marker for implementation-specific restorable lexer state.
+     */
     interface Snapshot {
     }
 

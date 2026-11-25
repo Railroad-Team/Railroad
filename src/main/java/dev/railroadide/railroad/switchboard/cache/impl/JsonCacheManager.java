@@ -80,6 +80,7 @@ public class JsonCacheManager implements IterableCacheManager {
                 Railroad.LOGGER.warn("Failed to read cache file: {}", file, exception);
                 invalidate(key);
             }
+
             return Optional.empty();
         });
     }

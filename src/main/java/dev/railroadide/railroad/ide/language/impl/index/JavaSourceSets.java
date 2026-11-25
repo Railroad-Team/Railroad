@@ -7,7 +7,9 @@ import dev.railroadide.railroad.ide.sst.document.api.WorkspaceConfigurationSnaps
 import java.nio.file.Path;
 import java.util.*;
 
-/** The Java compile inputs of each source set in one imported build. */
+/**
+ * The Java compile inputs of each source set in one imported build.
+ */
 public final class JavaSourceSets {
     private static final LoadingCache<WorkspaceConfigurationSnapshot, JavaSourceSets> CACHE = CacheBuilder.newBuilder()
         .weakKeys().maximumSize(16).build(CacheLoader.from(JavaSourceSets::new));
@@ -28,11 +30,12 @@ public final class JavaSourceSets {
     private final Set<Path> outputs;
 
     private JavaSourceSets(WorkspaceConfigurationSnapshot configuration) {
-        var settings = configuration.settings();
+        Map<String, String> settings = configuration.settings();
         openRoot = settings.containsKey("gradle.openRoot") ? Path.of(settings.get("gradle.openRoot")) : null;
         importRoot = settings.containsKey("gradle.importRoot") ? Path.of(settings.get("gradle.importRoot")) : null;
         record Input(String module, String name, String prefix, List<Path> roots) {
         }
+
         List<Input> inputs = new ArrayList<>();
         Map<Path, List<Path>> outputRoots = new HashMap<>();
         for (String module : configuration.moduleIds().stream().sorted().toList()) {
@@ -47,17 +50,18 @@ public final class JavaSourceSets {
 
         outputs = Set.copyOf(outputRoots.keySet());
         List<Scope> selected = new ArrayList<>();
-        for (var input : inputs) {
+        for (Input input : inputs) {
             Set<Path> visible = new LinkedHashSet<>(input.roots());
             List<Path> classpath = new ArrayList<>();
             for (Path entry : paths(settings, input.prefix() + "classpath")) {
-                var producer = outputRoots.get(entry);
+                List<Path> producer = outputRoots.get(entry);
                 if (producer == null) {
                     classpath.add(entry);
                 } else {
                     visible.addAll(producer);
                 }
             }
+
             String jdk = settings.getOrDefault(input.prefix() + "jdkHome",
                 settings.get("module." + input.module() + ".jdkHome"));
             var scope = new Scope(input.module(), input.name(), Set.copyOf(visible),
@@ -65,6 +69,7 @@ public final class JavaSourceSets {
             input.roots().forEach(path -> owners.putIfAbsent(path, scope));
             selected.add(scope);
         }
+
         scopes = List.copyOf(selected);
     }
 
@@ -90,16 +95,19 @@ public final class JavaSourceSets {
     private Path owningRoot(Path path) {
         if (path == null)
             return null;
+
         for (Path current = importedPath(path); current != null; current = current.getParent()) {
             if (owners.containsKey(current))
                 return current;
         }
+
         return null;
     }
 
     public Scope importing(String module, Path archive) {
         if (archive == null || module == null)
             return null;
+
         return scopes.stream().filter(scope -> scope.module().equals(module) && scope.classpath().contains(archive))
             .min(Comparator.comparing(scope -> !scope.name().equals("main"))).orElse(null);
     }

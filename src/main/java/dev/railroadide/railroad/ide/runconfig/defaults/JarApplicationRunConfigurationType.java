@@ -53,20 +53,23 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
 
             try {
                 String[] command = buildCommand(jre, jarPath, vmOptions, programArguments);
-                var builder = new ProcessBuilder()
+                ProcessBuilder builder = new ProcessBuilder()
                     .command(command)
                     .directory(workingDirectory.toFile());
                 if (!environmentVariables.isEmpty()) {
                     builder.environment().putAll(environmentVariables);
                 }
+
                 Process process;
                 synchronized (running) {
                     if (session.isStopRequested())
                         return null;
+
                     session.appendSystemLine(String.join(" ", command));
                     process = builder.start();
                     running.process = process;
                 }
+
                 CompletableFuture<Void> drained = session.connect(process, RunSession.processCharset());
                 int exitCode = process.waitFor();
                 drained.join();
@@ -82,6 +85,7 @@ public class JarApplicationRunConfigurationType extends RunConfigurationType<Jar
             session.finish(exitCode, failure);
             if (failure != null)
                 throw failure instanceof CompletionException completion ? completion : new CompletionException(failure);
+
             if (exitCode != null && exitCode != 0 && !session.isStopRequested())
                 throw new IllegalStateException("Jar Application process exited with code: " + exitCode);
 

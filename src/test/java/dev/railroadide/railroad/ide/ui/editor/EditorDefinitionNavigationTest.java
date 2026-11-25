@@ -52,6 +52,10 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.stream.Stream;
+import dev.railroadide.railroad.ide.diagnostics.BuildProblems;
+import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
+import dev.railroadide.railroad.plugin.spi.editor.TextEditorAccess;
+import java.lang.reflect.Field;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -73,8 +77,9 @@ public class EditorDefinitionNavigationTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
-        var hostServices = Railroad.class.getDeclaredField("hostServices");
+        Field hostServices = Railroad.class.getDeclaredField("hostServices");
         hostServices.setAccessible(true);
         if (hostServices.get(null) == null) {
             hostServices.set(null, new Railroad().getHostServices());
@@ -89,10 +94,12 @@ public class EditorDefinitionNavigationTest {
             if (ThemeManager.getTheme() == null) {
                 ThemeManager.setTheme("");
             }
+
             project = new RailroadProject(directory, "Definition navigation", new WritableImage(1, 1));
             Services.IDE_STATE.setCurrentProject(project);
             return null;
         });
+
         Services.IDE_STATE.getWorkspaceConfiguration().ready().get(10, TimeUnit.SECONDS);
         onFx(() -> {
             pane = new IDEPane(project);
@@ -110,6 +117,7 @@ public class EditorDefinitionNavigationTest {
                     sourceEditor.close();
                     sourceEditor.dispose();
                 }
+
                 if (pane != null) {
                     pane.getScene().setRoot(new Group());
                     pane.close();
@@ -117,6 +125,7 @@ public class EditorDefinitionNavigationTest {
             } finally {
                 Railroad.EVENT_BUS.publish(new ProjectEvent(project, ProjectEvent.EventType.CLOSED));
             }
+
             return null;
         });
     }
@@ -124,10 +133,10 @@ public class EditorDefinitionNavigationTest {
     @Test
     public void opensUnopenedDestinationAndSelectsItsDefinition() throws Exception {
         onFx(() -> {
-            var expected = publish("destination.txt", "prefix definition suffix");
+            TextDocumentSnapshot expected = publish("destination.txt", "prefix definition suffix");
             assertTrue(Services.EDITOR_TAB_MANAGER.navigateTo(null, expected,
                 Location.TextLocation.from(expected, 7, 17)));
-            var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            EditorTab tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
             assertEquals(expected.id(), tab.documentId());
             assertEquals(new TextSelection(7, 17), tab.view().textEditor().orElseThrow().selection());
             return null;
@@ -138,13 +147,13 @@ public class EditorDefinitionNavigationTest {
     public void opensUnopenedCrlfDestinationAndSelectsItsDefinition() throws Exception {
         onFx(() -> {
             String text = "class Destination {\r\n    void first() {}\r\n    void definition() {}\r\n}\r\n";
-            var expected = publish("Destination.java", text);
+            TextDocumentSnapshot expected = publish("Destination.java", text);
             int start = text.indexOf("definition");
             assertTrue(Services.EDITOR_TAB_MANAGER.navigateTo(null, expected,
                 Location.TextLocation.from(expected, start, start + "definition".length())));
-            var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            EditorTab tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
             assertEquals(expected.id(), tab.documentId());
-            var editor = tab.view().textEditor().orElseThrow();
+            TextEditorAccess editor = tab.view().textEditor().orElseThrow();
             String shown = editor.snapshot().text();
             int shownStart = shown.indexOf("definition");
             assertEquals(new TextSelection(shownStart, shownStart + "definition".length()), editor.selection());
@@ -155,12 +164,14 @@ public class EditorDefinitionNavigationTest {
     @Test
     public void crlfDestinationWhoseFileChangedIsNotSelected() throws Exception {
         onFx(() -> {
-            var expected = publish("Destination.java", "class Destination {\r\n    void definition() {}\r\n}\r\n");
+            TextDocumentSnapshot expected = publish("Destination.java",
+                "class Destination {\r\n    void definition() {}\r\n}\r\n");
             Files.writeString(expected.uri().filePath().orElseThrow(),
                 "class Destination {\r\n    void renamed() {}\r\n}\r\n");
             assertFalse(Services.EDITOR_TAB_MANAGER.navigateTo(null, expected,
                 Location.TextLocation.from(expected, 29, 39)));
-            var editor = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow().view().textEditor().orElseThrow();
+            TextEditorAccess editor = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow().view().textEditor()
+                .orElseThrow();
             assertEquals(new TextSelection(0, 0), editor.selection());
             return null;
         });
@@ -181,11 +192,12 @@ public class EditorDefinitionNavigationTest {
             sourceEditor.goToDefinition();
             return null;
         });
+
         sourceEditor.completion().get(10, TimeUnit.SECONDS);
         onFx(() -> {
-            var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            EditorTab tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
             assertEquals(file.toAbsolutePath().normalize(), tab.path());
-            var editor = tab.view().textEditor().orElseThrow();
+            TextEditorAccess editor = tab.view().textEditor().orElseThrow();
             assertEquals(new TextSelection(7, 17), editor.selection());
             assertFalse(editor.isEditable());
             assertFalse(tab.view().activeEditor().isEditable());
@@ -196,12 +208,12 @@ public class EditorDefinitionNavigationTest {
     @Test
     public void reusesExistingDestinationTabInsteadOfNavigatingThePreviouslyActiveTab() throws Exception {
         onFx(() -> {
-            var destination = publish("destination.txt", "prefix definition suffix");
+            TextDocumentSnapshot destination = publish("destination.txt", "prefix definition suffix");
             Services.EDITOR_TAB_MANAGER.open(destination.uri().filePath().orElseThrow());
-            var existing = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
-            var other = publish("source.txt", "source text");
+            EditorTab existing = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            TextDocumentSnapshot other = publish("source.txt", "source text");
             Services.EDITOR_TAB_MANAGER.open(other.uri().filePath().orElseThrow());
-            var source = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            EditorTab source = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
             source.view().activeEditor().moveTo(2);
             int count = existing.tab().getTabPane().getTabs().size();
             assertTrue(Services.EDITOR_TAB_MANAGER.navigateTo(null, destination,
@@ -223,10 +235,11 @@ public class EditorDefinitionNavigationTest {
 
     private void rejectsStaleOrInvalidDestinationWithoutChangingSelection(String kind) throws Exception {
         onFx(() -> {
-            var original = publish("destination.txt", "prefix definition suffix");
+            TextDocumentSnapshot original = publish("destination.txt", "prefix definition suffix");
             Services.EDITOR_TAB_MANAGER.open(original.uri().filePath().orElseThrow());
-            var editor = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow().view().textEditor().orElseThrow();
-            var current = editor.snapshot();
+            TextEditorAccess editor = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow().view().textEditor()
+                .orElseThrow();
+            TextDocumentSnapshot current = editor.snapshot();
             editor.selectAndReveal(current, new TextSelection(2, 2));
             var expected = new TextDocumentSnapshot(kind.equals("identity") ? DocumentId.create() : current.id(),
                 current.uri(), kind.equals("version") ? current.version().next() : current.version(), "text",
@@ -246,9 +259,9 @@ public class EditorDefinitionNavigationTest {
         onFx(() -> {
             project.getDataStore().writeJson("markdown.json", new MarkdownPreviewPane.MarkdownLayout(
                 MarkdownPreviewPane.MarkdownLayoutType.PREVIEW));
-            var expected = publish("destination.md", "# Heading\nDefinition");
+            TextDocumentSnapshot expected = publish("destination.md", "# Heading\nDefinition");
             Services.EDITOR_TAB_MANAGER.open(expected.uri().filePath().orElseThrow());
-            var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            EditorTab tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
             assertNull(tab.view().activeEditor());
             assertTrue(Services.EDITOR_TAB_MANAGER.navigateTo(null, expected,
                 Location.TextLocation.from(expected, 10, 20)));
@@ -260,7 +273,7 @@ public class EditorDefinitionNavigationTest {
 
     @Test
     public void rejectsNavigationOffTheFxThread() throws Exception {
-        var expected = onFx(() -> publish("destination.txt", "definition"));
+        TextDocumentSnapshot expected = onFx(() -> publish("destination.txt", "definition"));
         assertThrows(IllegalStateException.class, () -> Services.EDITOR_TAB_MANAGER.navigateTo(null, expected,
             Location.TextLocation.from(expected, 0, 10)));
     }
@@ -268,16 +281,17 @@ public class EditorDefinitionNavigationTest {
     @Test
     public void goToDefinitionCommandOpensCrossFileTargetThroughTheEditorRequestPipeline() throws Exception {
         onFx(() -> {
-            var destination = publish("destination.txt", "prefix definition suffix");
+            TextDocumentSnapshot destination = publish("destination.txt", "prefix definition suffix");
             openSource((context, offset) -> new FeatureResult<>(context,
                 List.of(target(destination, 7, 17))));
             assertTrue(Commands.GO_TO_DEFINITION.execute(
                 CommandContext.withArgument(project, sourceEditor, sourceEditor)));
             return null;
         });
+
         sourceEditor.completion().get(10, TimeUnit.SECONDS);
         onFx(() -> {
-            var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            EditorTab tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
             assertEquals("destination.txt", tab.path().getFileName().toString());
             assertEquals(new TextSelection(7, 17), tab.view().textEditor().orElseThrow().selection());
             assertEquals(1, sourceEditor.getCaretPosition());
@@ -289,7 +303,7 @@ public class EditorDefinitionNavigationTest {
     public void destinationEditDuringPendingF12PreventsOpeningTheStaleTarget() throws Exception {
         var entered = new CountDownLatch(1);
         var release = new CountDownLatch(1);
-        var destination = onFx(() -> publish("destination.txt", "prefix definition suffix"));
+        TextDocumentSnapshot destination = onFx(() -> publish("destination.txt", "prefix definition suffix"));
         try {
             onFx(() -> {
                 openSource((context, offset) -> {
@@ -300,15 +314,18 @@ public class EditorDefinitionNavigationTest {
                         Thread.currentThread().interrupt();
                         throw new CancellationException();
                     }
+
                     return new FeatureResult<>(context, List.of(target(destination, 7, 17)));
                 });
+
                 sourceEditor.goToDefinition();
                 return null;
             });
+
             assertTrue(entered.await(10, TimeUnit.SECONDS));
             onFx(() -> {
-                var store = Services.IDE_STATE.getDocumentStore().orElseThrow();
-                var current = (TextDocumentSnapshot) store.current(destination.id()).orElseThrow();
+                DocumentStore store = Services.IDE_STATE.getDocumentStore().orElseThrow();
+                TextDocumentSnapshot current = (TextDocumentSnapshot) store.current(destination.id()).orElseThrow();
                 var changed = new TextDocumentSnapshot(current.id(), current.uri(), current.version().next(),
                     current.languageId(), current.origin(), "changed destination", StandardCharsets.UTF_8);
                 store.publishBacking(changed);
@@ -317,6 +334,7 @@ public class EditorDefinitionNavigationTest {
         } finally {
             release.countDown();
         }
+
         sourceEditor.completion().get(10, TimeUnit.SECONDS);
         onFx(() -> {
             assertTrue(Services.EDITOR_TAB_MANAGER.activeTab().isEmpty());
@@ -327,19 +345,20 @@ public class EditorDefinitionNavigationTest {
 
     @Test
     public void ambiguousDefinitionsOfferAChooserAndOnlyNavigateToThePickedTarget() throws Exception {
-        var destination = onFx(() -> publish("destination.txt", "first second third"));
+        TextDocumentSnapshot destination = onFx(() -> publish("destination.txt", "first second third"));
         onFx(() -> {
             openSource((context, offset) -> new FeatureResult<>(context, List.of(
                 target(destination, 0, 5), target(destination, 6, 12))));
             sourceEditor.goToDefinition();
             return null;
         });
+
         sourceEditor.completion().get(10, TimeUnit.SECONDS);
         onFx(() -> {
             assertTrue(Services.EDITOR_TAB_MANAGER.activeTab().isEmpty());
             assertEquals(List.of(0, 6), sourceEditor.choices().stream().map(choice -> choice.range().start).toList());
             sourceEditor.choose(1);
-            var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            EditorTab tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
             assertEquals(destination.id(), tab.documentId());
             assertEquals(new TextSelection(6, 12), tab.view().textEditor().orElseThrow().selection());
             assertTrue(sourceEditor.choices().isEmpty());
@@ -349,13 +368,14 @@ public class EditorDefinitionNavigationTest {
 
     @Test
     public void chooserIsDiscardedWhenTheSourceChanges() throws Exception {
-        var destination = onFx(() -> publish("destination.txt", "first second third"));
+        TextDocumentSnapshot destination = onFx(() -> publish("destination.txt", "first second third"));
         onFx(() -> {
             openSource((context, offset) -> new FeatureResult<>(context, List.of(
                 target(destination, 0, 5), target(destination, 6, 12))));
             sourceEditor.goToDefinition();
             return null;
         });
+
         sourceEditor.completion().get(10, TimeUnit.SECONDS);
         onFx(() -> {
             assertEquals(2, sourceEditor.choices().size());
@@ -374,6 +394,7 @@ public class EditorDefinitionNavigationTest {
             sourceEditor.goToDefinition();
             return null;
         });
+
         sourceEditor.completion().get(10, TimeUnit.SECONDS);
         onFx(() -> {
             assertNotNull(sourceEditor.message());
@@ -385,7 +406,7 @@ public class EditorDefinitionNavigationTest {
 
     @Test
     public void goToImplementationUsesTheImplementationQuery() throws Exception {
-        var destination = onFx(() -> publish("destination.txt", "prefix implementation suffix"));
+        TextDocumentSnapshot destination = onFx(() -> publish("destination.txt", "prefix implementation suffix"));
         onFx(() -> {
             openSource(new NavigationProvider() {
                 @Override
@@ -401,12 +422,14 @@ public class EditorDefinitionNavigationTest {
                     return new FeatureResult<>(context, List.of(target(destination, 7, 21)));
                 }
             });
+
             sourceEditor.goToImplementation();
             return null;
         });
+
         sourceEditor.completion().get(10, TimeUnit.SECONDS);
         onFx(() -> {
-            var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            EditorTab tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
             assertEquals(new TextSelection(7, 21), tab.view().textEditor().orElseThrow().selection());
             return null;
         });
@@ -415,14 +438,14 @@ public class EditorDefinitionNavigationTest {
     @Test
     public void navigateBackRestoresTheOriginCaretAndForwardReturnsToTheDestination() throws Exception {
         onFx(() -> {
-            var origin = publish("origin.txt", "origin text here");
-            var destination = publish("destination.txt", "prefix definition suffix");
+            TextDocumentSnapshot origin = publish("origin.txt", "origin text here");
+            TextDocumentSnapshot destination = publish("destination.txt", "prefix definition suffix");
             Services.EDITOR_TAB_MANAGER.open(origin.uri().filePath().orElseThrow());
-            var originTab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            EditorTab originTab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
             originTab.view().activeEditor().moveTo(3);
             assertTrue(Services.EDITOR_TAB_MANAGER.navigateTo(null, destination,
                 Location.TextLocation.from(destination, 7, 17)));
-            var destinationTab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            EditorTab destinationTab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
             assertNotSame(originTab, destinationTab);
 
             originTab.view().activeEditor().moveTo(0);
@@ -440,11 +463,11 @@ public class EditorDefinitionNavigationTest {
     @Test
     public void navigateBackWithinOneFileReturnsToTheOriginCaret() throws Exception {
         onFx(() -> {
-            var document = publish("document.txt", "use here and definition there");
+            TextDocumentSnapshot document = publish("document.txt", "use here and definition there");
             Services.EDITOR_TAB_MANAGER.open(document.uri().filePath().orElseThrow());
-            var editor = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow().view().activeEditor();
+            TextEditorPane editor = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow().view().activeEditor();
             editor.moveTo(4);
-            var current = editor.textEditorAccess().snapshot();
+            TextDocumentSnapshot current = editor.textEditorAccess().snapshot();
             assertTrue(Services.EDITOR_TAB_MANAGER.navigateTo(null, current,
                 Location.TextLocation.from(current, 13, 23)));
             assertEquals(13, editor.getCaretPosition());
@@ -459,11 +482,11 @@ public class EditorDefinitionNavigationTest {
     @Test
     public void navigateBackIgnoresAPositionFromAnEditedRevision() throws Exception {
         onFx(() -> {
-            var origin = publish("origin.txt", "origin text here");
-            var destination = publish("destination.txt", "prefix definition suffix");
+            TextDocumentSnapshot origin = publish("origin.txt", "origin text here");
+            TextDocumentSnapshot destination = publish("destination.txt", "prefix definition suffix");
             Services.EDITOR_TAB_MANAGER.open(origin.uri().filePath().orElseThrow());
-            var originTab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
-            var originEditor = originTab.view().activeEditor();
+            EditorTab originTab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            TextEditorPane originEditor = originTab.view().activeEditor();
             originEditor.moveTo(10);
             assertTrue(Services.EDITOR_TAB_MANAGER.navigateTo(null, destination,
                 Location.TextLocation.from(destination, 7, 17)));
@@ -492,16 +515,17 @@ public class EditorDefinitionNavigationTest {
                 mainClass = 'Demo'
             }
             """);
-        var launches = new LinkedBlockingQueue<CompletableFuture<Void>>();
+        BlockingQueue<CompletableFuture<Void>> launches = new LinkedBlockingQueue<CompletableFuture<Void>>();
         var type = new GradleRunConfigurationType(() -> GradleConnector.newConnector()
             .useInstallation(new File(System.getProperty("railroad.test.gradleHome")))) {
             @Override
             public CompletableFuture<Void> run(Project target, RunConfiguration<GradleRunConfigurationData> config) {
-                var result = super.run(target, config);
+                CompletableFuture<Void> result = super.run(target, config);
                 launches.add(result);
                 return result;
             }
         };
+
         var config = new RunConfiguration<>(type, new GradleRunConfigurationData());
         config.data().setName("Launch");
         config.data().setTask(":app:launch");
@@ -510,46 +534,49 @@ public class EditorDefinitionNavigationTest {
             .setJavaHome(new JDK(Path.of(System.getProperty("java.home")), "Test JDK", JavaVersion.fromMajor(25)));
         onFx(() -> {
             Services.EDITOR_TAB_MANAGER.open(file);
-            var editor = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow().view().activeEditor();
+            TextEditorPane editor = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow().view().activeEditor();
             editor.replaceText(invalid);
             assertTrue(RunCommands.RUN.execute(CommandContext.withArgument(project, pane, config)));
             assertEquals(invalid, Files.readString(file).replace("\r\n", "\n"));
             return null;
         });
-        var first = launches.remove();
+
+        CompletableFuture<Void> first = launches.remove();
         assertThrows(ExecutionException.class, () -> first.get(60, TimeUnit.SECONDS));
-        var problems = project.getRunSessions().buildProblems();
+        BuildProblems problems = project.getRunSessions().buildProblems();
         assertEquals(1, problems.problems().size(), problems.problems()::toString);
-        var error = problems.problems().getFirst();
+        BuildProblems.Problem error = problems.problems().getFirst();
         assertEquals(file, error.file());
         assertEquals(2, error.line());
         onFx(() -> {
             pane.applyCss();
             pane.layout();
             assertTrue(pane.isDockItemActive(IDEDockItem.PROBLEMS));
-            var view = (BuildProblemsPane) pane.lookup(".build-problems-pane");
-            var rows = (ListView<?>) view.getCenter();
+            BuildProblemsPane view = (BuildProblemsPane) pane.lookup(".build-problems-pane");
+            ListView<?> rows = (ListView<?>) view.getCenter();
             rows.getSelectionModel().select(0);
             rows.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.ENTER, false, false, false, false));
             return null;
         });
+
         onFx(() -> {
-            var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            EditorTab tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
             assertTrue(Files.isSameFile(file, tab.path()));
-            var editor = tab.view().activeEditor();
+            TextEditorPane editor = tab.view().activeEditor();
             assertEquals(1, editor.getCurrentParagraph());
             editor.replaceText(valid);
             assertTrue(RunCommands.RUN.execute(CommandContext.withArgument(project, pane, config)));
             assertTrue(problems.problems().isEmpty());
             return null;
         });
+
         launches.remove().get(60, TimeUnit.SECONDS);
         assertTrue(problems.problems().isEmpty());
     }
 
     @Test
     public void findUsagesShowsResultsInTheWorkspaceToolAndOpensThem() throws Exception {
-        var destination = onFx(() -> publish("destination.txt", "one usage here"));
+        TextDocumentSnapshot destination = onFx(() -> publish("destination.txt", "one usage here"));
         var usage = Location.TextLocation.from(destination, 4, 9);
         onFx(() -> {
             openSource(new NavigationProvider() {
@@ -570,10 +597,12 @@ public class EditorDefinitionNavigationTest {
                         List.of(usage)));
                 }
             });
+
             sourceEditor.selectRange(0, "reference".length());
             sourceEditor.findUsages();
             return null;
         });
+
         UsagesPane usages = onFx(() -> {
             pane.applyCss();
             pane.layout();
@@ -582,6 +611,7 @@ public class EditorDefinitionNavigationTest {
                 .findFirst()
                 .orElseThrow();
         });
+
         usages.completion().get(10, TimeUnit.SECONDS);
         onFx(() -> null);
         onFx(() -> {
@@ -589,7 +619,7 @@ public class EditorDefinitionNavigationTest {
             assertEquals(UsagesPane.State.COMPLETE, usages.state());
             assertEquals(List.of(usage), usages.usages());
             assertTrue(usages.open(usage));
-            var tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
+            EditorTab tab = Services.EDITOR_TAB_MANAGER.activeTab().orElseThrow();
             assertEquals(destination.id(), tab.documentId());
             assertEquals(new TextSelection(4, 9), tab.view().textEditor().orElseThrow().selection());
             return null;
@@ -602,7 +632,7 @@ public class EditorDefinitionNavigationTest {
         int start = text.indexOf("toHexString");
         int end = text.indexOf('(', start);
         UsagesPane usages = onFx(() -> {
-            var source = publish("Main.java", text);
+            TextDocumentSnapshot source = publish("Main.java", text);
             Services.EDITOR_TAB_MANAGER.open(source.uri().filePath().orElseThrow());
             CodeEditorPane editor = Commands.activeCodeEditor();
             assertNotNull(editor);
@@ -613,6 +643,7 @@ public class EditorDefinitionNavigationTest {
             pane.layout();
             return (UsagesPane) pane.lookup(".usages-pane");
         });
+
         assertNotNull(usages);
         usages.completion().get(30, TimeUnit.SECONDS);
         onFx(() -> {
@@ -623,7 +654,7 @@ public class EditorDefinitionNavigationTest {
     }
 
     private void openSource(NavigationProvider provider) throws Exception {
-        var source = publish("source.txt", "reference");
+        TextDocumentSnapshot source = publish("source.txt", "reference");
         sourceEditor = new NavigationEditor(project, source.id(), source.uri().filePath().orElseThrow(),
             new CodeEditorConfig("text", null, null, null, provider, null));
         sourceEditor.setDocumentStore(Services.IDE_STATE.getDocumentStore().orElseThrow());
@@ -672,7 +703,7 @@ public class EditorDefinitionNavigationTest {
         Files.createDirectories(path.getParent());
         Files.writeString(path, text);
         String language = name.endsWith(".md") ? "markdown" : name.endsWith(".java") ? "java" : "text";
-        var identity = Services.IDE_STATE.identifyDocument(new FileSystemDocument(path, language));
+        DocumentIdentity identity = Services.IDE_STATE.identifyDocument(new FileSystemDocument(path, language));
         var uri = DocumentUri.fromPath(path);
         var snapshot = new TextDocumentSnapshot(identity.id(), uri, DocumentVersion.initial(), language,
             DocumentOrigin.original(uri), text, StandardCharsets.UTF_8);
@@ -688,8 +719,10 @@ public class EditorDefinitionNavigationTest {
         } catch (ExecutionException exception) {
             if (exception.getCause() instanceof Error error)
                 throw error;
+
             if (exception.getCause() instanceof Exception cause)
                 throw cause;
+
             throw exception;
         }
     }

@@ -59,6 +59,7 @@ public final class ConsolePane extends BorderPane implements AutoCloseable {
                 JavaFXUtils.runOnApplicationThread(() -> removeSession(session));
             }
         });
+
         replaying = false;
     }
 
@@ -82,6 +83,7 @@ public final class ConsolePane extends BorderPane implements AutoCloseable {
         } else {
             view(tab).bind(session);
         }
+
         tabsBySession.put(session, tab);
         tabs.getSelectionModel().select(tab);
         setCenter(tabs);
@@ -120,6 +122,7 @@ public final class ConsolePane extends BorderPane implements AutoCloseable {
                 setCenter(empty);
             }
         });
+
         return tab;
     }
 

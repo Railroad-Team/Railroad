@@ -25,6 +25,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.lang.reflect.Field;
+import javafx.geometry.Bounds;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -44,6 +46,7 @@ public class FindReplaceBarTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
         onFx(() -> {
             Platform.setImplicitExit(false);
@@ -57,11 +60,13 @@ public class FindReplaceBarTest {
             if (stage != null) {
                 stage.close();
             }
+
             for (TextEditorPane editor : editors) {
                 editor.discardChangesOnClose();
                 editor.close();
                 editor.dispose();
             }
+
             return null;
         });
     }
@@ -247,6 +252,7 @@ public class FindReplaceBarTest {
             bar.searchField().setText("match");
             return null;
         });
+
         Thread.sleep(300);
         onFx(() -> {
             assertEquals(3, bar.highlighter().drawnSegmentCount());
@@ -284,11 +290,12 @@ public class FindReplaceBarTest {
     @Test
     public void barReservesSpaceOnlyWhileTheDocumentStartIsVisible() throws Exception {
         FindReplaceBar bar = show(numberedLines(200, -1));
-        var host = (EditorFindHost) bar.getParent();
+        EditorFindHost host = (EditorFindHost) bar.getParent();
         onFx(() -> {
             bar.open(true);
             return null;
         });
+
         Thread.sleep(300);
         onFx(() -> {
             assertTrue(bar.getHeight() > 0);
@@ -299,6 +306,7 @@ public class FindReplaceBarTest {
             editor().showParagraphAtTop(100);
             return null;
         });
+
         Thread.sleep(300);
         onFx(() -> {
             assertEquals(0, host.reservedHeight(), 0.5);
@@ -310,12 +318,14 @@ public class FindReplaceBarTest {
             editor().showParagraphAtTop(0);
             return null;
         });
+
         Thread.sleep(300);
         onFx(() -> {
             assertEquals(bar.getHeight(), editor().getLayoutY(), 1);
             bar.close();
             return null;
         });
+
         Thread.sleep(300);
         onFx(() -> {
             assertEquals(0, editor().getLayoutY(), 0.5);
@@ -334,13 +344,14 @@ public class FindReplaceBarTest {
             editor().showParagraphAtTop(100);
             return null;
         });
+
         Thread.sleep(300);
         onFx(() -> {
             bar.findNext();
             assertEquals(0, bar.currentIndex());
-            var barBounds = bar.localToScreen(bar.getLayoutBounds());
+            Bounds barBounds = bar.localToScreen(bar.getLayoutBounds());
             TextRange match = bar.matches().getFirst();
-            var matchBounds = editor().getCharacterBoundsOnScreen(match.start, match.end).orElseThrow();
+            Bounds matchBounds = editor().getCharacterBoundsOnScreen(match.start, match.end).orElseThrow();
             assertTrue(matchBounds.getMinY() >= barBounds.getMaxY() - 0.5,
                 "Match at " + matchBounds.getMinY() + " is hidden by the bar ending at " + barBounds.getMaxY());
             return null;
@@ -352,6 +363,7 @@ public class FindReplaceBarTest {
         for (int line = 0; line < count; line++) {
             text.append(line == targetLine ? "target line " : "line ").append(line).append('\n');
         }
+
         return text.toString();
     }
 
@@ -378,8 +390,9 @@ public class FindReplaceBarTest {
             protected void showExternalChangeDialog(String disk) {
             }
         };
+
         editors.add(editor);
-        var autosave = TextEditorPane.class.getDeclaredField("changeSubscription");
+        Field autosave = TextEditorPane.class.getDeclaredField("changeSubscription");
         autosave.setAccessible(true);
         ((Subscription) autosave.get(editor)).unsubscribe();
         store.publishBacking(editor.captureSnapshot());

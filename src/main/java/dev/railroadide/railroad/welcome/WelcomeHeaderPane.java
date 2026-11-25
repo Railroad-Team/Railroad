@@ -18,7 +18,9 @@ import lombok.Getter;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-/** Welcome-screen header with project search, sorting controls, and a live count of known projects. */
+/**
+ * Welcome-screen header with project search, sorting controls, and a live count of known projects.
+ */
 @Getter
 public class WelcomeHeaderPane extends VBox {
     private static final PseudoClass FOCUSED_PSEUDO_CLASS = PseudoClass.getPseudoClass("focused");
@@ -52,11 +54,11 @@ public class WelcomeHeaderPane extends VBox {
         searchField.setMinWidth(0);
         searchField.getStyleClass().add("welcome-search-input");
         sortComboBox = new ProjectSortComboBox();
-        var searchBar = createSearchBar();
+        HBox searchBar = createSearchBar();
 
-        var heroSection = createHeroSection();
-        var statsBar = createStatsBar();
-        var options = createOptionsRow(searchBar);
+        VBox heroSection = createHeroSection();
+        HBox statsBar = createStatsBar();
+        HBox options = createOptionsRow(searchBar);
 
         var content = new VBox(heroSection, statsBar, options);
         content.setAlignment(Pos.CENTER_LEFT);

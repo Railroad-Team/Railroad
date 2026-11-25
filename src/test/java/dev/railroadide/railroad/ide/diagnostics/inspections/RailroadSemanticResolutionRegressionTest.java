@@ -286,5 +286,4 @@ public class RailroadSemanticResolutionRegressionTest {
             () -> diagnostics.stream().map(diagnostic -> diagnostic.startOffset() + " " + diagnostic.message())
                 .collect(Collectors.joining("\n")));
     }
-
 }

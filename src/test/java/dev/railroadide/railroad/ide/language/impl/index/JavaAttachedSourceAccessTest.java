@@ -28,6 +28,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
+import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
+import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -44,20 +47,23 @@ public class JavaAttachedSourceAccessTest {
         Path archive = jar("reader-sources.jar", Map.of(
             "example/Reader.java", source.getBytes(StandardCharsets.UTF_8),
             "example/Scope.java", scope.getBytes(StandardCharsets.UTF_8)));
-        var doc = document(JavaLibrarySymbolIndex.archiveEntry(archive, "example/Reader.java"), source);
+        TextDocumentSnapshot doc = document(JavaLibrarySymbolIndex.archiveEntry(archive, "example/Reader.java"),
+            source);
         var config = new WorkspaceConfigurationSnapshot(1, Set.of("main"), Map.of(
             "module.main.classpath", binary + "\n" + sibling));
         var workspace = new WorkspaceSnapshot("attached", Map.of(doc.id(), doc), config, 0);
         var base = JavaLibrarySymbolIndex.build(List.of(binary, sibling));
         try (var provider = new JavaWorkspaceAnalysisProvider(() -> true, (_, _) -> base)) {
-            var view = provider.capture(workspace, doc.id());
-            var field = view.lookupMember("example.Scope", "START").getFirst();
+            JavaWorkspaceAnalysis view = provider.capture(workspace, doc.id());
+            JavaProjectSemanticIndex.SymbolDescriptor field = view.lookupMember("example.Scope", "START").getFirst();
             assertEquals(scope, view.sourceText(field.sourceFile()).orElseThrow());
-            var diagnostics = JavaInspectionTestSupport.runProviders(List.of(new CoreNameResolutionInspection(),
-                new CoreMemberResolutionInspection()), Path.of("Reader.java"), source, view);
+            List<SemanticDiagnostic> diagnostics = JavaInspectionTestSupport
+                .runProviders(List.of(new CoreNameResolutionInspection(),
+                    new CoreMemberResolutionInspection()), Path.of("Reader.java"), source, view);
             assertEquals(List.of("Cannot resolve member 'MISSING'"), diagnostics.stream()
                 .map(issue -> issue.message()).toList());
         }
+
         assertTrue(base.lookupQualifiedName("example.Scope").isEmpty());
         assertTrue(base.forAttachedSource(binary, () -> {
         }).forAttachedSource(sibling, () -> {
@@ -98,8 +104,9 @@ public class JavaAttachedSourceAccessTest {
             "vendor/codec/util/Existing.class", libraryClass("vendor/codec/util/Existing"),
             "internal/codec/util/Foreign.class", libraryClass("internal/codec/util/Foreign")));
         var base = JavaLibrarySymbolIndex.build(List.of(binary, separate));
-        var view = base.forAttachedSource(binary, () -> {
+        JavaSymbolIndex view = base.forAttachedSource(binary, () -> {
         });
+
         assertEquals("internal.codec.api.Reader", view.binaryTypeName("vendor.codec.api.Reader"));
         assertEquals(base.lookupQualifiedName("internal.codec.util.Format"),
             view.lookupQualifiedName("vendor.codec.util.Format"));
@@ -122,8 +129,9 @@ public class JavaAttachedSourceAccessTest {
         JavaInspectionRuleEngine.runRules(new CoreMemberResolutionInspection(), context, members::add);
         assertEquals(List.of("Cannot resolve member 'missingWrite'", "Cannot resolve member 'missingDirect'",
             "Cannot resolve member 'missingInstance'"), members.stream().map(SemanticDiagnostic::message).toList());
-        var diagnostics = JavaInspectionTestSupport.runProviders(List.of(new CoreImportInspection(),
-            new CoreCallResolutionInspection()), Path.of("Adapter.java"), source, view);
+        List<SemanticDiagnostic> diagnostics = JavaInspectionTestSupport
+            .runProviders(List.of(new CoreImportInspection(),
+                new CoreCallResolutionInspection()), Path.of("Adapter.java"), source, view);
         assertEquals(List.of("Cannot resolve import 'unrelated.Other'"), diagnostics.stream()
             .filter(issue -> issue.code().startsWith("SEM_UNRESOLVED_")).map(issue -> issue.message()).toList());
     }
@@ -172,9 +180,10 @@ public class JavaAttachedSourceAccessTest {
         String entry = "example/Mod.java";
         Path attached = jar("1.0/" + "c".repeat(40) + "/mod-sources.jar",
             Map.of(entry, source.getBytes(StandardCharsets.UTF_8)));
-        var libraryDocument = document(JavaLibrarySymbolIndex.archiveEntry(attached, entry), source);
+        TextDocumentSnapshot libraryDocument = document(JavaLibrarySymbolIndex.archiveEntry(attached, entry), source);
         Path consumerRoot = directory.resolve("consumer");
-        var consumer = document(DocumentUri.fromPath(consumerRoot.resolve("Use.java")), "class Use {}");
+        TextDocumentSnapshot consumer = document(DocumentUri.fromPath(consumerRoot.resolve("Use.java")),
+            "class Use {}");
         var config = new WorkspaceConfigurationSnapshot(1, Set.of("consumer", "libraryUser"),
             Map.of("module.consumer.sources", consumerRoot.toString(), "module.consumer.classpath", api.toString(),
                 "module.libraryUser.classpath", patched + "\n" + binary));
@@ -182,21 +191,23 @@ public class JavaAttachedSourceAccessTest {
             Map.of(libraryDocument.id(), libraryDocument, consumer.id(), consumer), config, 0);
         try (var provider = new JavaWorkspaceAnalysisProvider(() -> true,
             (roots, _) -> JavaLibrarySymbolIndex.build(roots))) {
-            var view = provider.capture(workspace, libraryDocument.id());
+            JavaWorkspaceAnalysis view = provider.capture(workspace, libraryDocument.id());
             assertEquals(List.of(patched, binary), view.classpath());
-            var type = view.lookupClassStub("api.Target");
+            ClassStub type = view.lookupClassStub("api.Target");
             assertTrue(Modifier.isPublic(type.methods().getFirst().modifiers()));
             assertTrue(Modifier.isPublic(type.fields().getFirst().modifiers()));
             assertTrue(Modifier.isPrivate(type.fields().getLast().modifiers()));
-            var project = provider.capture(workspace, consumer.id());
+            JavaWorkspaceAnalysis project = provider.capture(workspace, consumer.id());
             assertTrue(Modifier.isPrivate(project.lookupClassStub("api.Target").methods().getFirst().modifiers()));
             assertTrue(Modifier.isPrivate(project.lookupClassStub("api.Target").fields().getFirst().modifiers()));
             assertFalse(project.declaredQualifiedNames().contains("example.Mod"));
 
             var sources = new JavaLibrarySources(directory.resolve("views"));
             var base = JavaLibrarySymbolIndex.build(List.of(binary));
-            var opened = sources.open(base.binaryLocations().get("example.Mod"), base.lookupClassStub("example.Mod"),
-                base.classStubsByQualifiedName()).orElseThrow();
+            TextDocumentSnapshot opened = sources
+                .open(base.binaryLocations().get("example.Mod"), base.lookupClassStub("example.Mod"),
+                    base.classStubsByQualifiedName())
+                .orElseThrow();
             assertEquals(binary, sources.ownerArchive(opened, List.of(binary)).orElseThrow());
             assertEquals(binary,
                 sources.ownerArchive(opened.uri().filePath().orElseThrow(), List.of(binary)).orElseThrow());
@@ -213,12 +224,13 @@ public class JavaAttachedSourceAccessTest {
         Path path = directory.resolve(name);
         Files.createDirectories(path.getParent());
         try (var output = new JarOutputStream(Files.newOutputStream(path))) {
-            for (var entry : entries.entrySet()) {
+            for (Map.Entry<String, byte[]> entry : entries.entrySet()) {
                 output.putNextEntry(new JarEntry(entry.getKey()));
                 output.write(entry.getValue());
                 output.closeEntry();
             }
         }
+
         return path;
     }
 

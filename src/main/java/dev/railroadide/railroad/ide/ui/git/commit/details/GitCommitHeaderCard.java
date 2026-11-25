@@ -53,6 +53,7 @@ public class GitCommitHeaderCard extends RRVBox {
                 committedAnimation.play();
             }
         });
+
         committedText.getStyleClass().addAll("git-commit-details-committed-time", "git-commit-details-meta-text");
         detailsHBox.getChildren().add(committedText);
 

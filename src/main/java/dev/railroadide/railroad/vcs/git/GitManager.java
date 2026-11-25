@@ -358,12 +358,14 @@ public class GitManager {
     public void commitChanges(GitCommitData commit, boolean pushAfterCommit) {
         this.executorService.submit(() -> {
             if (pushAfterCommit) {
-                try (var activity = BackgroundActivities.shared().start("railroad.activity.git_push")) {
+                try (BackgroundActivities.Handle activity = BackgroundActivities.shared()
+                    .start("railroad.activity.git_push")) {
                     gitClient.commitChanges(this.gitRepository.get(), commit, true, GitListeners.activity(activity));
                 }
             } else {
                 gitClient.commitChanges(this.gitRepository.get(), commit, false);
             }
+
             refreshStatusInternal();
         });
     }
@@ -439,6 +441,7 @@ public class GitManager {
                 this.pullStrategy.set(null);
                 this.pushStrategy.set(null);
             });
+
             return;
         }
 
@@ -465,9 +468,11 @@ public class GitManager {
         if (repository == null)
             return;
 
-        try (var activity = BackgroundActivities.shared().start("railroad.activity.git_fetch")) {
+        try (
+            BackgroundActivities.Handle activity = BackgroundActivities.shared().start("railroad.activity.git_fetch")) {
             this.gitClient.fetch(repository, GitOutputListener.NO_OP, GitListeners.activity(activity));
         }
+
         String remoteName = this.gitClient.getUpstream(repository).map(GitUpstream::remoteName).orElse("");
         JavaFXUtils
             .runOnApplicationThread(() -> this.remoteFetchTimestamps.put(remoteName, System.currentTimeMillis()));
@@ -501,9 +506,11 @@ public class GitManager {
         this.executorService.submit(() -> {
             GitRepository repository = this.gitRepository.get();
             if (repository != null) {
-                try (var activity = BackgroundActivities.shared().start("railroad.activity.git_push")) {
+                try (BackgroundActivities.Handle activity = BackgroundActivities.shared()
+                    .start("railroad.activity.git_push")) {
                     this.gitClient.push(repository, GitOutputListener.NO_OP, GitListeners.activity(activity));
                 }
+
                 refreshStatusInternal();
             }
         });
@@ -516,9 +523,11 @@ public class GitManager {
         this.executorService.submit(() -> {
             GitRepository repository = this.gitRepository.get();
             if (repository != null) {
-                try (var activity = BackgroundActivities.shared().start("railroad.activity.git_pull")) {
+                try (BackgroundActivities.Handle activity = BackgroundActivities.shared()
+                    .start("railroad.activity.git_pull")) {
                     this.gitClient.pull(repository, GitOutputListener.NO_OP, GitListeners.activity(activity));
                 }
+
                 refreshStatusInternal();
             }
         });
@@ -727,6 +736,7 @@ public class GitManager {
                         if (onPage != null) {
                             onPage.accept(page.commits());
                         }
+
                         lastCommitHash = page.commits().getLast().hash();
                         morePages = page.nextCursor() != null;
                     } else {
@@ -1206,6 +1216,7 @@ public class GitManager {
             String remoteName = getRemoteTrackingBranch(branchName);
             boolean isCurrent = branchName.equals(getCurrentBranch());
             int[] aheadBehind = remoteName != null ? getAheadBehindCounts(branchName, remoteName) : new int[]{0, 0};
+
             int aheadCount = aheadBehind[0];
             int behindCount = aheadBehind[1];
             String lastCommitHash = getLastCommitHash(branchName);
@@ -1294,10 +1305,12 @@ public class GitManager {
                     else if (behindCount > 0)
                         return GitBranchStatus.REMOTE;
                 }
+
                 return GitBranchStatus.CLEAN;
             }
         } else
             return hasUncommittedChanges ? GitBranchStatus.DIRTY : GitBranchStatus.CLEAN;
+
     }
 
     /**
@@ -1467,9 +1480,11 @@ public class GitManager {
         if (remote.fetchUrl() != null && !remote.fetchUrl().isBlank()) {
             urls.add(remote.fetchUrl());
         }
+
         if (remote.pushUrl() != null && !remote.pushUrl().isBlank()) {
             urls.add(remote.pushUrl());
         }
+
         return List.copyOf(urls);
     }
 
@@ -1494,10 +1509,12 @@ public class GitManager {
         this.executorService.submit(() -> {
             GitRepository repository = this.gitRepository.get();
             if (repository != null) {
-                try (var activity = BackgroundActivities.shared().start("railroad.activity.git_fetch")) {
+                try (BackgroundActivities.Handle activity = BackgroundActivities.shared()
+                    .start("railroad.activity.git_fetch")) {
                     this.gitClient.fetchAllRemotes(repository, GitOutputListener.NO_OP,
                         GitListeners.activity(activity));
                 }
+
                 refreshStatusInternal();
                 for (GitRemote remote : getRemotes()) {
                     JavaFXUtils.runOnApplicationThread(
@@ -1522,6 +1539,7 @@ public class GitManager {
                         GitLog.LOGGER.debug("Git Prune All Remotes Message - {}", message);
                     }
                 });
+
                 refreshStatusInternal();
             }
         });
@@ -1541,6 +1559,7 @@ public class GitManager {
                         GitLog.LOGGER.debug("Git Prune Message - {}", message);
                     }
                 });
+
                 refreshStatusInternal();
             }
         });

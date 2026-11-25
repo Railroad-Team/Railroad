@@ -129,8 +129,10 @@ public class FormRadioButtonGroup<E extends Enum<E>> extends InformativeLabeledH
                 if (toggleGroup != null) {
                     toggleGroup.selectToggle(null);
                 }
+
                 value.set(null);
             });
+
             return;
         }
 

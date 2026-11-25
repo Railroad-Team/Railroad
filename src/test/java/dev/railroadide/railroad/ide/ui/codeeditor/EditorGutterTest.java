@@ -20,6 +20,10 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import dev.railroadide.railroad.debug.breakpoint.SourceBreakpoint;
+import java.util.Set;
+import java.util.function.IntFunction;
+import javafx.scene.Node;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -32,6 +36,7 @@ public class EditorGutterTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
     }
 
@@ -48,11 +53,11 @@ public class EditorGutterTest {
                     event.consume();
                 }));
 
-                var row = (GridPane) editor.getParagraphGraphicFactory().apply(1);
+                GridPane row = (GridPane) editor.getParagraphGraphicFactory().apply(1);
                 assertEquals(3, row.getChildren().size());
-                var diagnostic = (StackPane) row.getChildren().get(1);
+                StackPane diagnostic = (StackPane) row.getChildren().get(1);
                 assertEquals("warning 2", ((Text) diagnostic.getChildren().getFirst()).getText());
-                var emptyCell = (StackPane) row.getChildren().get(2);
+                StackPane emptyCell = (StackPane) row.getChildren().get(2);
                 assertTrue(emptyCell.getChildren().isEmpty());
                 assertTrue(emptyCell.isPickOnBounds());
                 assertEquals(16, emptyCell.getMinWidth());
@@ -75,7 +80,7 @@ public class EditorGutterTest {
                 gutter.addTrailingColumn(new GutterColumn("fold", 16, _ -> new Text("fold")));
                 gutter.addColumn(new GutterColumn("diagnostics", 12, _ -> new Text("diagnostic")));
                 gutter.addColumn(new GutterColumn("breakpoints", 12, _ -> new Text("breakpoint")));
-                var row = (GridPane) editor.getParagraphGraphicFactory().apply(0);
+                GridPane row = (GridPane) editor.getParagraphGraphicFactory().apply(0);
                 assertEquals("diagnostic", markerText(row, 1));
                 assertEquals("breakpoint", markerText(row, 2));
                 assertEquals("fold", markerText(row, 3));
@@ -96,7 +101,7 @@ public class EditorGutterTest {
                 gutter.addColumn(new GutterColumn("first", 12, _ -> new Text("old")));
                 gutter.addColumn(new GutterColumn("second", 12, _ -> new Text("second")));
                 gutter.addColumn(new GutterColumn("first", 12, _ -> new Text("replacement")));
-                var row = (GridPane) editor.getParagraphGraphicFactory().apply(0);
+                GridPane row = (GridPane) editor.getParagraphGraphicFactory().apply(0);
                 assertEquals(3, row.getChildren().size());
                 assertEquals("replacement", markerText(row, 1));
                 assertEquals("second", markerText(row, 2));
@@ -138,7 +143,7 @@ public class EditorGutterTest {
     }
 
     private static String markerText(GridPane row, int column) {
-        var cell = (StackPane) row.getChildren().get(column);
+        StackPane cell = (StackPane) row.getChildren().get(column);
         return ((Text) cell.getChildren().getFirst()).getText();
     }
 
@@ -153,14 +158,14 @@ public class EditorGutterTest {
             var secondGutter = new EditorGutter(second);
             try (var firstBinding = new BreakpointGutterBinding(firstGutter, first, () -> file, service);
                 var secondBinding = new BreakpointGutterBinding(secondGutter, second, () -> file, service)) {
-                var previousFactory = second.getParagraphGraphicFactory();
+                IntFunction<? extends Node> previousFactory = second.getParagraphGraphicFactory();
                 clickBreakpoint(first, 1, MouseButton.SECONDARY);
                 assertFalse(service.has(file, 2));
                 clickBreakpoint(first, 1, MouseButton.PRIMARY);
                 assertTrue(service.has(file, 2));
                 assertNotSame(previousFactory, second.getParagraphGraphicFactory());
-                var row = (GridPane) second.getParagraphGraphicFactory().apply(1);
-                var cell = (StackPane) row.getChildren().get(1);
+                GridPane row = (GridPane) second.getParagraphGraphicFactory().apply(1);
+                StackPane cell = (StackPane) row.getChildren().get(1);
                 assertInstanceOf(Circle.class, cell.getChildren().getFirst());
 
                 previousFactory = second.getParagraphGraphicFactory();
@@ -170,7 +175,7 @@ public class EditorGutterTest {
                 assertFalse(service.has(file, 2));
 
                 firstBinding.close();
-                var closedFactory = first.getParagraphGraphicFactory();
+                IntFunction<? extends Node> closedFactory = first.getParagraphGraphicFactory();
                 service.add(file, 2);
                 assertSame(closedFactory, first.getParagraphGraphicFactory());
             } finally {
@@ -181,8 +186,8 @@ public class EditorGutterTest {
     }
 
     private static void clickBreakpoint(CodeArea editor, int paragraph, MouseButton button) {
-        var row = (GridPane) editor.getParagraphGraphicFactory().apply(paragraph);
-        var cell = (StackPane) row.getChildren().get(1);
+        GridPane row = (GridPane) editor.getParagraphGraphicFactory().apply(paragraph);
+        StackPane cell = (StackPane) row.getChildren().get(1);
         Event.fireEvent(cell, new MouseEvent(MouseEvent.MOUSE_CLICKED,
             1, 1, 1, 1, button, 1,
             false, false, false, false, false, false, false, false, false, true, null));
@@ -200,11 +205,11 @@ public class EditorGutterTest {
             var secondGutter = new EditorGutter(second);
             try (var firstBinding = new BreakpointGutterBinding(firstGutter, first, () -> file, service);
                 var secondBinding = new BreakpointGutterBinding(secondGutter, second, () -> file, service)) {
-                var breakpoint = service.add(file, 2);
+                SourceBreakpoint breakpoint = service.add(file, 2);
                 // Identical inserted code must not confuse the position with the existing line.
                 first.insertText(6, "target();\n");
                 assertEquals(breakpoint.id(), service.get(file, 3).orElseThrow().id());
-                var row = (GridPane) first.getParagraphGraphicFactory().apply(2);
+                GridPane row = (GridPane) first.getParagraphGraphicFactory().apply(2);
                 assertInstanceOf(Circle.class, ((StackPane) row.getChildren().get(1)).getChildren().getFirst());
                 second.replaceText(first.getText());
                 assertEquals(breakpoint.id(), service.get(file, 3).orElseThrow().id());
@@ -234,7 +239,7 @@ public class EditorGutterTest {
             var editor = new CodeArea("first\n    target();\nlast");
             var gutter = new EditorGutter(editor);
             try (var binding = new BreakpointGutterBinding(gutter, editor, () -> file, service)) {
-                var breakpoint = service.add(file, 2);
+                SourceBreakpoint breakpoint = service.add(file, 2);
                 editor.insertText(8, "\n");
                 assertEquals(breakpoint.id(), service.get(file, 3).orElseThrow().id());
                 editor.deleteText(9, 21);
@@ -246,10 +251,10 @@ public class EditorGutterTest {
     }
 
     private static void assertVisibleMarkers(StackPane root, String expected) {
-        var cells = root.lookupAll(".editor-gutter-cell");
+        Set<Node> cells = root.lookupAll(".editor-gutter-cell");
         assertFalse(cells.isEmpty());
-        for (var node : cells) {
-            var cell = (StackPane) node;
+        for (Node node : cells) {
+            StackPane cell = (StackPane) node;
             assertEquals(expected, ((Text) cell.getChildren().getFirst()).getText());
         }
     }

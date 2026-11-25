@@ -19,7 +19,9 @@ import lombok.Getter;
 import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
-/** Welcome navigation sidebar showing application branding and the available start-screen actions. */
+/**
+ * Welcome navigation sidebar showing application branding and the available start-screen actions.
+ */
 public class WelcomeLeftPane extends VBox {
     /**
      * Navigation list whose selection is handled by the enclosing welcome pane.
@@ -29,7 +31,9 @@ public class WelcomeLeftPane extends VBox {
     @Getter
     private final RRListView<MenuType> listView;
 
-    /** Builds the branding and menu list, registering the sidebar's UI identifier while attached. */
+    /**
+     * Builds the branding and menu list, registering the sidebar's UI identifier while attached.
+     */
     public WelcomeLeftPane() {
         getStyleClass().add("welcome-left-pane");
         setAlignment(Pos.TOP_CENTER);
@@ -66,21 +70,33 @@ public class WelcomeLeftPane extends VBox {
         Services.UI_MANAGER.assignWhileAttached(UIIds.Welcome.WELCOME_LEFT, this);
     }
 
-    /** Navigation destinations and actions offered by the welcome sidebar. */
+    /**
+     * Navigation destinations and actions offered by the welcome sidebar.
+     */
     @Getter
     public enum MenuType {
-        /** Displays the search header and known projects. */
+        /**
+         * Displays the search header and known projects.
+         */
         HOME("railroad.home.welcome.home", FontAwesomeSolid.HOME),
-        /** Displays project-type selection and onboarding. */
+        /**
+         * Displays project-type selection and onboarding.
+         */
         NEW_PROJECT("railroad.home.welcome.newproject",
             FontAwesomeSolid.PLUS),
-        /** Opens a directory chooser for an existing project. */
+        /**
+         * Opens a directory chooser for an existing project.
+         */
         OPEN_PROJECT("railroad.home.welcome.openproject",
             FontAwesomeSolid.FOLDER_OPEN),
-        /** Displays repository browsing and cloning controls. */
+        /**
+         * Displays repository browsing and cloning controls.
+         */
         IMPORT_PROJECT("railroad.home.welcome.importproject",
             FontAwesomeSolid.FILE_IMPORT),
-        /** Opens the application settings window. */
+        /**
+         * Opens the application settings window.
+         */
         SETTINGS("railroad.home.welcome.settings", FontAwesomeSolid.COG);
 
         /**
@@ -113,9 +129,13 @@ public class WelcomeLeftPane extends VBox {
         }
     }
 
-    /** Renders menu entries as localized navigation items with synchronized selection styling. */
+    /**
+     * Renders menu entries as localized navigation items with synchronized selection styling.
+     */
     public static class MenuTypeCell extends ListCell<MenuType> {
-        /** Creates an empty menu cell. */
+        /**
+         * Creates an empty menu cell.
+         */
         public MenuTypeCell() {
         }
 

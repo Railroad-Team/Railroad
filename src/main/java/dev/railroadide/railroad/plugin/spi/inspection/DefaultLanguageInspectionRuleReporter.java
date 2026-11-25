@@ -14,8 +14,7 @@ import java.util.Objects;
  * @param <C> context type consumed by the inspection rule
  */
 public final class DefaultLanguageInspectionRuleReporter<C extends LanguageRuleContext>
-    implements
-        LanguageInspectionRuleReporter {
+    implements LanguageInspectionRuleReporter {
     private final LanguageInspectionRule<C> rule;
     private final LanguageInspectionReporter sink;
     private final InspectionSettingsAccess settings;

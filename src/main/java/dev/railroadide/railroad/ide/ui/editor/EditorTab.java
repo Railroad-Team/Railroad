@@ -108,6 +108,7 @@ public final class EditorTab {
         if (editor != null) {
             this.saveState.bind(editor.saveStateProperty());
         }
+
         view.observeSourceEditor(current -> {
             findHost.setEditor(current);
             this.saveState.unbind();
@@ -117,6 +118,7 @@ public final class EditorTab {
                 this.saveState.set(EditorSaveState.CLEAN);
             }
         });
+
         this.dirty.bind(this.saveState.isNotEqualTo(EditorSaveState.CLEAN));
         this.saving.bind(this.saveState.isEqualTo(EditorSaveState.SAVING));
         this.saved.bind(this.saveState.isEqualTo(EditorSaveState.CLEAN));
@@ -139,10 +141,12 @@ public final class EditorTab {
             updateTabStateStyle("pinned", isPinned);
             updateMetadataTooltip();
         });
+
         this.preview.addListener((_, _, isPreview) -> {
             updateTabStateStyle("preview", isPreview);
             updateMetadataTooltip();
         });
+
         this.saveFailed.addListener((_, _, needsAttention) -> updateTabStateStyle("attention", needsAttention));
         L18n.currentLanguageProperty().addListener(weakLocalizationListener);
         updateTabStateStyle("pinned", pinned());
@@ -430,7 +434,9 @@ public final class EditorTab {
         this.tab.setId(normalizedPath.toString());
     }
 
-    /** Releases bindings and wrapper resources after the source has accepted closure. */
+    /**
+     * Releases bindings and wrapper resources after the source has accepted closure.
+     */
     public void dispose() {
         saveState.unbind();
         dirty.unbind();
@@ -513,7 +519,7 @@ public final class EditorTab {
             (_, _, state) -> updateSaveStatusIcon(statusIcon, statusTooltip, savingAnimation, state));
         updateSaveStatusIcon(statusIcon, statusTooltip, savingAnimation, saveState());
 
-        var actionSlot = createIconSlot(closeIcon, "editor-tab-action-slot");
+        RRStackPane actionSlot = createIconSlot(closeIcon, "editor-tab-action-slot");
         actionSlot.getChildren().addAll(pinIcon, statusIcon);
         actionSlot.setCursor(Cursor.HAND);
         closeIcon.visibleProperty().bind(
@@ -531,9 +537,11 @@ public final class EditorTab {
                 } else {
                     Services.EDITOR_TAB_MANAGER.close(this);
                 }
+
                 event.consume();
             }
         });
+
         var actionTooltip = new LocalizedTooltip(pinned()
             ? "editor.tab.contextmenu.unpin"
             : "editor.tab.contextmenu.close");
@@ -559,6 +567,7 @@ public final class EditorTab {
         if (titleLabel.getText() == null || titleLabel.getText().isBlank()) {
             setDisplayTitle(EditorTabPresentation.fileName(editorPath));
         }
+
         updateMetadataTooltip();
     }
 
@@ -578,18 +587,22 @@ public final class EditorTab {
             } catch (IOException _) {
                 // The file can disappear while its tab is still open.
             }
+
             if (!Files.isWritable(editorPath)) {
                 text.append('\n').append(L18n.localize("editor.tab.tooltip.read_only"));
             }
         } else {
             text.append('\n').append(L18n.localize("editor.tab.tooltip.missing"));
         }
+
         if (pinned()) {
             text.append('\n').append(L18n.localize("editor.tab.tooltip.pinned"));
         }
+
         if (preview()) {
             text.append('\n').append(L18n.localize("editor.tab.tooltip.preview"));
         }
+
         metadataTooltip.setText(text.toString());
         updateAccessibleText();
     }
@@ -812,5 +825,4 @@ public final class EditorTab {
             view.content(),
             this);
     }
-
 }

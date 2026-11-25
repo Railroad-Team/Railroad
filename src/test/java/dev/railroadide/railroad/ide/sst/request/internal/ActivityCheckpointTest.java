@@ -16,6 +16,7 @@ public class ActivityCheckpointTest {
         for (int call = 0; call < 4; call++) {
             ActivityCheckpoint.poll(callback);
         }
+
         assertEquals(1, checks.get());
 
         ActivityCheckpoint.poll(callback);
@@ -50,6 +51,7 @@ public class ActivityCheckpointTest {
         for (int skipped = 0; skipped < 3; skipped++) {
             assertDoesNotThrow(() -> ActivityCheckpoint.poll(checkpoint));
         }
+
         assertSame(failure, assertThrows(CancellationException.class, () -> ActivityCheckpoint.poll(checkpoint)));
     }
 

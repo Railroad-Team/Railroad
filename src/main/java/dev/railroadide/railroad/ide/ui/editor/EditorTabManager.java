@@ -102,6 +102,7 @@ public class EditorTabManager {
         TextEditorPane editor = tab == null ? null : tab.view().activeEditor();
         return editor == null || editor.isEditorClosed() ? Optional.empty() : Optional.of(editor);
     }
+
     private final Map<DocumentId, EditorTab> openTabs = new LinkedHashMap<>();
     private final Deque<ClosedEditorTab> recentlyClosedTabs = new ArrayDeque<>();
     private final Set<EditorTab> tabsByRecency = new LinkedHashSet<>();
@@ -232,6 +233,7 @@ public class EditorTabManager {
                 JavaFXUtils.runOnApplicationThread(() -> previewTab().ifPresent(this::promote));
             }
         });
+
         Settings.SYNCHRONIZE_PROJECT_EXPLORER_WITH_ACTIVE_TAB.addListener((_, enabled) -> {
             if (Boolean.TRUE.equals(enabled)) {
                 JavaFXUtils.runOnApplicationThread(
@@ -255,6 +257,7 @@ public class EditorTabManager {
         if (groupId == null) {
             groupId = nextEditorGroupId();
         }
+
         ensureSelectionListener(tabPane, groupId);
         trackEmptySplitGroup(tabPane);
         reconcilePaneMembership(tabPane);
@@ -327,6 +330,7 @@ public class EditorTabManager {
         }
 
         // Do not evict a useful preview for a path Railroad cannot render.
+
         if (resolveLanguageSupport(normalizedPath) == null)
             return null;
 
@@ -381,6 +385,7 @@ public class EditorTabManager {
     ) {
         if (!Platform.isFxApplicationThread())
             throw new IllegalStateException("Navigation must run on the FX thread");
+
         Objects.requireNonNull(destination, "destination");
         Objects.requireNonNull(target, "target");
 
@@ -402,6 +407,7 @@ public class EditorTabManager {
             if (originTab != null && originPosition != null) {
                 idePane.ifPresent(pane -> pane.markNavigationOrigin(originTab.tab(), originPosition));
             }
+
             int start = target.range().start;
             if (editor.selectAndReveal(current, new TextSelection(start, start)) != EditResult.APPLIED)
                 return false;
@@ -410,6 +416,7 @@ public class EditorTabManager {
                 idePane.ifPresent(pane -> pane.recordNavigationDestination(originTab.tab(),
                     new WorkspaceTabNavigationHistory.Position(destination.id(), destination.version(), start)));
             }
+
             return true;
         }
 
@@ -421,9 +428,10 @@ public class EditorTabManager {
         if (originTab != null && originPosition != null) {
             idePane.ifPresent(pane -> pane.markNavigationOrigin(originTab.tab(), originPosition));
         }
+
         Optional<IDEPane> destinationPane = Services.UI_MANAGER.lookup(UIIds.IDE.IDE);
 
-        var revealed = new boolean[1];
+        boolean[] revealed = new boolean[1];
         IDEContentRouter.routeActive(WorkspaceContentTargets.CODE_EDITOR, tabPane -> {
             EditorTab tab = openInTabPane(project, path, tabPane, TabOpenRequest.normal());
             if (tab == null)
@@ -438,6 +446,7 @@ public class EditorTabManager {
             } catch (IllegalStateException exception) {
                 return;
             }
+
             RevealTarget reveal = tab.documentId().equals(destination.id())
                 ? openedRevision(editor, destination, target)
                 : RevealTarget.of(derivedView(editor, destination), target);
@@ -449,6 +458,7 @@ public class EditorTabManager {
                 new WorkspaceTabNavigationHistory.Position(reveal.snapshot().id(), reveal.snapshot().version(),
                     reveal.selection().anchor())));
         });
+
         return revealed[0];
     }
 
@@ -495,6 +505,7 @@ public class EditorTabManager {
         } catch (IllegalStateException | IllegalArgumentException | IndexOutOfBoundsException exception) {
             return null;
         }
+
         String text = destination.text();
         if (!current.id().equals(destination.id()) || !current.uri().equals(destination.uri())
             || text.indexOf('\r') < 0
@@ -512,6 +523,7 @@ public class EditorTabManager {
                 removed++;
             }
         }
+
         return offset - removed;
     }
 
@@ -593,6 +605,7 @@ public class EditorTabManager {
         } catch (IllegalStateException exception) {
             return false;
         }
+
         if (!current.id().equals(position.documentId()) || !current.version().equals(position.version())
             || position.offset() > current.text().length())
             return false;
@@ -633,6 +646,7 @@ public class EditorTabManager {
     private void detachIntoNewWindow(EditorTab editorTab) {
         if (openTabs.get(editorTab.documentId()) != editorTab)
             return;
+
         if (!(editorTab.tab().getTabPane() instanceof DetachableTabPane sourceTabPane))
             return;
 
@@ -649,6 +663,7 @@ public class EditorTabManager {
                 stage.addEventHandler(WindowEvent.WINDOW_HIDDEN, _ -> removeSelectionListener(detachedTabPane));
                 queueSelectionUpdate(tab);
             }
+
             activate(editorTab);
             Railroad.WINDOW_MANAGER.registerChildWindow(stage);
         } catch (RuntimeException exception) {
@@ -656,6 +671,7 @@ public class EditorTabManager {
                 sourceTabPane.getTabs().add(Math.min(previousIndex, sourceTabPane.getTabs().size()), tab);
                 sourceTabPane.getSelectionModel().select(tab);
             }
+
             Railroad.LOGGER.error("Failed to open editor tab {} in a new window", editorTab.path(), exception);
         }
     }
@@ -668,13 +684,14 @@ public class EditorTabManager {
      */
     public void restore(Iterable<Path> paths, Path activePath) {
         Objects.requireNonNull(paths, "Paths cannot be null");
-        var legacyState = new ArrayList<EditorTabSessionState>();
+        List<EditorTabSessionState> legacyState = new ArrayList<EditorTabSessionState>();
         int order = 0;
         for (Path path : paths) {
             if (path != null) {
                 legacyState.add(EditorTabSessionState.legacy(path, order++, pathsMatch(path, activePath)));
             }
         }
+
         restoreSession(legacyState);
     }
 
@@ -723,6 +740,7 @@ public class EditorTabManager {
         if (primaryEditorPane == null && DEFAULT_EDITOR_GROUP_ID.equals(request.editorGroupId())) {
             primaryEditorPane = tabPane;
         }
+
         Path normalizedPath = path.toAbsolutePath().normalize();
         if (!Files.isRegularFile(normalizedPath)) {
             Railroad.LOGGER.warn("Cannot open missing or non-file path: {}", normalizedPath);
@@ -740,11 +758,13 @@ public class EditorTabManager {
             } else if (!request.preview()) {
                 promote(existingTab);
             }
+
             reattachExistingTabIfNeeded(existingTab, tabPane);
             if (request.activate()) {
                 select(existingTab, tabPane);
                 activate(existingTab);
             }
+
             return existingTab;
         }
 
@@ -753,16 +773,18 @@ public class EditorTabManager {
             if (request.openExternally()) {
                 FileUtils.openInDefaultApplication(normalizedPath);
             }
+
             return null;
         }
 
         var document = new FileSystemDocument(normalizedPath, support.languageId());
         DocumentIdentity identity = Services.IDE_STATE.identifyDocument(document);
-        var editorOpenView = support.open(project, identity.id(), normalizedPath);
+        EditorOpenView editorOpenView = support.open(project, identity.id(), normalizedPath);
         if (editorOpenView == null) {
             if (request.openExternally()) {
                 FileUtils.openInDefaultApplication(normalizedPath);
             }
+
             return null;
         }
 
@@ -774,6 +796,7 @@ public class EditorTabManager {
                     editorOpenView.languageId());
             }
         });
+
         Services.IDE_STATE.getDocumentStore().ifPresent(editorOpenView::setDocumentStore);
 
         boolean preview = request.preview()
@@ -782,6 +805,7 @@ public class EditorTabManager {
         if (preview) {
             previewTab().ifPresent(this::promote);
         }
+
         var editorTab = new EditorTab(
             identity,
             document,
@@ -801,19 +825,23 @@ public class EditorTabManager {
             if (isPinned) {
                 promote(editorTab);
             }
+
             keepPinnedTabsOnLeft(editorTab.tab().getTabPane());
             if (!isPinned) {
                 scheduleTabLimitEnforcement();
             }
         });
+
         editorTab.dirtyProperty().addListener((_, wasDirty, isDirty) -> {
             if (isDirty) {
                 promote(editorTab);
             }
+
             if (wasDirty && !isDirty) {
                 scheduleTabLimitEnforcement();
             }
         });
+
         ensureSelectionListener(tabPane, request.editorGroupId());
         Services.IDE_STATE.openDocument(document);
         addToTabPane(tabPane, editorTab.tab(), request.insertionIndex());
@@ -822,9 +850,11 @@ public class EditorTabManager {
             tabPane.getSelectionModel().select(editorTab.tab());
             activate(editorTab);
         }
+
         if (!restoring) {
             enforceTabLimit(editorTab);
         }
+
         return editorTab;
     }
 
@@ -838,9 +868,11 @@ public class EditorTabManager {
                             retainedState.backing() == null ? null : retainedState.backing().version(),
                             retainedState.isStale());
                     }
+
                     editor.setDocumentStore(store);
                     return;
                 }
+
                 TextDocumentSnapshot loaded = editor.captureSnapshot();
                 DocumentState state = store.state(identity.id()).orElse(null);
                 if (state != null && state.overlay() instanceof TextDocumentSnapshot) {
@@ -849,6 +881,7 @@ public class EditorTabManager {
                         editor.restoreSavedVersion(store.latestVersion(identity.id()).orElse(loaded.version()).next());
                         store.publishBacking(editor.captureSnapshot());
                     }
+
                     store.relocate(identity.id(), loaded.uri());
                     DocumentState retained = store.state(identity.id()).orElseThrow();
                     editor.restoreOverlay((TextDocumentSnapshot) retained.overlay(), retained.backing().version(),
@@ -867,12 +900,13 @@ public class EditorTabManager {
                             .ifPresent(version -> editor.restoreSavedVersion(version.next()));
                         loaded = editor.captureSnapshot();
                     }
+
                     store.publishBacking(loaded);
                 }
+
                 editor.setDocumentStore(store);
             });
         }
-
     }
 
     private void restoreWorkspaceOnApplicationThread(
@@ -908,7 +942,7 @@ public class EditorTabManager {
                 .map(EditorTabSessionState::editorGroupId)
                 .collect(Collectors.toSet());
 
-            var detachedLayouts = new ArrayList<Map.Entry<DetachedEditorWindowState, Map<String, DetachableTabPane>>>();
+            List<Map.Entry<DetachedEditorWindowState, Map<String, DetachableTabPane>>> detachedLayouts = new ArrayList<Map.Entry<DetachedEditorWindowState, Map<String, DetachableTabPane>>>();
             if (idePane != null) {
                 for (DetachedEditorWindowState windowState : workspaceState.detachedWindows()) {
                     Set<String> windowGroups = new LinkedHashSet<>();
@@ -945,6 +979,7 @@ public class EditorTabManager {
                             tabState.identity().uri());
                         continue;
                     }
+
                     DetachableTabPane destination = groups.getOrDefault(tabState.editorGroupId(), fallbackPane);
                     EditorTab restoredTab = openInTabPane(
                         project,
@@ -974,10 +1009,12 @@ public class EditorTabManager {
             if (activeTab != null && activeTab.tab().getTabPane() != null) {
                 activeTab.tab().getTabPane().getSelectionModel().select(activeTab.tab());
             }
+
             activate(activeTab);
         } finally {
             restoring = false;
         }
+
         enforceTabLimit(activeTab().orElse(null));
         cleanupEmptyEditorGroups();
         if (openTabs.isEmpty() && !replacingPreview) {
@@ -996,6 +1033,7 @@ public class EditorTabManager {
             if (pane == null) {
                 pane = createSiblingTabPane(template);
             }
+
             String requestedGroupId = state == null ? DEFAULT_EDITOR_GROUP_ID : state.groupId();
             String groupId = groups.containsKey(requestedGroupId) ? nextEditorGroupId() : requestedGroupId;
             assignEditorGroup(pane, groupId);
@@ -1036,6 +1074,7 @@ public class EditorTabManager {
                 ? savedPositions.get(index)
                 : (double) (index + 1) / (dividerCount + 1);
         }
+
         splitPane.setDividerPositions(positions);
     }
 
@@ -1044,6 +1083,7 @@ public class EditorTabManager {
             groupIds.add(state.groupId());
             return;
         }
+
         state.children().forEach(child -> collectGroupIds(child, groupIds));
     }
 
@@ -1062,8 +1102,10 @@ public class EditorTabManager {
                     pane.getSelectionModel().selectFirst();
                 }
             }
+
             return;
         }
+
         state.children().forEach(child -> restoreGroupSelections(child, groups, restoredTabs));
     }
 
@@ -1091,6 +1133,7 @@ public class EditorTabManager {
         if (currentTabPane != null) {
             currentTabPane.getTabs().remove(tab);
         }
+
         String targetGroupId = ensureEditorGroupId(targetTabPane);
         ensureSelectionListener(targetTabPane, targetGroupId);
         addToTabPane(targetTabPane, tab, -1);
@@ -1100,6 +1143,7 @@ public class EditorTabManager {
     private static boolean shouldReattach(TabPane currentTabPane, TabPane targetTabPane) {
         if (currentTabPane == targetTabPane)
             return false;
+
         if (targetTabPane.getScene() == null
             || targetTabPane.getScene().getWindow() == null
             || !targetTabPane.getScene().getWindow().isShowing())
@@ -1145,6 +1189,7 @@ public class EditorTabManager {
                 : Math.min(insertionIndex, tabPane.getTabs().size());
             tabPane.getTabs().add(targetIndex, tab);
         }
+
         keepPinnedTabsOnLeft(tabPane);
     }
 
@@ -1185,6 +1230,7 @@ public class EditorTabManager {
                 event.consume();
             }
         };
+
         tabPane.addEventFilter(MouseEvent.MOUSE_CLICKED, handler);
         mouseKeybindHandlers.put(tabPane, handler);
     }
@@ -1195,6 +1241,7 @@ public class EditorTabManager {
             if (current.getStyleClass().contains("tab") && getTabAt(current) != null)
                 return current;
         }
+
         return null;
     }
 
@@ -1210,6 +1257,7 @@ public class EditorTabManager {
                 trackDetachedWindow(tabPane);
             });
         };
+
         tabPane.getTabs().addListener(listener);
         tabOrderListeners.put(tabPane, listener);
         keepPinnedTabsOnLeft(tabPane);
@@ -1250,7 +1298,7 @@ public class EditorTabManager {
     }
 
     private static List<DetachableTabPane> collectEditorPanes(Node root) {
-        var panes = new ArrayList<DetachableTabPane>();
+        List<DetachableTabPane> panes = new ArrayList<DetachableTabPane>();
         collectTabPanes(root, panes);
         return panes;
     }
@@ -1260,6 +1308,7 @@ public class EditorTabManager {
             panes.add(tabPane);
             return;
         }
+
         if (node instanceof Parent parent) {
             parent.getChildrenUnmodifiable().forEach(child -> collectTabPanes(child, panes));
         }
@@ -1315,6 +1364,7 @@ public class EditorTabManager {
                 encounteredOtherTab = true;
             }
         }
+
         if (!requiresReorder)
             return;
 
@@ -1339,18 +1389,22 @@ public class EditorTabManager {
         if (listener != null) {
             tabPane.getSelectionModel().selectedItemProperty().removeListener(listener);
         }
+
         EventHandler<MouseEvent> mouseKeybindHandler = mouseKeybindHandlers.remove(tabPane);
         if (mouseKeybindHandler != null) {
             tabPane.removeEventFilter(MouseEvent.MOUSE_CLICKED, mouseKeybindHandler);
         }
+
         EditorTabStripSupport stripSupport = tabStripSupport.remove(tabPane);
         if (stripSupport != null) {
             stripSupport.close();
         }
+
         ListChangeListener<Tab> tabOrderListener = tabOrderListeners.remove(tabPane);
         if (tabOrderListener != null) {
             tabPane.getTabs().removeListener(tabOrderListener);
         }
+
         pendingTabOrderUpdates.remove(tabPane);
         editorGroupIds.remove(tabPane);
     }
@@ -1384,6 +1438,7 @@ public class EditorTabManager {
         if (selectedTab == null || !selectedTab.tab().isSelected()) {
             selectedTab = selectedManagedTab().orElse(null);
         }
+
         activate(selectedTab);
     }
 
@@ -1454,6 +1509,7 @@ public class EditorTabManager {
             if (tabPane != null) {
                 tabPane.getSelectionModel().select(protectedTab.tab());
             }
+
             queueSelectionUpdate(protectedTab.tab());
             activate(protectedTab);
         }
@@ -1482,6 +1538,7 @@ public class EditorTabManager {
             if (selectedInActiveGroup != null)
                 return Optional.of(selectedInActiveGroup);
         }
+
         return Optional.ofNullable(activeTab != null ? activeTab : selectedManagedTab().orElse(null));
     }
 
@@ -1551,6 +1608,7 @@ public class EditorTabManager {
         if (selectedIndex < 0) {
             selectedIndex = tabPane.getTabs().indexOf(editorTab.tab());
         }
+
         if (selectedIndex < 0)
             return;
 
@@ -1617,6 +1675,7 @@ public class EditorTabManager {
         EditorTab activeTab = activeTab().orElse(null);
         if (activeTab == null || save(activeTab))
             return new SaveResult(List.of());
+
         return new SaveResult(List.of(activeTab));
     }
 
@@ -1686,6 +1745,7 @@ public class EditorTabManager {
                 if (editorTab.document() instanceof FileSystemDocument fileSystemDocument) {
                     fileSystemDocument.rebind(normalizedTarget);
                 }
+
                 editorTab.rebind(reboundIdentity, normalizedTarget);
                 if (store != null) {
                     store.commitSaveAs(savedSnapshot, expectedState);
@@ -1698,10 +1758,12 @@ public class EditorTabManager {
                     if (editorTab.document() instanceof FileSystemDocument fileSystemDocument) {
                         fileSystemDocument.rebind(previousPath);
                     }
+
                     editorTab.rebind(previousIdentity, previousPath);
                 } catch (RuntimeException rollbackFailure) {
                     exception.addSuppressed(rollbackFailure);
                 }
+
                 Railroad.LOGGER.error(
                     "Save As wrote {} but finalization failed; the original editor location and draft were retained",
                     normalizedTarget, exception);
@@ -1754,7 +1816,7 @@ public class EditorTabManager {
         Window mainWindow = mainRoot == null || mainRoot.getScene() == null
             ? null
             : mainRoot.getScene().getWindow();
-        var detachedWindows = new ArrayList<DetachedEditorWindowState>();
+        List<DetachedEditorWindowState> detachedWindows = new ArrayList<DetachedEditorWindowState>();
         Set<Window> capturedWindows = Collections.newSetFromMap(new IdentityHashMap<>());
         selectionListeners.keySet().stream()
             .map(DetachableTabPane::getScene)
@@ -1805,6 +1867,7 @@ public class EditorTabManager {
                 .toList();
             if (children.isEmpty())
                 return null;
+
             if (children.size() == 1)
                 return children.getFirst();
 
@@ -1820,6 +1883,7 @@ public class EditorTabManager {
                 .toList();
             return children.size() == 1 ? children.getFirst() : null;
         }
+
         return null;
     }
 
@@ -1832,9 +1896,10 @@ public class EditorTabManager {
         if (selectionUpdateScheduled) {
             applyPendingSelection(selectionGeneration);
         }
+
         selectionListeners.keySet().forEach(this::reconcilePaneMembership);
 
-        var sessionState = new ArrayList<EditorTabSessionState>();
+        List<EditorTabSessionState> sessionState = new ArrayList<EditorTabSessionState>();
         Set<DocumentId> capturedTabs = new HashSet<>();
         DocumentId activeDocumentId = Optional.ofNullable(Services.IDE_STATE.getActiveDocument())
             .map(Services.IDE_STATE::identifyDocument)
@@ -1860,6 +1925,7 @@ public class EditorTabManager {
                 sessionState.add(toSessionState(editorTab, order++, activeDocumentId));
             }
         }
+
         return List.copyOf(sessionState);
     }
 
@@ -1882,9 +1948,11 @@ public class EditorTabManager {
             Railroad.LOGGER.warn("Failed to close removed editor {}; retaining its draft", editor.getFilePath(),
                 exception);
         }
+
         if (!editor.isEditorClosed()) {
             editor.closeRetainingDraft();
         }
+
         editor.dispose();
     }
 
@@ -1903,11 +1971,14 @@ public class EditorTabManager {
                 if (editor == null || !editor.hasPendingExternalChange()) {
                     showFailedCloseDialog(editorTab);
                 }
+
                 return false;
             }
         }
+
         if (closing.stream().anyMatch(tab -> !discardApprovedTabs.contains(tab) && tab.dirty()))
             return false;
+
         for (EditorTab editorTab : closing) {
             TextEditorPane editor = editorTab.view().activeEditor();
             if (editor != null) {
@@ -1917,18 +1988,22 @@ public class EditorTabManager {
                     editor.closeRetainingDraft();
                 }
             }
+
             requestClose(editorTab);
         }
+
         return true;
     }
 
     private void handleClosed(EditorTab editorTab) {
         if (!openTabs.containsKey(editorTab.documentId()))
             return;
+
         TextEditorPane editor = editorTab.view().activeEditor();
         if (editor != null) {
             closeRemovedEditor(editor);
         }
+
         editorTab.dispose();
         if (openTabs.remove(editorTab.documentId()) == null)
             return;
@@ -1945,16 +2020,19 @@ public class EditorTabManager {
             if (closedTab == null) {
                 closedTab = captureClosedTab(editorTab);
             }
+
             recentlyClosedTabs.removeIf(tab -> tab.documentId().equals(editorTab.documentId()));
             recentlyClosedTabs.addFirst(closedTab);
             trimRecentlyClosedTabs(Settings.RECENTLY_CLOSED_TAB_LIMIT.getValue());
         }
+
         tabsByControl.remove(editorTab.tab());
         refreshTabPresentations();
         Services.IDE_STATE.closeDocument(editorTab.document());
         if (Services.IDE_STATE.getActiveDocument() == null) {
             Services.DOCUMENT_EDITOR_STATE.setActiveEditor(null, null);
         }
+
         if (openTabs.isEmpty()) {
             restoreEmptyEditorState();
         }
@@ -1977,11 +2055,13 @@ public class EditorTabManager {
     private void handleCloseRequest(EditorTab editorTab, Event event) {
         if (editorTab.view().activeEditor() != null && editorTab.view().activeEditor().isEditorClosed())
             return;
+
         if (discardApprovedTabs.remove(editorTab)) {
             pendingCloseSnapshots.put(editorTab.documentId(), captureClosedTab(editorTab));
             if (editorTab.view().activeEditor() != null) {
                 editorTab.view().activeEditor().close();
             }
+
             return;
         }
 
@@ -1991,6 +2071,7 @@ public class EditorTabManager {
             if (editor == null || !editor.hasPendingExternalChange()) {
                 showFailedCloseDialog(editorTab);
             }
+
             return;
         }
 
@@ -2002,6 +2083,7 @@ public class EditorTabManager {
                 return;
             }
         }
+
         pendingCloseSnapshots.put(editorTab.documentId(), captureClosedTab(editorTab));
     }
 
@@ -2042,15 +2124,18 @@ public class EditorTabManager {
                 requestClose(editorTab);
             }
         });
+
         discardButton.setOnAction(_ -> {
-            var editor = editorTab.view().activeEditor();
+            TextEditorPane editor = editorTab.view().activeEditor();
             if (editor != null) {
                 editor.discardChangesOnClose();
             }
+
             discardApprovedTabs.add(editorTab);
             dialog.close();
             requestClose(editorTab);
         });
+
         cancelButton.setOnAction(_ -> dialog.close());
     }
 
@@ -2102,6 +2187,7 @@ public class EditorTabManager {
         EditorTab editorTab = openTabs.get(identity.id());
         if (editorTab == null)
             return;
+
         if (editorTab.document() instanceof FileSystemDocument fileSystemDocument) {
             fileSystemDocument.rebind(normalizedNewPath);
         }
@@ -2136,6 +2222,7 @@ public class EditorTabManager {
                 editorTab.view().activeEditor().markBackingFileDeleted();
             }
         });
+
         if (Platform.isFxApplicationThread()) {
             update.run();
         } else {
@@ -2161,6 +2248,7 @@ public class EditorTabManager {
         Path normalizedSecond = second.toAbsolutePath().normalize();
         if (normalizedFirst.equals(normalizedSecond))
             return true;
+
         if (File.separatorChar == '\\'
             && normalizedFirst.toString().equalsIgnoreCase(normalizedSecond.toString()))
             return true;
@@ -2180,8 +2268,10 @@ public class EditorTabManager {
             if (editor != null) {
                 closeRemovedEditor(editor);
             }
+
             tab.dispose();
         }
+
         selectionGeneration++;
         selectionUpdateScheduled = false;
         replacingPreview = false;
@@ -2377,6 +2467,7 @@ public class EditorTabManager {
             if (!tab.pinned()) {
                 promote(tab);
             }
+
             tab.setPinned(!tab.pinned());
         }
     }
@@ -2398,6 +2489,7 @@ public class EditorTabManager {
                     .filter(existing -> existing != tab)
                     .ifPresent(this::promote);
             }
+
             tab.setPreview(preview);
         }
     }
@@ -2602,10 +2694,12 @@ public class EditorTabManager {
             if (tab.getTabPane() == targetTabPane) {
                 targetTabPane.getTabs().remove(tab);
             }
+
             if (tab.getTabPane() == null) {
                 sourceTabPane.getTabs().add(Math.min(previousIndex, sourceTabPane.getTabs().size()), tab);
                 sourceTabPane.getSelectionModel().select(tab);
             }
+
             editorTab.setEditorGroupId(previousGroupId);
             Railroad.LOGGER.error("Failed to move editor tab {} to an adjacent group", editorTab.path(), exception);
         }
@@ -2622,6 +2716,7 @@ public class EditorTabManager {
                 .orElseGet(this::nextEditorGroupId);
             ensureSelectionListener(tabPane, groupId);
         }
+
         return groupId;
     }
 
@@ -2629,7 +2724,7 @@ public class EditorTabManager {
         if (sourceTabPane.getScene() == null)
             return List.of();
 
-        var groups = new ArrayList<DetachableTabPane>();
+        List<DetachableTabPane> groups = new ArrayList<DetachableTabPane>();
         collectEditorGroups(sourceTabPane.getScene().getRoot(), groups);
         return groups;
     }
@@ -2771,6 +2866,7 @@ public class EditorTabManager {
             if (!editorSplitPanes.contains(sourceParent)) {
                 untrackEmptySplitGroup(sourceTabPane);
             }
+
             untrackEmptySplitGroup(targetTabPane);
             removeSelectionListener(targetTabPane);
             return;
@@ -2791,6 +2887,7 @@ public class EditorTabManager {
                 sourceTabPane.getTabs().add(Math.clamp(previousIndex, 0, sourceTabPane.getTabs().size()), tab);
                 sourceTabPane.getSelectionModel().select(tab);
             }
+
             removeEmptySplitPane(targetTabPane);
             Railroad.LOGGER.error("Failed to split editor tab {}", editorTab.path(), exception);
         }
@@ -2833,11 +2930,13 @@ public class EditorTabManager {
             int sourceIndex = containingSplitPane.getItems().indexOf(sourceTabPane);
             if (sourceIndex < 0)
                 return false;
+
             containingSplitPane.getItems().set(sourceIndex, splitPane);
         } else if (sourceTabPane.getParent() instanceof Pane parentPane) {
             int sourceIndex = parentPane.getChildren().indexOf(sourceTabPane);
             if (sourceIndex < 0)
                 return false;
+
             parentPane.getChildren().set(sourceIndex, splitPane);
         } else if (sourceTabPane.getParent() == null
             && sourceTabPane.getScene() != null
@@ -2857,8 +2956,10 @@ public class EditorTabManager {
         while (ancestor != null) {
             if (ancestor instanceof SplitPane splitPane && splitPane.getItems().contains(node))
                 return splitPane;
+
             ancestor = ancestor.getParent();
         }
+
         return null;
     }
 
@@ -2868,6 +2969,7 @@ public class EditorTabManager {
         for (int index = 1; index < itemCount; index++) {
             positions[index - 1] = (double) index / itemCount;
         }
+
         splitPane.setDividerPositions(positions);
     }
 
@@ -2881,6 +2983,7 @@ public class EditorTabManager {
                 Platform.runLater(() -> removeEmptySplitPane(tabPane));
             }
         };
+
         tabPane.getTabs().addListener(listener);
         emptyGroupListeners.put(tabPane, listener);
     }
@@ -2926,6 +3029,7 @@ public class EditorTabManager {
         if (remaining != null) {
             splitPane.getItems().remove(remaining);
         }
+
         editorSplitPanes.remove(splitPane);
 
         if (parentSplitPane != null) {
@@ -2965,6 +3069,7 @@ public class EditorTabManager {
         do {
             groupId = "railroad:editor-group:" + ++editorGroupSequence;
         } while (editorGroupIds.containsValue(groupId));
+
         return groupId;
     }
 
@@ -3052,6 +3157,7 @@ public class EditorTabManager {
         for (EditorViewState.FoldRange fold : viewState.folds()) {
             if (paragraphCount < 2 || fold.startParagraph() >= paragraphCount - 1)
                 continue;
+
             int start = Math.clamp(fold.startParagraph(), 0, paragraphCount - 2);
             int end = Math.clamp(fold.endParagraph(), start + 1, paragraphCount - 1);
             editor.foldParagraphs(start, end);

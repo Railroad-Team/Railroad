@@ -330,6 +330,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 if (isElseToken(child)) {
                     sawElse = true;
                 }
+
                 continue;
             }
 
@@ -640,6 +641,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
             scanningPrefix = false;
         }
+
         return Map.copyOf(modifiers);
     }
 
@@ -702,6 +704,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             ActivityCheckpoint.poll(checkpoint);
             visitor.accept(node);
         });
+
         checkpoint.run();
     }
 
@@ -720,6 +723,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 nodes.add(node);
             }
         });
+
         return List.copyOf(nodes);
     }
 
@@ -738,6 +742,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 nodes.add(node);
             }
         });
+
         return List.copyOf(nodes);
     }
 
@@ -763,6 +768,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (isExpressionNode(child))
                 return child;
         }
+
         return null;
     }
 
@@ -779,6 +785,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 children.add(child);
             }
         }
+
         return List.copyOf(children);
     }
 
@@ -812,6 +819,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         Objects.requireNonNull(invocation, "invocation");
         if (!JAVA_METHOD_INVOCATION_EXPRESSION.equals(invocation.kind().id()))
             return false;
+
         if (resolvedSymbol(invocation).isPresent())
             return true;
 
@@ -849,6 +857,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (owner.staticAccess())
                 return methods.stream().anyMatch(method -> method.name().equals(methodName)
                     && isApplicableMethod(method, argumentTypes));
+
             return false;
         }
 
@@ -897,6 +906,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         SyntaxNode receiver = unwrapTransparentExpression(explicitReceiver(access));
         if (receiver == null)
             return false;
+
         Symbol symbol = resolvedSymbol(receiver).orElse(null);
         if (symbol != null && isTypeSymbol(symbol.kind())) {
             String owner = symbol.qualifiedName().orElse(null);
@@ -907,15 +917,18 @@ public final class JavaRuleContext implements LanguageRuleContext {
         Type type = inferredType(receiver).orElse(null);
         if (type == null || type.kind() == Kind.UNKNOWN)
             return false;
+
         return type.kind() != Kind.DECLARED || isResolvableType(resolveQualifiedTypeName(type.displayName(), receiver));
     }
 
     private boolean isRelocatedSourceReference(SyntaxNode receiver, String owner) {
         if (symbolIndex == null || !"jar".equals(documentUri.value().getScheme()))
             return false;
+
         String spelling = canonicalQualifiedName(receiver);
         if (spelling == null || spelling.isBlank())
             return false;
+
         String sourceName = spelling;
         if (!isResolvableType(spelling)) {
             int dot = spelling.indexOf('.');
@@ -924,6 +937,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 if (!entry.isWildcard() && first.equals(entry.importedName()))
                     return isAliasForOwner(entry.ownerName() + "." + spelling, owner);
             }
+
             sourceName = currentPackageName() + "." + spelling;
             if (!isResolvableType(sourceName)) {
                 for (ImportEntry entry : importEntries()) {
@@ -932,6 +946,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 }
             }
         }
+
         return isAliasForOwner(sourceName, owner);
     }
 
@@ -940,7 +955,9 @@ public final class JavaRuleContext implements LanguageRuleContext {
             && owner.equals(resolvableQualifiedTypeName(spelling, availableQualifiedTypeNames()));
     }
 
-    /** Returns whether the expression is assigned to or incremented/decremented. */
+    /**
+     * Returns whether the expression is assigned to or incremented/decremented.
+     */
     public boolean isWriteTarget(SyntaxNode expression) {
         SyntaxNode target = expression;
         SyntaxNode parent = target.parent().orElse(null);
@@ -980,6 +997,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
     private boolean isTypeHierarchyKnown(String qualifiedTypeName, Set<String> visited) {
         if (!visited.add(qualifiedTypeName))
             return true;
+
         if (!isKnownType(qualifiedTypeName))
             return false;
 
@@ -988,6 +1006,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (resolved == null || !isTypeHierarchyKnown(resolved, visited))
                 return false;
         }
+
         return true;
     }
 
@@ -1095,6 +1114,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         Objects.requireNonNull(creation, "creation");
         if (!"JAVA_CLASS_INSTANCE_CREATION_EXPRESSION".equals(creation.kind().id()))
             return false;
+
         if (resolvedSymbol(creation).isPresent())
             return true;
 
@@ -1270,17 +1290,21 @@ public final class JavaRuleContext implements LanguageRuleContext {
      * @return {@code true} if the node occurs in the invocation's method-reference portion
      */
     public boolean isMethodNameReference(SyntaxNode node) {
-        var parent = node.parent();
+        Optional<SyntaxNode> parent = node.parent();
         if (parent.isEmpty())
             return false;
+
         if (!JAVA_METHOD_INVOCATION_EXPRESSION.equals(parent.get().kind().id()))
             return false;
+
         for (SyntaxNode child : parent.get().children()) {
             if (JAVA_ARGUMENT_LIST.equals(child.kind().id()))
                 return false;
+
             if (child == node)
                 return true;
         }
+
         return false;
     }
 
@@ -1291,7 +1315,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
      * @return the declared or inferred type, or an unknown type when unavailable
      */
     public Type declaredTypeOfVariable(SyntaxNode variableDeclarator) {
-        var parent = variableDeclarator.parent();
+        Optional<SyntaxNode> parent = variableDeclarator.parent();
         while (parent.isPresent()) {
             SyntaxNode candidate = parent.get();
             if (JAVA_LOCAL_VARIABLE_DECLARATION_STATEMENT.equals(candidate.kind().id())
@@ -1310,16 +1334,20 @@ public final class JavaRuleContext implements LanguageRuleContext {
                         ? new UnknownType("<unknown>")
                         : inferredType(initializer).orElse(new UnknownType("<unknown>"));
                 }
+
                 Type inferred = inferredType(typeRef).orElse(null);
                 Type written = inferred == null || inferred.kind() == Kind.UNKNOWN
                     ? semanticTypeFromTypeReference(typeRef)
                     : inferred;
                 return JavaSemanticAnalyzer.withDeclaratorDimensions(written, variableDeclarator);
             }
+
             if (JAVA_LOCAL_VARIABLE_DECLARATION_STATEMENT.equals(candidate.kind().id()))
                 return new UnknownType("<unknown>");
+
             parent = candidate.parent();
         }
+
         return new UnknownType("<unknown>");
     }
 
@@ -1359,9 +1387,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (operator == JavaTokenType.PLUS_EQUALS) {
             if ("java.lang.String".equals(target.displayName()))
                 return source.kind() != Kind.VOID;
+
             if ("java.lang.String".equals(source.displayName()))
                 return isAssignable(target, source);
         }
+
         String left = target.kind() == Kind.PRIMITIVE
             ? target.displayName()
             : unboxedPrimitiveName(target.displayName());
@@ -1370,20 +1400,25 @@ public final class JavaRuleContext implements LanguageRuleContext {
             : unboxedPrimitiveName(source.displayName());
         if (left == null || right == null || !operator.isAssignmentOperator() || operator == JavaTokenType.EQUALS)
             return false;
+
         boolean bitwise = switch (operator) {
             case PIPE_EQUALS, CARET_EQUALS, AMPERSAND_EQUALS -> true;
             default -> false;
         };
+
         if (left.equals("boolean") || right.equals("boolean"))
             return bitwise && left.equals(right);
+
         boolean shift = switch (operator) {
             case LEFT_SHIFT_EQUALS, RIGHT_SHIFT_EQUALS, UNSIGNED_RIGHT_SHIFT_EQUALS -> true;
             default -> false;
         };
+
         int leftRank = numericRank(left);
         int rightRank = numericRank(right);
         if ((bitwise || shift) && Math.max(leftRank, rightRank) > numericRank("long"))
             return false;
+
         int resultRank = Math.max(numericRank("int"), shift ? leftRank : Math.max(leftRank, rightRank));
         return target.kind() == Kind.PRIMITIVE || leftRank == resultRank;
     }
@@ -1394,6 +1429,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
         if (target.kind() == Kind.UNKNOWN || source.kind() == Kind.UNKNOWN)
             return true;
+
         if (target.displayName().equals(source.displayName()))
             return true;
 
@@ -1401,9 +1437,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
             SyntaxNode parameter = lexicalTypeParameter(source.displayName(), usageSite);
             if (parameter == null || !visited.add(parameter))
                 return false;
+
             SyntaxNode bound = directChild(parameter, "JAVA_TYPE_BOUND");
             if (bound == null)
                 return isAssignable(target, new DeclaredType("java.lang.Object", List.of()), parameter, visited);
+
             for (SyntaxNode typeRef : bound.children()) {
                 if (JAVA_TYPE_REFERENCE.equals(typeRef.kind().id())
                     && isAssignable(target,
@@ -1411,6 +1449,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                         parameter, new HashSet<>(visited)))
                     return true;
             }
+
             return false;
         }
 
@@ -1419,6 +1458,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (unboxedSource != null) {
                 if ("boolean".equals(target.displayName()) || "boolean".equals(unboxedSource))
                     return target.displayName().equals(unboxedSource);
+
                 return numericRank(target.displayName()) >= numericRank(unboxedSource);
             }
         }
@@ -1455,6 +1495,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 || "java.lang.Object".equals(targetQualifiedName)
                 || isSubtype(sourceQualifiedName, targetQualifiedName);
         }
+
         return false;
     }
 
@@ -1463,12 +1504,14 @@ public final class JavaRuleContext implements LanguageRuleContext {
             SyntaxNode parameters = directChild(current, JAVA_TYPE_PARAMETERS);
             if (parameters == null)
                 continue;
+
             for (SyntaxNode parameter : parameters.children()) {
                 if (JAVA_TYPE_PARAMETER.equals(parameter.kind().id())
                     && name.equals(JavaSourceSymbolIds.declarationName(parameter)))
                     return parameter;
             }
         }
+
         return null;
     }
 
@@ -1486,6 +1529,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         for (SyntaxNode child : syntaxTree().root().children()) {
             if (!JAVA_PACKAGE_DECLARATION.equals(child.kind().id()))
                 continue;
+
             SyntaxNode qualifiedName = directChild(child, JAVA_QUALIFIED_NAME);
             String resolved = qualifiedName == null ? null : canonicalQualifiedName(qualifiedName);
             if (resolved != null) {
@@ -1507,7 +1551,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
     public Optional<Symbol> enclosingTypeSymbol(SyntaxNode node) {
         SyntaxNode current = node;
         while (true) {
-            var parent = current.parent();
+            Optional<SyntaxNode> parent = current.parent();
             if (parent.isEmpty())
                 return Optional.empty();
 
@@ -1528,7 +1572,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         Symbol topLevel = null;
         SyntaxNode current = node;
         while (true) {
-            var parent = current.parent();
+            Optional<SyntaxNode> parent = current.parent();
             if (parent.isEmpty())
                 return Optional.ofNullable(topLevel);
 
@@ -1562,6 +1606,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         SyntaxNode declaration = symbol.declaration().orElse(null);
         if (declaration == null)
             return Optional.empty();
+
         return enclosingTypeSymbol(declaration).flatMap(Symbol::qualifiedName);
     }
 
@@ -1602,18 +1647,23 @@ public final class JavaRuleContext implements LanguageRuleContext {
         while (text.endsWith("[]")) {
             text = text.substring(0, text.length() - 2);
         }
+
         if ("void".equals(text)
             || Set.of("boolean", "byte", "short", "char", "int", "long", "float", "double").contains(text))
             return text;
+
         if (isTypeParameterNameInScope(text, usageSite))
             return text;
+
         Set<String> availableQualifiedTypeNames = availableQualifiedTypeNames();
         String directType = resolvableQualifiedTypeName(text, availableQualifiedTypeNames);
         if (directType != null)
             return directType;
+
         String nestedType = resolveNestedQualifiedTypeName(text, availableQualifiedTypeNames, usageSite);
         if (nestedType != null)
             return nestedType;
+
         if (text.indexOf('.') > 0 && !currentPackageName().isBlank()) {
             String inCurrentPackage = currentPackageName() + "." + text;
             String currentPackageType = resolvableQualifiedTypeName(inCurrentPackage, availableQualifiedTypeNames);
@@ -1633,6 +1683,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (memberType != null)
                 return memberType;
         }
+
         for (String localQualifiedTypeName : localTypeSymbolsByQualifiedName().keySet()) {
             if (simpleTypeName(localQualifiedTypeName).equals(simpleName))
                 return localQualifiedTypeName;
@@ -1641,6 +1692,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         for (ImportEntry entry : importEntries()) {
             if (entry.isStatic() || entry.isWildcard())
                 continue;
+
             if (simpleName.equals(entry.importedName())) {
                 String imported = resolvableQualifiedTypeName(entry.qualifiedTarget(), availableQualifiedTypeNames);
                 if (imported != null)
@@ -1669,6 +1721,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         for (ImportEntry entry : importEntries()) {
             if (entry.isStatic() || !entry.isWildcard())
                 continue;
+
             String imported = entry.ownerName() + "." + simpleName;
             String importedType = resolvableQualifiedTypeName(imported, availableQualifiedTypeNames);
             if (importedType != null)
@@ -1684,6 +1737,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
     ) {
         if (qualifiedTypeName == null || qualifiedTypeName.isBlank())
             return null;
+
         if (localTypeSymbolsByQualifiedName().containsKey(qualifiedTypeName)
             || availableQualifiedTypeNames.contains(qualifiedTypeName))
             return symbolIndex == null ? qualifiedTypeName : symbolIndex.binaryTypeName(qualifiedTypeName);
@@ -1695,8 +1749,10 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (localTypeSymbolsByQualifiedName().containsKey(candidate)
                 || availableQualifiedTypeNames.contains(candidate))
                 return symbolIndex == null ? candidate : symbolIndex.binaryTypeName(candidate);
+
             dot = candidate.lastIndexOf('.', dot - 1);
         }
+
         return null;
     }
 
@@ -1731,11 +1787,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 ? null
                 : enclosingTypeSymbol(usageSite).flatMap(Symbol::qualifiedName).orElse(null);
         }
+
         if (ownerQualifiedName == null || ownerQualifiedName.isBlank()) {
             ownerQualifiedName = topLevelEnclosingTypeSymbol(syntaxTree().root())
                 .flatMap(Symbol::qualifiedName)
                 .orElse(null);
         }
+
         if (ownerQualifiedName == null || ownerQualifiedName.isBlank()) {
             for (Symbol symbol : localTypeSymbolsByQualifiedName().values()) {
                 ownerQualifiedName = symbol.qualifiedName().orElse(null);
@@ -1743,6 +1801,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                     break;
             }
         }
+
         if (ownerQualifiedName == null || ownerQualifiedName.isBlank())
             return null;
 
@@ -1752,6 +1811,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (resolved != null)
                 return resolved;
         }
+
         return null;
     }
 
@@ -1780,6 +1840,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (resolved != null)
                 return resolved;
         }
+
         return null;
     }
 
@@ -1826,6 +1887,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                     .map(MethodStub::modifiers)
                     .orElse(Modifier.PUBLIC);
             }
+
             case JavaSymbolKind.CONSTRUCTOR -> {
                 String signature = callableSignature(symbol);
                 yield stub.constructors().stream()
@@ -1835,6 +1897,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                     .map(ConstructorStub::modifiers)
                     .orElse(typeModifiers(ownerQualifiedName));
             }
+
             default -> Modifier.PUBLIC;
         };
     }
@@ -1843,6 +1906,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         String qualifiedName = symbol.qualifiedName().orElse(null);
         if (qualifiedName == null)
             return null;
+
         int separator = qualifiedName.indexOf('#');
         int signatureStart = qualifiedName.indexOf('(', separator + 1);
         return separator < 0 || signatureStart < 0 ? null : qualifiedName.substring(signatureStart);
@@ -1910,6 +1974,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (JAVA_INTERFACE_DECLARATION.equals(kindId) || JAVA_ANNOTATION_TYPE_DECLARATION.equals(kindId))
                 return true;
         }
+
         return Modifier.isAbstract(typeModifiers(qualifiedTypeName)) || isInterfaceType(qualifiedTypeName);
     }
 
@@ -1924,8 +1989,10 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (sourceSupers == null && availableClassStubsByQualifiedName().get(qualifiedTypeName) == null) {
             sourceSupers = indexedSourceDirectSuperTypes(qualifiedTypeName);
         }
+
         if (sourceSupers == null)
             return directSuperTypeNamesInternal(qualifiedTypeName);
+
         return sourceSupers.stream().map(DeclaredType::displayName).toList();
     }
 
@@ -1979,6 +2046,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (!collectingDirectSuperTypes) {
             inheritedMethodsByOwner.put(ownerQualifiedTypeName, inherited);
         }
+
         return inherited;
     }
 
@@ -1995,6 +2063,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
         if (qualifiedTypeName.isBlank())
             return true;
+
         if (Set.of("void", "boolean", "byte", "short", "char", "int", "long", "float", "double")
             .contains(qualifiedTypeName))
             return true;
@@ -2016,6 +2085,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (Modifier.isProtected(modifiers)) {
             if (Objects.equals(currentPackage, declaringPackage))
                 return true;
+
             String currentType = enclosingTypeSymbol(usageSite)
                 .flatMap(Symbol::qualifiedName)
                 .orElse(null);
@@ -2060,6 +2130,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (Modifier.isProtected(modifiers)) {
             if (Objects.equals(currentPackage, declaringPackage))
                 return true;
+
             SyntaxNode receiver = unwrapTransparentExpression(explicitReceiver(usageSite));
             String receiverType = null;
             for (SyntaxNode current = usageSite; current != null; current = current.parent().orElse(null)) {
@@ -2068,15 +2139,19 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 String currentType = enclosing == null ? null : enclosing.qualifiedName().orElse(null);
                 if (currentType == null || !isSubtype(currentType, ownerQualifiedName))
                     continue;
+
                 if (Modifier.isStatic(modifiers) || receiver == null
                     || JavaSyntaxKinds.SUPER_EXPRESSION.id().equals(receiver.kind().id()))
                     return true;
+
                 if (receiverType == null) {
                     receiverType = protectedAccessReceiverType(receiver, usageSite);
                 }
+
                 if (receiverType != null && isSubtype(receiverType, currentType))
                     return true;
             }
+
             return false;
         }
 
@@ -2109,6 +2184,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 symbol.qualifiedName().ifPresent(localNames::add);
             }
         }));
+
         collectTypeParameterNames(syntaxTree().root(), localNames);
         localNames.add("String");
         localNames.add("Object");
@@ -2118,6 +2194,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         } else {
             globalNames = jdkTypeNames();
         }
+
         Set<String> names = Collections.unmodifiableSet(Sets.union(globalNames, Set.copyOf(localNames)));
         cachedAvailableTypeNames = names;
         return names;
@@ -2127,6 +2204,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         Set<String> cached = cachedJdkTypeNames;
         if (cached != null)
             return cached;
+
         synchronized (JavaRuleContext.class) {
             if (cachedJdkTypeNames == null) {
                 Set<String> names = new HashSet<>();
@@ -2134,8 +2212,10 @@ public final class JavaRuleContext implements LanguageRuleContext {
                     names.add(simpleTypeName(qualifiedName));
                     names.add(qualifiedName);
                 }
+
                 cachedJdkTypeNames = Set.copyOf(names);
             }
+
             return cachedJdkTypeNames;
         }
     }
@@ -2232,7 +2312,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         Objects.requireNonNull(node, "node");
         SyntaxNode current = node;
         while (true) {
-            var parent = current.parent();
+            Optional<SyntaxNode> parent = current.parent();
             if (parent.isEmpty())
                 return null;
 
@@ -2257,6 +2337,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         SyntaxNode throwsClause = directChild(callableDeclaration, JAVA_THROWS_CLAUSE);
         if (throwsClause == null)
             return List.of();
+
         return topLevelReferencedTypeNames(throwsClause);
     }
 
@@ -2280,6 +2361,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (JAVA_TYPE_REFERENCE.equals(kindId) || JAVA_UNION_TYPE_REFERENCE.equals(kindId))
                 return topLevelReferencedTypeNames(child);
         }
+
         return List.of();
     }
 
@@ -2299,6 +2381,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 || JAVA_CONSTRUCTOR_DECLARATION.equals(kindId)
                 || JAVA_RECORD_COMPACT_CONSTRUCTOR.equals(kindId))
                 return declaredThrownTypeNames(declaration);
+
             return List.of();
         }
 
@@ -2319,24 +2402,27 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return List.of();
 
         if (symbol.kind() == JavaSymbolKind.CONSTRUCTOR) {
-            for (var constructor : stub.constructors()) {
+            for (ConstructorStub constructor : stub.constructors()) {
                 if (signature.equals(signatureSuffix(
                     constructor.parameters().stream().map(parameter -> toSemanticType(parameter.type())).toList())))
                     return thrownTypeNames(constructor.thrownTypes());
             }
+
             return List.of();
         }
 
         if (symbol.kind() != JavaSymbolKind.METHOD)
             return List.of();
 
-        for (var method : stub.methods()) {
+        for (MethodStub method : stub.methods()) {
             if (!method.name().equals(callableName))
                 continue;
+
             if (signature.equals(signatureSuffix(
                 method.parameters().stream().map(parameter -> toSemanticType(parameter.type())).toList())))
                 return thrownTypeNames(method.thrownTypes());
         }
+
         return List.of();
     }
 
@@ -2422,6 +2508,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 new JavaTypes.PrimitiveType(text);
             default -> new DeclaredType(text, List.of());
         };
+
         for (int index = 0; index < arrayDimensions; index++) {
             result = new JavaTypes.ArrayType(result);
         }
@@ -2529,14 +2616,16 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 nearestBySignature.putIfAbsent(descriptor.signatureKey(), descriptor);
             }
         }
+
         return distinctThrownTypes(nearestBySignature.values());
     }
 
     private static List<String> distinctThrownTypes(Iterable<MethodDescriptor> methods) {
-        LinkedHashSet<String> thrown = new LinkedHashSet<>();
+        Set<String> thrown = new LinkedHashSet<>();
         for (MethodDescriptor method : methods) {
             thrown.addAll(method.thrownTypes());
         }
+
         return List.copyOf(new LinkedHashSet<>(thrown));
     }
 
@@ -2568,6 +2657,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 current = firstExpressionChild(current);
                 continue;
             }
+
             return current;
         }
 
@@ -2650,6 +2740,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (symbolIndex != null) {
             qualifiedTypeName = symbolIndex.canonicalTypeName(qualifiedTypeName);
         }
+
         Map<String, List<String>> cached = cachedTypeParameterNamesByQualifiedName;
         if (cached != null && cached.containsKey(qualifiedTypeName))
             return cached.get(qualifiedTypeName);
@@ -2691,15 +2782,18 @@ public final class JavaRuleContext implements LanguageRuleContext {
     private static List<String> orderedTypeParameterNames(@Nullable SyntaxNode typeParameters) {
         if (typeParameters == null)
             return List.of();
+
         List<String> names = new ArrayList<>();
         for (SyntaxNode child : typeParameters.children()) {
             if (!JAVA_TYPE_PARAMETER.equals(child.kind().id()))
                 continue;
+
             String name = JavaSemanticAnalyzer.firstIdentifierLikeTokenText(child);
             if (name != null && !name.isBlank()) {
                 names.add(name);
             }
         }
+
         return List.copyOf(names);
     }
 
@@ -2708,6 +2802,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (cachedTypeParameterNamesByQualifiedName != null) {
             merged.putAll(cachedTypeParameterNamesByQualifiedName);
         }
+
         merged.put(qualifiedTypeName, List.copyOf(names));
         cachedTypeParameterNamesByQualifiedName = Map.copyOf(merged);
     }
@@ -2743,15 +2838,18 @@ public final class JavaRuleContext implements LanguageRuleContext {
                     if (!(inherited instanceof DeclaredType) && base != null) {
                         inherited = semanticTypeFromTypeReference(base);
                     }
+
                     if (inherited instanceof DeclaredType declared && !declared.displayName().equals(qualifiedName)) {
                         directSupers.add(declared);
                     }
                 }
+
                 collected.put(qualifiedName, List.copyOf(directSupers));
             }));
         } finally {
             collectingDirectSuperTypes = false;
         }
+
         Map<String, List<DeclaredType>> copy = Map.copyOf(collected);
         cachedDirectSuperTypesByQualifiedName = copy;
         return copy;
@@ -2767,6 +2865,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         traverse(node -> declaredSymbol(node).ifPresent(symbol -> {
             if (symbol.kind() != JavaSymbolKind.METHOD)
                 return;
+
             String ownerQualifiedName = ownerQualifiedName(symbol).orElse(null);
             SyntaxNode declaration = symbol.declaration().orElse(null);
             if (ownerQualifiedName == null || declaration == null
@@ -2808,6 +2907,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 String componentName = lastIdentifierLikeTokenText(child);
                 if (componentName == null || componentName.isBlank())
                     continue;
+
                 if (methods.stream()
                     .anyMatch(method -> method.name().equals(componentName) && method.parameterTypes().isEmpty()))
                     continue;
@@ -2837,6 +2937,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         traverse(node -> declaredSymbol(node).ifPresent(symbol -> {
             if (symbol.kind() != JavaSymbolKind.FIELD)
                 return;
+
             String ownerQualifiedName = ownerQualifiedName(symbol).orElse(null);
             SyntaxNode declaration = symbol.declaration().orElse(null);
             if (ownerQualifiedName == null || declaration == null)
@@ -2861,6 +2962,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         for (SyntaxNode node : clause.children()) {
             if (!JAVA_TYPE_REFERENCE.equals(node.kind().id()))
                 continue;
+
             Type type = inferredType(node).filter(inferred -> inferred instanceof DeclaredType)
                 .orElseGet(() -> semanticTypeFromTypeReference(node));
             if (type instanceof DeclaredType declared) {
@@ -2897,6 +2999,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (Modifier.isStatic(field.modifiers())) {
                 modifiers |= Modifier.STATIC;
             }
+
             methods.add(new MethodDescriptor(
                 field.ownerQualifiedName(),
                 methodName,
@@ -2915,21 +3018,26 @@ public final class JavaRuleContext implements LanguageRuleContext {
         while (current != null) {
             if (kindId.equals(current.kind().id()))
                 return current;
+
             current = current.parent().orElse(null);
         }
+
         return null;
     }
 
     private static boolean hasDirectAnnotation(@Nullable SyntaxNode declaration, String simpleName) {
         if (declaration == null)
             return false;
+
         for (SyntaxNode child : declaration.children()) {
             if (!"JAVA_ANNOTATION".equals(child.kind().id()))
                 continue;
+
             String annotationName = JavaSemanticAnalyzer.lastIdentifierLikeTokenText(child);
             if (simpleName.equals(annotationName))
                 return true;
         }
+
         return false;
     }
 
@@ -2943,6 +3051,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
     public boolean isFunctionalInterface(Type type) {
         if (!(type instanceof DeclaredType declared))
             return false;
+
         String qualifiedTypeName = resolveQualifiedTypeName(declared.displayName());
         if (qualifiedTypeName == null || !isInterfaceType(qualifiedTypeName))
             return false;
@@ -2996,16 +3105,20 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (fieldType instanceof JavaTypes.PrimitiveType primitive && "boolean".equals(primitive.displayName())) {
             if (fieldName.length() > 2 && fieldName.startsWith("is") && Character.isUpperCase(fieldName.charAt(2)))
                 return fieldName;
+
             return "is" + capitalizePropertyName(fieldName);
         }
+
         return "get" + capitalizePropertyName(fieldName);
     }
 
     private static String capitalizePropertyName(String fieldName) {
         if (fieldName.isEmpty())
             return fieldName;
+
         if (fieldName.length() > 1 && Character.isUpperCase(fieldName.charAt(1)))
             return fieldName;
+
         return Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
     }
 
@@ -3019,42 +3132,55 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (hasDirectModifierToken(modifierSource, JavaTokenType.PUBLIC_KEYWORD)) {
             modifiers |= Modifier.PUBLIC;
         }
+
         if (hasDirectModifierToken(modifierSource, JavaTokenType.PROTECTED_KEYWORD)) {
             modifiers |= Modifier.PROTECTED;
         }
+
         if (hasDirectModifierToken(modifierSource, JavaTokenType.PRIVATE_KEYWORD)) {
             modifiers |= Modifier.PRIVATE;
         }
+
         if (hasDirectModifierToken(modifierSource, JavaTokenType.STATIC_KEYWORD)) {
             modifiers |= Modifier.STATIC;
         }
+
         if (hasDirectModifierToken(modifierSource, JavaTokenType.FINAL_KEYWORD)) {
             modifiers |= Modifier.FINAL;
         }
+
         if (hasDirectModifierToken(modifierSource, JavaTokenType.ABSTRACT_KEYWORD)) {
             modifiers |= Modifier.ABSTRACT;
         }
+
         if (hasDirectModifierToken(modifierSource, JavaTokenType.NATIVE_KEYWORD)) {
             modifiers |= Modifier.NATIVE;
         }
+
         if (hasDirectModifierToken(modifierSource, JavaTokenType.SYNCHRONIZED_KEYWORD)) {
             modifiers |= Modifier.SYNCHRONIZED;
         }
+
         if (hasDirectModifierToken(modifierSource, JavaTokenType.TRANSIENT_KEYWORD)) {
             modifiers |= Modifier.TRANSIENT;
         }
+
         if (hasDirectModifierToken(modifierSource, JavaTokenType.VOLATILE_KEYWORD)) {
             modifiers |= Modifier.VOLATILE;
         }
+
         if (hasDirectModifierToken(modifierSource, JavaTokenType.STRICTFP_KEYWORD)) {
             modifiers |= Modifier.STRICT;
         }
+
         if (hasDirectModifierToken(modifierSource, JavaTokenType.DEFAULT_KEYWORD)) {
             modifiers |= DEFAULT_MODIFIER;
         }
+
         if (hasDirectModifierToken(modifierSource, JavaTokenType.SEALED_KEYWORD)) {
             modifiers |= SEALED_MODIFIER;
         }
+
         if (hasDirectModifierToken(modifierSource, JavaTokenType.NON_SEALED_KEYWORD)) {
             modifiers |= NON_SEALED_MODIFIER;
         }
@@ -3149,12 +3275,14 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return topLevelEnclosingTypeSymbol(localType.declaration().orElseThrow())
                 .flatMap(Symbol::qualifiedName)
                 .orElse(qualifiedTypeName);
+
         return qualifiedTypeName;
     }
 
     private boolean isSubtype(String candidateQualifiedTypeName, String targetQualifiedTypeName, Set<String> visited) {
         if (equivalentQualifiedTypeNames(candidateQualifiedTypeName, targetQualifiedTypeName))
             return true;
+
         if (!visited.add(candidateQualifiedTypeName))
             return false;
 
@@ -3163,6 +3291,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 || isSubtype(directSuper, targetQualifiedTypeName, visited))
                 return true;
         }
+
         return false;
     }
 
@@ -3184,6 +3313,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 supers.add(new DeclaredType("java.lang.Object", List.of()));
                 return List.copyOf(supers);
             }
+
             return sourceSupers;
         }
 
@@ -3192,6 +3322,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             List<DeclaredType> indexedSupers = indexedSourceDirectSuperTypes(qualifiedTypeName);
             if (indexedSupers.isEmpty() && isImplicitObjectBackedIndexedType(qualifiedTypeName))
                 return List.of(new DeclaredType("java.lang.Object", List.of()));
+
             return indexedSupers;
         }
 
@@ -3202,6 +3333,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 supers.add(declared);
             }
         }
+
         stub.interfaces().stream()
             .map(JavaRuleContext::toSemanticType)
             .filter(DeclaredType.class::isInstance)
@@ -3214,14 +3346,17 @@ public final class JavaRuleContext implements LanguageRuleContext {
         Symbol localType = localTypeSymbol(qualifiedTypeName).orElse(null);
         if (localType == null || directSupers.stream().anyMatch(type -> "java.lang.Object".equals(type.displayName())))
             return false;
+
         if (localType.kind() == JavaSymbolKind.RECORD)
             return true;
+
         if (localType.kind() != JavaSymbolKind.CLASS)
             return false;
 
         SyntaxNode declaration = localType.declaration().orElse(null);
         if (declaration != null && JavaSyntaxKinds.ANONYMOUS_CLASS_BODY.id().equals(declaration.kind().id()))
             return directSupers.isEmpty();
+
         return declaration != null && directChild(declaration, JAVA_EXTENDS_CLAUSE) == null;
     }
 
@@ -3249,8 +3384,10 @@ public final class JavaRuleContext implements LanguageRuleContext {
         for (SyntaxNode child : argumentList.children()) {
             if (!isExpressionNode(child))
                 continue;
+
             argumentTypes.add(inferredType(child).orElse(new UnknownType("<unknown>")));
         }
+
         return List.copyOf(argumentTypes);
     }
 
@@ -3263,17 +3400,21 @@ public final class JavaRuleContext implements LanguageRuleContext {
             traverseNode(declaration, node -> declaredSymbol(node).ifPresent(symbol -> {
                 if (symbol.kind() != JavaSymbolKind.CONSTRUCTOR)
                     return;
+
                 if (!Objects.equals(ownerQualifiedName(symbol).orElse(null), ownerQualifiedTypeName))
                     return;
+
                 SyntaxNode ctorDeclaration = symbol.declaration().orElse(null);
                 if (ctorDeclaration == null || !JAVA_CONSTRUCTOR_DECLARATION.equals(ctorDeclaration.kind().id()))
                     return;
+
                 constructors.add(sourceConstructorDescriptor(ownerQualifiedTypeName, symbol, ctorDeclaration));
             }));
 
             if (constructors.isEmpty() && localType.kind() == JavaSymbolKind.RECORD) {
                 constructors.add(implicitRecordConstructorDescriptor(ownerQualifiedTypeName, declaration));
             }
+
             return List.copyOf(constructors);
         }
 
@@ -3303,6 +3444,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 null,
                 null));
         });
+
         return List.copyOf(constructors);
     }
 
@@ -3317,11 +3459,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
             for (SyntaxNode child : parameterList.children()) {
                 if (!JAVA_PARAMETER.equals(child.kind().id()))
                     continue;
+
                 SyntaxNode typeRef = directChild(child, JAVA_TYPE_REFERENCE);
                 Type parameterType = withDeclaratorDimensions(semanticTypeFromTypeReference(typeRef), child);
                 if (hasTokenKind(child, JavaTokenType.ELLIPSIS)) {
                     parameterType = new JavaTypes.ArrayType(parameterType);
                 }
+
                 parameterTypes.add(parameterType);
             }
         }
@@ -3345,6 +3489,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             for (SyntaxNode child : header.children()) {
                 if (!JAVA_RECORD_COMPONENT.equals(child.kind().id()))
                     continue;
+
                 SyntaxNode typeRef = directChild(child, JAVA_TYPE_REFERENCE);
                 parameterTypes.add(semanticTypeFromTypeReference(typeRef));
             }
@@ -3372,12 +3517,14 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 result = new JavaTypes.ArrayType(result);
             }
         }
+
         return result;
     }
 
     private Type semanticTypeFromTypeReference(@Nullable SyntaxNode typeRef) {
         if (typeRef == null)
             return new UnknownType("<unknown>");
+
         String text = canonicalTypeText(typeRef);
         return semanticTypeFromText(text, typeRef);
     }
@@ -3389,10 +3536,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
         String text = typeText.trim();
         if ("void".equals(text))
             return new VoidType();
+
         if (text.startsWith("?extends"))
             return new JavaTypes.WildcardType(semanticTypeFromText(text.substring(8), usageSite), null);
+
         if (text.startsWith("?super"))
             return new JavaTypes.WildcardType(null, semanticTypeFromText(text.substring(6), usageSite));
+
         if ("?".equals(text))
             return new JavaTypes.WildcardType(new DeclaredType("java.lang.Object", List.of()), null);
 
@@ -3435,6 +3585,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         for (int index = 0; index < arrayDimensions; index++) {
             resolved = new JavaTypes.ArrayType(resolved);
         }
+
         return resolved;
     }
 
@@ -3510,6 +3661,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             MethodDescriptor descriptor = selectApplicableMethod(owner, methodName, argumentTypes);
             if (descriptor != null)
                 return descriptor;
+
             if (!owner.staticAccess())
                 return null;
 
@@ -3535,13 +3687,16 @@ public final class JavaRuleContext implements LanguageRuleContext {
             for (MethodDescriptor method : methods) {
                 if (!method.name().equals(methodName))
                     continue;
+
                 if (owner.staticAccess() && !Modifier.isStatic(method.modifiers()))
                     continue;
+
                 if ((!expanded || isVariableArityMethod(method))
                     && isApplicableMethod(method.parameterTypes(), argumentTypes, expanded))
                     return method;
             }
         }
+
         return null;
     }
 
@@ -3549,17 +3704,23 @@ public final class JavaRuleContext implements LanguageRuleContext {
         for (MethodDescriptor method : methodDescriptorsForType(ownerQualifiedName)) {
             if (!method.name().equals(methodName))
                 continue;
+
             if (method.returnType().kind() != Kind.DECLARED)
                 return null;
+
             return resolveQualifiedTypeName(method.returnType().displayName());
         }
+
         for (MethodDescriptor method : inheritedMethodDescriptors(ownerQualifiedName)) {
             if (!method.name().equals(methodName))
                 continue;
+
             if (method.returnType().kind() != Kind.DECLARED)
                 return null;
+
             return resolveQualifiedTypeName(method.returnType().displayName());
         }
+
         return null;
     }
 
@@ -3601,6 +3762,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (text == null || text.isBlank()) {
             text = firstIdentifierLikeTokenText(receiver);
         }
+
         String qualifiedTypeName = resolveQualifiedTypeName(text);
         if (qualifiedTypeName == null || qualifiedTypeName.isBlank())
             return null;
@@ -3608,6 +3770,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (localTypeSymbolsByQualifiedName().containsKey(qualifiedTypeName)
             || availableQualifiedTypeNames().contains(qualifiedTypeName))
             return qualifiedTypeName;
+
         return null;
     }
 
@@ -3623,6 +3786,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             SyntaxNode parameters = directChild(declaration, JAVA_PARAMETER_LIST);
             return parameters != null && hasTokenKind(parameters, JavaTokenType.ELLIPSIS);
         }
+
         return (method.modifiers() & Opcodes.ACC_VARARGS) != 0;
     }
 
@@ -3634,6 +3798,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
     private boolean isApplicableMethod(List<Type> parameterTypes, List<Type> argumentTypes, boolean varargs) {
         if (!varargs && parameterTypes.size() != argumentTypes.size())
             return false;
+
         if (varargs && argumentTypes.size() < parameterTypes.size() - 1)
             return false;
 
@@ -3655,6 +3820,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (!isInvocationAssignable(varargsArray.componentType(), argumentTypes.get(index)))
                 return false;
         }
+
         return true;
     }
 
@@ -3666,6 +3832,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             methodName)) {
             if (symbol.kind() != JavaSymbolKind.METHOD)
                 continue;
+
             if (owner.staticAccess() && !symbol.isStatic())
                 continue;
 
@@ -3675,9 +3842,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 && structured.parameters().getLast().varargs();
             if (isApplicableMethod(parameterTypes, argumentTypes, varargs))
                 return true;
+
             if (parameterTypes.size() == argumentTypes.size())
                 return true;
         }
+
         return false;
     }
 
@@ -3688,6 +3857,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 Type type = semanticTypeFromText(parameter.type().displayName().replaceAll("\\s+", ""), null);
                 return parameter.varargs() ? new JavaTypes.ArrayType(type) : type;
             }).toList();
+
         String signature = symbol.signature();
         if (signature == null || signature.length() < 2 || signature.charAt(0) != '('
             || signature.charAt(signature.length() - 1) != ')')
@@ -3704,16 +3874,20 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 ? new UnknownType("<unknown>")
                 : new DeclaredType(qualifiedTypeName, List.of()));
         }
+
         return List.copyOf(parameterTypes);
     }
 
     private boolean isInvocationAssignable(Type target, Type source) {
         if (target.kind() == Kind.UNKNOWN || source.kind() == Kind.UNKNOWN)
             return true;
+
         if (target.kind() == Kind.TYPE_VARIABLE || target.kind() == Kind.WILDCARD)
             return true;
+
         if (source.kind() == Kind.TYPE_VARIABLE || source.kind() == Kind.WILDCARD)
             return true;
+
         return isAssignable(target, source);
     }
 
@@ -3721,9 +3895,11 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (symbolIndex != null) {
             qualifiedTypeName = symbolIndex.canonicalTypeName(qualifiedTypeName);
         }
+
         Map<String, List<DeclaredType>> cached = cachedIndexedSourceDirectSuperTypesByQualifiedName;
         if (cached != null && cached.containsKey(qualifiedTypeName))
             return cached.getOrDefault(qualifiedTypeName, List.of());
+
         if (symbolIndex == null)
             return List.of();
 
@@ -3757,6 +3933,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (cachedIndexedSourceDirectSuperTypesByQualifiedName != null) {
             merged.putAll(cachedIndexedSourceDirectSuperTypesByQualifiedName);
         }
+
         additional.forEach((qualifiedName, supers) -> merged.putIfAbsent(qualifiedName, List.copyOf(supers)));
         Map<String, List<DeclaredType>> copy = Map.copyOf(merged);
         cachedIndexedSourceDirectSuperTypesByQualifiedName = copy;
@@ -3803,16 +3980,19 @@ public final class JavaRuleContext implements LanguageRuleContext {
         for (int index = 0; index < count; index++) {
             substitutions.put(parameterNames.get(index), declaredType.typeArguments().get(index));
         }
+
         return Map.copyOf(substitutions);
     }
 
     private MethodDescriptor substituteMethodDescriptor(MethodDescriptor method, Map<String, Type> substitutions) {
         if (substitutions.isEmpty())
             return method;
+
         Map<String, Type> ownerArguments = new HashMap<>(substitutions);
         method.typeParameters().forEach(parameter -> ownerArguments.remove(parameter.name()));
         if (ownerArguments.isEmpty())
             return method;
+
         return new MethodDescriptor(
             method.ownerQualifiedName(),
             method.name(),
@@ -3846,6 +4026,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return declared.displayName() + declared.typeArguments().stream()
                 .map(JavaRuleContext::typeKey)
                 .collect(Collectors.joining(",", "<", ">"));
+
         return type.displayName();
     }
 
@@ -3889,9 +4070,10 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return List.of();
 
         List<MethodDescriptor> methods = new ArrayList<>();
-        for (var method : stub.methods()) {
+        for (MethodStub method : stub.methods()) {
             if ((method.modifiers() & Opcodes.ACC_BRIDGE) != 0)
                 continue;
+
             List<Type> parameterTypes = method.parameters().stream()
                 .map(parameter -> toSemanticType(parameter.type()))
                 .toList();
@@ -3906,6 +4088,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 null,
                 null));
         }
+
         List<MethodDescriptor> binary = List.copyOf(methods);
         binaryMethodsByOwner.put(ownerQualifiedTypeName, binary);
         return binary;
@@ -3925,7 +4108,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             return List.of();
 
         List<FieldDescriptor> fields = new ArrayList<>();
-        for (var field : stub.fields()) {
+        for (FieldStub field : stub.fields()) {
             fields.add(new FieldDescriptor(
                 ownerQualifiedTypeName,
                 field.name(),
@@ -3934,6 +4117,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 null,
                 null));
         }
+
         return List.copyOf(fields);
     }
 
@@ -3941,13 +4125,16 @@ public final class JavaRuleContext implements LanguageRuleContext {
         SyntaxNode parameters = directChild(declaration, JAVA_TYPE_PARAMETERS);
         if (parameters == null)
             return List.of();
+
         List<MethodTypeParameter> result = new ArrayList<>();
         for (SyntaxNode parameter : parameters.children()) {
             if (!JAVA_TYPE_PARAMETER.equals(parameter.kind().id()))
                 continue;
+
             String name = JavaSourceSymbolIds.declarationName(parameter);
             if (name == null)
                 continue;
+
             SyntaxNode bound = directChild(parameter, "JAVA_TYPE_BOUND");
             result.add(new MethodTypeParameter(name, bound == null
                 ? List.of()
@@ -3955,6 +4142,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                     .filter(child -> JAVA_TYPE_REFERENCE.equals(child.kind().id()))
                     .map(this::semanticTypeFromTypeReference).toList()));
         }
+
         return List.copyOf(result);
     }
 
@@ -3972,11 +4160,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
             for (SyntaxNode child : parameterList.children()) {
                 if (!JAVA_PARAMETER.equals(child.kind().id()))
                     continue;
+
                 SyntaxNode typeRef = directChild(child, JAVA_TYPE_REFERENCE);
                 Type parameterType = withDeclaratorDimensions(semanticTypeFromTypeReference(typeRef), child);
                 if (hasTokenKind(child, JavaTokenType.ELLIPSIS)) {
                     parameterType = new JavaTypes.ArrayType(parameterType);
                 }
+
                 parameterTypes.add(parameterType);
             }
         }
@@ -4023,6 +4213,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (symbolIndex != null) {
             ownerQualifiedTypeName = symbolIndex.canonicalTypeName(ownerQualifiedTypeName);
         }
+
         Map<String, List<MethodDescriptor>> cached = cachedIndexedSourceMethodsByOwner;
         if (cached != null && cached.containsKey(ownerQualifiedTypeName))
             return cached.getOrDefault(ownerQualifiedTypeName, List.of());
@@ -4036,6 +4227,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (symbolIndex != null) {
             ownerQualifiedTypeName = symbolIndex.canonicalTypeName(ownerQualifiedTypeName);
         }
+
         Map<String, List<FieldDescriptor>> cached = cachedIndexedSourceFieldsByOwner;
         if (cached != null && cached.containsKey(ownerQualifiedTypeName))
             return cached.getOrDefault(ownerQualifiedTypeName, List.of());
@@ -4069,6 +4261,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                     methods.computeIfAbsent(owner, _ -> new ArrayList<>()).addAll(constructors);
                 }
             }
+
             sourceContext.declaredFieldsByOwner().forEach(
                 (owner, descriptors) -> fields.computeIfAbsent(owner, _ -> new ArrayList<>()).addAll(descriptors));
         } catch (Exception _) {
@@ -4111,6 +4304,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         if (existing != null) {
             merged.putAll(existing);
         }
+
         additional.forEach((owner, values) -> merged.put(owner, List.copyOf(values)));
         return Map.copyOf(merged);
     }
@@ -4128,11 +4322,13 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (ch == '<') {
                 if (depth == 0)
                     return index;
+
                 depth++;
             } else if (ch == '>') {
                 depth = Math.max(0, depth - 1);
             }
         }
+
         return -1;
     }
 
@@ -4151,24 +4347,30 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 current.setLength(0);
                 continue;
             }
+
             current.append(ch);
         }
+
         if (!current.isEmpty()) {
             parts.add(current.toString());
         }
+
         return List.copyOf(parts);
     }
 
     private static boolean isLikelyTypeVariableName(String displayName) {
         if (displayName == null || displayName.isBlank() || displayName.indexOf('.') >= 0)
             return false;
+
         if (!Character.isUpperCase(displayName.charAt(0)))
             return false;
+
         for (int index = 1; index < displayName.length(); index++) {
             char ch = displayName.charAt(index);
             if (!Character.isUpperCase(ch) && !Character.isDigit(ch) && ch != '_')
                 return false;
         }
+
         return true;
     }
 
@@ -4182,6 +4384,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 || JavaSyntaxKinds.METHOD_REFERENCE_EXPRESSION.id().equals(kindId))
                 return true;
         }
+
         return false;
     }
 
@@ -4196,6 +4399,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (qualifiedTypeName != null && !qualifiedTypeName.isBlank()) {
                 out.add(qualifiedTypeName);
             }
+
             return;
         }
 
@@ -4205,6 +4409,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                     collectTopLevelReferencedTypeNames(child, out);
                 }
             }
+
             return;
         }
 
@@ -4224,19 +4429,23 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 names.add(semanticType.displayName());
             }
         }
+
         return List.copyOf(names);
     }
 
     private static String signatureSuffix(List<Type> parameterTypes) {
         if (parameterTypes.isEmpty())
             return "()";
+
         var builder = new StringBuilder("(");
         for (int index = 0; index < parameterTypes.size(); index++) {
             if (index > 0) {
                 builder.append(',');
             }
+
             builder.append(parameterTypes.get(index).displayName());
         }
+
         builder.append(')');
         return builder.toString();
     }
@@ -4258,6 +4467,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 // Keep binary unbounded wildcards consistent with source '?' parsing.
                 if (wildcard.bound() == null && wildcard.isUpperBound())
                     yield new JavaTypes.WildcardType(new DeclaredType("java.lang.Object", List.of()), null);
+
                 Type bound = wildcard.bound() == null ? new UnknownType("<unknown>") : toSemanticType(wildcard.bound());
                 yield wildcard.isUpperBound()
                     ? new JavaTypes.WildcardType(bound, null)
@@ -4467,6 +4677,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             for (int i = 0; i < typeParameters.size(); i++) {
                 result.put(typeParameters.get(i).name(), new TypeVariableType("~" + i));
             }
+
             return result;
         }
 
@@ -4483,18 +4694,21 @@ public final class JavaRuleContext implements LanguageRuleContext {
         public boolean hasEquivalentTypeParameters(MethodDescriptor other) {
             if (typeParameters.size() != other.typeParameters.size())
                 return false;
+
             if (typeParameters.isEmpty())
                 return true;
-            var ownVariables = overrideVariables();
-            var otherVariables = other.overrideVariables();
+
+            Map<String, Type> ownVariables = overrideVariables();
+            Map<String, Type> otherVariables = other.overrideVariables();
             for (int i = 0; i < typeParameters.size(); i++) {
-                var ownBounds = typeParameters.get(i).bounds().stream()
+                List<Type> ownBounds = typeParameters.get(i).bounds().stream()
                     .map(bound -> substituteType(bound, ownVariables)).toList();
-                var otherBounds = other.typeParameters.get(i).bounds().stream()
+                List<Type> otherBounds = other.typeParameters.get(i).bounds().stream()
                     .map(bound -> substituteType(bound, otherVariables)).toList();
                 if (!ownBounds.equals(otherBounds))
                     return false;
             }
+
             return true;
         }
 
@@ -4510,8 +4724,10 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 if (index > 0) {
                     builder.append(',');
                 }
+
                 builder.append(parameterTypes.get(index).displayName().replace('$', '.'));
             }
+
             builder.append(')');
             return builder.toString();
         }
@@ -4620,6 +4836,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
         private @Nullable String knownTypeName(String qualifiedTypeName) {
             if (qualifiedTypeName == null || qualifiedTypeName.isBlank())
                 return null;
+
             if (localQualifiedTypeNames.contains(qualifiedTypeName)
                 || availableQualifiedTypeNames.contains(qualifiedTypeName))
                 return qualifiedTypeName;
@@ -4630,8 +4847,10 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 binaryName = binaryName.substring(0, dot) + "$" + binaryName.substring(dot + 1);
                 if (availableQualifiedTypeNames.contains(binaryName))
                     return binaryName;
+
                 dot = binaryName.lastIndexOf('.', dot - 1);
             }
+
             return null;
         }
 
@@ -4653,10 +4872,12 @@ public final class JavaRuleContext implements LanguageRuleContext {
         public boolean isResolvablePackagePrefix(String packagePrefix) {
             if (packagePrefix == null || packagePrefix.isBlank())
                 return false;
+
             for (String qualifiedType : availableQualifiedTypeNames) {
                 if (qualifiedType.startsWith(packagePrefix + "."))
                     return true;
             }
+
             return false;
         }
 
@@ -4756,8 +4977,10 @@ public final class JavaRuleContext implements LanguageRuleContext {
                     if (importEntry.isStatic()) {
                         onDemandStaticImports.add(importEntry);
                     }
+
                     continue;
                 }
+
                 if (importEntry.isStatic()) {
                     staticSingleImportsByMemberName
                         .computeIfAbsent(importEntry.importedName(), _ -> new ArrayList<>())
@@ -4790,12 +5013,15 @@ public final class JavaRuleContext implements LanguageRuleContext {
             context.traverse(node -> {
                 if (!JAVA_IMPORT_DECLARATION.equals(node.kind().id()))
                     return;
+
                 SyntaxNode target = context.directChild(node, JAVA_IMPORT_TARGET);
                 if (target == null)
                     return;
+
                 String qualifiedTarget = context.canonicalQualifiedName(target);
                 if (qualifiedTarget == null || qualifiedTarget.isBlank())
                     return;
+
                 boolean isStatic = context.hasTokenKind(node, JavaTokenType.STATIC_KEYWORD);
                 boolean isWildcard = qualifiedTarget.endsWith(".*");
                 String ownerName = isWildcard
@@ -4805,6 +5031,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 imports
                     .add(new ImportEntry(node, target, qualifiedTarget, ownerName, importedName, isStatic, isWildcard));
             });
+
             return imports;
         }
 
@@ -4815,6 +5042,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                     symbol.qualifiedName().ifPresent(names::add);
                 }
             }));
+
             return names;
         }
 
@@ -4827,6 +5055,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 Symbol symbol = context.declaredSymbol(node).orElse(null);
                 if (symbol == null)
                     return;
+
                 if (symbol.kind() != JavaSymbolKind.FIELD && symbol.kind() != JavaSymbolKind.METHOD)
                     return;
 
@@ -4837,6 +5066,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 int separator = qualifiedName.indexOf('#');
                 if (separator <= 0 || separator >= qualifiedName.length() - 1)
                     return;
+
                 if (!isStaticMemberSymbol(context, symbol))
                     return;
 
@@ -4858,8 +5088,10 @@ public final class JavaRuleContext implements LanguageRuleContext {
             SyntaxNode declaration = symbol.declaration().orElse(null);
             if (declaration == null)
                 return false;
+
             if (context.hasTokenKind(declaration, JavaTokenType.STATIC_KEYWORD))
                 return true;
+
             return declaration.parent()
                 .map(parent -> context.hasTokenKind(parent, JavaTokenType.STATIC_KEYWORD))
                 .orElse(false);
@@ -4869,6 +5101,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             SyntaxNode declaration = symbol.declaration().orElse(null);
             if (declaration == null)
                 return -1;
+
             SyntaxNode parameterList = context.directChild(declaration, JAVA_PARAMETER_LIST);
             if (parameterList == null)
                 return -1;
@@ -4879,6 +5112,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                     count++;
                 }
             }
+
             return count;
         }
 
@@ -4921,17 +5155,21 @@ public final class JavaRuleContext implements LanguageRuleContext {
         private boolean hasIndexedStaticMember(String owner, String name, JavaSymbolKind kind, int argumentCount) {
             if (context.symbolIndex == null)
                 return false;
-            for (var member : context.symbolIndex.lookupMember(owner, name)) {
+
+            for (JavaProjectSemanticIndex.SymbolDescriptor member : context.symbolIndex.lookupMember(owner, name)) {
                 if (member.kind() != kind || !member.isStatic())
                     continue;
+
                 if (member.descriptor() != null) {
                     String visibility = member.descriptor().metadata().visibility();
                     if ("private".equals(visibility) || !"public".equals(visibility) && !inCurrentPackage(owner))
                         continue;
                 }
+
                 if (argumentCount < 0 || acceptsArgumentCount(member, argumentCount))
                     return true;
             }
+
             return false;
         }
 
@@ -4940,7 +5178,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
             if (signature == null)
                 return member.signature() != null
                     && context.parameterTypesFromIndexedSignature(member).size() == argumentCount;
-            var parameters = signature.parameters();
+
+            List<SymbolSignature.Parameter> parameters = signature.parameters();
             return argumentCount == parameters.size() || !parameters.isEmpty() && parameters.getLast().varargs()
                 && argumentCount >= parameters.size() - 1;
         }
@@ -4950,6 +5189,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
             while (isResolvableType(prefix)) {
                 prefix = context.packagePrefix(prefix);
             }
+
             return prefix.equals(context.currentPackageName());
         }
 
@@ -4974,6 +5214,7 @@ public final class JavaRuleContext implements LanguageRuleContext {
                 members.forEach((member, arities) -> memberCopy.put(member, Set.copyOf(arities)));
                 copy.put(owner, Map.copyOf(memberCopy));
             });
+
             return Map.copyOf(copy);
         }
 

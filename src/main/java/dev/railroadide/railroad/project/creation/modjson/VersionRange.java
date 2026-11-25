@@ -17,7 +17,9 @@ import java.util.List;
 @AllArgsConstructor
 @JsonAdapter(VersionRangeTypeAdapter.class)
 public class VersionRange {
-    /** The version expressions in their serialization order. */
+    /**
+     * The version expressions in their serialization order.
+     */
     private List<String> ranges;
 
     /**

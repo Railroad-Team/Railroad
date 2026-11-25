@@ -29,7 +29,9 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.util.*;
 
-/** Settings view that lists, filters, and edits the application's keybinds. */
+/**
+ * Settings view that lists, filters, and edits the application's keybinds.
+ */
 public class KeybindsList extends RRVBox {
     private final Map<String, List<KeybindData>> keybinds = new LinkedHashMap<>();
 
@@ -46,7 +48,9 @@ public class KeybindsList extends RRVBox {
     private String pendingEditKey;
     private int pendingEditIndex = -1;
 
-    /** Creates a keybind list initialized from the registered defaults. */
+    /**
+     * Creates a keybind list initialized from the registered defaults.
+     */
     public KeybindsList() {
         this(null);
     }
@@ -144,9 +148,11 @@ public class KeybindsList extends RRVBox {
             Keybind keybind = KeybindHandler.getKeybind(id);
             if (keybind == null)
                 return;
+
             KeybindCategory category = keybind.getCategory();
             if (category == null)
                 return;
+
             if (seenCategories.add(category.id())) {
                 categoryBar.getChildren().add(createCategoryChip(category.titleKey(), category.id()));
             }
@@ -178,6 +184,7 @@ public class KeybindsList extends RRVBox {
             activeCategoryId = categoryId;
             renderKeybindCards();
         });
+
         return chip;
     }
 
@@ -210,6 +217,7 @@ public class KeybindsList extends RRVBox {
     private boolean matchesCategory(String keybindId) {
         if (activeCategoryId == null || activeCategoryId.isBlank())
             return true;
+
         Keybind keybind = KeybindHandler.getKeybind(keybindId);
         return keybind != null &&
             keybind.getCategory() != null &&
@@ -219,6 +227,7 @@ public class KeybindsList extends RRVBox {
     private boolean matchesSearch(String keybindId, String query) {
         if (query.isBlank())
             return true;
+
         String display = getDisplayName(keybindId).toLowerCase(Locale.ENGLISH);
         return display.contains(query) || keybindId.toLowerCase(Locale.ENGLISH).contains(query);
     }
@@ -230,7 +239,7 @@ public class KeybindsList extends RRVBox {
         var title = new LocalizedLabel(localizationKeyFor(keybindId));
         title.getStyleClass().add("keybind-card-title");
 
-        var subtitle = createSubtitleLabel(keybindId);
+        LocalizedLabel subtitle = createSubtitleLabel(keybindId);
         if (subtitle != null) {
             subtitle.getStyleClass().add("keybind-card-subtitle");
         }
@@ -328,6 +337,7 @@ public class KeybindsList extends RRVBox {
         String key = localizationKeyFor(keybindId);
         if (L18n.isKeyValid(key))
             return L18n.localize(key);
+
         return keybindId;
     }
 
@@ -337,6 +347,7 @@ public class KeybindsList extends RRVBox {
             .orElseGet(() -> {
                 if (keybindId == null || !keybindId.contains(":"))
                     return "railroad.settings.keybinds." + keybindId;
+
                 return "railroad.settings.keybinds." + keybindId.split(":", 2)[1];
             });
     }
@@ -350,20 +361,22 @@ public class KeybindsList extends RRVBox {
     public static JsonElement toJson(Map<String, List<KeybindData>> keybinds) {
         var jsonObject = new JsonObject();
         for (Map.Entry<String, List<KeybindData>> entry : keybinds.entrySet()) {
-            var keyList = new JsonArray();
+            JsonArray keyList = new JsonArray();
 
             for (KeybindData combo : entry.getValue()) {
                 String input = combo.mouseButton() == null
                     ? Objects.requireNonNullElse(combo.keyCode(), KeyCode.UNDEFINED).toString()
                     : "Mouse:" + combo.mouseButton().name();
-                var comboString = new StringBuilder(input).append(';');
+                StringBuilder comboString = new StringBuilder(input).append(';');
                 if (combo.modifiers() == null || combo.modifiers().length == 0) {
                     keyList.add(comboString.toString());
                     continue;
                 }
+
                 for (KeyCombination.Modifier modifier : combo.modifiers()) {
                     comboString.append(modifier.toString()).append(",");
                 }
+
                 comboString.deleteCharAt(comboString.length() - 1);
                 keyList.add(comboString.toString());
             }
@@ -381,17 +394,17 @@ public class KeybindsList extends RRVBox {
      * @return a map of keybind IDs to lists of KeybindData.
      */
     public static Map<String, List<KeybindData>> fromJson(JsonElement json) {
-        var map = new LinkedHashMap<String, List<KeybindData>>();
+        Map<String, List<KeybindData>> map = new LinkedHashMap<String, List<KeybindData>>();
 
         for (Map.Entry<String, JsonElement> keybindJson : json.getAsJsonObject().entrySet()) {
-            var id = keybindJson.getKey();
-            var keyList = keybindJson.getValue().getAsJsonArray();
+            String id = keybindJson.getKey();
+            Iterable<JsonElement> keyList = keybindJson.getValue().getAsJsonArray();
             if (KeybindHandler.getKeybind(id) == null) {
                 Railroad.LOGGER.warn("Keybind " + id + " does not exist");
                 continue;
             }
 
-            var keys = new ArrayList<KeybindData>();
+            ArrayList<KeybindData> keys = new ArrayList<KeybindData>();
             for (JsonElement keyCombo : keyList) {
                 keys.add(parseBinding(keyCombo.getAsString()));
             }
@@ -414,6 +427,7 @@ public class KeybindsList extends RRVBox {
 
         if (parts[0].startsWith("Mouse:"))
             return new KeybindData(MouseButton.valueOf(parts[0].substring("Mouse:".length())), modifiers);
+
         return new KeybindData(KeyCode.valueOf(parts[0]), modifiers);
     }
 

@@ -21,7 +21,9 @@ public class LocalizedTab extends Tab {
         setText(L18n.localize(titleKey));
     }
 
-    /** Creates an empty tab without a localization key or language-change listener. */
+    /**
+     * Creates an empty tab without a localization key or language-change listener.
+     */
     public LocalizedTab() {
         super();
     }

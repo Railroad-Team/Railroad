@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.ServiceConfigurationError;
+import java.util.Set;
 
 /**
  * PluginManager is responsible for loading, enabling, and disabling plugins in the Railroad application.
@@ -240,11 +241,13 @@ public class PluginManager {
             } catch (RuntimeException cleanupFailure) {
                 failure.addSuppressed(cleanupFailure);
             }
+
             try {
                 unregisterJavaInspectionRuleProviders(registeredProviderIds);
             } catch (RuntimeException cleanupFailure) {
                 failure.addSuppressed(cleanupFailure);
             }
+
             loadResult.clearShutdownRegistration();
             loadResult.clearJavaInspectionRuleProviderRegistrationIds();
             loadResult.setPlugin(null, null);
@@ -514,10 +517,13 @@ public class PluginManager {
         for (JavaInspectionRuleProvider provider : ServiceLoader.load(JavaInspectionRuleProvider.class, classLoader)) {
             if (provider == null)
                 continue;
+
             if (provider.getClass().getClassLoader() != classLoader)
                 continue;
+
             providers.add(provider);
         }
+
         return List.copyOf(providers);
     }
 
@@ -539,7 +545,7 @@ public class PluginManager {
         if (providers == null || providers.isEmpty())
             return List.of();
 
-        LinkedHashSet<String> registrationIds = new LinkedHashSet<>();
+        Set<String> registrationIds = new LinkedHashSet<>();
         try {
             for (JavaInspectionRuleProvider provider : providers) {
                 if (provider == null)
@@ -552,6 +558,7 @@ public class PluginManager {
 
                 JavaInspectionRegistries.registerRuleProvider(registrationId, provider);
             }
+
             return List.copyOf(registrationIds);
         } catch (Exception exception) {
             unregisterJavaInspectionRuleProviders(List.copyOf(registrationIds));
@@ -591,6 +598,7 @@ public class PluginManager {
         String providerId = Objects.requireNonNull(provider.id(), "provider.id");
         if (pluginId.isBlank())
             throw new IllegalArgumentException("Plugin descriptor id cannot be blank");
+
         if (providerId.isBlank())
             throw new IllegalArgumentException("Java inspection rule provider id cannot be blank");
 
@@ -604,6 +612,7 @@ public class PluginManager {
         for (String registrationId : registrationIds) {
             if (registrationId == null || registrationId.isBlank())
                 continue;
+
             if (JavaInspectionRegistries.containsRuleProvider(registrationId)) {
                 JavaInspectionRegistries.unregisterRuleProvider(registrationId);
             }
@@ -646,6 +655,7 @@ public class PluginManager {
         } catch (RuntimeException exception) {
             failure = new IOException("Unable to dispose language providers", exception);
         }
+
         try {
             unregisterJavaInspectionRuleProviders(loadResult);
         } catch (RuntimeException exception) {
@@ -655,6 +665,7 @@ public class PluginManager {
                 failure.addSuppressed(exception);
             }
         }
+
         PluginClassLoader classLoader = loadResult.classLoader();
         loadResult.setPlugin(null, null);
         if (classLoader != null) {
@@ -668,6 +679,7 @@ public class PluginManager {
                 }
             }
         }
+
         if (failure != null)
             throw failure;
     }

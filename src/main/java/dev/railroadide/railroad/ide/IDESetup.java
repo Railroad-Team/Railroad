@@ -75,7 +75,7 @@ public class IDESetup {
                 boolean wasShowing = ideStage.isShowing();
                 boolean keepWindowBounds = wasShowing && previousScene != null
                     && previousScene.getRoot() instanceof IDEPane;
-                var idePane = constructProjectView(Railroad.PROJECT_MANAGER, project, () -> new IDEPane(project));
+                IDEPane idePane = constructProjectView(Railroad.PROJECT_MANAGER, project, () -> new IDEPane(project));
                 if (idePane == null)
                     return;
 
@@ -97,9 +97,11 @@ public class IDESetup {
                 } else {
                     Railroad.WINDOW_MANAGER.showPrimary(stage, ideScene, title);
                 }
+
                 if (!keepWindowBounds && wasShowing) {
                     ideStage.setMaximized(true);
                 }
+
                 ThemeManager.release(previousScene);
             } finally {
                 isSwitchingToIDE = false;
@@ -130,6 +132,7 @@ public class IDESetup {
             if (manager.getOpenProject() != null)
                 return null;
         }
+
         boolean opening = manager.getOpenProject() != project;
         try {
             manager.setCurrentProject(project);
@@ -143,6 +146,7 @@ public class IDESetup {
                     cause.addSuppressed(cleanup);
                 }
             }
+
             throw failure;
         }
     }

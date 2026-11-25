@@ -2,7 +2,9 @@ package dev.railroadide.railroad.ui.layout;
 
 import java.io.IOException;
 
-/** Indicates that a layout could not be read or its contents could not be parsed. */
+/**
+ * Indicates that a layout could not be read or its contents could not be parsed.
+ */
 public class LayoutParseException extends IOException {
     /**
      * Creates a failure with a diagnostic message and underlying cause.

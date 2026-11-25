@@ -42,7 +42,7 @@ public class WorkspaceSnapshotTest {
     @Test
     public void capturedDocumentMapCannotBeModified() {
         var workspace = new WorkspaceSnapshot("project-test", Map.of(mainId, main, utilsId, utils), configuration, 0L);
-        var replacement = snapshot(mainId, main.version().next(), "class Main { int x; }");
+        TextDocumentSnapshot replacement = snapshot(mainId, main.version().next(), "class Main { int x; }");
 
         assertThrows(UnsupportedOperationException.class, () -> workspace.documents().put(mainId, replacement));
         assertThrows(UnsupportedOperationException.class, () -> workspace.documents().remove(utilsId));
@@ -69,7 +69,7 @@ public class WorkspaceSnapshotTest {
 
     @Test
     public void blankProjectIdsAreRejected() {
-        for (var projectId : List.of("", " ", "\t\n")) {
+        for (String projectId : List.of("", " ", "\t\n")) {
             assertThrows(IllegalArgumentException.class,
                 () -> new WorkspaceSnapshot(projectId, Map.of(), configuration, 0));
         }

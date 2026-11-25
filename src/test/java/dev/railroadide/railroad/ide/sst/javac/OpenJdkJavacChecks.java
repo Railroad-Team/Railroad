@@ -49,6 +49,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import dev.railroadide.railroad.ide.language.impl.index.JavaWorkspaceAnalysis;
+import dev.railroadide.railroad.ide.sst.document.api.LineMap;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
+import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import javax.tools.StandardJavaFileManager;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -156,25 +163,26 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
 
     public Result check(Path checkout, OpenJdkJavacSuite.TestCase test) throws IOException {
         OpenJdkCompilePlan plan = OpenJdkCompilePlan.read(checkout, test);
-        var mismatches = new ArrayList<String>();
-        var unsupported = new ArrayList<String>();
+        List<String> mismatches = new ArrayList<String>();
+        List<String> unsupported = new ArrayList<String>();
         if (plan.unsupported() != null) {
             unsupported.add(plan.unsupported());
         }
 
         Deadline deadline = Deadline.after(CASE_TIMEOUT);
-        var previous = new LinkedHashMap<Path, TextDocumentSnapshot>();
+        Map<Path, TextDocumentSnapshot> previous = new LinkedHashMap<Path, TextDocumentSnapshot>();
         int syntaxFiles = 0;
         int actions = 0;
         int skippedWarnings = 0;
-        for (var action : plan.actions()) {
+        for (OpenJdkCompilePlan.Action action : plan.actions()) {
             String label = "Action " + (actions + 1) + " (@" + action.name() + ")";
-            var sources = new LinkedHashMap<Path, TextDocumentSnapshot>();
-            var implicit = new LinkedHashMap<Path, TextDocumentSnapshot>();
+            Map<Path, TextDocumentSnapshot> sources = new LinkedHashMap<Path, TextDocumentSnapshot>();
+            Map<Path, TextDocumentSnapshot> implicit = new LinkedHashMap<Path, TextDocumentSnapshot>();
             try {
                 for (Path file : action.sources()) {
                     sources.put(file, readSource(file, action.encoding()));
                 }
+
                 for (Path file : implicitSources(checkout, plan.sourcePath(), action, sources, previous.keySet())) {
                     implicit.put(file, readSource(file, action.encoding()));
                 }
@@ -182,8 +190,9 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
                 unsupported.add(label + " has source bytes that cannot be decoded as " + action.encoding());
                 break;
             }
+
             actions++;
-            var visible = new LinkedHashMap<>(previous);
+            Map<Path, TextDocumentSnapshot> visible = new LinkedHashMap<>(previous);
             visible.putAll(implicit);
             visible.putAll(sources);
             WorkspaceSnapshot workspace = workspace(test, visible, actions);
@@ -195,19 +204,23 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
             if (!syntaxRejected && errors.isEmpty()) {
                 checkSemantics(workspace, parsed, deadline, errors);
             }
+
             if (!action.fails() && !errors.isEmpty()) {
                 mismatches.add(label + " should succeed. SST reported " + errors);
             } else if (action.fails() && action.reference() == null && errors.isEmpty()) {
                 mismatches.add(label + " should fail. SST reported no errors");
             }
+
             if (action.reference() != null) {
                 skippedWarnings += checkReference(action, parsed, errors, label, mismatches, unsupported);
             }
+
             if (!action.fails()) {
                 // Later actions get the sources of earlier successful javac actions, even when SST found a mismatch.
                 previous.putAll(sources);
             }
         }
+
         if (plan.actions().isEmpty() && test.javaSource()) {
             try {
                 Map<Path, TextDocumentSnapshot> source = Map.of(test.file(), readSource(test.file(), UTF_8));
@@ -234,39 +247,43 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
         String label,
         List<String> mismatches
     ) throws IOException {
-        var parsed = new LinkedHashMap<Path, ParsedSource>();
+        Map<Path, ParsedSource> parsed = new LinkedHashMap<Path, ParsedSource>();
         var diagnostics = new DiagnosticCollector<JavaFileObject>();
-        var inputs = sources.values().stream().map(SourceFile::new).toList();
+        List<SourceFile> inputs = sources.values().stream().map(SourceFile::new).toList();
         List<String> options = preview
             ? List.of("-proc:none", "--enable-preview", "--source",
                 Integer.toString(Runtime.version().feature()))
             : List.of("-proc:none");
-        try (var fileManager = compiler.getStandardFileManager(diagnostics, Locale.ROOT, UTF_8)) {
-            var task = (JavacTask) compiler.getTask(null, fileManager, diagnostics, options, null, inputs);
+        try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, Locale.ROOT, UTF_8)) {
+            JavacTask task = (JavacTask) compiler.getTask(null, fileManager, diagnostics, options, null, inputs);
             task.parse();
         }
 
-        for (var entry : sources.entrySet()) {
+        for (Map.Entry<Path, TextDocumentSnapshot> entry : sources.entrySet()) {
             var request = new FeatureRequestContext(workspace, entry.getValue(), CancellationToken.none(), deadline);
             var result = JavaSyntaxParser.parseWithDiagnostics(request);
-            var javacErrors = diagnostics.getDiagnostics().stream()
+            List<Diagnostic<? extends JavaFileObject>> javacErrors = diagnostics.getDiagnostics().stream()
                 .filter(diagnostic -> diagnostic.getKind() == Diagnostic.Kind.ERROR && diagnostic.getSource() != null
                     && diagnostic.getSource().toUri().equals(entry.getKey().toUri()))
                 .toList();
-            var syntaxErrors = result.diagnostics().stream()
+            List<SyntaxDiagnostic> syntaxErrors = result.diagnostics().stream()
                 .filter(diagnostic -> diagnostic.severity() == SyntaxDiagnostic.Severity.ERROR).toList();
             if (javacErrors.isEmpty() != syntaxErrors.isEmpty()) {
                 mismatches.add(label + " " + entry.getKey().getFileName() + " syntax differs. javac: "
                     + javacErrors.stream().map(Diagnostic::getCode).toList() + ", SST: " + syntaxErrors);
             }
+
             if (!entry.getValue().text().equals(JavaParserTestSupport.syntaxText(result.tree()))) {
                 mismatches.add(label + " " + entry.getKey().getFileName() + " failed the exact source round trip");
             }
+
             parsed.put(entry.getKey(), new ParsedSource(result, javacErrors));
         }
+
         if (diagnostics.getDiagnostics().stream()
             .anyMatch(diagnostic -> diagnostic.getKind() == Diagnostic.Kind.ERROR && diagnostic.getSource() == null))
             throw new IOException("javac could not initialize its parser: " + diagnostics.getDiagnostics());
+
         return parsed;
     }
 
@@ -285,17 +302,19 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
         if (sourcePath.isEmpty())
             return List.of();
 
-        var loaded = new LinkedHashSet<Path>();
-        var options = new ArrayList<>(List.of("-proc:none"));
+        Set<Path> loaded = new LinkedHashSet<Path>();
+        List<String> options = new ArrayList<>(List.of("-proc:none"));
         if (action.preview()) {
             options.addAll(List.of("--enable-preview", "--source", Integer.toString(Runtime.version().feature())));
         }
-        try (var fileManager = compiler.getStandardFileManager(null, Locale.ROOT, action.encoding())) {
+
+        try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, Locale.ROOT,
+            action.encoding())) {
             fileManager.setLocationFromPaths(StandardLocation.SOURCE_PATH, sourcePath);
             fileManager.setLocationFromPaths(StandardLocation.CLASS_PATH, List.of());
-            var inputs = sources.values().stream().map(SourceFile::new).toList();
+            List<SourceFile> inputs = sources.values().stream().map(SourceFile::new).toList();
             var diagnostics = new DiagnosticCollector<JavaFileObject>();
-            var task = (JavacTask) compiler.getTask(Writer.nullWriter(), fileManager, diagnostics, options, null,
+            JavacTask task = (JavacTask) compiler.getTask(Writer.nullWriter(), fileManager, diagnostics, options, null,
                 inputs);
             task.addTaskListener(new TaskListener() {
                 @Override
@@ -305,11 +324,13 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
                     }
                 }
             });
+
             task.parse();
             // Semantics are never checked after a syntax error, and javac can fail assertions attributing such trees.
             if (diagnostics.getDiagnostics().stream()
                 .anyMatch(diagnostic -> diagnostic.getKind() == Diagnostic.Kind.ERROR))
                 return List.of();
+
             task.analyze();
         }
 
@@ -325,22 +346,23 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
         Deadline deadline,
         List<ReportedError> errors
     ) {
-        for (var entry : parsed.entrySet()) {
+        for (Map.Entry<Path, ParsedSource> entry : parsed.entrySet()) {
             Path source = entry.getKey();
-            var tree = entry.getValue().sst().tree();
+            SyntaxTree tree = entry.getValue().sst().tree();
             var request = new FeatureRequestContext(workspace, tree.documentSnapshot(), CancellationToken.none(),
                 deadline);
-            var symbols = services.capture(request);
+            JavaWorkspaceAnalysis symbols = services.capture(request);
             var model = JavaSemanticAnalyzer.analyzeFacts(tree, symbols, request::checkActive);
-            var snapshot = tree.documentSnapshot();
+            TextDocumentSnapshot snapshot = tree.documentSnapshot();
             var ruleContext = new JavaRuleContext(snapshot.uri(), snapshot.text(), model, symbols,
                 request::checkActive);
-            var diagnostics = new ArrayList<>(model.diagnostics());
-            for (var provider : JavaInspectionRegistries.coreRuleProviders()) {
+            List<SemanticDiagnostic> diagnostics = new ArrayList<>(model.diagnostics());
+            for (JavaInspectionRuleProvider provider : JavaInspectionRegistries.coreRuleProviders()) {
                 diagnostics.addAll(JavaInspectionRuleEngine.collectDiagnostics(provider, ruleContext));
             }
+
             request.checkActive();
-            for (var diagnostic : diagnostics) {
+            for (SemanticDiagnostic diagnostic : diagnostics) {
                 if (diagnostic.severity() == SemanticDiagnostic.Severity.ERROR) {
                     errors.add(new ReportedError(source, diagnostic.code(), diagnostic.startOffset(),
                         diagnostic.endOffset()));
@@ -351,14 +373,15 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
 
     private static List<ReportedError> collectErrors(Map<Path, ParsedSource> parsed) {
         List<ReportedError> errors = new ArrayList<>();
-        for (var entry : parsed.entrySet()) {
-            for (var diagnostic : entry.getValue().sst().diagnostics()) {
+        for (Map.Entry<Path, ParsedSource> entry : parsed.entrySet()) {
+            for (SyntaxDiagnostic diagnostic : entry.getValue().sst().diagnostics()) {
                 if (diagnostic.severity() == SyntaxDiagnostic.Severity.ERROR) {
                     errors.add(new ReportedError(entry.getKey(), diagnostic.code(), diagnostic.startOffset(),
                         diagnostic.endOffset()));
                 }
             }
         }
+
         return errors;
     }
 
@@ -374,8 +397,8 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
         List<String> mismatches,
         List<String> unsupported
     ) throws IOException {
-        var unmatched = new ArrayList<>(errors);
-        var javacErrors = new ArrayList<JavacError>();
+        List<ReportedError> unmatched = new ArrayList<>(errors);
+        List<JavacError> javacErrors = new ArrayList<JavacError>();
         boolean complete = true;
         boolean hasOutput = false;
         int warnings = 0;
@@ -383,18 +406,20 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
             String text = line.strip();
             if (text.isEmpty() || REFERENCE_SUMMARY.matcher(text).matches())
                 continue;
+
             if (REFERENCE_WARNING.matcher(text).matches()) {
                 warnings++;
                 continue;
             }
 
             hasOutput = true;
-            var diagnostic = REFERENCE_DIAGNOSTIC.matcher(text);
+            Matcher diagnostic = REFERENCE_DIAGNOSTIC.matcher(text);
             if (!diagnostic.matches()) {
                 unsupported.add(label + " has an unsupported reference line: " + text);
                 complete = false;
                 continue;
             }
+
             String file = diagnostic.group(1).replace('\\', '/');
             List<Path> candidates = parsed.keySet().stream().filter(path -> path.endsWith(file)).toList();
             if (candidates.size() != 1) {
@@ -402,14 +427,17 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
                 complete = false;
                 continue;
             }
+
             Path source = candidates.getFirst();
             ParsedSource result = parsed.get(source);
-            var snapshot = result.sst().tree().documentSnapshot();
+            TextDocumentSnapshot snapshot = result.sst().tree().documentSnapshot();
             int row = Integer.parseInt(diagnostic.group(2));
             int column = Integer.parseInt(diagnostic.group(3));
             String code = diagnostic.group(4);
-            var javacSyntaxError = result.javacErrors().stream().filter(error -> error.getCode().equals(code)
-                && error.getLineNumber() == row && error.getColumnNumber() == column).findFirst();
+            Optional<Diagnostic<? extends JavaFileObject>> javacSyntaxError = result.javacErrors().stream()
+                .filter(error -> error.getCode().equals(code)
+                    && error.getLineNumber() == row && error.getColumnNumber() == column)
+                .findFirst();
             int offset = javacSyntaxError.isPresent()
                 ? Math.toIntExact(javacSyntaxError.get().getPosition())
                 : referenceOffset(snapshot, row, column);
@@ -422,9 +450,9 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
             }
 
             String expectation = text + " (" + String.join(" or ", expected.stream().sorted().toList()) + ")";
-            var matching = unmatched.stream().filter(error -> error.source().equals(source)
+            Optional<ReportedError> matching = unmatched.stream().filter(error -> error.source().equals(source)
                 && expected.contains(error.code()) && coversReference(error, snapshot.text(), offset)).findFirst();
-            var misplaced = matching.isPresent()
+            Optional<ReportedError> misplaced = matching.isPresent()
                 ? matching
                 : unmatched.stream()
                     .filter(error -> error.source().equals(source) && expected.contains(error.code())
@@ -437,11 +465,13 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
                 mismatches.add(label + " expected " + expectation + ". SST reported " + errors);
             }
         }
+
         if (action.fails() && !hasOutput) {
             unsupported.add(label + " has no diagnostic details in " + action.reference().getFileName());
         }
+
         if (action.fails() && complete && hasOutput && javacErrors.size() < JAVAC_ERROR_LIMIT) {
-            var surplus = unmatched.stream().filter(error -> javacErrors.stream()
+            List<ReportedError> surplus = unmatched.stream().filter(error -> javacErrors.stream()
                 .noneMatch(javac -> javac.source().equals(error.source())
                     && coversReference(error, parsed.get(error.source()).text(), javac.offset())))
                 .filter(error -> !SST_FLOW_CODES.contains(error.code())
@@ -451,6 +481,7 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
                 mismatches.add(label + " reported errors javac does not: " + surplus);
             }
         }
+
         return warnings;
     }
 
@@ -468,8 +499,8 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
         if (!javacErrors.stream().allMatch(javac -> JAVAC_FLOW_CODES.contains(javac.code())))
             return false;
 
-        var order = List.copyOf(parsed.keySet());
-        var first = javacErrors.stream()
+        List<Path> order = List.copyOf(parsed.keySet());
+        JavacError first = javacErrors.stream()
             .min(Comparator.comparingInt((JavacError javac) -> order.indexOf(javac.source()))
                 .thenComparingInt(JavacError::offset))
             .orElseThrow();
@@ -485,15 +516,18 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
         if ("compiler.err.cant.infer.local.var.type".equals(code)
             && referenceLine.endsWith("(compiler.misc.local.self.ref)"))
             return Set.of("SEM_SELF_REFERENCING_VAR");
-        var problem = PROBLEM_DETAIL.matcher(referenceLine);
+
+        Matcher problem = PROBLEM_DETAIL.matcher(referenceLine);
         if (problem.find())
             return PROBLEM_CODES.get(problem.group(1));
+
         return SEMANTIC_CODES.get(code);
     }
 
     private static boolean coversReference(ReportedError error, String source, int offset) {
         if (error.covers(offset))
             return true;
+
         if (offset < 0 || offset >= source.length())
             return false;
 
@@ -503,39 +537,48 @@ public final class OpenJdkJavacChecks implements AutoCloseable {
             while (type < source.length() && Character.isWhitespace(source.charAt(type))) {
                 type++;
             }
+
             return type > offset + "new".length() && error.covers(type);
         }
+
         // javac points at the selector dot or call parenthesis; SST reports on the identifier.
+
         if (source.charAt(offset) == '.' && SELECTOR_CODES.contains(error.code())) {
             int selector = offset + 1;
             while (selector < source.length() && Character.isWhitespace(source.charAt(selector))) {
                 selector++;
             }
+
             return error.covers(selector);
         }
+
         if (source.charAt(offset) == '(' && error.code().equals("SEM_UNCAUGHT_CHECKED_EXCEPTION")) {
             int name = offset - 1;
             while (name >= 0 && Character.isWhitespace(source.charAt(name))) {
                 name--;
             }
+
             return error.covers(name);
         }
+
         return false;
     }
 
     private static int referenceOffset(TextDocumentSnapshot source, int row, int column) throws IOException {
-        var lines = source.lineMap();
+        LineMap lines = source.lineMap();
         if (row > 0 && row <= lines.lineCount() && column > 0) {
             int end = lines.lineEnd(row - 1);
             int currentColumn = 1;
             for (int offset = lines.lineStart(row - 1); offset <= end; offset++) {
                 if (currentColumn == column)
                     return offset;
+
                 if (offset < end) {
                     currentColumn += source.text().charAt(offset) == '\t' ? 8 - (currentColumn - 1) % 8 : 1;
                 }
             }
         }
+
         throw new IOException("Reference location outside " + source.uri() + ":" + row + ":" + column);
     }
 

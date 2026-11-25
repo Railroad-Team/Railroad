@@ -27,20 +27,26 @@ public record Layout(Tree<LayoutItem> tree) {
         switch (node.getName()) {
             case "HSplit" :
                 return Either.left(new RRHBox());
+
             case "VSplit" :
                 return Either.left(new RRVBox());
+
             case "FileExplorer" :
                 var fileExplorer = new RRVBox();
                 fileExplorer.getChildren().add(new Text("File Explorer"));
                 return Either.left(fileExplorer);
+
             case "TextEditor" :
                 return null;
+
             case "Terminal" :
                 return Either.left(new TerminalBuilder().newTerminal().getTerminal());
+
             case "GradleTasks" :
                 var gradleTasks = new RRVBox();
                 gradleTasks.getChildren().add(new Text("Gradle Tasks"));
                 return Either.left(gradleTasks);
+
             default :
                 throw new IllegalArgumentException("Unknown layout item: " + node.getName());
         }
@@ -72,7 +78,9 @@ public record Layout(Tree<LayoutItem> tree) {
         // }
     }
 
-    /** Prints the item hierarchy using the tree's diagnostic output. */
+    /**
+     * Prints the item hierarchy using the tree's diagnostic output.
+     */
     public void print() {
         tree.print();
     }

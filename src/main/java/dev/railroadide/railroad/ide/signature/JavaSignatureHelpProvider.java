@@ -17,11 +17,14 @@ import java.util.Map;
 import java.util.List;
 import java.util.Set;
 
-/** Java parameter information from the SST argument list, semantic resolver and captured symbol index. */
+/**
+ * Java parameter information from the SST argument list, semantic resolver and captured symbol index.
+ */
 public record JavaSignatureHelpProvider(Function<RequestContext, JavaWorkspaceAnalysis> analysis)
-    implements
-        SignatureHelpProvider {
-    /** Uses the shared Java workspace analysis. */
+    implements SignatureHelpProvider {
+    /**
+     * Uses the shared Java workspace analysis.
+     */
     public JavaSignatureHelpProvider() {
         this(JavaLanguageSupport.analysisContextProvider()::index);
     }
@@ -41,7 +44,7 @@ public record JavaSignatureHelpProvider(Function<RequestContext, JavaWorkspaceAn
 
     @Override
     public FeatureResult<SignatureHelp> compute(FeatureRequestContext context, int caret) {
-        var result = compute(context, caret, false);
+        FeatureResult<List<SignatureHelp>> result = compute(context, caret, false);
         return new FeatureResult<>(context, result.value().isEmpty() ? null : result.value().getFirst());
     }
 
@@ -55,12 +58,15 @@ public record JavaSignatureHelpProvider(Function<RequestContext, JavaWorkspaceAn
         if (!(context.documentSnapshot() instanceof TextDocumentSnapshot text) || !"java".equals(text.languageId())
             || caret <= 0 || caret > text.text().length())
             return new FeatureResult<>(context, List.of());
+
         var tree = JavaSyntaxParser.parse(context);
-        var arguments = argumentListAt(tree.root(), caret);
+        SyntaxNode arguments = argumentListAt(tree.root(), caret);
         if (arguments == null)
             return new FeatureResult<>(context, List.of());
-        var workspaceAnalysis = analysis.apply(context);
-        var result = JavaSemanticAnalyzer.signatureHelp(tree, arguments, caret, workspaceAnalysis, includeOverloads,
+
+        JavaWorkspaceAnalysis workspaceAnalysis = analysis.apply(context);
+        List<SignatureHelp> result = JavaSemanticAnalyzer.signatureHelp(tree, arguments, caret, workspaceAnalysis,
+            includeOverloads,
             workspaceAnalysis.attachedSignatures(JavaLibrarySources.shared(), context::checkActive),
             context::checkActive);
         context.checkActive();
@@ -76,17 +82,21 @@ public record JavaSignatureHelpProvider(Function<RequestContext, JavaWorkspaceAn
                 for (SyntaxNode child : node.children()) {
                     if (child.start() >= caret)
                         break;
+
                     if (child.kind().equals(JavaSyntaxKinds.tokenKind(JavaTokenType.OPEN_PAREN))) {
                         inside = true;
                     }
+
                     if (child.kind().equals(JavaSyntaxKinds.tokenKind(JavaTokenType.CLOSE_PAREN))) {
                         inside = false;
                     }
                 }
+
                 if (inside) {
                     arguments = node;
                 }
             }
+
             SyntaxNode next = null;
             for (SyntaxNode child : node.children()) {
                 if (child.start() < caret && caret <= child.end()) {
@@ -94,9 +104,10 @@ public record JavaSignatureHelpProvider(Function<RequestContext, JavaWorkspaceAn
                     break;
                 }
             }
+
             node = next;
         }
+
         return arguments;
     }
-
 }

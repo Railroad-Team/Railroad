@@ -27,6 +27,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolDescriptor;
+import java.io.InputStream;
+import java.util.Queue;
+import java.util.concurrent.Future;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -40,11 +44,12 @@ public class JavaLibrarySymbolIndexTest {
     @Test
     public void countsUniqueRootsAndStopsReportingScanProgressWhileMerging() throws IOException {
         var registry = new BackgroundActivities();
-        var samples = new ConcurrentLinkedQueue<BackgroundActivities.Activity>();
+        Queue<BackgroundActivities.Activity> samples = new ConcurrentLinkedQueue<BackgroundActivities.Activity>();
         Path first = jar("one.jar", "sample/One", "one");
         Path second = jar("two.jar", "sample/Two", "two");
-        try (var activity = registry.start("index");
-            var observation = registry.observe(() -> samples.add(registry.running().getFirst()))) {
+        try (BackgroundActivities.Handle activity = registry.start("index");
+            BackgroundActivities.Subscription observation = registry
+                .observe(() -> samples.add(registry.running().getFirst()))) {
             ScopedValue.where(ActivityProgress.CURRENT, activity)
                 .run(() -> JavaLibrarySymbolIndex.build(List.of(first, second, first), ACTIVE, null));
             assertTrue(samples.stream().anyMatch(sample -> sample.total() == 2 && sample.completed() == 2));
@@ -78,21 +83,22 @@ public class JavaLibrarySymbolIndexTest {
         Path second = jar("second.jar", "sample/Duplicate", "secondMethod");
         var cache = new JavaLibraryStubCache(temp.resolve("cache"));
         var start = new CyclicBarrier(2);
-        var classpaths = List.of(List.of(first, shared, second), List.of(second, temp.resolve("./shared.jar"), first));
+        List<List<Path>> classpaths = List.of(List.of(first, shared, second),
+            List.of(second, temp.resolve("./shared.jar"), first));
         try (var workers = Executors.newFixedThreadPool(2)) {
-            var indexes = classpaths.stream().map(roots -> workers.submit(() -> {
+            List<Future<JavaLibrarySymbolIndex>> indexes = classpaths.stream().map(roots -> workers.submit(() -> {
                 start.await(5, TimeUnit.SECONDS);
                 return JavaLibrarySymbolIndex.build(roots, ACTIVE, cache);
             })).toList();
-            var left = indexes.getFirst().get(10, TimeUnit.SECONDS);
-            var right = indexes.getLast().get(10, TimeUnit.SECONDS);
+            JavaLibrarySymbolIndex left = indexes.getFirst().get(10, TimeUnit.SECONDS);
+            JavaLibrarySymbolIndex right = indexes.getLast().get(10, TimeUnit.SECONDS);
             assertNotNull(left.lookupClassStub("sample.Shared"));
             assertSame(left.lookupClassStub("sample.Shared"), right.lookupClassStub("sample.Shared"));
-            var locations = List.of(left, right).stream().map(index -> workers.submit(() -> {
+            List<Future<DocumentUri>> locations = List.of(left, right).stream().map(index -> workers.submit(() -> {
                 start.await(5, TimeUnit.SECONDS);
                 return index.binaryLocations().get("sample.Shared");
             })).toList();
-            var location = locations.getFirst().get(10, TimeUnit.SECONDS);
+            DocumentUri location = locations.getFirst().get(10, TimeUnit.SECONDS);
             assertEquals(JavaLibrarySymbolIndex.archiveEntry(shared, "sample/Shared.class"), location);
             assertSame(location, locations.getLast().get(10, TimeUnit.SECONDS));
             assertEquals("firstMethod", left.lookupClassStub("sample.Duplicate").methods().getFirst().name());
@@ -104,12 +110,13 @@ public class JavaLibrarySymbolIndexTest {
 
     @Test
     public void cancelledArchiveLoadCanBeRetriedWithTheSameCache() throws IOException {
-        var archive = jar("shared.jar", "sample/Shared", "sharedMethod");
+        Path archive = jar("shared.jar", "sample/Shared", "sharedMethod");
         var cache = new JavaLibraryStubCache(temp.resolve("cache"));
         ActivityProgress progress = (phase, unit, initial, total) -> completed -> {
             if (phase.equals("railroad.activity.archive_entries") && completed == 1)
                 throw new CancellationException("cancel archive load");
         };
+
         assertThrows(CancellationException.class, () -> ScopedValue.where(ActivityProgress.CURRENT, progress)
             .run(() -> JavaLibrarySymbolIndex.build(List.of(archive), ACTIVE, cache)));
         var retry = JavaLibrarySymbolIndex.build(List.of(archive), ACTIVE, cache);
@@ -118,15 +125,16 @@ public class JavaLibrarySymbolIndexTest {
 
     @Test
     public void partiallyShadowedArchivesRetainOnlyVisibleStubsAndCanRestoreOthers() throws Exception {
-        var first = jar("first.jar", "sample/Duplicate", "winner");
-        var second = jar("second.jar", Map.of("sample/Duplicate", "fallback", "sample/Other", "other"));
+        Path first = jar("first.jar", "sample/Duplicate", "winner");
+        Path second = jar("second.jar", Map.of("sample/Duplicate", "fallback", "sample/Other", "other"));
         var cache = new JavaLibraryStubCache(temp.resolve("cache"));
         var combined = JavaLibrarySymbolIndex.build(List.of(first, second), ACTIVE, cache);
-        var shadowed = unmaskedStub(second, cache);
+        WeakReference<ClassStub> shadowed = unmaskedStub(second, cache);
         for (int i = 0; i < 40 && !shadowed.refersTo(null); i++) {
             System.gc();
             Thread.sleep(25);
         }
+
         assertTrue(shadowed.refersTo(null), "The combined index retained a shadowed stub");
         var unmasked = JavaLibrarySymbolIndex.build(List.of(second), ACTIVE, cache);
         assertEquals("fallback", unmasked.lookupClassStub("sample.Duplicate").methods().getFirst().name());
@@ -175,6 +183,7 @@ public class JavaLibrarySymbolIndexTest {
         for (int index = 0; index < 32; index++) {
             roots.add(jar("library" + index + ".jar", "sample/Type" + index, "method"));
         }
+
         var checks = new AtomicInteger();
 
         assertThrows(CancellationException.class, () -> JavaLibrarySymbolIndex.build(roots, () -> {
@@ -190,17 +199,18 @@ public class JavaLibrarySymbolIndexTest {
     public void firstLocationLookupUsesTheScannedEntryAfterArchiveRemoval() throws IOException {
         Path archive = temp.resolve("with space.jmod");
         try (var output = new JarOutputStream(Files.newOutputStream(archive));
-            var bytes = ClassReader.class.getResourceAsStream("ClassReader.class")) {
+            InputStream bytes = ClassReader.class.getResourceAsStream("ClassReader.class")) {
             output.putNextEntry(new JarEntry("classes/odd path/#%/Reader.class"));
             bytes.transferTo(output);
         }
+
         var index = JavaLibrarySymbolIndex.build(List.of(archive), ACTIVE, new JavaLibraryStubCache(temp));
         DocumentUri expected = DocumentUri.parse("jar:" + archive.toUri().toASCIIString()
             + "!/classes/odd%20path/%23%25/Reader.class");
         Files.delete(archive);
 
         String name = ClassReader.class.getName();
-        var declaration = index.declarationShard(name).declarations().getFirst();
+        SymbolDescriptor declaration = index.declarationShard(name).declarations().getFirst();
         assertEquals(expected, declaration.locations().getFirst().uri());
         assertSame(declaration.locations().getFirst().uri(), index.binaryLocations().get(name));
     }
@@ -239,7 +249,7 @@ public class JavaLibrarySymbolIndexTest {
     private Path jar(String fileName, Map<String, String> classes) throws IOException {
         Path archive = temp.resolve(fileName);
         try (var output = new JarOutputStream(Files.newOutputStream(archive))) {
-            for (var entry : classes.entrySet()) {
+            for (Map.Entry<String, String> entry : classes.entrySet()) {
                 var writer = new ClassWriter(0);
                 writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC | Opcodes.ACC_ABSTRACT, entry.getKey(), null,
                     "java/lang/Object", null);

@@ -56,7 +56,7 @@ public class JavaSourceSymbolIdsTest {
                 void again(List value) { List copy = value; }
             }
             """;
-        var symbols = ids(declarations(source));
+        List<SymbolId> symbols = ids(declarations(source));
         var outerType = JavaSymbolIds.type("sample.Example");
         var nestedType = JavaSymbolIds.type("sample.Example$Nested");
         var outer = JavaSymbolIds.method(outerType, "outer", List.of("java.util.List"));
@@ -107,7 +107,7 @@ public class JavaSourceSymbolIdsTest {
         List<SymbolId> original = ids(nested);
         assertEquals(4, new HashSet<>(original).size());
         assertTrue(original.stream().allMatch(id -> id.value().contains("/localType/")));
-        var edited = declarations(source.replace("{", "{ /* nested comment */\n"))
+        List<Symbol> edited = declarations(source.replace("{", "{ /* nested comment */\n"))
             .stream().filter(symbol -> symbol.simpleName().equals("Nested")).toList();
         assertEquals(original, ids(edited));
     }
@@ -135,6 +135,7 @@ public class JavaSourceSymbolIdsTest {
             && JavaSourceSymbolIds.child(node, "JAVA_ANONYMOUS_CLASS_BODY") != null) {
             output.add(node);
         }
+
         for (SyntaxNode child : node.children()) {
             collectAnonymous(child, output);
         }

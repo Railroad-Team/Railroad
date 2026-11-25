@@ -49,8 +49,10 @@ public record CodeAction(
         diagnostics = List.copyOf(diagnostics);
         if (title.isBlank())
             throw new IllegalArgumentException("Action title must not be blank");
+
         if (unavailableReason != null && unavailableReason.isBlank())
             throw new IllegalArgumentException("Unavailable actions need a reason");
+
         if (unavailableReason != null && edit != null)
             throw new IllegalArgumentException("Unavailable actions cannot carry an edit");
     }

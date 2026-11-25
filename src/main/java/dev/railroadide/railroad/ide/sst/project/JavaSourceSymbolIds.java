@@ -11,7 +11,9 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
 import java.util.*;
 
-/** Java source identities. Lexical paths count syntax nodes, never trivia or character offsets. */
+/**
+ * Java source identities. Lexical paths count syntax nodes, never trivia or character offsets.
+ */
 public final class JavaSourceSymbolIds {
     private JavaSourceSymbolIds() {
     }
@@ -48,27 +50,35 @@ public final class JavaSourceSymbolIds {
     private static Optional<SymbolId> deriveValidSymbolId(Symbol symbol, JavaSymbolIndex index, Resolver resolver) {
         if (symbol.id().isPresent())
             return symbol.id();
+
         SyntaxNode node = symbol.declaration().orElse(null);
         String qualified = symbol.qualifiedName().orElse(symbol.simpleName());
         if (symbol.kind() == JavaSymbolKind.IMPORT || symbol.kind() == JavaSymbolKind.UNKNOWN)
             return Optional.empty();
+
         if (symbol.kind() == JavaSymbolKind.PACKAGE)
             return Optional.of(JavaSymbolIds.packageId("", qualified));
+
         if (symbol.kind() == JavaSymbolKind.MODULE)
             return Optional.of(JavaSymbolIds.module(qualified));
+
         if (isType(symbol.kind().id())) {
             if (node != null && node.kind().id().equals("JAVA_ANONYMOUS_CLASS_BODY")
                 && !JavaDeclarationAnalysis.isEnumConstantBody(node)) {
                 node = node.parent().orElse(null);
             }
+
             if (node != null)
                 return Optional.of(resolver != null && isTypeNode(node)
                     ? resolver.declarationId(node)
                     : typeId(node, index, resolver));
+
             return Optional.of(JavaSymbolIds.type(qualified));
         }
+
         if (node == null)
             return Optional.empty();
+
         SyntaxNode owner = enclosingDeclaration(node);
         SymbolId ownerId = owner == null
             ? JavaSymbolIds.packageId("", packageName(node))
@@ -100,6 +110,7 @@ public final class JavaSourceSymbolIds {
             if (isDeclaration(current))
                 return current;
         }
+
         return null;
     }
 
@@ -131,6 +142,7 @@ public final class JavaSourceSymbolIds {
     private static SymbolId computeDeclarationId(SyntaxNode node, JavaSymbolIndex index, Resolver resolver) {
         if (isTypeNode(node))
             return typeId(node, index, resolver);
+
         SyntaxNode owner = enclosingDeclaration(node);
         SymbolId ownerId = owner == null
             ? JavaSymbolIds.packageId("", packageName(node))
@@ -148,6 +160,7 @@ public final class JavaSourceSymbolIds {
             return JavaSymbolIds.anonymous(owner == null
                 ? JavaSymbolIds.packageId("", packageName(node))
                 : declarationId(owner, index, resolver), lexicalPath(node, owner));
+
         String name = declarationName(node);
         if (owner != null) {
             SymbolId ownerId = declarationId(owner, index, resolver);
@@ -155,6 +168,7 @@ public final class JavaSourceSymbolIds {
                 || ownerId.value().contains("/anonymous/"))
                 return JavaSymbolIds.localType(ownerId, lexicalPath(node, owner), name);
         }
+
         String qualified = typeQualifiedName(node);
         return JavaSymbolIds.type(qualified);
     }
@@ -187,11 +201,13 @@ public final class JavaSourceSymbolIds {
         SyntaxNode list = parameterList(callable);
         if (list == null)
             return List.of();
+
         List<String> result = new ArrayList<>();
         for (SyntaxNode parameter : list.children()) {
             if (!parameter.kind().id().equals("JAVA_PARAMETER")
                 && !parameter.kind().id().equals("JAVA_RECORD_COMPONENT"))
                 continue;
+
             SyntaxNode type = child(parameter, "JAVA_TYPE_REFERENCE");
             String text = type == null ? "java.lang.Object" : JavaSemanticAnalyzer.canonicalTypeText(type);
             text = erase(text == null ? "java.lang.Object" : text);
@@ -202,8 +218,10 @@ public final class JavaSourceSymbolIds {
             while ((bound = typeVariableBound(erasedBase, callable)) != null) {
                 if (!visited.add(erasedBase))
                     throw new IllegalArgumentException("Cyclic type variable bounds");
+
                 erasedBase = erase(bound);
             }
+
             String canonical = qualify(erasedBase, callable, index, resolver);
             int rank = (text.length() - base.length()) / 2;
             for (SyntaxNode part : parameter.children()) {
@@ -211,8 +229,10 @@ public final class JavaSourceSymbolIds {
                     rank++;
                 }
             }
+
             result.add(canonical + "[]".repeat(rank));
         }
+
         return List.copyOf(result);
     }
 
@@ -226,6 +246,7 @@ public final class JavaSourceSymbolIds {
         SyntaxNode list = child(callable, "JAVA_PARAMETER_LIST");
         if (list != null || !callable.kind().id().equals("JAVA_RECORD_COMPACT_CONSTRUCTOR"))
             return list;
+
         SyntaxNode owner = enclosingDeclaration(callable);
         return owner == null ? null : child(owner, "JAVA_RECORD_HEADER");
     }
@@ -258,29 +279,37 @@ public final class JavaSourceSymbolIds {
             || Set.of("void", "boolean", "byte", "short", "int", "long", "float", "double", "char", "var", "?")
                 .contains(name))
             return name;
+
         String first = name.contains(".") ? name.substring(0, name.indexOf('.')) : name;
         if (name.contains(".") && Character.isLowerCase(name.charAt(0)))
             return normalizeNested(name, index);
+
         for (SyntaxNode current = context; current != null; current = current.parent().orElse(null)) {
             if (isTypeNode(current) && declarationName(current).equals(first))
                 return typeQualifiedName(current) + name.substring(first.length()).replace('.', '$');
+
             SyntaxNode body = child(current, "JAVA_CLASS_BODY");
             if (body == null) {
                 body = child(current, "JAVA_INTERFACE_BODY");
             }
+
             if (body == null && current.parent().isEmpty()) {
                 body = current;
             }
+
             if (body == null)
                 continue;
+
             for (SyntaxNode nested : body.children()) {
                 if (isTypeNode(nested) && declarationName(nested).equals(first))
                     return typeQualifiedName(nested) + name.substring(first.length()).replace('.', '$');
             }
         }
+
         SyntaxNode root = root(context);
         if (resolver != null && root == resolver.root)
             return resolver.qualifiedNames.computeIfAbsent(name, key -> qualifyFileName(key, first, root, index));
+
         return qualifyFileName(name, first, root, index);
     }
 
@@ -288,42 +317,54 @@ public final class JavaSourceSymbolIds {
         for (SyntaxNode declaration : root.children()) {
             if (!declaration.kind().id().equals("JAVA_IMPORT_DECLARATION") || compactText(declaration).contains("*"))
                 continue;
+
             SyntaxNode target = child(declaration, "JAVA_IMPORT_TARGET");
             if (target == null)
                 continue;
+
             String imported = compactText(target);
             if (imported.endsWith("." + first))
                 return normalizeNested(imported + name.substring(first.length()), index);
         }
+
         String packageName = packageName(root);
         String packageType = packageName.isEmpty() ? name : packageName + "." + name;
         if (index != null && index.declaredQualifiedNames().contains(packageType))
             return normalizeNested(packageType, index);
+
         Set<String> candidates = new LinkedHashSet<>();
         boolean onDemandImport = false;
         if (knownType("java.lang." + first, index)) {
             candidates.add("java.lang." + name);
         }
+
         for (SyntaxNode declaration : root.children()) {
             if (!declaration.kind().id().equals("JAVA_IMPORT_DECLARATION") || !compactText(declaration).contains("*"))
                 continue;
+
             onDemandImport = true;
             SyntaxNode target = child(declaration, "JAVA_IMPORT_TARGET");
             if (target == null)
                 continue;
+
             String imported = compactText(target).replaceAll("\\.\\*$", "");
             if (knownType(imported + "." + first, index)) {
                 candidates.add(normalizeNested(imported + "." + name, index));
             }
         }
+
         if (candidates.size() > 1)
             throw new IllegalArgumentException("Ambiguous imported type: " + name);
+
         if (candidates.isEmpty() && onDemandImport)
             throw new IllegalArgumentException("Unresolved imported type: " + name);
+
         return candidates.isEmpty() ? packageType : candidates.iterator().next();
     }
 
-    /** Reuses source identities during a single analysis of one immutable compilation unit. */
+    /**
+     * Reuses source identities during a single analysis of one immutable compilation unit.
+     */
     public static final class Resolver {
         private final SyntaxNode root;
         private final JavaSymbolIndex index;
@@ -364,6 +405,7 @@ public final class JavaSourceSymbolIds {
                 id = computeDeclarationId(node, index, this);
                 declarationIds.put(node, id);
             }
+
             return id;
         }
 
@@ -382,6 +424,7 @@ public final class JavaSourceSymbolIds {
     private static boolean knownType(String name, JavaSymbolIndex index) {
         if (index != null && index.typeNames().contains(name))
             return true;
+
         try {
             Class.forName(name, false, ClassLoader.getPlatformClassLoader());
             return true;
@@ -393,11 +436,13 @@ public final class JavaSourceSymbolIds {
     private static String normalizeNested(String name, JavaSymbolIndex index) {
         if (index == null)
             return name;
+
         for (int dot = name.indexOf('.'); dot >= 0; dot = name.indexOf('.', dot + 1)) {
             String prefix = name.substring(0, dot);
             if (index.typeNames().contains(prefix))
                 return prefix + name.substring(dot).replace('.', '$');
         }
+
         return name;
     }
 
@@ -413,15 +458,19 @@ public final class JavaSourceSymbolIds {
             SyntaxNode parameters = child(current, "JAVA_TYPE_PARAMETERS");
             if (parameters == null)
                 continue;
+
             for (SyntaxNode parameter : parameters.children()) {
                 if (!parameter.kind().id().equals("JAVA_TYPE_PARAMETER"))
                     continue;
+
                 if (!declarationName(parameter).equals(name))
                     continue;
+
                 SyntaxNode bound = find(parameter, "JAVA_TYPE_REFERENCE");
                 return bound == null ? "java.lang.Object" : JavaSemanticAnalyzer.canonicalTypeText(bound);
             }
         }
+
         return null;
     }
 
@@ -436,12 +485,15 @@ public final class JavaSourceSymbolIds {
         for (SyntaxNode child : node.children()) {
             if (child.kind().id().equals("JAVA_PARAMETER_LIST"))
                 return last == null ? "<init>" : last;
+
             if (child instanceof SyntaxToken token && identifier(token)) {
                 if (isTypeNode(node) || node.kind().id().equals("JAVA_TYPE_PARAMETER"))
                     return JavaUnicodeEscapes.translate(token.text());
+
                 last = JavaUnicodeEscapes.translate(token.text());
             }
         }
+
         return last == null ? "<anonymous>" : last;
     }
 
@@ -458,6 +510,7 @@ public final class JavaSourceSymbolIds {
             && current != ancestor; current = current.parent().orElse(null)) {
             segments.add(current.kind().id() + ":" + siblingIndex(current));
         }
+
         Collections.reverse(segments);
         return String.join("/", segments);
     }
@@ -466,14 +519,17 @@ public final class JavaSourceSymbolIds {
         SyntaxNode parent = node.parent().orElse(null);
         if (parent == null)
             return 0;
+
         int index = 0;
         for (SyntaxNode sibling : parent.children()) {
             if (sibling == node)
                 return index;
+
             if (sibling.kind().equals(node.kind())) {
                 index++;
             }
         }
+
         return index;
     }
 
@@ -489,17 +545,20 @@ public final class JavaSourceSymbolIds {
             if (part.kind().id().equals(kind))
                 return part;
         }
+
         return null;
     }
 
     private static SyntaxNode find(SyntaxNode node, String kind) {
         if (node.kind().id().equals(kind))
             return node;
+
         for (SyntaxNode child : node.children()) {
             SyntaxNode found = find(child, kind);
             if (found != null)
                 return found;
         }
+
         return null;
     }
 
@@ -512,6 +571,7 @@ public final class JavaSourceSymbolIds {
     public static String compactText(SyntaxNode node) {
         if (node instanceof SyntaxToken token)
             return compactTokenText(token);
+
         var text = new StringBuilder();
         appendCompactText(node, text);
         return text.toString();
@@ -522,6 +582,7 @@ public final class JavaSourceSymbolIds {
             text.append(compactTokenText(token));
             return;
         }
+
         for (SyntaxNode child : node.children()) {
             appendCompactText(child, text);
         }
@@ -544,6 +605,7 @@ public final class JavaSourceSymbolIds {
         while (node.parent().isPresent()) {
             node = node.parent().orElseThrow();
         }
+
         return node;
     }
 
@@ -583,6 +645,7 @@ public final class JavaSourceSymbolIds {
                 result.append(character);
             }
         }
+
         return result.toString().replace("...", "[]");
     }
 }

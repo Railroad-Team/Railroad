@@ -33,13 +33,14 @@ public final class JavaStubSourceRenderer {
     public static String render(ClassStub topLevel, Map<String, ClassStub> classStubs, String origin) {
         String prefix = topLevel.getFullName() + "$";
         Map<String, List<ClassStub>> nested = new HashMap<>();
-        for (var entry : classStubs.entrySet()) {
+        for (Map.Entry<String, ClassStub> entry : classStubs.entrySet()) {
             ClassStub stub = entry.getValue();
             if (entry.getKey().startsWith(prefix) && stub.enclosingClassName() != null
                 && isMemberClass(stub)) {
                 nested.computeIfAbsent(stub.enclosingClassName(), _ -> new ArrayList<>()).add(stub);
             }
         }
+
         nested.values().forEach(list -> list.sort(Comparator.comparing(ClassStub::name)));
 
         var renderer = new JavaStubSourceRenderer(nested);
@@ -48,6 +49,7 @@ public final class JavaStubSourceRenderer {
         if (topLevel.packageName() != null && !topLevel.packageName().isEmpty()) {
             renderer.output.append("package ").append(topLevel.packageName()).append(";\n\n");
         }
+
         renderer.renderClass(topLevel, 0);
         return renderer.output.toString();
     }
@@ -73,9 +75,11 @@ public final class JavaStubSourceRenderer {
         if (isInterface || isEnum) {
             modifierMask &= ~(Modifier.ABSTRACT | Modifier.FINAL);
         }
+
         if (isRecord) {
             modifierMask &= ~Modifier.FINAL;
         }
+
         if (depth == 0) {
             modifierMask &= ~(Modifier.STATIC | Modifier.PRIVATE | Modifier.PROTECTED);
         }
@@ -101,8 +105,10 @@ public final class JavaStubSourceRenderer {
                 if (index > 0) {
                     output.append(", ");
                 }
+
                 output.append(type(components.get(index).type())).append(' ').append(components.get(index).name());
             }
+
             output.append(')');
         }
 
@@ -113,10 +119,12 @@ public final class JavaStubSourceRenderer {
             && !(stub.superClass() instanceof Type.ClassType named && named.name().equals("java.lang.Object"))) {
             output.append(" extends ").append(type(stub.superClass()));
         }
+
         if (!interfaces.isEmpty()) {
             output.append(isInterface ? " extends " : " implements ");
             appendTypes(interfaces);
         }
+
         output.append(" {\n");
 
         int memberDepth = depth + 1;
@@ -132,6 +140,7 @@ public final class JavaStubSourceRenderer {
         for (FieldStub field : stub.fields()) {
             if ((field.modifiers() & (Opcodes.ACC_SYNTHETIC | Opcodes.ACC_ENUM)) != 0 || components.contains(field))
                 continue;
+
             indent(memberDepth);
             appendModifiers(field.modifiers() & Modifier.fieldModifiers());
             output.append(type(field.type())).append(' ').append(field.name()).append(";\n");
@@ -140,12 +149,14 @@ public final class JavaStubSourceRenderer {
         for (ConstructorStub constructor : stub.constructors()) {
             if ((constructor.modifiers() & Opcodes.ACC_SYNTHETIC) != 0)
                 continue;
+
             indent(memberDepth);
             appendModifiers(constructor.modifiers() & Modifier.constructorModifiers());
             appendTypeParameters(constructor.typeParameters());
             if (!constructor.typeParameters().isEmpty()) {
                 output.append(' ');
             }
+
             output.append(simpleName(stub));
             appendParameters(constructor.parameters(), constructor.modifiers());
             appendThrows(constructor.thrownTypes());
@@ -156,20 +167,24 @@ public final class JavaStubSourceRenderer {
             int methodFlags = method.modifiers();
             if ((methodFlags & (Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE)) != 0 || method.name().startsWith("<"))
                 continue;
+
             boolean bodiless = Modifier.isAbstract(methodFlags) || Modifier.isNative(methodFlags);
             int mask = Modifier.methodModifiers();
             if (isInterface) {
                 mask &= ~(Modifier.ABSTRACT | Modifier.PUBLIC);
             }
+
             indent(memberDepth);
             appendModifiers(methodFlags & mask);
             if (isInterface && !bodiless && !Modifier.isStatic(methodFlags) && !Modifier.isPrivate(methodFlags)) {
                 output.append("default ");
             }
+
             if (!method.typeParameters().isEmpty()) {
                 appendTypeParameters(method.typeParameters());
                 output.append(' ');
             }
+
             output.append(type(method.returnType())).append(' ').append(method.name());
             appendParameters(method.parameters(), methodFlags);
             appendThrows(method.thrownTypes());
@@ -195,11 +210,13 @@ public final class JavaStubSourceRenderer {
     private void appendTypeParameters(List<TypeParameter> parameters) {
         if (parameters.isEmpty())
             return;
+
         output.append('<');
         for (int index = 0; index < parameters.size(); index++) {
             if (index > 0) {
                 output.append(", ");
             }
+
             TypeParameter parameter = parameters.get(index);
             output.append(parameter.name());
             List<Type> bounds = parameter.bounds().stream()
@@ -212,10 +229,12 @@ public final class JavaStubSourceRenderer {
                     if (bound > 0) {
                         output.append(" & ");
                     }
+
                     output.append(type(bounds.get(bound)));
                 }
             }
         }
+
         output.append('>');
     }
 
@@ -226,22 +245,26 @@ public final class JavaStubSourceRenderer {
             if (index > 0) {
                 output.append(", ");
             }
+
             Parameter parameter = parameters.get(index);
             if (varargs && index == parameters.size() - 1 && parameter.type() instanceof Type.ArrayType array) {
                 output.append(type(array.componentType())).append("...");
             } else {
                 output.append(type(parameter.type()));
             }
+
             output.append(' ').append(parameter.name() == null || parameter.name().isBlank()
                 ? "arg" + index
                 : parameter.name());
         }
+
         output.append(')');
     }
 
     private void appendThrows(List<Type> thrown) {
         if (thrown.isEmpty())
             return;
+
         output.append(" throws ");
         appendTypes(thrown);
     }
@@ -251,6 +274,7 @@ public final class JavaStubSourceRenderer {
             if (index > 0) {
                 output.append(", ");
             }
+
             output.append(type(types.get(index)));
         }
     }

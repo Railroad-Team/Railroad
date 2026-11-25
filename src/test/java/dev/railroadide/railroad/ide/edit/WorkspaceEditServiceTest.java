@@ -30,6 +30,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
+import java.lang.reflect.Field;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -53,6 +54,7 @@ public class WorkspaceEditServiceTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
         onFx(() -> {
             LanguageSupports.initialize();
@@ -78,6 +80,7 @@ public class WorkspaceEditServiceTest {
                 editor.close();
                 editor.dispose();
             }
+
             return null;
         });
     }
@@ -93,7 +96,7 @@ public class WorkspaceEditServiceTest {
 
         assertEquals(Status.APPLIED, result.status(), result.problems()::toString);
         assertEquals("ALPHA! beta GAMMA", Files.readString(root.resolve("Example.txt")));
-        var published = (TextDocumentSnapshot) store.current(document.id()).orElseThrow();
+        TextDocumentSnapshot published = (TextDocumentSnapshot) store.current(document.id()).orElseThrow();
         assertEquals("ALPHA! beta GAMMA", published.text());
         assertTrue(published.version().isAfter(document.version()));
         assertNull(store.state(document.id()).orElseThrow().overlay());
@@ -107,6 +110,7 @@ public class WorkspaceEditServiceTest {
             editor.insertText(0, "unsaved ");
             return null;
         });
+
         TextDocumentSnapshot editorSnapshot = onFx(() -> editor.textEditorAccess().snapshot());
         TextDocumentSnapshot draft = draft("Draft.txt", "saved draft", "unsaved draft");
         TextDocumentSnapshot closed = disk("Closed.txt", "closed text");
@@ -204,6 +208,7 @@ public class WorkspaceEditServiceTest {
             editor.setEditable(false);
             return null;
         });
+
         TextDocumentSnapshot editorSnapshot = onFx(() -> editor.textEditorAccess().snapshot());
         TextDocumentSnapshot readOnlyFile = disk("ReadOnlyFile.txt", "locked");
         assertTrue(root.resolve("ReadOnlyFile.txt").toFile().setReadOnly());
@@ -260,7 +265,7 @@ public class WorkspaceEditServiceTest {
 
         assertTrue(preview.applicable(), preview.problems()::toString);
         assertEquals(2, preview.documents().size());
-        var editorPreview = preview.documents().getFirst();
+        WorkspaceEditPreview.DocumentPreview editorPreview = preview.documents().getFirst();
         assertEquals(WorkspaceEditPreview.Target.EDITOR, editorPreview.target());
         assertEquals("hello world", editorPreview.before());
         assertEquals("hi there", editorPreview.after());
@@ -269,7 +274,7 @@ public class WorkspaceEditServiceTest {
         assertEquals(new TextRange(6, 11), editorPreview.changes().get(1).before());
         assertEquals(new TextRange(3, 8), editorPreview.changes().get(1).after());
         assertEquals("rename", editorPreview.changes().get(1).annotationId());
-        var closedPreview = preview.documents().get(1);
+        WorkspaceEditPreview.DocumentPreview closedPreview = preview.documents().get(1);
         assertEquals(WorkspaceEditPreview.Target.DISK, closedPreview.target());
         assertEquals("aBBBc", closedPreview.after());
         assertEquals(List.of(WorkspaceEditPreview.ResourcePreview.Kind.CREATE,
@@ -308,7 +313,7 @@ public class WorkspaceEditServiceTest {
         assertTrue(store.state(deleted.id()).isEmpty());
         assertFalse(Files.exists(root.resolve("Move.txt")));
         assertEquals("MOVE me", Files.readString(root.resolve("moved/Moved.txt")));
-        var relocated = (TextDocumentSnapshot) store.current(moved.id()).orElseThrow();
+        TextDocumentSnapshot relocated = (TextDocumentSnapshot) store.current(moved.id()).orElseThrow();
         assertEquals(destination, relocated.uri());
         assertEquals("MOVE me", relocated.text());
         assertEquals(moved.id(), identities.findIdentity(destination).orElseThrow().id());
@@ -472,11 +477,13 @@ public class WorkspaceEditServiceTest {
         files.failure = (operation, path) -> {
             if (!operation.equals("move"))
                 return false;
+
             try {
                 Files.writeString(root.resolve("Written.txt"), "concurrent");
             } catch (IOException exception) {
                 throw new IllegalStateException(exception);
             }
+
             return true;
         };
 
@@ -496,6 +503,7 @@ public class WorkspaceEditServiceTest {
             editor.selectRange(1, 3);
             return null;
         });
+
         TextDocumentSnapshot editorSnapshot = onFx(() -> editor.textEditorAccess().snapshot());
         TextDocumentSnapshot closed = disk("Closed.txt", "closed text");
         TextDocumentSnapshot moved = disk("Move.txt", "moved");
@@ -587,6 +595,7 @@ public class WorkspaceEditServiceTest {
             editor.undo();
             return null;
         });
+
         assertEquals("EDITOR", onFx(editor::getText));
         assertEquals("CLOSED", Files.readString(root.resolve("Closed.txt")));
 
@@ -594,6 +603,7 @@ public class WorkspaceEditServiceTest {
             editor.undo();
             return null;
         });
+
         assertEquals("editor", onFx(editor::getText));
         assertEquals("closed", Files.readString(root.resolve("Closed.txt")));
     }
@@ -613,6 +623,7 @@ public class WorkspaceEditServiceTest {
             editor.undo();
             return null;
         });
+
         assertEquals("EDITOR", onFx(editor::getText));
         assertEquals("CLOSED!", Files.readString(root.resolve("Closed.txt")));
 
@@ -620,6 +631,7 @@ public class WorkspaceEditServiceTest {
             editor.undo();
             return null;
         });
+
         assertEquals("editor", onFx(editor::getText));
         assertEquals("CLOSED!", Files.readString(root.resolve("Closed.txt")));
         assertFalse(onFx(service::canUndo));
@@ -642,6 +654,7 @@ public class WorkspaceEditServiceTest {
     @Test
     public void binaryDocumentsCanBeCreatedMovedAndDeletedWithUndo() throws Exception {
         byte[] bytes = {0, 1, 2, (byte) 0xff};
+
         Path image = root.resolve("image.png");
         Files.write(image, bytes);
         DocumentId id = identities.getOrCreate(image);
@@ -693,11 +706,13 @@ public class WorkspaceEditServiceTest {
         files.failure = (operation, path) -> {
             if (!operation.equals("overwrite") || !path.endsWith("Written.txt"))
                 return false;
+
             try {
                 Files.writeString(path, "CHA");
             } catch (IOException exception) {
                 throw new IllegalStateException(exception);
             }
+
             files.failure = (_, _) -> false;
             return true;
         };
@@ -822,6 +837,7 @@ public class WorkspaceEditServiceTest {
     @Test
     public void undoRestoresADeletedBinaryFileWithAnUnrecognisedExtension() throws Exception {
         byte[] bytes = {0, 1, 2, (byte) 0xff};
+
         Path payload = root.resolve("payload.unrecognised");
         Files.write(payload, bytes);
         DocumentId id = identities.getOrCreate(payload);
@@ -836,7 +852,8 @@ public class WorkspaceEditServiceTest {
 
         assertEquals(Status.APPLIED, undone.status(), undone.problems()::toString);
         assertArrayEquals(bytes, Files.readAllBytes(payload));
-        var restored = assertInstanceOf(BinaryDocumentSnapshot.class, store.current(id).orElseThrow());
+        BinaryDocumentSnapshot restored = assertInstanceOf(BinaryDocumentSnapshot.class,
+            store.current(id).orElseThrow());
         assertArrayEquals(bytes, restored.copyBytes());
         assertEquals(binary.languageId(), restored.languageId());
         assertTrue(restored.version().isAfter(binary.version()));
@@ -939,6 +956,7 @@ public class WorkspaceEditServiceTest {
         } catch (UnsupportedOperationException | IOException exception) {
             Assumptions.abort("Hard links are unavailable on this filesystem");
         }
+
         TextDocumentSnapshot document = publish(primary, "shared");
         assertEquals(document.id(), identities.getOrCreate(alias));
 
@@ -977,6 +995,7 @@ public class WorkspaceEditServiceTest {
         } catch (UnsupportedOperationException | IOException exception) {
             Assumptions.abort("Hard links are unavailable on this filesystem");
         }
+
         TextDocumentSnapshot document = publish(primary, "shared");
         identities.getOrCreate(alias);
         TextDocumentSnapshot moved = disk("Moved.txt", "moved");
@@ -1043,18 +1062,21 @@ public class WorkspaceEditServiceTest {
         });
     }
 
-    /** Opens an editor over a published document the way the tab manager does, including line-ending reloads. */
+    /**
+     * Opens an editor over a published document the way the tab manager does, including line-ending reloads.
+     */
     private TextEditorPane openDiscovered(Path path) throws Exception {
         DocumentId id = identities.getOrCreate(path);
         return onFx(() -> {
             TextEditorPane editor = createEditor(id, path);
-            var backing = (TextDocumentSnapshot) store.current(id).orElseThrow();
+            TextDocumentSnapshot backing = (TextDocumentSnapshot) store.current(id).orElseThrow();
             if (backing.text().equals(editor.getText())) {
                 editor.restoreSavedVersion(backing.version());
             } else {
                 editor.restoreSavedVersion(store.latestVersion(id).orElseThrow().next());
                 store.publishBacking(editor.captureSnapshot());
             }
+
             editor.setDocumentStore(store);
             host.editors.put(id, editor);
             return editor;
@@ -1067,7 +1089,8 @@ public class WorkspaceEditServiceTest {
             protected void showExternalChangeDialog(String disk) {
             }
         };
-        var field = TextEditorPane.class.getDeclaredField("changeSubscription");
+
+        Field field = TextEditorPane.class.getDeclaredField("changeSubscription");
         field.setAccessible(true);
         ((Subscription) field.get(editor)).unsubscribe();
         return editor;
@@ -1080,6 +1103,7 @@ public class WorkspaceEditServiceTest {
     private static <T> T onFx(Callable<T> action) throws Exception {
         if (Platform.isFxApplicationThread())
             return action.call();
+
         var task = new FutureTask<>(action);
         Platform.runLater(task);
         return task.get(10, TimeUnit.SECONDS);
@@ -1105,6 +1129,7 @@ public class WorkspaceEditServiceTest {
         public void relocate(DocumentIdentity identity, Path newPath) {
             if (relocations++ == failRelocationAfter)
                 throw new IllegalStateException("Injected relocation failure");
+
             DocumentUri uri = DocumentUri.fromPath(newPath);
             identities.rebind(identity.id(), identity.uri(), uri);
             store.relocate(identity.id(), uri);

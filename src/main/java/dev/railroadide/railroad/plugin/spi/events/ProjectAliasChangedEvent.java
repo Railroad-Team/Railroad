@@ -22,6 +22,7 @@ public record ProjectAliasChangedEvent(Project project, String oldAlias, String 
     public ProjectAliasChangedEvent {
         if (project == null)
             throw new IllegalArgumentException("Project cannot be null");
+
         if (oldAlias == null || newAlias == null)
             throw new IllegalArgumentException("Aliases cannot be null");
     }

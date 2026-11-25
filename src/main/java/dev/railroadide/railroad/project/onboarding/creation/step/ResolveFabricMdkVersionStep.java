@@ -69,6 +69,7 @@ public final class ResolveFabricMdkVersionStep implements CreationStep {
     }
 
     // TODO: Make sure that this will always pick a newer closest release (if it exists) instead of an older one.
+
     private @NotNull MinecraftVersion findClosestRelease(MinecraftVersion version) {
         List<MinecraftVersion> versions = fetchAllVersions();
         long releaseTime = version.releaseTime().toEpochSecond(ZoneOffset.UTC);

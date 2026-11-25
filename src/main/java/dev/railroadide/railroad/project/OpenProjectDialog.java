@@ -67,12 +67,12 @@ public final class OpenProjectDialog {
     }
 
     private void show(Window owner) {
-        var thisWindow = choice(FontAwesomeSolid.WINDOW_MAXIMIZE, "railroad.open_project.this_window.title",
+        HBox thisWindow = choice(FontAwesomeSolid.WINDOW_MAXIMIZE, "railroad.open_project.this_window.title",
             current == null
                 ? L18n.localize("railroad.open_project.this_window.description")
                 : L18n.localize("railroad.open_project.this_window.replaces", current.getAlias()),
             this::openHere);
-        var newWindow = choice(FontAwesomeSolid.CLONE, "railroad.open_project.new_window.title",
+        HBox newWindow = choice(FontAwesomeSolid.CLONE, "railroad.open_project.new_window.title",
             current == null
                 ? L18n.localize("railroad.open_project.new_window.description")
                 : L18n.localize("railroad.open_project.new_window.keeps", current.getAlias()),
@@ -161,6 +161,7 @@ public final class OpenProjectDialog {
         } else {
             frame.getChildren().add(new FontIcon(FontAwesomeSolid.FOLDER_OPEN));
         }
+
         return frame;
     }
 
@@ -195,6 +196,7 @@ public final class OpenProjectDialog {
                 action.run();
             }
         });
+
         return row;
     }
 

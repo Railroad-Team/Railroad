@@ -8,7 +8,9 @@ import org.eclipse.jgit.diff.RawTextComparator;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-/** Maps source lines across edits, including whole-buffer replacements from reload and undo. */
+/**
+ * Maps source lines across edits, including whole-buffer replacements from reload and undo.
+ */
 public final class BreakpointLineMapping {
     private final RawText before;
     private final RawText after;
@@ -62,20 +64,26 @@ public final class BreakpointLineMapping {
     public int map(int line) {
         if (newText.isEmpty() && !oldText.isEmpty())
             return 0;
+
         if (position >= 0)
             return mapExactEdit(line);
+
         int index = line - 1;
         int delta = 0;
         for (Edit edit : edits) {
             if (index < edit.getBeginA())
                 break;
+
             if (index < edit.getEndA()) {
                 if (edit.getLengthB() == 0)
                     return 0;
+
                 return mapReplacement(index, edit) + 1;
             }
+
             delta += edit.getLengthB() - edit.getLengthA();
         }
+
         return line + delta;
     }
 
@@ -85,12 +93,15 @@ public final class BreakpointLineMapping {
             int newline = oldText.indexOf('\n', start);
             if (newline < 0)
                 return line;
+
             start = newline + 1;
         }
+
         int end = oldText.indexOf('\n', start);
         if (end < 0) {
             end = oldText.length();
         }
+
         int removedEnd = position + removedLength;
         int lineEnd = end < oldText.length() ? end + 1 : end;
         if (removedLength > 0 && insertedLength == 0 && start >= position && lineEnd <= removedEnd)
@@ -100,8 +111,10 @@ public final class BreakpointLineMapping {
         while (anchor < end && Character.isWhitespace(oldText.charAt(anchor))) {
             anchor++;
         }
+
         if (anchor < position)
             return line;
+
         if (anchor >= removedEnd)
             return lineAt(newText, anchor + insertedLength - removedLength);
 
@@ -117,6 +130,7 @@ public final class BreakpointLineMapping {
                 line++;
             }
         }
+
         return line;
     }
 
@@ -129,11 +143,13 @@ public final class BreakpointLineMapping {
         for (int line = edit.getBeginA(); line < index; line++) {
             offset += before.getString(line).length() + 1;
         }
+
         String oldLine = before.getString(index);
         int column = 0;
         while (column < oldLine.length() && Character.isWhitespace(oldLine.charAt(column))) {
             column++;
         }
+
         offset += column;
 
         int prefix = 0;
@@ -141,6 +157,7 @@ public final class BreakpointLineMapping {
             && oldText.charAt(prefix) == newText.charAt(prefix)) {
             prefix++;
         }
+
         int suffix = 0;
         while (suffix < Math.min(oldText.length(), newText.length()) - prefix
             && oldText.charAt(oldText.length() - suffix - 1) == newText.charAt(newText.length() - suffix - 1)) {
@@ -155,12 +172,14 @@ public final class BreakpointLineMapping {
         } else
             // Edited code keeps its relative line within the replacement where possible.
             return edit.getBeginB() + Math.min(index - edit.getBeginA(), edit.getLengthB() - 1);
+
         int newLine = edit.getBeginB();
         for (int character = 0; character < newOffset; character++) {
             if (newText.charAt(character) == '\n') {
                 newLine++;
             }
         }
+
         return Math.min(newLine, edit.getEndB() - 1);
     }
 }

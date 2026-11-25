@@ -16,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -38,7 +39,7 @@ public class JavaStubSymbolIndexTest {
 
     @Test
     public void singleOwnerNamesAndTypesAreFound() {
-        var index = index(stub("Only", List.of(), List.of(method("unique"))));
+        JavaStubSymbolIndex index = index(stub("Only", List.of(), List.of(method("unique"))));
 
         assertEquals(List.of("sample.Only"), owners(index.lookupSimpleName("unique")));
         assertEquals(1, index.lookupSimpleName("Only").size());
@@ -47,7 +48,8 @@ public class JavaStubSymbolIndexTest {
 
     @Test
     public void typeNameLookupSkipsClassesWhoseMembersHaveTheSameName() {
-        var index = index(stub("Box", List.of(), List.of()), stub("Other", List.of(), List.of(method("Box"))));
+        JavaStubSymbolIndex index = index(stub("Box", List.of(), List.of()),
+            stub("Other", List.of(), List.of(method("Box"))));
         assertEquals(List.of("sample.Box"), index.qualifiedTypeNames("Box"));
         assertEquals(2, index.lookupSimpleName("Box").size());
     }
@@ -62,7 +64,7 @@ public class JavaStubSymbolIndexTest {
 
     @Test
     public void lookupTablesCoverEveryClass() {
-        var index = index(stub("First", List.of(), List.of()), stub("Second", List.of(), List.of()));
+        JavaStubSymbolIndex index = index(stub("First", List.of(), List.of()), stub("Second", List.of(), List.of()));
 
         assertEquals(Set.of("sample.First", "sample.Second"), index.declaredQualifiedNames());
         assertTrue(index.typeNames().containsAll(Set.of("sample.First", "First", "sample.Second", "Second")));
@@ -72,15 +74,16 @@ public class JavaStubSymbolIndexTest {
 
     @Test
     public void readingClassNamesAndStubsLeavesBinaryLocationsUnresolved() {
-        var first = stub("First", List.of(), List.of());
-        var second = stub("Second", List.of(), List.of());
-        var stubs = Map.of(first.getFullName(), first, second.getFullName(), second);
+        ClassStub first = stub("First", List.of(), List.of());
+        ClassStub second = stub("Second", List.of(), List.of());
+        Map<String, ClassStub> stubs = Map.of(first.getFullName(), first, second.getFullName(), second);
         Path archive = Path.of("library.jar");
-        var requests = new ArrayList<String>();
-        var locations = Maps.asMap(stubs.keySet(), name -> {
+        List<String> requests = new ArrayList<String>();
+        Map<String, DocumentUri> locations = Maps.asMap(stubs.keySet(), name -> {
             requests.add(name);
             return JavaLibrarySymbolIndex.archiveEntry(archive, name.replace('.', '/') + ".class");
         });
+
         var index = new JavaStubSymbolIndex(stubs, Map.of(first.getFullName(), archive, second.getFullName(), archive),
             locations, Map.of(), () -> {
             }, false);

@@ -21,6 +21,7 @@ import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -44,6 +45,7 @@ public final class OpenJdkJavacWorker implements AutoCloseable {
         if (process == null) {
             start();
         }
+
         String failure;
         try {
             requests.write(gson.toJson(id));
@@ -51,16 +53,18 @@ public final class OpenJdkJavacWorker implements AutoCloseable {
             requests.flush();
             String line = readReply();
             if (line != null && line.startsWith("{")) {
-                var result = gson.fromJson(line, OpenJdkJavacChecks.Result.class);
+                OpenJdkJavacChecks.Result result = gson.fromJson(line, OpenJdkJavacChecks.Result.class);
                 if (id.equals(result.id()))
                     return result;
             }
+
             failure = line == null ? "SST worker exited without a result" : "SST worker stopped: " + line;
         } catch (TimeoutException exception) {
             failure = "SST worker exceeded the " + WATCHDOG_SECONDS + "-second watchdog";
         } catch (ExecutionException | IOException | JsonParseException exception) {
             failure = "SST worker communication failed: " + exception;
         }
+
         stop();
         return new OpenJdkJavacChecks.Result(id, OpenJdkJavacChecks.Status.ERROR, 0, 0, 0, List.of(failure),
             List.of());
@@ -101,7 +105,7 @@ public final class OpenJdkJavacWorker implements AutoCloseable {
             .map(entry -> Path.of(entry).toAbsolutePath().toUri().toASCIIString())
             .collect(Collectors.joining(" "));
         var manifest = new Manifest();
-        var attributes = manifest.getMainAttributes();
+        Map<Object, Object> attributes = manifest.getMainAttributes();
         attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
         attributes.put(Attributes.Name.CLASS_PATH, classpath);
         Path jar = Files.createTempFile("sst-javac-classpath-", ".jar");
@@ -111,6 +115,7 @@ public final class OpenJdkJavacWorker implements AutoCloseable {
             Files.deleteIfExists(jar);
             throw exception;
         }
+
         return jar;
     }
 

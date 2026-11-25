@@ -16,8 +16,7 @@ import java.net.URISyntaxException;
  * @param previousUri original location, including the original directory when moving a file
  */
 public record DocumentRenamedEvent(Document file, String oldName, String newName, DocumentUri previousUri)
-    implements
-        GenericDocumentEvent {
+    implements GenericDocumentEvent {
     /**
      * Creates a rename event within the file's current directory for existing callers.
      *
@@ -34,19 +33,23 @@ public record DocumentRenamedEvent(Document file, String oldName, String newName
     private static DocumentUri previousLocation(DocumentUri current, String oldName) {
         if (current.isFile())
             return DocumentUri.fromPath(current.filePath().orElseThrow().resolveSibling(oldName));
+
         URI address = current.value();
         try {
             if (!address.isOpaque()) {
                 String path = address.getPath();
                 if (path == null || !path.contains("/"))
                     return current;
+
                 return DocumentUri.parse(new URI(address.getScheme(), address.getAuthority(),
                     path.substring(0, path.lastIndexOf('/') + 1) + oldName,
                     address.getQuery(), address.getFragment()).toString());
             }
+
             String entry = address.getRawSchemeSpecificPart();
             if (!entry.contains("!/"))
                 return current;
+
             String encodedName = DocumentUri.virtual("rename", oldName).value().getRawPath().substring(1);
             return DocumentUri.parse(address.getScheme() + ":" + entry.substring(0, entry.lastIndexOf('/') + 1)
                 + encodedName + (address.getRawFragment() == null ? "" : "#" + address.getRawFragment()));
@@ -54,6 +57,7 @@ public record DocumentRenamedEvent(Document file, String oldName, String newName
             throw new IllegalArgumentException("Invalid previous document location", exception);
         }
     }
+
     /**
      * Constructs a new DocumentRenamedEvent.
      *
@@ -72,6 +76,7 @@ public record DocumentRenamedEvent(Document file, String oldName, String newName
 
         if (newName == null)
             throw new IllegalArgumentException("newName cannot be null");
+
         if (previousUri == null)
             throw new IllegalArgumentException("previousUri cannot be null");
     }

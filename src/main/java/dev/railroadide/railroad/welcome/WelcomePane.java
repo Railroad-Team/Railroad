@@ -18,7 +18,9 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** Root welcome view coordinating project browsing, creation, import, directory opening, and settings actions. */
+/**
+ * Root welcome view coordinating project browsing, creation, import, directory opening, and settings actions.
+ */
 public class WelcomePane extends HBox {
     /**
      * Sidebar controlling the visible welcome content.
@@ -70,32 +72,39 @@ public class WelcomePane extends HBox {
         leftPane.getListView().getSelectionModel().selectedItemProperty().addListener((_, _, newValue) -> {
             if (newValue == null)
                 return;
+
             switch (newValue) {
                 case HOME -> {
                     rightPane.getChildren().clear();
                     rightPane.getChildren().addAll(headerPane, projectsPane);
                 }
+
                 case OPEN_PROJECT -> {
                     openProjectDialog();
                     // Reset selection to HOME after opening dialog
                     leftPane.getListView().getSelectionModel().select(WelcomeLeftPane.MenuType.HOME);
                 }
+
                 case NEW_PROJECT -> {
                     if (newProjectPane.get() == null) {
                         newProjectPane.set(new NewProjectPane());
                     }
+
                     rightPane.getChildren().setAll(newProjectPane.get());
                     VBox.setVgrow(newProjectPane.get(), Priority.ALWAYS);
                 }
+
                 case IMPORT_PROJECT -> {
                     var importProjectsPane = new WelcomeImportProjectsPane();
                     rightPane.getChildren().setAll(importProjectsPane);
                     VBox.setVgrow(importProjectsPane, Priority.ALWAYS);
                 }
+
                 case SETTINGS -> {
                     SettingsPane.openSettingsWindow();
                     leftPane.getListView().getSelectionModel().select(WelcomeLeftPane.MenuType.HOME);
                 }
+
                 default -> throw new IllegalStateException("Unexpected value: " + newValue);
             }
         });

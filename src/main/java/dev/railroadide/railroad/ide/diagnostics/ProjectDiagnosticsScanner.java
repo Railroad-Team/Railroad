@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService;
 
 /**
  * Runs registered language diagnostics over every source file in a project.
@@ -101,7 +102,7 @@ public final class ProjectDiagnosticsScanner {
             context.projectRoot(),
             targets.size(),
             parallelism);
-        try (var requests = SstScheduler.shared().newScope()) {
+        try (SstScheduler.Scope requests = SstScheduler.shared().newScope()) {
             int submitted = 0;
             int scannedFiles = 0;
             for (int index = 0; index < targets.size(); index++) {
@@ -115,6 +116,7 @@ public final class ProjectDiagnosticsScanner {
                         : requests.submit(target.path(), RequestPriority.BACKGROUND_INDEXING, request, cancellation,
                             () -> scanOne(diagnosticsContext, target, inputs, request)));
                 }
+
                 FileScanResult result = awaitResult(pending.removeFirst(), context);
                 context.checkActive();
                 fileResults.add(result);
@@ -201,12 +203,13 @@ public final class ProjectDiagnosticsScanner {
             IOException failure = inputs.failures().get(target.path());
             if (failure != null)
                 throw failure;
+
             DocumentSnapshot snapshot = inputs.documents().get(target.path());
 
             DiagnosticsProvider<?> provider = createDiagnosticsProvider(diagnosticsContext, target);
             if (provider instanceof DiagnosticsProvider<?> tprovider) {
                 Duration budget = Duration.ofSeconds(30);
-                var session = indexContext.session();
+                ProjectLanguageIndexService.Session session = indexContext.session();
                 CancellationToken cancellation = () -> request.cancellationToken().isCancellationRequested()
                     || indexContext.cancellationToken().isCancellationRequested()
                     || session != null && (session.isClosed()
@@ -216,20 +219,23 @@ public final class ProjectDiagnosticsScanner {
                 List<EditorDiagnostic> diagnostics = ProviderExecutor.shared().execute(
                     target.support().id().value() + ":project-diagnostics", feature, budget,
                     () -> {
-                        var result = tprovider.compute(feature);
+                        FeatureResult<? extends List<? extends EditorDiagnostic<?>>> result = tprovider
+                            .compute(feature);
                         if (!result.belongsTo(feature))
                             throw new IllegalStateException(
                                 "Diagnostics provider returned a result for a different request");
+
                         return DiagnosticsProvider.validated(result.value(), feature).stream()
                             .map(EditorDiagnostic.class::cast).toList();
                     });
+
                 request.checkActive();
                 indexContext.checkActive();
                 return new FileScanResult(target.path(), target.support().languageId(), diagnostics, null,
                     fileStartedAt);
             }
-            return new FileScanResult(target.path(), target.support().languageId(), List.of(), null, fileStartedAt);
 
+            return new FileScanResult(target.path(), target.support().languageId(), List.of(), null, fileStartedAt);
         } catch (CancellationException exception) {
             request.checkActive();
             indexContext.checkActive();
@@ -265,12 +271,14 @@ public final class ProjectDiagnosticsScanner {
                         : new BinaryDocumentSnapshot(id, uri, DocumentVersion.initial(), source.support().languageId(),
                             origin, Files.readAllBytes(source.path()));
                 }
+
                 documents.put(snapshot.id(), snapshot);
                 sourceDocuments.put(source.path(), snapshot);
             } catch (IOException exception) {
                 failures.put(source.path(), exception);
             }
         }
+
         context.checkActive();
         return new ScanInputs(new WorkspaceSnapshot(openWorkspace.projectId(), documents,
             openWorkspace.configuration(), openWorkspace.revision()), Map.copyOf(sourceDocuments),
@@ -301,6 +309,7 @@ public final class ProjectDiagnosticsScanner {
                 .map(path -> new ScanTarget(support, path))
                 .forEach(targets::add);
         }
+
         targets.sort(Comparator.comparing(target -> target.path().toString()));
         return List.copyOf(targets);
     }
@@ -341,10 +350,13 @@ public final class ProjectDiagnosticsScanner {
         long millis = duration.toMillisPart();
         if (hours > 0)
             return "%dh %02dm %02ds".formatted(hours, minutes, seconds);
+
         if (minutes > 0)
             return "%dm %02ds".formatted(minutes, seconds);
+
         if (seconds > 0)
             return "%d.%03ds".formatted(seconds, millis);
+
         return "%dms".formatted(duration.toMillis());
     }
 
@@ -366,10 +378,12 @@ public final class ProjectDiagnosticsScanner {
             context.checkActive();
             if (root == null || Files.notExists(root))
                 continue;
+
             if (Files.isRegularFile(root)) {
                 if (matchesLanguage(root, support)) {
                     files.add(root.toAbsolutePath().normalize());
                 }
+
                 continue;
             }
 
@@ -382,6 +396,7 @@ public final class ProjectDiagnosticsScanner {
                 Railroad.LOGGER.warn("Failed to enumerate diagnostic source root {}", root, exception);
             }
         }
+
         context.checkActive();
         return files.stream().sorted().toList();
     }
@@ -432,6 +447,7 @@ public final class ProjectDiagnosticsScanner {
                     report.append("line ").append(textDiagnostic.location().line() + 1)
                         .append(", column ").append(textDiagnostic.location().column() + 1);
                 }
+
                 report.append(", offsets ").append(diagnostic.location().range().start)
                     .append("-").append(diagnostic.location().range().end)
                     .append(", ").append(diagnostic.code())
@@ -440,6 +456,7 @@ public final class ProjectDiagnosticsScanner {
                     .append('\n');
             }
         }
+
         return report.toString();
     }
 

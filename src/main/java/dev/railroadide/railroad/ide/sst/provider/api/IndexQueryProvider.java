@@ -4,7 +4,9 @@ import dev.railroadide.railroad.ide.sst.request.api.WorkspaceRequestContext;
 import dev.railroadide.railroad.ide.sst.request.api.FeatureResult;
 import java.util.List;
 
-/** Queries declarations against the captured workspace, including unsaved document overlays. */
+/**
+ * Queries declarations against the captured workspace, including unsaved document overlays.
+ */
 @FunctionalInterface
 public interface IndexQueryProvider {
     /**

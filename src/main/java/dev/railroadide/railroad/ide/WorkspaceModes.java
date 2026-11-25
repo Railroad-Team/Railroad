@@ -4,7 +4,9 @@ import dev.railroadide.railroad.vcs.git.GitRepositoryState;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeBrands;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
-/** Registers Railroad's built-in workspace modes. */
+/**
+ * Registers Railroad's built-in workspace modes.
+ */
 public final class WorkspaceModes {
     /**
      * Built-in code editing workspace mode.

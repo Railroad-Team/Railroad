@@ -19,6 +19,7 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.sst.document.api.WorkspaceConfigurationSnapshot;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
 import java.util.concurrent.CancellationException;
+import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class LanguageCapabilityTest {
@@ -30,7 +31,7 @@ public class LanguageCapabilityTest {
         Project project = project();
         var indexes = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
         var analysis = JavaLanguageSupport.analysisContextProvider();
-        var projectOwner = indexes.openProject(project);
+        ProjectLanguageIndexService.Session projectOwner = indexes.openProject(project);
         var configuration = new WorkspaceConfigurationSnapshot(1, Set.of("test"),
             Map.of("module.test.jdkHome", tempDirectory.toString()));
         analysis.adoptConfiguration(projectOwner, analysis.prepareConfiguration(projectOwner, configuration));
@@ -38,17 +39,18 @@ public class LanguageCapabilityTest {
         var support = new JavaLanguageSupport();
         try (var runtime = new LanguageRuntime()) {
             runtime.register("test-owner", support);
-            var firstDialect = runtime.session(project, support.id(), "first");
-            var secondDialect = runtime.session(project, support.id(), "second");
+            LanguageSession firstDialect = runtime.session(project, support.id(), "first");
+            LanguageSession secondDialect = runtime.session(project, support.id(), "second");
             firstDialect.close();
             assertEquals(expectedCaches, analysis.cachedSessions());
             assertFalse(secondDialect.isClosed());
 
             var context = new LanguageSessionContext(tempDirectory, "second",
                 CapabilityRegistry.builder().add(LanguageCapabilities.PROJECT, project).build());
-            try (var discardedCandidate = support.openSession(context)) {
+            try (LanguageSession discardedCandidate = support.openSession(context)) {
                 assertFalse(discardedCandidate.isClosed());
             }
+
             assertEquals(expectedCaches, analysis.cachedSessions());
 
             analysis.closeSession(projectOwner);
@@ -93,18 +95,22 @@ public class LanguageCapabilityTest {
             public LanguageId id() {
                 return new LanguageId("test:independent");
             }
+
             @Override
             public String displayName() {
                 return "Independent";
             }
+
             @Override
             public LanguageMatcher matcher() {
                 return LanguageMatcher.extension("independent");
             }
+
             @Override
             public Set<CapabilityKey<?>> supportedCapabilities() {
                 return Set.of(SstCapabilities.COMPLETION);
             }
+
             @Override
             public LanguageSession openSession(LanguageSessionContext context) {
                 assertEquals(tempDirectory.toAbsolutePath().normalize(), context.projectRoot());
@@ -112,9 +118,11 @@ public class LanguageCapabilityTest {
                     CapabilityRegistry.builder().add(SstCapabilities.COMPLETION, completion).build());
             }
         };
+
         LanguageSupportRegistry.runtime().register("test-plugin", contribution);
         try {
-            var support = LanguageSupportRegistry.find(tempDirectory.resolve("source.independent")).orElseThrow();
+            LanguageSupport support = LanguageSupportRegistry.find(tempDirectory.resolve("source.independent"))
+                .orElseThrow();
             CodeEditorConfig first = CodeEditorConfig.fromDocument(project,
                 DocumentUri.virtual("generated", "/source.independent"), support, null);
             CodeEditorConfig second = CodeEditorConfig.fromLanguageSupport(project,

@@ -9,7 +9,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
-/** Builds concise, unambiguous labels for open editor tabs. */
+/**
+ * Builds concise, unambiguous labels for open editor tabs.
+ */
 public final class EditorTabPresentation {
     private EditorTabPresentation() {
     }
@@ -46,6 +48,7 @@ public final class EditorTabPresentation {
                 titles.set(index, fileName(path) + " — " + suffix);
             }
         }
+
         return List.copyOf(titles);
     }
 
@@ -81,6 +84,7 @@ public final class EditorTabPresentation {
             if (unique)
                 return candidate;
         }
+
         return parent == null ? path.toString() : parent.toString();
     }
 
@@ -91,6 +95,7 @@ public final class EditorTabPresentation {
         int nameCount = parent.getNameCount();
         if (depth > nameCount)
             return parent.toString();
+
         return parent.subpath(nameCount - depth, nameCount).toString();
     }
 

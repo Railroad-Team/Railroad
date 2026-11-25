@@ -86,6 +86,7 @@ public final class ProjectSourceResolver {
                 return FileVisitResult.CONTINUE;
             }
         });
+
         sourceRoots.sort(Comparator.comparingInt(Path::getNameCount).thenComparing(Path::toString));
         if (mainSource != null) {
             Path preferred = mainSource.toAbsolutePath().normalize().getParent();
@@ -100,11 +101,13 @@ public final class ProjectSourceResolver {
                     preferred = null;
                 }
             }
+
             if (preferred != null) {
                 sourceRoots.remove(preferred);
                 sourceRoots.addFirst(preferred);
             }
         }
+
         return new SourceResolver(sourceRoots, dependencies);
     }
 }

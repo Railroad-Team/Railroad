@@ -47,6 +47,7 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
                     reportVariableDeclarator(context, reporter, node);
                     return;
                 }
+
                 if (JAVA_ASSIGNMENT_EXPRESSION.equals(kindId)) {
                     reportAssignmentExpression(context, reporter, node);
                 }
@@ -61,6 +62,7 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
     public List<JavaInspectionRule> rules() {
         return RULES;
     }
+
     private static void reportVariableDeclarator(
         JavaRuleContext context,
         JavaInspectionRuleReporter reporter,
@@ -94,12 +96,14 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
         Type rightType = context.inferredType(value).orElse(new JavaTypes.UnknownType("<unknown>"));
         if (isUnknownLike(leftType) || isUnknownLike(rightType))
             return;
+
         for (SyntaxNode child : node.children()) {
             JavaTokenType operator = COMPOUND_OPERATORS.get(child.kind());
             if (operator != null) {
                 if (!context.isCompoundAssignmentCompatible(operator, leftType, rightType)) {
                     reporter.report(node, rightType.displayName(), leftType.displayName());
                 }
+
                 return;
             }
         }
@@ -118,11 +122,13 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
     ) {
         if (isUnknownLike(target))
             return;
+
         SyntaxNode value = context.unwrapTransparentExpression(expression);
         if (value == null)
             return;
+
         if ("JAVA_CONDITIONAL_EXPRESSION".equals(value.kind().id()) && target.kind() == JavaTypes.Kind.DECLARED) {
-            var operands = context.directExpressionChildren(value);
+            List<SyntaxNode> operands = context.directExpressionChildren(value);
             if (operands.size() == 3 && (containsFunctionalBranch(context, operands.get(1))
                 || containsFunctionalBranch(context, operands.get(2)))) {
                 checkValue(context, reporter, operands.get(1), target, operands.get(1));
@@ -130,13 +136,16 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
                 return;
             }
         }
+
         Type source = context.inferredType(value).orElse(new JavaTypes.UnknownType("<unknown>"));
         if (isPolyExpression(value)) {
             if (!context.isFunctionalInterface(target)) {
                 reporter.report(site, source.displayName(), target.displayName());
             }
+
             return;
         }
+
         if (!isUnknownLike(source) && !context.isAssignable(target, source, site)
             && !fitsIntegerLiteral(context, target, source, value)) {
             reporter.report(site, source.displayName(), target.displayName());
@@ -147,11 +156,14 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
         SyntaxNode value = context.unwrapTransparentExpression(expression);
         if (value == null)
             return false;
+
         if (isPolyExpression(value))
             return true;
+
         if (!value.kind().equals(JavaSyntaxKinds.CONDITIONAL_EXPRESSION))
             return false;
-        var operands = context.directExpressionChildren(value);
+
+        List<SyntaxNode> operands = context.directExpressionChildren(value);
         return operands.size() == 3 && (containsFunctionalBranch(context, operands.get(1))
             || containsFunctionalBranch(context, operands.get(2)));
     }
@@ -162,18 +174,22 @@ public final class CoreAssignmentInspection implements JavaInspectionRuleProvide
             || !Set.of("byte", "short", "char", "java.lang.Byte", "java.lang.Short", "java.lang.Character")
                 .contains(primitive))
             return false;
+
         boolean negative = context.hasOperatorToken(value, JavaTokenType.MINUS);
         if ("JAVA_UNARY_EXPRESSION".equals(value.kind().id())
             && (negative || context.hasOperatorToken(value, JavaTokenType.PLUS))) {
             value = context.unwrapTransparentExpression(context.firstExpressionChild(value));
         }
+
         if (value == null || !"JAVA_LITERAL_EXPRESSION".equals(value.kind().id()))
             return false;
+
         try {
             int number = new IntegerLiteralExpr(context.sourceText(value).strip()).asNumber().intValue();
             if (negative) {
                 number = -number;
             }
+
             return switch (primitive) {
                 case "byte", "java.lang.Byte" -> number == (byte) number;
                 case "short", "java.lang.Short" -> number == (short) number;

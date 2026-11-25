@@ -34,17 +34,21 @@ public sealed interface Type
                 for (int dimension = 0; dimension < asmType.getDimensions(); dimension++) {
                     componentType = new ArrayType(componentType);
                 }
+
                 yield componentType;
             }
+
             case org.objectweb.asm.Type.OBJECT -> {
                 String className = asmType.getClassName();
                 yield new ClassType(className, List.of());
             }
+
             default -> throw new IllegalArgumentException("Unsupported type: " + asmType);
         };
     }
 
     // Class or interface type, with optional type arguments for generics
+
     /**
      * Describes a class or interface reference with optional generic arguments.
      *
@@ -55,6 +59,7 @@ public sealed interface Type
     }
 
     // Primitive type (e.g., int, boolean)
+
     /**
      * Describes a primitive type or the void return type.
      *
@@ -78,6 +83,7 @@ public sealed interface Type
     }
 
     // Array type
+
     /**
      * Describes an array by its component type.
      *
@@ -87,6 +93,7 @@ public sealed interface Type
     }
 
     // Type variable for generics (e.g., T in List<T>)
+
     /**
      * References a named generic type parameter.
      *
@@ -96,6 +103,7 @@ public sealed interface Type
     }
 
     // Wildcard type for generics (e.g., ? extends Number)
+
     /**
      * Describes a generic wildcard with an upper or lower bound.
      *

@@ -28,6 +28,7 @@ import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.Deque;
 
 /**
  * Adds Java call-context detection for signature help to the configured code editor.
@@ -85,9 +86,10 @@ public class JavaCodeEditorPane extends CodeEditorPane {
     }
 
     private Node mainMarker(int line) {
-        var targets = mains.stream().filter(main -> main.line() == line).toList();
+        List<EditorMain> targets = mains.stream().filter(main -> main.line() == line).toList();
         if (targets.isEmpty())
             return null;
+
         var marker = new FontIcon(FontAwesomeSolid.PLAY);
         marker.getStyleClass().add("editor-main-marker");
         var tooltip = new LocalizedTooltip("railroad.editor.main.tooltip");
@@ -96,13 +98,16 @@ public class JavaCodeEditorPane extends CodeEditorPane {
         marker.setOnMouseClicked(event -> {
             if (event.getButton() != MouseButton.PRIMARY || !getText().equals(parsedSource))
                 return;
+
             var menu = new ContextMenu();
-            for (var main : targets) {
+            for (EditorMain main : targets) {
                 menu.getItems().addAll(mainAction(main, false), mainAction(main, true));
             }
+
             menu.show(marker, event.getScreenX(), event.getScreenY());
             event.consume();
         });
+
         return marker;
     }
 
@@ -112,10 +117,12 @@ public class JavaCodeEditorPane extends CodeEditorPane {
         item.setOnAction(_ -> {
             if (isEditorClosed() || !mains.contains(main) || !getText().equals(parsedSource))
                 return;
+
             var configuration = main.configuration(project, getFilePath());
             (debug ? RunCommands.DEBUG : RunCommands.RUN)
                 .execute(CommandContext.withArgument(project, this, configuration));
         });
+
         return item;
     }
 
@@ -152,7 +159,7 @@ public class JavaCodeEditorPane extends CodeEditorPane {
 
     private static int findRelevantCallOpenParen(String text, int caret) {
         int start = Math.max(0, caret - SIGNATURE_SCAN_WINDOW);
-        ArrayDeque<Integer> openParentheses = new ArrayDeque<>();
+        Deque<Integer> openParentheses = new ArrayDeque<>();
         boolean inLineComment = false;
         boolean inBlockComment = false;
         boolean inString = false;
@@ -167,6 +174,7 @@ public class JavaCodeEditorPane extends CodeEditorPane {
                 if (current == '\n' || current == '\r') {
                     inLineComment = false;
                 }
+
                 continue;
             }
 
@@ -175,6 +183,7 @@ public class JavaCodeEditorPane extends CodeEditorPane {
                     inBlockComment = false;
                     index++;
                 }
+
                 continue;
             }
 
@@ -186,6 +195,7 @@ public class JavaCodeEditorPane extends CodeEditorPane {
                 } else if (current == '"') {
                     inString = false;
                 }
+
                 continue;
             }
 
@@ -197,6 +207,7 @@ public class JavaCodeEditorPane extends CodeEditorPane {
                 } else if (current == '\'') {
                     inChar = false;
                 }
+
                 continue;
             }
 

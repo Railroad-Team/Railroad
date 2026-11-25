@@ -21,6 +21,7 @@ public final class JavaUnicodeEscapes {
     public static String translate(CharSequence text) {
         if (!containsBackslash(text))
             return text.toString();
+
         var translated = new StringBuilder(text.length());
         for (int index = 0; index < text.length(); index++) {
             int end = escapeEnd(text, index);
@@ -31,6 +32,7 @@ public final class JavaUnicodeEscapes {
                 translated.append(text.charAt(index));
             }
         }
+
         return translated.toString();
     }
 
@@ -44,24 +46,31 @@ public final class JavaUnicodeEscapes {
     public static int escapeEnd(CharSequence text, int index) {
         if (index >= text.length() || text.charAt(index) != '\\')
             return -1;
+
         int backslashes = 0;
         for (int previous = index - 1; previous >= 0 && text.charAt(previous) == '\\'; previous--) {
             backslashes++;
         }
+
         if (backslashes % 2 != 0)
             return -1;
+
         int digits = index + 1;
         if (digits >= text.length() || text.charAt(digits) != 'u')
             return -1;
+
         while (digits < text.length() && text.charAt(digits) == 'u') {
             digits++;
         }
+
         if (digits + 4 > text.length())
             return -1;
+
         for (int digit = digits; digit < digits + 4; digit++) {
             if (Character.digit(text.charAt(digit), 16) < 0)
                 return -1;
         }
+
         return digits + 4;
     }
 
@@ -81,6 +90,7 @@ public final class JavaUnicodeEscapes {
             if (text.charAt(index) == '\\')
                 return true;
         }
+
         return false;
     }
 }

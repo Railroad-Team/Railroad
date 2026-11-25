@@ -418,7 +418,9 @@ public final class Commands {
         CodeEditorPane::showCodeActions,
         new KeybindData(KeyCode.ENTER, new KeyCombination.Modifier[]{KeyCombination.ALT_DOWN}));
 
-    /** Shows the parameters of the call at the caret. */
+    /**
+     * Shows the parameters of the call at the caret.
+     */
     public static final Command<CodeEditorPane> PARAMETER_INFO = registerCodeEditorCommand(
         "railroad:parameter_info",
         "railroad.menu.code.parameter_info",
@@ -921,6 +923,7 @@ public final class Commands {
                 shortcuts,
                 IDEWorkspaceActions.class)));
         }
+
         return Map.copyOf(commands);
     }
 
@@ -947,6 +950,7 @@ public final class Commands {
                 List.of(),
                 IDEWorkspaceActions.class)));
         }
+
         return Map.copyOf(commands);
     }
 
@@ -961,6 +965,7 @@ public final class Commands {
                 List.of(),
                 IDEWorkspaceActions.class)));
         }
+
         return Map.copyOf(commands);
     }
 
@@ -1009,8 +1014,10 @@ public final class Commands {
     public static Command<Void> viewMode(WorkspaceMode mode) {
         if (mode == WorkspaceModes.CODE)
             return VIEW_MODE_CODE;
+
         if (mode == WorkspaceModes.GIT)
             return VIEW_MODE_GIT;
+
         return null;
     }
 
@@ -1064,7 +1071,7 @@ public final class Commands {
     }
 
     private static void saveActiveAs() {
-        var activeTab = Services.EDITOR_TAB_MANAGER.activeTab().orElse(null);
+        EditorTab activeTab = Services.EDITOR_TAB_MANAGER.activeTab().orElse(null);
         if (activeTab == null || activeTab.view().activeEditor() == null)
             return;
 
@@ -1074,6 +1081,7 @@ public final class Commands {
         if (parent != null && parent.toFile().isDirectory()) {
             fileChooser.setInitialDirectory(parent.toFile());
         }
+
         fileChooser.setInitialFileName(activeTab.path().getFileName().toString());
         File targetFile = fileChooser.showSaveDialog(Railroad.WINDOW_MANAGER.getPrimaryStage());
         if (targetFile == null)
@@ -1084,9 +1092,11 @@ public final class Commands {
         }
     }
 
-    /** Saves dirty editors and reports any files that prevented an operation from continuing. */
+    /**
+     * Saves dirty editors and reports any files that prevented an operation from continuing.
+     */
     public static boolean saveAll() {
-        var result = Services.EDITOR_TAB_MANAGER.saveAll();
+        EditorTabManager.SaveResult result = Services.EDITOR_TAB_MANAGER.saveAll();
         showSaveFailures(result);
         return result.successful();
     }
@@ -1117,7 +1127,7 @@ public final class Commands {
     }
 
     private static void copyToClipboard(String text) {
-        var content = new ClipboardContent();
+        ClipboardContent content = new ClipboardContent();
         content.putString(text);
         Clipboard.getSystemClipboard().setContent(content);
     }

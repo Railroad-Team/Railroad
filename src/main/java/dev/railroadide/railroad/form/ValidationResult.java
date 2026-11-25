@@ -57,11 +57,17 @@ public record ValidationResult(Status status, String message) {
      * It can be OK, WARNING or ERROR.
      */
     public enum Status {
-        /** The validated value is acceptable. */
+        /**
+         * The validated value is acceptable.
+         */
         OK,
-        /** The value is usable but should be brought to the user's attention. */
+        /**
+         * The value is usable but should be brought to the user's attention.
+         */
         WARNING,
-        /** The value is invalid. */
+        /**
+         * The value is invalid.
+         */
         ERROR
     }
 }

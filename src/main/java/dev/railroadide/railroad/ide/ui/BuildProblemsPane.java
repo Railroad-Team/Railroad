@@ -19,14 +19,16 @@ import javafx.scene.layout.BorderPane;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/** Project build errors, with navigation to the compiler's one-based source position. */
+/**
+ * Project build errors, with navigation to the compiler's one-based source position.
+ */
 public final class BuildProblemsPane extends BorderPane implements AutoCloseable {
     private final ListView<BuildProblems.Problem> rows = new ListView<>();
     private final Runnable unsubscribe;
     private boolean closed;
 
     public BuildProblemsPane(Project project) {
-        var problems = project.getRunSessions().buildProblems();
+        BuildProblems problems = project.getRunSessions().buildProblems();
         Path root = project.getPath().toAbsolutePath().normalize();
         rows.setPlaceholder(new LocalizedLabel("railroad.ide.problems.empty"));
         rows.setCellFactory(_ -> new ListCell<>() {
@@ -46,6 +48,7 @@ public final class BuildProblemsPane extends BorderPane implements AutoCloseable
                     setTooltip(null);
                     return;
                 }
+
                 Path file = problem.file();
                 String location = file == null
                     ? ""
@@ -56,17 +59,20 @@ public final class BuildProblemsPane extends BorderPane implements AutoCloseable
                 setTooltip(new Tooltip(location + problem.message()));
             }
         });
+
         rows.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.ENTER && rows.getSelectionModel().getSelectedItem() != null) {
                 open(rows.getSelectionModel().getSelectedItem());
                 event.consume();
             }
         });
+
         getStyleClass().add("build-problems-pane");
         setCenter(rows);
         unsubscribe = problems.subscribe(next -> Platform.runLater(() -> {
             if (closed || problems.problems() != next)
                 return;
+
             boolean newErrors = !rows.getItems().containsAll(next);
             rows.getItems().setAll(next);
             if (newErrors && Services.IDE_STATE.getCurrentProject() == project) {

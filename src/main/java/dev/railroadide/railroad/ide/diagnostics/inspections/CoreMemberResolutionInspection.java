@@ -46,8 +46,10 @@ public final class CoreMemberResolutionInspection implements JavaInspectionRuleP
         context.traverse(node -> {
             if (!"JAVA_FIELD_ACCESS_EXPRESSION".equals(node.kind().id()))
                 return;
+
             if (context.resolvedSymbol(node).isPresent())
                 return;
+
             if (isQualifiedTypePrefix(context, node))
                 return;
 
@@ -58,6 +60,7 @@ public final class CoreMemberResolutionInspection implements JavaInspectionRuleP
             String memberName = context.canonicalQualifiedName(memberNode);
             if (memberName == null || memberName.isBlank())
                 return;
+
             if (isArrayLengthAccess(context, node, memberName) || !context.hasKnownFieldOwner(node))
                 return;
 
@@ -72,8 +75,10 @@ public final class CoreMemberResolutionInspection implements JavaInspectionRuleP
                 .map(symbol -> isTypeSymbol(symbol.kind()))
                 .orElse(false))
                 return true;
+
             current = current.parent().orElse(null);
         }
+
         return false;
     }
 

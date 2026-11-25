@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -86,7 +87,8 @@ public class JavaInferenceRepairTest {
     }
 
     private void assertOnlyMissingField(String source, JavaSymbolIndex index) {
-        var issues = JavaInspectionTestSupport.runProviders(List.of(new CoreMemberResolutionInspection()),
+        List<SemanticDiagnostic> issues = JavaInspectionTestSupport.runProviders(
+            List.of(new CoreMemberResolutionInspection()),
             directory.resolve("Example.java"), source, index);
         assertEquals(List.of("Cannot resolve member 'missing'"), issues.stream()
             .map(SemanticDiagnostic::message).toList());
@@ -125,7 +127,7 @@ public class JavaInferenceRepairTest {
                 }
             }
             """;
-        var errors = JavaInspectionTestSupport.runProviders(
+        List<SemanticDiagnostic> errors = JavaInspectionTestSupport.runProviders(
             List.of(new CoreAssignmentInspection(), new CoreCallResolutionInspection()),
             directory.resolve("Example.java"), caller, index).stream()
             .filter(issue -> issue.severity() == SemanticDiagnostic.Severity.ERROR).toList();
@@ -257,7 +259,7 @@ public class JavaInferenceRepairTest {
         check(source, true);
         var model = JavaSemanticAnalyzer.analyzeFacts(source);
         var context = new JavaRuleContext(Path.of("Example.java"), source, model);
-        var literal = context.nodesOfKind("JAVA_LITERAL_EXPRESSION").getFirst();
+        SyntaxNode literal = context.nodesOfKind("JAVA_LITERAL_EXPRESSION").getFirst();
         assertEquals(new JavaTypes.DeclaredType("java.lang.String", List.of()),
             model.inferredType(literal).orElseThrow());
     }
@@ -279,7 +281,7 @@ public class JavaInferenceRepairTest {
         int exit = ToolProvider.getSystemJavaCompiler().run(null, output, output,
             "--release", "25", "-proc:none", "-d", directory.toString(), file.toString());
         assertEquals(valid, exit == 0, () -> "javac: " + output);
-        var diagnostics = JavaInspectionTestSupport.runProviders(
+        List<SemanticDiagnostic> diagnostics = JavaInspectionTestSupport.runProviders(
             List.of(new CoreAssignmentInspection(), new CoreCallResolutionInspection()),
             file, source, JDK);
         boolean errors = diagnostics.stream().anyMatch(d -> d.severity() == SemanticDiagnostic.Severity.ERROR);

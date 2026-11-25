@@ -121,6 +121,7 @@ public class LineMapTest {
             assertEquals(expected, map.positionAt(offset), "Position at offset " + offset);
             assertEquals(offset, map.offsetAt(expected), "Offset at column " + offset);
         }
+
         assertEquals(new TextPosition(1, 0), map.positionAt(5));
         assertEquals(5, map.offsetAt(new TextPosition(1, 0)));
     }
@@ -190,14 +191,18 @@ public class LineMapTest {
     @Test
     public void excludesEachKindOfLineTerminatorFromLineEnds() {
         assertLines("one\ntwo", new int[]{0, 4}, new int[]{3, 7});
+
         assertLines("one\rtwo", new int[]{0, 4}, new int[]{3, 7});
+
         assertLines("one\r\ntwo", new int[]{0, 5}, new int[]{3, 8});
     }
 
     @Test
     public void retainsEmptyFinalLineAfterEachKindOfTerminator() {
         assertLines("one\n", new int[]{0, 4}, new int[]{3, 4});
+
         assertLines("one\r", new int[]{0, 4}, new int[]{3, 4});
+
         assertLines("one\r\n", new int[]{0, 5}, new int[]{3, 5});
     }
 
@@ -209,8 +214,11 @@ public class LineMapTest {
     @Test
     public void handlesDocumentsContainingOnlyTerminators() {
         assertLines("\n", new int[]{0, 1}, new int[]{0, 1});
+
         assertLines("\r", new int[]{0, 1}, new int[]{0, 1});
+
         assertLines("\r\n", new int[]{0, 2}, new int[]{0, 2});
+
         assertLines("\r\r\n\n", new int[]{0, 1, 3, 4}, new int[]{0, 1, 3, 4});
     }
 

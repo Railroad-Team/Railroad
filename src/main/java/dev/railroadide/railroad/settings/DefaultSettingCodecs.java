@@ -175,6 +175,7 @@ public class DefaultSettingCodecs {
     private static int parseNonNegativeInteger(String text) {
         if (text == null || text.isBlank())
             return 0;
+
         if (!text.matches("\\d+"))
             return 0;
 

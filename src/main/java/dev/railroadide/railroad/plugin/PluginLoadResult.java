@@ -133,6 +133,7 @@ public final class PluginLoadResult {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass())
             return false;
+
         PluginLoadResult that = (PluginLoadResult) o;
         return Objects.equals(pluginPath, that.pluginPath)
             && Objects.equals(descriptor, that.descriptor)

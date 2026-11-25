@@ -25,6 +25,7 @@ public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
         super(index);
         archiveIndex = index;
     }
+
     private JavaJdkSymbolIndex(
         Map<String, ClassStub> classStubsByQualifiedName,
         Map<String, Path> sourceByQualifiedName,
@@ -62,6 +63,7 @@ public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
         if (!Files.isRegularFile(rtJar)) {
             rtJar = jdkHome.resolve("lib/rt.jar");
         }
+
         if (Files.isRegularFile(rtJar)) {
             roots.add(rtJar);
         } else {
@@ -120,6 +122,7 @@ public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
                 locations.put(qualifiedName,
                     resource == null ? runtimeLocation : DocumentUri.parse(resource.toExternalForm()));
             });
+
         return new JavaJdkSymbolIndex(classStubsByQualifiedName, sourceByQualifiedName, locations, activityCheck);
     }
 }

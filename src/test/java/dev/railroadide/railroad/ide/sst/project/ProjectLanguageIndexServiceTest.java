@@ -238,6 +238,7 @@ public class ProjectLanguageIndexServiceTest {
         for (int index = 0; index < additionalPathAndSourcePairs.length; index += 2) {
             writeProjectSource(root, additionalPathAndSourcePairs[index], additionalPathAndSourcePairs[index + 1]);
         }
+
         return root;
     }
 
@@ -266,6 +267,7 @@ public class ProjectLanguageIndexServiceTest {
             JavaProjectSemanticIndex rebuilt = indexService.indexTyped(project(projectRoot), LANGUAGE_ID);
             if (rebuilt == null)
                 throw new IllegalStateException("No indexer registered for " + LANGUAGE_ID);
+
             return rebuilt;
         }
 
@@ -277,6 +279,7 @@ public class ProjectLanguageIndexServiceTest {
             JavaProjectSemanticIndex rebuilt = indexService.rebuildTyped(project(projectRoot), LANGUAGE_ID);
             if (rebuilt == null)
                 throw new IllegalStateException("No indexer registered for " + LANGUAGE_ID);
+
             return rebuilt;
         }
 

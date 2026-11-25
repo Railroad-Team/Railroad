@@ -40,6 +40,7 @@ public final class RailroadLauncher {
         if (preloader == null || preloader.isBlank()) {
             System.setProperty("javafx.preloader", RailroadPreloader.class.getName());
         }
+
         Application.launch(Railroad.class, args);
     }
 

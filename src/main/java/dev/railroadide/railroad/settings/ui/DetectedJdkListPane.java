@@ -73,7 +73,7 @@ public class DetectedJdkListPane extends RRVBox {
     private void refresh() {
         JDKManager.refreshJDKs();
         List<JDK> detected = JDKManager.getAvailableJDKs();
-        var copy = new ArrayList<>(detected);
+        List<JDK> copy = new ArrayList<>(detected);
         items.setAll(copy);
         countLabel.setKey("railroad.settings.ide.jdk_management.detected.count", detected.size());
     }
@@ -155,6 +155,7 @@ public class DetectedJdkListPane extends RRVBox {
             if (version.endsWith(".0") && version.length() > 2) {
                 version = version.substring(0, version.length() - 2);
             }
+
             versionLabel.setKey("railroad.settings.ide.jdk_management.detected.version", version);
 
             String name = item.name();

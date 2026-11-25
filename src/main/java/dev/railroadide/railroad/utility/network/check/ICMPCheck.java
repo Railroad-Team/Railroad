@@ -9,7 +9,9 @@ import java.net.InetAddress;
  * The underlying reachability mechanism depends on the platform and available privileges.
  */
 public class ICMPCheck implements NetworkCheck {
-    /** Creates a host reachability probe with failure logging enabled. */
+    /**
+     * Creates a host reachability probe with failure logging enabled.
+     */
     public ICMPCheck() {
     }
 

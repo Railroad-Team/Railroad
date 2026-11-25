@@ -19,12 +19,12 @@ public class JavaProjectSemanticIndexTest {
         Path path = Path.of("Example.java");
         var descriptor = new JavaProjectSemanticIndex.SymbolDescriptor(
             JavaSymbolKind.CLASS, "Example", "demo.Example", null, null, path, false, true);
-        var declarations = new ArrayList<>(List.of(descriptor));
-        var imports = new ArrayList<>(
+        List<JavaProjectSemanticIndex.SymbolDescriptor> declarations = new ArrayList<>(List.of(descriptor));
+        List<JavaProjectSemanticIndex.ImportDescriptor> imports = new ArrayList<>(
             List.of(new JavaProjectSemanticIndex.ImportDescriptor("java.util.List", false, false)));
         var file = new JavaProjectSemanticIndex.SourceFileIndex(path, "demo", imports, declarations);
-        var builder = JavaProjectSemanticIndex.builder().putFile(file);
-        var index = builder.build();
+        JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder().putFile(file);
+        JavaProjectSemanticIndex index = builder.build();
         declarations.clear();
         imports.clear();
         builder.removeFile(path);
@@ -36,7 +36,7 @@ public class JavaProjectSemanticIndexTest {
         var ready = new CountDownLatch(4);
         var start = new CountDownLatch(1);
         try (var executor = Executors.newFixedThreadPool(4)) {
-            var tasks = new ArrayList<Future<?>>();
+            List<Future<?>> tasks = new ArrayList<Future<?>>();
             for (int worker = 0; worker < 4; worker++) {
                 tasks.add(executor.submit(() -> {
                     ready.countDown();
@@ -46,15 +46,18 @@ public class JavaProjectSemanticIndexTest {
                         assertEquals(List.of(descriptor), index.lookupQualifiedName("demo.Example"));
                         assertEquals(Set.of("demo.Example"), index.declaredQualifiedNames());
                     }
+
                     return null;
                 }));
             }
+
             try {
                 assertTrue(ready.await(10, TimeUnit.SECONDS));
             } finally {
                 start.countDown();
             }
-            for (var task : tasks) {
+
+            for (Future<?> task : tasks) {
                 task.get(20, TimeUnit.SECONDS);
             }
         }

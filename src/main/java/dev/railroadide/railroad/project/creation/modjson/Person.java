@@ -3,6 +3,7 @@ package dev.railroadide.railroad.project.creation.modjson;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.Map;
 
 /**
  * An author or contributor named in Fabric mod metadata, with optional contact information.
@@ -11,10 +12,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Person {
-    /** The person's required display name. */
+    /**
+     * The person's required display name.
+     */
     private String name; // Mandatory
-    /** The person's contact information, or {@code null} if omitted. */
-    private ContactInformation contact; // Optional
+    /**
+     * The person's contact information, or {@code null} if omitted.
+     */
+    private Map<String, String> contact; // Optional
 
     /**
      * Creates a person entry containing only a display name.

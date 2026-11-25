@@ -73,6 +73,7 @@ public final class IDEPaneLifecycle implements AutoCloseable {
                 }
             }
         }
+
         cleanupActions.clear();
 
         if (failure != null)

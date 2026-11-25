@@ -43,5 +43,4 @@ public abstract class BaseBinaryLanguageSupport implements LanguageSupport {
     public ContentKind contentKind() {
         return ContentKind.BINARY;
     }
-
 }

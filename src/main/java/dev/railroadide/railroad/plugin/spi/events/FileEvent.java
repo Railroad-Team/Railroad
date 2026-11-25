@@ -85,17 +85,29 @@ public record FileEvent(Document file, EventType eventType) implements Event {
      * Enum representing the different types of file events.
      */
     public enum EventType {
-        /** The file was opened. */
+        /**
+         * The file was opened.
+         */
         OPENED,
-        /** The file was closed. */
+        /**
+         * The file was closed.
+         */
         CLOSED,
-        /** The file was saved. */
+        /**
+         * The file was saved.
+         */
         SAVED,
-        /** The file was deleted. */
+        /**
+         * The file was deleted.
+         */
         DELETED,
-        /** The file became active. */
+        /**
+         * The file became active.
+         */
         ACTIVATED,
-        /** The file became inactive. */
+        /**
+         * The file became inactive.
+         */
         DEACTIVATED
     }
 }

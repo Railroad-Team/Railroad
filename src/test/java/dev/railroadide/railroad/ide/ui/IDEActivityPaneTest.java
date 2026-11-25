@@ -27,6 +27,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongConsumer;
+import javafx.event.EventType;
+import javafx.geometry.Bounds;
+import javafx.geometry.Point2D;
+import javafx.scene.Node;
+import javafx.scene.layout.Region;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -40,6 +46,7 @@ public class IDEActivityPaneTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
     }
 
@@ -52,19 +59,20 @@ public class IDEActivityPaneTest {
             new Scene(created);
             return created;
         });
+
         assertFalse(onFx(pane::isVisible));
 
-        var importing = activities.start("railroad.activity.importing_gradle");
-        var bytes = importing.begin("download.jar", ActivityProgress.Unit.BYTES, 0, 4096);
+        BackgroundActivities.Handle importing = activities.start("railroad.activity.importing_gradle");
+        LongConsumer bytes = importing.begin("download.jar", ActivityProgress.Unit.BYTES, 0, 4096);
         bytes.accept(512);
-        var indexing = activities.start("railroad.activity.indexing_libraries");
+        BackgroundActivities.Handle indexing = activities.start("railroad.activity.indexing_libraries");
         assertTrue(onFx(() -> bar(pane).isIndeterminate()));
         List<String> shown = onFx(() -> labels(pane));
         assertTrue(onFx(pane::isVisible));
         assertEquals(List.of(L18n.localize("railroad.activity.indexing_libraries"),
             L18n.localize("railroad.activity.others", 1)), shown);
 
-        var processed = indexing.count("files", ActivityProgress.Unit.COUNT, 4);
+        Runnable processed = indexing.count("files", ActivityProgress.Unit.COUNT, 4);
         processed.run();
         assertEquals(0.25, onFx(() -> bar(pane).getProgress()));
         assertTrue(onFx(() -> labels(pane).contains("1/4")));
@@ -87,15 +95,16 @@ public class IDEActivityPaneTest {
     @Test
     public void statusBarKeepsActivityBesideCaretAtRightEdge() throws Exception {
         onFx(() -> {
-            try (var _ = BackgroundActivities.shared().start("railroad.activity.indexing_libraries")) {
+            try (BackgroundActivities.Handle _ = BackgroundActivities.shared()
+                .start("railroad.activity.indexing_libraries")) {
                 var statusBar = new IDEStatusBarPane(new Pane(), new IDEActivityPane());
                 var scene = new Scene(statusBar, 900, 32);
                 try {
                     statusBar.applyCss();
                     statusBar.layout();
-                    var activity = statusBar.lookup(".rr-activity-pane");
-                    var caret = statusBar.lookup("IDECaretPositionPane");
-                    var indicators = (HBox) activity.getParent();
+                    Node activity = statusBar.lookup(".rr-activity-pane");
+                    Node caret = statusBar.lookup("IDECaretPositionPane");
+                    HBox indicators = (HBox) activity.getParent();
                     assertTrue(activity.isManaged());
                     assertEquals(caret.getBoundsInParent().getMinX(),
                         activity.getBoundsInParent().getMaxX() + indicators.getSpacing(), 0.5);
@@ -105,6 +114,7 @@ public class IDEActivityPaneTest {
                     scene.setRoot(new Pane());
                 }
             }
+
             return null;
         });
     }
@@ -113,13 +123,13 @@ public class IDEActivityPaneTest {
     public void clickingProgressFloatsTasksOverTheEditorUntilDismissed() throws Exception {
         var clock = new AtomicLong();
         var activities = new BackgroundActivities(clock::get);
-        var first = activities.start("railroad.activity.indexing_libraries");
-        var files = first.count("first library", ActivityProgress.Unit.COUNT, 8);
+        BackgroundActivities.Handle first = activities.start("railroad.activity.indexing_libraries");
+        Runnable files = first.count("first library", ActivityProgress.Unit.COUNT, 8);
         files.run();
-        var second = activities.start("railroad.activity.indexing_libraries");
+        BackgroundActivities.Handle second = activities.start("railroad.activity.indexing_libraries");
         second.indeterminate("second library");
-        var pane = onFx(() -> new IDEActivityPane(activities));
-        var stage = onFx(() -> {
+        IDEActivityPane pane = onFx(() -> new IDEActivityPane(activities));
+        Stage stage = onFx(() -> {
             Platform.setImplicitExit(false);
             var window = new Stage();
             var editor = new Pane();
@@ -130,30 +140,32 @@ public class IDEActivityPaneTest {
             window.show();
             return window;
         });
+
         try {
             VBox rows = onFx(() -> {
-                var workspace = (BorderPane) stage.getScene().getRoot();
-                var stack = (StackPane) workspace.getCenter();
-                var editor = stack.getChildren().getFirst();
-                var editorBounds = editor.localToScene(editor.getLayoutBounds());
-                var statusBar = workspace.getBottom();
-                var statusBounds = statusBar.localToScene(statusBar.getLayoutBounds());
-                var bounds = bar(pane).localToScene(bar(pane).getBoundsInLocal());
-                var screen = pane.getScene().getRoot().localToScreen(bounds.getCenterX(), bounds.getCenterY());
-                for (var type : List.of(MouseEvent.MOUSE_PRESSED, MouseEvent.MOUSE_RELEASED)) {
+                BorderPane workspace = (BorderPane) stage.getScene().getRoot();
+                StackPane stack = (StackPane) workspace.getCenter();
+                Node editor = stack.getChildren().getFirst();
+                Bounds editorBounds = editor.localToScene(editor.getLayoutBounds());
+                Node statusBar = workspace.getBottom();
+                Bounds statusBounds = statusBar.localToScene(statusBar.getLayoutBounds());
+                Bounds bounds = bar(pane).localToScene(bar(pane).getBoundsInLocal());
+                Point2D screen = pane.getScene().getRoot().localToScreen(bounds.getCenterX(), bounds.getCenterY());
+                for (EventType<MouseEvent> type : List.of(MouseEvent.MOUSE_PRESSED, MouseEvent.MOUSE_RELEASED)) {
                     pane.fireEvent(new MouseEvent(type, bounds.getCenterX(), bounds.getCenterY(), screen.getX(),
                         screen.getY(), MouseButton.PRIMARY, 1, false, false, false, false,
                         type == MouseEvent.MOUSE_PRESSED, false, false, false, false, true,
                         new PickResult(pane, bounds.getCenterX(), bounds.getCenterY())));
                 }
+
                 workspace.applyCss();
                 workspace.layout();
-                var list = (ScrollPane) workspace.lookup(".rr-activity-list");
-                var overlay = pane.getTaskOverlay();
+                ScrollPane list = (ScrollPane) workspace.lookup(".rr-activity-list");
+                Region overlay = pane.getTaskOverlay();
                 assertTrue(overlay.isVisible());
                 assertSame(overlay, stack.getChildren().getLast());
                 assertSame(stage.getScene(), list.getScene());
-                var listBounds = list.localToScene(list.getLayoutBounds());
+                Bounds listBounds = list.localToScene(list.getLayoutBounds());
                 assertEquals(editorBounds, editor.localToScene(editor.getLayoutBounds()));
                 assertEquals(statusBounds, statusBar.localToScene(statusBar.getLayoutBounds()));
                 assertTrue(editorBounds.contains(listBounds));
@@ -164,7 +176,7 @@ public class IDEActivityPaneTest {
                 editor.requestFocus();
                 assertSame(editor, stage.getScene().getFocusOwner());
                 assertTrue(overlay.isVisible());
-                var content = (VBox) list.getContent();
+                VBox content = (VBox) list.getContent();
                 assertEquals(2, content.getChildren().size());
                 assertTaskRow(content, 0, "second library", "", -1);
                 assertTaskRow(content, 1, "first library", "1/8", 0.125);
@@ -173,7 +185,7 @@ public class IDEActivityPaneTest {
 
             clock.set(TimeUnit.SECONDS.toNanos(2));
             files.run();
-            var third = activities.start("railroad.activity.git_fetch");
+            BackgroundActivities.Handle third = activities.start("railroad.activity.git_fetch");
             third.indeterminate("fetching");
             second.close();
             onFx(() -> {
@@ -184,6 +196,7 @@ public class IDEActivityPaneTest {
                     0.25);
                 return null;
             });
+
             third.close();
             first.close();
             onFx(() -> {
@@ -195,7 +208,8 @@ public class IDEActivityPaneTest {
                 assertFalse(bar(pane).isVisible());
                 return null;
             });
-            try (var next = activities.start("railroad.activity.indexing_libraries")) {
+
+            try (BackgroundActivities.Handle next = activities.start("railroad.activity.indexing_libraries")) {
                 next.indeterminate("next library");
                 onFx(() -> {
                     assertTaskRow(rows, 0, "next library", "", -1);
@@ -215,9 +229,9 @@ public class IDEActivityPaneTest {
     }
 
     private static void assertTaskRow(VBox rows, int index, String phase, String detail, double fraction) {
-        var row = rows.getChildren().get(index);
+        Node row = rows.getChildren().get(index);
         assertEquals(fraction, ((ProgressBar) row.lookup(".progress-bar")).getProgress());
-        var text = row.lookupAll(".label").stream().map(node -> ((Label) node).getText()).toList();
+        List<String> text = row.lookupAll(".label").stream().map(node -> ((Label) node).getText()).toList();
         assertTrue(text.contains(phase));
         assertTrue(text.contains(detail));
     }

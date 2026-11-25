@@ -110,6 +110,7 @@ public final class GitStatusParser {
 
             branch = head.isBlank() ? "(unknown)" : head;
         }
+
         return branch;
     }
 

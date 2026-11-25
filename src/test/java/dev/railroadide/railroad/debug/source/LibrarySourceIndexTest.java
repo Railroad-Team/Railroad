@@ -92,11 +92,13 @@ public class LibrarySourceIndexTest {
         zip(jar, Map.of(
             "net/example/Thing.class", new byte[]{(byte) 0xCA, (byte) 0xFE},
             "net/example/Thing$Inner.class", new byte[]{(byte) 0xCA, (byte) 0xFE}));
+
         if (withSources) {
             String name = jar.getFileName().toString();
             Path sources = jar.resolveSibling(name.substring(0, name.length() - ".jar".length()) + "-sources.jar");
             zip(sources, Map.of("net/example/Thing.java", SOURCE.getBytes(StandardCharsets.UTF_8)));
         }
+
         return jar;
     }
 

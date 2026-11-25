@@ -103,7 +103,9 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         return build(roots, activityCheck, cache, "railroad.activity.libraries");
     }
 
-    /** Builds an index using the specified phase label for its root scan, including JDK module scans. */
+    /**
+     * Builds an index using the specified phase label for its root scan, including JDK module scans.
+     */
     public static JavaLibrarySymbolIndex build(
         List<Path> roots,
         Runnable activityCheck,
@@ -117,7 +119,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         List<Path> uniqueRoots = List.copyOf(new LinkedHashSet<>(roots));
         var progress = ActivityProgress.current();
         Runnable processed = progress.count(phase, ActivityProgress.Unit.COUNT, uniqueRoots.size());
-        var scannedRoots = scanRoots(uniqueRoots, activityCheck, cache, processed,
+        List<ScannedRoot> scannedRoots = scanRoots(uniqueRoots, activityCheck, cache, processed,
             uniqueRoots.size() == 1 ? progress : ActivityProgress.NONE);
         progress.indeterminate("railroad.activity.finalizing");
         List<ScannedRoot> archives = new ArrayList<>();
@@ -138,6 +140,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
                     }
                 }
             }
+
             if (!retained.isEmpty()) {
                 archives.add(new ScannedRoot(List.copyOf(retained), root.archive(), root.shared()));
             }
@@ -152,6 +155,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
     public JavaSymbolIndex forAttachedSource(Path archive, Runnable check) {
         if (unscoped != this)
             return unscoped.forAttachedSource(archive, check);
+
         check.run();
         Map<String, String> aliases = Map.of();
         try {
@@ -159,7 +163,8 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         } catch (IOException exception) {
             Railroad.LOGGER.warn("Failed to read package relocations for attached source from {}", archive, exception);
         }
-        var scoped = aliases.isEmpty() ? this : new JavaLibrarySymbolIndex(this, aliases);
+
+        JavaLibrarySymbolIndex scoped = aliases.isEmpty() ? this : new JavaLibrarySymbolIndex(this, aliases);
         try {
             return JavaLibrarySources.shared().withSourceOnlyTypes(archive, scoped, this, check);
         } catch (IOException exception) {
@@ -168,7 +173,9 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         }
     }
 
-    /** Scans roots in parallel and returns their classes in root order, so earlier roots keep precedence. */
+    /**
+     * Scans roots in parallel and returns their classes in root order, so earlier roots keep precedence.
+     */
     private static List<ScannedRoot> scanRoots(
         List<Path> roots,
         Runnable activityCheck,
@@ -186,10 +193,11 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
             thread.setDaemon(true);
             return thread;
         });
+
         try {
             List<Future<ScannedRoot>> scans = roots.stream()
                 .map(root -> executor.submit(() -> {
-                    var scanned = scanRoot(root, cache, cancelled, entriesProgress);
+                    ScannedRoot scanned = scanRoot(root, cache, cancelled, entriesProgress);
                     processed.run();
                     return scanned;
                 }))
@@ -218,8 +226,10 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
             } catch (ExecutionException exception) {
                 if (exception.getCause() instanceof RuntimeException runtime)
                     throw runtime;
+
                 if (exception.getCause() instanceof Error error)
                     throw error;
+
                 throw new IllegalStateException("Failed to scan library root", exception.getCause());
             }
         }
@@ -279,20 +289,22 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
                     cancelled), archive, null);
 
             Path path = archive.toAbsolutePath().normalize();
-            var lock = ARCHIVE_LOCKS.get(path);
+            Lock lock = ARCHIVE_LOCKS.get(path);
             lock.lockInterruptibly();
             try {
                 checkCancelled(cancelled);
                 var attributes = Files.readAttributes(path, BasicFileAttributes.class);
                 var version = new ArchiveVersion(cache, path, attributes.size(),
                     attributes.lastModifiedTime().toMillis());
-                var existing = LOADED_ARCHIVES.getIfPresent(version);
+                SharedArchive existing = LOADED_ARCHIVES.getIfPresent(version);
                 if (existing != null)
                     return new ScannedRoot(List.of(), archive, existing);
-                var entries = readArchive(version, cancelled, entriesProgress);
+
+                List<JavaLibraryStubCache.ArchiveClass> entries = readArchive(version, cancelled, entriesProgress);
                 if (entries.isEmpty())
                     return ScannedRoot.EMPTY;
-                var classes = toScannedClasses(path, entries, cancelled);
+
+                List<ScannedClass> classes = toScannedClasses(path, entries, cancelled);
                 var shared = new SharedArchive(version, entries, classes);
                 LOADED_ARCHIVES.put(version, shared);
                 return new ScannedRoot(classes, archive, shared);
@@ -313,21 +325,24 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         AtomicBoolean cancelled,
         ActivityProgress entriesProgress
     ) throws IOException {
-        var cache = version.cache();
+        JavaLibraryStubCache cache = version.cache();
         Path archive = version.path();
         try {
-            var cached = cache.load(archive, version.size(), version.lastModified());
+            Optional<List<JavaLibraryStubCache.ArchiveClass>> cached = cache.load(archive, version.size(),
+                version.lastModified());
             if (cached.isPresent())
                 return cached.get();
         } catch (IOException exception) {
             Railroad.LOGGER.warn("Ignoring unreadable library stub cache for {}", archive, exception);
         }
-        var parsed = parseArchive(archive, cancelled, entriesProgress);
+
+        List<JavaLibraryStubCache.ArchiveClass> parsed = parseArchive(archive, cancelled, entriesProgress);
         try {
             cache.save(archive, version.size(), version.lastModified(), parsed);
         } catch (IOException | RuntimeException exception) {
             Railroad.LOGGER.warn("Failed to cache library stubs for {}", archive, exception);
         }
+
         return parsed;
     }
 
@@ -339,7 +354,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         List<JavaLibraryStubCache.ArchiveClass> parsed = new ArrayList<>();
         try (JarFile jarFile = new JarFile(archive.toFile())) {
             Enumeration<JarEntry> entries = jarFile.entries();
-            var processed = entriesProgress.count("railroad.activity.archive_entries", ActivityProgress.Unit.COUNT,
+            Runnable processed = entriesProgress.count("railroad.activity.archive_entries", ActivityProgress.Unit.COUNT,
                 jarFile.size());
             for (; entries.hasMoreElements(); processed.run()) {
                 checkCancelled(cancelled);
@@ -361,6 +376,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
                 }
             }
         }
+
         return parsed;
     }
 
@@ -373,7 +389,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         List<ScannedClass> scanned = new ArrayList<>(classes.size());
         for (JavaLibraryStubCache.ArchiveClass archiveClass : classes) {
             checkCancelled(cancelled);
-            var stub = archiveClass.stub();
+            ClassStub stub = archiveClass.stub();
             scanned.add(ScannedClass.inArchive(stub, archive, prefix, archiveClass.entryName()));
         }
 
@@ -418,7 +434,9 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         return entry;
     }
 
-    /** Characters a URI path keeps as they are; class entries rarely contain anything else. */
+    /**
+     * Characters a URI path keeps as they are; class entries rarely contain anything else.
+     */
     private static boolean isUnreservedPathCharacter(char character) {
         return character >= 'a' && character <= 'z'
             || character >= 'A' && character <= 'Z'
@@ -466,6 +484,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
                     entries.add(new ArchiveEntry(parsed.get(i).entryName(), scanned));
                 }
             }
+
             this.entries = List.copyOf(entries);
         }
 
@@ -475,13 +494,15 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
             for (ArchiveEntry entry : entries) {
                 ActivityCheckpoint.poll(activityCheck);
                 if (!shadowed.contains(entry.qualifiedName)) {
-                    var scanned = entry.scanned.get();
+                    ScannedClass scanned = entry.scanned.get();
                     if (scanned == null) {
                         missing.put(visible.size(), entry);
                     }
+
                     visible.add(scanned);
                 }
             }
+
             if (missing.isEmpty())
                 return visible;
 
@@ -491,10 +512,11 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
                 if (attributes.size() != version.size()
                     || attributes.lastModifiedTime().toMillis() != version.lastModified())
                     throw new CancellationException("Library archive changed during indexing: " + path);
+
                 String prefix = archivePrefix(path);
-                for (var item : missing.entrySet()) {
+                for (Map.Entry<Integer, ArchiveEntry> item : missing.entrySet()) {
                     activityCheck.run();
-                    var entry = item.getValue();
+                    ArchiveEntry entry = item.getValue();
                     try {
                         visible.set(item.getKey(), entry.restore(jar, path, prefix));
                     } catch (CancellationException exception) {
@@ -506,6 +528,7 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
             } catch (IOException exception) {
                 Railroad.LOGGER.error("Error scanning library archive {}", path, exception);
             }
+
             visible.removeIf(Objects::isNull);
             return visible;
         }
@@ -523,13 +546,15 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
         }
 
         private synchronized ScannedClass restore(JarFile jar, Path path, String prefix) throws IOException {
-            var existing = scanned.get();
+            ScannedClass existing = scanned.get();
             if (existing != null)
                 return existing;
-            var entry = jar.getJarEntry(name);
+
+            JarEntry entry = jar.getJarEntry(name);
             if (entry == null)
                 throw new IOException("Missing class entry " + name);
-            try (var input = jar.getInputStream(entry)) {
+
+            try (InputStream input = jar.getInputStream(entry)) {
                 var stub = BinaryStubPublication.copy(ClassStubParser.parse(new ClassReader(input)));
                 var result = ScannedClass.inArchive(stub, path, prefix, name);
                 scanned = new WeakReference<>(result);

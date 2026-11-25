@@ -94,6 +94,7 @@ public class ToolingGradleModelServiceTest {
                 Files.writeString(snapshot, "not a snapshot");
             }
         }
+
         var service = new ToolingGradleModelService(project, new StubEnvironment(project), executor, store);
 
         assertEquals(Optional.empty(), service.getCachedModel());

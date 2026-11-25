@@ -9,6 +9,8 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+import java.util.concurrent.Future;
+import java.util.function.LongConsumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -18,19 +20,23 @@ public class BackgroundActivitiesTest {
     public void overlappingTasksUpdateOnlyTheirOwnActivity() throws Exception {
         var registry = new BackgroundActivities();
         var barrier = new CyclicBarrier(2);
-        try (var first = registry.start("first");
-            var second = registry.start("second");
+        try (BackgroundActivities.Handle first = registry.start("first");
+            BackgroundActivities.Handle second = registry.start("second");
             var pool = Executors.newVirtualThreadPerTaskExecutor()) {
-            var firstCount = pool.submit(() -> ScopedValue.where(ActivityProgress.CURRENT, first).call(() -> {
-                barrier.await(5, TimeUnit.SECONDS);
-                return ActivityProgress.current().count("files", ActivityProgress.Unit.COUNT, 100);
-            }));
-            var secondCount = pool.submit(() -> ScopedValue.where(ActivityProgress.CURRENT, second).call(() -> {
-                barrier.await(5, TimeUnit.SECONDS);
-                return ActivityProgress.current().count("modules", ActivityProgress.Unit.COUNT, 20);
-            }));
-            var files = firstCount.get(5, TimeUnit.SECONDS);
-            var modules = secondCount.get(5, TimeUnit.SECONDS);
+            Future<Runnable> firstCount = pool
+                .submit(() -> ScopedValue.where(ActivityProgress.CURRENT, first).call(() -> {
+                    barrier.await(5, TimeUnit.SECONDS);
+                    return ActivityProgress.current().count("files", ActivityProgress.Unit.COUNT, 100);
+                }));
+
+            Future<Runnable> secondCount = pool
+                .submit(() -> ScopedValue.where(ActivityProgress.CURRENT, second).call(() -> {
+                    barrier.await(5, TimeUnit.SECONDS);
+                    return ActivityProgress.current().count("modules", ActivityProgress.Unit.COUNT, 20);
+                }));
+
+            Runnable files = firstCount.get(5, TimeUnit.SECONDS);
+            Runnable modules = secondCount.get(5, TimeUnit.SECONDS);
             IntStream.range(0, 100).parallel().forEach(_ -> files.run());
             modules.run();
             assertEquals(List.of(100L, 1L), registry.running().stream()
@@ -44,8 +50,8 @@ public class BackgroundActivitiesTest {
     public void estimatesOnlyAdvancingMeasuredPhasesAndIgnoresLateCallbacks() {
         var clock = new AtomicLong();
         var registry = new BackgroundActivities(clock::get);
-        var activity = registry.start("download");
-        var bytes = activity.begin("file", ActivityProgress.Unit.BYTES, 400, 1000);
+        BackgroundActivities.Handle activity = registry.start("download");
+        LongConsumer bytes = activity.begin("file", ActivityProgress.Unit.BYTES, 400, 1000);
         bytes.accept(450);
         assertEquals(-1, registry.running().getFirst().remainingSeconds());
         clock.set(TimeUnit.SECONDS.toNanos(2));
@@ -59,7 +65,7 @@ public class BackgroundActivitiesTest {
         assertEquals(500, registry.running().getFirst().completed());
         bytes.accept(1000);
         assertEquals(-1, registry.running().getFirst().remainingSeconds());
-        var steps = activity.begin("setup", ActivityProgress.Unit.STEPS, 0, 5);
+        LongConsumer steps = activity.begin("setup", ActivityProgress.Unit.STEPS, 0, 5);
         steps.accept(1);
         clock.addAndGet(TimeUnit.SECONDS.toNanos(2));
         steps.accept(2);
@@ -76,10 +82,10 @@ public class BackgroundActivitiesTest {
     @Test
     public void overlappingDownloadsKeepTheirOwnCountsAndHideUnknownTotals() {
         var registry = new BackgroundActivities();
-        try (var activity = registry.start("downloads")) {
+        try (BackgroundActivities.Handle activity = registry.start("downloads")) {
             var downloads = new DownloadProgress(activity);
-            var first = "https://repo.test/first.jar?token=hidden";
-            var second = "https://repo.test/second.jar";
+            String first = "https://repo.test/first.jar?token=hidden";
+            String second = "https://repo.test/second.jar";
             downloads.update(first, 1, -1);
             assertEquals(-1, registry.running().getFirst().fraction());
             downloads.update(first, 2, 10);
@@ -101,13 +107,14 @@ public class BackgroundActivitiesTest {
     public void activitiesRunUntilClosedAndNotifyObserversUntilUnsubscribed() {
         var activities = new BackgroundActivities();
         var notifications = new AtomicInteger();
-        var subscription = activities.observe(notifications::incrementAndGet);
+        BackgroundActivities.Subscription subscription = activities.observe(notifications::incrementAndGet);
 
-        var indexing = activities.start("railroad.activity.indexing_project");
-        try (var _ = activities.start("railroad.activity.indexing_jdk")) {
+        BackgroundActivities.Handle indexing = activities.start("railroad.activity.indexing_project");
+        try (BackgroundActivities.Handle _ = activities.start("railroad.activity.indexing_jdk")) {
             assertEquals(List.of("railroad.activity.indexing_project", "railroad.activity.indexing_jdk"),
                 activities.running().stream().map(BackgroundActivities.Activity::titleKey).toList());
         }
+
         assertEquals(List.of("railroad.activity.indexing_project"),
             activities.running().stream().map(BackgroundActivities.Activity::titleKey).toList());
 

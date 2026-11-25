@@ -59,6 +59,7 @@ public class RailroadPreloader extends Preloader {
         if (stylesheet != null) {
             scene.getStylesheets().add(stylesheet.toExternalForm());
         }
+
         stage.setScene(scene);
         stage.sizeToScene();
         stage.show();

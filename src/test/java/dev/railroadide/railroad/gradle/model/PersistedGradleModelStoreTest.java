@@ -198,13 +198,17 @@ public class PersistedGradleModelStoreTest {
         Files.setLastModifiedTime(file, FileTime.from(IMPORT_STARTED.minusSeconds(60)));
     }
 
-    /** Has the shape of {@link Runnable} without implementing it, so the adapter wraps it in a proxy. */
+    /**
+     * Has the shape of {@link Runnable} without implementing it, so the adapter wraps it in a proxy.
+     */
     public static final class SerializableTask implements Serializable {
         public void run() {
         }
     }
 
-    /** Stands in for the Tooling API proxy, which is not serializable. */
+    /**
+     * Stands in for the Tooling API proxy, which is not serializable.
+     */
     private static final class ProxyLikeFabricData implements FabricDataModel {
         @Override
         public String minecraftVersion() {
@@ -227,8 +231,8 @@ public class PersistedGradleModelStoreTest {
         }
 
         @Override
-        public FabricDataModel.LoomVersion loomVersion() {
-            return new FabricDataModel.LoomVersion() {
+        public LoomVersion loomVersion() {
+            return new LoomVersion() {
                 @Override
                 public String version() {
                     return "1.7";

@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
+import javafx.scene.control.TreeItem;
 
 import static dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorRequestTestSupport.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -64,8 +65,8 @@ public class UsagesPaneTest {
     @Test
     public void streamedGroupsKeepTheirCountsAndExpansionWhenTheSearchFinishes() throws Exception {
         var finish = new CountDownLatch(1);
-        var firstUsage = usage(first, 0);
-        var secondUsage = usage(first, 8);
+        Location.TextLocation firstUsage = usage(first, 0);
+        Location.TextLocation secondUsage = usage(first, 8);
         start(provider((context, query, sink) -> {
             sink.accept(List.of(firstUsage), 1, 2);
             sink.accept(List.of(secondUsage), 2, 2);
@@ -89,9 +90,10 @@ public class UsagesPaneTest {
         } finally {
             finish.countDown();
         }
+
         waitUntil(() -> pane.state() == UsagesPane.State.COMPLETE);
         onFx(() -> {
-            var group = ((TreeView<?>) pane.lookup(".usages-tree")).getRoot().getChildren().getFirst();
+            TreeItem<?> group = ((TreeView<?>) pane.lookup(".usages-tree")).getRoot().getChildren().getFirst();
             assertFalse(group.isExpanded());
             groupButton("railroad.generic.expand_all").fire();
             assertTrue(group.isExpanded());
@@ -109,7 +111,7 @@ public class UsagesPaneTest {
 
     @Test
     public void previewHighlightsTheReturnedRangeWithinTheLine() throws Exception {
-        var source = document("Repeated.java", "header\n    use(use);");
+        TextDocumentSnapshot source = document("Repeated.java", "header\n    use(use);");
         store.publishBacking(source);
         start(provider((context, query, sink) -> search(context, usage(source, source.text().lastIndexOf("use")))),
             new UsageQuery.AtOffset(0));
@@ -118,7 +120,7 @@ public class UsagesPaneTest {
             new Scene(pane, 800, 300);
             pane.applyCss();
             pane.layout();
-            var snippet = (HBox) pane.lookup(".usages-snippet");
+            HBox snippet = (HBox) pane.lookup(".usages-snippet");
             assertEquals(List.of("use(", "use", ");"), snippet.getChildren().stream()
                 .map(Label.class::cast).map(Label::getText).toList());
             assertSame(snippet.getChildren().get(1), pane.lookup(".usages-match"));
@@ -142,6 +144,7 @@ public class UsagesPaneTest {
             assertEquals(UsagesPane.State.SEARCHING, pane.state());
             return null;
         });
+
         release.countDown();
         pane.completion().get(10, TimeUnit.SECONDS);
         onFx(() -> {
@@ -161,6 +164,7 @@ public class UsagesPaneTest {
             while (!context.cancellationToken().isCancellationRequested()) {
                 Thread.onSpinWait();
             }
+
             sink.accept(List.of(usage(second, 0)), 2, 2);
             cancelled.countDown();
             context.checkActive();
@@ -173,6 +177,7 @@ public class UsagesPaneTest {
             pane.cancelSearch();
             return null;
         });
+
         assertTrue(cancelled.await(10, TimeUnit.SECONDS));
         pane.completion().get(10, TimeUnit.SECONDS);
         onFx(() -> null);
@@ -194,6 +199,7 @@ public class UsagesPaneTest {
                 sink.accept(List.of(usage(first, 0)), 1, 1);
                 return search(context, usage(first, 0));
             }
+
             return search(context, usage(second, 0));
         }), new UsageQuery.AtOffset(0));
         oldContext.get(10, TimeUnit.SECONDS);
@@ -201,6 +207,7 @@ public class UsagesPaneTest {
             pane.search(request(currentProvider, new UsageQuery.AtOffset(4)));
             return null;
         });
+
         releaseOld.countDown();
         pane.completion().get(10, TimeUnit.SECONDS);
         onFx(() -> null);
@@ -214,12 +221,13 @@ public class UsagesPaneTest {
 
     @Test
     public void workspaceChangesMarkResultsOutdatedAndRefreshSearchesBySymbol() throws Exception {
-        var queries = new LinkedBlockingQueue<UsageQuery>();
-        var workspaces = new LinkedBlockingQueue<WorkspaceSnapshot>();
+        BlockingQueue<UsageQuery> queries = new LinkedBlockingQueue<UsageQuery>();
+        BlockingQueue<WorkspaceSnapshot> workspaces = new LinkedBlockingQueue<WorkspaceSnapshot>();
         start(provider((context, query, sink) -> {
             queries.add(query);
             workspaces.add(context.workspaceSnapshot());
-            var document = (TextDocumentSnapshot) context.workspaceSnapshot().document(first.id()).orElseThrow();
+            TextDocumentSnapshot document = (TextDocumentSnapshot) context.workspaceSnapshot().document(first.id())
+                .orElseThrow();
             return search(context, usage(document, 0));
         }), new UsageQuery.AtOffset(0));
         pane.completion().get(10, TimeUnit.SECONDS);
@@ -229,12 +237,14 @@ public class UsagesPaneTest {
                 first.origin(), "\n" + first.text(), StandardCharsets.UTF_8));
             return null;
         });
+
         onFx(() -> null);
         onFx(() -> {
             assertEquals(UsagesPane.State.OUTDATED, pane.state());
             pane.refresh();
             return null;
         });
+
         pane.completion().get(10, TimeUnit.SECONDS);
         onFx(() -> null);
         assertEquals(new UsageQuery.AtOffset(0), queries.poll());
@@ -309,6 +319,7 @@ public class UsagesPaneTest {
             while (!request.cancellationToken().isCancellationRequested()) {
                 Thread.onSpinWait();
             }
+
             request.checkActive();
             return search(request);
         }), new UsageQuery.AtOffset(0));
@@ -318,6 +329,7 @@ public class UsagesPaneTest {
             assertTrue(pane.usages().isEmpty());
             return null;
         });
+
         assertTrue(context.get().cancellationToken().isCancellationRequested());
     }
 

@@ -20,7 +20,9 @@ import java.time.Duration;
  * @param clientMode HTTP client implementation to use; must be non-null when running a check
  */
 public record HTTPCheck(HttpClientMode clientMode) implements NetworkCheck {
-    /** Creates an HTTP probe using {@link HttpClientMode#URL_CONNECTION}. */
+    /**
+     * Creates an HTTP probe using {@link HttpClientMode#URL_CONNECTION}.
+     */
     public HTTPCheck() {
         this(HttpClientMode.URL_CONNECTION);
     }
@@ -45,7 +47,7 @@ public record HTTPCheck(HttpClientMode clientMode) implements NetworkCheck {
             case URL_CONNECTION -> {
                 try {
                     URL url = new URI(address).toURL();
-                    var connection = (HttpURLConnection) url.openConnection();
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                     connection.setConnectTimeout(timeout);
                     connection.setReadTimeout(timeout);
                     connection.setRequestMethod("HEAD");
@@ -83,13 +85,13 @@ public record HTTPCheck(HttpClientMode clientMode) implements NetworkCheck {
                 try (HttpClient client = HttpClient.newBuilder()
                     .connectTimeout(Duration.ofMillis(timeout))
                     .build()) {
-                    var request = HttpRequest.newBuilder()
+                    HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(address))
                         .timeout(Duration.ofMillis(timeout))
                         .HEAD()
                         .build();
 
-                    var response = client.send(request, HttpResponse.BodyHandlers.discarding());
+                    HttpResponse<Void> response = client.send(request, HttpResponse.BodyHandlers.discarding());
                     yield (200 <= response.statusCode() && response.statusCode() < 400);
                 } catch (IOException exception) {
                     if (shouldLogFailures()) {
@@ -109,14 +111,14 @@ public record HTTPCheck(HttpClientMode clientMode) implements NetworkCheck {
 
             case OKHTTP -> {
                 try {
-                    var client = new OkHttpClient.Builder()
+                    OkHttpClient client = new OkHttpClient.Builder()
                         .callTimeout(Duration.ofMillis(timeout))
                         .connectTimeout(Duration.ofMillis(timeout))
                         .readTimeout(Duration.ofMillis(timeout))
                         .writeTimeout(Duration.ofMillis(timeout))
                         .build();
 
-                    var request = new Request.Builder()
+                    Request request = new Request.Builder()
                         .url(address)
                         .head()
                         .build();
@@ -143,13 +145,21 @@ public record HTTPCheck(HttpClientMode clientMode) implements NetworkCheck {
         };
     }
 
-    /** HTTP client implementations available to the probe. */
+    /**
+     * HTTP client implementations available to the probe.
+     */
     public enum HttpClientMode {
-        /** Uses {@link HttpURLConnection} with connect and read timeouts. */
+        /**
+         * Uses {@link HttpURLConnection} with connect and read timeouts.
+         */
         URL_CONNECTION,
-        /** Uses the JDK {@link HttpClient} with connect and request timeouts. */
+        /**
+         * Uses the JDK {@link HttpClient} with connect and request timeouts.
+         */
         JAVA_NET,
-        /** Uses {@link OkHttpClient} with call, connect, read, and write timeouts. */
+        /**
+         * Uses {@link OkHttpClient} with call, connect, read, and write timeouts.
+         */
         OKHTTP
     }
 }

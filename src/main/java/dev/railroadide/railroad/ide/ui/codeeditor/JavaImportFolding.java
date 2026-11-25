@@ -17,6 +17,8 @@ import javafx.scene.text.Text;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 import java.util.Objects;
+import java.util.Optional;
+import javafx.geometry.Bounds;
 
 public final class JavaImportFolding {
     private static final PseudoClass HAS_CARET = PseudoClass.getPseudoClass("has-caret");
@@ -37,6 +39,7 @@ public final class JavaImportFolding {
         editor.getGutter().addTrailingColumn(new GutterColumn("java-import-fold", 16, line -> {
             if (range == null || line != range.start() + 1)
                 return null;
+
             boolean folded = editor.isFolded(range.start() + 1);
             var chevron = new FontIcon(folded ? FontAwesomeSolid.CHEVRON_RIGHT : FontAwesomeSolid.CHEVRON_DOWN);
             chevron.setStyle("-fx-icon-size: 10px; -fx-font-family: 'Font Awesome 6 Free Solid';");
@@ -50,10 +53,12 @@ public final class JavaImportFolding {
             if (folded) {
                 Platform.runLater(this::showPlaceholder);
             }
+
             return marker;
         }, (line, event) -> {
             if (event.getButton() != MouseButton.PRIMARY || range == null || line != range.start() + 1)
                 return;
+
             toggle();
             event.consume();
         }));
@@ -62,16 +67,19 @@ public final class JavaImportFolding {
     private void toggle() {
         if (range == null)
             return;
+
         if (editor.isFolded(range.start() + 1)) {
             editor.unfoldParagraphs(range.start());
         } else {
             editor.foldParagraphs(range.start(), range.end());
         }
+
         if (editor.isFolded(range.start() + 1)) {
             showPlaceholder();
         } else {
             hidePlaceholder();
         }
+
         editor.getGutter().refresh();
     }
 
@@ -79,6 +87,7 @@ public final class JavaImportFolding {
         if (closed || placeholder != null || range == null || range.start() + 1 >= editor.getParagraphs().size()
             || !editor.isFolded(range.start() + 1))
             return;
+
         String firstLine = editor.getParagraph(range.start()).getText();
         int importStart = firstLine.indexOf("import");
         var indent = new Label(firstLine.substring(0, Math.max(0, importStart)));
@@ -97,6 +106,7 @@ public final class JavaImportFolding {
                 event.consume();
             }
         });
+
         var replacement = new HBox(indent, keyword, new Label(" "), dots, new Label(";"));
         replacement.setAlignment(Pos.CENTER_LEFT);
         placeholder = new StackPane(original, replacement);
@@ -115,16 +125,18 @@ public final class JavaImportFolding {
             editor.getGutter().refresh();
             return;
         }
+
         int start = editor.getAbsolutePosition(range.start(), 0);
         int length = editor.getParagraph(range.start()).length();
-        var bounds = editor.getCharacterBoundsOnScreen(start, start + length);
-        var paragraphBounds = editor.getParagraphBoundsOnScreen(range.start());
+        Optional<Bounds> bounds = editor.getCharacterBoundsOnScreen(start, start + length);
+        Optional<Bounds> paragraphBounds = editor.getParagraphBoundsOnScreen(range.start());
         if (bounds.isEmpty() || paragraphBounds.isEmpty() || editor.getScene() == null) {
             placeholder.setVisible(false);
             return;
         }
-        var local = editor.screenToLocal(bounds.get());
-        var paragraphLocal = editor.screenToLocal(paragraphBounds.get());
+
+        Bounds local = editor.screenToLocal(bounds.get());
+        Bounds paragraphLocal = editor.screenToLocal(paragraphBounds.get());
         placeholder.pseudoClassStateChanged(HAS_CARET, editor.getCurrentParagraph() == range.start());
         placeholder.applyCss();
         placeholder.autosize();
@@ -167,8 +179,10 @@ public final class JavaImportFolding {
             JavaTokenType type = token.type();
             if (type == JavaTokenType.EOF)
                 break;
+
             if (token.channel() != TokenChannel.DEFAULT || type == null)
                 continue;
+
             if (inImport) {
                 if (type == JavaTokenType.SEMICOLON) {
                     end = paragraphAt(text, token.pos());
@@ -184,10 +198,13 @@ public final class JavaImportFolding {
                 if (start < 0) {
                     start = paragraphAt(text, token.pos());
                 }
+
                 inImport = true;
             } else
                 break;
+
         }
+
         return start >= 0 && end > start ? new Range(start, end) : null;
     }
 
@@ -198,6 +215,7 @@ public final class JavaImportFolding {
                 paragraph++;
             }
         }
+
         return paragraph;
     }
 

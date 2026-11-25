@@ -231,6 +231,7 @@ public class DeadlineTest {
                     } finally {
                         checkedBeforeExpiration.countDown();
                     }
+
                     assertTrue(expired.await(10, TimeUnit.SECONDS), "Owner did not advance the clock");
                     assertTrue(deadline.isExpired());
                     assertEquals(Optional.of(Duration.ZERO), deadline.remaining());

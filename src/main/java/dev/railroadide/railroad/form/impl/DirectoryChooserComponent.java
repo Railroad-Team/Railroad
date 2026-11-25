@@ -30,8 +30,7 @@ import java.util.function.Function;
  * @see Builder
  */
 public class DirectoryChooserComponent
-    extends
-        FormComponent<FormDirectoryChooser, DirectoryChooserComponent.Data, TextField, String> {
+    extends FormComponent<FormDirectoryChooser, DirectoryChooserComponent.Data, TextField, String> {
     /**
      * Constructs a new directory chooser component.
      *
@@ -299,6 +298,7 @@ public class DirectoryChooserComponent
                 } else
                     throw new IllegalArgumentException(
                         "Unsupported component type: " + toComponent.getValue().getClass().getName());
+
             }, valueMapper));
             return this;
         }

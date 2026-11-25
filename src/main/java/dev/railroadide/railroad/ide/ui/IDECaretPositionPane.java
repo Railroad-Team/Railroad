@@ -9,8 +9,11 @@ import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.localized.LocalizedText;
 
 import java.util.function.BiConsumer;
+import dev.railroadide.railroad.ide.sst.document.api.TextPosition;
 
-/** Displays the caret position of the active managed document, including detached editors. */
+/**
+ * Displays the caret position of the active managed document, including detached editors.
+ */
 public class IDECaretPositionPane extends RRHBox {
     private final LocalizedText text;
     private TextEditorAccess observedEditor;
@@ -18,7 +21,9 @@ public class IDECaretPositionPane extends RRHBox {
     private EditorSubscription selectionSubscription;
     private EditorSubscription documentSubscription;
 
-    /** Creates the active editor's one-based line and column display. */
+    /**
+     * Creates the active editor's one-based line and column display.
+     */
     public IDECaretPositionPane() {
         text = new LocalizedText("");
         text.getStyleClass().add("column-number");
@@ -41,6 +46,7 @@ public class IDECaretPositionPane extends RRHBox {
             activeSubscription.close();
             activeSubscription = null;
         }
+
         observe(null);
     }
 
@@ -49,15 +55,18 @@ public class IDECaretPositionPane extends RRHBox {
             selectionSubscription.close();
             selectionSubscription = null;
         }
+
         if (documentSubscription != null) {
             documentSubscription.close();
             documentSubscription = null;
         }
+
         observedEditor = editor;
         if (editor != null) {
             selectionSubscription = editor.observeSelection(_ -> update());
             documentSubscription = editor.observe(_ -> update());
         }
+
         update();
     }
 
@@ -68,7 +77,7 @@ public class IDECaretPositionPane extends RRHBox {
         }
 
         try {
-            var position = observedEditor.snapshot().lineMap().positionAt(observedEditor.selection().caret());
+            TextPosition position = observedEditor.snapshot().lineMap().positionAt(observedEditor.selection().caret());
             text.setKeyAndArgs(Settings.CARET_POSITION_FORMAT.getValue().getIdeTranslationKey(),
                 position.line() + 1, position.column() + 1);
         } catch (IllegalStateException exception) {

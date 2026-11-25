@@ -162,7 +162,7 @@ public class Config implements JsonSerializable<JsonObject> {
     public JsonObject toJson() {
         var json = new JsonObject();
 
-        var projects = new JsonArray();
+        JsonArray projects = new JsonArray();
         for (Project project : Railroad.PROJECT_MANAGER.getProjects()) {
             projects.add(project.toJson());
         }
@@ -185,16 +185,20 @@ public class Config implements JsonSerializable<JsonObject> {
         for (Map.Entry<String, Boolean> entry : inspectionRuleEnabledOverrides.entrySet()) {
             if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null)
                 continue;
+
             inspectionRuleEnabledJson.addProperty(entry.getKey(), entry.getValue());
         }
+
         json.add("InspectionRuleEnabledOverrides", inspectionRuleEnabledJson);
 
         var inspectionRuleTagEnabledJson = new JsonObject();
         for (Map.Entry<String, Boolean> entry : inspectionRuleTagEnabledOverrides.entrySet()) {
             if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null)
                 continue;
+
             inspectionRuleTagEnabledJson.addProperty(entry.getKey(), entry.getValue());
         }
+
         json.add("InspectionRuleTagEnabledOverrides", inspectionRuleTagEnabledJson);
 
         var inspectionRuleSeverityJson = new JsonObject();
@@ -202,8 +206,10 @@ public class Config implements JsonSerializable<JsonObject> {
             if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null
                 || entry.getValue().isBlank())
                 continue;
+
             inspectionRuleSeverityJson.addProperty(entry.getKey(), entry.getValue());
         }
+
         json.add("InspectionRuleSeverityOverrides", inspectionRuleSeverityJson);
 
         return json;
@@ -231,7 +237,7 @@ public class Config implements JsonSerializable<JsonObject> {
         if (json.has("Projects")) {
             JsonElement projects = json.get("Projects");
             if (projects.isJsonArray()) {
-                JsonArray projectsArray = projects.getAsJsonArray();
+                Iterable<JsonElement> projectsArray = projects.getAsJsonArray();
                 for (JsonElement project : projectsArray) {
                     if (!project.isJsonObject())
                         continue;
@@ -241,6 +247,7 @@ public class Config implements JsonSerializable<JsonObject> {
                 }
             }
         }
+
         Railroad.PROJECT_MANAGER.setProjects(loadedProjects);
         if (loadedProjects.size() != Railroad.PROJECT_MANAGER.getProjects().size()) {
             Railroad.LOGGER.warn(
@@ -271,6 +278,7 @@ public class Config implements JsonSerializable<JsonObject> {
                     if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null
                         || !entry.getValue().isJsonPrimitive())
                         continue;
+
                     inspectionRuleEnabledOverrides.put(entry.getKey(), entry.getValue().getAsBoolean());
                 }
             }
@@ -284,6 +292,7 @@ public class Config implements JsonSerializable<JsonObject> {
                     if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null
                         || !entry.getValue().isJsonPrimitive())
                         continue;
+
                     inspectionRuleTagEnabledOverrides.put(entry.getKey(), entry.getValue().getAsBoolean());
                 }
             }
@@ -297,6 +306,7 @@ public class Config implements JsonSerializable<JsonObject> {
                     if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null
                         || !entry.getValue().isJsonPrimitive())
                         continue;
+
                     inspectionRuleSeverityOverrides.put(entry.getKey(), entry.getValue().getAsString());
                 }
             }

@@ -23,6 +23,7 @@ public record CompletionResult(int replacementStart, List<CompletionItem> items)
         if (replacementStart < -1 || replacementStart == -1 && !items.isEmpty())
             throw new IllegalArgumentException("Completion replacement start must be nonnegative for candidates");
     }
+
     /**
      * Creates a completion result without a trigger or candidates.
      *

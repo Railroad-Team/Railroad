@@ -5,15 +5,23 @@ import lombok.Getter;
 
 import java.util.Comparator;
 
-/** Project ordering choices and their localized display labels. */
+/**
+ * Project ordering choices and their localized display labels.
+ */
 @Getter
 public enum ProjectSort {
-    /** Orders projects by alias using natural, case-sensitive string ordering. */
+    /**
+     * Orders projects by alias using natural, case-sensitive string ordering.
+     */
     NAME("railroad.home.welcome.sort.name", Comparator.comparing(Project::getAlias)),
-    /** Orders projects by last-opened time, most recent first. */
+    /**
+     * Orders projects by last-opened time, most recent first.
+     */
     DATE(
         "railroad.home.welcome.sort.date", Comparator.comparing(Project::getLastOpened).reversed()),
-    /** Default ordering, implemented by ascending project hash code rather than insertion order. */
+    /**
+     * Default ordering, implemented by ascending project hash code rather than insertion order.
+     */
     NONE(
         "railroad.home.welcome.sort.none", Comparator.comparing(Project::hashCode));
 

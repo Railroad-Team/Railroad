@@ -92,6 +92,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
             String qualifiedName = declared.qualifiedName().orElse(null);
             if (qualifiedName != null && cyclic.contains(qualifiedName))
                 continue;
+
             Set<String> cycle = qualifiedName == null ? Set.of() : dependencyCycle(context, qualifiedName);
             if (!cycle.isEmpty()) {
                 // javac reports a cycle once, on the first of its types that it checks.
@@ -132,6 +133,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                 String implementedType = context.resolveQualifiedTypeName(typeRef);
                 if (!hasKnownSupertype(context, typeRef, implementedType))
                     continue;
+
                 if (!context.isInterfaceType(implementedType)) {
                     reporter.report(typeRef,
                         "type cannot implement non-interface '%s'".formatted(context.simpleTypeName(implementedType)));
@@ -154,6 +156,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
             String type = pending.pop();
             if (dependencies.containsKey(type))
                 continue;
+
             Set<String> direct = directDependencies(context, type);
             dependencies.put(type, direct);
             pending.addAll(direct);
@@ -165,6 +168,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                 cycle.add(type);
             }
         }
+
         return cycle.contains(start) ? cycle : Set.of();
     }
 
@@ -172,24 +176,29 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
         // Compiled classes cannot depend on source types, so no cycle passes through them.
         if (context.jdkClassStubsByQualifiedName().containsKey(type))
             return Set.of();
+
         Set<String> direct = new LinkedHashSet<>();
         for (String superType : context.directSuperTypeNames(type)) {
             int typeArguments = superType.indexOf('<');
             String erased = typeArguments < 0 ? superType : superType.substring(0, typeArguments);
             if (!context.isResolvableType(erased))
                 continue;
+
             direct.add(erased);
             for (int separator = lastSeparator(erased); separator > 0; separator = lastSeparator(erased)) {
                 erased = erased.substring(0, separator);
                 if (!context.isResolvableType(erased))
                     break;
+
                 direct.add(erased);
             }
         }
+
         SyntaxNode declaration = context.localTypeDeclarations().get(type);
         if (declaration != null) {
             direct.addAll(writtenQualifiers(context, declaration));
         }
+
         return direct;
     }
 
@@ -202,10 +211,12 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
             SyntaxNode clauseNode = context.directChild(declaration, clause);
             if (clauseNode == null)
                 continue;
+
             for (SyntaxNode typeRef : directTypeReferences(clauseNode)) {
                 String text = context.canonicalTypeText(typeRef);
                 if (text == null)
                     continue;
+
                 int typeArguments = text.indexOf('<');
                 String qualifier = typeArguments < 0 ? text : text.substring(0, typeArguments);
                 for (int dot = qualifier.lastIndexOf('.'); dot > 0; dot = qualifier.lastIndexOf('.')) {
@@ -217,6 +228,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                 }
             }
         }
+
         return qualifiers;
     }
 
@@ -229,6 +241,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
             if (reaches(dependencies, next, target))
                 return true;
         }
+
         return false;
     }
 
@@ -239,16 +252,19 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
             String type = pending.pop();
             if (type.equals(target))
                 return true;
+
             if (visited.add(type)) {
                 pending.addAll(dependencies.getOrDefault(type, Set.of()));
             }
         }
+
         return false;
     }
 
     private static boolean hasKnownSupertype(JavaRuleContext context, SyntaxNode reference, String name) {
         if (name == null || name.isBlank())
             return false;
+
         return context.isResolvableType(name) || context.inferredType(reference).map(type -> switch (type.kind()) {
             case JavaTypes.Kind.PRIMITIVE, JavaTypes.Kind.ARRAY, JavaTypes.Kind.TYPE_VARIABLE -> true;
             default -> false;
@@ -262,11 +278,13 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
             Symbol declared = context.declaredSymbol(declarationNode).orElse(null);
             if (declared == null)
                 continue;
+
             if (JAVA_ENUM_DECLARATION.equals(declarationNode.kind().id())) {
                 declared.qualifiedName()
                     .ifPresent(owner -> reportMissingEnumImplementations(context, reporter, declarationNode, owner));
                 continue;
             }
+
             if (!isConcreteImplementingType(declared, declarationNode, context))
                 continue;
 
@@ -293,6 +311,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                     implemented.add(declaredMethod.signatureKey());
                 }
             }
+
             for (JavaRuleContext.MethodDescriptor inheritedMethod : context
                 .inheritedMethodDescriptors(ownerQualifiedName)) {
                 if (!inheritedMethod.isAbstract() && !Modifier.isStatic(inheritedMethod.modifiers())) {
@@ -304,11 +323,13 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
             // An anonymous supertype never has wildcard arguments, so one here is an inference approximation.
             if (anonymous && required.keySet().stream().anyMatch(signature -> signature.contains("?")))
                 continue;
+
             if (anonymous) {
                 for (JavaRuleContext.MethodDescriptor objectMethod : context.methodDescriptorsForType(OBJECT)) {
                     implemented.add(objectMethod.signatureKey());
                 }
             }
+
             SyntaxNode reportedNode = anonymous ? declarationNode.parent().orElse(declarationNode) : declarationNode;
             for (JavaRuleContext.MethodDescriptor missing : required.values()) {
                 if (!implemented.contains(missing.signatureKey())) {
@@ -329,12 +350,14 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
         SyntaxNode body = context.directChild(declaration, "JAVA_ENUM_BODY");
         if (required.isEmpty() || body == null)
             return;
+
         List<SyntaxNode> constants = body.children().stream()
             .filter(child -> "JAVA_ENUM_CONSTANT".equals(child.kind().id())).toList();
         if (constants.isEmpty()) {
             required.forEach(method -> reporter.report(nodeFor(method, declaration), method.signatureKey()));
             return;
         }
+
         for (SyntaxNode constant : constants) {
             SyntaxNode classBody = context.directChild(constant, "JAVA_ANONYMOUS_CLASS_BODY");
             List<JavaRuleContext.MethodDescriptor> methods = classBody == null
@@ -342,12 +365,13 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                 : context.declaredSymbol(classBody).flatMap(Symbol::qualifiedName)
                     .map(context::declaredMethodDescriptors).orElse(List.of());
             Set<String> implemented = new HashSet<>();
-            for (var method : methods) {
+            for (JavaRuleContext.MethodDescriptor method : methods) {
                 if (!method.isAbstract() && !Modifier.isStatic(method.modifiers())) {
                     implemented.add(erasedMethodSignature(method));
                 }
             }
-            for (var method : required) {
+
+            for (JavaRuleContext.MethodDescriptor method : required) {
                 if (!implemented.contains(erasedMethodSignature(method))) {
                     reporter.report(constant, method.signatureKey());
                 }
@@ -358,6 +382,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
     private static String erasedMethodSignature(JavaRuleContext.MethodDescriptor method) {
         if (method.symbol() == null)
             return method.signatureKey();
+
         return method.symbol().id().map(JavaSymbolIds::components).map(List::getLast)
             .filter(component -> component.kind().equals("parameters"))
             .map(parameters -> method.name() + "(" + parameters.value() + ")")
@@ -378,6 +403,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
             for (JavaRuleContext.MethodDescriptor inherited : context.inheritedMethodDescriptors(ownerQualifiedName)) {
                 if (Modifier.isPrivate(inherited.modifiers()))
                     continue;
+
                 inheritedBySignature.computeIfAbsent(inherited.signatureKey(), _ -> new ArrayList<>()).add(inherited);
             }
 
@@ -418,7 +444,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                 }
             }
 
-            for (var entry : inheritedBySignature.entrySet()) {
+            for (Map.Entry<String, List<JavaRuleContext.MethodDescriptor>> entry : inheritedBySignature.entrySet()) {
                 if (!declaredSignatures.contains(entry.getKey())
                     && hasConflictingInheritedMethods(context, declarationNode, entry.getValue())) {
                     reporter.report(declarationNode, entry.getValue().getFirst().name());
@@ -512,8 +538,10 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
         String kindId = declarationNode.kind().id();
         if (JAVA_ANONYMOUS_CLASS_BODY.equals(kindId))
             return !JavaDeclarationAnalysis.isEnumConstantBody(declarationNode);
+
         if (!JAVA_CLASS_DECLARATION.equals(kindId) && !JAVA_RECORD_DECLARATION.equals(kindId))
             return false;
+
         String qualifiedName = symbol.qualifiedName().orElse(null);
         return qualifiedName != null && !context.isAbstractType(qualifiedName);
     }
@@ -528,10 +556,12 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                 && !JAVA_ANNOTATION_TYPE_DECLARATION.equals(kindId)
                 && !JAVA_RECORD_DECLARATION.equals(kindId) && !JavaDeclarationAnalysis.isEnumConstantBody(node))
                 return;
+
             if (context.declaredSymbol(node).isPresent()) {
                 nodes.add(node);
             }
         });
+
         return List.copyOf(nodes);
     }
 
@@ -546,6 +576,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                 bodies.add(node);
             }
         });
+
         return bodies;
     }
 
@@ -556,16 +587,20 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                 refs.add(child);
             }
         }
+
         return List.copyOf(refs);
     }
 
     private static int accessRank(int modifiers) {
         if (Modifier.isPublic(modifiers))
             return 3;
+
         if (Modifier.isProtected(modifiers))
             return 2;
+
         if (Modifier.isPrivate(modifiers))
             return 0;
+
         return 1;
     }
 
@@ -577,6 +612,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
     ) {
         if (!candidate.typeParameters().isEmpty() && !candidate.hasEquivalentTypeParameters(base))
             return false;
+
         Type inherited = base.overrideReturnType();
         Type declared = candidate.overrideReturnType();
         while (inherited instanceof JavaTypes.ArrayType baseArray
@@ -584,12 +620,16 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
             inherited = baseArray.componentType();
             declared = candidateArray.componentType();
         }
+
         if (Objects.equals(inherited.displayName(), declared.displayName()))
             return true;
+
         if (inherited.kind() == JavaTypes.Kind.PRIMITIVE || declared.kind() == JavaTypes.Kind.PRIMITIVE)
             return false;
+
         if (inherited.kind() == JavaTypes.Kind.DECLARED && declared.kind() == JavaTypes.Kind.DECLARED)
             return context.isSubtype(declared.displayName(), inherited.displayName());
+
         return context.isAssignable(inherited, declared, ownerDeclaration);
     }
 
@@ -606,6 +646,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
             for (String inheritedThrownType : inherited.thrownTypes()) {
                 if (!context.isCheckedExceptionType(inheritedThrownType))
                     continue;
+
                 if (declaredThrownType.equals(inheritedThrownType)
                     || context.isSubtype(declaredThrownType, inheritedThrownType)) {
                     compatible = true;
@@ -616,6 +657,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
             if (!compatible)
                 return false;
         }
+
         return true;
     }
 
@@ -626,7 +668,9 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
     ) {
         if (inheritedGroup.size() < 2)
             return false;
-        var methods = inheritedGroup.stream().filter(method -> !Modifier.isStatic(method.modifiers())).toList();
+
+        List<JavaRuleContext.MethodDescriptor> methods = inheritedGroup.stream()
+            .filter(method -> !Modifier.isStatic(method.modifiers())).toList();
         return methods.size() > 1 && methods.stream().noneMatch(candidate -> methods.stream()
             .allMatch(base -> base == candidate || isReturnTypeCompatible(context, ownerDeclaration, base, candidate)));
     }

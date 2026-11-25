@@ -56,6 +56,7 @@ public record UpdateGradlePropertiesStep(FilesService files) implements Creation
         if (mappingChannel == null) {
             mappingChannel = UpdateGradleFilesStep.getDefaultMappingChannel(projectType);
         }
+
         String channelId = mappingChannel.id().toLowerCase(Locale.ROOT);
         if (channelId.equals("mojmap")) {
             channelId = "official";
@@ -122,5 +123,6 @@ public record UpdateGradlePropertiesStep(FilesService files) implements Creation
             files.updateKeyPairInPropertiesFile(propsFile, "mod_description", "'''" + description + "'''");
         } else
             throw new IllegalStateException("Unsupported project type: " + projectType.getName());
+
     }
 }

@@ -21,60 +21,102 @@ import java.util.Map;
 @AllArgsConstructor
 public class FabricModJson {
     // Mandatory fields
-    /** The mod identifier. */
+    /**
+     * The mod identifier.
+     */
     private String id;
-    /** The mod version text. */
+    /**
+     * The mod version text.
+     */
     private String version;
 
     // Optional fields (mod loading)
-    /** The environments in which the mod can load. */
+    /**
+     * The environments in which the mod can load.
+     */
     @JsonAdapter(StringOrStringArrayTypeAdapter.class)
     private List<String> environment;
-    /** Initialization entrypoints grouped by their entrypoint key. */
-    private EntrypointContainer entrypoints;
-    /** JAR resources nested inside the mod. */
+    /**
+     * Initialization entrypoints grouped by their entrypoint key.
+     */
+    private Map<String, List<Entrypoint>> entrypoints;
+    /**
+     * JAR resources nested inside the mod.
+     */
     private List<NestedJarEntry> jars;
-    /** Custom language adapter implementation classes keyed by adapter identifier. */
+    /**
+     * Custom language adapter implementation classes keyed by adapter identifier.
+     */
     private Map<String, String> languageAdapters;
-    /** Mixin configuration resources and their optional environment restrictions. */
+    /**
+     * Mixin configuration resources and their optional environment restrictions.
+     */
     @JsonAdapter(MixinListTypeAdapter.class)
     private List<MixinEnvironment> mixins;
-    /** The access widener resource path. */
+    /**
+     * The access widener resource path.
+     */
     private String accessWidener;
 
     // Optional fields (dependency resolution)
-    /** Required dependencies keyed by mod identifier. */
+    /**
+     * Required dependencies keyed by mod identifier.
+     */
     private Map<String, VersionRange> depends;
-    /** Recommended dependencies keyed by mod identifier. */
+    /**
+     * Recommended dependencies keyed by mod identifier.
+     */
     private Map<String, VersionRange> recommends;
-    /** Suggested dependencies keyed by mod identifier. */
+    /**
+     * Suggested dependencies keyed by mod identifier.
+     */
     private Map<String, VersionRange> suggests;
-    /** Conflicting versions keyed by mod identifier. */
+    /**
+     * Conflicting versions keyed by mod identifier.
+     */
     private Map<String, VersionRange> conflicts;
-    /** Incompatible versions that prevent loading, keyed by mod identifier. */
+    /**
+     * Incompatible versions that prevent loading, keyed by mod identifier.
+     */
     private Map<String, VersionRange> breaks;
 
     // Optional fields (metadata)
-    /** The human-readable mod name. */
+    /**
+     * The human-readable mod name.
+     */
     private String name;
-    /** A description of the mod. */
+    /**
+     * A description of the mod.
+     */
     private String description;
-    /** The mod's authors. */
+    /**
+     * The mod's authors.
+     */
     @JsonAdapter(PersonListTypeAdapter.class)
     private List<Person> authors;
-    /** Additional contributors to the mod. */
+    /**
+     * Additional contributors to the mod.
+     */
     @JsonAdapter(PersonListTypeAdapter.class)
     private List<Person> contributors;
-    /** Project contact information and links. */
-    private ContactInformation contact;
-    /** License identifiers or descriptions for the mod. */
+    /**
+     * Project contact information and links.
+     */
+    private Map<String, String> contact;
+    /**
+     * License identifiers or descriptions for the mod.
+     */
     @JsonAdapter(StringOrStringArrayTypeAdapter.class)
     private List<String> license;
-    /** Icon paths for the mod. */
+    /**
+     * Icon paths for the mod.
+     */
     @JsonAdapter(IconTypeAdapter.class)
     private IconInfo icon;
 
     // Custom fields
-    /** Additional metadata supplied under the custom property. */
+    /**
+     * Additional metadata supplied under the custom property.
+     */
     private Map<String, Object> custom;
 }

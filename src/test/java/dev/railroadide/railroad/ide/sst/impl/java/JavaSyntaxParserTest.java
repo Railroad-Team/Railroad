@@ -18,6 +18,9 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxKind;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
+import java.util.Deque;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -109,7 +112,7 @@ public class JavaSyntaxParserTest {
         var result = JavaSyntaxParser.parseWithDiagnostics(source);
         assertTrue(result.diagnostics().isEmpty(), result.diagnostics()::toString);
         assertEquals(source, JavaParserTestSupport.syntaxText(result.tree()));
-        var tokens = JavaParserTestSupport.collectSyntaxTokens(result.tree());
+        List<SyntaxToken> tokens = JavaParserTestSupport.collectSyntaxTokens(result.tree());
         assertEquals(2, tokens.stream()
             .filter(token -> token.kind().equals(JavaSyntaxKinds.tokenKind(JavaTokenType.NON_SEALED_KEYWORD))).count());
         assertEquals(1, tokens.stream()
@@ -157,7 +160,8 @@ public class JavaSyntaxParserTest {
         assertEquals(source, JavaParserTestSupport.syntaxText(tree));
         var result = JavaSyntaxParser.parseWithDiagnostics(source);
         assertTrue(result.diagnostics().isEmpty(), result.diagnostics()::toString);
-        var tokenKinds = JavaParserTestSupport.collectSyntaxTokens(tree).stream().map(token -> token.kind()).toList();
+        List<SyntaxKind> tokenKinds = JavaParserTestSupport.collectSyntaxTokens(tree).stream()
+            .map(token -> token.kind()).toList();
         assertTrue(tokenKinds.contains(JavaSyntaxKinds.tokenKind(JavaTokenType.RIGHT_SHIFT)));
         assertTrue(tokenKinds.contains(JavaSyntaxKinds.tokenKind(JavaTokenType.UNSIGNED_RIGHT_SHIFT)));
     }
@@ -191,13 +195,14 @@ public class JavaSyntaxParserTest {
             """;
 
         JavaSyntaxAssertions.assertParsesWithoutRecovery(source);
-        var kinds = new ArrayList<String>();
-        var pending = new ArrayDeque<SyntaxNode>(List.of(JavaSyntaxParser.parse(source).root()));
+        List<String> kinds = new ArrayList<String>();
+        Deque<SyntaxNode> pending = new ArrayDeque<SyntaxNode>(List.of(JavaSyntaxParser.parse(source).root()));
         while (!pending.isEmpty()) {
             SyntaxNode node = pending.pop();
             kinds.add(node.kind().id());
             node.children().forEach(pending::push);
         }
+
         assertEquals(4, countKind(kinds, JavaSyntaxKinds.RECEIVER_PARAMETER.id()));
         assertEquals(1, countKind(kinds, JavaSyntaxKinds.PARAMETER.id()));
 
@@ -432,8 +437,10 @@ public class JavaSyntaxParserTest {
         SyntaxTree tree = JavaSyntaxParser.parse(snapshot);
         var edit = new JavaSyntaxParser.TextEdit(oldSource.indexOf("1"), 1, "20");
 
-        var next = JavaSyntaxParser.parseIncremental(tree, oldSource, newSource, edit).tree().documentSnapshot();
-        var versioned = JavaSyntaxParser.parseIncremental(tree, new DocumentVersion(9), oldSource, newSource, edit)
+        TextDocumentSnapshot next = JavaSyntaxParser.parseIncremental(tree, oldSource, newSource, edit).tree()
+            .documentSnapshot();
+        TextDocumentSnapshot versioned = JavaSyntaxParser
+            .parseIncremental(tree, new DocumentVersion(9), oldSource, newSource, edit)
             .tree().documentSnapshot();
 
         assertSame(origin, next.origin());

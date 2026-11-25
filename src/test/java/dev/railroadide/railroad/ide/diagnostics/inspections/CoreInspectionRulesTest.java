@@ -43,9 +43,10 @@ public class CoreInspectionRulesTest {
                 int adjust(int n) { return n; }
             }
             """;
-        var diagnostics = runProviders(List.of(new CoreInheritanceInspection(), new CoreModifierInspection(),
-            new CoreDuplicateDeclarationInspection(), new CoreCallResolutionInspection(),
-            new CoreNameResolutionInspection()),
+        List<SemanticDiagnostic> diagnostics = runProviders(
+            List.of(new CoreInheritanceInspection(), new CoreModifierInspection(),
+                new CoreDuplicateDeclarationInspection(), new CoreCallResolutionInspection(),
+                new CoreNameResolutionInspection()),
             Path.of("Mode.java"), source, JavaProjectSemanticIndex.empty());
         assertEquals(List.of("SEM_MISSING_IMPLEMENTATION", "SEM_MISSING_IMPLEMENTATION"),
             diagnostics.stream().map(SemanticDiagnostic::code).toList(), diagnostics::toString);
@@ -78,7 +79,8 @@ public class CoreInspectionRulesTest {
                 int wrong[] = 1;
             }
             """;
-        var diagnostics = runProviders(List.of(new CoreAssignmentInspection(), new CoreMemberResolutionInspection()),
+        List<SemanticDiagnostic> diagnostics = runProviders(
+            List.of(new CoreAssignmentInspection(), new CoreMemberResolutionInspection()),
             Path.of("Example.java"), source, JavaProjectSemanticIndex.empty());
 
         assertEquals(List.of("SEM_INCOMPATIBLE_ASSIGNMENT"),
@@ -111,8 +113,9 @@ public class CoreInspectionRulesTest {
                 }
             }
             """;
-        var diagnostics = Stream.of(new CoreCallResolutionInspection(), new CoreAssignmentInspection(),
-            new CoreMemberResolutionInspection(), new CoreTypeResolutionInspection())
+        List<SemanticDiagnostic> diagnostics = Stream
+            .of(new CoreCallResolutionInspection(), new CoreAssignmentInspection(),
+                new CoreMemberResolutionInspection(), new CoreTypeResolutionInspection())
             .flatMap(provider -> runProvider(provider, source).stream()).toList();
 
         assertEquals(List.of(), diagnostics, diagnostics::toString);
@@ -150,14 +153,15 @@ public class CoreInspectionRulesTest {
         sources.put(examplePath, example);
         var builder = JavaProjectSemanticIndex.builder();
         sources.forEach((path, text) -> builder.putFile(new JavaProjectSemanticExtractor().extract(path, text)));
-        var sourceIndex = builder.build();
+        JavaProjectSemanticIndex sourceIndex = builder.build();
         var symbols = new CompositeJavaSymbolIndex(List.of(sourceIndex, JavaJdkSymbolIndex.fromCurrentRuntime()));
         var index = new JavaWorkspaceAnalysis(sourceIndex, symbols, sources, List.of(),
             Path.of(System.getProperty("java.home")));
         var model = JavaSemanticAnalyzer.analyzeFacts(example, index);
         var context = new JavaRuleContext(examplePath, example, model, index);
 
-        var diagnostics = JavaInspectionRuleEngine.collectDiagnostics(new CoreAssignmentInspection(), context);
+        List<SemanticDiagnostic> diagnostics = JavaInspectionRuleEngine
+            .collectDiagnostics(new CoreAssignmentInspection(), context);
 
         assertEquals(List.of(), diagnostics, diagnostics::toString);
     }
@@ -174,8 +178,9 @@ public class CoreInspectionRulesTest {
                 }
             }
             """;
-        var diagnostics = runProviders(List.of(new CoreCallResolutionInspection(), new CoreNameResolutionInspection(),
-            new CoreTypeResolutionInspection(), new CoreDuplicateDeclarationInspection()),
+        List<SemanticDiagnostic> diagnostics = runProviders(
+            List.of(new CoreCallResolutionInspection(), new CoreNameResolutionInspection(),
+                new CoreTypeResolutionInspection(), new CoreDuplicateDeclarationInspection()),
             Path.of("Example.java"), source, JavaProjectSemanticIndex.empty());
 
         assertEquals(List.of(), diagnostics, diagnostics::toString);
@@ -315,7 +320,7 @@ public class CoreInspectionRulesTest {
                 public static class Nested { static void internal() {} }
             }
             """);
-        var index = new JavaProjectSemanticIndexer().build(root);
+        JavaProjectSemanticIndex index = new JavaProjectSemanticIndexer().build(root);
         String caller = """
             package consumer;
             import static api.Operations.take;
@@ -328,7 +333,7 @@ public class CoreInspectionRulesTest {
             class Caller {}
             """;
         Path callerPath = root.resolve("consumer/Caller.java");
-        var unresolved = runProvider(new CoreImportInspection(), callerPath, caller, index).stream()
+        List<String> unresolved = runProvider(new CoreImportInspection(), callerPath, caller, index).stream()
             .filter(issue -> "SEM_UNRESOLVED_IMPORT".equals(issue.code()))
             .map(SemanticDiagnostic::message).toList();
         assertEquals(List.of("Cannot resolve import 'api.Operations.instance'",
@@ -343,12 +348,13 @@ public class CoreInspectionRulesTest {
         assertTrue(context.resolveStaticImportedMethods("take", site, 3).isEmpty());
         assertTrue(context.resolveStaticImportedMethods("log", site, 0).isEmpty());
         assertEquals(1, context.resolveStaticImportedMethods("log", site, 3).size());
-        var samePackage = runProvider(new CoreImportInspection(), root.resolve("api/Peer.java"), """
-            package api;
-            import static api.Operations.internal;
-            import static api.Operations.Nested.internal;
-            class Peer {}
-            """, index);
+        List<SemanticDiagnostic> samePackage = runProvider(new CoreImportInspection(), root.resolve("api/Peer.java"),
+            """
+                package api;
+                import static api.Operations.internal;
+                import static api.Operations.Nested.internal;
+                class Peer {}
+                """, index);
         assertFalse(samePackage.stream().anyMatch(issue -> "SEM_UNRESOLVED_IMPORT".equals(issue.code())),
             samePackage::toString);
     }
@@ -689,7 +695,7 @@ public class CoreInspectionRulesTest {
                 }
             }
             """;
-        var diagnostics = runProvider(new CoreParameterNamedUnderscoreInspection(), source);
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreParameterNamedUnderscoreInspection(), source);
         assertEquals(List.of("long _", "int _"), diagnostics.stream()
             .filter(diagnostic -> "SEM_PARAMETER_NAME_UNDERSCORE".equals(diagnostic.code()))
             .map(diagnostic -> source.substring(diagnostic.startOffset(), diagnostic.endOffset()).strip())
@@ -698,7 +704,7 @@ public class CoreInspectionRulesTest {
 
     @Test
     public void unnamedCatchLambdaAndLoopVariablesAreAllowed() {
-        var diagnostics = runProvider(new CoreParameterNamedUnderscoreInspection(), """
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreParameterNamedUnderscoreInspection(), """
             class Example {
                 void run(java.util.List<String> values) {
                     try {
@@ -1047,8 +1053,9 @@ public class CoreInspectionRulesTest {
                 }
             }
             """;
-        var diagnostics = runProviders(List.of(new CoreInheritanceInspection(), new CoreMemberResolutionInspection(),
-            new CoreNameResolutionInspection(), new CoreTypeResolutionInspection(), new CoreImportInspection()),
+        List<SemanticDiagnostic> diagnostics = runProviders(
+            List.of(new CoreInheritanceInspection(), new CoreMemberResolutionInspection(),
+                new CoreNameResolutionInspection(), new CoreTypeResolutionInspection(), new CoreImportInspection()),
             Path.of("Example.java"), source, JavaJdkSymbolIndex.fromCurrentRuntime());
         assertEquals(List.of("Invalid inheritance: type cannot implement non-interface 'Wrong'"), diagnostics.stream()
             .filter(issue -> issue.code().equals("SEM_INVALID_INHERITANCE")).map(SemanticDiagnostic::message).toList());
@@ -1083,6 +1090,7 @@ public class CoreInspectionRulesTest {
                     + context.resolvedSymbol(node).map(Object::toString).orElse("<none>"));
             }
         });
+
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreMemberResolutionInspection(), source);
 
         assertFalse(diagnostics.stream().anyMatch(diagnostic -> "SEM_UNRESOLVED_MEMBER".equals(diagnostic.code())),
@@ -1248,14 +1256,15 @@ public class CoreInspectionRulesTest {
             "-proc:none", "-d", root.toString(), api.toString()));
         var index = new CompositeJavaSymbolIndex(List.of(JavaLibrarySymbolIndex.build(List.of(root)),
             JavaJdkSymbolIndex.fromCurrentRuntime()));
-        var diagnostics = runProvider(new CoreInheritanceInspection(), root.resolve("Child.java"), """
-            import api.Parent;
-            abstract class Child implements Parent<String> {
-                public abstract <V extends Number> V read(Class<V> key);
-                public abstract <X, Y> Y choose(Class<X> key, Class<Y> other);
-                public abstract <V extends CharSequence> V bounded();
-            }
-            """, index).stream().filter(d -> d.code().equals("SEM_INVALID_OVERRIDE")).toList();
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreInheritanceInspection(), root.resolve("Child.java"),
+            """
+                import api.Parent;
+                abstract class Child implements Parent<String> {
+                    public abstract <V extends Number> V read(Class<V> key);
+                    public abstract <X, Y> Y choose(Class<X> key, Class<Y> other);
+                    public abstract <V extends CharSequence> V bounded();
+                }
+                """, index).stream().filter(d -> d.code().equals("SEM_INVALID_OVERRIDE")).toList();
         assertEquals(Set.of("Invalid override for 'choose'", "Invalid override for 'bounded'"),
             diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.toSet()));
     }
@@ -1280,27 +1289,29 @@ public class CoreInspectionRulesTest {
         var index = new CompositeJavaSymbolIndex(List.of(JavaLibrarySymbolIndex.build(List.of(root)),
             JavaJdkSymbolIndex.fromCurrentRuntime()));
 
-        var direct = runProvider(new CoreInheritanceInspection(), holder, holderSource, index);
+        List<SemanticDiagnostic> direct = runProvider(new CoreInheritanceInspection(), holder, holderSource, index);
         assertFalse(direct.stream().anyMatch(issue -> issue.code().equals("SEM_INVALID_OVERRIDE")), direct::toString);
-        var subclasses = runProvider(new CoreInheritanceInspection(), root.resolve("Children.java"), """
-            import api.Holder;
-            abstract class Numbers<N extends Number> extends Holder<Number, N> {}
-            abstract class Texts<B extends CharSequence, S extends B> extends Holder<CharSequence, S> {}
-            """, index);
+        List<SemanticDiagnostic> subclasses = runProvider(new CoreInheritanceInspection(),
+            root.resolve("Children.java"), """
+                import api.Holder;
+                abstract class Numbers<N extends Number> extends Holder<Number, N> {}
+                abstract class Texts<B extends CharSequence, S extends B> extends Holder<CharSequence, S> {}
+                """, index);
         assertFalse(subclasses.stream().anyMatch(issue -> issue.code().equals("SEM_INVALID_OVERRIDE")),
             subclasses::toString);
 
-        var invalid = runProvider(new CoreInheritanceInspection(), root.resolve("Invalid.java"), """
-            import api.Reference;
-            abstract class Wrong<R, S> extends Reference<R> {
-                @Override public abstract S value();
-            }
-            abstract class Primitive { abstract int count(); abstract int[] counts(); }
-            abstract class Boxed<T extends Integer> extends Primitive {
-                abstract T count();
-                abstract T[] counts();
-            }
-            """, index);
+        List<SemanticDiagnostic> invalid = runProvider(new CoreInheritanceInspection(), root.resolve("Invalid.java"),
+            """
+                import api.Reference;
+                abstract class Wrong<R, S> extends Reference<R> {
+                    @Override public abstract S value();
+                }
+                abstract class Primitive { abstract int count(); abstract int[] counts(); }
+                abstract class Boxed<T extends Integer> extends Primitive {
+                    abstract T count();
+                    abstract T[] counts();
+                }
+                """, index);
         assertEquals(
             List.of("Invalid override for 'value'", "Invalid override for 'count'", "Invalid override for 'counts'"),
             invalid.stream()
@@ -1324,7 +1335,8 @@ public class CoreInspectionRulesTest {
             import api.Both;
             abstract class Child implements Both {}
             """;
-        var diagnostics = runProvider(new CoreInheritanceInspection(), root.resolve("Child.java"), source, index);
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreInheritanceInspection(), root.resolve("Child.java"),
+            source, index);
         assertFalse(diagnostics.stream().anyMatch(d -> d.code().equals("SEM_INVALID_OVERRIDE")), diagnostics::toString);
         var context = new JavaRuleContext(root.resolve("Child.java"), source,
             JavaSemanticAnalyzer.analyzeFacts(source, index), index);
@@ -3237,12 +3249,14 @@ public class CoreInspectionRulesTest {
         context.traverse(node -> {
             if (!"JAVA_YIELD_STATEMENT".equals(node.kind().id()))
                 return;
+
             List<String> kinds = new ArrayList<>();
             SyntaxNode current = node;
             while (current != null) {
                 kinds.add(current.kind().id());
                 current = current.parent().orElse(null);
             }
+
             yieldAncestors.add(String.join(" -> ", kinds));
         });
 

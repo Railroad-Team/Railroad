@@ -49,14 +49,17 @@ public final class RunConfigurationTreeView extends TreeView<RunConfigurationTre
                         setText(L18n.localize(type.getLocalizationKey()));
                         setGraphic(createTypeIcon(type));
                     }
+
                     case FolderTreeEntry(String name) -> {
                         setText(name);
                         setGraphic(new FontIcon(FontAwesomeSolid.FOLDER));
                     }
+
                     case ConfigurationTreeEntry(RunConfiguration<?> configuration) -> {
                         setText(getConfigurationDisplayName(configuration));
                         setGraphic(createTypeIcon(configuration.type()));
                     }
+
                     default -> {
                         setText(null);
                         setGraphic(null);
@@ -122,6 +125,7 @@ public final class RunConfigurationTreeView extends TreeView<RunConfigurationTre
                     if (!currentPath.isEmpty()) {
                         currentPath.append('/');
                     }
+
                     currentPath.append(segment);
                     String pathKey = currentPath.toString();
                     TreeItem<TreeEntry> folderItem = folders.get(pathKey);
@@ -131,6 +135,7 @@ public final class RunConfigurationTreeView extends TreeView<RunConfigurationTre
                         parent.getChildren().add(folderItem);
                         folders.put(pathKey, folderItem);
                     }
+
                     parent = folderItem;
                 }
             }
@@ -238,7 +243,7 @@ public final class RunConfigurationTreeView extends TreeView<RunConfigurationTre
     }
 
     private List<String> extractFolderSegments(String folderPath) {
-        var segments = folderPath.split("[/\\\\]");
+        String[] segments = folderPath.split("[/\\\\]");
         List<String> cleaned = new ArrayList<>();
         for (String segment : segments) {
             String trimmed = segment.trim();

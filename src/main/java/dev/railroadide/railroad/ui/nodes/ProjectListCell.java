@@ -174,9 +174,11 @@ public class ProjectListCell extends ListCell<Project> {
                     if (description != null && !description.isBlank()) {
                         Tooltip.install(tagLabel, new Tooltip(description));
                     }
+
                     facetTagsBox.getChildren().add(tagLabel);
                 }
             }
+
             setGraphic(card);
         }
     }

@@ -35,10 +35,10 @@ public class StringOrStringArrayTypeAdapter extends TypeAdapter<List<String>> {
             while (in.hasNext()) {
                 list.add(in.nextString());
             }
+
             in.endArray();
 
             return list;
-
         } else if (token == JsonToken.NULL) {
             in.nextNull();
             return null;
@@ -63,6 +63,7 @@ public class StringOrStringArrayTypeAdapter extends TypeAdapter<List<String>> {
         }
 
         // Write back as a single string if only one element, or array if multiple.
+
         if (value.size() == 1) {
             out.value(value.getFirst());
         } else {

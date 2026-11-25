@@ -40,6 +40,7 @@ public class GoToPopupTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
         onFx(() -> {
             Platform.setImplicitExit(false);
@@ -53,6 +54,7 @@ public class GoToPopupTest {
             if (stage != null) {
                 stage.close();
             }
+
             return null;
         });
     }
@@ -122,14 +124,17 @@ public class GoToPopupTest {
                         cancelled.countDown();
                         throw exception;
                     }
+
                     Thread.sleep(5);
                 }
             }
         };
+
         GoToPopup<String> first = onFx(() -> {
             createStage();
             return GoToPopup.show(root, project(), slow);
         });
+
         assertTrue(blocked.await(10, TimeUnit.SECONDS));
 
         GoToPopup<String> second = onFx(() -> GoToPopup.show(root, project(),
@@ -149,6 +154,7 @@ public class GoToPopupTest {
             createStage();
             return GoToPopup.show(root, project(), contributor);
         });
+
         assertNotNull(popup);
         popup.loaded().get(10, TimeUnit.SECONDS);
         return popup;
@@ -176,6 +182,7 @@ public class GoToPopupTest {
     private static <T> T onFx(Callable<T> action) throws Exception {
         if (Platform.isFxApplicationThread())
             return action.call();
+
         var task = new FutureTask<>(action);
         Platform.runLater(task);
         return task.get(10, TimeUnit.SECONDS);

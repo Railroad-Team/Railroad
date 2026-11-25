@@ -25,12 +25,14 @@ public class ProviderExecutorTest {
     @Test
     public void failedProviderDoesNotPoisonHealthyProvidersAndHealthHasNoFailureObject() {
         try (var executor = new ProviderExecutor(2, 1, 4, Duration.ZERO)) {
-            var request = request(CancellationToken.none());
+            WorkspaceRequestContext request = request(CancellationToken.none());
             assertThrows(IllegalStateException.class, () -> executor.execute("broken", request, BUDGET, () -> {
                 throw new IllegalStateException("failure");
             }));
+
             assertEquals("healthy", executor.execute("healthy", request, BUDGET, () -> "healthy"));
-            var broken = executor.health().stream().filter(item -> item.providerId().equals("broken")).findFirst()
+            ProviderHealth broken = executor.health().stream().filter(item -> item.providerId().equals("broken"))
+                .findFirst()
                 .orElseThrow();
             assertEquals(1, broken.failed());
             assertEquals(IllegalStateException.class.getName(), broken.lastFailureType());
@@ -46,7 +48,7 @@ public class ProviderExecutorTest {
         var release = new CountDownLatch(1);
         var exited = new CountDownLatch(1);
         try (var executor = new ProviderExecutor(2, 1, 4, Duration.ZERO)) {
-            var request = request(CancellationToken.none());
+            WorkspaceRequestContext request = request(CancellationToken.none());
             try {
                 assertThrows(DeadlineExceededException.class, () -> executor.execute("slow", request,
                     Duration.ofMillis(150), () -> {
@@ -55,8 +57,9 @@ public class ProviderExecutorTest {
                         exited.countDown();
                         return "late";
                     }));
+
                 assertTrue(entered.await(2, TimeUnit.SECONDS));
-                var health = executor.health().getFirst();
+                ProviderHealth health = executor.health().getFirst();
                 assertEquals(1, health.timedOut());
                 assertEquals(1, health.active());
                 assertEquals(0, health.succeeded());
@@ -66,6 +69,7 @@ public class ProviderExecutorTest {
             } finally {
                 release.countDown();
             }
+
             assertTrue(exited.await(2, TimeUnit.SECONDS));
         }
     }
@@ -84,16 +88,18 @@ public class ProviderExecutorTest {
                         awaitIgnoringInterrupt(release);
                         return "late";
                     });
+
                     finished.complete(null);
                 } catch (Throwable failure) {
                     finished.complete(failure);
                 }
             });
+
             try {
                 assertTrue(entered.await(2, TimeUnit.SECONDS));
                 source.cancel();
                 assertInstanceOf(CancellationException.class, finished.get(2, TimeUnit.SECONDS));
-                var health = executor.health().getFirst();
+                ProviderHealth health = executor.health().getFirst();
                 assertEquals(1, health.cancelled());
                 assertEquals(0, health.failed());
                 assertEquals(1, health.active());
@@ -107,7 +113,7 @@ public class ProviderExecutorTest {
     @Test
     public void childContextRetainsInputsAndObservesProviderDeadline() {
         try (var executor = new ProviderExecutor(2, 1, 4, BUDGET)) {
-            var request = request(CancellationToken.none());
+            WorkspaceRequestContext request = request(CancellationToken.none());
             var observed = new AtomicReference<RequestContext>();
             assertThrows(DeadlineExceededException.class, () -> executor.executeWithContext("cooperative", request,
                 Duration.ofMillis(100), child -> {
@@ -116,6 +122,7 @@ public class ProviderExecutorTest {
                         child.checkActive();
                     }
                 }));
+
             assertNotSame(request, observed.get());
             assertSame(request.workspaceSnapshot(), observed.get().workspaceSnapshot());
             assertTrue(observed.get().deadline().isExpired());
@@ -128,6 +135,7 @@ public class ProviderExecutorTest {
         var id = DocumentId.create();
         var document = new BinaryDocumentSnapshot(id, DocumentUri.inMemory(id), DocumentVersion.initial(),
             "bytecode", new byte[]{1, 2});
+
         var workspace = new WorkspaceSnapshot("binary-test", Map.of(id, document),
             new WorkspaceConfigurationSnapshot(0, Set.of()), 4);
         var clock = new AtomicLong();
@@ -142,6 +150,7 @@ public class ProviderExecutorTest {
                     child.checkActive();
                     return "unreachable";
                 }));
+
             assertEquals(1, executor.health().getFirst().timedOut());
         }
     }
@@ -149,7 +158,7 @@ public class ProviderExecutorTest {
     @Test
     public void cancellationFromDeadlineAdaptersRetainsTimeoutMetrics() {
         var clock = new AtomicLong();
-        var workspace = request(CancellationToken.none()).workspaceSnapshot();
+        WorkspaceSnapshot workspace = request(CancellationToken.none()).workspaceSnapshot();
         var context = new WorkspaceRequestContext(workspace, CancellationToken.none(),
             Deadline.after(Duration.ofNanos(10), clock::get));
         try (var executor = new ProviderExecutor(2, 1, 4, BUDGET)) {
@@ -158,6 +167,7 @@ public class ProviderExecutorTest {
                     clock.set(10);
                     throw new CancellationException("Index token observed an expired deadline");
                 }));
+
             ProviderHealth health = executor.health().getFirst();
             assertEquals(1, health.timedOut());
             assertEquals(0, health.cancelled());
@@ -167,13 +177,13 @@ public class ProviderExecutorTest {
     @Test
     public void completedColdWarmAndChangedRequestsHaveBoundedAggregateMeasurements() {
         try (var executor = new ProviderExecutor(2, 1, 2, Duration.ZERO)) {
-            var first = request(CancellationToken.none());
+            WorkspaceRequestContext first = request(CancellationToken.none());
             var changed = new WorkspaceRequestContext(new WorkspaceSnapshot("provider-test", Map.of(),
                 first.workspaceSnapshot().configuration(), 8), CancellationToken.none(), Deadline.none());
             assertEquals(1, executor.execute("analysis", first, BUDGET, () -> 1));
             assertEquals(2, executor.execute("analysis", first, BUDGET, () -> 2));
             assertEquals(3, executor.execute("analysis", changed, BUDGET, () -> 3));
-            var health = executor.health().getFirst();
+            ProviderHealth health = executor.health().getFirst();
             assertEquals(3, health.succeeded());
             assertEquals(3, health.slow());
             assertEquals(0, health.active());
@@ -184,6 +194,7 @@ public class ProviderExecutorTest {
             for (int index = 0; index < 20; index++) {
                 executor.execute("provider-" + index, first, BUDGET, () -> null);
             }
+
             assertEquals(2, executor.health().size());
         }
     }
@@ -194,7 +205,7 @@ public class ProviderExecutorTest {
         var entered = new CountDownLatch(1);
         var release = new CountDownLatch(1);
         var finished = new CompletableFuture<Throwable>();
-        var request = request(CancellationToken.none());
+        WorkspaceRequestContext request = request(CancellationToken.none());
         Thread caller = Thread.ofVirtual().start(() -> {
             try {
                 executor.execute("closing", request, BUDGET, () -> {
@@ -202,11 +213,13 @@ public class ProviderExecutorTest {
                     awaitIgnoringInterrupt(release);
                     return null;
                 });
+
                 finished.complete(null);
             } catch (Throwable failure) {
                 finished.complete(failure);
             }
         });
+
         try {
             assertTrue(entered.await(2, TimeUnit.SECONDS));
             executor.close();
@@ -229,14 +242,16 @@ public class ProviderExecutorTest {
         var release = new CountDownLatch(1);
         var outcome = new CompletableFuture<Throwable>();
         try (var executor = new ProviderExecutor(2, 1, 1, BUDGET)) {
-            var request = request(() -> {
+            WorkspaceRequestContext request = request(() -> {
                 if (Thread.currentThread() == caller.get() && returned.get() && !gated.get()
                     && executor.health().getFirst().active() == 0 && gated.compareAndSet(false, true)) {
                     responseGate.countDown();
                     awaitIgnoringInterrupt(release);
                 }
+
                 return false;
             });
+
             Thread thread = Thread.ofVirtual().start(() -> {
                 caller.set(Thread.currentThread());
                 try {
@@ -244,11 +259,13 @@ public class ProviderExecutorTest {
                         returned.set(true);
                         return "finished";
                     });
+
                     outcome.complete(null);
                 } catch (Throwable failure) {
                     outcome.complete(failure);
                 }
             });
+
             try {
                 assertTrue(responseGate.await(2, TimeUnit.SECONDS));
                 assertThrows(RejectedExecutionException.class,

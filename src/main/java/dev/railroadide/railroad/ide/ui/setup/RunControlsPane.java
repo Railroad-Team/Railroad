@@ -35,6 +35,7 @@ import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import dev.railroadide.railroad.ide.runconfig.RunConfigurationManager;
 
 /**
  * Encapsulates the run/debug/stop controls shown in the IDE toolbar.
@@ -126,7 +127,7 @@ public final class RunControlsPane extends RRHBox {
         button.getStyleClass().addAll("toolbar-button", "debugger-control");
         button.setTooltip(new LocalizedTooltip(command.displayNameKey()));
         button.setAccessibleText(L18n.localize(command.displayNameKey()));
-        var debugging = project.getDebuggingManager();
+        DebuggingManager debugging = project.getDebuggingManager();
         button.visibleProperty().bind(debugging.activeProperty());
         button.managedProperty().bind(button.visibleProperty());
         CommandButtons.bind(button, command, () -> CommandContext.forProject(project, this),
@@ -241,7 +242,7 @@ public final class RunControlsPane extends RRHBox {
                 return;
             }
 
-            var menu = item.createContextMenu(project);
+            ContextMenu menu = item.createContextMenu(project);
             RunConfigurationContextMenuManager.show(moreActionsButton, menu, Side.BOTTOM);
         });
 
@@ -299,6 +300,7 @@ public final class RunControlsPane extends RRHBox {
     public void executeConfiguration(RunConfiguration<?> configuration, boolean debug) {
         if (!canExecuteConfiguration(configuration, debug) || !Commands.saveAll())
             return;
+
         runConfigurationsComboBox.setValue(configuration);
         if (isConfigurationRunning(configuration) && !allowsMultipleInstances(configuration)) {
             restartConfiguration(configuration, debug);
@@ -311,7 +313,7 @@ public final class RunControlsPane extends RRHBox {
      * Stops the sole running configuration or opens the existing stop-selection menu.
      */
     public void requestStop() {
-        var running = getRunningConfigurations();
+        List<RunConfiguration<?>> running = getRunningConfigurations();
         if (running.size() > 1) {
             showStopMenu(running);
         } else if (!running.isEmpty()) {
@@ -323,7 +325,7 @@ public final class RunControlsPane extends RRHBox {
      * Requests stop for every tracked configuration that is not already stopping.
      */
     public void stopAllConfigurations() {
-        for (var configuration : getRunningConfigurations()) {
+        for (RunConfiguration<?> configuration : getRunningConfigurations()) {
             if (canStopConfiguration(configuration)) {
                 stopConfiguration(configuration);
             }
@@ -487,8 +489,8 @@ public final class RunControlsPane extends RRHBox {
     }
 
     private List<RunConfiguration<?>> getRunningConfigurations() {
-        var manager = project.getRunConfigManager();
-        var configs = new ArrayList<RunConfiguration<?>>();
+        RunConfigurationManager manager = project.getRunConfigManager();
+        List<RunConfiguration<?>> configs = new ArrayList<RunConfiguration<?>>();
         for (UUID uuid : runningConfigurations.keySet()) {
             RunConfiguration<?> configuration = manager.getConfigurationByUUID(uuid);
             if (configuration != null) {

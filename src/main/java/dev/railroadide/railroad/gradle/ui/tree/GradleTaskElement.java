@@ -28,6 +28,7 @@ public class GradleTaskElement extends GradleTreeElement {
         super(task != null ? task.getName() : "Unknown Task");
         if (project == null)
             throw new IllegalArgumentException("Project cannot be null");
+
         if (task == null)
             throw new IllegalArgumentException("Task cannot be null");
 

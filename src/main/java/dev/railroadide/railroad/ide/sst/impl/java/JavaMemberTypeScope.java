@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.Deque;
 
 /**
  * Resolves a simple type name against the member types in scope at a usage site, following Java's shadowing order:
@@ -40,12 +41,14 @@ public final class JavaMemberTypeScope {
             String owner = type.qualifiedName().orElse(null);
             if (owner == null || owner.isBlank())
                 continue;
+
             if (simpleName.equals(type.simpleName()))
                 return owner;
 
             String declared = resolveType.apply(owner + "." + simpleName);
             if (declared != null)
                 return declared;
+
             if (directSuperTypes == null)
                 continue;
 
@@ -57,6 +60,7 @@ public final class JavaMemberTypeScope {
                     return inherited;
             }
         }
+
         return null;
     }
 
@@ -76,12 +80,13 @@ public final class JavaMemberTypeScope {
 
         Set<String> visited = new HashSet<>();
         visited.add(owner);
-        var pending = new ArrayDeque<>(directSuperTypes.apply(owner));
+        Deque<String> pending = new ArrayDeque<>(directSuperTypes.apply(owner));
         String match = null;
         while (!pending.isEmpty()) {
             String parent = pending.removeFirst();
             if (!visited.add(parent))
                 continue;
+
             String member = resolveType.apply(parent + "." + simpleName);
             if (member == null) {
                 pending.addAll(directSuperTypes.apply(parent));
@@ -89,7 +94,9 @@ public final class JavaMemberTypeScope {
                 match = member;
             } else
                 return null;
+
         }
+
         return match;
     }
 
@@ -106,11 +113,13 @@ public final class JavaMemberTypeScope {
         String member = resolveType.apply(owner + "." + simpleName);
         if (member != null)
             return member;
+
         for (String directSuper : directSuperTypes.apply(owner)) {
             String inherited = resolveInHierarchy(directSuper, simpleName, resolveType, directSuperTypes, visited);
             if (inherited != null)
                 return inherited;
         }
+
         return null;
     }
 }

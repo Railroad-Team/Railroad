@@ -57,6 +57,7 @@ public record SymbolSignature(
             Objects.requireNonNull(name, "name");
             if (name.isBlank())
                 throw new IllegalArgumentException("Type parameter name cannot be blank");
+
             bounds = List.copyOf(bounds);
         }
     }

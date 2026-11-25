@@ -6,6 +6,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -18,7 +19,7 @@ public class JavafxCssValidatorTest {
     @Test
     public void acceptsJavafxValuesAndRelativeImports() throws IOException {
         Files.writeString(directory.resolve("palette.css"), ".root { -color-bg: #123456; }");
-        var stylesheet = Files.writeString(directory.resolve("valid.css"), """
+        Path stylesheet = Files.writeString(directory.resolve("valid.css"), """
             @import "palette.css";
             .tab-pane > .tab {
                 -fx-background-color: derive(-color-bg, -12%);
@@ -30,9 +31,9 @@ public class JavafxCssValidatorTest {
 
     @Test
     public void rejectsInvalidValuesAndClearsPreviousErrors() throws IOException {
-        var stylesheet = Files.writeString(directory.resolve("invalid.css"),
+        Path stylesheet = Files.writeString(directory.resolve("invalid.css"),
             ".root { -fx-background-color: rgb(1, 2); }");
-        var errors = JavafxCssValidator.validate(stylesheet);
+        List<String> errors = JavafxCssValidator.validate(stylesheet);
         assertFalse(errors.isEmpty());
         assertTrue(errors.getFirst().contains("invalid.css"));
         Files.writeString(stylesheet, ".root { -fx-padding: 1px; }");
@@ -41,7 +42,7 @@ public class JavafxCssValidatorTest {
 
     @Test
     public void rejectsChildCombinatorOnNewLine() throws IOException {
-        var stylesheet = Files.writeString(directory.resolve("wrapped.css"),
+        Path stylesheet = Files.writeString(directory.resolve("wrapped.css"),
             ".tab-pane\n    > .tab { -fx-padding: 1; }");
         assertFalse(JavafxCssValidator.validate(stylesheet).isEmpty());
         Files.writeString(stylesheet, ".tab-pane > .tab { -fx-padding: 1; }");
@@ -51,14 +52,15 @@ public class JavafxCssValidatorTest {
     @Test
     public void rejectsMissingStylesheetsAndImports() throws IOException {
         assertFalse(JavafxCssValidator.validate(directory.resolve("missing.css")).isEmpty());
-        var stylesheet = Files.writeString(directory.resolve("import.css"), "@import \"missing.css\";");
+        Path stylesheet = Files.writeString(directory.resolve("import.css"), "@import \"missing.css\";");
         assertFalse(JavafxCssValidator.validate(stylesheet).isEmpty());
     }
 
     @Test
     public void commandFailsForInvalidNestedStylesheetOrEmptyDirectory() throws IOException {
         assertThrows(IllegalStateException.class, () -> JavafxCssValidator.main(new String[]{directory.toString()}));
-        var nested = Files.createDirectory(directory.resolve("components"));
+
+        Path nested = Files.createDirectory(directory.resolve("components"));
         Files.writeString(nested.resolve("bad.css"), ".root { -fx-padding: ; }");
         assertThrows(IllegalStateException.class, () -> JavafxCssValidator.main(new String[]{directory.toString()}));
     }

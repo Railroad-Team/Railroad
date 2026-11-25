@@ -31,6 +31,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import dev.railroadide.railroad.ide.sst.graph.api.ReferenceOccurrence;
+import dev.railroadide.railroad.ide.sst.graph.api.SymbolEdge;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolLocation;
 
 /**
  * Immutable Java analysis inputs derived from one workspace capture. Workspace source comes from the
@@ -76,6 +79,7 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
     public JavaProjectSemanticIndex sourceIndex() {
         return sourceIndex;
     }
+
     /**
      * Returns the combined symbols pinned by this capture.
      *
@@ -84,6 +88,7 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
     public JavaSymbolIndex symbols() {
         return symbols;
     }
+
     /**
      * Returns source text copied when this analysis was captured.
      *
@@ -92,6 +97,7 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
     public Map<Path, String> sourceTexts() {
         return sourceTexts;
     }
+
     /**
      * Returns the dependency roots pinned by this workspace capture.
      *
@@ -100,6 +106,7 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
     public List<Path> classpath() {
         return classpath;
     }
+
     /**
      * Returns the JDK home pinned by this workspace capture.
      *
@@ -112,10 +119,12 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
     private static boolean extendsAny(ClassStub stub, Set<String> names) {
         if (stub.superClass() instanceof Type.ClassType parent && names.contains(parent.name()))
             return true;
-        for (var type : stub.interfaces()) {
+
+        for (Type type : stub.interfaces()) {
             if (type instanceof Type.ClassType parent && names.contains(parent.name()))
                 return true;
         }
+
         return false;
     }
 
@@ -132,9 +141,10 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
      */
     public WorkspaceSymbolGraph graph() {
         ActivityCheckpoint.checkInterrupted();
-        var cached = declarationGraph;
+        WorkspaceSymbolGraph cached = declarationGraph;
         if (cached != null)
             return cached;
+
         lockGraph(ActivityCheckpoint::checkInterrupted);
         try {
             if (declarationGraph == null) {
@@ -143,6 +153,7 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
                 ActivityCheckpoint.checkInterrupted();
                 declarationGraph = result;
             }
+
             return declarationGraph;
         } finally {
             graphLock.unlock();
@@ -172,19 +183,21 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
      */
     public WorkspaceSymbolGraph resolvedGraph(Runnable activityCheck) {
         Objects.requireNonNull(activityCheck).run();
-        var cached = resolvedGraph;
+        WorkspaceSymbolGraph cached = resolvedGraph;
         if (cached != null) {
             activityCheck.run();
             return cached;
         }
+
         lockGraph(activityCheck);
         try {
             activityCheck.run();
             if (resolvedGraph == null) {
-                var result = buildResolvedGraph(activityCheck);
+                WorkspaceSymbolGraph result = buildResolvedGraph(activityCheck);
                 activityCheck.run();
                 resolvedGraph = result;
             }
+
             activityCheck.run();
             return resolvedGraph;
         } finally {
@@ -195,11 +208,12 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
     private WorkspaceSymbolGraph buildResolvedGraph(Runnable activityCheck) {
         List<SemanticIndexShard> sources = new ArrayList<>();
         var extractor = new JavaProjectSemanticExtractor();
-        for (var file : sourceIndex.files().values()) {
+        for (JavaProjectSemanticIndex.SourceFileIndex file : sourceIndex.files().values()) {
             activityCheck.run();
             sources.add(resolveShard(extractor, file, activityCheck));
         }
-        var shards = withReferencedDeclarations(sources, activityCheck);
+
+        Collection<SemanticIndexShard> shards = withReferencedDeclarations(sources, activityCheck);
         var result = WorkspaceSymbolGraph.of(JavaOverrideGraphExtractor.extract(shards, symbols, activityCheck),
             activityCheck);
         activityCheck.run();
@@ -211,26 +225,29 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         Runnable check
     ) {
         Map<DocumentId, SemanticIndexShard> shards = new LinkedHashMap<>();
-        for (var source : sources) {
+        for (SemanticIndexShard source : sources) {
             check.run();
             shards.put(source.documentId(), source);
         }
-        var pending = new ArrayDeque<>(sources);
+
+        Deque<SemanticIndexShard> pending = new ArrayDeque<>(sources);
         Set<String> owners = new HashSet<>();
         while (!pending.isEmpty()) {
             check.run();
-            var shard = pending.removeFirst();
-            for (var reference : shard.references()) {
+            SemanticIndexShard shard = pending.removeFirst();
+            for (ReferenceOccurrence reference : shard.references()) {
                 check.run();
                 if (!reference.kind().equals(ReferenceKindId.DECLARATION)) {
                     addOwner(reference.target(), owners, shards, pending, check);
                 }
             }
-            for (var edge : shard.edges()) {
+
+            for (SymbolEdge edge : shard.edges()) {
                 check.run();
                 addOwner(edge.target(), owners, shards, pending, check);
             }
         }
+
         return shards.values();
     }
 
@@ -242,39 +259,44 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
      * @return the resolved graph with any additional binary descendants needed for rename checks
      */
     public WorkspaceSymbolGraph renameGraph(Runnable check) {
-        var graph = resolvedGraph(check);
+        WorkspaceSymbolGraph graph = resolvedGraph(check);
         Set<String> parents = new HashSet<>();
         for (String name : sourceIndex.declaredQualifiedNames()) {
             check.run();
-            for (var type : sourceIndex.lookupQualifiedName(name)) {
+            for (JavaProjectSemanticIndex.SymbolDescriptor type : sourceIndex.lookupQualifiedName(name)) {
                 if (type.descriptor() != null) {
                     parents.add(JavaSymbolIds.owningTypeName(type.descriptor().id()));
                 }
             }
         }
+
         List<SemanticIndexShard> additional = new ArrayList<>();
         Set<String> descendants = new HashSet<>();
         while (!parents.isEmpty()) {
             Set<String> next = new HashSet<>();
-            for (var stub : symbols.classStubsByQualifiedName().values()) {
+            for (ClassStub stub : symbols.classStubsByQualifiedName().values()) {
                 check.run();
                 if (!extendsAny(stub, parents))
                     continue;
+
                 String name = stub.getFullName();
                 if (descendants.add(name)) {
                     next.add(name);
                     if (graph.symbols(JavaSymbolIds.type(name)).isEmpty()) {
-                        var shard = symbols.declarationShard(name, check);
+                        SemanticIndexShard shard = symbols.declarationShard(name, check);
                         if (shard != null) {
                             additional.add(shard);
                         }
                     }
                 }
             }
+
             parents = next;
         }
+
         if (additional.isEmpty())
             return graph;
+
         additional.addAll(graph.shards().values());
         return WorkspaceSymbolGraph.of(JavaOverrideGraphExtractor.extract(withReferencedDeclarations(additional, check),
             symbols, check), check);
@@ -289,10 +311,12 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
     ) {
         if (!sourceIndex.graph().symbols(target).isEmpty())
             return;
+
         String owner = JavaSymbolIds.owningTypeName(target);
         if (owner == null || !owners.add(owner))
             return;
-        var declaration = symbols.declarationShard(owner, check);
+
+        SemanticIndexShard declaration = symbols.declarationShard(owner, check);
         if (declaration != null && shards.putIfAbsent(declaration.documentId(), declaration) == null) {
             pending.addLast(declaration);
         }
@@ -323,25 +347,28 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         Objects.requireNonNull(activityCheck).run();
         Map<DocumentId, SemanticIndexShard> shards = new LinkedHashMap<>();
         JavaProjectSemanticIndex.SourceFileIndex requested = null;
-        for (var file : sourceIndex.files().values()) {
+        for (JavaProjectSemanticIndex.SourceFileIndex file : sourceIndex.files().values()) {
             activityCheck.run();
-            var shard = file.semanticShard();
+            SemanticIndexShard shard = file.semanticShard();
             if (shard == null)
                 continue;
+
             shards.put(shard.documentId(), shard);
             if (shard.documentId().equals(source.id())) {
                 requested = file;
             }
         }
+
         if (requested == null)
             return List.of();
 
-        var resolved = resolveShard(new JavaProjectSemanticExtractor(), requested, activityCheck);
+        SemanticIndexShard resolved = resolveShard(new JavaProjectSemanticExtractor(), requested, activityCheck);
         shards.put(resolved.documentId(), resolved);
         var graph = WorkspaceSymbolGraph.of(shards.values(), activityCheck);
         SymbolId symbol = SemanticNavigationResolver.symbolAt(graph, source, offset).orElse(null);
         if (symbol == null)
             return List.of();
+
         if (!graph.symbols(symbol).isEmpty())
             return SemanticNavigationResolver.definitionsOf(graph, workspace, symbol);
 
@@ -374,7 +401,9 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         return usages(workspace, document, query, sink, activityCheck, _ -> true);
     }
 
-    /** Searches the selected candidate files, resolving their references with this compile classpath. */
+    /**
+     * Searches the selected candidate files, resolving their references with this compile classpath.
+     */
     public @Nullable UsageSearch usages(
         WorkspaceSnapshot workspace,
         DocumentSnapshot document,
@@ -385,16 +414,19 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
     ) {
         activityCheck.run();
         var extractor = new JavaProjectSemanticExtractor();
-        var files = sourceIndex.files().values();
+        Collection<JavaProjectSemanticIndex.SourceFileIndex> files = sourceIndex.files().values();
         SemanticIndexShard caretShard = null;
         SymbolId symbol;
         if (query instanceof UsageQuery.AtOffset(int offset)) {
             if (!(document instanceof TextDocumentSnapshot source))
                 return null;
-            var requested = files.stream().filter(file -> file.semanticShard().documentId().equals(source.id()))
+
+            JavaProjectSemanticIndex.SourceFileIndex requested = files.stream()
+                .filter(file -> file.semanticShard().documentId().equals(source.id()))
                 .findFirst().orElse(null);
             if (requested == null)
                 return null;
+
             caretShard = resolveShard(extractor, requested, activityCheck);
             symbol = SemanticNavigationResolver.symbolAt(caretShard, source, offset).orElse(null);
             String text = source.text();
@@ -403,51 +435,59 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
                 && (offset == text.length() || !Character.isJavaIdentifierPart(text.codePointAt(offset)))) {
                 symbol = SemanticNavigationResolver.symbolAt(caretShard, source, offset - 1).orElse(null);
             }
+
             if (symbol == null)
                 return null;
         } else {
             symbol = ((UsageQuery.OfSymbol) query).symbol();
         }
 
-        var graph = resolvedGraph == null ? sourceIndex.graph() : resolvedGraph;
+        WorkspaceSymbolGraph graph = resolvedGraph == null ? sourceIndex.graph() : resolvedGraph;
         SymbolDescriptor declaration = graph.symbols(symbol).stream().findFirst().orElse(null);
         if (declaration == null && caretShard != null) {
             declaration = declarationIn(caretShard, symbol);
         }
+
         if (declaration == null) {
             String owner = JavaSymbolIds.owningTypeName(symbol);
-            var shard = owner == null ? null : symbols.declarationShard(owner, activityCheck);
+            SemanticIndexShard shard = owner == null ? null : symbols.declarationShard(owner, activityCheck);
             if (shard != null) {
                 declaration = declarationIn(shard, symbol);
             }
         }
+
         String requiredName = declaration != null && (declaration.kind().id().equals(JavaSymbolKind.METHOD.id())
             || declaration.kind().id().equals(JavaSymbolKind.FIELD.id())) ? declaration.simpleName() : null;
-        var candidates = files.stream().filter(file -> {
+        List<JavaProjectSemanticIndex.SourceFileIndex> candidates = files.stream().filter(file -> {
             activityCheck.run();
             return include.test(file.path()) && (requiredName == null
                 || JavaUnicodeEscapes.translate(sourceTexts.get(file.path())).contains(requiredName));
         }).sorted(Comparator.comparing(file -> file.semanticShard().uri().toString())).toList();
 
-        var usages = new ArrayList<Location<?>>();
+        List<Location<?>> usages = new ArrayList<Location<?>>();
         int searched = 0;
         sink.accept(List.of(), searched, candidates.size());
-        for (var file : candidates) {
+        for (JavaProjectSemanticIndex.SourceFileIndex file : candidates) {
             activityCheck.run();
-            var shard = caretShard != null && caretShard.documentId().equals(file.semanticShard().documentId())
-                ? caretShard
-                : resolveShard(extractor, file, activityCheck);
+            SemanticIndexShard shard = caretShard != null
+                && caretShard.documentId().equals(file.semanticShard().documentId())
+                    ? caretShard
+                    : resolveShard(extractor, file, activityCheck);
             if (declaration == null) {
                 declaration = declarationIn(shard, symbol);
             }
-            var batch = List.<Location<?>>copyOf(SemanticNavigationResolver.usagesOf(shard, workspace, symbol));
+
+            List<Location<?>> batch = List
+                .<Location<?>>copyOf(SemanticNavigationResolver.usagesOf(shard, workspace, symbol));
             activityCheck.run();
             usages.addAll(batch);
             sink.accept(batch, ++searched, candidates.size());
         }
+
         activityCheck.run();
         if (query instanceof UsageQuery.OfSymbol && declaration == null && usages.isEmpty())
             return null;
+
         String name = declaration == null
             ? symbol.value()
             : Objects.requireNonNullElse(declaration.qualifiedName(), declaration.simpleName());
@@ -466,12 +506,14 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         } catch (IllegalArgumentException exception) {
             return Optional.empty();
         }
+
         int typeIndex = -1;
         for (int index = 0; index < components.size(); index++) {
             if (components.get(index).kind().equals("type")) {
                 typeIndex = index;
             }
         }
+
         if (typeIndex < 0)
             return Optional.empty();
 
@@ -482,11 +524,13 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         DocumentUri binary = binaryLocation(topLevel.getFullName()).orElse(null);
         if (binary == null)
             return Optional.empty();
+
         activityCheck.run();
         TextDocumentSnapshot view = librarySources.open(binary, topLevel, symbols.classStubsByQualifiedName())
             .orElse(null);
         if (view == null)
             return Optional.empty();
+
         activityCheck.run();
         for (DocumentSnapshot document : workspace.documents().values()) {
             if (document instanceof TextDocumentSnapshot open && open.uri().equals(view.uri())
@@ -499,7 +543,7 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         Path path = view.uri().filePath().orElseThrow();
         var tree = JavaSyntaxParser.parse(view, activityCheck);
         var model = JavaSemanticAnalyzer.analyzeProjectDeclarations(tree, symbols, activityCheck);
-        var declarations = new JavaProjectSemanticExtractor()
+        List<SymbolDescriptor> declarations = new JavaProjectSemanticExtractor()
             .extractProjectDeclarations(path, model, symbols, activityCheck).semanticShard().declarations();
         activityCheck.run();
 
@@ -507,9 +551,11 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         for (int length = components.size(); length > typeIndex && location == null; length--) {
             location = declarationLocation(declarations, components.subList(0, length));
         }
+
         if (location == null) {
             location = Location.TextLocation.from(view, 0, 0);
         }
+
         return Optional.of(new DefinitionTarget(view, location));
     }
 
@@ -543,19 +589,21 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         JavaLibrarySources librarySources,
         Runnable activityCheck
     ) {
-        var source = binaryLocation(topLevel.getFullName())
+        TextDocumentSnapshot source = binaryLocation(topLevel.getFullName())
             .flatMap(binary -> librarySources.readAttachedSource(binary, topLevel)).orElse(null);
         if (source == null)
             return Map.of();
+
         var tree = JavaSyntaxParser.parse(source, activityCheck);
         var model = JavaSemanticAnalyzer.analyzeProjectDeclarations(tree, symbols, activityCheck);
         var shard = JavaSemanticGraphExtractor.extractProjectDeclarations(model, symbols, activityCheck);
         Map<SymbolId, SymbolSignature> signatures = new HashMap<>();
-        for (var declaration : shard.declarations()) {
+        for (SymbolDescriptor declaration : shard.declarations()) {
             if (declaration.signature() != null) {
                 signatures.put(declaration.id(), declaration.signature());
             }
         }
+
         return signatures;
     }
 
@@ -565,26 +613,32 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         while (topLevel != null && topLevel.enclosingClassName() != null) {
             if (!visited.add(topLevel.getFullName()))
                 return null;
+
             topLevel = symbols.lookupClassStub(topLevel.enclosingClassName());
         }
+
         return topLevel;
     }
 
-    /** The compiled top-level class used to open the library view containing this type. */
+    /**
+     * The compiled top-level class used to open the library view containing this type.
+     */
     public Optional<DocumentUri> topLevelBinaryLocation(String name) {
-        var topLevel = topLevelClass(name);
+        ClassStub topLevel = topLevelClass(name);
         return topLevel == null ? Optional.empty() : binaryLocation(topLevel.getFullName());
     }
 
     private Optional<DocumentUri> binaryLocation(String qualifiedName) {
-        for (var descriptor : symbols.lookupQualifiedName(qualifiedName)) {
+        for (JavaProjectSemanticIndex.SymbolDescriptor descriptor : symbols.lookupQualifiedName(qualifiedName)) {
             if (descriptor.descriptor() == null)
                 continue;
-            for (var location : descriptor.descriptor().locations()) {
+
+            for (SymbolLocation location : descriptor.descriptor().locations()) {
                 if (!location.uri().isFile() || location.uri().toString().endsWith(".class"))
                     return Optional.of(location.uri());
             }
         }
+
         return Optional.empty();
     }
 
@@ -598,19 +652,22 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
     ) {
         Location.TextLocation best = null;
         int bestDepth = Integer.MAX_VALUE;
-        for (var declaration : declarations) {
+        for (SymbolDescriptor declaration : declarations) {
             List<JavaSymbolIds.Component> components;
             try {
                 components = JavaSymbolIds.components(declaration.id());
             } catch (IllegalArgumentException exception) {
                 continue;
             }
+
             if (components.size() < prefix.size() || !components.subList(0, prefix.size()).equals(prefix))
                 continue;
-            for (var source : declaration.locations()) {
+
+            for (SymbolLocation source : declaration.locations()) {
                 Location<?> candidate = source.selection() != null ? source.selection() : source.declaration();
                 if (!(candidate instanceof Location.TextLocation text))
                     continue;
+
                 if (components.size() < bestDepth
                     || components.size() == bestDepth && text.range().start < best.range().start) {
                     best = text;
@@ -618,6 +675,7 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
                 }
             }
         }
+
         return best;
     }
 
@@ -626,14 +684,16 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         JavaProjectSemanticIndex.SourceFileIndex file,
         Runnable activityCheck
     ) {
-        var shard = file.semanticShard();
+        SemanticIndexShard shard = file.semanticShard();
         if (shard == null)
             throw new IllegalStateException("Captured source has no semantic shard: " + file.path());
+
         if (resolvedGraph != null) {
             activityCheck.run();
             return resolvedGraph.shard(shard.documentId()).orElseThrow();
         }
-        var origin = shard.declarations().stream().flatMap(symbol -> symbol.locations().stream())
+
+        DocumentOrigin origin = shard.declarations().stream().flatMap(symbol -> symbol.locations().stream())
             .filter(location -> location.uri().equals(shard.uri())).map(location -> location.origin())
             .findFirst().orElseGet(() -> DocumentOrigin.unspecified(shard.uri()));
         String text = Objects.requireNonNull(sourceTexts.get(file.path()), "Captured source text");
@@ -641,7 +701,7 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
             "java", origin, text, StandardCharsets.UTF_8);
         var tree = JavaSyntaxParser.parse(snapshot, activityCheck);
         var model = JavaSemanticAnalyzer.analyzeFacts(tree, this, activityCheck);
-        var resolved = extractor.extract(file.path(), model, this, activityCheck).semanticShard();
+        SemanticIndexShard resolved = extractor.extract(file.path(), model, this, activityCheck).semanticShard();
         activityCheck.run();
         return resolved;
     }
@@ -659,22 +719,27 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
     public Optional<String> sourceText(Path path) {
         return Optional.ofNullable(sourceTexts.get(path));
     }
+
     @Override
     public Set<String> declaredQualifiedNames() {
         return symbols.declaredQualifiedNames();
     }
+
     @Override
     public Set<String> typeNames() {
         return symbols.typeNames();
     }
+
     @Override
     public boolean containsPackage(String name) {
         return symbols.containsPackage(name);
     }
+
     @Override
     public Map<String, ClassStub> classStubsByQualifiedName() {
         return symbols.classStubsByQualifiedName();
     }
+
     @Override
     public List<JavaProjectSemanticIndex.SymbolDescriptor> lookupSimpleName(String name) {
         return symbols.lookupSimpleName(name);
@@ -684,14 +749,17 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
     public List<String> qualifiedTypeNames(String simpleName) {
         return symbols.qualifiedTypeNames(simpleName);
     }
+
     @Override
     public List<JavaProjectSemanticIndex.SymbolDescriptor> lookupQualifiedName(String name) {
         return symbols.lookupQualifiedName(name);
     }
+
     @Override
     public List<JavaProjectSemanticIndex.SymbolDescriptor> lookupMembers(String name) {
         return symbols.lookupMembers(name);
     }
+
     @Override
     public List<JavaProjectSemanticIndex.SymbolDescriptor> lookupMember(String owner, String name) {
         return symbols.lookupMember(owner, name);

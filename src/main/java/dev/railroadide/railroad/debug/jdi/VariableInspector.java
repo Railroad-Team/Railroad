@@ -134,6 +134,7 @@ public final class VariableInspector {
 
         return switch (value) {
             case null -> throw new IllegalArgumentException("Unknown or expired variable reference");
+
             case ArrayReference array -> expandArray(array, start, count);
             case ObjectReference object -> expandObject(object);
             default -> List.of();
@@ -189,6 +190,7 @@ public final class VariableInspector {
             case null -> {
                 return "null";
             }
+
             case StringReference string -> {
                 String text = string.value();
 
@@ -198,43 +200,54 @@ public final class VariableInspector {
 
                 return "\"" + escape(text) + "\"";
             }
+
             case CharValue character -> {
                 return "'" + character.value() + "'";
             }
+
             case BooleanValue booleanValue -> {
                 return Boolean.toString(
                     booleanValue.value());
             }
+
             case ByteValue number -> {
                 return Byte.toString(number.value());
             }
+
             case ShortValue number -> {
                 return Short.toString(number.value());
             }
+
             case IntegerValue number -> {
                 return Integer.toString(number.value());
             }
+
             case LongValue number -> {
                 return number.value() + "L";
             }
+
             case FloatValue number -> {
                 return number.value() + "f";
             }
+
             case DoubleValue number -> {
                 return Double.toString(number.value());
             }
+
             case ArrayReference array -> {
                 return array.referenceType().name()
                     + "[length="
                     + array.length()
                     + "]";
             }
+
             case ObjectReference object -> {
                 return object.referenceType().name()
                     + "@"
                     + Long.toHexString(
                         object.uniqueID());
             }
+
             default -> {
             }
         }

@@ -17,7 +17,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-/** Owns presentation resources and exposes an optional, implementation-independent text capability. */
+/**
+ * Owns presentation resources and exposes an optional, implementation-independent text capability.
+ */
 public final class EditorOpenView {
     private final Node content;
     private final ObservableValue<TextEditorPane> source;
@@ -117,6 +119,7 @@ public final class EditorOpenView {
     public void observeSourceEditor(Consumer<TextEditorPane> listener) {
         if (closed)
             throw new IllegalStateException("Editor view is closed");
+
         ChangeListener<TextEditorPane> change = (_, _, current) -> listener.accept(current);
         source.addListener(change);
         sourceSubscriptions.add(() -> source.removeListener(change));
@@ -140,10 +143,13 @@ public final class EditorOpenView {
         rebind.accept(path);
     }
 
-    /** Releases listeners and wrapper resources after accepted source closure; safe to repeat. */
+    /**
+     * Releases listeners and wrapper resources after accepted source closure; safe to repeat.
+     */
     public void closeResources() {
         if (closed)
             return;
+
         closed = true;
         sourceSubscriptions.forEach(EditorSubscription::close);
         sourceSubscriptions.clear();

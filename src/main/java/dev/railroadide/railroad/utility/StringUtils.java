@@ -202,11 +202,13 @@ public final class StringUtils {
         for (int i = 0; i <= a.length(); i++) {
             dp[i][0] = i;
         }
+
         for (int j = 0; j <= b.length(); j++) {
             dp[0][j] = j;
         }
 
         // Fill the DP table with the minimum edit distances.
+
         for (int i = 1; i <= a.length(); i++) {
             for (int j = 1; j <= b.length(); j++) {
                 int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
@@ -217,6 +219,7 @@ public final class StringUtils {
         }
 
         // Return the final computed Levenshtein distance.
+
         return dp[a.length()][b.length()];
     }
 }

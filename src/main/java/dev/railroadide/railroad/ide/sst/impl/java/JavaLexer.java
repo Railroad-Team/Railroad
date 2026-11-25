@@ -244,6 +244,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
                 // The escaped codepoint has already been consumed; do not treat
                 // the next character as escaped as well.
+
                 escapeNext = false;
             } else {
                 escapeNext = false;
@@ -271,6 +272,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                 consume();
                 continue;
             }
+
             consume();
             char escaped = hasNext() ? charAt(pos) : '\0';
             if (escaped == '\r' || escaped == '\n') {
@@ -370,6 +372,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                     }
                 }
             }
+
             consume();
             return token(JavaTokenType.SINGLE_CHAR_TOKENS.get(current), startOffset, startLine, startCol);
         }
@@ -484,6 +487,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                 end++;
                 matched++;
             }
+
             if (matched == spelling.length()) {
                 consume(end - pos);
                 return token(possibleToken.getValue(), startOffset, line, column);
@@ -511,6 +515,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
             if (problem == null && Character.toLowerCase(peek(0)) == 'l') {
                 consume();
             }
+
             return finishNumber(JavaTokenType.NUMBER_BINARY_LITERAL, problem, startOffset, startLine, startColumn);
         }
 
@@ -533,6 +538,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         if (floating && problem == null) {
             problem = readDigits(JavaLexer::isDecimalDigit);
         }
+
         return finishDecimal(floating, problem, startOffset, startLine, startColumn);
     }
 
@@ -589,6 +595,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         if (problem == null && !hasDigits) {
             problem = "Missing digits in hexadecimal literal";
         }
+
         if (problem == null && Character.toLowerCase(peek(0)) == 'p') {
             floating = true;
             problem = readExponent();
@@ -608,7 +615,9 @@ public class JavaLexer implements Lexer<JavaTokenType> {
             : JavaTokenType.NUMBER_HEXADECIMAL_LITERAL, problem, startOffset, startLine, startColumn);
     }
 
-    /** Reads an exponent marker, an optional sign and the exponent digits. */
+    /**
+     * Reads an exponent marker, an optional sign and the exponent digits.
+     */
     private String readExponent() {
         consume();
         if (peek(0) == '+' || peek(0) == '-') {
@@ -644,6 +653,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
         if (!sawDigit)
             return "Missing digits in number literal";
+
         if (lastUnderscore)
             return "Underscore must be followed by a digit in number literal";
 
@@ -660,6 +670,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         if (problem == null && hasNext() && !doesCharacterTerminateNumber(peek(0))) {
             problem = "Unexpected character after number literal: '" + peek(0) + "'";
         }
+
         if (problem == null && !fitsIntegerType(type, input.subSequence(startOffset, pos).toString())) {
             problem = "Integer number too large";
         }
@@ -702,6 +713,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
                 yield true; // valid Unicode escape
             }
+
             default -> {
                 if (current >= '0' && current <= '7') {
                     int val = current - '0';
@@ -710,9 +722,11 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                         char d = peek(0);
                         if (d < '0' || d > '7')
                             break;
+
                         int next = val * 8 + (d - '0');
                         if (next > 255)
                             break; // cap at 255; stop before overflow
+
                         consume();
                         val = next;
                         count++;
@@ -739,6 +753,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
             case NUMBER_BINARY_LITERAL -> 2;
             default -> 0;
         };
+
         if (radix == 0)
             return true;
 
@@ -747,9 +762,11 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         if (isLong) {
             digits = digits.substring(0, digits.length() - 1);
         }
+
         if (radix == 16 || radix == 2) {
             digits = digits.substring(2);
         }
+
         int bits = isLong ? 64 : 32;
         var value = new BigInteger(digits, radix);
         if (radix != 10)
@@ -846,19 +863,24 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                 if (offsets != null) {
                     offsets.add(index);
                 }
+
                 continue;
             }
+
             if (offsets == null) {
                 offsets = new ArrayList<>(raw.length());
                 for (int previous = 0; previous < index; previous++) {
                     offsets.add(previous);
                 }
             }
+
             offsets.add(index);
             index = end - 1;
         }
+
         if (offsets == null)
             return null;
+
         offsets.add(raw.length());
         return offsets.stream().mapToInt(Integer::intValue).toArray();
     }
@@ -899,6 +921,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         if (channel == TokenChannel.DEFAULT) {
             previousSignificantType = type;
         }
+
         return new Token.SimpleToken<>(type, slice(startOff, pos), rawOffset(startOff), rawOffset(pos), startLine,
             startCol, channel, flags);
     }

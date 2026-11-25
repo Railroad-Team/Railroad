@@ -515,6 +515,7 @@ public final class JavaSyntaxParser {
         TextDocumentSnapshot previousSnapshot = previousTree.documentSnapshot();
         if (!newSnapshot.id().equals(previousSnapshot.id()))
             throw new IllegalArgumentException("newSnapshot must have the same document identity as previousTree");
+
         if (!newSnapshot.version().isAfter(previousSnapshot.version()))
             throw new IllegalArgumentException(
                 "newSnapshot version must be later than previous tree version " + previousSnapshot.version());
@@ -792,6 +793,7 @@ public final class JavaSyntaxParser {
                 ActivityCheckpoint.checkInterrupted();
                 collectReuseCandidates(child, oldReparseStart, oldReparseEnd, delta, candidates);
             }
+
             return;
         }
 
@@ -830,7 +832,7 @@ public final class JavaSyntaxParser {
 
     private static List<SyntaxDiagnostic> collectSyntaxDiagnostics(SyntaxNode root, Runnable activityCheck) {
         List<SyntaxDiagnostic> diagnostics = new ArrayList<>();
-        ArrayDeque<SyntaxNode> stack = new ArrayDeque<>();
+        Deque<SyntaxNode> stack = new ArrayDeque<>();
         stack.push(root);
         while (!stack.isEmpty()) {
             activityCheck.run();
@@ -872,10 +874,13 @@ public final class JavaSyntaxParser {
         String tokenKind = node.children().isEmpty() ? "" : node.children().getFirst().kind().id();
         if (tokenKind.contains("NUMBER"))
             return "Malformed number literal";
+
         if (tokenKind.contains("COMMENT"))
             return "Unterminated comment";
+
         if (tokenKind.contains("LITERAL"))
             return "Malformed or unterminated literal";
+
         return "Illegal character";
     }
 
@@ -915,8 +920,10 @@ public final class JavaSyntaxParser {
         public TextEdit {
             if (startOffset < 0)
                 throw new IllegalArgumentException("startOffset cannot be negative");
+
             if (removedLength < 0)
                 throw new IllegalArgumentException("removedLength cannot be negative");
+
             insertedText = Objects.requireNonNull(insertedText, "insertedText");
         }
 

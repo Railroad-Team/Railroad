@@ -57,7 +57,7 @@ public record CreateMixinsJsonStep(FilesService files) implements CreationStep {
         }
 
         config.setInjectors(Map.of("defaultRequire", 1));
-        var json = Railroad.GSON.toJson(config);
+        String json = Railroad.GSON.toJson(config);
         files.writeString(mixinsPath, json);
     }
 }

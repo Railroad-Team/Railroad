@@ -48,9 +48,13 @@ public record ProjectEvent(Project project, EventType eventType) implements Even
      * Enum representing the type of project event.
      */
     public enum EventType {
-        /** The project was opened. */
+        /**
+         * The project was opened.
+         */
         OPENED,
-        /** The project was closed. */
+        /**
+         * The project was closed.
+         */
         CLOSED
     }
 }

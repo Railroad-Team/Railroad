@@ -6,6 +6,7 @@ import javafx.scene.text.Font;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
+import javafx.collections.ObservableList;
 
 /**
  * Combo box containing the fonts installed on the current system.
@@ -18,7 +19,7 @@ public class InstalledFontPane extends ComboBox<String> {
      * @param selectedFont initially selected font, or {@code null} for no selection
      */
     public InstalledFontPane(@Nullable String selectedFont) {
-        var fonts = FXCollections.observableArrayList(Font.getFamilies());
+        ObservableList<String> fonts = FXCollections.observableArrayList(Font.getFamilies());
         fonts.sort(String.CASE_INSENSITIVE_ORDER);
         getStyleClass().add("installed-font-pane");
         setItems(fonts);
@@ -29,6 +30,7 @@ public class InstalledFontPane extends ComboBox<String> {
                 fonts.add(selectedFont);
                 fonts.sort(Comparator.comparing(String::toLowerCase));
             }
+
             setValue(selectedFont);
         }
     }

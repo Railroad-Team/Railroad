@@ -288,6 +288,7 @@ public final class JavaGreenParser {
             parseTypeReference();
             member = isIdentifierLike(peekSignificantType());
         }
+
         rollback(checkpoint);
         return member;
     }
@@ -398,6 +399,7 @@ public final class JavaGreenParser {
         while (true) {
             if (matchSignificant(JavaTokenType.STATIC_KEYWORD, children))
                 continue;
+
             if (matchSignificant(JavaTokenType.TRANSITIVE_KEYWORD, children))
                 continue;
 
@@ -505,12 +507,16 @@ public final class JavaGreenParser {
         JavaTokenType tokenType = peekSignificantType();
         if (tokenType == JavaTokenType.CLASS_KEYWORD)
             return parseClassDeclaration(prefix);
+
         if (tokenType == JavaTokenType.INTERFACE_KEYWORD)
             return parseInterfaceDeclaration(prefix);
+
         if (tokenType == JavaTokenType.ENUM_KEYWORD)
             return parseEnumDeclaration(prefix);
+
         if (tokenType == JavaTokenType.AT_INTERFACE_KEYWORD)
             return parseAnnotationTypeDeclaration(prefix);
+
         if (tokenType == JavaTokenType.RECORD_KEYWORD && isIdentifierLike(peekSignificantTypeAfter(1)))
             return parseRecordDeclaration(prefix);
 
@@ -606,6 +612,7 @@ public final class JavaGreenParser {
         if (typeParameters != null) {
             children.add(typeParameters);
         }
+
         GreenNode extendsClause = parseOptionalTypeClause(JavaTokenType.EXTENDS_KEYWORD,
             JavaSyntaxKinds.EXTENDS_CLAUSE);
         if (extendsClause != null) {
@@ -1481,11 +1488,14 @@ public final class JavaGreenParser {
                 consumeIdentifierLike(children);
                 matchSignificant(JavaTokenType.DOT, children);
             }
+
             return greenNode(JavaSyntaxKinds.RECEIVER_PARAMETER, children);
         }
+
         if (consumeIdentifierLike(children) == null) {
             children.add(missingToken(JavaTokenType.IDENTIFIER));
         }
+
         appendOptionalDimensions(children);
         if (position == marker) {
             Token<JavaTokenType> token = peekSignificantToken();
@@ -1895,6 +1905,7 @@ public final class JavaGreenParser {
 
         if (tokenType == JavaTokenType.OPEN_PAREN && isCastExpressionStart())
             return parseCastExpression();
+
         if (tokenType == JavaTokenType.SWITCH_KEYWORD)
             return parseSwitchExpression();
 
@@ -1977,12 +1988,14 @@ public final class JavaGreenParser {
                 if (typeArguments != null) {
                     children.add(typeArguments);
                 }
+
                 consumeTypeUseAnnotations(children);
 
                 List<GreenElement> nameChildren = new ArrayList<>();
                 if (consumeIdentifierLike(nameChildren) == null) {
                     nameChildren.add(missingToken(JavaTokenType.IDENTIFIER));
                 }
+
                 children.add(greenNode(JavaSyntaxKinds.NAME_EXPRESSION, nameChildren));
 
                 if (peekSignificantType() == JavaTokenType.OPEN_PAREN) {
@@ -1991,6 +2004,7 @@ public final class JavaGreenParser {
                 } else {
                     expression = greenNode(JavaSyntaxKinds.FIELD_ACCESS_EXPRESSION, children);
                 }
+
                 continue;
             }
 
@@ -2007,6 +2021,7 @@ public final class JavaGreenParser {
                     expression = parseArrayConstructorMethodReferenceExpression(expression);
                     continue;
                 }
+
                 List<GreenElement> children = new ArrayList<>();
                 children.add(expression);
                 expectSignificant(JavaTokenType.OPEN_BRACKET, children);
@@ -2053,6 +2068,7 @@ public final class JavaGreenParser {
                 ? JavaSyntaxKinds.THIS_EXPRESSION
                 : JavaSyntaxKinds.SUPER_EXPRESSION, children);
         }
+
         rollback(checkpoint);
         children.subList(childCount, children.size()).clear();
         return null;
@@ -2073,6 +2089,7 @@ public final class JavaGreenParser {
             JavaTokenType type = tokens.get(index).type();
             if (type == JavaTokenType.DOUBLE_COLON)
                 return typeSyntax;
+
             if (type == JavaTokenType.LEFT_ANGLED_BRACKET || type == JavaTokenType.OPEN_BRACKET
                 || type == JavaTokenType.AT) {
                 typeSyntax = true;
@@ -2083,7 +2100,9 @@ public final class JavaGreenParser {
                 && type != JavaTokenType.RIGHT_SHIFT && type != JavaTokenType.UNSIGNED_RIGHT_SHIFT
                 && type != JavaTokenType.CLOSE_BRACKET)
                 return false;
+
         }
+
         return false;
     }
 
@@ -2094,11 +2113,14 @@ public final class JavaGreenParser {
             int closeIndex = nextSignificantIndex(index + 1);
             if (closeIndex < 0 || tokens.get(closeIndex).type() != JavaTokenType.CLOSE_BRACKET)
                 return false;
+
             foundDimension = true;
             index = nextSignificantIndex(closeIndex + 1);
         }
+
         if (!foundDimension || index < 0 || tokens.get(index).type() != JavaTokenType.DOUBLE_COLON)
             return false;
+
         int memberIndex = nextSignificantIndex(index + 1);
         return memberIndex >= 0 && tokens.get(memberIndex).type() == JavaTokenType.NEW_KEYWORD;
     }
@@ -2110,6 +2132,7 @@ public final class JavaGreenParser {
             expectSignificant(JavaTokenType.OPEN_BRACKET, children);
             expectSignificant(JavaTokenType.CLOSE_BRACKET, children);
         }
+
         expectSignificant(JavaTokenType.DOUBLE_COLON, children);
         expectSignificant(JavaTokenType.NEW_KEYWORD, children);
         return greenNode(JavaSyntaxKinds.METHOD_REFERENCE_EXPRESSION, children);
@@ -2131,26 +2154,34 @@ public final class JavaGreenParser {
 
         if (isLiteralToken(tokenType))
             return parseLiteral();
+
         if (isBlockBodiedLambdaStart())
             return parseLambdaExpression();
+
         if (tokenType == JavaTokenType.OPEN_PAREN)
             return parseParenthesizedExpression();
+
         if (tokenType == JavaTokenType.NEW_KEYWORD)
             return parseClassInstanceCreationOrArrayCreationExpression();
+
         if (tokenType == JavaTokenType.SWITCH_KEYWORD)
             return parseSwitchExpression();
+
         if (isClassLiteralStart())
             return parseClassLiteralExpression();
+
         if (tokenType == JavaTokenType.LEFT_ANGLED_BRACKET) {
             GreenNode invocation = parseOptionalTypedConstructorInvocationTarget(new ArrayList<>());
             if (invocation != null)
                 return invocation;
         }
+
         if (isTypeMethodReferenceStart()) {
             ParserCheckpoint checkpoint = mark();
             GreenNode type = parseTypeReference();
             if (peekSignificantType() == JavaTokenType.DOUBLE_COLON)
                 return parseMethodReferenceExpression(type);
+
             rollback(checkpoint);
         }
 
@@ -2159,6 +2190,7 @@ public final class JavaGreenParser {
             if (consumeIdentifierLike(nameChildren) == null) {
                 nameChildren.add(missingToken(JavaTokenType.IDENTIFIER));
             }
+
             GreenNode nameExpression = greenNode(JavaSyntaxKinds.NAME_EXPRESSION, nameChildren);
             if (peekSignificantType() == JavaTokenType.OPEN_PAREN) {
                 List<GreenElement> children = new ArrayList<>();
@@ -2177,6 +2209,7 @@ public final class JavaGreenParser {
         } else {
             errorChildren.add(missingToken(JavaTokenType.IDENTIFIER));
         }
+
         return greenNode(JavaSyntaxKinds.PRIMARY_EXPRESSION, errorChildren);
     }
 
@@ -2196,6 +2229,7 @@ public final class JavaGreenParser {
             if (peekSignificantType() != JavaTokenType.CLOSE_BRACKET) {
                 children.add(parseExpression());
             }
+
             expectSignificant(JavaTokenType.CLOSE_BRACKET, children);
         }
 
@@ -2203,6 +2237,7 @@ public final class JavaGreenParser {
             if (peekSignificantType() == JavaTokenType.OPEN_BRACE) {
                 children.add(parseArrayInitializerExpression());
             }
+
             return greenNode(JavaSyntaxKinds.ARRAY_CREATION_EXPRESSION, children);
         }
 
@@ -2337,6 +2372,7 @@ public final class JavaGreenParser {
         if (consumeIdentifierLike(children) == null) {
             children.add(missingToken(JavaTokenType.IDENTIFIER));
         }
+
         return greenNode(JavaSyntaxKinds.METHOD_REFERENCE_EXPRESSION, children);
     }
 
@@ -2388,6 +2424,7 @@ public final class JavaGreenParser {
         if (consumeIdentifierLike(children) == null) {
             children.add(missingToken(JavaTokenType.IDENTIFIER));
         }
+
         return greenNode(JavaSyntaxKinds.LAMBDA_PARAMETER, children);
     }
 
@@ -2438,6 +2475,7 @@ public final class JavaGreenParser {
         if (!consumedSignificant) {
             children.add(missingToken(JavaTokenType.IDENTIFIER));
         }
+
         return greenNode(JavaSyntaxKinds.LAMBDA_PARAMETER, children);
     }
 
@@ -2464,6 +2502,7 @@ public final class JavaGreenParser {
         if (peekSignificantType() == JavaTokenType.OPEN_PAREN) {
             rejectRecordPatternAnnotations(children, prefixStart, typeIndex);
         }
+
         if (matchSignificant(JavaTokenType.OPEN_PAREN, children)) {
             while (hasMoreTokens()) {
                 consumeTrivia(children);
@@ -2529,6 +2568,7 @@ public final class JavaGreenParser {
             parsePattern();
             recovered = recoveries != before;
         }
+
         boolean consumed = position > marker;
         int significantTokens = 0;
         for (int index = marker; index < position; index++) {
@@ -2563,6 +2603,7 @@ public final class JavaGreenParser {
             // A qualified constant such as ColorSpace.TYPE_RGB is a case
             // expression. parseTypeReference can consume the whole qualified
             // name while probing, but there is no binding identifier after it.
+
             if (previous == JavaTokenType.DOT) {
                 looksLikePattern = false;
             }
@@ -2628,13 +2669,17 @@ public final class JavaGreenParser {
                     depth++;
                 } else if (type == JavaTokenType.CLOSE_PAREN && --depth == 0)
                     break;
+
             }
+
             if (index < 0)
                 return false;
         }
+
         int arrow = nextSignificantIndex(index + 1);
         if (arrow < 0 || tokens.get(arrow).type() != JavaTokenType.ARROW)
             return false;
+
         int body = nextSignificantIndex(arrow + 1);
         return body >= 0 && tokens.get(body).type() == JavaTokenType.OPEN_BRACE;
     }
@@ -2681,6 +2726,7 @@ public final class JavaGreenParser {
             && peekSignificantTypeAfter(offset + 1) == JavaTokenType.DOT) {
             offset += 2;
         }
+
         return peekSignificantTypeAfter(offset) == JavaTokenType.THIS_KEYWORD;
     }
 
@@ -2857,6 +2903,7 @@ public final class JavaGreenParser {
         if (consumeIdentifierLike(nameTokens) == null) {
             nameTokens.add(missingToken(JavaTokenType.IDENTIFIER));
         }
+
         JavaTokenType afterName = peekSignificantType();
         boolean varDimensions = varType
             && (afterName == JavaTokenType.OPEN_BRACKET || afterName == JavaTokenType.AT);
@@ -2880,6 +2927,7 @@ public final class JavaGreenParser {
         if (consumeIdentifierLike(children) == null) {
             children.add(missingToken(JavaTokenType.IDENTIFIER));
         }
+
         expectSignificant(JavaTokenType.COLON, children);
         children.add(parseStatement());
         return greenNode(JavaSyntaxKinds.LABELED_STATEMENT, children);
@@ -2997,6 +3045,7 @@ public final class JavaGreenParser {
         } else {
             children.add(parseExpression());
         }
+
         return greenNode(JavaSyntaxKinds.TRY_RESOURCE, children);
     }
 
@@ -3059,6 +3108,7 @@ public final class JavaGreenParser {
         if (peekSignificantType() != JavaTokenType.SEMICOLON) {
             children.add(parseExpression());
         }
+
         expectSignificant(JavaTokenType.SEMICOLON, children);
 
         if (peekSignificantType() != JavaTokenType.CLOSE_PAREN) {
@@ -3122,6 +3172,7 @@ public final class JavaGreenParser {
             if (parenDepth == 0 && bracketDepth == 0 && braceDepth == 0 && angleDepth == 0) {
                 if (tokenType == JavaTokenType.SEMICOLON)
                     return false;
+
                 if (tokenType == JavaTokenType.COLON)
                     return true;
             }
@@ -3360,15 +3411,17 @@ public final class JavaGreenParser {
         do {
             consumeModifiersAndAnnotations(prefix, JavaGreenParser::isTypeDeclarationModifier);
         } while (matchNonSealedModifier(prefix));
+
         return prefix;
     }
 
     private boolean matchNonSealedModifier(List<GreenElement> prefix) {
         if (position + 2 >= tokens.size())
             return false;
-        var non = tokens.get(position);
-        var hyphen = tokens.get(position + 1);
-        var sealed = tokens.get(position + 2);
+
+        Token<JavaTokenType> non = tokens.get(position);
+        Token<JavaTokenType> hyphen = tokens.get(position + 1);
+        Token<JavaTokenType> sealed = tokens.get(position + 2);
         if (non.type() != JavaTokenType.IDENTIFIER || hyphen.type() != JavaTokenType.MINUS
             || sealed.type() != JavaTokenType.SEALED_KEYWORD || non.endOffset() != hyphen.pos()
             || hyphen.endOffset() != sealed.pos() || !"non".equals(JavaUnicodeEscapes.translate(non.lexeme())))
@@ -3407,6 +3460,7 @@ public final class JavaGreenParser {
                 consumed = true;
             }
         } while (consumed);
+
     }
 
     /**
@@ -3419,6 +3473,7 @@ public final class JavaGreenParser {
         } else if (RESTRICTED_TYPE_NAMES.contains(name.type())) {
             children.add(errorNode(children.removeLast()));
         }
+
         return name;
     }
 
@@ -3429,6 +3484,7 @@ public final class JavaGreenParser {
     private static boolean containsKind(GreenElement element, SyntaxKind kind) {
         if (element.kind().equals(kind))
             return true;
+
         return element instanceof GreenNode node
             && node.children().stream().anyMatch(child -> containsKind(child, kind));
     }
@@ -3436,13 +3492,17 @@ public final class JavaGreenParser {
     private static boolean startsWithVar(GreenElement element) {
         if (element instanceof GreenToken token)
             return "var".equals(token.text());
+
         if (!(element instanceof GreenNode node))
             return false;
+
         for (GreenElement child : node.children()) {
             if (child instanceof GreenToken token && (token.text().isBlank() || token.text().startsWith("/")))
                 continue;
+
             return startsWithVar(child);
         }
+
         return false;
     }
 
@@ -3668,6 +3728,7 @@ public final class JavaGreenParser {
         if (consumedSignificant) {
             recoveries++;
         }
+
         return consumedSignificant;
     }
 
@@ -3757,6 +3818,7 @@ public final class JavaGreenParser {
     }
 
     // Policy: the token stream must always end with EOF; only the compilation-unit parser consumes it.
+
     private void ensureEofToken() {
         if (!tokens.isEmpty() && isEof(tokens.getLast()))
             return;
@@ -3785,10 +3847,13 @@ public final class JavaGreenParser {
     private static int adjustAngleDepthForToken(int angleDepth, JavaTokenType tokenType) {
         if (tokenType == JavaTokenType.LEFT_ANGLED_BRACKET)
             return angleDepth + 1;
+
         if (tokenType == JavaTokenType.RIGHT_ANGLED_BRACKET)
             return Math.max(0, angleDepth - 1);
+
         if (tokenType == JavaTokenType.RIGHT_SHIFT)
             return Math.max(0, angleDepth - 2);
+
         if (tokenType == JavaTokenType.UNSIGNED_RIGHT_SHIFT)
             return Math.max(0, angleDepth - 3);
 

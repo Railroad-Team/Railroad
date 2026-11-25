@@ -49,7 +49,7 @@ public class ThemeSelector extends RRVBox {
         setAlignment(Pos.TOP_LEFT);
         getStyleClass().add("theme-selector");
 
-        var contentSection = createContentSection();
+        VBox contentSection = createContentSection();
         getChildren().add(contentSection);
 
         loadAvailableThemes();

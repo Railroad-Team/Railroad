@@ -45,6 +45,7 @@ public class MixinListTypeAdapter extends TypeAdapter<List<MixinEnvironment>> {
                 in.nextNull();
             } else
                 throw new IOException("Expected string, object, or null for Mixin entry but got " + token);
+
         }
 
         in.endArray();
@@ -76,6 +77,7 @@ public class MixinListTypeAdapter extends TypeAdapter<List<MixinEnvironment>> {
                 gson.toJson(config, MixinEnvironment.class, out);
             }
         }
+
         out.endArray();
     }
 }

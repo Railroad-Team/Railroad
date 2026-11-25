@@ -70,6 +70,7 @@ public final class DocumentIdentityRegistry {
         DocumentVersion version = versionsById.get(documentId);
         if (version == null)
             throw new IllegalStateException("Document identity is not owned by this registry: " + documentId);
+
         return version;
     }
 
@@ -103,6 +104,7 @@ public final class DocumentIdentityRegistry {
         if (current != null && version.isBefore(current))
             throw new IllegalArgumentException(
                 "Document version cannot move backward from " + current + " to " + version);
+
         versionsById.put(documentId, version);
     }
 
@@ -369,12 +371,14 @@ public final class DocumentIdentityRegistry {
             Path path = entry.getKey();
             if (!entry.getValue().equals(documentId))
                 continue;
+
             if (path.equals(normalized) || Files.notExists(path) || resolve(path).equals(resolved)) {
                 forgotten.add(path);
             } else if (Files.exists(path)) {
                 surviving.add(path);
             }
         }
+
         if (surviving.isEmpty())
             return Optional.empty();
 
@@ -382,6 +386,7 @@ public final class DocumentIdentityRegistry {
             removePath(path);
             idsByUri.remove(DocumentUri.fromPath(path), documentId);
         }
+
         return Optional.of(preferredSpelling(surviving));
     }
 
@@ -408,6 +413,7 @@ public final class DocumentIdentityRegistry {
             if (!entry.getValue().equals(documentId) || !Files.exists(candidate)
                 || resolve(candidate).equals(resolved))
                 continue;
+
             try {
                 if (Files.isSameFile(candidate, normalized)) {
                     aliases.add(candidate);
@@ -417,6 +423,7 @@ public final class DocumentIdentityRegistry {
                     exception);
             }
         }
+
         return aliases.isEmpty() ? Optional.empty() : Optional.of(preferredSpelling(aliases));
     }
 
@@ -475,6 +482,7 @@ public final class DocumentIdentityRegistry {
     private void refreshFileKey(Path path) {
         if (!idsByPath.containsKey(path))
             return;
+
         unindexFileKey(path);
         Object key = fileKey(path);
         if (key != null) {
@@ -487,6 +495,7 @@ public final class DocumentIdentityRegistry {
         Object key = fileKeysByPath.remove(path);
         if (key == null)
             return;
+
         Set<Path> paths = pathsByFileKey.get(key);
         paths.remove(path);
         if (paths.isEmpty()) {

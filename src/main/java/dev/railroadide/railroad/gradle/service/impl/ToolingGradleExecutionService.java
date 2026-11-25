@@ -23,6 +23,7 @@ import java.net.ServerSocket;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.*;
+import java.io.OutputStream;
 
 /**
  * Implementation of {@link GradleExecutionService} using the Gradle Tooling API.
@@ -88,11 +89,13 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
                 if (problems != null) {
                     problems.finish(exception);
                 }
+
                 throw new CompletionException(exception);
             } finally {
                 if (problems != null) {
                     problems.finish(null);
                 }
+
                 runningTasks.remove(handle.id());
 
                 recentRequests.addFirst(request);
@@ -163,10 +166,10 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
             build.withCancellationToken(tokenSource.token());
 
             var charset = Charset.defaultCharset();
-            var stdout = problems == null
+            OutputStream stdout = problems == null
                 ? new DecodingOutputStream(charset, handle::emitOutput)
                 : problems.output(charset, handle::emitOutput);
-            var stderr = problems == null
+            OutputStream stderr = problems == null
                 ? new DecodingOutputStream(charset, handle::emitError)
                 : problems.output(charset, handle::emitError);
             build.setStandardOutput(stdout);
@@ -174,6 +177,7 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
             if (problems != null) {
                 GradleBuildProblems.listen(build, problems);
             }
+
             var downloads = new DownloadProgress(progress);
             build.addProgressListener((ProgressListener) event -> {
                 String msg = event.getDescriptor() != null
@@ -183,6 +187,7 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
                 if (event instanceof StatusEvent status && status.getTotal() > 0) {
                     fraction = Math.clamp((double) status.getProgress() / status.getTotal(), 0, 1);
                 }
+
                 handle.updateProgress(GradleTaskState.RUNNING, fraction, msg);
                 if (progress != ActivityProgress.NONE
                     && event.getDescriptor() instanceof FileDownloadOperationDescriptor file) {
@@ -224,6 +229,7 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
         }
 
         // system properties as -Dkey=value
+
         request.systemProperties().forEach((key, value) -> args.add("-D" + key + "=" + value));
 
         return args;

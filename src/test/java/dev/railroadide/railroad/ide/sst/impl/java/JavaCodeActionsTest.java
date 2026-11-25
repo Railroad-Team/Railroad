@@ -268,6 +268,7 @@ public class JavaCodeActionsTest {
         for (String used : List.of("java.util.List", "java.util.Set")) {
             assertEquals(List.of(), actionsAt("p/A.java", used), used);
         }
+
         CodeAction map = single(actionsAt("p/A.java", "java.util.Map"));
         assertEquals("Remove unused import 'java.util.Map'", map.title());
         assertEquals(text("p/A.java").replace("import java.util.Map;\n", ""),
@@ -309,6 +310,7 @@ public class JavaCodeActionsTest {
         for (String used : List.of("java.util.List", "java.util.Optional", "java.util.Set")) {
             assertEquals(List.of(), actionsAt("p/A.java", used), used);
         }
+
         assertEquals("Remove unused import 'java.util.Map'", single(actionsAt("p/A.java", "java.util.Map")).title());
         assertEquals(List.of("java.util.Map"), unusedImportDiagnostics("p/A.java"));
 
@@ -384,7 +386,8 @@ public class JavaCodeActionsTest {
             """);
         TextDocumentSnapshot saved = documents.get("p/A.java");
         int target = saved.text().indexOf("java.util.Map");
-        var current = diagnostic(saved, target, target + "java.util.Map".length(), JavaCodeActions.UNUSED_IMPORT);
+        TextEditorDiagnostic current = diagnostic(saved, target, target + "java.util.Map".length(),
+            JavaCodeActions.UNUSED_IMPORT);
         var away = new CodeActionRequest(new TextRange(saved.text().length() - 2,
             saved.text().length() - 2), List.of(current));
         CodeAction action = single(actions("p/A.java", away));
@@ -559,6 +562,7 @@ public class JavaCodeActionsTest {
         for (String owner : List.of("a", "b", "c", "d", "e")) {
             source(owner + "/Thing.java", "package " + owner + ";\npublic class Thing {}\n");
         }
+
         source("p/A.java", """
             package p;
             class A { Thing thing; }
@@ -578,7 +582,8 @@ public class JavaCodeActionsTest {
             """);
         TextDocumentSnapshot document = documents.get("p/A.java");
         int start = document.text().indexOf("ArrayList");
-        var unresolved = diagnostic(document, start, start + "ArrayList<String>".length(), "SEM_UNRESOLVED_TYPE");
+        TextEditorDiagnostic unresolved = diagnostic(document, start, start + "ArrayList<String>".length(),
+            "SEM_UNRESOLVED_TYPE");
         CodeAction action = single(actions("p/A.java", new CodeActionRequest(new TextRange(0, 0),
             List.of(unresolved))));
         assertEquals("Import 'java.util.ArrayList'", action.title());
@@ -599,6 +604,7 @@ public class JavaCodeActionsTest {
             return services.capture(new FeatureRequestContext(captured.workspaceSnapshot(),
                 captured.documentSnapshot(), CancellationToken.none(), Deadline.none()));
         });
+
         int offset = text("p/A.java").indexOf("ArrayList") + 1;
         assertThrows(CancellationException.class, () -> actions.discover(CodeActionRequest.at(offset)));
     }
@@ -624,7 +630,7 @@ public class JavaCodeActionsTest {
 
     private String applied(String file, CodeAction action) {
         assertNotNull(action.edit(), () -> String.valueOf(action.unavailableReason()));
-        var change = (WorkspaceChange.TextEdit) action.edit().changes().getFirst();
+        WorkspaceChange.TextEdit change = (WorkspaceChange.TextEdit) action.edit().changes().getFirst();
         assertEquals(1, action.edit().changes().size());
         assertSame(documents.get(file), change.expected());
         var builder = new StringBuilder(change.expected().text());
@@ -680,6 +686,7 @@ public class JavaCodeActionsTest {
                 Map.of("module.main.sources", directory.resolve(root).toString()));
             store = new DefaultDocumentStore("code-actions", configuration);
         }
+
         return store;
     }
 }

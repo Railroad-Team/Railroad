@@ -2,15 +2,25 @@ package dev.railroadide.railroad.ide.sst.lexer;
 
 import java.util.Objects;
 
-/** Base lexer snapshot storing a source position and active lexical mode. */
+/**
+ * Base lexer snapshot storing a source position and active lexical mode.
+ */
 public abstract class AbstractLexerSnapshot implements Lexer.Snapshot {
-    /** Zero-based character offset of the input cursor. */
+    /**
+     * Zero-based character offset of the input cursor.
+     */
     public final int offset;
-    /** One-based source line of the input cursor. */
+    /**
+     * One-based source line of the input cursor.
+     */
     public final int line;
-    /** One-based source column of the input cursor. */
+    /**
+     * One-based source column of the input cursor.
+     */
     public final int column;
-    /** Implementation-specific active mode identifier. */
+    /**
+     * Implementation-specific active mode identifier.
+     */
     public final int mode;
 
     /**
@@ -42,6 +52,7 @@ public abstract class AbstractLexerSnapshot implements Lexer.Snapshot {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass())
             return false;
+
         AbstractLexerSnapshot that = (AbstractLexerSnapshot) o;
         return offset == that.offset && line == that.line && column == that.column && mode == that.mode;
     }

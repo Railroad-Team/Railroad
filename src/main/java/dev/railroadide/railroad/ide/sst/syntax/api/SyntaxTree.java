@@ -157,6 +157,7 @@ public final class SyntaxTree {
             text.append(token.text());
             return;
         }
+
         for (SyntaxNode child : node.children()) {
             appendSourceText(child, text);
         }

@@ -9,7 +9,9 @@ import dev.railroadide.railroad.ui.id.UIId;
 import java.util.Objects;
 import java.util.Optional;
 
-/** Registered destination for content routed into a workspace mode. */
+/**
+ * Registered destination for content routed into a workspace mode.
+ */
 public final class WorkspaceContentTarget {
     /**
      * Registry of workspace content destinations by stable identifier.
@@ -85,6 +87,7 @@ public final class WorkspaceContentTarget {
     public static Optional<WorkspaceContentTarget> fromId(String id) {
         if (id == null || id.isBlank())
             return Optional.empty();
+
         return Optional.ofNullable(REGISTRY.get(id.trim()));
     }
 }

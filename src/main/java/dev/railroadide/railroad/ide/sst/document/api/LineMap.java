@@ -53,6 +53,7 @@ public final class LineMap {
                 if (index + 1 < text.length() && text.charAt(index + 1) == '\n') {
                     index++; // Skip the next character if it's part of a CRLF sequence
                 }
+
                 lineStart = index + 1;
             }
         }

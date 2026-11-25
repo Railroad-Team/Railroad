@@ -27,8 +27,7 @@ import java.util.function.Supplier;
  * @param <E> enum type
  */
 public class RadioButtonGroupComponent<E extends Enum<E>>
-    extends
-        FormComponent<FormRadioButtonGroup<E>, RadioButtonGroupComponent.Data<E>, FormRadioButtonGroup<E>, E> {
+    extends FormComponent<FormRadioButtonGroup<E>, RadioButtonGroupComponent.Data<E>, FormRadioButtonGroup<E>, E> {
     /**
      * Creates a radio button group component.
      *
@@ -125,8 +124,7 @@ public class RadioButtonGroupComponent<E extends Enum<E>>
      * @param <E> the enum type represented by the radio buttons
      */
     public static class Builder<E extends Enum<E>>
-        implements
-            FormComponentBuilder<RadioButtonGroupComponent<E>, FormRadioButtonGroup<E>, E, Builder<E>> {
+        implements FormComponentBuilder<RadioButtonGroupComponent<E>, FormRadioButtonGroup<E>, E, Builder<E>> {
         private final String dataKey;
         private final Data<E> data;
         private final List<FormTransformer<FormRadioButtonGroup<E>, E, ?>> transformers = new ArrayList<>();
@@ -159,6 +157,7 @@ public class RadioButtonGroupComponent<E extends Enum<E>>
                             return enumValue.name();
                         }
                     });
+
                     data.translateOptions(true);
                     return;
                 }

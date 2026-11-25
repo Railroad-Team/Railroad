@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.io.InputStream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -32,6 +33,7 @@ public final class OpenJdkJavacRunner {
             serve(Path.of(args[1]));
             return;
         }
+
         var suite = new OpenJdkJavacSuite(Path.of(args[0]));
         Path reportPath = Path.of(args[1]);
         String selection = args.length == 3 ? args[2] : "";
@@ -40,14 +42,16 @@ public final class OpenJdkJavacRunner {
         System.out.println("Checking " + cases.size() + " OpenJDK javac cases at " + revision
             + " with JDK " + Runtime.version());
 
-        var results = new ArrayList<OpenJdkJavacChecks.Result>();
-        var counts = new EnumMap<OpenJdkJavacChecks.Status, Integer>(OpenJdkJavacChecks.Status.class);
-        for (var status : OpenJdkJavacChecks.Status.values()) {
+        List<OpenJdkJavacChecks.Result> results = new ArrayList<OpenJdkJavacChecks.Result>();
+        Map<OpenJdkJavacChecks.Status, Integer> counts = new EnumMap<OpenJdkJavacChecks.Status, Integer>(
+            OpenJdkJavacChecks.Status.class);
+        for (OpenJdkJavacChecks.Status status : OpenJdkJavacChecks.Status.values()) {
             counts.put(status, 0);
         }
+
         try (var worker = new OpenJdkJavacWorker(suite.root())) {
-            for (var test : cases) {
-                var result = worker.run(test.id());
+            for (OpenJdkJavacSuite.TestCase test : cases) {
+                OpenJdkJavacChecks.Result result = worker.run(test.id());
                 results.add(result);
                 counts.merge(result.status(), 1, Integer::sum);
                 if (result.status() == OpenJdkJavacChecks.Status.MISMATCH
@@ -56,6 +60,7 @@ public final class OpenJdkJavacRunner {
                     if (finding.length() > CONSOLE_FINDING_LIMIT) {
                         finding = finding.substring(0, CONSOLE_FINDING_LIMIT) + "...";
                     }
+
                     System.out.println(result.status() + " " + result.id() + " " + finding);
                 }
             }
@@ -68,6 +73,7 @@ public final class OpenJdkJavacRunner {
             new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(report, writer);
             writer.newLine();
         }
+
         System.out.println(counts + "  Report: " + reportPath);
         if (counts.get(OpenJdkJavacChecks.Status.MISMATCH) > 0 || counts.get(OpenJdkJavacChecks.Status.ERROR) > 0) {
             System.exit(1);
@@ -87,8 +93,8 @@ public final class OpenJdkJavacRunner {
             String request;
             while ((request = requests.readLine()) != null) {
                 String id = gson.fromJson(request, String.class);
-                var test = suite.discover(id).getFirst();
-                var result = runCase(checks, suite.root(), test);
+                OpenJdkJavacSuite.TestCase test = suite.discover(id).getFirst();
+                OpenJdkJavacChecks.Result result = runCase(checks, suite.root(), test);
                 protocol.write(gson.toJson(result));
                 protocol.newLine();
                 protocol.flush();
@@ -112,14 +118,16 @@ public final class OpenJdkJavacRunner {
     }
 
     private static String revision(Path root) throws IOException, InterruptedException {
-        var git = new ProcessBuilder("git", "-C", root.toString(), "rev-parse", "--verify", "HEAD")
+        Process git = new ProcessBuilder("git", "-C", root.toString(), "rev-parse", "--verify", "HEAD")
             .redirectErrorStream(true).start();
         String output;
-        try (var input = git.getInputStream()) {
+        try (InputStream input = git.getInputStream()) {
             output = new String(input.readAllBytes(), UTF_8).strip();
         }
+
         if (git.waitFor() != 0 || !output.matches("[a-f0-9]{40,64}"))
             throw new IOException("Could not identify the OpenJDK checkout revision: " + output);
+
         return output;
     }
 

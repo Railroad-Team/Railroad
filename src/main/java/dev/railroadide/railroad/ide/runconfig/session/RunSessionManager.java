@@ -45,11 +45,13 @@ public final class RunSessionManager {
                     break;
                 }
             }
+
             sessions.add(session);
             for (Listener listener : listeners) {
                 listener.sessionStarted(session, replaced);
             }
         }
+
         return session;
     }
 
@@ -68,6 +70,7 @@ public final class RunSessionManager {
             for (Listener listener : listeners) {
                 listener.sessionRemoved(session);
             }
+
             return true;
         }
     }
@@ -95,8 +98,10 @@ public final class RunSessionManager {
             for (RunSession session : sessions) {
                 listener.sessionStarted(session, null);
             }
+
             listeners.add(listener);
         }
+
         return () -> {
             synchronized (lock) {
                 listeners.remove(listener);

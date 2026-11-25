@@ -36,12 +36,14 @@ public class RRCheckBoxTreeItem<T> extends TreeItem<T> {
                     unregisterChild(removed);
                 }
             }
+
             if (change.wasAdded()) {
                 for (TreeItem<T> added : change.getAddedSubList()) {
                     registerChild(added);
                 }
             }
         }
+
         updateStateFromChildren();
     };
 
@@ -256,6 +258,7 @@ public class RRCheckBoxTreeItem<T> extends TreeItem<T> {
             } finally {
                 updatingState = false;
             }
+
             updateParentState();
         });
 

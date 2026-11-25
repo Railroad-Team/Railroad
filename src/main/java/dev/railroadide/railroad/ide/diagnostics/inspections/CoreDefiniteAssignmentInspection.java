@@ -144,11 +144,13 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                     state = state.assign(capture.symbol());
                 }
             }
+
             SyntaxNode parameterList = context.directChild(node, JAVA_PARAMETER_LIST);
             if (parameterList != null) {
                 for (SyntaxNode child : parameterList.children()) {
                     if (!JAVA_PARAMETER.equals(child.kind().id()))
                         continue;
+
                     Symbol symbol = context.declaredSymbol(child).orElse(null);
                     if (symbol != null) {
                         state = state.assign(symbol);
@@ -176,6 +178,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             for (FieldSymbolInfo field : finalFieldSymbols(context, typeNode)) {
                 if (!field.isBlankFinal())
                     continue;
+
                 if (lombokInitializesFinalFields)
                     continue;
 
@@ -187,6 +190,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                     if (!initializerState.definitelyAssigned()) {
                         reporter.report(field.reportNode(), field.symbol().simpleName());
                     }
+
                     continue;
                 }
 
@@ -195,6 +199,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                     if (!initializerState.definitelyAssigned()) {
                         reporter.report(field.reportNode(), field.symbol().simpleName());
                     }
+
                     continue;
                 }
 
@@ -202,8 +207,10 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                     SyntaxNode body = context.directChild(constructor, JAVA_BLOCK);
                     if (body == null)
                         continue;
+
                     if (delegatesToThisConstructor(body))
                         continue;
+
                     FieldFlowState state = analyzeFieldFlow(context, body, field.symbol(), initializerState, null);
                     if (state.reachable() && !state.definitelyAssigned()) {
                         reporter.report(constructor, field.symbol().simpleName());
@@ -230,6 +237,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                     : analyzeInstanceFieldInitializers(context, typeNode, field.symbol(), reporter);
                 if (field.isStatic())
                     continue;
+
                 for (SyntaxNode constructor : constructorsOf(typeNode)) {
                     SyntaxNode body = context.directChild(constructor, JAVA_BLOCK);
                     if (body != null) {
@@ -254,10 +262,13 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         for (SyntaxNode child : block.children()) {
             if (child instanceof SyntaxToken)
                 continue;
+
             if (!current.reachable())
                 break;
+
             current = analyzeNode(context, child, current, unassignedReporter, illegalFinalReporter);
         }
+
         return current;
     }
 
@@ -316,6 +327,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 current = current.assign(symbol);
             }
         }
+
         return current;
     }
 
@@ -535,8 +547,10 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 bodyState.resumeContinues(loopLabel).withoutAbruptExits());
             if (nextHead.withoutAbruptExits().equals(loopHead.withoutAbruptExits()))
                 return nextHead;
+
             loopHead = nextHead;
         }
+
         return loopHead;
     }
 
@@ -565,8 +579,10 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             FlowState nextHead = FlowState.mergeBranches(baseHead, updateState.withoutAbruptExits());
             if (nextHead.withoutAbruptExits().equals(loopHead.withoutAbruptExits()))
                 return nextHead;
+
             loopHead = nextHead;
         }
+
         return loopHead;
     }
 
@@ -584,6 +600,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 if (symbol != null) {
                     current = current.assign(symbol);
                 }
+
                 continue;
             }
 
@@ -591,6 +608,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 current = analyzeReads(context, child, current, unassignedReporter, illegalFinalReporter);
             }
         }
+
         return current;
     }
 
@@ -615,15 +633,18 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             for (SyntaxNode child : catchClause.children()) {
                 if (!JAVA_PARAMETER.equals(child.kind().id()))
                     continue;
+
                 Symbol symbol = context.declaredSymbol(child).orElse(null);
                 if (symbol != null) {
                     catchState = catchState.assign(symbol);
                 }
             }
+
             SyntaxNode catchBlock = context.directChild(catchClause, JAVA_BLOCK);
             if (catchBlock != null) {
                 catchState = analyzeNode(context, catchBlock, catchState, unassignedReporter, illegalFinalReporter);
             }
+
             merged = FlowState.mergeBranches(merged, catchState);
         }
 
@@ -634,6 +655,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 merged = analyzeNode(context, finallyBlock, merged, unassignedReporter, illegalFinalReporter);
             }
         }
+
         return merged;
     }
 
@@ -671,6 +693,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 fallthrough = ruleState.withoutAbruptExits();
             }
         }
+
         return FlowState.mergeBranches(switchExit, fallthrough)
             .resumeBreaks(expression ? YIELD_TARGET : null)
             .withAbruptExitsFrom(selectorState);
@@ -702,13 +725,16 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         String kindId = node.kind().id();
         if (isCaptureBoundary(node))
             return analyzeCaptures(context, node, state, unassignedReporter);
+
         if (ANALYSIS_BARRIERS.contains(kindId))
             return state;
 
         if (JAVA_ASSIGNMENT_EXPRESSION.equals(kindId))
             return analyzeAssignmentExpression(context, node, state, unassignedReporter, illegalFinalReporter);
+
         if (isIncrementExpression(node))
             return analyzeIncrementExpression(context, node, state, unassignedReporter, illegalFinalReporter);
+
         if (context.isExpressionNode(node))
             return analyzeReads(context, node, state, unassignedReporter, illegalFinalReporter);
 
@@ -716,8 +742,10 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         for (SyntaxNode child : node.children()) {
             if (child instanceof SyntaxToken)
                 continue;
+
             current = analyzeNode(context, child, current, unassignedReporter, illegalFinalReporter);
         }
+
         return current;
     }
 
@@ -739,6 +767,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         if (operator != JavaTokenType.EQUALS) {
             current = analyzeReads(context, left, current, unassignedReporter, illegalFinalReporter);
         }
+
         current = analyzeReads(context, right, current, unassignedReporter, illegalFinalReporter);
         return applyWrite(context, left, current, illegalFinalReporter);
     }
@@ -753,6 +782,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode target = context.firstDirectExpressionChild(node);
         if (target == null)
             return state;
+
         FlowState current = analyzeReads(context, target, state, unassignedReporter, illegalFinalReporter);
         return applyWrite(context, target, current, illegalFinalReporter);
     }
@@ -767,11 +797,13 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         String kindId = node.kind().id();
         if (isCaptureBoundary(node))
             return analyzeCaptures(context, node, state, unassignedReporter);
+
         if (ANALYSIS_BARRIERS.contains(kindId))
             return state;
 
         if (JAVA_ASSIGNMENT_EXPRESSION.equals(kindId))
             return analyzeAssignmentExpression(context, node, state, unassignedReporter, illegalFinalReporter);
+
         if (isIncrementExpression(node))
             return analyzeIncrementExpression(context, node, state, unassignedReporter, illegalFinalReporter);
 
@@ -792,8 +824,10 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         for (SyntaxNode child : node.children()) {
             if (child instanceof SyntaxToken)
                 continue;
+
             current = analyzeReads(context, child, current, unassignedReporter, illegalFinalReporter);
         }
+
         return current;
     }
 
@@ -810,6 +844,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 }
             }
         }
+
         return state;
     }
 
@@ -823,9 +858,11 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             .orElse(null)) {
             if (isCaptureBoundary(parent))
                 return parent;
+
             if (ANALYSIS_BARRIERS.contains(parent.kind().id()))
                 return null;
         }
+
         return null;
     }
 
@@ -834,14 +871,17 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         context.traverseDescendants(boundary, node -> {
             if (!JAVA_NAME_EXPRESSION.equals(node.kind().id()))
                 return;
+
             Symbol symbol = context.resolvedSymbol(node).orElse(null);
             if (!isTrackedVariable(symbol) || !isVisibleAtUse(symbol, node))
                 return;
+
             SyntaxNode declaration = symbol.declaration().orElse(null);
             if (declaration != null && !inside(declaration, boundary)) {
                 captures.add(new CapturedUse(node, symbol));
             }
         });
+
         return captures;
     }
 
@@ -850,6 +890,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             if (current == ancestor)
                 return true;
         }
+
         return false;
     }
 
@@ -877,11 +918,14 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
     private static boolean isTrackedVariable(Symbol symbol) {
         if (symbol == null)
             return false;
+
         if (symbol.declaration().map(declaration -> "JAVA_PATTERN".equals(declaration.kind().id())).orElse(false))
             return false;
+
         if (symbol.declaration().map(declaration -> "JAVA_RECORD_COMPONENT".equals(declaration.kind().id()))
             .orElse(false))
             return false;
+
         return symbol.kind() == JavaSymbolKind.LOCAL_VARIABLE || symbol.kind() == JavaSymbolKind.PARAMETER;
     }
 
@@ -897,6 +941,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         String kindId = node.kind().id();
         if (!"JAVA_UNARY_EXPRESSION".equals(kindId) && !"JAVA_POSTFIX_EXPRESSION".equals(kindId))
             return false;
+
         for (SyntaxNode child : node.children()) {
             if (child instanceof SyntaxToken token) {
                 String text = token.text();
@@ -904,6 +949,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                     return true;
             }
         }
+
         return false;
     }
 
@@ -911,6 +957,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         for (SyntaxNode child : node.children()) {
             if (!(child instanceof SyntaxToken token))
                 continue;
+
             String text = token.text();
             JavaTokenType operator = switch (text) {
                 case "=" -> JavaTokenType.EQUALS;
@@ -927,9 +974,11 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 case ">>>=" -> JavaTokenType.UNSIGNED_RIGHT_SHIFT_EQUALS;
                 default -> null;
             };
+
             if (operator != null)
                 return operator;
         }
+
         return null;
     }
 
@@ -940,6 +989,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 children.add(child);
             }
         }
+
         return List.copyOf(children);
     }
 
@@ -950,6 +1000,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 children.add(child);
             }
         }
+
         return List.copyOf(children);
     }
 
@@ -964,8 +1015,10 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         for (SyntaxNode node : nodes) {
             if (!current.reachable())
                 break;
+
             current = analyzeNode(context, node, current, unassignedReporter, illegalFinalReporter);
         }
+
         return current;
     }
 
@@ -980,8 +1033,10 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         for (SyntaxNode node : nodes) {
             if (!current.reachable())
                 break;
+
             current = analyzeFieldFlow(context, node, fieldSymbol, current, reporter);
         }
+
         return current;
     }
 
@@ -995,6 +1050,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 if (";".equals(token.text())) {
                     segment++;
                 }
+
                 continue;
             }
 
@@ -1004,12 +1060,14 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 default -> update.add(child);
             }
         }
+
         return new BasicForSegments(List.copyOf(init), List.copyOf(condition), List.copyOf(update));
     }
 
     private static boolean hasFiniteBasicForExit(BasicForSegments segments) {
         if (segments.conditionNodes().isEmpty())
             return false;
+
         return segments.conditionNodes().size() != 1
             || !isConstantTrueExpressionText(segments.conditionNodes().getFirst());
     }
@@ -1019,11 +1077,13 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             SyntaxNode label = findDirectChild(rule, "JAVA_SWITCH_LABEL");
             if (label == null)
                 continue;
+
             for (String identifier : identifierLikeTokens(label)) {
                 if ("default".equals(identifier))
                     return true;
             }
         }
+
         return false;
     }
 
@@ -1047,6 +1107,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             if (kindId.equals(child.kind().id()))
                 return child;
         }
+
         return null;
     }
 
@@ -1059,10 +1120,12 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         for (SyntaxNode child : body.children()) {
             if (!JAVA_FIELD_DECLARATION.equals(child.kind().id()))
                 continue;
+
             for (SyntaxNode declarator : directChildrenOfKind(child, JAVA_VARIABLE_DECLARATOR)) {
                 Symbol symbol = context.declaredSymbol(declarator).orElse(null);
                 if (symbol == null || !Modifier.isFinal(context.symbolModifiers(symbol)))
                     continue;
+
                 boolean hasInitializer = context.firstDirectExpressionChild(declarator) != null;
                 fields.add(new FieldSymbolInfo(symbol, declarator,
                     Modifier.isStatic(context.symbolModifiers(symbol)), !hasInitializer));
@@ -1104,6 +1167,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         SyntaxNode body = typeBody(typeNode);
         if (body == null)
             return List.of();
+
         return directChildrenOfKind(body, JAVA_CONSTRUCTOR_DECLARATION);
     }
 
@@ -1111,8 +1175,10 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         for (SyntaxNode child : body.children()) {
             if (child instanceof SyntaxToken)
                 continue;
+
             return containsThisConstructorInvocation(child);
         }
+
         return false;
     }
 
@@ -1123,10 +1189,12 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                     return true;
             }
         }
+
         for (SyntaxNode child : node.children()) {
             if (!(child instanceof SyntaxToken) && containsThisConstructorInvocation(child))
                 return true;
         }
+
         return false;
     }
 
@@ -1134,11 +1202,13 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         for (SyntaxNode child : declaration.children()) {
             if (!"JAVA_ANNOTATION".equals(child.kind().id()))
                 continue;
+
             List<String> identifiers = identifierLikeTokens(child);
             String annotationName = identifiers.isEmpty() ? null : identifiers.getLast();
             if (simpleName.equals(annotationName))
                 return true;
         }
+
         return false;
     }
 
@@ -1148,6 +1218,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             if (kindId.endsWith("_BODY"))
                 return child;
         }
+
         return null;
     }
 
@@ -1221,10 +1292,13 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         for (SyntaxNode child : block.children()) {
             if (child instanceof SyntaxToken)
                 continue;
+
             if (!current.reachable())
                 break;
+
             current = analyzeFieldFlow(context, child, fieldSymbol, current, reporter);
         }
+
         return current;
     }
 
@@ -1263,6 +1337,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                     analyzeFieldFlow(context, catchBlock, fieldSymbol, state, reporter));
             }
         }
+
         SyntaxNode finallyClause = context.directChild(node, JAVA_FINALLY_CLAUSE);
         if (finallyClause != null) {
             SyntaxNode finallyBlock = context.directChild(finallyClause, JAVA_BLOCK);
@@ -1270,6 +1345,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 merged = analyzeFieldFlow(context, finallyBlock, fieldSymbol, merged, reporter);
             }
         }
+
         return merged;
     }
 
@@ -1304,6 +1380,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 fallthrough = ruleState.withoutAbruptExits();
             }
         }
+
         return FieldFlowState.merge(switchExit, fallthrough.withoutAbruptExits());
     }
 
@@ -1321,10 +1398,12 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 pastLabel = true;
                 continue;
             }
+
             current = analyzeFieldFlow(context, child, fieldSymbol, current, reporter);
             if (!current.reachable())
                 return current;
         }
+
         return current;
     }
 
@@ -1349,6 +1428,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         List<SyntaxNode> children = structuralChildren(node);
         if (children.isEmpty())
             return state;
+
         SyntaxNode body = children.size() > 1 ? children.get(1) : null;
         FieldFlowState loopHead = stabilizeFieldWhileLoopHead(context, conditionChild(children), body, fieldSymbol,
             state, reporter, loopLabel);
@@ -1379,6 +1459,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         List<SyntaxNode> children = structuralChildren(node);
         if (children.isEmpty())
             return state;
+
         FieldFlowState bodyState = analyzeFieldFlow(context, children.getFirst(), fieldSymbol, state, reporter);
         FieldFlowState continued = bodyState.resumeContinues(loopLabel);
         return FieldFlowState.loopExitFrom(continued.reachable() ? continued.snapshot() : null, continued);
@@ -1405,10 +1486,12 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         List<SyntaxNode> children = structuralChildren(node);
         if (children.isEmpty())
             return state;
+
         SyntaxNode header = children.getFirst();
         if (JAVA_BASIC_FOR_STATEMENT.equals(header.kind().id()))
             return analyzeFieldBasicFor(context, header, children.size() > 1 ? children.get(1) : null, fieldSymbol,
                 state, reporter, loopLabel);
+
         SyntaxNode body = children.size() > 1 ? children.get(1) : null;
         FieldFlowState bodyState = body == null ? state : analyzeFieldFlow(context, body, fieldSymbol, state, reporter);
         return FieldFlowState.loopExitFrom(state.snapshot(), bodyState.resumeContinues(loopLabel));
@@ -1458,8 +1541,10 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 bodyState.resumeContinues(loopLabel).withoutAbruptExits());
             if (nextHead.withoutAbruptExits().equals(loopHead.withoutAbruptExits()))
                 return nextHead;
+
             loopHead = nextHead;
         }
+
         return loopHead;
     }
 
@@ -1489,8 +1574,10 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             FieldFlowState nextHead = FieldFlowState.merge(baseHead, updateState.withoutAbruptExits());
             if (nextHead.withoutAbruptExits().equals(loopHead.withoutAbruptExits()))
                 return nextHead;
+
             loopHead = nextHead;
         }
+
         return loopHead;
     }
 
@@ -1514,6 +1601,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                     if (reporter != null && state.maybeAssigned()) {
                         reporter.report(left, fieldSymbol.simpleName());
                     }
+
                     return state.assign();
                 }
             }
@@ -1526,6 +1614,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 if (reporter != null && state.maybeAssigned()) {
                     reporter.report(target, fieldSymbol.simpleName());
                 }
+
                 return state.assign();
             }
         }
@@ -1534,10 +1623,12 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         for (SyntaxNode child : node.children()) {
             if (child instanceof SyntaxToken)
                 continue;
+
             current = analyzeFieldFlow(context, child, fieldSymbol, current, reporter);
             if (!current.reachable())
                 break;
         }
+
         return current;
     }
 
@@ -1577,13 +1668,16 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                     Symbol symbol = context.declaredSymbol(declarator).orElse(null);
                     if (symbol == null || symbol != fieldSymbol)
                         continue;
+
                     if (context.firstDirectExpressionChild(declarator) != null) {
                         if (reporter != null && state.maybeAssigned()) {
                             reporter.report(declarator, fieldSymbol.simpleName());
                         }
+
                         state = state.assign();
                     }
                 }
+
                 continue;
             }
 
@@ -1592,6 +1686,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 if (block != null) {
                     state = analyzeFieldFlow(context, block, fieldSymbol, state, reporter);
                 }
+
                 continue;
             }
 
@@ -1602,6 +1697,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 }
             }
         }
+
         return state;
     }
 
@@ -1609,6 +1705,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         List<String> identifiers = identifierLikeTokens(node);
         if (identifiers.isEmpty())
             return null;
+
         return context.lastIdentifierLikeTokenText(node);
     }
 
@@ -1617,6 +1714,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             if (!(child instanceof SyntaxToken) && !JAVA_LABELED_STATEMENT.equals(child.kind().id()))
                 return child;
         }
+
         return null;
     }
 
@@ -1628,8 +1726,10 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
     private static boolean isConstantTrueExpression(JavaRuleContext context, @Nullable SyntaxNode node) {
         if (node == null)
             return false;
+
         if (node.start() < 0 || node.end() > context.documentText().length() || node.start() >= node.end())
             return false;
+
         String text = context.documentText().substring(node.start(), node.end()).replaceAll("\\s+", "");
         return isConstantTrueExpressionText(text);
     }
@@ -1642,6 +1742,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         while (text.startsWith("(") && text.endsWith(")") && outerParensWrapEntireText(text)) {
             text = text.substring(1, text.length() - 1);
         }
+
         return "true".equals(text);
     }
 
@@ -1674,6 +1775,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                     return false;
             }
         }
+
         return depth == 0;
     }
 
@@ -1692,6 +1794,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 && !"continue".equals(text)) {
                 out.add(text);
             }
+
             return;
         }
 
@@ -1787,14 +1890,17 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                     remaining.add(exit);
                     continue;
                 }
+
                 FlowSnapshot snapshot = exit.snapshot();
                 var branch = new FlowState(snapshot.definitelyAssigned(), snapshot.maybeAssigned(), true, List.of(),
                     List.of());
                 resumed = resumed == null ? branch : mergeBranches(resumed, branch);
             }
+
             if (resumed == null) {
                 resumed = new FlowState(definitelyAssigned, maybeAssigned, false, List.of(), List.of());
             }
+
             return new FlowState(
                 resumed.definitelyAssigned,
                 resumed.maybeAssigned,
@@ -1813,10 +1919,13 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                     false,
                     breaks,
                     continues);
+
             if (!left.reachable)
                 return new FlowState(right.definitelyAssigned, right.maybeAssigned, true, breaks, continues);
+
             if (!right.reachable)
                 return new FlowState(left.definitelyAssigned, left.maybeAssigned, true, breaks, continues);
+
             return new FlowState(
                 Set.copyOf(intersection(left.definitelyAssigned, right.definitelyAssigned)),
                 Set.copyOf(union(left.maybeAssigned, right.maybeAssigned)),
@@ -1830,11 +1939,13 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             if (normalExit != null) {
                 exits.add(normalExit);
             }
+
             for (FlowExit exit : bodyEnd.breakExits) {
                 if (exit.label() == null) {
                     exits.add(exit.snapshot());
                 }
             }
+
             List<FlowExit> outerBreaks = bodyEnd.breakExits.stream().filter(exit -> exit.label() != null).toList();
             if (exits.isEmpty())
                 return new FlowState(bodyEnd.definitelyAssigned, bodyEnd.maybeAssigned, false, outerBreaks,
@@ -1846,6 +1957,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 definitely.retainAll(exit.definitelyAssigned());
                 maybe.addAll(exit.maybeAssigned());
             }
+
             maybe.addAll(bodyEnd.maybeAssigned);
             return new FlowState(Set.copyOf(definitely), Set.copyOf(maybe), true, outerBreaks, bodyEnd.continueExits);
         }
@@ -1853,21 +1965,23 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
         private static List<FlowExit> concat(List<FlowExit> left, List<FlowExit> right) {
             if (left.isEmpty())
                 return right;
+
             if (right.isEmpty())
                 return left;
-            ArrayList<FlowExit> merged = new ArrayList<>(left);
+
+            List<FlowExit> merged = new ArrayList<>(left);
             merged.addAll(right);
             return List.copyOf(merged);
         }
 
         private static Set<VariableKey> union(Set<VariableKey> left, Set<VariableKey> right) {
-            LinkedHashSet<VariableKey> merged = new LinkedHashSet<>(left);
+            Set<VariableKey> merged = new LinkedHashSet<>(left);
             merged.addAll(right);
             return merged;
         }
 
         private static Set<VariableKey> intersection(Set<VariableKey> left, Set<VariableKey> right) {
-            LinkedHashSet<VariableKey> merged = new LinkedHashSet<>(left);
+            Set<VariableKey> merged = new LinkedHashSet<>(left);
             merged.retainAll(right);
             return merged;
         }
@@ -1948,6 +2062,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                     remaining.add(exit);
                     continue;
                 }
+
                 FieldFlowSnapshot snapshot = exit.snapshot();
                 if (first) {
                     resumedDefinitely = snapshot.definitelyAssigned();
@@ -1958,6 +2073,7 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                     resumedMaybe |= snapshot.maybeAssigned();
                 }
             }
+
             return new FieldFlowState(
                 resumedDefinitely,
                 resumedMaybe,
@@ -1972,10 +2088,13 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             if (!left.reachable && !right.reachable)
                 return new FieldFlowState(left.definitelyAssigned || right.definitelyAssigned,
                     left.maybeAssigned || right.maybeAssigned, false, breaks, continues);
+
             if (!left.reachable)
                 return new FieldFlowState(right.definitelyAssigned, right.maybeAssigned, true, breaks, continues);
+
             if (!right.reachable)
                 return new FieldFlowState(left.definitelyAssigned, left.maybeAssigned, true, breaks, continues);
+
             return new FieldFlowState(left.definitelyAssigned && right.definitelyAssigned,
                 left.maybeAssigned || right.maybeAssigned, true, breaks, continues);
         }
@@ -1985,11 +2104,13 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
             if (normalExit != null) {
                 exits.add(normalExit);
             }
+
             for (FieldFlowExit exit : bodyEnd.breakExits) {
                 if (exit.label() == null) {
                     exits.add(exit.snapshot());
                 }
             }
+
             if (exits.isEmpty())
                 return new FieldFlowState(bodyEnd.definitelyAssigned, bodyEnd.maybeAssigned, false, List.of(),
                     List.of());
@@ -2000,15 +2121,18 @@ public final class CoreDefiniteAssignmentInspection implements JavaInspectionRul
                 definitely &= exit.definitelyAssigned();
                 maybe |= exit.maybeAssigned();
             }
+
             return new FieldFlowState(definitely, maybe, true, List.of(), List.of());
         }
 
         private static List<FieldFlowExit> concat(List<FieldFlowExit> left, List<FieldFlowExit> right) {
             if (left.isEmpty())
                 return right;
+
             if (right.isEmpty())
                 return left;
-            ArrayList<FieldFlowExit> merged = new ArrayList<>(left);
+
+            List<FieldFlowExit> merged = new ArrayList<>(left);
             merged.addAll(right);
             return List.copyOf(merged);
         }

@@ -121,6 +121,7 @@ public final class JavaParserBenchmarkRunner {
     private static ParseStrategy strategyFor(ParseMode mode) {
         if (mode != ParseMode.SYNTAX)
             throw new IllegalStateException("Unsupported parse mode: " + mode);
+
         return JavaParserBenchmarkRunner::parseSyntaxUnit;
     }
 
@@ -194,6 +195,7 @@ public final class JavaParserBenchmarkRunner {
         for (SizeBucket bucket : SizeBucket.values()) {
             bucketCounts.put(bucket, 0);
         }
+
         for (SourceUnit unit : corpus) {
             bucketCounts.put(unit.bucket(), bucketCounts.get(unit.bucket()) + 1);
         }
@@ -222,8 +224,10 @@ public final class JavaParserBenchmarkRunner {
             if (i > 0) {
                 System.out.print(", ");
             }
+
             System.out.print(datasets.get(i).name());
         }
+
         System.out.println();
     }
 
@@ -321,6 +325,7 @@ public final class JavaParserBenchmarkRunner {
         int value = parseInt(argument, prefix);
         if (value <= 0)
             throw new IllegalArgumentException("Expected value > 0 for " + prefix + " in " + argument);
+
         return value;
     }
 
@@ -328,6 +333,7 @@ public final class JavaParserBenchmarkRunner {
         int value = parseInt(argument, prefix);
         if (value < 0)
             throw new IllegalArgumentException("Expected value >= 0 for " + prefix + " in " + argument);
+
         return value;
     }
 
@@ -377,6 +383,7 @@ public final class JavaParserBenchmarkRunner {
         for (int i = 0; i < samples.size(); i++) {
             copy[i] = samples.get(i);
         }
+
         Arrays.sort(copy);
 
         double clamped = Math.max(0.0, Math.min(1.0, percentile));
@@ -393,6 +400,7 @@ public final class JavaParserBenchmarkRunner {
         for (long sample : samples) {
             sum += sample;
         }
+
         return (double) sum / (double) samples.size();
     }
 
@@ -441,8 +449,10 @@ public final class JavaParserBenchmarkRunner {
         private static SizeBucket fromBytes(long bytes) {
             if (bytes <= SMALL_FILE_LIMIT_BYTES)
                 return SMALL;
+
             if (bytes <= MEDIUM_FILE_LIMIT_BYTES)
                 return MEDIUM;
+
             return LARGE;
         }
     }
@@ -456,6 +466,7 @@ public final class JavaParserBenchmarkRunner {
             for (SourceUnit unit : units) {
                 total += unit.bytes();
             }
+
             return total;
         }
     }
@@ -482,6 +493,7 @@ public final class JavaParserBenchmarkRunner {
             double meanNanos = meanNanos(iterationNanos);
             if (meanNanos <= 0.0)
                 return 0.0;
+
             return parsesPerIteration / (meanNanos / 1_000_000_000.0);
         }
 
@@ -489,6 +501,7 @@ public final class JavaParserBenchmarkRunner {
             double meanNanos = meanNanos(iterationNanos);
             if (meanNanos <= 0.0)
                 return 0.0;
+
             double seconds = meanNanos / 1_000_000_000.0;
             return bytesToMiB(bytesPerIteration) / seconds;
         }

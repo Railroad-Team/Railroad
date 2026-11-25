@@ -57,6 +57,7 @@ public class DocumentIdentityRegistryTest {
         for (int index = 0; index < 20; index++) {
             registry.getOrCreate(Files.writeString(tempDirectory.resolve("other" + index + ".bin"), "other"));
         }
+
         DocumentId id = registry.getOrCreate(file);
         Path replacement = Files.writeString(tempDirectory.resolve("replacement.bin"), "replaced");
         Files.move(replacement, file, StandardCopyOption.REPLACE_EXISTING);

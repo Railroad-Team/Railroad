@@ -178,24 +178,26 @@ public class CancellationTokenTest {
     @Test
     public void racingCancellationCallsHaveExactlyOneWinner() throws Exception {
         int attempts = 10_000;
-        var sources = new ArrayList<CancellationTokenSource>(attempts);
+        List<CancellationTokenSource> sources = new ArrayList<CancellationTokenSource>(attempts);
         for (int attempt = 0; attempt < attempts; attempt++) {
             sources.add(new CancellationTokenSource());
         }
 
         // Repeated fresh sources exercise competing calls without assuming a particular
         // thread schedule. A passing run does not prove that every interleaving is safe.
+
         var start = new Phaser(2);
         var executor = Executors.newFixedThreadPool(2);
         try {
             List<Future<boolean[]>> workers = new ArrayList<>();
             for (int worker = 0; worker < 2; worker++) {
                 workers.add(executor.submit(() -> {
-                    var results = new boolean[attempts];
+                    boolean[] results = new boolean[attempts];
                     for (int attempt = 0; attempt < attempts; attempt++) {
                         start.awaitAdvanceInterruptibly(start.arrive(), 10, TimeUnit.SECONDS);
                         results[attempt] = sources.get(attempt).cancel();
                     }
+
                     return results;
                 }));
             }

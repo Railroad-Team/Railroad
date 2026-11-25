@@ -45,6 +45,7 @@ public class CoreParameterNamedUnderscoreInspection implements JavaInspectionRul
             SyntaxNode parent = syntaxNode.parent().orElse(null);
             if (parent == null || !"JAVA_PARAMETER_LIST".equals(parent.kind().id()))
                 continue;
+
             Symbol symbol = context.declaredSymbol(syntaxNode).orElse(null);
             if (symbol != null && "_".equals(symbol.simpleName())) {
                 reporter.report(syntaxNode, symbol.simpleName());

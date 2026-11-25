@@ -59,15 +59,25 @@ public record MinecraftVersion(
         return this.releaseTime.compareTo(other.releaseTime);
     }
 
-    /** The categories of Minecraft versions exposed by Switchboard. */
+    /**
+     * The categories of Minecraft versions exposed by Switchboard.
+     */
     public enum Type {
-        /** A stable Minecraft release. */
+        /**
+         * A stable Minecraft release.
+         */
         RELEASE,
-        /** A development snapshot. */
+        /**
+         * A development snapshot.
+         */
         SNAPSHOT,
-        /** An old alpha release. */
+        /**
+         * An old alpha release.
+         */
         OLD_ALPHA,
-        /** An old beta release. */
+        /**
+         * An old beta release.
+         */
         OLD_BETA;
 
         /**

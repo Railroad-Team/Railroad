@@ -10,14 +10,18 @@ import dev.railroadide.railroad.utility.network.check.TCPCheck;
  * These operations block the calling thread and should run outside the JavaFX application thread.
  */
 public class NetworkChecker {
-    /** Shared checker using the default implementations of each probe. */
+    /**
+     * Shared checker using the default implementations of each probe.
+     */
     public static final NetworkChecker INSTANCE = new NetworkChecker();
 
     private final ICMPCheck icmpCheck = new ICMPCheck();
     private final HTTPCheck httpCheck = new HTTPCheck();
     private final TCPCheck tcpCheck = new TCPCheck();
 
-    /** Creates a checker with host reachability, URL-connection HTTP, and TCP port-53 probes. */
+    /**
+     * Creates a checker with host reachability, URL-connection HTTP, and TCP port-53 probes.
+     */
     public NetworkChecker() {
     }
 

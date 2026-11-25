@@ -12,7 +12,7 @@ public class RunSessionManagerTest {
     @Test
     public void rerunReplacesEndedSessionOfSameConfiguration() {
         var manager = new RunSessionManager();
-        var events = new ArrayList<String>();
+        List<String> events = new ArrayList<String>();
         var configuration = RunSessionTest.configuration();
         RunSession first = manager.start(configuration, false);
         manager.subscribe(new RecordingListener(events, first));
@@ -48,7 +48,7 @@ public class RunSessionManagerTest {
     @Test
     public void onlyEndedSessionsCanBeRemoved() {
         var manager = new RunSessionManager();
-        var events = new ArrayList<String>();
+        List<String> events = new ArrayList<String>();
         RunSession session = manager.start(RunSessionTest.configuration(), false);
         manager.subscribe(new RecordingListener(events, session));
 
@@ -64,7 +64,7 @@ public class RunSessionManagerTest {
     @Test
     public void unsubscribedListenerStopsReceiving() {
         var manager = new RunSessionManager();
-        var events = new ArrayList<String>();
+        List<String> events = new ArrayList<String>();
         Runnable unsubscribe = manager.subscribe(new RecordingListener(events, null));
         unsubscribe.run();
         manager.start(RunSessionTest.configuration(), false);
@@ -73,8 +73,7 @@ public class RunSessionManagerTest {
     }
 
     private record RecordingListener(List<String> events, @Nullable RunSession first)
-        implements
-            RunSessionManager.Listener {
+        implements RunSessionManager.Listener {
         @Override
         public void sessionStarted(RunSession session, @Nullable RunSession replaced) {
             events.add("started " + name(session) + " replacing " + (replaced == null ? "none" : name(replaced)));

@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.BiConsumer;
 import java.util.concurrent.CancellationException;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,11 +43,13 @@ public class LanguageInspectionRuleEngineTest {
                 return "";
             }
         };
+
         List<String> executedRules = new ArrayList<>();
         var first = new TestRule("test:failing", _ -> {
             executedRules.add("first");
             throw new IllegalArgumentException("Deliberate inspection failure");
         });
+
         var second = new TestRule("test:successful", _ -> executedRules.add("second"));
         var provider = new TestProvider(List.of(first, second));
         InspectionSettingsAccess settings = new InspectionSettingsAccess() {
@@ -78,14 +81,15 @@ public class LanguageInspectionRuleEngineTest {
     public void cancellationBetweenRulesStopsLaterRulesAndDiscardsCancelledOutput() {
         var cancellation = new CancellationTokenSource();
         var context = new ControlledContext(cancellation.token()::throwIfCancellationRequested);
-        var root = JavaSyntaxParser.parse("class Example {}").root();
-        var reported = new ArrayList<SemanticDiagnostic>();
-        var executed = new ArrayList<String>();
+        SyntaxNode root = JavaSyntaxParser.parse("class Example {}").root();
+        List<SemanticDiagnostic> reported = new ArrayList<SemanticDiagnostic>();
+        List<String> executed = new ArrayList<String>();
         var first = new TestRule("first", (_, reporter) -> {
             reporter.reportMessage(root, "discard me");
             executed.add("first");
             cancellation.cancel();
         });
+
         var second = new TestRule("second", _ -> executed.add("second"));
 
         assertThrows(CancellationException.class, () -> LanguageInspectionRuleEngine.runRules(
@@ -96,13 +100,15 @@ public class LanguageInspectionRuleEngineTest {
 
     @Test
     public void failedRuleCannotPublishPartialDiagnosticsAndHealthyRuleStillRuns() {
-        var root = JavaSyntaxParser.parse("class Example {}").root();
+        SyntaxNode root = JavaSyntaxParser.parse("class Example {}").root();
         var failed = new TestRule("failed", (_, reporter) -> {
             reporter.reportMessage(root, "discard me");
             throw new IllegalStateException("failed after reporting");
         });
+
         var healthy = new TestRule("healthy", (_, reporter) -> reporter.reportMessage(root, "keep me"));
-        var reported = LanguageInspectionRuleEngine.collectDiagnostics(new TestProvider(List.of(failed, healthy)),
+        List<SemanticDiagnostic> reported = LanguageInspectionRuleEngine.collectDiagnostics(
+            new TestProvider(List.of(failed, healthy)),
             new PathOnlyContext(Path.of("Example.java")), enabledSettings());
 
         assertEquals(1, reported.size());
@@ -111,17 +117,18 @@ public class LanguageInspectionRuleEngineTest {
 
     @Test
     public void stackOverflowSkipsTheProvidersRemainingRulesForTheDocument() {
-        var root = JavaSyntaxParser.parse("class Example {}").root();
-        var executed = new ArrayList<String>();
+        SyntaxNode root = JavaSyntaxParser.parse("class Example {}").root();
+        List<String> executed = new ArrayList<String>();
         var earlier = new TestRule("earlier", (_, reporter) -> reporter.reportMessage(root, "keep me"));
         var overflowing = new TestRule("overflowing", (_, reporter) -> {
             reporter.reportMessage(root, "discard me");
             executed.add("overflowing");
             throw new StackOverflowError();
         });
+
         var later = new TestRule("later", _ -> executed.add("later"));
 
-        var reported = assertDoesNotThrow(() -> LanguageInspectionRuleEngine.collectDiagnostics(
+        List<SemanticDiagnostic> reported = assertDoesNotThrow(() -> LanguageInspectionRuleEngine.collectDiagnostics(
             new TestProvider(List.of(earlier, overflowing, later)), new PathOnlyContext(Path.of("Example.java")),
             enabledSettings()));
 
@@ -190,8 +197,7 @@ public class LanguageInspectionRuleEngineTest {
     }
 
     private record TestRule(String id, BiConsumer<LanguageRuleContext, LanguageInspectionRuleReporter> evaluator)
-        implements
-            LanguageInspectionRule<LanguageRuleContext> {
+        implements LanguageInspectionRule<LanguageRuleContext> {
         private TestRule(String id, Consumer<LanguageRuleContext> evaluator) {
             this(id, (context, _) -> evaluator.accept(context));
         }

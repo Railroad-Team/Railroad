@@ -10,7 +10,7 @@ public class LocationTest {
 
     @Test
     public void textLocationRejectsOutOfBoundsRanges() {
-        var snapshot = snapshot("Hello\nWorld");
+        TextDocumentSnapshot snapshot = snapshot("Hello\nWorld");
 
         assertThrows(IndexOutOfBoundsException.class,
             () -> Location.TextLocation.from(snapshot, 0, 100));
@@ -55,7 +55,7 @@ public class LocationTest {
 
     @Test
     public void textLocationValidatesMatchingRevisionIncludingEof() {
-        var snapshot = snapshot("Hello\nWorld");
+        TextDocumentSnapshot snapshot = snapshot("Hello\nWorld");
         Location<?> location = Location.TextLocation.from(snapshot, 6, 11);
         var sameRevision = new TextDocumentSnapshot(snapshot.id(),
             DocumentUri.virtual("memory", "renamed.java"), new DocumentVersion(snapshot.version().value()),
@@ -65,13 +65,13 @@ public class LocationTest {
         assertDoesNotThrow(() -> location.validateAgainst(sameRevision));
         assertDoesNotThrow(() -> Location.TextLocation.from(snapshot, 11, 11).validateAgainst(snapshot));
 
-        var empty = snapshot("");
+        TextDocumentSnapshot empty = snapshot("");
         assertDoesNotThrow(() -> Location.TextLocation.from(empty, 0, 0).validateAgainst(empty));
     }
 
     @Test
     public void textLocationRejectsDifferentDocumentAndVersion() {
-        var snapshot = snapshot("Hello\nWorld");
+        TextDocumentSnapshot snapshot = snapshot("Hello\nWorld");
         Location<?> location = Location.TextLocation.from(snapshot, 6, 11);
         var otherDocument = new TextDocumentSnapshot(DocumentId.create(), snapshot.uri(), snapshot.version(),
             "java", snapshot.text(), StandardCharsets.UTF_8);
@@ -86,9 +86,9 @@ public class LocationTest {
 
     @Test
     public void textLocationRejectsNullAndBinarySnapshots() {
-        var snapshot = snapshot("Hello");
+        TextDocumentSnapshot snapshot = snapshot("Hello");
         Location<?> location = Location.TextLocation.from(snapshot, 0, 5);
-        var binary = binarySnapshot(snapshot.id(), snapshot.version(), 5);
+        BinaryDocumentSnapshot binary = binarySnapshot(snapshot.id(), snapshot.version(), 5);
 
         assertThrows(NullPointerException.class, () -> location.validateAgainst(null));
         assertThrows(IllegalArgumentException.class, () -> location.validateAgainst(binary));
@@ -96,7 +96,7 @@ public class LocationTest {
 
     @Test
     public void textLocationRejectsInconsistentStoredCoordinates() {
-        var snapshot = snapshot("Hello\nWorld");
+        TextDocumentSnapshot snapshot = snapshot("Hello\nWorld");
         var range = new TextRange(6, 11);
         var wrongLine = new Location.TextLocation(snapshot.id(), snapshot.version(), range, 0, 0);
         var wrongColumn = new Location.TextLocation(snapshot.id(), snapshot.version(), range, 1, 1);
@@ -107,7 +107,7 @@ public class LocationTest {
 
     @Test
     public void textLocationValidationChecksBothRangeBounds() {
-        var snapshot = snapshot("Hello\nWorld");
+        TextDocumentSnapshot snapshot = snapshot("Hello\nWorld");
         var invalidStart = new Location.TextLocation(snapshot.id(), snapshot.version(),
             new TextRange(12, 12), 1, 6);
         var invalidEnd = new Location.TextLocation(snapshot.id(), snapshot.version(),
@@ -119,7 +119,7 @@ public class LocationTest {
 
     @Test
     public void binaryLocationValidatesMatchingRevisionIncludingEof() {
-        var snapshot = binarySnapshot(DocumentId.create(), DocumentVersion.initial(), 4);
+        BinaryDocumentSnapshot snapshot = binarySnapshot(DocumentId.create(), DocumentVersion.initial(), 4);
         Location<?> location = Location.BinaryLocation.from(snapshot, 1, 4);
         var sameRevision = new BinaryDocumentSnapshot(snapshot.id(),
             DocumentUri.virtual("memory", "renamed.bin"), new DocumentVersion(snapshot.version().value()),
@@ -129,17 +129,17 @@ public class LocationTest {
         assertDoesNotThrow(() -> location.validateAgainst(sameRevision));
         assertDoesNotThrow(() -> Location.BinaryLocation.from(snapshot, 4, 4).validateAgainst(snapshot));
 
-        var empty = binarySnapshot(DocumentId.create(), DocumentVersion.initial(), 0);
+        BinaryDocumentSnapshot empty = binarySnapshot(DocumentId.create(), DocumentVersion.initial(), 0);
         assertDoesNotThrow(() -> Location.BinaryLocation.from(empty, 0, 0).validateAgainst(empty));
     }
 
     @Test
     public void binaryLocationRejectsDifferentDocumentAndVersion() {
-        var snapshot = binarySnapshot(DocumentId.create(), DocumentVersion.initial(), 4);
+        BinaryDocumentSnapshot snapshot = binarySnapshot(DocumentId.create(), DocumentVersion.initial(), 4);
         Location<?> location = Location.BinaryLocation.from(snapshot, 1, 4);
         var otherDocument = new BinaryDocumentSnapshot(DocumentId.create(), snapshot.uri(), snapshot.version(),
             "binary", snapshot.copyBytes());
-        var newer = binarySnapshot(snapshot.id(), snapshot.version().next(), 4);
+        BinaryDocumentSnapshot newer = binarySnapshot(snapshot.id(), snapshot.version().next(), 4);
 
         assertThrows(IllegalArgumentException.class, () -> location.validateAgainst(otherDocument));
         assertThrows(IllegalArgumentException.class, () -> location.validateAgainst(newer));
@@ -149,8 +149,8 @@ public class LocationTest {
 
     @Test
     public void binaryLocationRejectsNullAndTextSnapshots() {
-        var text = snapshot("Hello");
-        var snapshot = binarySnapshot(text.id(), text.version(), 5);
+        TextDocumentSnapshot text = snapshot("Hello");
+        BinaryDocumentSnapshot snapshot = binarySnapshot(text.id(), text.version(), 5);
         Location<?> location = Location.BinaryLocation.from(snapshot, 0, 5);
 
         assertThrows(NullPointerException.class, () -> location.validateAgainst(null));
@@ -159,7 +159,7 @@ public class LocationTest {
 
     @Test
     public void binaryLocationValidationRejectsRangesBeyondSnapshotSize() {
-        var snapshot = binarySnapshot(DocumentId.create(), DocumentVersion.initial(), 4);
+        BinaryDocumentSnapshot snapshot = binarySnapshot(DocumentId.create(), DocumentVersion.initial(), 4);
         var invalidEnd = new Location.BinaryLocation(snapshot.id(), snapshot.version(), new BinaryRange(1, 5));
         var invalidStart = new Location.BinaryLocation(snapshot.id(), snapshot.version(), new BinaryRange(5, 5));
 
@@ -169,7 +169,7 @@ public class LocationTest {
 
     @Test
     public void binaryLocationFactoryValidatesRangeAndRetainsRevision() {
-        var snapshot = binarySnapshot(DocumentId.create(), DocumentVersion.initial(), 4);
+        BinaryDocumentSnapshot snapshot = binarySnapshot(DocumentId.create(), DocumentVersion.initial(), 4);
 
         assertThrows(NullPointerException.class, () -> Location.BinaryLocation.from(null, 0, 0));
         assertThrows(IllegalArgumentException.class, () -> Location.BinaryLocation.from(snapshot, -1, 2));

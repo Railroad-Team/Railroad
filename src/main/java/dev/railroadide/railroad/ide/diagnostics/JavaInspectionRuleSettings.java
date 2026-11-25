@@ -204,11 +204,13 @@ public final class JavaInspectionRuleSettings {
         config.getInspectionRuleSeverityOverrides().forEach((ruleId, severityName) -> {
             if (severityName == null || severityName.isBlank())
                 return;
+
             try {
                 RULE_SEVERITY_OVERRIDES.put(ruleId, SemanticDiagnostic.Severity.valueOf(severityName));
             } catch (IllegalArgumentException _) {
             }
         });
+
         loaded = true;
     }
 
@@ -239,6 +241,7 @@ public final class JavaInspectionRuleSettings {
     private static void ensureLoaded() {
         if (loaded)
             return;
+
         synchronized (JavaInspectionRuleSettings.class) {
             if (!loaded) {
                 reloadFromConfig();

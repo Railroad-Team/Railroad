@@ -36,6 +36,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
+import dev.railroadide.railroad.ide.sst.graph.api.SymbolEdge;
+import dev.railroadide.railroad.ide.sst.graph.api.WorkspaceSymbolGraph;
+import dev.railroadide.railroad.ide.sst.provider.api.UsageSearch;
+import java.util.concurrent.Future;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -61,12 +65,13 @@ public class JavaBinarySymbolGraphTest {
             """;
         Path file = directory.resolve("Fixture.java");
         Files.writeString(file, source);
-        var sourceShard = new JavaProjectSemanticExtractor().extract(file, source).semanticShard();
+        SemanticIndexShard sourceShard = new JavaProjectSemanticExtractor().extract(file, source).semanticShard();
         for (boolean parameterNames : List.of(false, true)) {
-            var arguments = new ArrayList<>(List.of("-d", directory.toString(), file.toString()));
+            List<String> arguments = new ArrayList<>(List.of("-d", directory.toString(), file.toString()));
             if (parameterNames) {
                 arguments.addFirst("-parameters");
             }
+
             assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
                 arguments.toArray(String[]::new)));
             for (String name : List.of("Outer$Inner", "Outer$Generic", "Outer$Nested", "Arrays", "Mode")) {
@@ -76,15 +81,19 @@ public class JavaBinarySymbolGraphTest {
                     assertTrue(stub.constructors().getFirst().parameters().getFirst().annotations().stream()
                         .anyMatch(annotation -> annotation.name().equals("java.lang.Deprecated")));
                 }
+
                 var shard = JavaBinarySymbolExtractor.extract(stub, DocumentUri.fromPath(binary),
                     Map.of(), () -> {
                     });
+
                 var owner = JavaSymbolIds.type("sample." + name);
-                for (var declaration : sourceShard.declarations()) {
+                for (SymbolDescriptor declaration : sourceShard.declarations()) {
                     if (!owner.equals(declaration.ownerId())
                         || !List.of("java:method", "java:constructor").contains(declaration.kind().id()))
                         continue;
-                    var compiled = shard.declarations().stream().filter(symbol -> symbol.id().equals(declaration.id()))
+
+                    SymbolDescriptor compiled = shard.declarations().stream()
+                        .filter(symbol -> symbol.id().equals(declaration.id()))
                         .findFirst().orElseThrow(() -> new AssertionError(declaration.id()));
                     assertEquals(declaration.signature().parameters().size(), compiled.signature().parameters().size());
                     assertEquals(declaration.metadata().visibility(), compiled.metadata().visibility());
@@ -94,11 +103,13 @@ public class JavaBinarySymbolGraphTest {
                         assertEquals(compiled.declaredType().arrayDimensions(),
                             declaration.declaredType().arrayDimensions());
                     }
+
                     for (int i = 0; i < compiled.signature().parameters().size(); i++) {
                         var parameterId = JavaSymbolIds.parameter(compiled.id(), i);
-                        var parameter = shard.declarations().stream().filter(symbol -> symbol.id().equals(parameterId))
+                        SymbolDescriptor parameter = shard.declarations().stream()
+                            .filter(symbol -> symbol.id().equals(parameterId))
                             .findFirst().orElseThrow();
-                        var sourceParameter = sourceShard.declarations().stream()
+                        SymbolDescriptor sourceParameter = sourceShard.declarations().stream()
                             .filter(symbol -> symbol.id().equals(parameterId))
                             .findFirst().orElseThrow();
                         if (parameterNames) {
@@ -106,6 +117,7 @@ public class JavaBinarySymbolGraphTest {
                         }
                     }
                 }
+
                 if (name.equals("Mode")) {
                     assertTrue(sourceShard.declarations().stream().filter(symbol -> symbol.id().equals(owner))
                         .findFirst().orElseThrow().metadata().modifiers().contains("final"));
@@ -122,13 +134,13 @@ public class JavaBinarySymbolGraphTest {
             var index = JavaLibrarySymbolIndex.build(List.of(archive));
             Set<DocumentId> documents = new HashSet<>();
             for (String type : List.of("sample.Box", "sample.Other")) {
-                var location = index.binaryLocations().get(type);
+                DocumentUri location = index.binaryLocations().get(type);
                 assertNotNull(location);
                 String expected = "!/" + (archive.equals(jmod) ? "classes/" : "") + type.replace('.', '/') + ".class";
                 assertTrue(location.toString().endsWith(expected), location.toString());
-                var shard = index.declarationShard(type);
+                SemanticIndexShard shard = index.declarationShard(type);
                 assertTrue(documents.add(shard.documentId()));
-                var symbol = shard.declarations().stream()
+                SymbolDescriptor symbol = shard.declarations().stream()
                     .filter(declaration -> declaration.id().equals(JavaSymbolIds.type(type))).findFirst().orElseThrow();
                 assertEquals(location, symbol.locations().getFirst().uri());
                 assertEquals(BackingKind.ARCHIVE_ENTRY, symbol.locations().getFirst().origin().backing());
@@ -177,6 +189,7 @@ public class JavaBinarySymbolGraphTest {
         var uri = DocumentUri.virtual("binary", "Box.class");
         var shard = JavaBinarySymbolExtractor.extract(stub, uri, Map.of(), () -> {
         });
+
         SymbolId expected = JavaSymbolIds.method(JavaSymbolIds.type("sample.Box"), "combine",
             List.of("java.lang.Number", "java.lang.CharSequence", "int[][]", "java.lang.String[]"));
         SymbolDescriptor method = shard.declarations().stream().filter(symbol -> symbol.id().equals(expected))
@@ -210,6 +223,7 @@ public class JavaBinarySymbolGraphTest {
         var minimal = JavaBinarySymbolExtractor.extractDeclarations(stub, uri, Map.of(),
             new JavaBinarySymbolExtractor.TypeReferences(), () -> {
             });
+
         assertTrue(minimal.declarations().stream().noneMatch(symbol -> symbol.kind().id().equals("java:parameter")));
         var checks = new AtomicInteger();
         assertThrows(CancellationException.class,
@@ -217,18 +231,21 @@ public class JavaBinarySymbolGraphTest {
                 if (checks.incrementAndGet() == 4)
                     throw new CancellationException();
             }));
+
         var complete = JavaBinarySymbolExtractor.withParameters(minimal, Map.of(), () -> {
         });
+
         assertTrue(complete.declarations().size() > minimal.declarations().size());
-        for (var declaration : minimal.declarations()) {
+        for (SymbolDescriptor declaration : minimal.declarations()) {
             assertSame(declaration,
                 complete.declarations().stream().filter(symbol -> symbol.id().equals(declaration.id()))
                     .findFirst().orElseThrow());
         }
+
         var index = new JavaStubSymbolIndex(Map.of("sample.Box", stub),
             Map.of("sample.Box", directory.resolve("Box.class")));
-        var published = index.lookupQualifiedName("sample.Box").getFirst().descriptor();
-        var shard = index.declarationShard("sample.Box");
+        SymbolDescriptor published = index.lookupQualifiedName("sample.Box").getFirst().descriptor();
+        SemanticIndexShard shard = index.declarationShard("sample.Box");
         assertSame(shard, index.declarationShard("sample.Box"));
         assertSame(published, shard.declarations().getFirst());
     }
@@ -244,15 +261,18 @@ public class JavaBinarySymbolGraphTest {
         } finally {
             Thread.interrupted();
         }
+
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
             Callable<List<JavaProjectSemanticIndex.SymbolDescriptor>> lookup = () -> index.lookupMembers("sample.Box");
-            var results = executor.invokeAll(Collections.nCopies(8, lookup));
+            List<Future<List<JavaProjectSemanticIndex.SymbolDescriptor>>> results = executor
+                .invokeAll(Collections.nCopies(8, lookup));
             List<JavaProjectSemanticIndex.SymbolDescriptor> members = results.getFirst().get();
             assertFalse(members.isEmpty());
-            for (var result : results) {
+            for (Future<List<JavaProjectSemanticIndex.SymbolDescriptor>> result : results) {
                 assertSame(members, result.get());
             }
-            var method = index.lookupMember("sample.Box", "combine").getFirst();
+
+            JavaProjectSemanticIndex.SymbolDescriptor method = index.lookupMember("sample.Box", "combine").getFirst();
             assertSame(method, index.lookupQualifiedName("sample.Box#combine").getFirst());
             assertSame(method, index.lookupSimpleName("combine").getFirst());
             assertSame(method.descriptor(), index.declarationShard("sample.Box").declarations().stream()
@@ -272,12 +292,14 @@ public class JavaBinarySymbolGraphTest {
                 if (owner.equals("sample.Box")) {
                     binaryStarted.set(true);
                 }
+
                 return super.declarationShard(owner, activityCheck);
             }
         };
-        var path = directory.resolve("Use.java");
+
+        Path path = directory.resolve("Use.java");
         String text = "import sample.Box; class Use { Box value; }";
-        var sources = JavaProjectSemanticIndex.builder()
+        JavaProjectSemanticIndex sources = JavaProjectSemanticIndex.builder()
             .putFile(new JavaProjectSemanticExtractor().extract(path, text)).build();
         var combined = new JavaSourcePrecedenceIndex(sources, new CompositeJavaSymbolIndex(List.of(binary)));
         var analysis = new JavaWorkspaceAnalysis(sources, combined, Map.of(path, text), List.of(), directory);
@@ -286,12 +308,15 @@ public class JavaBinarySymbolGraphTest {
             if (binaryStarted.get() && binaryChecks.incrementAndGet() == 5)
                 throw new CancellationException("request cancelled without interrupting its worker");
         }));
+
         assertEquals(5, binaryChecks.get());
         assertFalse(Thread.currentThread().isInterrupted());
-        var completed = analysis.resolvedGraph(() -> {
+        WorkspaceSymbolGraph completed = analysis.resolvedGraph(() -> {
         });
+
         assertSame(completed, analysis.resolvedGraph(() -> {
         }));
+
         assertTrue(completed.shards().containsKey(binary.declarationShard("sample.Box").documentId()));
         assertTrue(binary.declarationShard("sample.Box").declarations().stream()
             .anyMatch(declaration -> declaration.kind().id().equals("java:parameter")));
@@ -299,8 +324,8 @@ public class JavaBinarySymbolGraphTest {
 
     @Test
     public void usagesLookUpOnlyTheRequestedOwnerAndGraphsFollowSourceReferences() {
-        var stubs = new HashMap<String, ClassStub>();
-        var origins = new HashMap<String, Path>();
+        Map<String, ClassStub> stubs = new HashMap<String, ClassStub>();
+        Map<String, Path> origins = new HashMap<String, Path>();
         for (String name : List.of("Base", "Child", "Unused", "Shadow", "BinaryChild")) {
             var writer = new ClassWriter(0);
             String parent = switch (name) {
@@ -308,6 +333,7 @@ public class JavaBinarySymbolGraphTest {
                 case "BinaryChild" -> "sample/Shadow";
                 default -> "java/lang/Object";
             };
+
             writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, "sample/" + name, null, parent, null);
             String signature = name.equals("BinaryChild") ? "(I)Lsample/Unused;" : "(I)I";
             writer.visitMethod(Opcodes.ACC_PUBLIC, "value", signature, null, null).visitEnd();
@@ -316,6 +342,7 @@ public class JavaBinarySymbolGraphTest {
             stubs.put(owner, ClassStubParser.parse(new ClassReader(writer.toByteArray())));
             origins.put(owner, directory.resolve("library.jar"));
         }
+
         Set<String> requested = new HashSet<>();
         var binary = new JavaStubSymbolIndex(stubs, origins) {
             @Override
@@ -323,9 +350,11 @@ public class JavaBinarySymbolGraphTest {
                 if (stubs.containsKey(owner)) {
                     requested.add(owner);
                 }
+
                 return super.declarationShard(owner, check);
             }
         };
+
         String text = "package sample; class Shadow { Base value(int x) { return null; } } "
             + "class Use extends Child { int run(Child c) { return c.value(1) + c.value(2); } }";
         var uri = DocumentUri.fromPath(directory.resolve("Use.java"));
@@ -336,12 +365,14 @@ public class JavaBinarySymbolGraphTest {
         var workspace = new WorkspaceSnapshot("sparse", Map.of(document.id(), document), configuration, 0);
         try (var provider = new JavaWorkspaceAnalysisProvider(() -> true,
             (_, _) -> new CompositeJavaSymbolIndex(List.of(binary)))) {
-            var analysis = provider.capture(workspace);
+            JavaWorkspaceAnalysis analysis = provider.capture(workspace);
             var childMethod = JavaSymbolIds.method(JavaSymbolIds.type("sample.Child"), "value", List.of("int"));
             var baseMethod = JavaSymbolIds.method(JavaSymbolIds.type("sample.Base"), "value", List.of("int"));
-            var search = analysis.usages(workspace, document, new UsageQuery.AtOffset(text.indexOf("c.value") + 2),
+            UsageSearch search = analysis.usages(workspace, document,
+                new UsageQuery.AtOffset(text.indexOf("c.value") + 2),
                 UsageSink.NONE, () -> {
                 });
+
             assertEquals(childMethod, search.symbol());
             assertEquals(2, search.usages().size());
             assertEquals(Set.of("sample.Child"), requested);
@@ -349,28 +380,31 @@ public class JavaBinarySymbolGraphTest {
                 UsageSink.NONE, () -> {
                 }));
 
-            var graph = analysis.resolvedGraph();
+            WorkspaceSymbolGraph graph = analysis.resolvedGraph();
             assertEquals(Set.of("sample.Child", "sample.Base"), requested);
-            for (var captured : List.of(analysis.graph(), graph)) {
+            for (WorkspaceSymbolGraph captured : List.of(analysis.graph(), graph)) {
                 assertEquals(3, captured.shards().size());
                 assertEquals(1, captured.symbols(JavaSymbolIds.type("sample.Shadow")).size());
                 assertTrue(captured.symbols(JavaSymbolIds.type("sample.Unused")).isEmpty());
             }
+
             assertTrue(
                 graph.outgoingEdges(childMethod).stream().anyMatch(edge -> edge.kind().equals(EdgeKindId.OVERRIDE)
                     && edge.target().equals(baseMethod)));
             var unused = JavaSymbolIds.method(JavaSymbolIds.type("sample.Unused"), "value", List.of("int"));
-            var parameter = analysis.usages(workspace, document,
+            UsageSearch parameter = analysis.usages(workspace, document,
                 new UsageQuery.OfSymbol(JavaSymbolIds.parameter(unused, 0)),
                 UsageSink.NONE, () -> {
                 });
+
             assertNotNull(parameter);
             assertTrue(parameter.usages().isEmpty());
             assertEquals("arg0", parameter.displayName());
             assertTrue(graph.symbols(unused).isEmpty());
 
-            var rename = analysis.renameGraph(() -> {
+            WorkspaceSymbolGraph rename = analysis.renameGraph(() -> {
             });
+
             var shadow = JavaSymbolIds.method(JavaSymbolIds.type("sample.Shadow"), "value", List.of("int"));
             var override = JavaSymbolIds.method(JavaSymbolIds.type("sample.BinaryChild"), "value", List.of("int"));
             assertTrue(rename.incomingEdges(shadow).stream().anyMatch(edge -> edge.kind().equals(EdgeKindId.OVERRIDE)
@@ -388,12 +422,14 @@ public class JavaBinarySymbolGraphTest {
             new DocumentOrigin(BackingKind.VIRTUAL, ProvenanceKind.ATTACHED_SOURCE), null, null, true);
         var decompiled = new SymbolLocation(DocumentUri.virtual("decompiled", "Other.java"),
             new DocumentOrigin(BackingKind.VIRTUAL, ProvenanceKind.DECOMPILED), null, null, true);
-        var alternatives = new ArrayList<>(List.of(attached, decompiled));
+        List<SymbolLocation> alternatives = new ArrayList<>(List.of(attached, decompiled));
         var shard = JavaBinarySymbolExtractor.extract(stub, DocumentUri.virtual("binary", "Other.class"),
             Map.of(id, alternatives), () -> {
             });
+
         alternatives.clear();
-        var symbol = shard.declarations().stream().filter(candidate -> candidate.id().equals(id)).findFirst()
+        SymbolDescriptor symbol = shard.declarations().stream().filter(candidate -> candidate.id().equals(id))
+            .findFirst()
             .orElseThrow();
         assertEquals(3, symbol.locations().size());
         assertEquals(attached, symbol.locations().get(1));
@@ -409,6 +445,7 @@ public class JavaBinarySymbolGraphTest {
             if (checks.incrementAndGet() == 4)
                 throw new CancellationException("cancel scan");
         }));
+
         var stub = ClassStubParser.parse(new ClassReader(classBytes("sample/Box", true)));
         checks.set(0);
         assertThrows(CancellationException.class, () -> JavaBinarySymbolExtractor.extract(stub,
@@ -425,6 +462,7 @@ public class JavaBinarySymbolGraphTest {
         var shard = JavaBinarySymbolExtractor.extract(stub, DocumentUri.virtual("binary", "Example.class"),
             Map.of(), () -> {
             });
+
         assertEquals(JavaSymbolIds.type("Example"), shard.declarations().getFirst().id());
     }
 
@@ -441,6 +479,7 @@ public class JavaBinarySymbolGraphTest {
         var shard = JavaBinarySymbolExtractor.extract(stub, DocumentUri.virtual("binary", "ReturnOverloads.class"),
             Map.of(), () -> {
             });
+
         SymbolId owner = JavaSymbolIds.type("sample.ReturnOverloads");
         List<SymbolId> ids = shard.declarations().stream().map(SymbolDescriptor::id).toList();
         assertTrue(ids.contains(JavaSymbolIds.binaryMethod(owner, "invoke", List.of("int"), "int")));
@@ -457,7 +496,7 @@ public class JavaBinarySymbolGraphTest {
         assertTrue(index.declarationShard("java.lang.String").declarations().stream()
             .anyMatch(symbol -> symbol.id().equals(JavaSymbolIds.type("java.lang.String"))));
         for (String name : index.declaredQualifiedNames()) {
-            var shard = index.declarationShard(name);
+            SemanticIndexShard shard = index.declarationShard(name);
             assertEquals(shard.declarations().size(),
                 new HashSet<>(shard.declarations().stream().map(SymbolDescriptor::id).toList()).size());
         }
@@ -504,14 +543,18 @@ public class JavaBinarySymbolGraphTest {
         var base = JavaBinarySymbolExtractor.extract(ClassStubParser.parse(new ClassReader(baseWriter.toByteArray())),
             DocumentUri.virtual("binary", "Base.class"), Map.of(), () -> {
             });
+
         var child = JavaBinarySymbolExtractor.extract(ClassStubParser.parse(new ClassReader(childWriter.toByteArray())),
             DocumentUri.virtual("binary", "Child.class"), Map.of(), () -> {
             });
-        var inheritance = child.edges().stream().filter(edge -> edge.kind().equals(EdgeKindId.SUBTYPE)).findFirst()
+
+        SymbolEdge inheritance = child.edges().stream().filter(edge -> edge.kind().equals(EdgeKindId.SUBTYPE))
+            .findFirst()
             .orElseThrow();
         assertEquals("java.lang.String", inheritance.typeArguments().getFirst().name());
-        var enriched = JavaOverrideGraphExtractor.extract(List.of(base, child), () -> {
+        List<SemanticIndexShard> enriched = JavaOverrideGraphExtractor.extract(List.of(base, child), () -> {
         });
+
         SymbolId implementation = JavaSymbolIds.method(JavaSymbolIds.type("sample.Child"), "accept",
             List.of("java.lang.String"));
         SymbolId declaration = JavaSymbolIds.method(JavaSymbolIds.type("sample.Base"), "accept",
@@ -526,6 +569,7 @@ public class JavaBinarySymbolGraphTest {
         if (jmod) {
             bytes.write(new byte[]{'J', 'M', 1, 0});
         }
+
         try (var jar = new JarOutputStream(bytes)) {
             for (String name : List.of("sample/Box", "sample/Other")) {
                 jar.putNextEntry(new JarEntry(prefix + name + ".class"));
@@ -533,6 +577,7 @@ public class JavaBinarySymbolGraphTest {
                 jar.closeEntry();
             }
         }
+
         Path path = directory.resolve(filename);
         Files.write(path, bytes.toByteArray());
         return path;
@@ -547,6 +592,7 @@ public class JavaBinarySymbolGraphTest {
                 "(Ljava/lang/Number;Ljava/lang/CharSequence;[[I[Ljava/lang/String;)Ljava/lang/Number;",
                 "<U:Ljava/lang/CharSequence;>(TT;TU;[[I[Ljava/lang/String;)TT;", null).visitEnd();
         }
+
         writer.visitEnd();
         return writer.toByteArray();
     }

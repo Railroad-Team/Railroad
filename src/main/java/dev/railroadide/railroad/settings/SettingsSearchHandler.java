@@ -43,10 +43,12 @@ public class SettingsSearchHandler {
             if (descKey != null && L18n.isKeyValid(descKey)) {
                 settingsMap.put(L18n.localize(descKey), baseKey);
             }
+
             SettingCategory category = setting.getCategory();
             if (category.hasTitle() && L18n.isKeyValid(category.title())) {
                 settingsMap.put(L18n.localize(category.title()), baseKey);
             }
+
             if (category.hasDescription() && L18n.isKeyValid(category.description())) {
                 settingsMap.put(L18n.localize(category.description()), baseKey);
             }
@@ -83,6 +85,7 @@ public class SettingsSearchHandler {
         String normalized = query.strip().toLowerCase(Locale.ROOT);
         if (normalized.isEmpty())
             return null;
+
         // Prefer a literal match over fuzzy matches to unrelated short words.
         return settingsMap.entrySet().stream()
             .filter(entry -> entry.getKey().toLowerCase(Locale.ROOT).contains(normalized))
@@ -135,6 +138,7 @@ public class SettingsSearchHandler {
                     texts.addAll(findText(child));
                 }
             }
+
             case null, default -> {
             } // For other node types, we can ignore them or handle them as needed
         }

@@ -38,6 +38,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.lang.reflect.Method;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -70,6 +71,7 @@ public class CodeActionEditorIntegrationTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
         Field hostServices = Railroad.class.getDeclaredField("hostServices");
         hostServices.setAccessible(true);
@@ -85,10 +87,12 @@ public class CodeActionEditorIntegrationTest {
             if (ThemeManager.getTheme() == null) {
                 ThemeManager.setTheme("");
             }
+
             project = new RailroadProject(projectDirectory, "Code actions", new WritableImage(1, 1));
             Services.IDE_STATE.setCurrentProject(project);
             return null;
         });
+
         Services.IDE_STATE.getWorkspaceConfiguration().ready().get(10, TimeUnit.SECONDS);
         file = projectDirectory.resolve("src/main/java/p/A.java");
         Files.createDirectories(file.getParent());
@@ -103,6 +107,7 @@ public class CodeActionEditorIntegrationTest {
             window.show();
             return window;
         });
+
         editor = open(file);
     }
 
@@ -115,6 +120,7 @@ public class CodeActionEditorIntegrationTest {
             Railroad.EVENT_BUS.publish(new ProjectEvent(project, ProjectEvent.EventType.CLOSED));
             return null;
         });
+
         assertTrue(Services.IDE_STATE.getWorkspaceEdits().isEmpty());
         assertNull(onFx(editor::activeCodeActionMenu), "Closing the project must close the code action menu");
     }
@@ -139,11 +145,13 @@ public class CodeActionEditorIntegrationTest {
             editor.undo();
             return null;
         });
+
         assertEquals(SOURCE, onFx(editor::getText));
         onFx(() -> {
             editor.redo();
             return null;
         });
+
         assertEquals(imported, onFx(editor::getText));
     }
 
@@ -154,6 +162,7 @@ public class CodeActionEditorIntegrationTest {
                 "    // unsaved\n");
             return null;
         });
+
         String unsaved = onFx(editor::getText);
         moveTo("java.util.Map");
 
@@ -168,6 +177,7 @@ public class CodeActionEditorIntegrationTest {
             editor.undo();
             return null;
         });
+
         assertEquals(unsaved, onFx(editor::getText));
     }
 
@@ -193,6 +203,7 @@ public class CodeActionEditorIntegrationTest {
             editor.insertText(0, " ");
             return null;
         });
+
         assertTrue(onFx(menu::isClosed));
         assertNull(onFx(editor::activeCodeActionMenu));
 
@@ -201,6 +212,7 @@ public class CodeActionEditorIntegrationTest {
             press(editor, KeyCode.ENTER, true);
             return null;
         });
+
         awaitFx(() -> visibleNode(".navigation-message") != null);
         assertNull(onFx(editor::activeCodeActionMenu));
     }
@@ -213,6 +225,7 @@ public class CodeActionEditorIntegrationTest {
             editor.close();
             return null;
         });
+
         assertTrue(onFx(menu::isClosed));
         assertNull(onFx(editor::activeCodeActionMenu));
         assertFalse(onFx(editor::supportsCodeActions));
@@ -240,9 +253,11 @@ public class CodeActionEditorIntegrationTest {
                 press(editor, KeyCode.ENTER, true);
                 return null;
             });
+
             awaitFx(() -> visibleNode(".navigation-message") != null);
             assertNull(onFx(editor::activeCodeActionMenu), marker);
         }
+
         assertEquals(Files.readString(escaped), onFx(editor::getText));
     }
 
@@ -281,6 +296,7 @@ public class CodeActionEditorIntegrationTest {
                 LanguageSupportRegistry.unregister("java");
                 return null;
             });
+
             assertFalse(onFx(editor::supportsCodeActions));
             pressInMenu(KeyCode.ENTER);
             assertEquals(SOURCE, onFx(editor::getText));
@@ -304,6 +320,7 @@ public class CodeActionEditorIntegrationTest {
             press(editor, KeyCode.ENTER, true);
             return null;
         });
+
         awaitFx(() -> editor.activeCodeActionMenu() != null);
         return onFx(editor::activeCodeActionMenu);
     }
@@ -348,9 +365,9 @@ public class CodeActionEditorIntegrationTest {
 
     private EditorTab openInTabPane(Path path, DetachableTabPane tabs) throws ReflectiveOperationException {
         Class<?> requestType = Class.forName(EditorTabManager.class.getName() + "$TabOpenRequest");
-        var normalRequest = requestType.getDeclaredMethod("normal");
+        Method normalRequest = requestType.getDeclaredMethod("normal");
         normalRequest.setAccessible(true);
-        var open = EditorTabManager.class.getDeclaredMethod("openInTabPane", Project.class, Path.class,
+        Method open = EditorTabManager.class.getDeclaredMethod("openInTabPane", Project.class, Path.class,
             DetachableTabPane.class, requestType);
         open.setAccessible(true);
         return (EditorTab) open.invoke(Services.EDITOR_TAB_MANAGER, project, path, tabs,
@@ -360,6 +377,7 @@ public class CodeActionEditorIntegrationTest {
     private static <T> T onFx(Callable<T> action) throws Exception {
         if (Platform.isFxApplicationThread())
             return action.call();
+
         var task = new FutureTask<>(action);
         Platform.runLater(task);
         return task.get(30, TimeUnit.SECONDS);

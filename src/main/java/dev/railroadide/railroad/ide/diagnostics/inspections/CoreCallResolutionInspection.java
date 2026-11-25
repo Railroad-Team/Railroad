@@ -59,6 +59,7 @@ public final class CoreCallResolutionInspection implements JavaInspectionRulePro
                 if (overload == Outcome.RESOLVED || overload == Outcome.AMBIGUOUS
                     || overload == Outcome.ERRONEOUS_ARGUMENTS)
                     return;
+
                 if (overload == Outcome.UNDETERMINED && (context.resolvedSymbol(node).isPresent()
                     || context.canResolveMethodInvocation(node) || !context.hasKnownMethodOwner(node)))
                     return;
@@ -69,6 +70,7 @@ public final class CoreCallResolutionInspection implements JavaInspectionRulePro
                     : context.canonicalQualifiedName(memberNode);
                 if (callName == null || callName.isBlank())
                     return;
+
                 Railroad.LOGGER.debug(
                     "Unresolved method invocation detail for {}: {}",
                     callName,
@@ -79,8 +81,10 @@ public final class CoreCallResolutionInspection implements JavaInspectionRulePro
 
             if (!"JAVA_CLASS_INSTANCE_CREATION_EXPRESSION".equals(kindId))
                 return;
+
             if (context.resolvedSymbol(node).isPresent())
                 return;
+
             if (context.canResolveClassInstanceCreation(node))
                 return;
 
@@ -88,6 +92,7 @@ public final class CoreCallResolutionInspection implements JavaInspectionRulePro
             String typeName = typeRef == null ? null : context.canonicalTypeText(typeRef);
             if (typeName == null || typeName.isBlank())
                 return;
+
             reporter.report(typeRef, typeName);
         });
     }
@@ -96,6 +101,7 @@ public final class CoreCallResolutionInspection implements JavaInspectionRulePro
         context.traverse(node -> {
             if (!"JAVA_METHOD_INVOCATION_EXPRESSION".equals(node.kind().id()))
                 return;
+
             Resolution resolution = JavaOverloadResolver.resolve(context, node);
             if (resolution.outcome() != Outcome.AMBIGUOUS)
                 return;

@@ -12,7 +12,9 @@ import java.awt.image.BufferedImage;
 import java.util.EnumMap;
 import java.util.Map;
 
-/** Renders bundled JDK vendor artwork without JavaFX's internal SVG image loader. */
+/**
+ * Renders bundled JDK vendor artwork without JavaFX's internal SVG image loader.
+ */
 public final class JdkBrandIcons {
     private static final Map<JDK.Brand, Image> CACHE = new EnumMap<>(JDK.Brand.class);
 
@@ -38,6 +40,7 @@ public final class JdkBrandIcons {
         try (var stream = AppResources.getResourceAsStream(brand.getImagePath())) {
             transcoder.transcode(new TranscoderInput(stream), null);
         }
+
         Image image = SwingFXUtils.toFXImage(transcoder.image, null);
         CACHE.put(brand, image);
         return image;

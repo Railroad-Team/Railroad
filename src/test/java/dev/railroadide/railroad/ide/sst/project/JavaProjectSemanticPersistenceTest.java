@@ -10,6 +10,8 @@ import java.nio.file.attribute.FileTime;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
+import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolDescriptor;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -28,6 +30,7 @@ public class JavaProjectSemanticPersistenceTest {
                 if (checks.incrementAndGet() == 7)
                     throw failure;
             })));
+
         assertNotNull(persistence.loadIfCurrent(tempDir));
     }
 
@@ -44,13 +47,15 @@ public class JavaProjectSemanticPersistenceTest {
         for (int index = 0; index < 100; index++) {
             source.append("int field").append(index).append(';');
         }
+
         Files.writeString(file, source.append('}'));
-        var replacement = indexer.build(tempDir);
+        JavaProjectSemanticIndex replacement = indexer.build(tempDir);
         var checks = new AtomicInteger();
         assertThrows(CancellationException.class, () -> persistence.save(tempDir, replacement, Runnable::run, () -> {
             if (checks.incrementAndGet() == 20)
                 throw new CancellationException();
         }));
+
         assertArrayEquals(previous, Files.readAllBytes(snapshot));
         try (var files = Files.walk(tempDir)) {
             assertTrue(files.noneMatch(path -> path.toString().endsWith(".tmp")));
@@ -61,9 +66,10 @@ public class JavaProjectSemanticPersistenceTest {
     public void rejectedCommitLeavesNoSnapshotOrTemporaryFile() throws Exception {
         Path file = tempDir.resolve("A.java");
         Files.writeString(file, "class A {}");
-        var index = new JavaProjectSemanticIndexer().build(tempDir);
+        JavaProjectSemanticIndex index = new JavaProjectSemanticIndexer().build(tempDir);
         new JavaProjectSemanticPersistence().save(tempDir, index, replacement -> {
         });
+
         assertNull(new JavaProjectSemanticPersistence().loadIfCurrent(tempDir));
         try (var files = Files.walk(tempDir)) {
             assertTrue(files.noneMatch(path -> path.toString().endsWith(".tmp")));
@@ -99,13 +105,13 @@ public class JavaProjectSemanticPersistenceTest {
         assertEquals(1, loaded.lookupQualifiedName("demo.A").size());
         assertEquals(1, loaded.lookupMember("demo.A", "VALUE").size());
         assertEquals(1, loaded.lookupMember("demo.A.Child", "cost").size());
-        var originalShard = index.getFile(aFile).orElseThrow().semanticShard();
-        var loadedShard = loaded.getFile(aFile).orElseThrow().semanticShard();
+        SemanticIndexShard originalShard = index.getFile(aFile).orElseThrow().semanticShard();
+        SemanticIndexShard loadedShard = loaded.getFile(aFile).orElseThrow().semanticShard();
         assertNotNull(loadedShard);
         assertEquals(originalShard.documentId(), loadedShard.documentId());
         assertEquals(originalShard.declarations().stream().map(symbol -> symbol.id()).toList(),
             loadedShard.declarations().stream().map(symbol -> symbol.id()).toList());
-        for (var descriptor : loadedShard.declarations()) {
+        for (SymbolDescriptor descriptor : loadedShard.declarations()) {
             assertFalse(loaded.graph().symbols(descriptor.id()).isEmpty());
         }
     }
@@ -254,6 +260,7 @@ public class JavaProjectSemanticPersistenceTest {
                 output.writeInt(obsoleteVersion);
                 output.writeInt(0);
             }
+
             assertNull(new JavaProjectSemanticPersistence().loadIfCurrent(root));
         }
     }
@@ -264,5 +271,4 @@ public class JavaProjectSemanticPersistenceTest {
         Files.writeString(file, source);
         return file;
     }
-
 }

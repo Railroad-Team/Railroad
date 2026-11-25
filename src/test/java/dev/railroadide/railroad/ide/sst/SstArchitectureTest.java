@@ -31,6 +31,7 @@ public class SstArchitectureTest {
         for (String directory : CORE) {
             inspect(SOURCE.resolve(directory), FORBIDDEN, violations);
         }
+
         assertTrue(violations.isEmpty(), () -> String.join("\n", violations));
     }
 
@@ -55,6 +56,7 @@ public class SstArchitectureTest {
             "signature/SignatureHelpProvider.java", "signature/SignatureHelp.java")) {
             inspect(SOURCE.getParent().resolve(file), FORBIDDEN, violations);
         }
+
         assertTrue(violations.isEmpty(), () -> String.join("\n", violations));
     }
 

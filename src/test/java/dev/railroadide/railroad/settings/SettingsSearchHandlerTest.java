@@ -17,7 +17,7 @@ public class SettingsSearchHandlerTest {
 
     @Test
     public void searchesCategoryTextWhenTheEditorHasNoTitle() {
-        var setting = Setting.builder(String.class, "test:language")
+        Setting<String> setting = Setting.builder(String.class, "test:language")
             .treePath("general")
             .category(SettingCategory.simple("railroad:general.language"))
             .codec(DefaultSettingCodecs.STRING)
@@ -33,7 +33,7 @@ public class SettingsSearchHandlerTest {
 
     @Test
     public void searchesActualSettingTitleAndPreservesNestedPath() {
-        var setting = Setting.builder(String.class, "test:language")
+        Setting<String> setting = Setting.builder(String.class, "test:language")
             .treePath("plugin.preferences.language")
             .title("railroad.settings.general.language.title")
             .description("railroad.settings.general.language.description")

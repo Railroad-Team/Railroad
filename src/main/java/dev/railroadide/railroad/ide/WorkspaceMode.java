@@ -10,7 +10,9 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-/** Registered workspace-mode descriptor. The plugin SPI refers to modes only by stable ID. */
+/**
+ * Registered workspace-mode descriptor. The plugin SPI refers to modes only by stable ID.
+ */
 public final class WorkspaceMode {
     /**
      * Ordered registry of workspace mode descriptors.
@@ -118,10 +120,13 @@ public final class WorkspaceMode {
     ) {
         if (id == null || id.isBlank())
             throw new IllegalArgumentException("Workspace-mode ID cannot be null or blank");
+
         if (localizationKey == null || localizationKey.isBlank())
             throw new IllegalArgumentException("Workspace-mode localization key cannot be null or blank");
+
         if (availability == null)
             throw new IllegalArgumentException("Workspace-mode availability cannot be null");
+
         if (unavailableBindingFactory == null)
             throw new IllegalArgumentException("Workspace-mode unavailable binding factory cannot be null");
 
@@ -160,6 +165,7 @@ public final class WorkspaceMode {
     public static WorkspaceMode defaultMode() {
         if (REGISTRY.values().isEmpty())
             throw new IllegalStateException("No workspace modes are registered");
+
         return REGISTRY.values().getFirst();
     }
 }

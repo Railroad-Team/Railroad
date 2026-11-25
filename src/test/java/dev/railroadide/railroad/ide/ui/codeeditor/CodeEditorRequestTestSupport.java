@@ -20,6 +20,7 @@ public final class CodeEditorRequestTestSupport {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
     }
 
@@ -45,5 +46,4 @@ public final class CodeEditorRequestTestSupport {
             throw new AssertionError("Earlier requests did not finish", exception);
         }
     }
-
 }

@@ -51,6 +51,7 @@ public class GitDiffPane extends RRBorderPane implements AutoCloseable {
         thread.setDaemon(true);
         return thread;
     });
+
     private final AtomicInteger generation = new AtomicInteger();
     private final ShutdownHooks.Registration shutdownRegistration;
     private List<RenderLine> renderLines = List.of();
@@ -357,6 +358,7 @@ public class GitDiffPane extends RRBorderPane implements AutoCloseable {
                         case ADDITION -> LineKind.ADDITION;
                         case DELETION -> LineKind.DELETION;
                     };
+
                     String text = prefixForKind(kind) + hunkLine.content();
                     lines.add(
                         new RenderLine(text, kind, hunkLine.oldLineNumber(), hunkLine.newLineNumber(), languageId));

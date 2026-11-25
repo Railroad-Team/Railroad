@@ -131,21 +131,22 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
         getStyleClass().add("usages-pane");
         refresh.setOnAction(_ -> refresh());
         cancel.setOnAction(_ -> cancelSearch());
-        var collapse = toolButton("railroad.generic.collapse_all", FontAwesomeSolid.COMPRESS_ALT);
+        RRButton collapse = toolButton("railroad.generic.collapse_all", FontAwesomeSolid.COMPRESS_ALT);
         collapse.setOnAction(_ -> groups.values().forEach(item -> item.setExpanded(false)));
-        var expand = toolButton("railroad.generic.expand_all", FontAwesomeSolid.EXPAND_ALT);
+        RRButton expand = toolButton("railroad.generic.expand_all", FontAwesomeSolid.EXPAND_ALT);
         expand.setOnAction(_ -> groups.values().forEach(item -> item.setExpanded(true)));
         groupActions.getChildren().addAll(collapse, expand);
         groupActions.getStyleClass().add("usages-group-actions");
         heading.getStyleClass().add("usages-heading");
         heading.setTextOverrun(OverrunStyle.LEADING_ELLIPSIS);
         status.getStyleClass().add("usages-summary");
-        for (var label : List.of(heading, status)) {
+        for (Label label : List.of(heading, status)) {
             var tooltip = new Tooltip();
             tooltip.textProperty().bind(label.textProperty());
             label.setTooltip(tooltip);
             label.setMinWidth(0);
         }
+
         var caption = new VBox(heading, status);
         caption.setMinWidth(0);
         HBox.setHgrow(caption, Priority.ALWAYS);
@@ -168,12 +169,14 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
                 openSelected();
             }
         });
+
         tree.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) {
                 openSelected();
                 event.consume();
             }
         });
+
         empty.getStyleClass().add("usages-empty");
         empty.setMaxSize(460, USE_PREF_SIZE);
         emptyTitle.getStyleClass().add("usages-empty-title");
@@ -181,9 +184,10 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
         emptyTitle.setWrapText(true);
         emptyDetail.setWrapText(true);
         setCenter(new StackPane(tree, empty));
-        for (var node : List.of(header, status, progress, groupActions, cancel, refresh, tree, empty)) {
+        for (Region node : List.of(header, status, progress, groupActions, cancel, refresh, tree, empty)) {
             node.managedProperty().bind(node.visibleProperty());
         }
+
         updateStatus();
     }
 
@@ -291,6 +295,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
         if (!opened) {
             status.setText(L18n.localize("railroad.ide.usages.outdated_target"));
         }
+
         return opened;
     }
 
@@ -315,6 +320,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
             storeSubscription.close();
             storeSubscription = null;
         }
+
         request = null;
         clearResults();
     }
@@ -328,6 +334,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
         Objects.requireNonNull(request, "request");
         if (!Platform.isFxApplicationThread())
             throw new IllegalStateException("Usage searches must start on the FX thread");
+
         if (closed)
             return;
 
@@ -341,6 +348,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
             symbol = null;
             symbolName = null;
         }
+
         state = State.SEARCHING;
 
         var cancellation = new CancellationTokenSource(request.providerLifetime());
@@ -385,6 +393,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
                 Railroad.LOGGER.error("Find Usages failed for {} in {}", request.query(), request.source().uri(),
                     cause);
             }
+
             Platform.runLater(() -> {
                 if (activeContext != context)
                     return;
@@ -400,8 +409,10 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
                         ? cause.getClass().getSimpleName()
                         : cause.getMessage();
                 }
+
                 updateStatus();
             });
+
             return null;
         });
     }
@@ -421,6 +432,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
             clearResults();
             append(request.workspace(), search.usages());
         }
+
         state = isCurrent(request) ? State.COMPLETE : State.OUTDATED;
         updateStatus();
     }
@@ -447,6 +459,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
                 root.getChildren().add(item);
                 return item;
             });
+
             group.getChildren().add(new TreeItem<>(UsageRow.from(snapshot, location)));
         }
     }
@@ -462,6 +475,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
         if (storeSubscription != null) {
             storeSubscription.close();
         }
+
         storeSubscription = store.onChange(() -> {
             if (outdatedCheckQueued.compareAndSet(false, true)) {
                 Platform.runLater(this::markOutdatedIfChanged);
@@ -488,6 +502,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
         if (activeCancellation != null) {
             activeCancellation.cancel();
         }
+
         releaseRequest();
     }
 
@@ -537,6 +552,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
                 : name;
             heading.setText(title);
         }
+
         progress.setProgress(
             totalDocuments > 0 ? (double) searchedDocuments / totalDocuments : ProgressBar.INDETERMINATE_PROGRESS);
         status.setText(switch (state) {
@@ -552,6 +568,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
             case TIMED_OUT -> L18n.localize("railroad.ide.usages.timed_out", usageCount(count));
             case FAILED -> L18n.localize("railroad.ide.usages.failed", failureMessage);
         });
+
         if (!hasResults) {
             updateEmptyState();
         }
@@ -563,6 +580,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
             case CANCELLED -> FontAwesomeSolid.STOP_CIRCLE;
             default -> FontAwesomeSolid.SEARCH;
         });
+
         String titleKey = switch (state) {
             case IDLE -> "idle_title";
             case SEARCHING -> "search_title";
@@ -573,6 +591,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
             case OUTDATED -> "outdated_title";
             case FAILED -> "failed_title";
         };
+
         emptyTitle.setText(L18n.localize("railroad.ide.usages." + titleKey));
         emptyDetail.setText(switch (state) {
             case IDLE, UNRESOLVED -> L18n.localize("railroad.ide.usages.idle");
@@ -587,17 +606,29 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
      * Search state presented by the pane.
      */
     public enum State {
-        /** No search has been started. */
+        /**
+         * No search has been started.
+         */
         IDLE,
-        /** A search is running; results may be partial. */
+        /**
+         * A search is running; results may be partial.
+         */
         SEARCHING,
-        /** The search completed against an unchanged workspace. */
+        /**
+         * The search completed against an unchanged workspace.
+         */
         COMPLETE,
-        /** The search was cancelled; results may be partial. */
+        /**
+         * The search was cancelled; results may be partial.
+         */
         CANCELLED,
-        /** The workspace changed after the results were captured. */
+        /**
+         * The workspace changed after the results were captured.
+         */
         OUTDATED,
-        /** The query resolved to no symbol or the language cannot search for usages. */
+        /**
+         * The query resolved to no symbol or the language cannot search for usages.
+         */
         UNRESOLVED,
         /**
          * The search exceeded its deadline; results may be partial.
@@ -615,6 +646,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
             && cause.getCause() != null) {
             cause = cause.getCause();
         }
+
         return cause;
     }
 
@@ -691,8 +723,9 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
                 setAccessibleText(null);
                 return;
             }
+
             if (item instanceof FileRow file) {
-                var uri = file.snapshot().uri();
+                DocumentUri uri = file.snapshot().uri();
                 fileName.setText(uri.fileName().orElse(uri.toString()));
                 fileName.setGraphic(
                     uri.filePath().map(FileUtils::getIcon).orElseGet(() -> new FontIcon(FontAwesomeSolid.FILE)));
@@ -710,6 +743,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
                 tip.setText(description);
                 setGraphic(usageLine);
             }
+
             setTooltip(tip);
         }
     }

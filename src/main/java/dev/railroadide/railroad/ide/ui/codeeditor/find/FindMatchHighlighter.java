@@ -19,9 +19,13 @@ import java.util.Objects;
  * Only matches in visible paragraphs are drawn, so the cost does not grow with the document.
  */
 public final class FindMatchHighlighter {
-    /** Style class of the shapes drawn over matches other than the current one. */
+    /**
+     * Style class of the shapes drawn over matches other than the current one.
+     */
     public static final String MATCH_STYLE_CLASS = "find-match";
-    /** Style class of the shapes drawn over the current match. */
+    /**
+     * Style class of the shapes drawn over the current match.
+     */
     public static final String CURRENT_MATCH_STYLE_CLASS = "find-match-current";
     private static final int MAX_DRAWN_SEGMENTS = 2_000;
 
@@ -66,10 +70,13 @@ public final class FindMatchHighlighter {
             editor.sceneProperty().addListener(sceneListener);
             moveLayoutListener(null, editor.getScene());
         }
+
         markDirty();
     }
 
-    /** Removes every highlight and stops following the editor's viewport. */
+    /**
+     * Removes every highlight and stops following the editor's viewport.
+     */
     public void clear() {
         matches = List.of();
         current = null;
@@ -97,6 +104,7 @@ public final class FindMatchHighlighter {
         if (previous != null) {
             previous.removePostLayoutPulseListener(redrawAfterLayout);
         }
+
         if (next != null) {
             next.addPostLayoutPulseListener(redrawAfterLayout);
             markDirty();
@@ -113,6 +121,7 @@ public final class FindMatchHighlighter {
     private void redrawIfDirty() {
         if (!dirty)
             return;
+
         dirty = false;
         redraw();
     }
@@ -131,6 +140,7 @@ public final class FindMatchHighlighter {
             TextRange match = matches.get(index);
             if (match.start > visibleEnd || layer.getChildren().size() >= MAX_DRAWN_SEGMENTS)
                 break;
+
             drawMatch(match, Objects.equals(match, current) ? CURRENT_MATCH_STYLE_CLASS : MATCH_STYLE_CLASS);
         }
     }
@@ -146,6 +156,7 @@ public final class FindMatchHighlighter {
                 high = middle;
             }
         }
+
         return low;
     }
 

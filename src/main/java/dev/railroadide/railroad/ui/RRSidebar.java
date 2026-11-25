@@ -238,9 +238,13 @@ public class RRSidebar extends VBox {
      * Sidebar position variants that determine styling and collapse direction.
      */
     public enum SidebarPosition {
-        /** Left-side styling and a leftward collapse translation. */
+        /**
+         * Left-side styling and a leftward collapse translation.
+         */
         LEFT,
-        /** Right-side styling and a rightward collapse translation. */
+        /**
+         * Right-side styling and a rightward collapse translation.
+         */
         RIGHT;
     }
 
@@ -248,11 +252,17 @@ public class RRSidebar extends VBox {
      * CSS size variants for a sidebar.
      */
     public enum SidebarSize {
-        /** The small size variant. */
+        /**
+         * The small size variant.
+         */
         SMALL,
-        /** The default medium size variant. */
+        /**
+         * The default medium size variant.
+         */
         MEDIUM,
-        /** The large size variant. */
+        /**
+         * The large size variant.
+         */
         LARGE;
     }
 }

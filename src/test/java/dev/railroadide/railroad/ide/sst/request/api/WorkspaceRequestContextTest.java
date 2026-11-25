@@ -48,6 +48,7 @@ public class WorkspaceRequestContextTest {
             "text-provider", "source", StandardCharsets.UTF_8);
         var binary = new BinaryDocumentSnapshot(binaryId, DocumentUri.inMemory(binaryId), DocumentVersion.initial(),
             "binary-provider", new byte[]{1, 2, 3});
+
         var workspace = new WorkspaceSnapshot(empty.projectId(), Map.of(textId, text, binaryId, binary),
             empty.configuration(), 1);
         RequestContext context = new WorkspaceRequestContext(workspace, CancellationToken.none(), Deadline.none());
@@ -105,12 +106,15 @@ public class WorkspaceRequestContextTest {
                 throw failure;
             }
         };
+
         var clock = new AtomicLong(100);
         Deadline deadline = Deadline.after(Duration.ofNanos(50), () -> {
             if (clock.get() != 100)
                 throw new AssertionError("Cancellation must be checked before reading the deadline");
+
             return clock.get();
         });
+
         RequestContext context = new WorkspaceRequestContext(empty, token, deadline);
         clock.set(150);
 

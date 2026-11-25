@@ -37,6 +37,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.ArrayList;
 import java.util.Collections;
+import javafx.geometry.Bounds;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.stage.Popup;
 
 import static dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorRequestTestSupport.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -70,7 +74,7 @@ public class CodeEditorSignatureRequestTest {
 
     @Test
     public void manuallyOpenedOverloadsStayVisibleAndFollowArgumentEditsWithAutomaticHintsOff() throws Exception {
-        var parameters = List.of(new SignatureHelp.ParameterInfo("int", "first", false),
+        List<SignatureHelp.ParameterInfo> parameters = List.of(new SignatureHelp.ParameterInfo("int", "first", false),
             new SignatureHelp.ParameterInfo("int", "second", false));
         try (Fixture fixture = open(context -> {
             String text = ((TextDocumentSnapshot) context.documentSnapshot()).text();
@@ -78,7 +82,7 @@ public class CodeEditorSignatureRequestTest {
                 text.contains("call(1, ") ? 1 : 0, false, "void", false);
             return new FeatureResult<>(context, text.contains("call(x") ? null : help);
         })) {
-            var editor = fixture.editor;
+            TestEditor editor = fixture.editor;
             var overload = new SignatureHelp("Example", "Example", "call", List.of(parameters.getFirst()),
                 0, false, "void", false);
             fixture.provider.overloads = List.of(overload);
@@ -91,7 +95,8 @@ public class CodeEditorSignatureRequestTest {
                 editor.showParameterInfo();
                 return null;
             });
-            var initial = fixture.nextRequest();
+
+            Invocation initial = fixture.nextRequest();
             awaitRequests(editor.featureRequests);
             onFx(() -> {
                 assertTrue(editor.signaturePopup.isShowing());
@@ -101,6 +106,7 @@ public class CodeEditorSignatureRequestTest {
                 assertTrue(editor.signaturePopup.isShowing());
                 return null;
             });
+
             fixture.nextRequest();
             awaitRequests(editor.featureRequests);
             onFx(() -> {
@@ -109,11 +115,12 @@ public class CodeEditorSignatureRequestTest {
                 assertTrue(editor.signaturePopup.isShowing());
                 return null;
             });
+
             fixture.nextRequest();
             awaitRequests(editor.featureRequests);
             onFx(() -> {
                 assertEquals(2, editor.signatureRows.getChildren().size());
-                var primary = editor.signatureRows.getChildren().getFirst();
+                Node primary = editor.signatureRows.getChildren().getFirst();
                 assertEquals("int second", ((Text) primary.lookup(".signature-param-active")).getText());
                 editor.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.ESCAPE,
                     false, false, false, false));
@@ -121,6 +128,7 @@ public class CodeEditorSignatureRequestTest {
                 editor.moveTo(arguments);
                 return null;
             });
+
             awaitRequests(editor.featureRequests);
             assertTrue(fixture.provider.requests.isEmpty());
         }
@@ -132,7 +140,7 @@ public class CodeEditorSignatureRequestTest {
             "call", List.of(new SignatureHelp.ParameterInfo("int", "first", false),
                 new SignatureHelp.ParameterInfo("int", "second", false)),
             1, false, "void", false)))) {
-            var editor = fixture.editor;
+            TestEditor editor = fixture.editor;
             fixture.provider.overloads = List.of(
                 new SignatureHelp("Example", "Example", "call",
                     List.of(new SignatureHelp.ParameterInfo("long", "count", false)), -1, false, "void", false),
@@ -147,6 +155,7 @@ public class CodeEditorSignatureRequestTest {
                 assertFalse(editor.signaturePopup.isShowing());
                 return null;
             });
+
             awaitRequests(editor.featureRequests);
             assertTrue(fixture.provider.requests.isEmpty());
             for (int attempt = 0; attempt < 2; attempt++) {
@@ -154,6 +163,7 @@ public class CodeEditorSignatureRequestTest {
                     editor.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.P, false, true, false, false));
                     return null;
                 });
+
                 assertEquals(caret, fixture.nextRequest().caret());
                 awaitRequests(editor.featureRequests);
                 onFx(() -> {
@@ -187,15 +197,16 @@ public class CodeEditorSignatureRequestTest {
                     fixture.editor.showParameterInfo();
                     return null;
                 });
+
                 fixture.nextRequest();
                 awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
-                    var popup = fixture.editor.signaturePopup;
-                    var root = popup.getScene().getRoot();
+                    Popup popup = fixture.editor.signaturePopup;
+                    Parent root = popup.getScene().getRoot();
                     root.applyCss();
                     root.layout();
-                    var row = (TextFlow) fixture.editor.signatureRows.getChildren().getFirst();
-                    var text = (Text) row.getChildren().getFirst();
+                    TextFlow row = (TextFlow) fixture.editor.signatureRows.getChildren().getFirst();
+                    Text text = (Text) row.getChildren().getFirst();
                     double screenWidth = Screen.getScreensForRectangle(fixture.stage.getX(), fixture.stage.getY(), 1, 1)
                         .stream().findFirst().orElse(Screen.getPrimary()).getVisualBounds().getWidth();
                     double textWidth = text.getLayoutBounds().getWidth();
@@ -203,6 +214,7 @@ public class CodeEditorSignatureRequestTest {
                         assertTrue(row.getWidth() >= Math.floor(textWidth));
                         assertEquals(text.getLayoutBounds().getHeight(), row.getHeight(), 2);
                     }
+
                     assertTrue(popup.getWidth() <= screenWidth);
                     return null;
                 });
@@ -225,7 +237,7 @@ public class CodeEditorSignatureRequestTest {
             awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
                 assertTrue(fixture.editor.signaturePopup.isShowing());
-                var row = (TextFlow) fixture.editor.signatureRows.getChildren().getFirst();
+                TextFlow row = (TextFlow) fixture.editor.signatureRows.getChildren().getFirst();
                 assertEquals("<no parameters>", ((Text) row.getChildren().getFirst()).getText());
                 assertTrue(row.lookupAll(".signature-param-active").isEmpty());
                 return null;
@@ -242,22 +254,25 @@ public class CodeEditorSignatureRequestTest {
                 fixture.editor.moveTo(fixture.editor.getText().indexOf("call(") + "call(".length());
                 return null;
             });
-            for (var position : ParameterPopupPosition.values()) {
+
+            for (ParameterPopupPosition position : ParameterPopupPosition.values()) {
                 onFx(() -> {
                     Settings.PARAMETER_POPUP_POSITION.setValue(position);
                     return null;
                 });
+
                 fixture.request();
                 awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
-                    var caret = fixture.editor.getCaretBounds().orElseThrow();
-                    var popup = fixture.editor.signaturePopup;
+                    Bounds caret = fixture.editor.getCaretBounds().orElseThrow();
+                    Popup popup = fixture.editor.signaturePopup;
                     assertTrue(popup.isShowing());
                     if (position == ParameterPopupPosition.ABOVE) {
                         assertTrue(popup.getY() + popup.getHeight() <= caret.getMinY());
                     } else {
                         assertTrue(popup.getY() >= caret.getMaxY());
                     }
+
                     return null;
                 });
             }
@@ -289,6 +304,7 @@ public class CodeEditorSignatureRequestTest {
             if (call == 1) {
                 await(releaseOld);
             }
+
             return help(context, call == 1 ? "OLD" : "NEW");
         })) {
             try {
@@ -297,6 +313,7 @@ public class CodeEditorSignatureRequestTest {
                     fixture.editor.moveTo(old.caret() + 1);
                     return null;
                 });
+
                 Invocation current = fixture.nextRequest();
                 assertEquals(old.caret() + 1, current.caret());
                 assertSame(old.context().documentSnapshot(), current.context().documentSnapshot());
@@ -337,6 +354,7 @@ public class CodeEditorSignatureRequestTest {
                     awaitRequests(fixture.editor.featureRequests);
                     blocker.releaseAndAwait();
                 }
+
                 fixture.nextRequest();
                 onFx(() -> {
                     assertTrue(fixture.editor.activeSignatureHelp.get().isEmpty());
@@ -372,6 +390,7 @@ public class CodeEditorSignatureRequestTest {
                     assertTrue(old.context().cancellationToken().isCancellationRequested());
                     return null;
                 });
+
                 release.countDown();
                 awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
@@ -399,6 +418,7 @@ public class CodeEditorSignatureRequestTest {
                     awaitRequests(fixture.editor.featureRequests);
                     blocker.releaseAndAwait();
                 }
+
                 onFx(() -> {
                     assertTrue(invocation.context().cancellationToken().isCancellationRequested());
                     assertTrue(fixture.editor.activeSignatureHelp.get().isEmpty());
@@ -534,6 +554,7 @@ public class CodeEditorSignatureRequestTest {
                     assertTrue(invocation.context().cancellationToken().isCancellationRequested());
                     return null;
                 });
+
                 release.countDown();
                 awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
@@ -561,6 +582,7 @@ public class CodeEditorSignatureRequestTest {
                     assertTrue(invocation.context().cancellationToken().isCancellationRequested());
                     return null;
                 });
+
                 release.countDown();
                 awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
@@ -579,6 +601,7 @@ public class CodeEditorSignatureRequestTest {
         try (Fixture fixture = open(context -> {
             if (calls.incrementAndGet() == 1)
                 throw new CompletionException(new IllegalStateException("Provider failed"));
+
             return help(context, "RECOVERED");
         })) {
             fixture.request();
@@ -599,7 +622,7 @@ public class CodeEditorSignatureRequestTest {
         var store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()));
         var provider = new ControlledProvider(computation);
         Fixture fixture = onFx(() -> {
-            var failures = new LinkedBlockingQueue<Throwable>();
+            BlockingQueue<Throwable> failures = new LinkedBlockingQueue<Throwable>();
             Thread.UncaughtExceptionHandler previousHandler = Thread.currentThread().getUncaughtExceptionHandler();
             Thread.currentThread().setUncaughtExceptionHandler((_, failure) -> failures.add(failure));
             Project project = new RailroadProject(directory, "Signature request", new WritableImage(1, 1));
@@ -615,6 +638,7 @@ public class CodeEditorSignatureRequestTest {
             pane.requestFocus();
             return new Fixture(pane, stage, store, provider, failures, previousHandler);
         });
+
         onFx(() -> null);
         return fixture;
     }
@@ -642,6 +666,7 @@ public class CodeEditorSignatureRequestTest {
                 editor.trigger();
                 return null;
             });
+
             return nextRequest();
         }
 
@@ -663,8 +688,10 @@ public class CodeEditorSignatureRequestTest {
                 } finally {
                     Thread.currentThread().setUncaughtExceptionHandler(previousHandler);
                 }
+
                 return null;
             });
+
             CodeEditorRequestTestSupport.awaitRequests(editor.featureRequests);
             if (!fxFailures.isEmpty())
                 throw new AssertionError("Uncaught JavaFX publication failure", fxFailures.peek());
@@ -699,10 +726,12 @@ public class CodeEditorSignatureRequestTest {
             int caretPosition,
             boolean includeOverloads
         ) {
-            var result = SignatureHelpProvider.super.compute(context, caretPosition, includeOverloads);
+            FeatureResult<List<SignatureHelp>> result = SignatureHelpProvider.super.compute(context, caretPosition,
+                includeOverloads);
             if (!includeOverloads || overloads.isEmpty() || result.value().isEmpty())
                 return result;
-            var signatures = new ArrayList<>(result.value());
+
+            List<SignatureHelp> signatures = new ArrayList<>(result.value());
             signatures.addAll(overloads);
             return new FeatureResult<>(result.context(), List.copyOf(signatures));
         }

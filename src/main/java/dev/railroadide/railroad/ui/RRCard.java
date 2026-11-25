@@ -42,6 +42,7 @@ public class RRCard extends VBox {
         if (padding != null) {
             content.setPadding(padding);
         }
+
         content.visibleProperty().bind(Bindings.isNotEmpty(content.getChildren()));
         content.managedProperty().bind(Bindings.isNotEmpty(content.getChildren()));
 

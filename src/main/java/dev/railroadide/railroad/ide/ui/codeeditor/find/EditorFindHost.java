@@ -48,6 +48,7 @@ public final class EditorFindHost extends Region {
             if (current instanceof EditorFindHost host)
                 return host;
         }
+
         return null;
     }
 
@@ -60,13 +61,16 @@ public final class EditorFindHost extends Region {
         if (this.editor != null) {
             this.editor.estimatedScrollYProperty().removeListener(scrollListener);
         }
+
         this.editor = editor;
         if (editor != null) {
             editor.estimatedScrollYProperty().addListener(scrollListener);
         }
+
         if (bar != null) {
             bar.setEditor(editor);
         }
+
         requestLayout();
     }
 
@@ -91,6 +95,7 @@ public final class EditorFindHost extends Region {
             bar.visibleProperty().addListener(relayout);
             getChildren().add(bar);
         }
+
         return bar;
     }
 

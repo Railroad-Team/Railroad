@@ -27,15 +27,8 @@ import java.util.function.Function;
  * Session-owned Java implementations of the neutral semantic, declaration, navigation, rename and code action
  * contracts.
  */
-public final class JavaSstServices
-    implements
-        SemanticProvider,
-        IndexExtractionProvider,
-        IndexQueryProvider,
-        AutoCloseable,
-        NavigationProvider,
-        RenameProvider,
-        CodeActionProvider {
+public final class JavaSstServices implements SemanticProvider, IndexExtractionProvider, IndexQueryProvider,
+    AutoCloseable, NavigationProvider, RenameProvider, CodeActionProvider {
     private final JavaLibrarySources librarySources;
     private final Function<RequestContext, JavaWorkspaceAnalysis> captures;
     private final @Nullable JavaWorkspaceAnalysisProvider ownedWorkspaces;
@@ -97,7 +90,7 @@ public final class JavaSstServices
     public FeatureResult<List<SymbolOccurrence>> extract(FeatureRequestContext context) {
         SemanticModel model = analyze(context).value();
         TextDocumentSnapshot snapshot = model.syntaxTree().documentSnapshot();
-        var declarations = new ArrayList<SymbolOccurrence>();
+        List<SymbolOccurrence> declarations = new ArrayList<SymbolOccurrence>();
         Deque<SyntaxNode> pending = new ArrayDeque<>();
         pending.add(model.syntaxTree().root());
         while (!pending.isEmpty()) {
@@ -107,6 +100,7 @@ public final class JavaSstServices
                 Location.TextLocation.from(snapshot, node.start(), node.end()))));
             pending.addAll(node.children());
         }
+
         context.checkActive();
         return new FeatureResult<>(context, List.copyOf(declarations));
     }
@@ -114,16 +108,18 @@ public final class JavaSstServices
     @Override
     public FeatureResult<List<SymbolOccurrence>> query(WorkspaceRequestContext context, String name) {
         Objects.requireNonNull(name, "name");
-        var found = new ArrayList<SymbolOccurrence>();
+        List<SymbolOccurrence> found = new ArrayList<SymbolOccurrence>();
         for (DocumentSnapshot snapshot : context.workspaceSnapshot().documents().values()) {
             context.checkActive();
             if (!(snapshot instanceof TextDocumentSnapshot) || !snapshot.languageId().equals("java"))
                 continue;
+
             var request = new FeatureRequestContext(context.workspaceSnapshot(), snapshot,
                 context.cancellationToken(), context.deadline());
             extract(request).value().stream().filter(entry -> entry.symbol().simpleName().equals(name)
                 || entry.symbol().qualifiedName().filter(name::equals).isPresent()).forEach(found::add);
         }
+
         context.checkActive();
         return new FeatureResult<>(context, List.copyOf(found));
     }

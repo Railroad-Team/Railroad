@@ -8,6 +8,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.io.InputStream;
 
 /**
  * Utility class for URL-related operations.
@@ -90,7 +91,7 @@ public final class UrlUtils {
      * @param path the file path to write to
      */
     public static void writeBody(String url, Path path) {
-        try (var in = new URI(url).toURL().openStream()) {
+        try (InputStream in = new URI(url).toURL().openStream()) {
             Files.copy(in, path, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException exception) {
             throw new RuntimeException("Failed to write body from URL: " + url + " to path: " + path, exception);

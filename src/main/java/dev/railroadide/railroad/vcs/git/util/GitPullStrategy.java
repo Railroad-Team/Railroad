@@ -7,11 +7,17 @@ import lombok.Getter;
  */
 @Getter
 public enum GitPullStrategy {
-    /** Integrates fetched changes by merging, fast-forwarding where possible. */
+    /**
+     * Integrates fetched changes by merging, fast-forwarding where possible.
+     */
     MERGE("railroad.git.pull.strategy.merge"),
-    /** Replays local commits on top of the fetched upstream history. */
+    /**
+     * Replays local commits on top of the fetched upstream history.
+     */
     REBASE("railroad.git.pull.strategy.rebase"),
-    /** Accepts fetched changes only when the local branch can be fast-forwarded. */
+    /**
+     * Accepts fetched changes only when the local branch can be fast-forwarded.
+     */
     FAST_FORWARD_ONLY(
         "railroad.git.pull.strategy.fast_forward_only");
 

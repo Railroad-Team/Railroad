@@ -14,6 +14,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 /**
  * Output, input and outcome of one launch of a run configuration.
@@ -34,9 +35,9 @@ public final class RunSession {
     private final boolean debug;
     private final int retainedCharLimit;
     private final Object lock = new Object();
-    private final ArrayDeque<RunOutput> retained = new ArrayDeque<>();
+    private final Deque<RunOutput> retained = new ArrayDeque<>();
     private final List<RunSessionListener> listeners = new ArrayList<>();
-    private final LinkedBlockingQueue<InputChunk> pendingInput = new LinkedBlockingQueue<>();
+    private final BlockingQueue<InputChunk> pendingInput = new LinkedBlockingQueue<>();
     private long retainedChars;
     private boolean stopRequested;
     private RunSessionState state = RunSessionState.RUNNING;
@@ -159,6 +160,7 @@ public final class RunSession {
             while (retainedChars > retainedCharLimit && retained.size() > 1) {
                 retainedChars -= retained.removeFirst().text().length();
             }
+
             for (RunSessionListener listener : listeners) {
                 listener.outputAppended(output);
             }
@@ -203,6 +205,7 @@ public final class RunSession {
                 listeners.add(listener);
             }
         }
+
         return () -> {
             synchronized (lock) {
                 listeners.remove(listener);
@@ -248,6 +251,7 @@ public final class RunSession {
             if (!text.isEmpty()) {
                 pendingInput.add(new InputChunk(text));
             }
+
             return true;
         }
     }
@@ -326,11 +330,13 @@ public final class RunSession {
             } else {
                 state = RunSessionState.SUCCEEDED;
             }
+
             failureMessage = failure == null ? null : describe(failure);
             pendingInput.add(END_OF_INPUT);
             for (RunSessionListener listener : listeners) {
                 listener.sessionEnded(state);
             }
+
             listeners.clear();
             return true;
         }
@@ -342,6 +348,7 @@ public final class RunSession {
             && cause.getCause() != null) {
             cause = cause.getCause();
         }
+
         String message = cause.getMessage();
         return message == null || message.isBlank() ? cause.getClass().getSimpleName() : message;
     }
@@ -357,11 +364,12 @@ public final class RunSession {
                 drained.complete(null);
             }
         });
+
         return drained;
     }
 
     private static void forward(InputStream input, OutputStream processInput) {
-        var buffer = new byte[1024];
+        byte[] buffer = new byte[1024];
         try (input; processInput) {
             int read;
             while ((read = input.read(buffer)) != -1) {
@@ -388,7 +396,7 @@ public final class RunSession {
 
         @Override
         public synchronized int read() throws IOException {
-            var single = new byte[1];
+            byte[] single = new byte[1];
             return read(single, 0, 1) == -1 ? -1 : single[0] & 0xFF;
         }
 
@@ -409,10 +417,12 @@ public final class RunSession {
                     Thread.currentThread().interrupt();
                     throw new InterruptedIOException("Interrupted while waiting for run input");
                 }
+
                 if (next.text() == null) {
                     ended = true;
                     return -1;
                 }
+
                 current = next.text().getBytes(charset);
                 position = 0;
             }

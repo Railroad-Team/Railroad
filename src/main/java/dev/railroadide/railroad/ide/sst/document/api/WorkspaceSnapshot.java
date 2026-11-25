@@ -53,7 +53,7 @@ public record WorkspaceSnapshot(
             throw new IllegalArgumentException("Workspace revision cannot be negative");
 
         documents = Map.copyOf(documents);
-        for (var entry : documents.entrySet()) {
+        for (Map.Entry<DocumentId, DocumentSnapshot> entry : documents.entrySet()) {
             if (!entry.getKey().equals(entry.getValue().id()))
                 throw new IllegalArgumentException("Document map key must match the snapshot's document ID.");
         }

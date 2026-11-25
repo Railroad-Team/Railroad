@@ -14,8 +14,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
+import dev.railroadide.railroad.ide.sst.document.api.LineMap;
+import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
+import dev.railroadide.railroad.plugin.spi.editor.TextSelection;
 
-/** Exposes the active managed text target and its cursor, selection, and language state. */
+/**
+ * Exposes the active managed text target and its cursor, selection, and language state.
+ */
 @Slf4j
 public class DefaultDocumentEditorStateService implements DocumentEditorStateService {
     private TextEditorAccess activeEditor;
@@ -28,13 +33,15 @@ public class DefaultDocumentEditorStateService implements DocumentEditorStateSer
         activeLanguageId = editor != null && languageId != null ? languageId : "";
         if (activeEditor == editor)
             return;
+
         activeEditor = editor;
 
         long currentGeneration = ++generation;
-        var current = getActiveTextEditor();
+        Optional<TextEditorAccess> current = getActiveTextEditor();
         for (ActiveSubscription subscription : List.copyOf(subscriptions)) {
             if (currentGeneration != generation)
                 break;
+
             if (!subscription.closed) {
                 try {
                     subscription.listener.accept(current);
@@ -50,7 +57,7 @@ public class DefaultDocumentEditorStateService implements DocumentEditorStateSer
         if (activeEditor == null)
             return List.of();
 
-        var snapshot = activeEditor.snapshot();
+        TextDocumentSnapshot snapshot = activeEditor.snapshot();
         return List.of(cursor(snapshot.lineMap().positionAt(activeEditor.selection().caret())));
     }
 
@@ -59,13 +66,13 @@ public class DefaultDocumentEditorStateService implements DocumentEditorStateSer
         if (activeEditor == null)
             return List.of();
 
-        var selection = activeEditor.selection();
+        TextSelection selection = activeEditor.selection();
         int start = Math.min(selection.anchor(), selection.caret());
         int end = Math.max(selection.anchor(), selection.caret());
         if (start == end)
             return List.of();
 
-        var map = activeEditor.snapshot().lineMap();
+        LineMap map = activeEditor.snapshot().lineMap();
         return List.of(new Selection(cursor(map.positionAt(start)), cursor(map.positionAt(end))));
     }
 
@@ -89,6 +96,7 @@ public class DefaultDocumentEditorStateService implements DocumentEditorStateSer
             subscription.close();
             throw exception;
         }
+
         return subscription;
     }
 
@@ -108,6 +116,7 @@ public class DefaultDocumentEditorStateService implements DocumentEditorStateSer
         public void close() {
             if (closed)
                 return;
+
             closed = true;
             subscriptions.remove(this);
         }

@@ -5,7 +5,9 @@ import dev.railroadide.railroad.ide.sst.provider.api.CapabilityKey;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ide.ui.codeeditor.SyntaxHighlightingProvider;
 
-/** Host integration contracts; portable language features belong to SstCapabilities. */
+/**
+ * Host integration contracts; portable language features belong to SstCapabilities.
+ */
 public final class LanguageCapabilities {
     /**
      * Host project supplied as a session context service.

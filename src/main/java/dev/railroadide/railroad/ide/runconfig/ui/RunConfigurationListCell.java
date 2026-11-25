@@ -20,6 +20,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
+import javafx.scene.control.ContextMenu;
 
 /**
  * Displays a run configuration with its type icon and run, debug, and context-menu actions.
@@ -74,7 +75,7 @@ public class RunConfigurationListCell extends ListCell<RunConfiguration<?>> {
         moreActionsButton.setOnAction(event -> {
             RunConfiguration<?> config = getItem();
             if (config != null) {
-                var menu = config.createContextMenu(project);
+                ContextMenu menu = config.createContextMenu(project);
                 RunConfigurationContextMenuManager.show(moreActionsButton, menu, Side.BOTTOM);
             }
         });

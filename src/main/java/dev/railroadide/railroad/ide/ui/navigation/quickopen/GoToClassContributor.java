@@ -33,6 +33,7 @@ public final class GoToClassContributor implements GoToContributor<GoToClassCont
             activityCheck.run();
             index = Services.PROJECT_LANGUAGE_INDEX_SERVICE.indexTyped(project, JavaLanguageSupport.LANGUAGE_ID);
         }
+
         return index == null ? List.of() : types(index, activityCheck);
     }
 
@@ -54,6 +55,7 @@ public final class GoToClassContributor implements GoToContributor<GoToClassCont
                 }
             }
         }
+
         return types;
     }
 
@@ -67,10 +69,12 @@ public final class GoToClassContributor implements GoToContributor<GoToClassCont
     private static int nameOffset(JavaProjectSemanticIndex.SymbolDescriptor symbol) {
         if (symbol.descriptor() == null)
             return -1;
+
         for (SymbolLocation location : symbol.descriptor().locations()) {
             if (location.selection() != null)
                 return location.selection().range().start;
         }
+
         return -1;
     }
 
@@ -91,10 +95,12 @@ public final class GoToClassContributor implements GoToContributor<GoToClassCont
         while (matcher.find()) {
             if (matcher.start(1) == indexedOffset)
                 return indexedOffset;
+
             if (first < 0) {
                 first = matcher.start(1);
             }
         }
+
         return first;
     }
 
@@ -129,6 +135,7 @@ public final class GoToClassContributor implements GoToContributor<GoToClassCont
             case ANNOTATION -> "@";
             default -> "C";
         });
+
         badge.getStyleClass().addAll("go-to-type-badge",
             "go-to-type-" + item.kind().name().toLowerCase(Locale.ROOT));
         return badge;

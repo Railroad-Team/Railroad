@@ -76,6 +76,7 @@ public abstract class LabeledHBox<T extends Node> extends RRHBox {
         if (required) {
             verticalLayout.getChildren().add(createAsterisk());
         }
+
         getChildren().add(verticalLayout);
         HBox.setHgrow(verticalLayout, Priority.ALWAYS);
     }

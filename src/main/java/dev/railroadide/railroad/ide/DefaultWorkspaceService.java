@@ -15,7 +15,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-/** Application implementation of the plugin-facing workspace API. */
+/**
+ * Application implementation of the plugin-facing workspace API.
+ */
 public final class DefaultWorkspaceService implements WorkspaceService {
     private final ObjectProperty<WorkspaceMode> currentViewMode = new SimpleObjectProperty<>(
         WorkspaceMode.defaultMode());
@@ -65,11 +67,14 @@ public final class DefaultWorkspaceService implements WorkspaceService {
         if (previous != null && previous != adapter) {
             publishAvailabilityChanges(availableModes, Set.of());
         }
+
         refreshAvailability();
         return new Registration(() -> detachWorkspace(adapter));
     }
 
-    /** Recomputes availability after project capabilities such as Git change. */
+    /**
+     * Recomputes availability after project capabilities such as Git change.
+     */
     public void refreshAvailability() {
         WorkspaceAdapter workspace = activeWorkspace;
         Set<WorkspaceMode> nextModes = workspace == null
@@ -126,6 +131,7 @@ public final class DefaultWorkspaceService implements WorkspaceService {
                 result.complete(ActivationResult.UNAVAILABLE);
             }
         });
+
         return result;
     }
 

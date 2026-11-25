@@ -54,6 +54,7 @@ public final class CommandUtils {
      */
     public static List<Path> findPathsOfExecutable(long timeoutMs, String executableName) {
         String[] cmd = new String[]{(OperatingSystem.isWindows() ? "where" : "which"), executableName};
+
         List<String> lines = runAndCollectLines(timeoutMs, cmd);
 
         List<Path> paths = new ArrayList<>();

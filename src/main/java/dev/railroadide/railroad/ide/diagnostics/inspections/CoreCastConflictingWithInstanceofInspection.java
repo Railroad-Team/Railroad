@@ -157,6 +157,7 @@ public class CoreCastConflictingWithInstanceofInspection implements JavaInspecti
                 if (fact != null)
                     return fact;
             }
+
             return null;
         }
 

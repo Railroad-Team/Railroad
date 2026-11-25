@@ -81,6 +81,7 @@ public final class ExpressionEvaluator {
         if (field != null) {
             if (field.isStatic())
                 return field.declaringType().getValue(field);
+
             if (thisObject != null)
                 return thisObject.getValue(field);
         }

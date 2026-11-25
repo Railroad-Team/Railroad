@@ -62,8 +62,10 @@ public final class CoreAccessibilityInspection implements JavaInspectionRuleProv
                 String qualifiedTypeName = context.resolveQualifiedTypeName(node);
                 if (qualifiedTypeName == null || qualifiedTypeName.isBlank())
                     return;
+
                 if (context.isTypeAccessible(qualifiedTypeName, node))
                     return;
+
                 reporter.report(node, context.simpleTypeName(qualifiedTypeName));
                 return;
             }
@@ -74,9 +76,11 @@ public final class CoreAccessibilityInspection implements JavaInspectionRuleProv
             Symbol resolved = context.resolvedSymbol(node).orElse(null);
             if (resolved == null || !context.isTypeSymbol(resolved.kind()))
                 return;
+
             String qualifiedTypeName = resolved.qualifiedName().orElse(resolved.simpleName());
             if (context.isTypeAccessible(qualifiedTypeName, node))
                 return;
+
             reporter.report(node, resolved.simpleName());
         });
     }
@@ -87,6 +91,7 @@ public final class CoreAccessibilityInspection implements JavaInspectionRuleProv
                 Symbol resolved = context.resolvedSymbol(node).orElse(null);
                 if (resolved == null || resolved.kind() != JavaSymbolKind.FIELD)
                     return;
+
                 if (ownerTypeInaccessible(context, resolved, node) || context.isSymbolAccessible(resolved, node))
                     return;
 
@@ -101,8 +106,10 @@ public final class CoreAccessibilityInspection implements JavaInspectionRuleProv
             Symbol resolved = context.resolvedSymbol(node).orElse(null);
             if (resolved == null || resolved.kind() != JavaSymbolKind.FIELD)
                 return;
+
             if (ownerTypeInaccessible(context, resolved, node) || context.isSymbolAccessible(resolved, node))
                 return;
+
             reporter.report(node, resolved.simpleName());
         });
     }
@@ -114,6 +121,7 @@ public final class CoreAccessibilityInspection implements JavaInspectionRuleProv
                 Symbol resolved = context.resolvedSymbol(node).orElse(null);
                 if (resolved == null || resolved.kind() != JavaSymbolKind.METHOD)
                     return;
+
                 if (ownerTypeInaccessible(context, resolved, node) || context.isSymbolAccessible(resolved, node))
                     return;
 
@@ -128,9 +136,11 @@ public final class CoreAccessibilityInspection implements JavaInspectionRuleProv
             Symbol resolved = context.resolvedSymbol(node).orElse(null);
             if (resolved == null || resolved.kind() != JavaSymbolKind.CONSTRUCTOR)
                 return;
+
             if (Modifier.isProtected(context.symbolModifiers(resolved))
                 && context.directChild(node, "JAVA_ANONYMOUS_CLASS_BODY") != null)
                 return;
+
             if (ownerTypeInaccessible(context, resolved, node) || context.isSymbolAccessible(resolved, node))
                 return;
 
@@ -141,6 +151,7 @@ public final class CoreAccessibilityInspection implements JavaInspectionRuleProv
             if (displayName == null || displayName.isBlank()) {
                 displayName = resolved.simpleName();
             }
+
             reporter.report(typeRef == null ? node : typeRef, context.simpleTypeName(displayName));
         });
     }

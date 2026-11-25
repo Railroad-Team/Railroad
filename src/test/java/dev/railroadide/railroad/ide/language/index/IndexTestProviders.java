@@ -10,7 +10,9 @@ import java.util.WeakHashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-/** Test registrations exercise the same contribution/session path as plugins. */
+/**
+ * Test registrations exercise the same contribution/session path as plugins.
+ */
 public final class IndexTestProviders {
     private static final Map<ProjectLanguageIndexService, Fixture> FIXTURES = new WeakHashMap<>();
 
@@ -62,6 +64,7 @@ public final class IndexTestProviders {
         Fixture fixture = FIXTURES.get(service);
         if (fixture == null)
             throw new IllegalArgumentException("Use IndexTestProviders.service()");
+
         return fixture.registrations.computeIfAbsent(language,
             id -> new Registration(new LanguageId(id.contains(":") ? id : "railroad:" + id)));
     }
@@ -96,16 +99,19 @@ public final class IndexTestProviders {
 
         @Override
         public Set<CapabilityKey<?>> supportedCapabilities() {
-            var keys = new HashSet<CapabilityKey<?>>();
+            Set<CapabilityKey<?>> keys = new HashSet<CapabilityKey<?>>();
             if (indexer != null) {
                 keys.add(LanguageCapabilities.INDEXER);
             }
+
             if (persistence != null) {
                 keys.add(LanguageCapabilities.PERSISTENCE);
             }
+
             if (context != null) {
                 keys.add(LanguageCapabilities.INDEX_CONTEXT);
             }
+
             return Set.copyOf(keys);
         }
 
@@ -115,12 +121,15 @@ public final class IndexTestProviders {
             if (indexer != null) {
                 capabilities.add(LanguageCapabilities.INDEXER, indexer);
             }
+
             if (persistence != null) {
                 capabilities.add(LanguageCapabilities.PERSISTENCE, persistence);
             }
+
             if (this.context != null) {
                 capabilities.add(LanguageCapabilities.INDEX_CONTEXT, this.context);
             }
+
             return new LanguageSession(capabilities.build());
         }
     }

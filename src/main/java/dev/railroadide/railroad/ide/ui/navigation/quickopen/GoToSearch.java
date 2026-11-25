@@ -41,6 +41,7 @@ public final class GoToSearch {
                 results.add(new Result<>(item, name, path, match.score(), byPath ? null : match));
             }
         }
+
         results.sort(Comparator.<Result<T>>comparingInt(Result::score).reversed()
             .thenComparingInt(result -> result.name().length())
             .thenComparing(Result::name, String.CASE_INSENSITIVE_ORDER)
@@ -80,6 +81,7 @@ public final class GoToSearch {
             Matcher matcher = LOCATION_SUFFIX.matcher(stripped);
             if (!matcher.find())
                 return new Query(stripped, 0, 0);
+
             try {
                 int line = Integer.parseInt(matcher.group(1));
                 int column = matcher.group(2) == null ? 0 : Integer.parseInt(matcher.group(2));
@@ -107,19 +109,23 @@ public final class GoToSearch {
         public int offsetIn(String text) {
             if (!hasLine())
                 return -1;
+
             int lineStart = 0;
             for (int current = 1; current < line; current++) {
                 int newline = text.indexOf('\n', lineStart);
                 if (newline < 0)
                     break;
+
                 lineStart = newline + 1;
             }
+
             int lineEnd = text.indexOf('\n', lineStart);
             if (lineEnd < 0) {
                 lineEnd = text.length();
             } else if (lineEnd > lineStart && text.charAt(lineEnd - 1) == '\r') {
                 lineEnd--;
             }
+
             return Math.min(lineStart + Math.max(column - 1, 0), lineEnd);
         }
     }

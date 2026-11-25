@@ -67,6 +67,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import javafx.geometry.Rectangle2D;
 
 /**
  * Provides a text editor with configurable highlighting, completion, diagnostics, and signature help.
@@ -252,20 +253,25 @@ public abstract class CodeEditorPane extends TextEditorPane {
             signatureEditPending = true;
             invalidateSignatureRequest();
         }));
+
         installSyntaxHighlighting();
         if (supportsDiagnostics()) {
             installDiagnostics();
         }
+
         if (supportsCompletion()) {
             installCompletion();
         }
+
         if (supportsSignatureHelp()) {
             installSignatureHelp();
         }
+
         if (navigationProvider != null || renameProvider != null || codeActions != null
             || signatureHelpProvider != null) {
             KeybindHandler.registerCapture(KeybindContexts.of(KEYBIND_CONTEXT), this);
         }
+
         installNavigation();
         installRename();
         installCodeActions();
@@ -290,6 +296,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             workspaceSubscription.close();
             workspaceSubscription = null;
         }
+
         subscriptions.forEach(Subscription::unsubscribe);
         subscriptions.clear();
         highlightGeneration.incrementAndGet();
@@ -304,10 +311,12 @@ public abstract class CodeEditorPane extends TextEditorPane {
             activeRenameDialog.close();
             activeRenameDialog = null;
         }
+
         invalidateCodeActions();
         if (codeActions != null) {
             codeActions.close();
         }
+
         hideAutoComplete();
         hideSignatureHelp();
         featureRequests.close();
@@ -325,6 +334,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (workspaceSubscription != null) {
             workspaceSubscription.close();
         }
+
         invalidateHighlightRequest();
         invalidateDiagnosticsRequest();
         invalidateNavigationRequest();
@@ -337,6 +347,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
                 Platform.runLater(this::refreshWorkspaceFeatures);
             }
         });
+
         observedWorkspace = store.capture();
         requestHighlight();
         if (diagnosticsProvider != null) {
@@ -348,11 +359,13 @@ public abstract class CodeEditorPane extends TextEditorPane {
         workspaceRefreshQueued.set(false);
         if (codeEditorClosed)
             return;
+
         WorkspaceSnapshot latest = captureFeatureWorkspace();
         WorkspaceSnapshot previous = observedWorkspace;
         observedWorkspace = latest;
         if (previous == null || latest == null)
             return;
+
         Map<DocumentId, DocumentSnapshot> oldDependencies = new HashMap<>(previous.documents());
         Map<DocumentId, DocumentSnapshot> newDependencies = new HashMap<>(latest.documents());
         oldDependencies.remove(documentId);
@@ -404,12 +417,14 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
 
     // region Navigation
+
     private void invalidateNavigationRequest() {
         featureRequests.cancel("navigation");
         if (activeNavigationCancellation != null) {
             activeNavigationCancellation.cancel();
             activeNavigationCancellation = null;
         }
+
         activeNavigationContext = null;
         hideNavigationPopup();
     }
@@ -491,6 +506,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (selection.getLength() > 0 && offset == selection.getEnd()) {
             offset--;
         }
+
         return Optional.of(new UsagesPane.Request(provider, providerLifetime, store, workspace, snapshot,
             new UsageQuery.AtOffset(offset)));
     }
@@ -540,6 +556,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
                     && cause.getCause() != null) {
                     cause = cause.getCause();
                 }
+
                 boolean timedOut = DeadlineExceededException.class.isInstance(cause);
                 Platform.runLater(() -> {
                     if (activeNavigationContext == context) {
@@ -549,11 +566,13 @@ public abstract class CodeEditorPane extends TextEditorPane {
                         }
                     }
                 });
+
                 if (timedOut) {
                     Railroad.LOGGER.warn("Timed out resolving {}", kind.name().toLowerCase(Locale.ROOT));
                 } else if (!(cause instanceof CancellationException)) {
                     Railroad.LOGGER.error("Failed to resolve {}", kind.name().toLowerCase(Locale.ROOT), cause);
                 }
+
                 return null;
             });
     }
@@ -628,12 +647,14 @@ public abstract class CodeEditorPane extends TextEditorPane {
                 navigate(selected, workspace);
             }
         });
+
         list.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.ENTER) {
                 NavigationChoice selected = list.getSelectionModel().getSelectedItem();
                 if (selected != null) {
                     navigate(selected, workspace);
                 }
+
                 event.consume();
             } else if (event.getCode() == KeyCode.ESCAPE) {
                 hideNavigationPopup();
@@ -735,6 +756,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     // endregion
 
     // region Rename
+
     private void installRename() {
         if (renameProvider == null)
             return;
@@ -748,6 +770,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             activeRenameCancellation.cancel();
             activeRenameCancellation = null;
         }
+
         activeRenameContext = null;
     }
 
@@ -800,6 +823,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
                 invalidateRenameRequest();
                 if (!current)
                     return;
+
                 switch (result.value()) {
                     case RenamePreparation.Rejected rejected -> showNavigationMessage(
                         L18n.localize("railroad.editor.rename.rejected", rejected.reason()));
@@ -814,6 +838,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
                     && cause.getCause() != null) {
                     cause = cause.getCause();
                 }
+
                 boolean timedOut = DeadlineExceededException.class.isInstance(cause);
                 Platform.runLater(() -> {
                     if (activeRenameContext == context) {
@@ -823,9 +848,11 @@ public abstract class CodeEditorPane extends TextEditorPane {
                         }
                     }
                 });
+
                 if (!(cause instanceof CancellationException)) {
                     Railroad.LOGGER.error("Failed to prepare rename", cause);
                 }
+
                 return null;
             });
     }
@@ -834,6 +861,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (activeRenameDialog != null) {
             activeRenameDialog.close();
         }
+
         var dialog = new RenameDialog(request);
         activeRenameDialog = dialog;
         dialog.show(getScene() == null ? null : getScene().getWindow());
@@ -851,6 +879,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     // endregion
 
     // region Code Actions
+
     private void installCodeActions() {
         if (codeActions == null)
             return;
@@ -868,6 +897,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (codeActions != null) {
             codeActions.cancel();
         }
+
         closeCodeActionMenu();
         setCodeActionBulbLine(-1);
     }
@@ -883,9 +913,11 @@ public abstract class CodeEditorPane extends TextEditorPane {
     private void scheduleCodeActionBulb() {
         if (codeActions == null || codeEditorClosed)
             return;
+
         if (codeActionBulbLine >= 0 && codeActionBulbLine != getCurrentParagraph() + 1) {
             setCodeActionBulbLine(-1);
         }
+
         codeActionBulbDelay.playFromStart();
     }
 
@@ -901,8 +933,10 @@ public abstract class CodeEditorPane extends TextEditorPane {
             setCodeActionBulbLine(-1);
             return;
         }
+
         if (activeCodeActionMenu() != null || pendingCodeActionMenu != null)
             return;
+
         discoverCodeActions(RequestPriority.OPEN_DOCUMENT_ANALYSIS, _ -> {
         }, () -> {
         });
@@ -927,6 +961,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         closeCodeActionMenu();
         if (!supportsCodeActions())
             return;
+
         codeActionBulbDelay.stop();
         var request = new Object();
         pendingCodeActionMenu = request;
@@ -935,6 +970,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
                 showNavigationMessage(L18n.localize("railroad.code_actions.none"));
                 return;
             }
+
             hideAutoComplete();
             hideSignatureHelp();
             var menu = new CodeActionMenu(Objects.requireNonNull(codeActions), discovery, this::requestFocus);
@@ -980,10 +1016,13 @@ public abstract class CodeEditorPane extends TextEditorPane {
                     } else if (!(cause instanceof CancellationException)) {
                         Railroad.LOGGER.error("Failed to discover code actions", cause);
                     }
+
                     return;
                 }
+
                 if (getCaretPosition() != caret || !getSelection().equals(selection) || !isCurrent(workspace))
                     return;
+
                 setCodeActionBulbLine(discovery.hasAvailableActions()
                     ? snapshot.lineMap().positionAt(caret).line() + 1
                     : -1);
@@ -1023,6 +1062,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     // endregion
 
     // region Context Menu
+
     private void installContextMenu() {
         addEventHandler(ContextMenuEvent.CONTEXT_MENU_REQUESTED, event -> {
             if (codeEditorClosed)
@@ -1049,6 +1089,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
                     : new Point2D(event.getScreenX(), event.getScreenY());
                 menu.show(this, anchor.getX(), anchor.getY());
             }
+
             event.consume();
         });
     }
@@ -1104,6 +1145,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     // endregion
 
     // region Gutter
+
     private void configureGutter() {
         getGutter().setLineNumberFactory(line -> {
             var label = new Label(String.format("%4d", line));
@@ -1111,6 +1153,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             label.getStyleClass().add("editor-line-number");
             return label;
         });
+
         getGutter().addColumn(new GutterColumn("diagnostics", 12, this::createDiagnosticMarker));
         getGutter().addColumn(new GutterColumn("code-actions", 14, this::createCodeActionBulb, (line, event) -> {
             if (line == codeActionBulbLine) {
@@ -1123,6 +1166,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     private @Nullable Node createCodeActionBulb(int line) {
         if (line != codeActionBulbLine)
             return null;
+
         var icon = new MFXFontIcon(FontAwesomeSolid.LIGHTBULB, 12);
         icon.getStyleClass().add("editor-code-action-bulb");
         Tooltip.install(icon, new Tooltip(L18n.localize("railroad.code_actions.bulb")));
@@ -1220,6 +1264,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
                 if (!(cause instanceof CancellationException)) {
                     Railroad.LOGGER.error("Failed to compute syntax highlighting", cause);
                 }
+
                 return null;
             });
     }
@@ -1333,6 +1378,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (lineDecorationsChanged) {
             getGutter().refresh();
         }
+
         scheduleCodeActionBulb();
     }
 
@@ -1357,6 +1403,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
                     snapshot.id(), snapshot.version(), exception);
             }
         }
+
         return List.copyOf(valid);
     }
 
@@ -1453,15 +1500,18 @@ public abstract class CodeEditorPane extends TextEditorPane {
             hideAutoComplete();
             return;
         }
+
         if (event.getCode() == KeyCode.SPACE && event.isControlDown() && !event.isAltDown() && !event.isShiftDown()) {
             requestCompletionAtCaret();
             event.consume();
             return;
         }
-        var list = activeCompletionList.get();
+
+        RRListView<CompletionItem> list = activeCompletionList.get();
         if (list == null || !activeCompletionPopup.get().isShowing() || event.isShortcutDown()
             || event.isAltDown() || event.isShiftDown())
             return;
+
         switch (event.getCode()) {
             case DOWN -> list.getSelectionModel().selectNext();
             case UP -> list.getSelectionModel().selectPrevious();
@@ -1470,6 +1520,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
                 return;
             }
         }
+
         list.scrollTo(list.getSelectionModel().getSelectedIndex());
         event.consume();
     }
@@ -1477,6 +1528,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     private void requestCompletionAtCaret() {
         if (codeEditorClosed || providerLifetime.isCancellationRequested())
             return;
+
         int caret = getCaretPosition();
         String text = getText();
         try {
@@ -1486,6 +1538,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
                     triggerCompletion(offset, caret);
                     return;
                 }
+
                 if (!Character.isJavaIdentifierPart(text.charAt(offset)))
                     return;
             }
@@ -1588,6 +1641,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
                 hideAutoComplete();
             }
         });
+
         popup.getContent().add(content);
 
         activeCompletionList.set(listView);
@@ -1599,7 +1653,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             double x = bounds.getMinX();
             double below = bounds.getMaxY() + 3;
             popup.show(this, x, below);
-            var screen = Screen.getScreensForRectangle(bounds.getMinX(), bounds.getMinY(),
+            Screen screen = Screen.getScreensForRectangle(bounds.getMinX(), bounds.getMinY(),
                 Math.max(1, bounds.getWidth()), bounds.getHeight()).stream().findFirst().orElse(Screen.getPrimary());
             if (below + popup.getHeight() > screen.getVisualBounds().getMaxY()
                 && bounds.getMinY() - popup.getHeight() - 3 >= screen.getVisualBounds().getMinY()) {
@@ -1617,6 +1671,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             hideAutoComplete();
             return;
         }
+
         CompletionItem selected = listView.getSelectionModel().getSelectedItem();
         if (selected == null)
             return;
@@ -1627,6 +1682,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             hideAutoComplete();
             return;
         }
+
         int start = completionReplacementStart;
         hideAutoComplete();
         if (selected.kind() == CompletionItem.Kind.METHOD) {
@@ -1635,6 +1691,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             replaceText(start, caret, selected.insertText());
             moveTo(start + selected.insertText().length());
         }
+
         hideAutoComplete();
     }
 
@@ -1665,6 +1722,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         while (offset < text.length() && (text.charAt(offset) == ' ' || text.charAt(offset) == '\t')) {
             offset++;
         }
+
         return offset;
     }
 
@@ -1715,6 +1773,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     private void showAutocomplete(PlainTextChange change) {
         if (codeEditorClosed || providerLifetime.isCancellationRequested())
             return;
+
         String inserted = change.getInserted();
         try {
             int end = change.getPosition() + inserted.length();
@@ -1774,6 +1833,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             .subscribe(change -> {
                 if (!signatureEditPending)
                     return;
+
                 signatureEditPending = false;
                 requestSignatureHelp(true);
             }));
@@ -1794,17 +1854,22 @@ public abstract class CodeEditorPane extends TextEditorPane {
     private void requestSignatureHelp(boolean textChanged) {
         if (!manualSignatureHelp && !Settings.AUTOMATIC_PARAMETER_HINTS.getOrDefaultValue())
             return;
+
         if (!supportsSignatureHelp() || !shouldRequestSignatureHelp(getText(), getCaretPosition(), textChanged)) {
             hideSignatureHelp();
             return;
         }
+
         requestSignatureHelpAtCaret(manualSignatureHelp ? NAVIGATION_BUDGET : INTERACTIVE_BUDGET, textChanged);
     }
 
-    /** Shows parameter information at the current caret, including after automatic help was dismissed. */
+    /**
+     * Shows parameter information at the current caret, including after automatic help was dismissed.
+     */
     public void showParameterInfo() {
         if (!supportsSignatureHelp())
             return;
+
         hideAutoComplete();
         manualSignatureHelp = true;
         signatureEditPending = false;
@@ -1867,6 +1932,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             } else {
                 positionSignaturePopup();
             }
+
             return;
         }
 
@@ -1890,6 +1956,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             signatureScroll.setContent(null);
             signaturePopupContainer.getChildren().add(signatureRows);
         }
+
         positionSignaturePopup();
     }
 
@@ -1900,6 +1967,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (parameters.isEmpty()) {
             row.getChildren().add(new Text(L18n.localize("railroad.ide.signature.no_parameters")));
         }
+
         int parameterCount = parameters.size();
         int highlightIndex = help.activeParameter();
 
@@ -1941,13 +2009,14 @@ public abstract class CodeEditorPane extends TextEditorPane {
             Point2D editorOrigin = localToScreen(0, 0);
             if (editorOrigin == null)
                 return;
+
             x = editorOrigin.getX();
             top = editorOrigin.getY();
             bottom = top;
         }
 
-        var screen = Screen.getScreensForRectangle(x, top, 1, 1).stream().findFirst().orElse(Screen.getPrimary());
-        var available = screen.getVisualBounds();
+        Screen screen = Screen.getScreensForRectangle(x, top, 1, 1).stream().findFirst().orElse(Screen.getPrimary());
+        Rectangle2D available = screen.getVisualBounds();
         double maxContentWidth = Math.max(1, available.getWidth() - 24);
         signatureRows.setMaxWidth(maxContentWidth);
         signatureScroll.setMaxWidth(maxContentWidth);
@@ -2081,6 +2150,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     private void applyBracketHighlight(int first, int second) {
         clearBracketHighlight();
         bracketHighlightRange = new int[]{first, second};
+
         addBracketStyle(first);
         addBracketStyle(second);
     }
@@ -2126,6 +2196,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
     // endregion
 
     // region Styles
+
     private void applyEditorStyles() {
         if (lastHighlight == null)
             return;
@@ -2160,6 +2231,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
 
             if (diagnostic.kind() == DiagnosticSeverity.INFORMATION || diagnostic.kind() == DiagnosticSeverity.HINT)
                 continue;
+
             boolean error = diagnostic.kind() == DiagnosticSeverity.ERROR;
             registerDiagnosticEvent(events, start, error, 1);
             registerDiagnosticEvent(events, end, error, -1);
@@ -2215,7 +2287,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
         if (activeErrors <= 0 && activeWarnings <= 0)
             return baseStyles;
 
-        LinkedHashSet<String> merged = new LinkedHashSet<>(baseStyles);
+        Set<String> merged = new LinkedHashSet<>(baseStyles);
         if (activeErrors > 0) {
             merged.add("error");
         } else if (activeWarnings > 0) {
@@ -2245,6 +2317,7 @@ public abstract class CodeEditorPane extends TextEditorPane {
             StyleSpan<Collection<String>> rightSpan = rightIterator.next();
             if (leftSpan.getLength() != rightSpan.getLength())
                 return false;
+
             if (!Objects.equals(leftSpan.getStyle(), rightSpan.getStyle()))
                 return false;
         }
@@ -2290,7 +2363,9 @@ public abstract class CodeEditorPane extends TextEditorPane {
         return completionProvider != null;
     }
 
-    /** @return whether the editor can request parameter information from its language provider */
+    /**
+     * @return whether the editor can request parameter information from its language provider
+     */
     public boolean supportsSignatureHelp() {
         return signatureHelpProvider != null && !codeEditorClosed && !providerLifetime.isCancellationRequested();
     }
@@ -2303,5 +2378,4 @@ public abstract class CodeEditorPane extends TextEditorPane {
         applyEditorStyles();
         restoreBracketHighlight();
     }
-
 }

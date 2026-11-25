@@ -131,6 +131,7 @@ public class GitCommitCheckoutButton extends RRButton {
                         if (forceDialogStage != null) {
                             forceDialogStage.close();
                         }
+
                         dialog.close();
                     }
                 });
@@ -140,13 +141,12 @@ public class GitCommitCheckoutButton extends RRButton {
                 forceDialogBuilder);
             forceDialogRef.set(forceDialog);
 
-            var confirmButton = (RRButton) forceDialog.getScene().lookup(".rr-button.primary");
+            RRButton confirmButton = (RRButton) forceDialog.getScene().lookup(".rr-button.primary");
             if (confirmButton != null) {
                 confirmButton.setDisable(true);
                 discardTextField.textProperty()
                     .addListener((obs, oldText, newText) -> confirmButton.setDisable(!newText.equals("FORCE")));
             }
-
         });
     }
 

@@ -13,6 +13,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Future;
+import java.lang.reflect.Method;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -28,6 +29,7 @@ public class JavaTokenTypeTest {
         for (String spelling : spellings.split(" ")) {
             expected.put(spelling, spelling.toUpperCase(Locale.ROOT) + "_KEYWORD");
         }
+
         expected.put("non-sealed", "NON_SEALED_KEYWORD");
         expected.put("@interface", "AT_INTERFACE_KEYWORD");
 
@@ -38,10 +40,10 @@ public class JavaTokenTypeTest {
                 List.of(JavaTokenType.class.getProtectionDomain().getCodeSource().getLocation()).toArray(URL[]::new),
                 ClassLoader.getPlatformClassLoader())) {
                 Class<?> tokenType = Class.forName(JavaTokenType.class.getName(), false, loader);
-                var listKeywords = tokenType.getMethod("listKeywords");
+                Method listKeywords = tokenType.getMethod("listKeywords");
                 var ready = new CountDownLatch(16);
                 var start = new CountDownLatch(1);
-                var futures = new ArrayList<Future<?>>();
+                List<Future<?>> futures = new ArrayList<Future<?>>();
                 for (int worker = 0; worker < 16; worker++) {
                     futures.add(executor.submit(() -> {
                         ready.countDown();
@@ -54,14 +56,17 @@ public class JavaTokenTypeTest {
                         return null;
                     }));
                 }
+
                 try {
                     assertTrue(ready.await(10, TimeUnit.SECONDS));
                 } finally {
                     start.countDown();
                 }
-                for (var future : futures) {
+
+                for (Future<?> future : futures) {
                     future.get(20, TimeUnit.SECONDS);
                 }
+
                 Map<?, ?> keywords = (Map<?, ?>) listKeywords.invoke(null);
                 assertEquals(expected.size(), keywords.size());
             } finally {

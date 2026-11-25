@@ -270,5 +270,4 @@ public class RRPasswordField extends PasswordField implements TextFieldControl {
             }
         }
     }
-
 }

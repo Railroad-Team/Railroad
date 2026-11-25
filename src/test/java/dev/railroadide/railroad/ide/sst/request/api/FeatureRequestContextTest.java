@@ -46,6 +46,7 @@ public class FeatureRequestContextTest {
     public void binaryDocumentsUseTheSameRequestContract() {
         var binary = new BinaryDocumentSnapshot(id, document.uri(), document.version(),
             "unregistered-binary-provider", new byte[]{1, 2, 3});
+
         WorkspaceSnapshot binaryWorkspace = workspace(binary, 1);
         var context = new FeatureRequestContext(binaryWorkspace, binary, CancellationToken.none(), Deadline.none());
 
@@ -195,12 +196,15 @@ public class FeatureRequestContextTest {
                 throw failure;
             }
         };
+
         var clock = new AtomicLong(100);
         Deadline deadline = Deadline.after(Duration.ofNanos(50), () -> {
             if (clock.get() != 100)
                 throw new AssertionError("Deadline must not be queried after explicit cancellation");
+
             return clock.get();
         });
+
         var context = new FeatureRequestContext(workspace, document, token, deadline);
         clock.set(150);
 
@@ -239,6 +243,7 @@ public class FeatureRequestContextTest {
                     } finally {
                         checkedActive.countDown();
                     }
+
                     assertTrue(cancelled.await(10, TimeUnit.SECONDS), "Owner did not cancel the request");
                     assertThrows(CancellationException.class, context::checkActive);
                     assertSame(workspace, context.workspaceSnapshot());

@@ -35,6 +35,7 @@ public record AnsiStyle(int foreground, int background, boolean bold, boolean it
     public AnsiStyle {
         if (foreground < DEFAULT_COLOR || foreground > 15)
             throw new IllegalArgumentException("foreground must be a 16-colour palette index");
+
         if (background < DEFAULT_COLOR || background > 15)
             throw new IllegalArgumentException("background must be a 16-colour palette index");
     }
@@ -48,22 +49,27 @@ public record AnsiStyle(int foreground, int background, boolean bold, boolean it
         if (equals(PLAIN))
             return List.of();
 
-        var classes = new ArrayList<String>(4);
+        List<String> classes = new ArrayList<String>(4);
         if (foreground != DEFAULT_COLOR) {
             classes.add("ansi-fg-" + foreground);
         }
+
         if (background != DEFAULT_COLOR) {
             classes.add("ansi-bg-" + background);
         }
+
         if (bold) {
             classes.add("ansi-bold");
         }
+
         if (italic) {
             classes.add("ansi-italic");
         }
+
         if (underline) {
             classes.add("ansi-underline");
         }
+
         return classes;
     }
 

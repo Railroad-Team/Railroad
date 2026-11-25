@@ -38,6 +38,8 @@ import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import dev.railroadide.railroad.ui.UIManager;
+import javafx.beans.value.ObservableBooleanValue;
 
 /**
  * Hosts a project workspace, coordinating editor groups, docked tools, modes, and window lifecycles.
@@ -96,8 +98,8 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             rightPane.setScope(toolDockScope(IDEDockItem.DockPosition.RIGHT));
             trackOwnedTabs(rightPane);
             assignWhileAttached(UIIds.IDE.IDE_RIGHT_DOCK, rightPane);
-            var codeEditorPane = getOrCreateEditorPane(editorPanesByMode, WorkspaceModes.CODE);
-            var codeEditorHost = getOrCreateEditorHost(WorkspaceModes.CODE, codeEditorPane);
+            DetachableTabPane codeEditorPane = getOrCreateEditorPane(editorPanesByMode, WorkspaceModes.CODE);
+            StackPane codeEditorHost = getOrCreateEditorHost(WorkspaceModes.CODE, codeEditorPane);
             this.contentRouter = new IDEContentRouter(this);
             this.bottomPane = createBottomPane();
 
@@ -122,7 +124,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
 
             viewModeController.onViewModeChanged(this::activateViewMode);
 
-            var workspaceRegistration = Services.WORKSPACE.attachWorkspace(
+            DefaultWorkspaceService.Registration workspaceRegistration = Services.WORKSPACE.attachWorkspace(
                 this::requestViewMode,
                 mode -> mode.isAvailable(project));
             lifecycle.onDispose(workspaceRegistration::close);
@@ -137,6 +139,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
                 Throwable cause = failure;
                 cause.addSuppressed(cleanup);
             }
+
             throw failure;
         }
     }
@@ -146,7 +149,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         pane.getStyleClass().add("ide-tool-dock");
         pane.setScope(toolDockScope(IDEDockItem.DockPosition.LEFT));
         trackOwnedTabs(pane);
-        var projectTab = createDockTab(IDEDockItem.PROJECT, IDEDockItem.DockPosition.LEFT);
+        IDEDockTab projectTab = createDockTab(IDEDockItem.PROJECT, IDEDockItem.DockPosition.LEFT);
         dockTabsByMode.put(WorkspaceModes.CODE, List.of(projectTab));
 
         assignWhileAttached(UIIds.IDE.IDE_LEFT_DOCK, pane);
@@ -210,6 +213,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         if (accepted && clearPendingMode) {
             pendingViewModeAfterAvailability = null;
         }
+
         return accepted;
     }
 
@@ -221,8 +225,10 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         return editorPanesByMode.computeIfAbsent(resolvedMode, mode -> {
             if (mode == WorkspaceModes.CODE)
                 return createCodeEditorPane();
+
             if (mode == WorkspaceModes.GIT)
                 return createGitEditorPane();
+
             return createEditorPane(mode);
         });
     }
@@ -259,6 +265,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         if (dockItem.preferredDockPosition() != dockPosition)
             throw new IllegalArgumentException(
                 "Dock item '" + dockItem.id() + "' belongs in the " + dockItem.preferredDockPosition() + " dock");
+
         var tab = new IDEDockTab(dockItem, project, this);
         dockTabs.put(dockItem, tab);
         return tab;
@@ -336,6 +343,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         StackPane host = editorHostsByMode.get(viewMode);
         if (host == null || host.getChildren().isEmpty())
             return null;
+
         return host.getChildren().removeFirst();
     }
 
@@ -415,6 +423,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         if (viewMode != WorkspaceModes.CODE) {
             selectTab(editorPane, layout.selectedEditorTab());
         }
+
         selectTab(rightPane, layout.selectedRightTab());
         selectTab(bottomPane, layout.selectedBottomTab());
     }
@@ -430,6 +439,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
                 leftDivider = 0.15;
                 rightDivider = 0.85;
             }
+
             mainSplit.setDividerPositions(leftDivider, rightDivider);
         } else if (leftVisible) {
             mainSplit.setDividerPositions(leftDivider);
@@ -522,6 +532,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             if (oldScene != null) {
                 oldScene.focusOwnerProperty().removeListener(focusOwnerListener);
             }
+
             if (newScene != null) {
                 newScene.focusOwnerProperty().addListener(focusOwnerListener);
                 rememberModeFocus(newScene.getFocusOwner());
@@ -532,18 +543,20 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         if (getScene() != null) {
             getScene().focusOwnerProperty().addListener(focusOwnerListener);
         }
+
         lifecycle.onDispose(() -> {
             sceneProperty().removeListener(sceneListener);
             if (getScene() != null) {
                 getScene().focusOwnerProperty().removeListener(focusOwnerListener);
             }
+
             focusOwnersByMode.clear();
         });
     }
 
     private void installModeAvailabilityTracking() {
         for (WorkspaceMode viewMode : WorkspaceMode.REGISTRY.values()) {
-            var unavailable = viewMode.createUnavailableBinding(project);
+            ObservableBooleanValue unavailable = viewMode.createUnavailableBinding(project);
             if (unavailable == null)
                 continue;
 
@@ -555,10 +568,12 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
                 } else if (isUnavailable && viewModeController.getCurrentViewMode() == viewMode) {
                     requestViewMode(WorkspaceMode.defaultMode(), false);
                 }
+
                 if (!isUnavailable) {
                     restorePendingToolWindows();
                 }
             };
+
             unavailable.addListener(listener);
             lifecycle.onDispose(() -> unavailable.removeListener(listener));
         }
@@ -617,14 +632,17 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             if (selectedTab != null) {
                 editorNavigationHistory.visit(viewMode.getId(), tabIdentity(selectedTab));
             }
+
             snapshotActiveLayout();
         };
+
         editorNavigationListeners.put(pane, listener);
         pane.getSelectionModel().selectedItemProperty().addListener(listener);
         Tab selectedTab = pane.getSelectionModel().getSelectedItem();
         if (selectedTab != null) {
             editorNavigationHistory.visit(viewMode.getId(), tabIdentity(selectedTab));
         }
+
         lifecycle.onDispose(() -> {
             pane.getSelectionModel().selectedItemProperty().removeListener(listener);
             editorNavigationListeners.remove(pane);
@@ -644,8 +662,10 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
                 change.getRemoved().forEach(divider -> divider.positionProperty().removeListener(positionListener));
                 change.getAddedSubList().forEach(divider -> divider.positionProperty().addListener(positionListener));
             }
+
             snapshotActiveLayout();
         };
+
         ListChangeListener<Node> itemListener = _ -> snapshotActiveLayout();
 
         splitPane.getDividers().forEach(divider -> divider.positionProperty().addListener(positionListener));
@@ -703,7 +723,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         }
 
         Predicate<String> available = tabId -> findEditorTab(viewMode, tabId) != null;
-        var destination = forward
+        Optional<WorkspaceTabNavigationHistory.Destination> destination = forward
             ? editorNavigationHistory.forwardDestination(viewMode.getId(), available)
             : editorNavigationHistory.backDestination(viewMode.getId(), available);
         destination.ifPresent(entry -> {
@@ -782,6 +802,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         if (tab.getTabPane().getScene() != null && tab.getTabPane().getScene().getWindow() instanceof Stage stage) {
             stage.toFront();
         }
+
         Node content = tab.getContent();
         Objects.requireNonNullElse(content, tab.getTabPane()).requestFocus();
     }
@@ -791,8 +812,10 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         Objects.requireNonNull(dockItem, "Dock item cannot be null");
         if (dockItem.owningMode() != null && !dockItem.owningMode().isAvailable(project))
             return false;
+
         if (dockItem == IDEDockItem.GRADLE)
             return dockTabs.containsKey(dockItem);
+
         return true;
     }
 
@@ -823,6 +846,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             Platform.runLater(() -> toggleDockItem(dockItem));
             return;
         }
+
         if (!isDockItemAvailable(dockItem))
             return;
 
@@ -839,6 +863,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             Window window = currentPane.getScene() == null ? null : currentPane.getScene().getWindow();
             if (!(window instanceof Stage stage))
                 return;
+
             if (stage.isShowing() && currentPane.getSelectionModel().getSelectedItem() == dockTab) {
                 stage.hide();
             } else {
@@ -847,6 +872,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
                 stage.toFront();
                 registerToolWindow(stage);
             }
+
             snapshotActiveLayout();
             return;
         }
@@ -866,6 +892,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
                 restoreMainDividerPositions(layout);
             }
         }
+
         snapshotActiveLayout();
     }
 
@@ -903,6 +930,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             sourcePane.getTabs().add(Math.clamp(sourceIndex, 0, sourcePane.getTabs().size()), dockTab);
             throw exception;
         }
+
         snapshotActiveLayout();
     }
 
@@ -926,12 +954,14 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             if (dockTab.getTabPane() != null) {
                 dockTab.getTabPane().getTabs().remove(dockTab);
             }
+
             int targetIndex = 0;
             while (targetIndex < targetPane.getTabs().size()
                 && targetPane.getTabs().get(targetIndex) instanceof IDEDockTab existing
                 && existing.getDockItem().ordinal() < dockItem.ordinal()) {
                 targetIndex++;
             }
+
             targetPane.getTabs().add(targetIndex, dockTab);
         }
 
@@ -948,6 +978,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         } else {
             restoreMainDividerPositions(layout);
         }
+
         snapshotActiveLayout();
     }
 
@@ -1012,6 +1043,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         if (Platform.isFxApplicationThread() && layoutInitialized && activeViewMode != null) {
             layoutsByMode.put(activeViewMode, captureModeLayout(activeViewMode));
         }
+
         editorPanesByMode.keySet().forEach(mode -> layoutsByMode.computeIfPresent(
             mode,
             (_, layout) -> layout.withEditorNavigation(editorNavigationHistory.snapshot(
@@ -1037,7 +1069,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             tabsByWindow.computeIfAbsent(window, _ -> new ArrayList<>()).add(dockTab);
         }
 
-        var states = new ArrayList<IDELayoutState.ToolWindowState>();
+        List<IDELayoutState.ToolWindowState> states = new ArrayList<IDELayoutState.ToolWindowState>();
         int windowIndex = 0;
         for (Map.Entry<Window, List<IDEDockTab>> entry : tabsByWindow.entrySet()) {
             Window window = entry.getKey();
@@ -1062,6 +1094,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
                 window instanceof Stage stage && stage.isMaximized(),
                 window.isShowing()));
         }
+
         Set<String> capturedItemIds = states.stream()
             .flatMap(state -> state.dockItemIds().stream())
             .collect(Collectors.toSet());
@@ -1097,11 +1130,13 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             } else {
                 pendingViewModeAfterAvailability = null;
             }
+
             if (viewModeController.getCurrentViewMode() == targetMode) {
                 activateViewMode(targetMode);
             } else {
                 requestViewMode(targetMode, false);
             }
+
             pendingToolWindows.clear();
             pendingToolWindows.addAll(layoutState.toolWindows());
             restorePendingToolWindows();
@@ -1115,6 +1150,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             Platform.runLater(this::restorePendingToolWindows);
             return;
         }
+
         if (pendingToolWindows.isEmpty())
             return;
 
@@ -1126,7 +1162,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             dockTabsByMode.computeIfAbsent(WorkspaceModes.GIT, _ -> createGitDockTabs());
         }
 
-        var restoredStates = new ArrayList<IDELayoutState.ToolWindowState>();
+        List<IDELayoutState.ToolWindowState> restoredStates = new ArrayList<IDELayoutState.ToolWindowState>();
         for (IDELayoutState.ToolWindowState state : pendingToolWindows) {
             List<IDEDockItem> items = state.dockItemIds().stream()
                 .map(IDEPane::dockItemById)
@@ -1151,6 +1187,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
                 Railroad.LOGGER.error("Failed to restore detached tool window {}", state.id(), exception);
             }
         }
+
         pendingToolWindows.removeAll(restoredStates);
     }
 
@@ -1166,6 +1203,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
 
         // TiwulFX copies stylesheets from the source pane while creating its stage. A hidden dock is detached from
         // the scene graph during layout restoration, so attach it just long enough for the library to build the stage.
+
         if (sourcePane.getScene() == null) {
             setDockVisible(sourceSplit, sourcePane, true, preferredDockIndex(sourcePosition));
         }
@@ -1177,12 +1215,14 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             if (firstTab.getTabPane() == null) {
                 sourcePane.getTabs().add(firstTab);
             }
+
             throw exception;
         } finally {
             if (!sourceWasVisible) {
                 setDockVisible(sourceSplit, sourcePane, false, preferredDockIndex(sourcePosition));
             }
         }
+
         if (!(firstTab.getTabPane() instanceof DetachableTabPane detachedPane))
             return;
 
@@ -1190,8 +1230,10 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             if (tab.getTabPane() != null) {
                 tab.getTabPane().getTabs().remove(tab);
             }
+
             detachedPane.getTabs().add(tab);
         }
+
         tabs.stream()
             .filter(tab -> tab.getDockItem().id().equals(state.selectedDockItemId()))
             .findFirst()
@@ -1212,10 +1254,12 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     private static IDEDockItem dockItemById(String id) {
         if (id == null)
             return null;
+
         for (IDEDockItem dockItem : IDEDockItem.values()) {
             if (dockItem.id().equals(id))
                 return dockItem;
         }
+
         return null;
     }
 
@@ -1234,16 +1278,19 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
                 if (pane.getStyleClass().contains("ide-tool-dock")) {
                     detachedPane.getStyleClass().add("ide-tool-dock");
                 }
+
                 trackOwnedTabs(detachedPane);
                 WorkspaceMode editorMode = editorMode(detachedPane);
                 if (editorMode != null) {
                     trackEditorNavigation(detachedPane, editorMode);
                 }
+
                 if (editorMode == WorkspaceModes.CODE) {
                     Services.EDITOR_TAB_MANAGER.registerEditorPane(detachedPane);
                 }
             }
         });
+
         pane.setStageFactory((priorPane, tab) -> {
             double contentWidth = priorPane.getWidth();
             double contentHeight = priorPane.getHeight();
@@ -1253,14 +1300,17 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             if (tab instanceof IDEDockTab) {
                 registerToolWindow(stage);
             }
+
             return stage;
         });
+
         pane.getTabs().forEach(this::trackOwnedTab);
         ListChangeListener<Tab> listener = change -> {
             while (change.next()) {
                 change.getAddedSubList().forEach(this::trackOwnedTab);
             }
         };
+
         pane.getTabs().addListener(listener);
         lifecycle.onDispose(() -> pane.getTabs().removeListener(listener));
     }
@@ -1273,6 +1323,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
             double horizontalDecoration = Math.max(0.0, stage.getWidth() - stage.getScene().getWidth());
             stage.setWidth(contentWidth + horizontalDecoration);
         }
+
         if (Double.isFinite(contentHeight) && contentHeight > 0.0) {
             double verticalDecoration = Math.max(0.0, stage.getHeight() - stage.getScene().getHeight());
             stage.setHeight(contentHeight + verticalDecoration);
@@ -1313,10 +1364,12 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         if (getScene() != null && getScene().getWindow() != null) {
             stage.initOwner(getScene().getWindow());
         }
+
         var scene = new Scene(parent, 800, 600);
         if (getScene() != null) {
             scene.getStylesheets().addAll(getScene().getStylesheets());
         }
+
         stage.setScene(scene);
         guardDetachedStage(stage);
         return stage;
@@ -1335,6 +1388,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
                 snapshotActiveLayout();
                 return;
             }
+
             if (detachedTabs.stream().anyMatch(detachedTab -> !IDETabLifecycle.requestClose(detachedTab))) {
                 event.consume();
             }
@@ -1359,9 +1413,11 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
         if (leftPane != null) {
             tabsToDispose.addAll(leftPane.getTabs());
         }
+
         if (rightPane != null) {
             tabsToDispose.addAll(rightPane.getTabs());
         }
+
         if (bottomPane != null) {
             tabsToDispose.addAll(bottomPane.getTabs());
         }
@@ -1418,6 +1474,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
                 openGradleTab(event.facet(), rightPane, mainSplit);
             }
         };
+
         Railroad.EVENT_BUS.subscribe(FacetDetectedEvent.class, facetDetectedListener);
         lifecycle.onDispose(() -> Railroad.EVENT_BUS.unsubscribe(FacetDetectedEvent.class, facetDetectedListener));
     }
@@ -1442,6 +1499,7 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
                     layoutsByMode.getOrDefault(activeViewMode, IDELayoutState.ModeLayout.defaults()));
                 snapshotActiveLayout();
             }
+
             restorePendingToolWindows();
         });
     }
@@ -1468,12 +1526,12 @@ public final class IDEPane extends RRBorderPane implements AutoCloseable, IDEWor
     }
 
     private <T extends Node> void assignWhileAttached(UIId<T> id, T node) {
-        var registration = Services.UI_MANAGER.assignWhileAttached(id, node);
+        UIManager.Registration registration = Services.UI_MANAGER.assignWhileAttached(id, node);
         lifecycle.onDispose(registration::close);
     }
 
     private <T extends Node> void assignWhileIDEAttached(UIId<T> id, T node) {
-        var registration = Services.UI_MANAGER.assignWhileAttached(id, this, node);
+        UIManager.Registration registration = Services.UI_MANAGER.assignWhileAttached(id, this, node);
         lifecycle.onDispose(registration::close);
     }
 }

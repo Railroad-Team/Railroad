@@ -16,6 +16,8 @@ import lombok.EqualsAndHashCode;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import dev.railroadide.railroad.form.impl.RadioButtonGroupComponent;
+import javafx.beans.property.ObjectProperty;
 
 /**
  * Stores script source, interpreter, argument, working-directory, and environment options.
@@ -50,14 +52,14 @@ public class ShellScriptRunConfigurationData extends RunConfigurationData {
 
     @Override
     public Form createConfigurationForm(Project project, RunConfiguration<?> configuration) {
-        var executeModeComponent = FormComponent
+        RadioButtonGroupComponent<ExecuteMode> executeModeComponent = FormComponent
             .radioButtonGroup("executeMode", "railroad.runconfig.shell_script.configuration.executeMode.label",
                 ExecuteMode.class)
             .required()
             .selected(() -> this.executeMode)
             .build();
 
-        var modeValueProperty = executeModeComponent.getComponent().valueProperty();
+        ObjectProperty<ExecuteMode> modeValueProperty = executeModeComponent.getComponent().valueProperty();
         var fileModeVisible = Bindings.createBooleanBinding(
             () -> executeModeComponent.getComponent().getValue() == ExecuteMode.FILE,
             modeValueProperty);
@@ -65,9 +67,9 @@ public class ShellScriptRunConfigurationData extends RunConfigurationData {
             () -> executeModeComponent.getComponent().getValue() == ExecuteMode.TEXT,
             modeValueProperty);
 
-        var scriptArgsValue = this.scriptArgs == null ? new String[0] : this.scriptArgs;
-        var interpreterArgsValue = this.interpreterArgs == null ? new String[0] : this.interpreterArgs;
-        var environmentValues = this.environmentVariables == null
+        String[] scriptArgsValue = this.scriptArgs == null ? new String[0] : this.scriptArgs;
+        String[] interpreterArgsValue = this.interpreterArgs == null ? new String[0] : this.interpreterArgs;
+        Map<String, String> environmentValues = this.environmentVariables == null
             ? Map.<String, String>of()
             : this.environmentVariables;
 

@@ -11,7 +11,9 @@ import org.kordamp.ikonli.Ikon;
  * </p>
  */
 public enum RailroadIcon implements Ikon {
-    /** The {@code rr-jar-file} file-type icon at glyph {@code U+ECA6}. */
+    /**
+     * The {@code rr-jar-file} file-type icon at glyph {@code U+ECA6}.
+     */
     JAR_FILE("rr-jar-file", 0xECA6);
 
     private final String description;

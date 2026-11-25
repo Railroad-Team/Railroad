@@ -50,9 +50,9 @@ public class ClassStubVisitor extends ClassVisitor {
         } else {
             this.superClass = (superName == null)
                 ? null
-                : Type.fromAsmType(org.objectweb.asm.Type.getObjectType(superName));
+                : Type.fromAsmType(Type.getObjectType(superName));
             this.interfaces = Arrays.stream(interfaces)
-                .map(org.objectweb.asm.Type::getObjectType)
+                .map(Type::getObjectType)
                 .map(Type::fromAsmType)
                 .toList();
         }
@@ -60,7 +60,7 @@ public class ClassStubVisitor extends ClassVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-        String annotationName = org.objectweb.asm.Type.getType(descriptor).getClassName();
+        String annotationName = Type.getType(descriptor).getClassName();
         return new AnnotationStubVisitor(annotationName, this.annotations::add);
     }
 
@@ -79,7 +79,7 @@ public class ClassStubVisitor extends ClassVisitor {
 
     @Override
     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-        Type fieldType = Type.fromAsmType(org.objectweb.asm.Type.getType(descriptor));
+        Type fieldType = Type.fromAsmType(Type.getType(descriptor));
         if (signature != null) {
             Type[] genericFieldType = new Type[1];
             new SignatureReader(signature).acceptType(new TypeSignatureVisitor(type -> genericFieldType[0] = type));
@@ -87,12 +87,13 @@ public class ClassStubVisitor extends ClassVisitor {
                 fieldType = genericFieldType[0];
             }
         }
+
         Type resolvedFieldType = fieldType;
         List<AnnotationStub> fieldAnnotations = new ArrayList<>();
         return new FieldVisitor(Opcodes.ASM9) {
             @Override
             public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-                String annotationName = org.objectweb.asm.Type.getType(descriptor).getClassName();
+                String annotationName = Type.getType(descriptor).getClassName();
                 return new AnnotationStubVisitor(annotationName, fieldAnnotations::add);
             }
 
@@ -127,30 +128,33 @@ public class ClassStubVisitor extends ClassVisitor {
             returnType = signatureVisitor.returnType;
             signatureThrownTypes = List.copyOf(signatureVisitor.thrownTypes);
         } else {
-            parameterTypes = Arrays.stream(org.objectweb.asm.Type.getArgumentTypes(descriptor))
+            parameterTypes = Arrays.stream(Type.getArgumentTypes(descriptor))
                 .map(Type::fromAsmType)
                 .toList();
 
-            returnType = Type.fromAsmType(org.objectweb.asm.Type.getReturnType(descriptor));
+            returnType = Type.fromAsmType(Type.getReturnType(descriptor));
         }
 
         int hiddenParameters = 0;
         if (name.equals("<init>")) {
-            org.objectweb.asm.Type[] descriptorParameters = org.objectweb.asm.Type.getArgumentTypes(descriptor);
+            Type[] descriptorParameters = Type.getArgumentTypes(descriptor);
             if ((modifiers & Opcodes.ACC_ENUM) != 0 && descriptorParameters.length >= 2
                 && descriptorParameters[0].getClassName().equals("java.lang.String")
-                && descriptorParameters[1].equals(org.objectweb.asm.Type.INT_TYPE)) {
+                && descriptorParameters[1].equals(Type.INT_TYPE)) {
                 hiddenParameters = 2;
             } else if (innerInstance && descriptorParameters.length > 0
                 && descriptorParameters[0].getClassName().equals(enclosingClassName)) {
                 hiddenParameters = 1;
             }
+
             // Generic signatures can already omit the compiler-supplied constructor prefix.
+
             if (hiddenParameters > 0
                 && parameterTypes.size() == descriptorParameters.length) {
                 parameterTypes = parameterTypes.subList(hiddenParameters, parameterTypes.size());
             }
         }
+
         List<String> parameterNames = new ArrayList<>();
         List<List<AnnotationStub>> parameterAnnotations = new ArrayList<>(parameterTypes.size());
         for (int i = 0; i < parameterTypes.size(); i++) {
@@ -161,7 +165,7 @@ public class ClassStubVisitor extends ClassVisitor {
         List<Type> descriptorThrownTypes = exceptions == null
             ? List.of()
             : Arrays.stream(exceptions)
-                .map(internalName -> Type.fromAsmType(org.objectweb.asm.Type.getObjectType(internalName)))
+                .map(internalName -> Type.fromAsmType(Type.getObjectType(internalName)))
                 .toList();
         List<Type> thrownTypes = signatureThrownTypes.isEmpty()
             ? descriptorThrownTypes
@@ -316,7 +320,7 @@ public class ClassStubVisitor extends ClassVisitor {
 
         @Override
         public void visitBaseType(char descriptor) {
-            this.result = Type.fromAsmType(org.objectweb.asm.Type.getType(String.valueOf(descriptor)));
+            this.result = Type.fromAsmType(Type.getType(String.valueOf(descriptor)));
             finishIfComplete();
         }
 
@@ -469,7 +473,7 @@ public class ClassStubVisitor extends ClassVisitor {
         public AnnotationVisitor visitParameterAnnotation(int parameterIndex, String descriptor, boolean visible) {
             parameterIndex -= annotationOffset;
             if (parameterIndex >= 0 && parameterIndex < parameterAnnotations.size()) {
-                String annotationName = org.objectweb.asm.Type.getType(descriptor).getClassName();
+                String annotationName = Type.getType(descriptor).getClassName();
                 return new AnnotationStubVisitor(annotationName, parameterAnnotations.get(parameterIndex)::add);
             }
 
@@ -478,7 +482,7 @@ public class ClassStubVisitor extends ClassVisitor {
 
         @Override
         public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-            String annotationName = org.objectweb.asm.Type.getType(descriptor).getClassName();
+            String annotationName = Type.getType(descriptor).getClassName();
             return new AnnotationStubVisitor(annotationName, methodAnnotations::add);
         }
 

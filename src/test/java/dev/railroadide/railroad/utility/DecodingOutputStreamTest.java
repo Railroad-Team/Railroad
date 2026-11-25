@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class DecodingOutputStreamTest {
     @Test
     public void multibyteCharacterSplitAcrossWritesIsDecodedOnce() {
-        var decoded = new ArrayList<String>();
+        List<String> decoded = new ArrayList<String>();
         var stream = new DecodingOutputStream(StandardCharsets.UTF_8, decoded::add);
         byte[] bytes = "a€b".getBytes(StandardCharsets.UTF_8);
 

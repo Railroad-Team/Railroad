@@ -9,6 +9,8 @@ import java.util.List;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.fxmisc.richtext.model.StyleSpan;
+import org.fxmisc.richtext.model.StyleSpans;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -21,14 +23,14 @@ public class TreeSitterJavaSyntaxHighlightingTest {
             + "    // Line comment\n"
             + "    int count; /* Block\n       comment */ int limit;\n"
             + "    String text = \"/* not a comment */\";\n}";
-        var styles = TreeSitterJavaSyntaxHighlighting.computeHighlighting(source);
-        var comments = new ArrayList<Boolean>();
-        for (var span : styles) {
+        StyleSpans<Collection<String>> styles = TreeSitterJavaSyntaxHighlighting.computeHighlighting(source);
+        List<Boolean> comments = new ArrayList<Boolean>();
+        for (StyleSpan<Collection<String>> span : styles) {
             comments.addAll(Collections.nCopies(span.getLength(), span.getStyle().contains("comment")));
         }
 
         assertEquals(source.length(), comments.size());
-        var expected = new ArrayList<>(Collections.nCopies(source.length(), false));
+        List<Boolean> expected = new ArrayList<>(Collections.nCopies(source.length(), false));
         for (String comment : new String[]{"/** Documentation. */", "// Line comment", "/* Block\n       comment */"}) {
             int start = source.indexOf(comment);
             for (int offset = start; offset < start + comment.length(); offset++) {
@@ -70,6 +72,7 @@ public class TreeSitterJavaSyntaxHighlightingTest {
             "enum", "record", "implements", "non-sealed")) {
             assertStyle(source, keyword, "keyword");
         }
+
         assertStyle("class X { boolean f(Object o) { return o instanceof String s; } }", "instanceof", "keyword");
         assertStyle(
             "class X { int f(Object o) { return switch(o) { case String s when s.isEmpty() -> 1; default -> 0; }; } }",
@@ -84,6 +87,7 @@ public class TreeSitterJavaSyntaxHighlightingTest {
             "provides", "with")) {
             assertStyle(source, keyword, "keyword");
         }
+
         assertStyle(source, "example.app", "namespace", true);
     }
 
@@ -93,9 +97,11 @@ public class TreeSitterJavaSyntaxHighlightingTest {
         for (String literal : List.of("true", "false", "null")) {
             assertStyle(source, literal, "literal");
         }
+
         for (String number : List.of("12", "1.5e2", "0xAB", "077", "0b101", "0x1.fp3")) {
             assertStyle(source, number, "number");
         }
+
         assertStyle(source, "'a'", "string");
         assertStyle(source, "hello", "string");
         assertStyle(source, "\\n", "escape");
@@ -129,7 +135,7 @@ public class TreeSitterJavaSyntaxHighlightingTest {
         assertEveryOccurrence(source, "local", "variable");
         assertEveryOccurrence(source, "method", "method");
         assertEveryOccurrence(source, "item", "parameter");
-        var styles = styles(source);
+        List<Collection<String>> styles = styles(source);
         int nested = source.indexOf("int field = 2");
         for (int at = source.indexOf("field"); at >= 0; at = source.indexOf("field", at + 5)) {
             String expected = at >= nested && at < source.indexOf("}", nested) ? "variable" : "field";
@@ -166,9 +172,11 @@ public class TreeSitterJavaSyntaxHighlightingTest {
         for (String operator : List.of("+=", "<<", "=", "!", "&&", "||", ">=", "->")) {
             assertStyle(source, operator, "operator");
         }
+
         for (String punctuation : List.of("{", "}", "[", "]", "(", ")", ";")) {
             assertStyle(source, punctuation, "punctuation");
         }
+
         assertStyle("class X { void f() { try {} catch (Exception _) {} } }", "_", "variable");
     }
 
@@ -178,6 +186,7 @@ public class TreeSitterJavaSyntaxHighlightingTest {
         for (String tag : List.of("@link", "@code", "@param", "@return")) {
             assertStyle(source, tag, "doc-tag");
         }
+
         assertStyle(source, "Example#run()", "doc-link");
         assertStyle(source, "value", "doc-parameter");
         assertStyle(source, "input", "comment");
@@ -190,6 +199,7 @@ public class TreeSitterJavaSyntaxHighlightingTest {
             "class X { void f( ", "/* unfinished")) {
             assertEquals(source.length(), styles(source).size(), source);
         }
+
         String source = "// caf\u00e9 \ud83d\ude00\nclass Caf\u00e9 { String s = \"\u4f60\u597d\ud83d\ude00\"; }  \n";
         assertStyle(source, "class", "keyword");
         assertStyle(source, "Caf\u00e9", "type");
@@ -200,7 +210,7 @@ public class TreeSitterJavaSyntaxHighlightingTest {
     public void preservesSpanLengthsAcrossTheParserCorpus() throws IOException {
         try (var files = Files.walk(Path.of(
             "src/test/resources/dev/railroadide/railroad/ide/sst/impl/java/corpus"))) {
-            for (var file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
+            for (Path file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
                 String source = Files.readString(file);
                 assertEquals(source.length(), TreeSitterJavaSyntaxHighlighting.computeHighlighting(source).length(),
                     file.toString());
@@ -225,7 +235,7 @@ public class TreeSitterJavaSyntaxHighlightingTest {
         String source = "class Railroad { Object logger = LoggerService.builder()"
             + ".configFile(ConfigHandler.getConfigDirectory().resolve(\"logger_config.json\")); }";
         assertStyle(source, "\"logger_config.json\"", "string");
-        var styles = styles(source);
+        List<Collection<String>> styles = styles(source);
         int closingParentheses = source.indexOf("\"logger_config.json\"))") + "\"logger_config.json\"".length();
         assertEquals(List.of("punctuation"), styles.get(closingParentheses));
         assertEquals(List.of("punctuation"), styles.get(closingParentheses + 1));
@@ -233,15 +243,16 @@ public class TreeSitterJavaSyntaxHighlightingTest {
     }
 
     private static List<Collection<String>> styles(String source) {
-        var result = new ArrayList<Collection<String>>();
-        for (var span : TreeSitterJavaSyntaxHighlighting.computeHighlighting(source)) {
+        List<Collection<String>> result = new ArrayList<Collection<String>>();
+        for (StyleSpan<Collection<String>> span : TreeSitterJavaSyntaxHighlighting.computeHighlighting(source)) {
             result.addAll(Collections.nCopies(span.getLength(), span.getStyle()));
         }
+
         return result;
     }
 
     private static void assertEveryOccurrence(String source, String token, String role) {
-        var styles = styles(source);
+        List<Collection<String>> styles = styles(source);
         for (int start = source.indexOf(token); start >= 0; start = source.indexOf(token, start + token.length())) {
             assertTrue(styles.get(start).contains(role), token + " at " + start + ": " + styles.get(start));
         }
@@ -254,7 +265,7 @@ public class TreeSitterJavaSyntaxHighlightingTest {
     private static void assertStyle(String source, String token, String role, boolean firstOnly) {
         int start = source.indexOf(token);
         assertTrue(start >= 0, token);
-        var styles = styles(source);
+        List<Collection<String>> styles = styles(source);
         for (int offset = start; offset < start + (firstOnly ? 1 : token.length()); offset++) {
             assertTrue(styles.get(offset).contains(role),
                 token + " at " + offset + " expected " + role + " but was " + styles.get(offset));

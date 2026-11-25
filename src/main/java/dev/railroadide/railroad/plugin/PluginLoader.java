@@ -120,6 +120,7 @@ public class PluginLoader {
                         } else
                             throw new IOException(
                                 "plugin.json 'dependencies.repositories' must be an array of objects or strings");
+
                     }
                 }
 
@@ -139,6 +140,7 @@ public class PluginLoader {
                         } else
                             throw new IOException(
                                 "plugin.json 'dependencies.artifacts' must be an array of objects or strings");
+
                     }
                 }
             }

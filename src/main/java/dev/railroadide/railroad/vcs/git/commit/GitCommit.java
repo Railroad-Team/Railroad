@@ -95,6 +95,7 @@ public record GitCommit(
                 tagToCommit.put(tagName, hash);
             }
         }
+
         return tagToCommit;
     }
 

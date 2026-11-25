@@ -78,6 +78,7 @@ public final class CodeActionMenu implements AutoCloseable {
                 requestResolution(selected);
             }
         });
+
         list.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.ENTER) {
                 choose();
@@ -87,6 +88,7 @@ public final class CodeActionMenu implements AutoCloseable {
                 event.consume();
             }
         });
+
         list.setOnMouseClicked(event -> {
             if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
                 choose();
@@ -118,10 +120,12 @@ public final class CodeActionMenu implements AutoCloseable {
     public void show(Node owner, double screenX, double screenY) {
         if (closed)
             return;
+
         if (owner.getScene() != null && owner.getScene().getWindow() != null
             && owner.getScene().getWindow().isShowing()) {
             popup.show(owner, screenX, screenY);
         }
+
         list.requestFocus();
     }
 
@@ -151,16 +155,19 @@ public final class CodeActionMenu implements AutoCloseable {
         CodeAction selected = list.getSelectionModel().getSelectedItem();
         if (closed || selected == null)
             return;
+
         CodeActionController.Resolution resolution = resolutions.get(selected);
         if (resolution == null) {
             pendingChoice = selected;
             return;
         }
+
         pendingChoice = null;
         if (resolution.status() != CodeActionController.Status.READY) {
             showResolution(resolution);
             return;
         }
+
         if (resolution.needsConfirmation() && confirmed != selected) {
             confirmed = selected;
             WorkspaceEditPreview changes = Objects.requireNonNull(resolution.preview());
@@ -169,10 +176,12 @@ public final class CodeActionMenu implements AutoCloseable {
                 reasons.add(L18n.localize("railroad.code_actions.confirm_annotated",
                     String.join(", ", resolution.confirmationLabels())));
             }
+
             if (resolution.affectsOtherDocuments()) {
                 reasons.add(L18n.localize("railroad.code_actions.confirm",
                     changes.documents().size() + changes.resources().size()));
             }
+
             status.setText(String.join("\n", reasons));
             return;
         }
@@ -183,6 +192,7 @@ public final class CodeActionMenu implements AutoCloseable {
             onApplied.run();
             return;
         }
+
         confirmed = null;
         resolutions.put(selected, new CodeActionController.Resolution(CodeActionController.Status.FAILED,
             discovery, resolution.action(), resolution.preview(), L18n.localize(
@@ -222,6 +232,7 @@ public final class CodeActionMenu implements AutoCloseable {
     public void close() {
         if (closed)
             return;
+
         closed = true;
         pendingChoice = null;
         controller.cancelResolution();
@@ -237,10 +248,12 @@ public final class CodeActionMenu implements AutoCloseable {
             showResolution(cached);
             return;
         }
+
         status.setText(L18n.localize("railroad.code_actions.computing"));
         controller.resolve(discovery, action).whenComplete((resolution, failure) -> {
             if (closed)
                 return;
+
             if (failure != null) {
                 Throwable cause = failure instanceof CompletionException && failure.getCause() != null
                     ? failure.getCause()
@@ -251,15 +264,19 @@ public final class CodeActionMenu implements AutoCloseable {
                         showResolution(new CodeActionController.Resolution(CodeActionController.Status.FAILED,
                             discovery, action, null, L18n.localize("railroad.code_actions.cancelled")));
                     }
+
                     return;
                 }
+
                 Railroad.LOGGER.error("Failed to resolve code action '{}'", action.title(), cause);
                 resolution = new CodeActionController.Resolution(CodeActionController.Status.FAILED, discovery,
                     action, null, L18n.localize("railroad.code_actions.failed"));
             }
+
             resolutions.put(action, resolution);
             if (list.getSelectionModel().getSelectedItem() != action)
                 return;
+
             showResolution(resolution);
             if (pendingChoice == action) {
                 choose();
@@ -272,11 +289,13 @@ public final class CodeActionMenu implements AutoCloseable {
         if (resolution.preview() != null) {
             preview.show(resolution.preview());
         }
+
         boolean ready = resolution.status() == CodeActionController.Status.READY;
         status.getStyleClass().remove("code-action-error");
         if (!ready) {
             status.getStyleClass().add("code-action-error");
         }
+
         status.setText(ready ? L18n.localize("railroad.code_actions.ready") : resolution.message());
     }
 
@@ -290,6 +309,7 @@ public final class CodeActionMenu implements AutoCloseable {
                 setText(null);
                 return;
             }
+
             setText(item.available() ? item.title() : item.title() + " — " + item.unavailableReason());
             if (!item.available()) {
                 getStyleClass().add("code-action-unavailable");

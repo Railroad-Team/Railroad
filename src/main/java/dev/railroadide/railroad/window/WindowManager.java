@@ -73,6 +73,7 @@ public class WindowManager {
         if (this.primaryStage.getIcons().isEmpty()) {
             this.primaryStage.getIcons().add(AppResources.icon());
         }
+
         trackWindowEvents(this.primaryStage);
     }
 

@@ -37,8 +37,10 @@ public class RedNodeCancellationTest {
             assertEquals(index + 1, child.end());
             assertSame(root, child.parent().orElseThrow());
         }
+
         assertSame(children, root.children(() -> {
         }));
+
         assertThrows(UnsupportedOperationException.class, children::clear);
         assertDoesNotThrow(() -> SyntaxTreeValidator.validate(root));
     }
@@ -63,6 +65,7 @@ public class RedNodeCancellationTest {
             source.token().throwIfCancellationRequested();
             firstCheck.countDown();
         })));
+
         Thread waiter = Thread.ofPlatform().unstarted(result);
 
         try {

@@ -46,13 +46,21 @@ public record WorkspaceEditPreview(
         return problems.isEmpty();
     }
 
-    /** Where a text change would be applied and how it would be persisted. */
+    /**
+     * Where a text change would be applied and how it would be persisted.
+     */
     public enum Target {
-        /** An open editor's buffer: one undoable editor change, persisted by the editor's normal autosave. */
+        /**
+         * An open editor's buffer: one undoable editor change, persisted by the editor's normal autosave.
+         */
         EDITOR,
-        /** An unsaved draft retained without an editor: it stays unsaved and is restored when reopened. */
+        /**
+         * An unsaved draft retained without an editor: it stays unsaved and is restored when reopened.
+         */
         DRAFT,
-        /** A file with no editor or draft: written to disk during application. */
+        /**
+         * A file with no editor or draft: written to disk during application.
+         */
         DISK
     }
 
@@ -139,13 +147,21 @@ public record WorkspaceEditPreview(
             Objects.requireNonNull(kind, "kind");
         }
 
-        /** File operation kinds. */
+        /**
+         * File operation kinds.
+         */
         public enum Kind {
-            /** A new file is created. */
+            /**
+             * A new file is created.
+             */
             CREATE,
-            /** An existing file is deleted. */
+            /**
+             * An existing file is deleted.
+             */
             DELETE,
-            /** An existing file is renamed or moved. */
+            /**
+             * An existing file is renamed or moved.
+             */
             RENAME
         }
     }

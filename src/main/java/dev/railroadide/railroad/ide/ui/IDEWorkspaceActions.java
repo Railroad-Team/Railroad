@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.ide.ui;
 
-/** Actions exposed by the current IDE workspace to menus and other navigation controls. */
+/**
+ * Actions exposed by the current IDE workspace to menus and other navigation controls.
+ */
 public interface IDEWorkspaceActions {
     /**
      * Checks whether an earlier editor navigation entry is available.

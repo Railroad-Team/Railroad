@@ -70,6 +70,7 @@ public class SettingsPane extends RRVBox {
                 }
             }
         });
+
         tree.getStyleClass().add("settings-category-tree");
         VBox.setVgrow(tree, Priority.ALWAYS);
         leftVbox.getChildren().addAll(searchBar, tree);
@@ -139,6 +140,7 @@ public class SettingsPane extends RRVBox {
                     detectedPane.getStyleClass().add("settings-detected-pane");
                     content.getChildren().addFirst(detectedPane);
                 }
+
                 return content;
             });
 
@@ -163,6 +165,7 @@ public class SettingsPane extends RRVBox {
                     .getParent()) {
                     ancestor.setExpanded(true);
                 }
+
                 tree.getSelectionModel().select(toSelect);
                 tree.scrollTo(tree.getRow(toSelect));
             }
@@ -196,6 +199,7 @@ public class SettingsPane extends RRVBox {
 
             SettingsHandler.saveSettings();
         });
+
         cancel.setOnAction(_ -> {
             SettingsHandler.loadSettings();
             SettingsHandler.getSettingsHolder().updateAll();
@@ -222,11 +226,13 @@ public class SettingsPane extends RRVBox {
     private static TreeItem<LocalizedLabel> findCategory(TreeItem<LocalizedLabel> item, String path) {
         if (item.getValue() != null && Objects.equals(item.getValue().getUserData(), path))
             return item;
+
         for (TreeItem<LocalizedLabel> child : item.getChildren()) {
             TreeItem<LocalizedLabel> match = findCategory(child, path);
             if (match != null)
                 return match;
         }
+
         return null;
     }
 

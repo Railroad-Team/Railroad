@@ -11,14 +11,14 @@ import static org.junit.jupiter.api.Assertions.*;
 public class JavaOverrideGraphExtractorTest {
     @Test
     public void nestedTypesUseTheirDeclaringPackageForPackagePrivateOverrides() {
-        var base = type("api.Base");
-        var outer = type("api.Outer");
-        var otherOuter = type("other.Outer");
-        var child = nestedType(outer, "Child");
-        var otherChild = nestedType(otherOuter, "Child");
-        var inherited = method(base.id(), "run", "package", Set.of());
-        var implementation = method(child.id(), "run", "public", Set.of());
-        var inaccessible = method(otherChild.id(), "run", "public", Set.of());
+        SymbolDescriptor base = type("api.Base");
+        SymbolDescriptor outer = type("api.Outer");
+        SymbolDescriptor otherOuter = type("other.Outer");
+        SymbolDescriptor child = nestedType(outer, "Child");
+        SymbolDescriptor otherChild = nestedType(otherOuter, "Child");
+        SymbolDescriptor inherited = method(base.id(), "run", "package", Set.of());
+        SymbolDescriptor implementation = method(child.id(), "run", "public", Set.of());
+        SymbolDescriptor inaccessible = method(otherChild.id(), "run", "public", Set.of());
         var id = DocumentId.create();
         var shard = new SemanticIndexShard(id, DocumentVersion.initial(), DocumentUri.inMemory(id),
             List.of(base, outer, otherOuter, child, otherChild, inherited, implementation, inaccessible),
@@ -26,6 +26,7 @@ public class JavaOverrideGraphExtractorTest {
                 new SymbolEdge(otherChild.id(), base.id(), EdgeKindId.SUBTYPE)));
         var graph = WorkspaceSymbolGraph.of(JavaOverrideGraphExtractor.extract(List.of(shard), () -> {
         }));
+
         assertEquals(List.of(new SymbolEdge(implementation.id(), inherited.id(), EdgeKindId.OVERRIDE)),
             graph.outgoingEdges(implementation.id()));
         assertTrue(graph.outgoingEdges(inaccessible.id()).isEmpty());
@@ -33,19 +34,21 @@ public class JavaOverrideGraphExtractorTest {
 
     @Test
     public void specializesComparableAndGenericChainsWithoutLinkingDifferentGenericArguments() {
-        var comparable = genericType("api.Comparable", "T");
-        var comparableString = type("impl.StringOrder");
-        var compare = genericMethod(comparable.id(), "compareTo", new TypeReference("T"), "java.lang.Object");
-        var compareString = genericMethod(comparableString.id(), "compareTo", new TypeReference("java.lang.String"),
+        SymbolDescriptor comparable = genericType("api.Comparable", "T");
+        SymbolDescriptor comparableString = type("impl.StringOrder");
+        SymbolDescriptor compare = genericMethod(comparable.id(), "compareTo", new TypeReference("T"),
+            "java.lang.Object");
+        SymbolDescriptor compareString = genericMethod(comparableString.id(), "compareTo",
+            new TypeReference("java.lang.String"),
             "java.lang.String");
-        var base = genericType("api.Base", "T");
-        var middle = genericType("api.Middle", "U");
-        var child = type("impl.Child");
-        var wrong = type("impl.Wrong");
-        var accept = genericMethod(base.id(), "accept", new TypeReference("T"), "java.lang.Object");
+        SymbolDescriptor base = genericType("api.Base", "T");
+        SymbolDescriptor middle = genericType("api.Middle", "U");
+        SymbolDescriptor child = type("impl.Child");
+        SymbolDescriptor wrong = type("impl.Wrong");
+        SymbolDescriptor accept = genericMethod(base.id(), "accept", new TypeReference("T"), "java.lang.Object");
         var listString = new TypeReference("java.util.List", List.of(new TypeReference("java.lang.String")), 0, null);
-        var acceptChild = genericMethod(child.id(), "accept", listString, "java.util.List");
-        var acceptWrong = genericMethod(wrong.id(), "accept", new TypeReference("java.util.List",
+        SymbolDescriptor acceptChild = genericMethod(child.id(), "accept", listString, "java.util.List");
+        SymbolDescriptor acceptWrong = genericMethod(wrong.id(), "accept", new TypeReference("java.util.List",
             List.of(new TypeReference("java.lang.Integer")), 0, null), "java.util.List");
         var id = DocumentId.create();
         var shard = new SemanticIndexShard(id, DocumentVersion.initial(), DocumentUri.inMemory(id),
@@ -61,6 +64,7 @@ public class JavaOverrideGraphExtractorTest {
                 new SymbolEdge(wrong.id(), base.id(), EdgeKindId.SUBTYPE, List.of(listString))));
         var graph = WorkspaceSymbolGraph.of(JavaOverrideGraphExtractor.extract(List.of(shard), () -> {
         }));
+
         assertTrue(graph.outgoingEdges(compareString.id())
             .contains(new SymbolEdge(compareString.id(), compare.id(), EdgeKindId.OVERRIDE)));
         assertTrue(graph.outgoingEdges(acceptChild.id())
@@ -70,18 +74,18 @@ public class JavaOverrideGraphExtractorTest {
 
     @Test
     public void findsOverrideAndImplementationWithoutStaticPrivateOrUnrelatedEdges() {
-        var base = type("api.Base");
-        var child = type("impl.Child");
-        var unrelated = type("api.Unrelated");
-        var inherited = method(base.id(), "run", "public", Set.of());
-        var implementation = method(child.id(), "run", "public", Set.of());
-        var other = method(unrelated.id(), "run", "public", Set.of());
-        var hidden = method(base.id(), "hidden", "private", Set.of());
-        var hiddenChild = method(child.id(), "hidden", "public", Set.of());
-        var staticBase = method(base.id(), "utility", "public", Set.of("static"));
-        var staticChild = method(child.id(), "utility", "public", Set.of("static"));
-        var packageBase = method(base.id(), "packageOnly", "package", Set.of());
-        var packageChild = method(child.id(), "packageOnly", "public", Set.of());
+        SymbolDescriptor base = type("api.Base");
+        SymbolDescriptor child = type("impl.Child");
+        SymbolDescriptor unrelated = type("api.Unrelated");
+        SymbolDescriptor inherited = method(base.id(), "run", "public", Set.of());
+        SymbolDescriptor implementation = method(child.id(), "run", "public", Set.of());
+        SymbolDescriptor other = method(unrelated.id(), "run", "public", Set.of());
+        SymbolDescriptor hidden = method(base.id(), "hidden", "private", Set.of());
+        SymbolDescriptor hiddenChild = method(child.id(), "hidden", "public", Set.of());
+        SymbolDescriptor staticBase = method(base.id(), "utility", "public", Set.of("static"));
+        SymbolDescriptor staticChild = method(child.id(), "utility", "public", Set.of("static"));
+        SymbolDescriptor packageBase = method(base.id(), "packageOnly", "package", Set.of());
+        SymbolDescriptor packageChild = method(child.id(), "packageOnly", "public", Set.of());
         var id = DocumentId.create();
         var shard = new SemanticIndexShard(id, DocumentVersion.initial(), DocumentUri.inMemory(id),
             List.of(base, child, unrelated, inherited, implementation, other, hidden, hiddenChild,
@@ -90,11 +94,13 @@ public class JavaOverrideGraphExtractorTest {
             List.of(new SymbolEdge(child.id(), base.id(), EdgeKindId.SUBTYPE)));
         var graph = WorkspaceSymbolGraph.of(JavaOverrideGraphExtractor.extract(List.of(shard), () -> {
         }));
+
         assertEquals(List.of(new SymbolEdge(implementation.id(), inherited.id(), EdgeKindId.OVERRIDE)),
             graph.outgoingEdges(implementation.id()));
-        for (var absent : List.of(other, hiddenChild, staticChild, packageChild)) {
+        for (SymbolDescriptor absent : List.of(other, hiddenChild, staticChild, packageChild)) {
             assertTrue(graph.outgoingEdges(absent.id()).isEmpty(), absent.simpleName());
         }
+
         assertEquals(List.of(new SymbolEdge(child.id(), base.id(), EdgeKindId.SUBTYPE)),
             graph.incomingEdges(base.id()));
     }
@@ -111,7 +117,7 @@ public class JavaOverrideGraphExtractorTest {
     }
 
     private static SymbolDescriptor genericType(String name, String parameter) {
-        var type = type(name);
+        SymbolDescriptor type = type(name);
         return new SymbolDescriptor(type.id(), type.kind(), type.simpleName(), type.qualifiedName(), null,
             new SymbolSignature(
                 List.of(new SymbolSignature.TypeParameter(parameter, List.of(new TypeReference("java.lang.Object")))),

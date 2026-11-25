@@ -34,6 +34,7 @@ public record SymbolKindId(String id) implements SymbolKind {
     public static SymbolKindId from(SymbolKind kind) {
         if (Objects.requireNonNull(kind, "kind") instanceof SymbolKindId id)
             return id;
+
         return SHARED.computeIfAbsent(kind.id(), SymbolKindId::new);
     }
 }

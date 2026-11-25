@@ -32,6 +32,7 @@ public final class NameMatcher {
     public static @Nullable Match match(String pattern, String text) {
         if (pattern.isEmpty())
             return new Match(0, new int[0]);
+
         if (pattern.length() > text.length())
             return null;
 
@@ -41,6 +42,7 @@ public final class NameMatcher {
         if (humps == null) {
             humps = subsequencePositions(lowerPattern, lowerText);
         }
+
         if (humps == null)
             return null;
 
@@ -52,6 +54,7 @@ public final class NameMatcher {
                 best = new Match(substringScore, substring);
             }
         }
+
         return best;
     }
 
@@ -66,14 +69,18 @@ public final class NameMatcher {
     public static boolean isWordStart(String text, int index) {
         if (index == 0)
             return true;
+
         char current = text.charAt(index);
         char previous = text.charAt(index - 1);
         if (!Character.isLetterOrDigit(current))
             return false;
+
         if (!Character.isLetterOrDigit(previous))
             return true;
+
         if (Character.isUpperCase(current) && !Character.isUpperCase(previous))
             return true;
+
         return Character.isLetter(current) && Character.isDigit(previous);
     }
 
@@ -92,15 +99,19 @@ public final class NameMatcher {
                         break;
                     }
                 }
+
                 if (found < 0) {
                     found = lowerText.indexOf(wanted, from);
                 }
             }
+
             if (found < 0)
                 return null;
+
             positions[index] = found;
             from = found + 1;
         }
+
         return positions;
     }
 
@@ -111,9 +122,11 @@ public final class NameMatcher {
             int found = lowerText.indexOf(lowerPattern.charAt(index), from);
             if (found < 0)
                 return null;
+
             positions[index] = found;
             from = found + 1;
         }
+
         return positions;
     }
 
@@ -121,16 +134,19 @@ public final class NameMatcher {
         int start = lowerText.indexOf(lowerPattern);
         if (start < 0)
             return null;
+
         for (int candidate = start; candidate >= 0; candidate = lowerText.indexOf(lowerPattern, candidate + 1)) {
             if (isWordStart(text, candidate)) {
                 start = candidate;
                 break;
             }
         }
+
         int[] positions = new int[lowerPattern.length()];
         for (int index = 0; index < positions.length; index++) {
             positions[index] = start + index;
         }
+
         return positions;
     }
 
@@ -142,21 +158,26 @@ public final class NameMatcher {
             if (text.charAt(position) == pattern.charAt(index)) {
                 score += EXACT_CASE;
             }
+
             if (isWordStart(text, position)) {
                 score += WORD_START;
             }
+
             if (index > 0 && positions[index - 1] == position - 1) {
                 score += CONSECUTIVE;
             }
         }
+
         if (positions[0] == 0) {
             score += LEADING;
         }
+
         if (text.equalsIgnoreCase(pattern)) {
             score += EQUAL;
         } else if (text.regionMatches(true, 0, pattern, 0, pattern.length())) {
             score += PREFIX;
         }
+
         return score - (text.length() - pattern.length()) / 4;
     }
 

@@ -36,6 +36,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import dev.railroadide.railroad.ide.diagnostics.BuildProblems;
 
 /**
  * Encapsulates all Gradle-related state for a {@link Project}, including cached environments and models.
@@ -179,7 +180,7 @@ public final class GradleManager {
             false,
             GradleConsoleMode.PLAIN);
 
-        var problems = project.getRunSessions().buildProblems().begin(taskName, project.getPath());
+        BuildProblems.Report problems = project.getRunSessions().buildProblems().begin(taskName, project.getPath());
         GradleTaskExecutionHandle handle = execService.runTask(request, problems);
         handle.onOutputReceived(event -> output.accept(event.output()));
         handle.onErrorReceived(event -> error.accept(event.errorMessage()));
@@ -231,7 +232,8 @@ public final class GradleManager {
             false,
             GradleConsoleMode.RICH);
 
-        var activity = BackgroundActivities.shared().start("railroad.activity.downloading_sources");
+        BackgroundActivities.Handle activity = BackgroundActivities.shared()
+            .start("railroad.activity.downloading_sources");
         GradleTaskExecutionHandle handle;
         try {
             handle = ScopedValue.where(ActivityProgress.CURRENT, activity).call(() -> execService.runTask(request));
@@ -417,6 +419,7 @@ public final class GradleManager {
     }
 
     // TODO: Support changing JDK at runtime (this would require recreating the execution service)
+
     private GradleExecutionService getExecutionService(JDK jdkOverride) {
         synchronized (lock) {
             if (executionService == null) {

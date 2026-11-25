@@ -13,6 +13,7 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
+import lombok.AccessLevel;
 
 /**
  * Manages the list of projects and the currently open project.
@@ -21,7 +22,7 @@ import java.util.function.Consumer;
 public final class ProjectManager {
     private final ObservableList<Project> projects = FXCollections.observableArrayList();
     private final Runnable configSaver;
-    @Getter(lombok.AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
     private final Consumer<ProjectEvent> eventPublisher;
     @Getter
     private Project openProject;
@@ -148,6 +149,7 @@ public final class ProjectManager {
         Project beingClosed = this.openProject;
         if (beingClosed == project)
             return;
+
         this.openProject = project;
 
         eventPublisher.accept(new ProjectEvent(

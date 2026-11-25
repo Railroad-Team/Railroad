@@ -54,7 +54,7 @@ public class ThemeExamplePane {
      */
     public ThemeExamplePane(final String themeName, Window owner) {
         this.themeName = themeName;
-        var previewContent = createPreviewContent();
+        VBox previewContent = createPreviewContent();
 
         var scrollPane = new ScrollPane(previewContent);
         scrollPane.setFitToWidth(true);
@@ -87,13 +87,13 @@ public class ThemeExamplePane {
         mainContainer.setAlignment(Pos.TOP_LEFT);
         mainContainer.getStyleClass().add("theme-example-main-container");
 
-        var form = createFormSection();
+        VBox form = createFormSection();
         mainContainer.getChildren().add(form);
 
-        var list = createListSection();
+        VBox list = createListSection();
         mainContainer.getChildren().add(list);
 
-        var buttons = createButtonSection();
+        VBox buttons = createButtonSection();
         mainContainer.getChildren().add(buttons);
 
         return mainContainer;
@@ -118,7 +118,7 @@ public class ThemeExamplePane {
     }
 
     private VBox createFormSection() {
-        var formSection = createSection("railroad.home.settings.appearance.preview.form.components");
+        VBox formSection = createSection("railroad.home.settings.appearance.preview.form.components");
 
         var textFieldRow = new FlowPane(12, 12);
         textFieldRow.setAlignment(Pos.CENTER_LEFT);
@@ -163,7 +163,7 @@ public class ThemeExamplePane {
     }
 
     private VBox createListSection() {
-        var listSection = createSection("railroad.home.settings.appearance.preview.list.components");
+        VBox listSection = createSection("railroad.home.settings.appearance.preview.list.components");
 
         var listView = new RRListView<>();
         listView.getItems().addAll(
@@ -206,7 +206,7 @@ public class ThemeExamplePane {
     }
 
     private VBox createButtonSection() {
-        var buttonSection = createSection("railroad.home.settings.appearance.preview.button.components");
+        VBox buttonSection = createSection("railroad.home.settings.appearance.preview.button.components");
 
         var buttonRow1 = new FlowPane(8, 8);
         buttonRow1.setAlignment(Pos.CENTER_LEFT);
@@ -258,8 +258,8 @@ public class ThemeExamplePane {
         closeButton.setVariant(ButtonVariant.SECONDARY);
         closeButton.setCancelButton(true);
         closeButton.setOnAction(e -> {
-            var target = (Node) e.getTarget();
-            var stage = (Stage) target.sceneProperty().get().getWindow();
+            Node target = (Node) e.getTarget();
+            Stage stage = (Stage) target.sceneProperty().get().getWindow();
             stage.close();
         });
 
@@ -269,8 +269,8 @@ public class ThemeExamplePane {
             // Apply the theme to the main application
             ThemeManager.setTheme(themeName.replace(".css", ""));
 
-            var target = (Node) event.getTarget();
-            var stage = (Stage) target.sceneProperty().get().getWindow();
+            Node target = (Node) event.getTarget();
+            Stage stage = (Stage) target.sceneProperty().get().getWindow();
             stage.close();
         });
 

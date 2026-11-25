@@ -224,6 +224,7 @@ public sealed interface EditorDiagnostic<L extends Location<?>>
         Objects.requireNonNull(origin, "origin");
         if (message.isBlank())
             throw new IllegalArgumentException("Diagnostic message must not be blank");
+
         if (source.isBlank())
             throw new IllegalArgumentException("Diagnostic source must not be blank");
     }

@@ -78,6 +78,7 @@ public final class ToolingGradleService implements GradleService {
         while (current != null) {
             if (current instanceof SocketException || current instanceof SocketTimeoutException)
                 return true;
+
             if (current instanceof UncheckedIOException uio && uio.getCause() != null) {
                 current = uio.getCause();
                 continue;
@@ -89,6 +90,7 @@ public final class ToolingGradleService implements GradleService {
 
             current = current.getCause();
         }
+
         return false;
     }
 

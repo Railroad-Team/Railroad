@@ -58,8 +58,8 @@ public class DefaultDocumentEditorStateServiceTest {
         var service = new DefaultDocumentEditorStateService();
         var first = new TestEditor("first");
         var second = new TestEditor("second");
-        var changes = new ArrayList<Optional<TextEditorAccess>>();
-        var subscription = service.observeActiveTextEditor(changes::add);
+        List<Optional<TextEditorAccess>> changes = new ArrayList<Optional<TextEditorAccess>>();
+        EditorSubscription subscription = service.observeActiveTextEditor(changes::add);
 
         service.setActiveEditor(first, "text");
         service.setActiveEditor(first, "text");
@@ -80,25 +80,27 @@ public class DefaultDocumentEditorStateServiceTest {
         var service = new DefaultDocumentEditorStateService();
         var first = new TestEditor("first");
         var second = new TestEditor("second");
-        var changes = new ArrayList<Optional<TextEditorAccess>>();
-        var firstSubscription = service.observeActiveTextEditor(target -> {
+        List<Optional<TextEditorAccess>> changes = new ArrayList<Optional<TextEditorAccess>>();
+        EditorSubscription firstSubscription = service.observeActiveTextEditor(target -> {
             if (target.orElse(null) == first) {
                 service.setActiveEditor(second, "text");
             }
         });
-        var secondSubscription = service.observeActiveTextEditor(changes::add);
+
+        EditorSubscription secondSubscription = service.observeActiveTextEditor(changes::add);
         service.setActiveEditor(first, "text");
         assertEquals(List.of(Optional.empty(), Optional.of(second)), changes);
         firstSubscription.close();
         secondSubscription.close();
 
-        var disposedChanges = new ArrayList<Optional<TextEditorAccess>>();
-        var pending = new EditorSubscription[1];
-        var disposing = service.observeActiveTextEditor(target -> {
+        List<Optional<TextEditorAccess>> disposedChanges = new ArrayList<Optional<TextEditorAccess>>();
+        EditorSubscription[] pending = new EditorSubscription[1];
+        EditorSubscription disposing = service.observeActiveTextEditor(target -> {
             if (target.orElse(null) == first) {
                 pending[0].close();
             }
         });
+
         pending[0] = service.observeActiveTextEditor(disposedChanges::add);
         service.setActiveEditor(first, "text");
         assertEquals(List.of(Optional.of(second)), disposedChanges);
@@ -108,11 +110,12 @@ public class DefaultDocumentEditorStateServiceTest {
     @Test
     public void initialListenerFailureDoesNotRetainRegistration() {
         var service = new DefaultDocumentEditorStateService();
-        var calls = new ArrayList<Optional<TextEditorAccess>>();
+        List<Optional<TextEditorAccess>> calls = new ArrayList<Optional<TextEditorAccess>>();
         assertThrows(IllegalStateException.class, () -> service.observeActiveTextEditor(target -> {
             calls.add(target);
             throw new IllegalStateException("listener failure");
         }));
+
         service.setActiveEditor(new TestEditor("text"), "text");
         assertEquals(1, calls.size());
     }
@@ -126,10 +129,11 @@ public class DefaultDocumentEditorStateServiceTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
         var check = new FutureTask<>(() -> {
             var service = Services.DOCUMENT_EDITOR_STATE;
-            var previous = service.getActiveTextEditor().orElse(null);
+            TextEditorAccess previous = service.getActiveTextEditor().orElse(null);
             String previousLanguage = service.getLanguageId();
             var first = new TestEditor("first");
             var second = new TestEditor("second");
@@ -165,8 +169,10 @@ public class DefaultDocumentEditorStateServiceTest {
                 root.getChildren().clear();
                 service.setActiveEditor(previous, previousLanguage);
             }
+
             return null;
         });
+
         Platform.runLater(check);
         check.get(10, TimeUnit.SECONDS);
     }

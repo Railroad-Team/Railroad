@@ -20,7 +20,9 @@ public record CompletionItem(
     Kind kind,
     boolean hasParameters
 ) {
-    /** Symbol categories displayed by the completion popup. */
+    /**
+     * Symbol categories displayed by the completion popup.
+     */
     public enum Kind {
         TEXT,
         METHOD,
@@ -73,10 +75,13 @@ public record CompletionItem(
         return isStatic ? "static " + name : name;
     }
 
-    /** @return complete label for accessibility, tooltips and plain-text consumers */
+    /**
+     * @return complete label for accessibility, tooltips and plain-text consumers
+     */
     public String displayText() {
         if (kind == Kind.TYPE)
             return label + " (type)";
+
         return label + suffix + (detail.isEmpty() ? "" : " : " + detail);
     }
 

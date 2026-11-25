@@ -48,9 +48,11 @@ public final class GoToFileContributor implements GoToContributor<GoToFileContri
                 activityCheck.run();
                 if (directory.equals(normalizedRoot))
                     return FileVisitResult.CONTINUE;
+
                 String name = directory.getFileName().toString();
                 if (name.startsWith(".") || BUILD_OUTPUTS.contains(name) && !insideSources(directory))
                     return FileVisitResult.SKIP_SUBTREE;
+
                 return FileVisitResult.CONTINUE;
             }
 
@@ -59,6 +61,7 @@ public final class GoToFileContributor implements GoToContributor<GoToFileContri
                 if (attributes.isRegularFile()) {
                     files.add(new FileEntry(file, normalizedRoot.relativize(file).toString().replace('\\', '/')));
                 }
+
                 return FileVisitResult.CONTINUE;
             }
 
@@ -72,9 +75,11 @@ public final class GoToFileContributor implements GoToContributor<GoToFileContri
                     if (segment.toString().equals("src"))
                         return true;
                 }
+
                 return false;
             }
         });
+
         return files;
     }
 

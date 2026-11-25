@@ -122,6 +122,7 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
             for (ThrownException exception : unhandled) {
                 if (isAllowed(exception.qualifiedTypeName(), allowed, context))
                     continue;
+
                 reporter.report(exception.reportNode(), exception.qualifiedTypeName());
             }
         });
@@ -160,9 +161,11 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
                         if (type instanceof JavaTypes.TypeVariableType
                             && context.isAssignable(THROWABLE, type, typeNode))
                             continue;
+
                         reportInvalidTypeReference(context, reporter, typeNode, "declared thrown type");
                     }
                 }
+
                 return;
             }
 
@@ -170,6 +173,7 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
                 for (SyntaxNode typeNode : catchTypeNodes(node)) {
                     reportInvalidTypeReference(context, reporter, typeNode, "caught type");
                 }
+
                 return;
             }
 
@@ -195,6 +199,7 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
 
     // TODO: We need to make these exceptions a user-defined policy decision rather than hardcoding them in the
     // inspection
+
     private static void reportDisallowedExceptionInMethodSignature(
         JavaRuleContext context,
         JavaInspectionRuleReporter reporter
@@ -204,6 +209,7 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
             Symbol methodSymbol = context.declaredSymbol(syntaxNode).orElse(null);
             if (methodSymbol == null)
                 continue;
+
             if (isInsidePrivateHelperType(context, syntaxNode))
                 continue;
 
@@ -229,8 +235,10 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
             if (TYPE_DECLARATION_KINDS.contains(current.kind().id())
                 && context.hasDirectModifierToken(current, JavaTokenType.PRIVATE_KEYWORD))
                 return true;
+
             current = current.parent().orElse(null);
         }
+
         return false;
     }
 
@@ -250,6 +258,7 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         for (SyntaxNode child : node.children()) {
             if (JAVA_CATCH_CLAUSE.equals(child.kind().id()) || JAVA_FINALLY_CLAUSE.equals(child.kind().id()))
                 continue;
+
             exceptions.addAll(collectUnhandledCheckedExceptions(context, child, allowed));
         }
 
@@ -302,6 +311,7 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
                     exceptions.add(exception);
                     continue;
                 }
+
                 for (ThrownException tryException : tryExceptions) {
                     if (isCoveredByAny(tryException.qualifiedTypeName(), catchTypes, context)) {
                         exceptions.add(new ThrownException(
@@ -330,6 +340,7 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         SyntaxNode parameter = context.directChild(catchClause, JavaSyntaxKinds.PARAMETER.id());
         if (parameter == null)
             return false;
+
         String parameterName = context.lastIdentifierLikeTokenText(parameter);
         String expressionName = context.canonicalQualifiedName(thrownExpression);
         return parameterName != null && parameterName.equals(expressionName);
@@ -383,6 +394,7 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
         for (String qualifiedTypeName : context.thrownTypeNames(symbol)) {
             if (!context.isCheckedExceptionType(qualifiedTypeName))
                 continue;
+
             out.add(new ThrownException(reportNodeForCallable(context, node), qualifiedTypeName));
         }
     }
@@ -393,6 +405,7 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
             if (selector != null)
                 return selector;
         }
+
         return node;
     }
 
@@ -405,6 +418,7 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
             if (isCoveredByAny(qualifiedTypeName, context.catchParameterTypeNames(catchClause), context))
                 return true;
         }
+
         return false;
     }
 
@@ -417,6 +431,7 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
             if (qualifiedTypeName.equals(candidate) || context.isSubtype(qualifiedTypeName, candidate))
                 return true;
         }
+
         return false;
     }
 
@@ -454,6 +469,7 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
                     out.add(child);
                 }
             }
+
             return;
         }
 
@@ -481,8 +497,10 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
                     out.add(child);
                 }
             }
+
             return;
         }
+
         for (SyntaxNode child : node.children()) {
             collectTypeNodes(child, out);
         }
@@ -495,6 +513,7 @@ public final class CoreExceptionInspection implements JavaInspectionRuleProvider
                 children.add(child);
             }
         }
+
         return List.copyOf(children);
     }
 

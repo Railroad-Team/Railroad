@@ -51,6 +51,7 @@ public final class JdiConnections {
         throws IllegalConnectorArgumentsException, IOException {
         if (timeout.isNegative() || timeout.isZero())
             throw new IllegalArgumentException("Attachment timeout must be positive");
+
         if (port < 1 || port > 65535)
             throw new IllegalArgumentException(String.format("Invalid port number: %d", port));
 
@@ -70,12 +71,14 @@ public final class JdiConnections {
         while (true) {
             if (cancelled.getAsBoolean())
                 throw new CancellationException("Debug attachment cancelled");
+
             try {
                 VirtualMachine vm = connector.attach(arguments);
                 if (cancelled.getAsBoolean()) {
                     vm.dispose();
                     throw new CancellationException("Debug attachment cancelled");
                 }
+
                 return vm;
             } catch (ConnectException exception) {
                 if (System.nanoTime() >= deadline)

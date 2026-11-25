@@ -7,7 +7,9 @@ import org.gradle.tooling.events.ProgressListener;
 import org.gradle.tooling.events.problems.*;
 import org.gradle.tooling.model.UnsupportedMethodException;
 
-/** Reads compiler-provided coordinates from Gradle versions supporting problem events. */
+/**
+ * Reads compiler-provided coordinates from Gradle versions supporting problem events.
+ */
 public final class GradleBuildProblems {
     private GradleBuildProblems() {
     }
@@ -16,18 +18,21 @@ public final class GradleBuildProblems {
         launcher.addProgressListener((ProgressListener) event -> {
             if (!(event instanceof SingleProblemEvent single))
                 return;
-            var problem = single.getProblem();
-            var definition = problem.getDefinition();
+
+            Problem problem = single.getProblem();
+            ProblemDefinition definition = problem.getDefinition();
             if (definition.getSeverity().getSeverity() != Severity.ERROR.getSeverity())
                 return;
+
             String message = problem.getContextualLabel() == null
                 ? null
                 : problem.getContextualLabel().getContextualLabel();
             if (message == null || message.isBlank()) {
                 message = definition.getId().getDisplayName();
             }
+
             try {
-                for (var origin : problem.getOriginLocations()) {
+                for (Location origin : problem.getOriginLocations()) {
                     if (origin instanceof LineInFileLocation location) {
                         report.location(location.getPath(), location.getLine(), location.getColumn(), message);
                     }

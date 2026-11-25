@@ -5,7 +5,9 @@ import dev.railroadide.railroad.ui.id.UIIds;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.HBox;
 
-/** Project creation workspace pairing project-type selection with the selected type's onboarding interface. */
+/**
+ * Project creation workspace pairing project-type selection with the selected type's onboarding interface.
+ */
 public class NewProjectPane extends HBox {
     private final ProjectTypePane projectTypePane;
     private final ProjectDetailsPane projectDetailsPane;

@@ -42,6 +42,7 @@ public class CodeEditorDiagnosticsRequestTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
     }
 
@@ -63,6 +64,7 @@ public class CodeEditorDiagnosticsRequestTest {
             if (call == 1) {
                 await(releaseOld);
             }
+
             return diagnostics(context, call == 1 ? "OLD" : "NEW");
         })) {
             try {
@@ -75,9 +77,11 @@ public class CodeEditorDiagnosticsRequestTest {
                     } else {
                         fixture.editor.request();
                     }
+
                     assertTrue(old.cancellationToken().isCancellationRequested());
                     return null;
                 });
+
                 FeatureRequestContext current = fixture.nextRequest();
                 assertNotSame(old, current);
                 assertSame(old.documentSnapshot(), current.documentSnapshot());
@@ -90,6 +94,7 @@ public class CodeEditorDiagnosticsRequestTest {
                 });
 
                 // The old provider deliberately ignores cancellation and completes last.
+
                 releaseOld.countDown();
                 fixture.editor.awaitRequests();
                 onFx(() -> {
@@ -138,6 +143,7 @@ public class CodeEditorDiagnosticsRequestTest {
                         assertEquals(captured.documentSnapshot().version(),
                             fixture.store.capture().document(captured.documentSnapshot().id()).orElseThrow().version());
                     }
+
                     fixture.editor.refreshWorkspace();
                     fixture.editor.pauseWorkspaceDebounce();
                     assertTrue(captured.cancellationToken().isCancellationRequested());
@@ -175,6 +181,7 @@ public class CodeEditorDiagnosticsRequestTest {
                     fixture.editor.awaitRequests();
                     blocker.releaseAndAwait();
                 }
+
                 onFx(() -> {
                     assertTrue(fixture.editor.diagnosticCodes().isEmpty());
                     return null;
@@ -202,6 +209,7 @@ public class CodeEditorDiagnosticsRequestTest {
                     fixture.editor.awaitRequests();
                     blocker.releaseAndAwait();
                 }
+
                 FeatureRequestContext current = fixture.nextRequest();
                 assertTrue(old.cancellationToken().isCancellationRequested());
                 assertNotSame(old, current);
@@ -241,6 +249,7 @@ public class CodeEditorDiagnosticsRequestTest {
                     fixture.editor.awaitRequests();
                     blocker.releaseAndAwait();
                 }
+
                 onFx(() -> {
                     assertTrue(fixture.editor.isEditorClosed());
                     assertTrue(fixture.editor.diagnosticCodes().isEmpty());
@@ -266,6 +275,7 @@ public class CodeEditorDiagnosticsRequestTest {
                 Thread.currentThread().interrupt();
                 throw new CancellationException("Editor closed");
             }
+
             return diagnostics(context, "FINISHED");
         })) {
             try {
@@ -308,6 +318,7 @@ public class CodeEditorDiagnosticsRequestTest {
         try (Fixture fixture = open(context -> {
             if (calls.incrementAndGet() == 1)
                 throw new CompletionException(new ExecutionException(new IllegalStateException("Provider failed")));
+
             return diagnostics(context, "RECOVERED");
         })) {
             fixture.nextRequest();
@@ -316,6 +327,7 @@ public class CodeEditorDiagnosticsRequestTest {
                 fixture.editor.request();
                 return null;
             });
+
             fixture.nextRequest();
             fixture.editor.awaitRequests();
             onFx(() -> {
@@ -344,6 +356,7 @@ public class CodeEditorDiagnosticsRequestTest {
             pane.setDocumentStore(store);
             return pane;
         });
+
         return new Fixture(editor, store, dependency, provider);
     }
 
@@ -388,6 +401,7 @@ public class CodeEditorDiagnosticsRequestTest {
                 editor.dispose();
                 return null;
             });
+
             CodeEditorRequestTestSupport.awaitRequests(editor.featureRequests);
         }
     }
@@ -469,7 +483,6 @@ public class CodeEditorDiagnosticsRequestTest {
         private void awaitRequests() throws InterruptedException {
             CodeEditorRequestTestSupport.awaitRequests(featureRequests);
         }
-
     }
 
     private static final class FxBlocker implements AutoCloseable {
@@ -489,6 +502,7 @@ public class CodeEditorDiagnosticsRequestTest {
                     blocker.finished.completeExceptionally(failure);
                 }
             });
+
             assertTrue(blocker.entered.await(10, TimeUnit.SECONDS));
             return blocker;
         }

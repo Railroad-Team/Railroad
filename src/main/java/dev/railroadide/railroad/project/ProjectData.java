@@ -565,6 +565,7 @@ public final class ProjectData {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass())
             return false;
+
         ProjectData that = (ProjectData) o;
         return Objects.equals(data, that.data);
     }
@@ -585,29 +586,53 @@ public final class ProjectData {
      * Standard keys used for common project properties.
      */
     public static class DefaultKeys {
-        /** Key for the project name. */
+        /**
+         * Key for the project name.
+         */
         public static final String NAME = "project.name";
-        /** Key for the project path. */
+        /**
+         * Key for the project path.
+         */
         public static final String PATH = "project.path";
-        /** Key indicating whether Git should be initialized for the project. */
+        /**
+         * Key indicating whether Git should be initialized for the project.
+         */
         public static final String INIT_GIT = "project.initGit";
-        /** Key for the selected project license. */
+        /**
+         * Key for the selected project license.
+         */
         public static final String LICENSE = "project.license";
-        /** Key for custom project license text. */
+        /**
+         * Key for custom project license text.
+         */
         public static final String LICENSE_CUSTOM = "project.licenseCustom";
-        /** Key for the project author. */
+        /**
+         * Key for the project author.
+         */
         public static final String AUTHOR = "project.author";
-        /** Key for the project description. */
+        /**
+         * Key for the project description.
+         */
         public static final String DESCRIPTION = "project.description";
-        /** Key for project credits. */
+        /**
+         * Key for project credits.
+         */
         public static final String CREDITS = "project.credits";
-        /** Key for the project's issue tracker URL. */
+        /**
+         * Key for the project's issue tracker URL.
+         */
         public static final String ISSUES_URL = "project.issuesUrl";
-        /** Key for the project's homepage URL. */
+        /**
+         * Key for the project's homepage URL.
+         */
         public static final String HOMEPAGE_URL = "project.homepageUrl";
-        /** Key for the project's source repository URL. */
+        /**
+         * Key for the project's source repository URL.
+         */
         public static final String SOURCES_URL = "project.sourcesUrl";
-        /** Key for the project type. */
+        /**
+         * Key for the project type.
+         */
         public static final String TYPE = "project.type";
     }
 }

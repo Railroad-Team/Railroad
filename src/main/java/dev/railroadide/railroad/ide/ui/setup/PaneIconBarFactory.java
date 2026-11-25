@@ -19,6 +19,8 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Consumer;
+import javafx.scene.layout.Pane;
+import org.kordamp.ikonli.Ikon;
 
 /**
  * Builds the vertical/horizontal icon bars that toggle DetachableTabPanes via toolbar buttons.
@@ -42,7 +44,7 @@ public final class PaneIconBarFactory {
         Orientation orientation,
         int originalIndex
     ) {
-        var bar = orientation == Orientation.HORIZONTAL ? new RRHBox(4) : new RRVBox(4);
+        Pane bar = orientation == Orientation.HORIZONTAL ? new RRHBox(4) : new RRVBox(4);
         bar.getStyleClass().add("icon-bar-" + orientation.name().toLowerCase(Locale.ROOT));
 
         Map<Tab, ToggleButton> btnMap = new LinkedHashMap<>();
@@ -53,11 +55,12 @@ public final class PaneIconBarFactory {
         };
 
         Consumer<Tab> addButtonFor = tab -> {
-            var icon = tab instanceof IDEDockTab dockTab ? dockTab.getDockItem().icon() : FontAwesomeSolid.EYE;
+            Ikon icon = tab instanceof IDEDockTab dockTab ? dockTab.getDockItem().icon() : FontAwesomeSolid.EYE;
             var btn = new ToggleButton("", new FontIcon(icon));
             if (tab instanceof IDEDockTab dockTab) {
                 btn.setId("dock-item-button:" + dockTab.getDockItem().id());
             }
+
             btn.getStyleClass().add("icon-button");
 
             if (tab instanceof IDEDockTab dockTab) {
@@ -73,8 +76,10 @@ public final class PaneIconBarFactory {
                         if (!isVisible) {
                             split.getItems().add(Math.min(originalIndex, split.getItems().size()), pane);
                         }
+
                         pane.getSelectionModel().select(tab);
                     }
+
                     updateButtonStates.run();
                 });
             }
@@ -96,6 +101,7 @@ public final class PaneIconBarFactory {
                 if (change.wasAdded()) {
                     change.getAddedSubList().forEach(addButtonFor);
                 }
+
                 if (change.wasRemoved()) {
                     change.getRemoved().forEach(removeButtonFor);
                 }

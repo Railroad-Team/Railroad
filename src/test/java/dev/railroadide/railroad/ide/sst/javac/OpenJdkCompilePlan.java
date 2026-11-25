@@ -38,27 +38,30 @@ public record OpenJdkCompilePlan(List<Action> actions, List<Path> sourcePath, St
                 "No declarative compile action. The jtreg driver requires an adapter.");
 
         boolean preview = tags.stream().anyMatch(tag -> tag.name().equals("enablePreview"));
-        var actions = new ArrayList<Action>();
-        var compiled = new LinkedHashSet<Path>();
+        List<Action> actions = new ArrayList<Action>();
+        Set<Path> compiled = new LinkedHashSet<Path>();
         List<Path> libraries = List.of();
         try {
-            for (var tag : tags) {
+            for (OpenJdkJavacSuite.Tag tag : tags) {
                 if (!INFORMATION_TAGS.contains(tag.name()) && !isAction(tag.name()))
                     throw new Unsupported("Test metadata @" + tag.name());
             }
+
             Path testRoot = checkout.resolve("test");
             Path testDir = test.file().getParent();
             libraries = libraryRoots(test, testRoot, testDir);
-            for (var original : tags) {
-                var tag = actionTag(original);
+            for (OpenJdkJavacSuite.Tag original : tags) {
+                OpenJdkJavacSuite.Tag tag = actionTag(original);
                 if (INFORMATION_TAGS.contains(tag.name()) || tag.name().equals("clean") && actions.isEmpty())
                     continue;
+
                 Action action = switch (tag.name().split("/", 2)[0]) {
                     case "compile" -> compile(tag, testRoot, testDir, preview);
                     case "build" -> build(words(tag.value()), libraries, testRoot, preview);
                     case "main" -> mainClassBuild(tag, libraries, testRoot, preview, compiled);
                     default -> throw new Unsupported("jtreg action @" + tag.name());
                 };
+
                 if (action != null) {
                     actions.add(action);
                     if (!action.fails()) {
@@ -69,6 +72,7 @@ public record OpenJdkCompilePlan(List<Action> actions, List<Path> sourcePath, St
         } catch (Unsupported exception) {
             return new OpenJdkCompilePlan(List.copyOf(actions), libraries, exception.getMessage());
         }
+
         return new OpenJdkCompilePlan(List.copyOf(actions), libraries, null);
     }
 
@@ -82,7 +86,7 @@ public record OpenJdkCompilePlan(List<Action> actions, List<Path> sourcePath, St
             return test.tags();
 
         String file = test.file().getFileName().toString();
-        var tags = new ArrayList<>(test.tags());
+        List<OpenJdkJavacSuite.Tag> tags = new ArrayList<>(test.tags());
         tags.add(new OpenJdkJavacSuite.Tag("run", "main " + file.substring(0, file.length() - ".java".length())));
         return List.copyOf(tags);
     }
@@ -118,9 +122,9 @@ public record OpenJdkCompilePlan(List<Action> actions, List<Path> sourcePath, St
 
     private static List<Path> libraryRoots(OpenJdkJavacSuite.TestCase test, Path testRoot, Path testDir)
         throws IOException, Unsupported {
-        var roots = new LinkedHashSet<Path>();
+        Set<Path> roots = new LinkedHashSet<Path>();
         roots.add(testDir);
-        for (var tag : test.tags()) {
+        for (OpenJdkJavacSuite.Tag tag : test.tags()) {
             if (tag.name().equals("library")) {
                 for (String path : words(tag.value())) {
                     Path candidate = path.startsWith("/")
@@ -129,19 +133,22 @@ public record OpenJdkCompilePlan(List<Action> actions, List<Path> sourcePath, St
                     if (path.startsWith("/") && Files.notExists(candidate)) {
                         candidate = testRoot.getParent().resolve(path.substring(1));
                     }
+
                     Path directory = withinTestTree(candidate, testRoot);
                     if (!Files.isDirectory(directory))
                         throw new Unsupported("Source library is not a directory: " + path);
+
                     roots.add(directory);
                 }
             }
         }
+
         return List.copyOf(roots);
     }
 
     private static Action build(List<String> classNames, List<Path> libraries, Path testRoot, boolean preview)
         throws IOException, Unsupported {
-        var sources = new LinkedHashSet<Path>();
+        Set<Path> sources = new LinkedHashSet<Path>();
         for (String name : classNames) {
             if (!CLASS_NAME.matcher(name).matches())
                 throw new Unsupported("@build class selector " + name);
@@ -151,8 +158,10 @@ public record OpenJdkCompilePlan(List<Action> actions, List<Path> sourcePath, St
                 .findFirst().orElseThrow(() -> new Unsupported("@build has no Java source for " + name));
             sources.add(withinTestTree(path, testRoot));
         }
+
         if (sources.isEmpty())
             throw new IOException("@build requires at least one class");
+
         return new Action("build", List.copyOf(sources), UTF_8, preview, false, null);
     }
 
@@ -169,9 +178,10 @@ public record OpenJdkCompilePlan(List<Action> actions, List<Path> sourcePath, St
                 reference = requiredFile(testDir.resolve(modifier.substring(4)), testRoot);
             } else
                 throw new Unsupported("jtreg compile modifier /" + modifier);
+
         }
 
-        var sources = new LinkedHashSet<Path>();
+        Set<Path> sources = new LinkedHashSet<Path>();
         Charset encoding = UTF_8;
         List<String> arguments = words(tag.value());
         for (int index = 0; index < arguments.size(); index++) {
@@ -183,31 +193,39 @@ public record OpenJdkCompilePlan(List<Action> actions, List<Path> sourcePath, St
                     if (!JDK_VERSION.equals(version))
                         throw new Unsupported(argument + " " + version + " requires a different language profile");
                 }
+
                 case "-encoding" -> encoding = Charset.forName(operand(arguments, ++index, argument));
                 case "-XDrawDiagnostics", "-proc:none", "-nowarn", "-g", "-g:none", "-parameters" -> {
                 }
+
                 case "-Werror" -> {
                     if (fails && reference == null)
                         throw new Unsupported("javac argument -Werror on a failing compile without reference output");
                 }
+
                 default -> {
                     if (argument.equals("-Xlint") || argument.startsWith("-Xlint:"))
                         continue;
+
                     if (argument.startsWith("-") || !argument.endsWith(".java") || argument.contains("${")
                         || argument.equals("module-info.java") || argument.endsWith("/module-info.java"))
                         throw new Unsupported("javac argument " + argument);
+
                     sources.add(requiredFile(testDir.resolve(argument), testRoot));
                 }
             }
         }
+
         if (sources.isEmpty())
             throw new IOException("@" + tag.name() + " requires at least one Java source");
+
         return new Action(tag.name(), List.copyOf(sources), encoding, preview, fails, reference);
     }
 
     private static String operand(List<String> arguments, int index, String option) throws IOException {
         if (index >= arguments.size())
             throw new IOException("Missing argument for " + option);
+
         return arguments.get(index);
     }
 
@@ -219,6 +237,7 @@ public record OpenJdkCompilePlan(List<Action> actions, List<Path> sourcePath, St
         Path resolved = withinTestTree(path, testRoot);
         if (!Files.isRegularFile(resolved))
             throw new IOException("Missing test file: " + path);
+
         return resolved;
     }
 
@@ -226,8 +245,10 @@ public record OpenJdkCompilePlan(List<Action> actions, List<Path> sourcePath, St
         Path normalized = path.normalize();
         if (!normalized.startsWith(testRoot))
             throw new Unsupported("Path outside the OpenJDK test tree: " + path);
+
         if (Files.exists(normalized) && !normalized.toRealPath().startsWith(testRoot))
             throw new Unsupported("Path outside the OpenJDK test tree: " + path);
+
         return normalized;
     }
 

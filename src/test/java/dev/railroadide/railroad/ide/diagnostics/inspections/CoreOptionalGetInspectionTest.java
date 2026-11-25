@@ -119,7 +119,8 @@ public class CoreOptionalGetInspectionTest {
     }
 
     private static void assertWarnings(String source, List<String> expected) {
-        var diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), source);
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(),
+            source);
         assertEquals(expected, diagnostics.stream()
             .map(issue -> source.substring(issue.startOffset(), issue.endOffset()).strip()).toList());
     }
@@ -137,7 +138,8 @@ public class CoreOptionalGetInspectionTest {
                 }
             }
             """;
-        var diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(), source);
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreOptionalGetWithoutIsPresentCheckInspection(),
+            source);
         assertEquals(List.of("second.get()"), diagnostics.stream()
             .filter(issue -> "SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK".equals(issue.code()))
             .map(issue -> source.substring(issue.startOffset(), issue.endOffset()).strip()).toList());
@@ -346,5 +348,4 @@ public class CoreOptionalGetInspectionTest {
 
         assertTrue(diagnostics.stream().anyMatch(d -> "SEM_OPTIONAL_GET_WITHOUT_IS_PRESENT_CHECK".equals(d.code())));
     }
-
 }

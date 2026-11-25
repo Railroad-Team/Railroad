@@ -21,7 +21,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Compiles Java sources with the system compiler and runs a static {@code String run()} entry point. */
+/**
+ * Compiles Java sources with the system compiler and runs a static {@code String run()} entry point.
+ */
 public final class CompiledJava {
     private static final AtomicInteger BUILDS = new AtomicInteger();
 
@@ -77,11 +79,13 @@ public final class CompiledJava {
                 Files.writeString(path, source.getValue());
                 paths.add(path);
             }
+
             compiler.getTask(null, files, diagnostics, List.of("-d", classes.toString(), "-proc:none", "-Xlint:none"),
                 null, files.getJavaFileObjectsFromPaths(paths)).call();
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
+
         List<String> errors = diagnostics.getDiagnostics().stream()
             .filter(diagnostic -> diagnostic.getKind() == Diagnostic.Kind.ERROR)
             .map(diagnostic -> diagnostic.getSource().getName() + ":" + diagnostic.getLineNumber() + ": "

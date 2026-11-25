@@ -48,15 +48,25 @@ public interface WorkspaceService {
      */
     CompletableFuture<ActivationResult> activateMode(String modeId);
 
-    /** Describes the outcome of a workspace mode activation request. */
+    /**
+     * Describes the outcome of a workspace mode activation request.
+     */
     enum ActivationResult {
-        /** The requested mode is active, including when it was already selected. */
+        /**
+         * The requested mode is active, including when it was already selected.
+         */
         ACTIVATED,
-        /** No mode is registered with the requested ID. */
+        /**
+         * No mode is registered with the requested ID.
+         */
         UNKNOWN_MODE,
-        /** The mode is registered but cannot currently be activated. */
+        /**
+         * The mode is registered but cannot currently be activated.
+         */
         UNAVAILABLE,
-        /** No workspace is active to receive the request. */
+        /**
+         * No workspace is active to receive the request.
+         */
         NO_ACTIVE_WORKSPACE
     }
 }

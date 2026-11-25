@@ -27,14 +27,16 @@ public final class CompositeJavaSymbolIndex implements JavaSymbolIndex {
         this(delegates, null, Map.of());
     }
 
-    /** Combines an attachment's declarations and captured texts, using the base index when switching archives. */
+    /**
+     * Combines an attachment's declarations and captured texts, using the base index when switching archives.
+     */
     public CompositeJavaSymbolIndex(
         List<? extends JavaSymbolIndex> delegates,
         JavaSymbolIndex unscoped,
         Map<Path, String> sourceTexts
     ) {
         this.unscoped = unscoped;
-        var texts = new HashMap<>(sourceTexts);
+        Map<Path, String> texts = new HashMap<>(sourceTexts);
         this.delegates = List.copyOf(Objects.requireNonNull(delegates, "delegates"));
         Set<String> qualifiedNames = new LinkedHashSet<>();
         Set<String> typeNames = new LinkedHashSet<>();
@@ -56,10 +58,11 @@ public final class CompositeJavaSymbolIndex implements JavaSymbolIndex {
     public @Nullable SemanticIndexShard declarationShard(String binaryName, Runnable activityCheck) {
         activityCheck.run();
         for (JavaSymbolIndex delegate : delegates) {
-            var shard = delegate.declarationShard(binaryName, activityCheck);
+            SemanticIndexShard shard = delegate.declarationShard(binaryName, activityCheck);
             if (shard != null)
                 return shard;
         }
+
         return null;
     }
 
@@ -72,7 +75,9 @@ public final class CompositeJavaSymbolIndex implements JavaSymbolIndex {
     public JavaSymbolIndex forAttachedSource(Path archive, Runnable check) {
         if (unscoped != null)
             return unscoped.forAttachedSource(archive, check);
-        var scoped = delegates.stream().map(delegate -> delegate.forAttachedSource(archive, check)).toList();
+
+        List<JavaSymbolIndex> scoped = delegates.stream().map(delegate -> delegate.forAttachedSource(archive, check))
+            .toList();
         return scoped.equals(delegates) ? this : new CompositeJavaSymbolIndex(scoped);
     }
 

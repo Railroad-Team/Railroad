@@ -10,6 +10,7 @@ import java.util.function.LongConsumer;
 public interface ActivityProgress {
     ActivityProgress NONE = (phase, unit, initial, total) -> _ -> {
     };
+
     ScopedValue<ActivityProgress> CURRENT = ScopedValue.newInstance();
 
     /**
@@ -39,7 +40,8 @@ public interface ActivityProgress {
         if (this == NONE)
             return () -> {
             };
-        var sink = begin(phase, unit, 0, total);
+
+        LongConsumer sink = begin(phase, unit, 0, total);
         var completed = new AtomicLong();
         return () -> sink.accept(completed.incrementAndGet());
     }
@@ -48,7 +50,9 @@ public interface ActivityProgress {
         begin(phase, Unit.COUNT, 0, -1);
     }
 
-    /** Steps have known counts but unequal costs, so their count does not drive a time estimate. */
+    /**
+     * Steps have known counts but unequal costs, so their count does not drive a time estimate.
+     */
     enum Unit {
         COUNT,
         STEPS,

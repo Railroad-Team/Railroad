@@ -47,11 +47,13 @@ public final class EditCommands {
      */
     public static final Command<Void> FIND = registerFind("find", host -> host.bar().open(false),
         new KeybindData(KeyCode.F, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN}));
+
     /**
      * Opens the find bar of the focused or active editor with its replace row shown.
      */
     public static final Command<Void> REPLACE = registerFind("replace", host -> host.bar().open(true),
         new KeybindData(KeyCode.R, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN}));
+
     /**
      * Selects the next match of the current find query.
      */
@@ -78,6 +80,7 @@ public final class EditCommands {
         if (host == null) {
             host = Services.EDITOR_TAB_MANAGER.activeTab().map(EditorTab::findHost).orElse(null);
         }
+
         return host != null && host.canFind() ? host : null;
     }
 
@@ -90,6 +93,7 @@ public final class EditCommands {
                 || node instanceof ProjectExplorerPane)
                 return node;
         }
+
         return Services.EDITOR_TAB_MANAGER.activeTab().map(t -> (Node) t.view().activeEditor()).orElse(null);
     }
 
@@ -102,9 +106,10 @@ public final class EditCommands {
 
     private static boolean enabled(String action, Node target) {
         if (target instanceof ProjectExplorerPane pane) {
-            var command = explorerCommand(action);
+            Command<ExplorerTarget> command = explorerCommand(action);
             return command != null && command.canExecute(CommandContext.withArgument(null, pane, pane.commandTarget()));
         }
+
         if (target instanceof TextInputControl text)
             return switch (action) {
                 case "undo" -> text.isEditable() && text.isUndoable();
@@ -114,6 +119,7 @@ public final class EditCommands {
                 case "paste" -> text.isEditable() && Clipboard.getSystemClipboard().hasString();
                 default -> false;
             };
+
         if (target instanceof TextEditorPane text)
             return switch (action) {
                 case "undo" -> text.isEditable() && text.isUndoAvailable();
@@ -123,6 +129,7 @@ public final class EditCommands {
                 case "paste" -> text.isEditable() && Clipboard.getSystemClipboard().hasString();
                 default -> false;
             };
+
         return false;
     }
 
@@ -139,7 +146,6 @@ public final class EditCommands {
         if (target instanceof ProjectExplorerPane pane) {
             CommandDispatcher.execute(explorerCommand(action),
                 CommandContext.withArgument(context.project(), pane, pane.commandTarget()));
-
         } else if (target instanceof TextInputControl text) {
             switch (action) {
                 case "undo" -> text.undo();

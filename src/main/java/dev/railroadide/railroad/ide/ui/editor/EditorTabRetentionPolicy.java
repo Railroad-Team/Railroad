@@ -40,6 +40,7 @@ public final class EditorTabRetentionPolicy {
             if (!excluded.contains(candidate) && evictable.test(candidate))
                 return candidate;
         }
+
         return null;
     }
 

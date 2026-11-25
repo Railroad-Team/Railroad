@@ -22,6 +22,7 @@ import javafx.scene.Node;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
 import org.kordamp.ikonli.javafx.FontIcon;
+import javafx.geometry.Bounds;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaImportFoldingVisualTest {
@@ -36,6 +37,7 @@ public class JavaImportFoldingVisualTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
         onFx(() -> Platform.setImplicitExit(false));
     }
@@ -68,63 +70,68 @@ public class JavaImportFoldingVisualTest {
                 root.applyCss();
                 root.layout();
             });
+
             Thread.sleep(500);
             onFx(() -> {
-                var marker = editorRef.get().lookup(".editor-fold-marker");
+                Node marker = editorRef.get().lookup(".editor-fold-marker");
                 assertNotNull(marker);
-                var icon = (FontIcon) marker.lookup(".editor-fold-chevron");
+                FontIcon icon = (FontIcon) marker.lookup(".editor-fold-chevron");
                 assertEquals("Font Awesome 6 Free Solid", icon.getFont().getFamily());
                 click(marker);
             });
+
             Thread.sleep(700);
             onFx(() -> {
-                var editor = editorRef.get();
+                TextEditorPane editor = editorRef.get();
                 assertTrue(editor.isFolded(3));
                 assertFalse(editor.getParagraphGraphicFactory().apply(3).isVisible());
-                var placeholder = editor.lookup(".editor-fold-placeholder");
-                var dots = editor.lookup(".editor-fold-placeholder-action");
-                var marker = editor.lookup(".editor-fold-marker");
+                Node placeholder = editor.lookup(".editor-fold-placeholder");
+                Node dots = editor.lookup(".editor-fold-placeholder-action");
+                Node marker = editor.lookup(".editor-fold-marker");
                 assertNotNull(placeholder);
                 assertTrue(placeholder.isVisible());
                 assertNotNull(dots);
-                var placeholderBounds = placeholder.localToScreen(placeholder.getBoundsInLocal());
-                var markerBounds = marker.localToScreen(marker.getBoundsInLocal());
-                var textBounds = editor
+                Bounds placeholderBounds = placeholder.localToScreen(placeholder.getBoundsInLocal());
+                Bounds markerBounds = marker.localToScreen(marker.getBoundsInLocal());
+                Bounds textBounds = editor
                     .getCharacterBoundsOnScreen(editor.getAbsolutePosition(2, 0), editor.getAbsolutePosition(2, 1))
                     .orElseThrow();
                 assertTrue(markerBounds.getMaxX() < placeholderBounds.getMinX());
                 assertEquals(textBounds.getMinX(), placeholderBounds.getMinX(), 2);
-                var paragraphBounds = editor.getParagraphBoundsOnScreen(2).orElseThrow();
+                Bounds paragraphBounds = editor.getParagraphBoundsOnScreen(2).orElseThrow();
                 assertEquals(paragraphBounds.getMinY(), placeholderBounds.getMinY(), 0.5);
                 assertEquals(paragraphBounds.getHeight(), placeholderBounds.getHeight(), 0.5);
                 assertEquals(source, editor.getText());
-                var fullLine = editor.getCharacterBoundsOnScreen(editor.getAbsolutePosition(2, 0),
+                Bounds fullLine = editor.getCharacterBoundsOnScreen(editor.getAbsolutePosition(2, 0),
                     editor.getAbsolutePosition(2, editor.getParagraph(2).length())).orElseThrow();
                 assertTrue(placeholderBounds.getWidth() >= fullLine.getWidth());
-                var keyword = (Label) editor.lookup(".editor-fold-keyword");
+                Label keyword = (Label) editor.lookup(".editor-fold-keyword");
                 assertNotNull(keyword);
                 assertNotEquals(((Label) dots).getTextFill(), keyword.getTextFill());
                 editor.moveTo(2, 0);
             });
+
             Thread.sleep(300);
             onFx(() -> {
-                var editor = editorRef.get();
-                var placeholder = (StackPane) editor.lookup(".editor-fold-placeholder");
+                TextEditorPane editor = editorRef.get();
+                StackPane placeholder = (StackPane) editor.lookup(".editor-fold-placeholder");
                 assertTrue(placeholder.getPseudoClassStates().contains(PseudoClass.getPseudoClass("has-caret")));
                 placeholder.applyCss();
                 highlightBackground.set(placeholder.getBackground());
                 editor.moveTo(0, 0);
             });
+
             Thread.sleep(300);
             onFx(() -> {
-                var editor = editorRef.get();
-                var placeholder = (StackPane) editor.lookup(".editor-fold-placeholder");
+                TextEditorPane editor = editorRef.get();
+                StackPane placeholder = (StackPane) editor.lookup(".editor-fold-placeholder");
                 assertFalse(placeholder.getPseudoClassStates().contains(PseudoClass.getPseudoClass("has-caret")));
                 placeholder.applyCss();
                 assertNotEquals(highlightBackground.get(), placeholder.getBackground());
-                var dots = editor.lookup(".editor-fold-placeholder-action");
+                Node dots = editor.lookup(".editor-fold-placeholder-action");
                 click(dots);
             });
+
             Thread.sleep(500);
             onFx(() -> {
                 assertFalse(editorRef.get().isFolded(3));
@@ -138,6 +145,7 @@ public class JavaImportFoldingVisualTest {
                     editorRef.get().close();
                     editorRef.get().dispose();
                 }
+
                 if (stageRef.get() != null) {
                     stageRef.get().close();
                 }
@@ -156,6 +164,7 @@ public class JavaImportFoldingVisualTest {
             action.run();
             return null;
         });
+
         Platform.runLater(task);
         task.get(10, TimeUnit.SECONDS);
     }

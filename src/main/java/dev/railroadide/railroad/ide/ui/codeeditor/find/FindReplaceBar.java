@@ -71,7 +71,9 @@ public final class FindReplaceBar extends VBox {
     private boolean patternInvalid;
     private boolean selecting;
 
-    /** Creates a closed bar without a target editor. */
+    /**
+     * Creates a closed bar without a target editor.
+     */
     public FindReplaceBar() {
         getStyleClass().add("find-replace-bar");
         setVisible(false);
@@ -162,6 +164,7 @@ public final class FindReplaceBar extends VBox {
             setManaged(true);
             attach();
         }
+
         if (!selected.isEmpty() && selected.length() <= MAX_PREFILL_LENGTH && selected.indexOf('\n') < 0) {
             String text = regex.isSelected() ? escapeRegex(selected) : selected;
             if (!text.equals(searchField.getText())) {
@@ -172,11 +175,14 @@ public final class FindReplaceBar extends VBox {
         } else if (show) {
             refresh(true);
         }
+
         searchField.requestFocus();
         searchField.selectAll();
     }
 
-    /** Closes the bar, removes its highlights and returns focus to the editor. */
+    /**
+     * Closes the bar, removes its highlights and returns focus to the editor.
+     */
     public void close() {
         boolean focused = isFocusWithin();
         hide();
@@ -194,7 +200,9 @@ public final class FindReplaceBar extends VBox {
         return isVisible();
     }
 
-    /** Selects the first match after the editor selection, wrapping to the start of the document. */
+    /**
+     * Selects the first match after the editor selection, wrapping to the start of the document.
+     */
     public void findNext() {
         if (!prepareNavigation())
             return;
@@ -203,7 +211,9 @@ public final class FindReplaceBar extends VBox {
         navigateTo(index == matches.size() ? 0 : index);
     }
 
-    /** Selects the last match before the editor selection, wrapping to the end of the document. */
+    /**
+     * Selects the last match before the editor selection, wrapping to the end of the document.
+     */
     public void findPrevious() {
         if (!prepareNavigation())
             return;
@@ -212,7 +222,9 @@ public final class FindReplaceBar extends VBox {
         navigateTo(index < 0 ? matches.size() - 1 : index);
     }
 
-    /** Replaces the selected match and selects the following one, or finds the next match if none is selected. */
+    /**
+     * Replaces the selected match and selects the following one, or finds the next match if none is selected.
+     */
     public void replaceCurrent() {
         if (!prepareNavigation())
             return;
@@ -229,6 +241,7 @@ public final class FindReplaceBar extends VBox {
             TextReplacement edit = query().replace(text, match, replacement);
             return edit == null ? List.of() : List.of(edit);
         });
+
         if (applied == null || applied.isEmpty())
             return;
 
@@ -239,7 +252,9 @@ public final class FindReplaceBar extends VBox {
         }
     }
 
-    /** Replaces every match as a single undoable edit. */
+    /**
+     * Replaces every match as a single undoable edit.
+     */
     public void replaceAll() {
         if (editor == null)
             return;
@@ -353,11 +368,13 @@ public final class FindReplaceBar extends VBox {
     private boolean prepareNavigation() {
         if (editor == null)
             return false;
+
         if (!isOpen()) {
             setVisible(true);
             setManaged(true);
             attach();
         }
+
         refresh(false);
         return !matches.isEmpty();
     }
@@ -376,6 +393,7 @@ public final class FindReplaceBar extends VBox {
         } finally {
             selecting = false;
         }
+
         keepClearOfBar(match);
         updateView();
     }
@@ -410,6 +428,7 @@ public final class FindReplaceBar extends VBox {
             patternInvalid = true;
             error = exception.getDescription();
         }
+
         limitReached = found.size() > MATCH_LIMIT;
         matches = limitReached ? List.copyOf(found.subList(0, MATCH_LIMIT)) : List.copyOf(found);
 
@@ -430,6 +449,7 @@ public final class FindReplaceBar extends VBox {
         if (currentIndex < 0) {
             searchOrigin = editor.getSelection().getStart();
         }
+
         updateView();
     }
 
@@ -490,6 +510,7 @@ public final class FindReplaceBar extends VBox {
     private String countText() {
         if (searchField.getText().isEmpty())
             return "";
+
         if (matches.isEmpty())
             return L18n.localize("railroad.editor.find.no_results");
 
@@ -510,6 +531,7 @@ public final class FindReplaceBar extends VBox {
             if (match.start == selection.getStart() && match.end == selection.getEnd())
                 return index;
         }
+
         return -1;
     }
 
@@ -524,6 +546,7 @@ public final class FindReplaceBar extends VBox {
                 high = middle;
             }
         }
+
         return low;
     }
 
@@ -544,10 +567,12 @@ public final class FindReplaceBar extends VBox {
             textSubscription = null;
             editor.selectionProperty().removeListener(selectionListener);
         }
+
         if (highlighter != null) {
             highlighter.clear();
             highlighter = null;
         }
+
         matches = List.of();
         currentIndex = -1;
     }
@@ -571,6 +596,7 @@ public final class FindReplaceBar extends VBox {
             } else {
                 findNext();
             }
+
             event.consume();
         } else if (event.getCode() == KeyCode.ESCAPE) {
             close();
@@ -598,6 +624,7 @@ public final class FindReplaceBar extends VBox {
             case X -> regex;
             default -> null;
         };
+
         if (option != null) {
             option.setSelected(!option.isSelected());
             event.consume();

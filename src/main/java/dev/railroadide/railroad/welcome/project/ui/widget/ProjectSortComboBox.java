@@ -18,7 +18,9 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import java.util.EnumMap;
 import java.util.Map;
 
-/** Project ordering selector with localized labels, descriptive popup cells, icons, and a selection tooltip. */
+/**
+ * Project ordering selector with localized labels, descriptive popup cells, icons, and a selection tooltip.
+ */
 public class ProjectSortComboBox extends LocalizedComboBox<ProjectSort> {
     private static final FontAwesomeSolid DEFAULT_ICON = FontAwesomeSolid.FILTER;
     private static final Map<ProjectSort, FontAwesomeSolid> ICON_BY_SORT = new EnumMap<>(ProjectSort.class);
@@ -36,7 +38,9 @@ public class ProjectSortComboBox extends LocalizedComboBox<ProjectSort> {
 
     private final Tooltip sortTooltip = new Tooltip();
 
-    /** Builds a selector containing all sort choices and initially selects {@link ProjectSort#NONE}. */
+    /**
+     * Builds a selector containing all sort choices and initially selects {@link ProjectSort#NONE}.
+     */
     public ProjectSortComboBox() {
         super(ProjectSort::getKey);
         setItems(FXCollections.observableArrayList(ProjectSort.values()));

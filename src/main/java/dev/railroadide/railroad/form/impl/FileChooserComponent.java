@@ -127,7 +127,9 @@ public class FileChooserComponent extends FormComponent<FormFileChooser, FileCho
         getComponent().getPrimaryComponent().getTextField().setText(getData().defaultPath);
     }
 
-    /** Builds and configures a {@link FileChooserComponent}. */
+    /**
+     * Builds and configures a {@link FileChooserComponent}.
+     */
     public static class Builder implements FormComponentBuilder<FileChooserComponent, TextField, String, Builder> {
         private final String dataKey;
         private final Data data;
@@ -265,6 +267,7 @@ public class FileChooserComponent extends FormComponent<FormFileChooser, FileCho
                 } else
                     throw new IllegalArgumentException(
                         "Unsupported component type: " + toComponent.getValue().getClass().getName());
+
             }, valueMapper));
             return this;
         }
@@ -293,7 +296,9 @@ public class FileChooserComponent extends FormComponent<FormFileChooser, FileCho
         }
     }
 
-    /** Mutable configuration used to create a file chooser component. */
+    /**
+     * Mutable configuration used to create a file chooser component.
+     */
     public static class Data {
         private final String label;
         private String defaultPath;

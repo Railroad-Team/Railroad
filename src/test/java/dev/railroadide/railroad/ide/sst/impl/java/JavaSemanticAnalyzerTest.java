@@ -27,6 +27,8 @@ import java.util.Objects;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
 import java.lang.reflect.Modifier;
 import java.util.Optional;
+import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
+import dev.railroadide.railroad.ide.classparser.stub.MethodStub;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -234,6 +236,7 @@ public class JavaSemanticAnalyzerTest {
         for (int index = 0; index < type.getName().split("\\.").length; index++) {
             root = root.getParent();
         }
+
         return root;
     }
 
@@ -537,7 +540,7 @@ public class JavaSemanticAnalyzerTest {
             }
             """;
         var model = JavaSemanticAnalyzer.analyze(source, JavaJdkSymbolIndex.fromCurrentRuntime());
-        var names = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.NAME_EXPRESSION.id());
+        List<SyntaxNode> names = nodesOfKind(model.syntaxTree().root(), JavaSyntaxKinds.NAME_EXPRESSION.id());
         assertEquals(JavaSymbolKind.FIELD,
             model.resolvedSymbol(findNameExpression(names, "context")).orElseThrow().kind());
         assertEquals("java.awt.Point",
@@ -1083,6 +1086,7 @@ public class JavaSemanticAnalyzerTest {
         for (SyntaxNode creation : creations) {
             assertEquals(JavaSymbolKind.CONSTRUCTOR, model.resolvedSymbol(creation).orElseThrow().kind());
         }
+
         SyntaxNode accessor = nodesOfKind(root, JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id()).getFirst();
         assertEquals("int[]", model.inferredType(accessor).orElseThrow().displayName());
     }
@@ -1139,6 +1143,7 @@ public class JavaSemanticAnalyzerTest {
                 JavaSymbolKind.RECORD -> true;
             default -> false;
         });
+
         SyntaxNode listSelector = JavaSemanticAnalyzer.selectorNameNode(listOfCall);
         assertNotNull(listSelector);
         assertEquals("of", syntaxText(listSelector).trim());
@@ -1651,10 +1656,10 @@ public class JavaSemanticAnalyzerTest {
             """;
 
         JavaJdkSymbolIndex jdkIndex = JavaJdkSymbolIndex.fromCurrentRuntime();
-        var functionStub = jdkIndex.lookupClassStub("java.util.function.Function");
+        ClassStub functionStub = jdkIndex.lookupClassStub("java.util.function.Function");
         assertEquals(List.of("T", "R"), functionStub
             .typeParameters().stream().map(parameter -> parameter.name()).toList());
-        var applyStub = functionStub.methods().stream()
+        MethodStub applyStub = functionStub.methods().stream()
             .filter(method -> method.name().equals("apply"))
             .findFirst()
             .orElseThrow();
@@ -1776,6 +1781,7 @@ public class JavaSemanticAnalyzerTest {
         if (kindId.equals(node.kind().id())) {
             out.add(node);
         }
+
         for (SyntaxNode child : node.children()) {
             collectNodesOfKind(child, kindId, out);
         }
@@ -1818,6 +1824,7 @@ public class JavaSemanticAnalyzerTest {
         for (SyntaxNode child : node.children()) {
             builder.append(syntaxText(child));
         }
+
         return builder.toString();
     }
 
@@ -1830,6 +1837,7 @@ public class JavaSemanticAnalyzerTest {
         for (int index = 0; index < additionalPathAndSourcePairs.length; index += 2) {
             writeProjectSource(additionalPathAndSourcePairs[index], additionalPathAndSourcePairs[index + 1]);
         }
+
         return new JavaProjectSemanticIndexer().build(tempDir);
     }
 

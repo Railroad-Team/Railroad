@@ -114,9 +114,10 @@ public class JavaNameResolutionComplianceTest {
                     Function<Signature, String> descriptor = Signature::descriptor;
                 }
                 """);
-        for (var file : files.entrySet()) {
+        for (Map.Entry<String, String> file : files.entrySet()) {
             Files.writeString(directory.resolve(file.getKey()), file.getValue());
         }
+
         JavaSymbolIndex index = new CompositeJavaSymbolIndex(List.of(
             new JavaProjectSemanticIndexer().build(directory), JavaJdkSymbolIndex.fromCurrentRuntime()));
         assertClean(files.get("Main.java"), directory.resolve("Main.java"), index);

@@ -209,7 +209,7 @@ public final class JavaSyntaxMemoryProfileRunner {
     }
 
     private static List<SourceUnit> loadSources(List<Path> inputs, int maxFiles) throws IOException {
-        TreeSet<Path> javaFiles = new TreeSet<>();
+        NavigableSet<Path> javaFiles = new TreeSet<>();
         for (Path input : inputs) {
             Path normalized = input.toAbsolutePath().normalize();
             if (!Files.exists(normalized))
@@ -219,6 +219,7 @@ public final class JavaSyntaxMemoryProfileRunner {
                 if (normalized.toString().endsWith(".java")) {
                     javaFiles.add(normalized);
                 }
+
                 continue;
             }
 
@@ -266,6 +267,7 @@ public final class JavaSyntaxMemoryProfileRunner {
         long abs = Math.abs(bytes);
         if (abs < 1024L)
             return bytes + " B";
+
         if (abs < 1024L * 1024L)
             return String.format(Locale.ROOT, "%.2f KiB", bytes / 1024.0);
 

@@ -35,6 +35,7 @@ public class FacetManager {
         thread.setPriority(Thread.MIN_PRIORITY);
         return thread;
     });
+
     /**
      * The facet type for Java language support.
      */
@@ -150,6 +151,7 @@ public class FacetManager {
     public static <D> FacetType<D> registerFacet(@NotNull FacetType<D> facetType, @NotNull FacetDetector<D> detector) {
         if (facetType == null)
             throw new IllegalArgumentException("Facet type must not be null");
+
         if (detector == null)
             throw new IllegalArgumentException("Facet detector must not be null");
 

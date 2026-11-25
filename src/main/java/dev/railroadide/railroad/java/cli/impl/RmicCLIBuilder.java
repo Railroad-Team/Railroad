@@ -95,6 +95,7 @@ public class RmicCLIBuilder implements CLIBuilder<Process, RmicCLIBuilder> {
         for (String path : paths) {
             Objects.requireNonNull(path, "Boot class path entry cannot be null");
         }
+
         this.arguments.add("-bootclasspath");
         this.arguments.add(String.join(File.pathSeparator, paths));
         return this;
@@ -125,6 +126,7 @@ public class RmicCLIBuilder implements CLIBuilder<Process, RmicCLIBuilder> {
         for (String entry : entries) {
             Objects.requireNonNull(entry, "Classpath entry cannot be null");
         }
+
         this.arguments.add("-classpath");
         this.arguments.add(String.join(File.pathSeparator, entries));
         return this;

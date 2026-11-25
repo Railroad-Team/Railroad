@@ -46,7 +46,7 @@ public class CodeEditorWorkspaceTest {
         Files.writeString(file, "class Example {\n public static void main(String[] args) {}\n}");
         var markerReady = new CountDownLatch(1);
         var markerMoved = new CountDownLatch(1);
-        var editor = onFx(() -> {
+        JavaCodeEditorPane editor = onFx(() -> {
             var project = new RailroadProject(directory, "Main gutter", new WritableImage(1, 1));
             var pane = new JavaCodeEditorPane(project, DocumentId.create(), file,
                 new CodeEditorConfig("java", null, null, null, null, null));
@@ -57,14 +57,17 @@ public class CodeEditorWorkspaceTest {
                     markerMoved.countDown();
                 }
             });
+
             return pane;
         });
+
         try {
             assertTrue(markerReady.await(10, TimeUnit.SECONDS));
             onFx(() -> {
                 editor.insertText(0, "// edited\n");
                 return null;
             });
+
             assertTrue(markerMoved.await(10, TimeUnit.SECONDS));
         } finally {
             onFx(() -> {
@@ -93,6 +96,7 @@ public class CodeEditorWorkspaceTest {
                 return List.of();
             }
         };
+
         TestEditor editor = onFx(() -> {
             Project project = new RailroadProject(directory, "Debounced workspace", new WritableImage(1, 1));
             var pane = new TestEditor(project, id, file,
@@ -101,6 +105,7 @@ public class CodeEditorWorkspaceTest {
             pane.setDocumentStore(store);
             return pane;
         });
+
         Field delayField = CodeEditorPane.class.getDeclaredField("workspaceFeaturesDelay");
         delayField.setAccessible(true);
         PauseTransition delay = (PauseTransition) delayField.get(editor);
@@ -121,10 +126,12 @@ public class CodeEditorWorkspaceTest {
                     return null;
                 });
             }
+
             onFx(() -> {
                 delay.getOnFinished().handle(new ActionEvent());
                 return null;
             });
+
             WorkspaceSnapshot refreshed = requests.poll(10, TimeUnit.SECONDS);
             assertNotNull(refreshed);
             assertEquals(store.capture(), refreshed);
@@ -160,6 +167,7 @@ public class CodeEditorWorkspaceTest {
             highlights.incrementAndGet();
             return new StyleSpansBuilder<Collection<String>>().add(List.of(), text.length()).create();
         };
+
         TestEditor editor = onFx(() -> {
             Project project = new RailroadProject(directory, "Debounced highlighting", new WritableImage(1, 1));
             var pane = new TestEditor(project, id, file,
@@ -168,6 +176,7 @@ public class CodeEditorWorkspaceTest {
             pane.setDocumentStore(store);
             return pane;
         });
+
         Field delayField = CodeEditorPane.class.getDeclaredField("workspaceFeaturesDelay");
         delayField.setAccessible(true);
         PauseTransition delay = (PauseTransition) delayField.get(editor);
@@ -178,6 +187,7 @@ public class CodeEditorWorkspaceTest {
             while (highlights.get() == 0 && System.nanoTime() < deadline) {
                 Thread.sleep(10);
             }
+
             editor.awaitWorkerCompletion();
             int initial = highlights.get();
             assertTrue(initial > 0);
@@ -190,16 +200,19 @@ public class CodeEditorWorkspaceTest {
                     return null;
                 });
             }
+
             editor.awaitWorkerCompletion();
             assertEquals(initial, highlights.get(), "Workspace changes must wait for the debounce to re-highlight");
             onFx(() -> {
                 delay.getOnFinished().handle(new ActionEvent());
                 return null;
             });
+
             deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
             while (highlights.get() == initial && System.nanoTime() < deadline) {
                 Thread.sleep(10);
             }
+
             assertEquals(initial + 1, highlights.get());
         } finally {
             onFx(() -> {
@@ -256,11 +269,13 @@ public class CodeEditorWorkspaceTest {
                         throw new AssertionError(exception);
                     }
                 }
+
                 TextDocumentSnapshot document = (TextDocumentSnapshot) workspace.document(documentId).orElseThrow();
                 return List.of(new TextEditorDiagnostic(Location.TextLocation.from(document, 0, 1),
                     DiagnosticSeverity.ERROR, call == 1 ? "OLD" : "NEW", "result"));
             }
         };
+
         TestEditor editor = onFx(() -> {
             Project project = new RailroadProject(directory, "Workspace retry", new WritableImage(1, 1));
             var pane = new TestEditor(project, id, file,
@@ -269,6 +284,7 @@ public class CodeEditorWorkspaceTest {
             pane.setDocumentStore(store);
             return pane;
         });
+
         try {
             WorkspaceSnapshot original = requests.poll(10, TimeUnit.SECONDS);
             assertNotNull(original);
@@ -281,6 +297,7 @@ public class CodeEditorWorkspaceTest {
                     new TextDocumentSnapshot(dependencyId, dependency.uri(), dependency.version().next(),
                         "java", "changed", StandardCharsets.UTF_8));
             }
+
             WorkspaceSnapshot retried = requests.poll(10, TimeUnit.SECONDS);
             assertNotNull(retried, "Workspace changes must retry diagnostics without a local edit");
             assertEquals(((TextDocumentSnapshot) original.document(id).orElseThrow()).text(),
@@ -296,6 +313,7 @@ public class CodeEditorWorkspaceTest {
                 editor.dispose();
                 return null;
             });
+
             int closedCalls = calls.get();
             store.publishConfiguration(new WorkspaceConfigurationSnapshot(2, Set.of(":closed")));
             onFx(() -> null);
@@ -320,6 +338,7 @@ public class CodeEditorWorkspaceTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
     }
 
@@ -345,6 +364,7 @@ public class CodeEditorWorkspaceTest {
             requested.complete(snapshot);
             return null;
         };
+
         CodeEditorPane editor = onFx(() -> {
             Project project = new RailroadProject(directory, "Live completion", new WritableImage(1, 1));
             var config = new CodeEditorConfig("java", completion, null, null, null, null);
@@ -359,11 +379,13 @@ public class CodeEditorWorkspaceTest {
                     return false;
                 }
             };
+
             store.publishBacking(pane.captureSnapshot());
             pane.setDocumentStore(store);
             pane.appendText(".");
             return pane;
         });
+
         try {
             TextDocumentSnapshot snapshot = (TextDocumentSnapshot) requested.get(10, TimeUnit.SECONDS);
             assertEquals("class Example { String text; }.", snapshot.text());
@@ -397,18 +419,21 @@ public class CodeEditorWorkspaceTest {
             received.set(snapshot);
             return null;
         };
+
         completion.compute(workspace, id, 0);
         assertSame(document, received.get());
         SignatureHelpProvider signature = (snapshot, offset) -> {
             received.set(snapshot);
             return null;
         };
+
         signature.compute(workspace, id, 0);
         assertSame(document, received.get());
         DiagnosticsProvider<TextEditorDiagnostic> diagnostics = snapshot -> {
             received.set(snapshot);
             return List.of();
         };
+
         diagnostics.compute(workspace, id);
         assertSame(document, received.get());
     }
@@ -437,6 +462,7 @@ public class CodeEditorWorkspaceTest {
                 return new CompletionResult(offset, List.of(new CompletionItem("old", "old")));
             }
         };
+
         DiagnosticsProvider<TextEditorDiagnostic> diagnostics = new DiagnosticsProvider<>() {
             @Override
             public @NonNull List<TextEditorDiagnostic> compute(DocumentSnapshot snapshot) {
@@ -448,12 +474,14 @@ public class CodeEditorWorkspaceTest {
                 block(workspace, entered, release);
                 if (workspace != entered.getNow(null))
                     return List.of();
+
                 completedWith.complete(workspace);
                 TextDocumentSnapshot snapshot = (TextDocumentSnapshot) workspace.document(id).orElseThrow();
                 return List.of(new TextEditorDiagnostic(Location.TextLocation.from(snapshot, 0, 1),
                     DiagnosticSeverity.ERROR, "OLD", "old result"));
             }
         };
+
         SignatureHelpProvider signature = new SignatureHelpProvider() {
             @Override
             public SignatureHelp compute(DocumentSnapshot snapshot, int caret) {
@@ -468,6 +496,7 @@ public class CodeEditorWorkspaceTest {
                     List.of(new SignatureHelp.ParameterInfo("int", "value", false)), 0, false, "void", false);
             }
         };
+
         DocumentId id = DocumentId.create();
         DocumentId otherId = DocumentId.create();
         var store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()));
@@ -490,8 +519,10 @@ public class CodeEditorWorkspaceTest {
             } else if (feature.equals("signature")) {
                 pane.showParameterInfo();
             }
+
             return pane;
         });
+
         try {
             WorkspaceSnapshot captured = entered.get(10, TimeUnit.SECONDS);
             TextDocumentSnapshot original = (TextDocumentSnapshot) captured.document(id).orElseThrow();
@@ -501,6 +532,7 @@ public class CodeEditorWorkspaceTest {
                     "java", "other updated", StandardCharsets.UTF_8));
                 return null;
             });
+
             assertEquals("class Example {}", original.text());
             assertSame(other, captured.document(otherId).orElseThrow());
             release.countDown();
@@ -541,6 +573,7 @@ public class CodeEditorWorkspaceTest {
                 interrupted = true;
             }
         }
+
         if (interrupted) {
             Thread.currentThread().interrupt();
         }

@@ -19,7 +19,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Projects immutable class metadata into the same node-free declarations used by source shards. */
+/**
+ * Projects immutable class metadata into the same node-free declarations used by source shards.
+ */
 public final class JavaBinarySymbolExtractor {
     /**
      * Metadata without annotations depends only on the access flags and declaration kind, and a classpath only uses a
@@ -45,12 +47,14 @@ public final class JavaBinarySymbolExtractor {
         for (MethodStub other : owner.methods()) {
             if (other == method || (other.modifiers() & Opcodes.ACC_BRIDGE) != 0 || !other.name().equals(method.name()))
                 continue;
+
             Map<String, Type> otherBounds = bounds(other.typeParameters(), inherited);
             if (parameters.equals(erased(other.parameters(), otherBounds))
                 && !result.equals(erased(other.returnType(), otherBounds, new HashSet<>())))
                 return JavaSymbolIds.binaryMethod(JavaSymbolIds.type(owner.getFullName()), method.name(), parameters,
                     result);
         }
+
         return JavaSymbolIds.method(JavaSymbolIds.type(owner.getFullName()), method.name(), parameters);
     }
 
@@ -106,7 +110,8 @@ public final class JavaBinarySymbolExtractor {
         check.run();
         String fullName = stub.getFullName();
         SymbolId owner = JavaSymbolIds.type(fullName);
-        var location = List.of(new SymbolLocation(uri, DocumentOrigin.original(uri), null, null, true));
+        List<SymbolLocation> location = List
+            .of(new SymbolLocation(uri, DocumentOrigin.original(uri), null, null, true));
         List<SymbolDescriptor> declarations = new ArrayList<>();
         Map<String, Type> bounds = bounds(stub.typeParameters(), Map.of());
         JavaSymbolKind kind = (stub.modifiers() & Opcodes.ACC_ANNOTATION) != 0
@@ -128,21 +133,25 @@ public final class JavaBinarySymbolExtractor {
                 fullName + "#" + field.name(), owner, null, types.type(field.type()), field.modifiers(),
                 field.annotations(), location, alternates, types));
         }
+
         Map<SymbolId, Set<String>> methodReturns = new HashMap<>();
         for (MethodStub method : stub.methods()) {
             check.run();
             if ((method.modifiers() & Opcodes.ACC_BRIDGE) != 0)
                 continue;
+
             Map<String, Type> methodBounds = bounds(method.typeParameters(), bounds);
             SymbolId id = JavaSymbolIds.method(owner, method.name(), erased(method.parameters(), methodBounds));
             methodReturns.computeIfAbsent(id, _ -> new HashSet<>())
                 .add(erased(method.returnType(), methodBounds, new HashSet<>()));
         }
+
         Map<String, String> methodNames = new HashMap<>();
         for (MethodStub method : stub.methods()) {
             check.run();
             if ((method.modifiers() & Opcodes.ACC_BRIDGE) != 0)
                 continue;
+
             SymbolSignature signature = signature(method.parameters(), method.typeParameters(), method.returnType(),
                 method.thrownTypes(), method.modifiers(), types);
             Map<String, Type> methodBounds = bounds(method.typeParameters(), bounds);
@@ -152,11 +161,13 @@ public final class JavaBinarySymbolExtractor {
                 id = JavaSymbolIds.binaryMethod(owner, method.name(), parameterTypes,
                     erased(method.returnType(), methodBounds, new HashSet<>()));
             }
+
             String qualified = methodNames.computeIfAbsent(method.name(), name -> fullName + "#" + name);
             declarations.add(descriptor(id, JavaSymbolKind.METHOD, method.name(), qualified, owner, signature,
                 types.type(method.returnType()), method.modifiers(), method.annotations(), location, alternates,
                 types));
         }
+
         String constructorName = fullName + "#<init>";
         for (ConstructorStub constructor : stub.constructors()) {
             check.run();
@@ -166,6 +177,7 @@ public final class JavaBinarySymbolExtractor {
             declarations.add(descriptor(id, JavaSymbolKind.CONSTRUCTOR, stub.name(), constructorName, owner,
                 signature, null, constructor.modifiers(), constructor.annotations(), location, alternates, types));
         }
+
         check.run();
         // Some stub providers identify only the containing archive, so several classes can share the same URI.
         var documentId = new DocumentId(
@@ -187,6 +199,7 @@ public final class JavaBinarySymbolExtractor {
         if (stub.superClass() != null) {
             supers.add(stub.superClass());
         }
+
         List<SymbolEdge> edges = new ArrayList<>();
         for (Type base : supers) {
             if (base instanceof Type.ClassType named) {
@@ -194,6 +207,7 @@ public final class JavaBinarySymbolExtractor {
                 edges.add(new SymbolEdge(owner, reference.target(), EdgeKindId.SUBTYPE, reference.arguments()));
             }
         }
+
         return edges;
     }
 
@@ -211,7 +225,7 @@ public final class JavaBinarySymbolExtractor {
         Runnable check
     ) {
         List<SymbolDescriptor> declarations = new ArrayList<>(shard.declarations());
-        for (var declaration : shard.declarations()) {
+        for (SymbolDescriptor declaration : shard.declarations()) {
             check.run();
             if (declaration.signature() != null) {
                 List<SymbolLocation> locations = declaration.locations();
@@ -219,6 +233,7 @@ public final class JavaBinarySymbolExtractor {
                     locations.size() == 1 ? locations : List.of(locations.getFirst()), alternates, check);
             }
         }
+
         check.run();
         return declarations.size() == shard.declarations().size()
             ? shard
@@ -236,11 +251,12 @@ public final class JavaBinarySymbolExtractor {
     ) {
         for (int i = 0; i < signature.parameters().size(); i++) {
             check.run();
-            var parameter = signature.parameters().get(i);
+            SymbolSignature.Parameter parameter = signature.parameters().get(i);
             output.add(descriptor(JavaSymbolIds.parameter(owner, i), JavaSymbolKind.PARAMETER,
                 parameter.name().isBlank() ? "arg" + i : parameter.name(), null, owner, null, parameter.type(),
                 0, List.of(), location, alternates, null));
         }
+
         for (int i = 0; i < signature.typeParameters().size(); i++) {
             check.run();
             output.add(descriptor(JavaSymbolIds.typeParameter(owner, i), JavaSymbolKind.TYPE_PARAMETER,
@@ -273,6 +289,7 @@ public final class JavaBinarySymbolExtractor {
             locations = new ArrayList<>(location);
             locations.addAll(extra);
         }
+
         boolean hasSignature = signature != null;
         SymbolMetadata metadata = annotations.isEmpty()
             ? PLAIN_METADATA.computeIfAbsent(metadataKey(kind, flags, hasSignature),
@@ -308,13 +325,16 @@ public final class JavaBinarySymbolExtractor {
         if (!standard.isBlank()) {
             modifiers.addAll(List.of(standard.split(" ")));
         }
+
         if ((flags & Opcodes.ACC_SYNTHETIC) != 0) {
             modifiers.add("synthetic");
         }
+
         if ((flags & Opcodes.ACC_VARARGS) != 0 && hasSignature) {
             modifiers.remove("transient");
             modifiers.add("varargs");
         }
+
         String visibility = Modifier.isPublic(flags)
             ? "public"
             : Modifier.isProtected(flags)
@@ -344,6 +364,7 @@ public final class JavaBinarySymbolExtractor {
             values.add(new SymbolSignature.Parameter(parameter.name() == null ? "arg" + i : parameter.name(),
                 types.type(parameterType), varargs));
         }
+
         return new SymbolSignature(typeParameters(typeParameters, types), values, types.type(result),
             thrown.stream().map(types::type).toList());
     }
@@ -364,6 +385,7 @@ public final class JavaBinarySymbolExtractor {
                     ? new Type.ClassType("java.lang.Object", List.of())
                     : parameter.bounds().getFirst());
         }
+
         return result;
     }
 
@@ -417,6 +439,7 @@ public final class JavaBinarySymbolExtractor {
                     yield new TypeReference(component.name(), component.arguments(), component.arrayDimensions() + 1,
                         component.target());
                 }
+
                 case Type.WildcardType wildcard -> wildcard.bound() == null
                     ? unresolved("?")
                     : new TypeReference(wildcard.isUpperBound() ? "? extends" : "? super",

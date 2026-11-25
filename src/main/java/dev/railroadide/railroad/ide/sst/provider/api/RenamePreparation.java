@@ -19,8 +19,7 @@ public sealed interface RenamePreparation permits RenamePreparation.Renameable, 
      * @param range identifier at the requested position, in the captured document revision
      */
     record Renameable(SymbolId symbol, String kind, String name, Location.TextLocation range)
-        implements
-            RenamePreparation {
+        implements RenamePreparation {
         /**
          * Validates a renameable symbol.
          *

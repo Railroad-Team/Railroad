@@ -45,12 +45,13 @@ public class JavaSymbolIdsTest {
         String name = "sample.Outer$Nested";
         var type = JavaSymbolIds.type("sample.module", name);
         var method = JavaSymbolIds.binaryMethod(type, "read", List.of("other.Argument"), "other.Result");
-        for (var symbol : List.of(type, method, JavaSymbolIds.parameter(method, 0),
+        for (SymbolId symbol : List.of(type, method, JavaSymbolIds.parameter(method, 0),
             JavaSymbolIds.typeParameter(type, 0),
             JavaSymbolIds.field(type, "field"), JavaSymbolIds.constructor(type, List.of()))) {
             assertEquals(name, JavaSymbolIds.owningTypeName(symbol));
         }
-        for (var symbol : List.of(JavaSymbolIds.packageId("", "sample"), JavaSymbolIds.module("sample"),
+
+        for (SymbolId symbol : List.of(JavaSymbolIds.packageId("", "sample"), JavaSymbolIds.module("sample"),
             new SymbolId("other:type"), new SymbolId("java:module//type/!"))) {
             assertNull(JavaSymbolIds.owningTypeName(symbol));
         }
@@ -97,6 +98,7 @@ public class JavaSymbolIdsTest {
         if (node.kind().id().equals("JAVA_VARIABLE_DECLARATOR") || node.kind().id().equals("JAVA_CLASS_DECLARATION")) {
             anchors.add(JavaSymbolIds.lexicalPath(node, root));
         }
+
         for (SyntaxNode child : node.children()) {
             collectAnchors(child, root, anchors);
         }

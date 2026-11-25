@@ -34,6 +34,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * Launches Java main classes for run or debug sessions and tracks their processes.
@@ -110,7 +112,7 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
         Project project,
         RunConfiguration<JavaApplicationRunConfigurationData> configuration
     ) {
-        var running = List.copyOf(executions.getOrDefault(configuration.uuid(), List.of()));
+        List<Execution> running = List.copyOf(executions.getOrDefault(configuration.uuid(), List.of()));
         running.forEach(Execution::stop);
         return CompletableFuture.allOf(running.stream()
             .map(execution -> execution.completion.handle((_, _) -> null))
@@ -159,9 +161,11 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
             if (running == null) {
                 running = new CopyOnWriteArrayList<>();
             }
+
             running.add(execution);
             return running;
         });
+
         try {
             validateLaunch(jdk, mainClass, classpathEntries, workingDirectory);
             CompletableFuture<Void> buildFuture = CompletableFuture.completedFuture(null);
@@ -174,7 +178,8 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
                             return CompletableFuture.completedFuture(null);
                         });
                 } else {
-                    var problems = project.getRunSessions().buildProblems().begin(configuration.uuid().toString(),
+                    BuildProblems.Report problems = project.getRunSessions().buildProblems().begin(
+                        configuration.uuid().toString(),
                         workingDirectory);
                     buildFuture = CompletableFuture.runAsync(() -> compilePlainJavaProject(
                         project,
@@ -209,6 +214,7 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
                     synchronized (execution) {
                         if (execution.stopped)
                             return CompletableFuture.<Integer>completedFuture(null);
+
                         session.appendSystemLine(String.join(" ", command));
                         process = startProcess(builder);
                         execution.process = process;
@@ -254,9 +260,9 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
                             } else {
                                 Railroad.LOGGER.debug("Application process finished successfully.");
                             }
+
                             return process.exitValue();
                         });
-
                 } catch (IOException exception) {
                     throw new IllegalStateException("Failed to start Java Application process", exception);
                 }
@@ -265,6 +271,7 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
         } catch (Throwable failure) {
             finishExecution(configuration, execution, null, failure);
         }
+
         return execution.completion;
     }
 
@@ -297,6 +304,7 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
             running.remove(execution);
             return running.isEmpty() ? null : running;
         });
+
         execution.session.finish(exitCode, failure);
         if (failure == null) {
             execution.completion.complete(null);
@@ -379,8 +387,8 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
                 .redirectErrorStream(true)
                 .start();
             process.getOutputStream().close();
-            try (var input = process.getInputStream();
-                var output = problems.output(RunSession.processCharset(),
+            try (InputStream input = process.getInputStream();
+                OutputStream output = problems.output(RunSession.processCharset(),
                     text -> session.append(RunOutput.Kind.STDOUT, text))) {
                 input.transferTo(output);
             }
@@ -477,6 +485,7 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
         if (normalized.toLowerCase().startsWith("src.main.java.")) {
             normalized = normalized.substring("src.main.java.".length());
         }
+
         if (normalized.toLowerCase().endsWith(".java")) {
             normalized = normalized.substring(0, normalized.length() - ".java".length());
         }

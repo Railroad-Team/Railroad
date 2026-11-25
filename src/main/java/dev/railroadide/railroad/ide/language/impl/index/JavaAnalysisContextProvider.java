@@ -42,6 +42,7 @@ import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.request.api.RequestContext;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.MapMaker;
+import java.util.Map;
 
 /**
  * Combines Java project, library, and JDK symbol indexes, caching library and JDK scans.
@@ -82,7 +83,9 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
             workspace = new JavaWorkspaceAnalysisProvider(active, this::binaries);
         }
 
-        /** Lets workspace captures reuse this session's binary indexes instead of scanning and holding their own. */
+        /**
+         * Lets workspace captures reuse this session's binary indexes instead of scanning and holding their own.
+         */
         private JavaSymbolIndex binaries(List<Path> classpath, Path jdk) {
             Runnable check = this::checkActive;
             return new CompositeJavaSymbolIndex(List.of(libraryIndex(classpath, null, this, check),
@@ -110,9 +113,10 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
                 try {
                     value = cache.getIfPresent(key);
                     if (value == null) {
-                        try (var activity = BackgroundActivities.shared().start(activityKey)) {
+                        try (BackgroundActivities.Handle activity = BackgroundActivities.shared().start(activityKey)) {
                             value = ScopedValue.where(ActivityProgress.CURRENT, activity).call(loader::get);
                         }
+
                         synchronized (this) {
                             activityCheck.run();
                             checkActive();
@@ -123,6 +127,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
                     lock.unlock();
                 }
             }
+
             activityCheck.run();
             checkActive();
             return value;
@@ -163,7 +168,8 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
     ) {
         if (closed || session.isClosed())
             throw new CancellationException("Project closed");
-        var values = new HashMap<>(configuration.settings());
+
+        Map<String, String> values = new HashMap<>(configuration.settings());
         values.put(SESSION, session.id());
         values.put(EPOCH, UUID.randomUUID().toString());
         values.put("index.binary.fingerprint", JavaArtifactFingerprint.capture(
@@ -172,8 +178,10 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
                 if (closed || session.isClosed() || Thread.currentThread().isInterrupted())
                     throw new CancellationException("Java configuration preparation cancelled");
             }));
+
         if (closed || session.isClosed())
             throw new CancellationException("Project closed");
+
         return new WorkspaceConfigurationSnapshot(
             configuration.revision(), configuration.moduleIds(), values);
     }
@@ -191,15 +199,18 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
     ) {
         if (closed || session.isClosed())
             throw new CancellationException("Project closed");
+
         String epoch = configuration.settings().get(EPOCH);
         var cache = new Cache(session, epoch, () -> {
             Cache current = sessions.get(session.id());
             return !closed && !session.isClosed() && current != null && current.epoch.equals(epoch);
         });
+
         Cache previous = sessions.put(session.id(), cache);
         if (previous != null) {
             previous.dispose();
         }
+
         workspaceAnalysis.clearCaches();
         if (closed || session.isClosed()) {
             sessions.remove(session.id(), cache);
@@ -221,7 +232,9 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         }
     }
 
-    /** Releases standalone and session caches, rejecting future work without waiting for scans. */
+    /**
+     * Releases standalone and session caches, rejecting future work without waiting for scans.
+     */
     @Override
     public void close() {
         closed = true;
@@ -230,6 +243,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
                 cache.dispose();
             }
         });
+
         workspaceAnalysis.close();
     }
 
@@ -246,19 +260,23 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         Cache cache = session == null ? null : sessions.get(session.id());
         if (closed || cache == null || session.isClosed())
             throw new CancellationException("Java configuration not active");
+
         return cache;
     }
 
     private JavaWorkspaceAnalysisProvider workspace(WorkspaceSnapshot workspace) {
         if (closed)
             throw new CancellationException("Java analysis provider closed");
+
         String id = workspace.configuration().settings().get(SESSION);
         if (id == null)
             return workspaceAnalysis; // Standalone/headless captures have no live project ownership.
+
         Cache cache = sessions.get(id);
         if (cache == null || cache.session.isClosed()
             || !cache.epoch.equals(workspace.configuration().settings().get(EPOCH)))
             throw new CancellationException("Captured Java configuration was superseded");
+
         return cache.workspace;
     }
 
@@ -294,6 +312,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         context.checkActive();
         return workspace(context.workspaceSnapshot()).capture(context);
     }
+
     private final DefaultProjectIndexContextResolver resolver = new DefaultProjectIndexContextResolver(
         project -> Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project));
 
@@ -308,12 +327,16 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         return index(resolver.resolve(project), file);
     }
 
-    /** Resolves live diagnostics using the document's source attachment when present. */
+    /**
+     * Resolves live diagnostics using the document's source attachment when present.
+     */
     public @Nullable JavaSymbolIndex indexForDocument(Project project, DocumentSnapshot document) {
         return indexForDocument(resolver.resolve(project), document);
     }
 
-    /** Resolves a captured diagnostics document in a live indexing session. */
+    /**
+     * Resolves a captured diagnostics document in a live indexing session.
+     */
     public @Nullable JavaSymbolIndex indexForDocument(ProjectIndexContext context, DocumentSnapshot document) {
         return index(context, document.uri().filePath().orElse(null), document);
     }
@@ -357,8 +380,10 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
             context.checkActive();
             cache.checkActive();
         };
+
         if (context.configurationGeneration() != cache.generation)
             throw new CancellationException("Live Java configuration was superseded");
+
         List<JavaSymbolIndex> delegates = new ArrayList<>();
 
         if (javaContext != null) {
@@ -374,15 +399,17 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
                         () -> {
                             var visible = JavaProjectSemanticIndex.builder();
                             var sets = JavaSourceSets.of(gradle);
-                            for (var entry : key.index().files().values()) {
+                            for (JavaProjectSemanticIndex.SourceFileIndex entry : key.index().files().values()) {
                                 activityCheck.run();
                                 if (sets.visible(key.scope(), entry.path())) {
                                     visible.putFile(entry);
                                 }
                             }
+
                             return visible.build();
                         });
                 }
+
                 jdk = scope.jdkHome(gradle);
                 roots = scope.classpath(gradle);
                 archive = scope.archive();
@@ -410,13 +437,17 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         activityCheck.run();
         if (cache != cache(context.session()))
             throw new CancellationException("Java configuration changed during scan");
+
         if (projectIndex != null) {
             delegates.addFirst(projectIndex);
         }
+
         if (delegates.isEmpty())
             return null;
+
         if (delegates.size() == 1)
             return delegates.getFirst();
+
         return new CompositeJavaSymbolIndex(delegates);
     }
 
@@ -438,6 +469,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         return cache.load(cache.libraries, key, "railroad.activity.indexing_libraries", activityCheck, () -> {
             if (archive != null)
                 return libraryIndex(roots, null, cache, activityCheck).forAttachedSource(archive, activityCheck);
+
             Railroad.LOGGER.warn(
                 "Building Java library index: roots={}, javafxBaseRoots={}, javafxGraphicsRoots={}, sampleRoots={}",
                 roots.size(),

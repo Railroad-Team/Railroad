@@ -5,7 +5,9 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-/** Returns positive specificity on a match, or zero. Priority is resolved by the runtime first. */
+/**
+ * Returns positive specificity on a match, or zero. Priority is resolved by the runtime first.
+ */
 @FunctionalInterface
 public interface LanguageMatcher {
     /**
@@ -37,6 +39,7 @@ public interface LanguageMatcher {
         Objects.requireNonNull(extension, "extension");
         if (extension.isBlank() || extension.equals("."))
             throw new IllegalArgumentException("Extension cannot be blank");
+
         String suffix = "." + extension.toLowerCase(Locale.ROOT).replaceFirst("^\\.", "");
         return input -> input.fileName().toLowerCase(Locale.ROOT).endsWith(suffix) ? 200 + suffix.length() : 0;
     }
@@ -53,17 +56,22 @@ public interface LanguageMatcher {
             String firstLine = input.textPrefix().lines().findFirst().orElse("");
             if (!firstLine.startsWith("#!"))
                 return 0;
+
             String[] words = firstLine.substring(2).trim().split("\\s+");
             String executable = words[0].substring(words[0].lastIndexOf('/') + 1);
             if (executable.equals(interpreter))
                 return 300;
+
             if (!executable.equals("env"))
                 return 0;
+
             for (int i = 1; i < words.length; i++) {
                 if (words[i].startsWith("-") || words[i].contains("="))
                     continue;
+
                 return words[i].equals(interpreter) ? 300 : 0;
             }
+
             return 0;
         };
     }
@@ -90,6 +98,7 @@ public interface LanguageMatcher {
         for (LanguageMatcher matcher : copy) {
             Objects.requireNonNull(matcher, "matcher");
         }
+
         return input -> Arrays.stream(copy).mapToInt(matcher -> matcher.match(input)).max().orElse(0);
     }
 }

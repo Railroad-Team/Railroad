@@ -46,6 +46,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javafx.beans.InvalidationListener;
 import org.fxmisc.richtext.model.TwoDimensional;
+import java.util.Collection;
+import org.fxmisc.richtext.MultiChangeBuilder;
 
 /**
  * Edits a file with observable save state, autosaving, and external-file change handling.
@@ -53,6 +55,7 @@ import org.fxmisc.richtext.model.TwoDimensional;
 @Slf4j
 public class TextEditorPane extends CodeArea implements AutoCloseable {
     private static final int[] FONT_SIZES = {6, 8, 10, 12, 14, 16, 18, 20, 24, 26, 28, 30, 36, 40, 48, 56, 60};
+
     private static final Duration SAVE_DELAY = Duration.ofMillis(400);
     private static final Duration CHANGE_DEBOUNCE = Duration.ofMillis(150);
 
@@ -123,12 +126,16 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
 
     private int fontSizeIndex = 5;
 
-    /** Adds an unmanaged visual overlay without changing the document. */
+    /**
+     * Adds an unmanaged visual overlay without changing the document.
+     */
     public void addFoldOverlay(Node overlay) {
         getChildren().add(overlay);
     }
 
-    /** Removes a previously added fold overlay. */
+    /**
+     * Removes a previously added fold overlay.
+     */
     public void removeFoldOverlay(Node overlay) {
         getChildren().remove(overlay);
     }
@@ -170,12 +177,14 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     public void showSelection(int anchor, int caret) {
         if (anchor < 0 || caret < 0 || anchor > getLength() || caret > getLength())
             throw new IndexOutOfBoundsException("Selection lies outside the document");
-        int lastParagraph = offsetToPosition(Math.max(anchor, caret), TwoDimensional.Bias.Forward).getMajor();
+
+        int lastParagraph = offsetToPosition(Math.max(anchor, caret), Bias.Forward).getMajor();
         for (int paragraph = 0; paragraph <= lastParagraph; paragraph++) {
             if (isFolded(paragraph)) {
                 unfoldParagraphs(Math.max(0, paragraph - 1));
             }
         }
+
         selectRange(anchor, caret);
         requestFollowCaret();
     }
@@ -185,7 +194,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
      */
     public void clearExecutionLine() {
         for (int index = 0; index < getParagraphs().size(); index++) {
-            var styles = new ArrayList<>(getParagraph(index).getParagraphStyle());
+            List<String> styles = new ArrayList<>(getParagraph(index).getParagraphStyle());
             if (styles.remove("debug-execution-line")) {
                 setParagraphStyle(index, styles);
             }
@@ -220,9 +229,11 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         if (initialContentLoaded && !Files.isWritable(filePath)) {
             setEditable(false);
         }
+
         if (backingReadFailed) {
             setSaveState(EditorSaveState.ERROR);
         }
+
         pendingSnapshot.set(captureSnapshot());
         configureFontControls();
         configureTabBehaviour();
@@ -336,7 +347,8 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         DocumentStore store = documentStore;
         if (closed || store == null)
             return null;
-        var current = store.current(documentId).orElse(null);
+
+        DocumentSnapshot current = store.current(documentId).orElse(null);
         return current instanceof TextDocumentSnapshot snapshot && snapshot.text().equals(getText())
             && snapshot.uri().equals(DocumentUri.fromPath(filePath)) ? snapshot : null;
     }
@@ -351,11 +363,14 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     private EditResult validateExpected(TextDocumentSnapshot expected) {
         if (closed)
             return EditResult.CLOSED;
+
         if (expected == null)
             return EditResult.INVALID;
+
         TextDocumentSnapshot current = publishedSnapshot();
         if (current == null)
             return EditResult.UNAVAILABLE;
+
         return sameSnapshot(expected, current) ? EditResult.APPLIED : EditResult.STALE;
     }
 
@@ -369,11 +384,14 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             EditResult validation = validateExpected(expected);
             if (validation != EditResult.APPLIED)
                 return validation;
+
             if (!effectivelyEditable())
                 return EditResult.READ_ONLY;
+
             if (replacements == null || replacements.stream().anyMatch(Objects::isNull))
                 return EditResult.INVALID;
-            var ordered = new ArrayList<>(replacements);
+
+            List<TextReplacement> ordered = new ArrayList<>(replacements);
             ordered.sort(Comparator.comparingInt(edit -> edit.range().start));
             int previousStart = -1;
             int previousEnd = -1;
@@ -382,19 +400,23 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 if (range.end > expected.text().length() || range.start < previousEnd
                     || range.start == previousStart)
                     return EditResult.INVALID;
+
                 previousStart = range.start;
                 previousEnd = range.end;
             }
+
             if (ordered.isEmpty())
                 return EditResult.APPLIED;
 
-            var changes = createMultiChange(ordered.size());
+            MultiChangeBuilder<Collection<String>, String, Collection<String>> changes = createMultiChange(
+                ordered.size());
             for (TextReplacement edit : ordered) {
                 TextRange range = edit.range();
                 if (!edit.text().equals(expected.text().substring(range.start, range.end))) {
                     changes.replaceText(range.start, range.end, edit.text());
                 }
             }
+
             if (!changes.hasChanges())
                 return EditResult.APPLIED;
 
@@ -404,6 +426,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             } finally {
                 getUndoManager().preventMerge();
             }
+
             return EditResult.APPLIED;
         }
     }
@@ -414,6 +437,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             requireEditorThread();
             if (closed)
                 throw new IllegalStateException("Text editor is closed");
+
             requestFollowCaret();
             requestFocus();
         }
@@ -425,6 +449,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 TextDocumentSnapshot snapshot = publishedSnapshot();
                 if (snapshot == null)
                     throw new IllegalStateException("No reconciled published text is available");
+
                 return snapshot;
             }
         }
@@ -434,6 +459,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             requireEditorThread();
             if (closed)
                 throw new IllegalStateException("Text editor is closed");
+
             return new TextSelection(getAnchor(), getCaretPosition());
         }
 
@@ -444,8 +470,10 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 EditResult validation = validateExpected(expected);
                 if (validation != EditResult.APPLIED)
                     return validation;
+
                 if (selection == null || selection.anchor() > getLength() || selection.caret() > getLength())
                     return EditResult.INVALID;
+
                 showSelection(selection.anchor(), selection.caret());
                 requestFocus();
                 return EditResult.APPLIED;
@@ -470,6 +498,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             synchronized (saveLock) {
                 if (closed || documentStore == null)
                     throw new IllegalStateException("Text editor is closed or not initialized");
+
                 SettledObservation<TextDocumentSnapshot> observation = new SettledObservation<>(listener) {
                     @Override
                     protected TextDocumentSnapshot current() {
@@ -481,6 +510,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                         return sameSnapshot(first, second);
                     }
                 };
+
                 observation.detach = documentStore.onChange(observation::schedule)::close;
                 editorSubscriptions.add(observation);
                 observation.schedule();
@@ -495,12 +525,14 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             synchronized (saveLock) {
                 if (closed)
                     throw new IllegalStateException("Text editor is closed");
+
                 SettledObservation<TextSelection> observation = new SettledObservation<>(listener) {
                     @Override
                     protected TextSelection current() {
                         return selection();
                     }
                 };
+
                 InvalidationListener invalidated = _ -> observation.schedule();
                 anchorProperty().addListener(invalidated);
                 caretPositionProperty().addListener(invalidated);
@@ -508,6 +540,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                     anchorProperty().removeListener(invalidated);
                     caretPositionProperty().removeListener(invalidated);
                 });
+
                 editorSubscriptions.add(observation);
                 observation.schedule();
                 return observation;
@@ -521,6 +554,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         private final AtomicBoolean queued = new AtomicBoolean();
         private EditorSubscription detach = () -> {
         };
+
         private T last;
 
         private SettledObservation(Consumer<T> listener) {
@@ -536,11 +570,13 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         private void schedule() {
             if (!active.get() || !queued.compareAndSet(false, true))
                 return;
+
             Platform.runLater(() -> {
                 synchronized (saveLock) {
                     queued.set(false);
                     if (!active.get() || closed)
                         return;
+
                     T value = current();
                     if (value != null && !unchanged(last, value)) {
                         last = value;
@@ -604,12 +640,14 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         Objects.requireNonNull(snapshot, "snapshot");
         if (!documentId.equals(snapshot.id()))
             throw new IllegalArgumentException("Overlay belongs to another document");
+
         applyingExternalReload = true;
         try {
             replaceText(snapshot.text());
         } finally {
             applyingExternalReload = false;
         }
+
         editVersion.set(snapshot.version().value());
         savedVersion.set(backingVersion == null ? -1 : backingVersion.value());
         pendingSnapshot.set(snapshot);
@@ -638,11 +676,15 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         documentStoreAttached();
     }
 
-    /** Notifies subclasses after the initialized document has been attached to its store. */
+    /**
+     * Notifies subclasses after the initialized document has been attached to its store.
+     */
     protected void documentStoreAttached() {
     }
 
-    /** @return the associated project store, or {@code null} before initialization */
+    /**
+     * @return the associated project store, or {@code null} before initialization
+     */
     protected final DocumentStore getDocumentStore() {
         return documentStore;
     }
@@ -685,6 +727,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 if (!persistSnapshot(pendingSnapshot.get()))
                     return;
             }
+
             if (!retainDraftOnClose) {
                 DocumentStore store = documentStore;
                 DocumentState state = store == null ? null : store.state(documentId).orElse(null);
@@ -692,6 +735,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                     store.removeOverlay(documentId, state.overlay().version());
                 }
             }
+
             closed = true;
         }
 
@@ -718,6 +762,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             changeSubscription.unsubscribe();
             changeSubscription = null;
         }
+
         if (dirtySubscription != null) {
             dirtySubscription.unsubscribe();
             dirtySubscription = null;
@@ -759,6 +804,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             rememberSavedDiskText("");
             setSaveState(EditorSaveState.CLEAN);
         }
+
         return loaded;
     }
 
@@ -906,11 +952,13 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             if (importFolding != null) {
                 importFolding.update();
             }
+
             discardChangesOnClose = false;
             if (documentStore != null) {
                 documentStore.latestVersion(documentId)
                     .ifPresent(version -> editVersion.accumulateAndGet(version.value(), Math::max));
             }
+
             editVersion.incrementAndGet();
             TextDocumentSnapshot snapshot = captureSnapshot();
             pendingSnapshot.set(snapshot);
@@ -918,9 +966,11 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 if (documentStore != null) {
                     documentStore.publishOverlay(snapshot);
                 }
+
                 setSaveState(EditorSaveState.DIRTY);
             }
         });
+
         changeSubscription = multiPlainChanges()
             .successionEnds(CHANGE_DEBOUNCE)
             .subscribe(changes -> {
@@ -962,6 +1012,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             updateAfterSave(editVersion.get(), EditorSaveState.ERROR);
             return false;
         }
+
         if (savedSnapshot == null)
             return true;
 
@@ -981,6 +1032,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         }
 
         // The watcher can arrive after autosave, so also check disk before writing.
+
         try {
             if (Files.exists(filePath)) {
                 String disk = Files.readString(filePath);
@@ -1050,6 +1102,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                     store.acknowledgeSavedRevision(savedSnapshot.id(), state.backing().version(), overlay.version(),
                         savedSnapshot);
                 }
+
                 return;
             } catch (IllegalStateException exception) {
                 Railroad.LOGGER.debug("Retrying save acknowledgement for {} because the document state changed",
@@ -1113,6 +1166,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             Railroad.LOGGER.warn("Use the document owner's Save As transition for attached editor {}", filePath);
             return false;
         }
+
         return saveAs(newPath, saved -> rebindIdentity.run());
     }
 
@@ -1156,6 +1210,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                     }
                 });
             }
+
             if (state != null && (state.isStale() || state.backing() == null
                 || state.overlay() == null && state.backing() instanceof TextDocumentSnapshot backing
                     && (!backing.text().equals(snapshot) || editVersion.get() != backing.version().value()))) {
@@ -1163,12 +1218,15 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 if (state.backing() != null) {
                     latestVersion = Math.max(latestVersion, state.backing().version().value());
                 }
+
                 if (state.overlay() != null) {
                     latestVersion = Math.max(latestVersion, state.overlay().version().value());
                 }
+
                 editVersion.set(new DocumentVersion(latestVersion).next().value());
                 pendingSnapshot.set(captureSnapshot());
             }
+
             long snapshotVersion = editVersion.get();
             DocumentUri uri = DocumentUri.fromPath(normalizedPath);
             var savedSnapshot = new TextDocumentSnapshot(documentId, uri,
@@ -1181,6 +1239,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 if (parent != null) {
                     Files.createDirectories(parent);
                 }
+
                 Files.writeString(
                     normalizedPath,
                     diskText,
@@ -1193,6 +1252,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                     editVersion.set(previousEditVersion);
                     pendingSnapshot.set(previousPending);
                 }
+
                 setSaveState(EditorSaveState.ERROR);
                 Railroad.LOGGER.error("Failed to write file {}", normalizedPath, exception);
                 return false;
@@ -1382,6 +1442,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             if (documentStore != null) {
                 documentStore.relocate(documentId, DocumentUri.fromPath(normalizedPath));
             }
+
             JavaFXUtils.runOnApplicationThread(gutter::refresh);
             pendingExternalText = null;
             closeExternalChangeDialog();
@@ -1396,13 +1457,16 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 contentDirty = true;
                 Railroad.LOGGER.warn("Failed to verify renamed editor file {}", normalizedPath, exception);
             }
+
             if (contentDirty && editVersion.get() == savedVersion.get()) {
                 editVersion.incrementAndGet();
             }
+
             if (!contentDirty) {
                 rememberSavedDiskText(disk);
                 savedVersion.set(editVersion.get());
             }
+
             setSaveState(contentDirty ? EditorSaveState.DIRTY : EditorSaveState.CLEAN);
             TextDocumentSnapshot snapshot = captureSnapshot();
             pendingSnapshot.set(snapshot);
@@ -1427,15 +1491,18 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             if (editVersion.get() == savedVersion.get()) {
                 editVersion.incrementAndGet();
             }
+
             DocumentStore store = documentStore;
             DocumentState state = store != null ? store.state(documentId).orElse(null) : null;
             if (state != null && state.overlay() instanceof TextDocumentSnapshot overlay
                 && overlay.text().equals(getText())) {
                 editVersion.accumulateAndGet(overlay.version().value(), Math::max);
             }
+
             if (state != null && state.backing() != null && state.overlay() == null) {
                 editVersion.accumulateAndGet(state.backing().version().next().value(), Math::max);
             }
+
             setSaveState(EditorSaveState.ERROR);
             TextDocumentSnapshot snapshot = captureSnapshot();
             pendingSnapshot.set(snapshot);
@@ -1443,8 +1510,10 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 if (state.overlay() == null) {
                     store.publishOverlay(snapshot);
                 }
+
                 store.removeBacking(documentId, state.backing().version());
             }
+
             if (pendingSaveTask != null) {
                 pendingSaveTask.cancel(false);
                 pendingSaveTask = null;
@@ -1491,6 +1560,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 Railroad.LOGGER.warn("Failed to stop watcher for {}", filePath, exception);
             }
         }
+
         startExternalWatcher();
     }
 
@@ -1532,6 +1602,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                             markBackingFileDeleted();
                         }
                     });
+
                     return;
                 }
 
@@ -1557,6 +1628,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             pendingSaveTask.cancel(false);
             pendingSaveTask = null;
         }
+
         if (!alreadyQueued || displayedExternalText != null) {
             Path changedPath = filePath;
             Platform.runLater(() -> processExternalChange(changedPath));
@@ -1574,6 +1646,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                     && documentStore.state(documentId).map(state -> state.overlay() != null).orElse(false)) {
                     publishExternalBacking(disk);
                 }
+
                 reloadExternalText(disk);
             } else {
                 publishExternalBacking(disk);
@@ -1605,10 +1678,12 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             if (state.backing() != null) {
                 latestVersion = Math.max(latestVersion, state.backing().version().value());
             }
+
             if (state.overlay() != null) {
                 latestVersion = Math.max(latestVersion, state.overlay().version().value());
             }
         }
+
         DocumentVersion externalVersion = new DocumentVersion(latestVersion).next();
         DocumentUri uri = DocumentUri.fromPath(filePath);
         var externalSnapshot = new TextDocumentSnapshot(documentId, uri, externalVersion, languageId,
@@ -1622,6 +1697,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             externalChangeDialog = new ExternalChangeDialog(this, () -> resolveExternalChange(true),
                 () -> resolveExternalChange(false));
         }
+
         externalChangeDialog.update(getText(), disk);
     }
 
@@ -1652,6 +1728,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                     showExternalChangeDialog(disk);
                     return;
                 }
+
                 if (reload) {
                     DocumentStore store = documentStore;
                     DocumentState state = store != null ? store.state(documentId).orElse(null) : null;
@@ -1665,6 +1742,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                             backing.languageId(), backing.origin(), disk, backing.encoding());
                         store.discardOverlay(documentId, backing.version(), state.overlay().version(), restoredBacking);
                     }
+
                     reloadExternalText(disk, restoredBacking);
                 } else {
                     DocumentStore store = documentStore;
@@ -1682,6 +1760,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                         editVersion.set(reconciledVersion.value());
                         pendingSnapshot.set(reconciledOverlay);
                     }
+
                     rememberSavedDiskText(disk);
                     pendingExternalText = null;
                     closeExternalChangeDialog();
@@ -1708,6 +1787,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             pendingSaveTask.cancel(false);
             pendingSaveTask = null;
         }
+
         DocumentStore store = documentStore;
         DocumentState state = store != null ? store.state(documentId).orElse(null) : null;
         if (restoredBacking == null && state != null && state.overlay() != null
@@ -1720,6 +1800,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                 backing.languageId(), backing.origin(), disk, backing.encoding());
             store.discardOverlay(documentId, backing.version(), state.overlay().version(), restoredBacking);
         }
+
         boolean cleanReload = restoredBacking == null && !hasUnsavedChanges()
             && (state == null || state.overlay() == null);
         if (cleanReload && state != null && state.backing() instanceof TextDocumentSnapshot backing
@@ -1727,6 +1808,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             restoredBacking = backing;
             cleanReload = false;
         }
+
         int caret = getCaretPosition();
         if (!getText().equals(disk)) {
             applyingExternalReload = true;
@@ -1735,11 +1817,14 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             } finally {
                 applyingExternalReload = false;
             }
+
             if (cleanReload && state != null && state.backing() != null) {
                 editVersion.accumulateAndGet(state.backing().version().next().value(), Math::max);
             }
+
             moveTo(Math.min(caret, getLength()));
         }
+
         if (restoredBacking != null && !restoredBacking.text().equals(getText())) {
             // RichTextFX normalizes line endings; that content requires its own canonical revision.
             editVersion.set(new DocumentVersion(latestDocumentVersion()).next().value());
@@ -1750,10 +1835,12 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
         } else if (restoredBacking != null) {
             editVersion.set(restoredBacking.version().value());
         }
+
         TextDocumentSnapshot snapshot = restoredBacking != null ? restoredBacking : captureSnapshot();
         if (cleanReload && store != null) {
             store.publishBacking(snapshot);
         }
+
         rememberSavedDiskText(disk);
         pendingSnapshot.set(snapshot);
         pendingExternalText = null;
@@ -1780,6 +1867,7 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     }
 
     // RichTextFX stores every line terminator as '\n', so editor text never matches CRLF disk text exactly.
+
     private boolean matchesLastSaved(String editorText) {
         return sameText(editorText, lastSavedText.get());
     }
@@ -1802,9 +1890,11 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
             char character = text.charAt(index);
             if (character == '\n')
                 return "\n";
+
             if (character == '\r')
                 return index + 1 < text.length() && text.charAt(index + 1) == '\n' ? "\r\n" : "\r";
         }
+
         return "\n";
     }
 

@@ -12,8 +12,11 @@ import java.util.*;
 import java.util.concurrent.CancellationException;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
-/** Source locations and messages from each build target's latest execution in one project. */
+/**
+ * Source locations and messages from each build target's latest execution in one project.
+ */
 public final class BuildProblems {
     public record Problem(@Nullable Path file, int line, int column, String message) {
     }
@@ -29,6 +32,7 @@ public final class BuildProblems {
         if (failures.remove(target) != null) {
             publish();
         }
+
         return report;
     }
 
@@ -36,7 +40,9 @@ public final class BuildProblems {
         return problems;
     }
 
-    /** Replays the current list and delivers replacements, in order, on the publishing thread. */
+    /**
+     * Replays the current list and delivers replacements, in order, on the publishing thread.
+     */
     public synchronized Runnable subscribe(Consumer<List<Problem>> listener) {
         listeners.add(listener);
         listener.accept(problems);
@@ -48,9 +54,10 @@ public final class BuildProblems {
     }
 
     private void publish() {
-        var next = failures.values().stream().flatMap(List::stream).distinct().toList();
+        List<Problem> next = failures.values().stream().flatMap(List::stream).distinct().toList();
         if (problems.equals(next))
             return;
+
         problems = next;
         listeners.forEach(listener -> listener.accept(next));
     }
@@ -81,7 +88,9 @@ public final class BuildProblems {
             }
         }
 
-        /** Forwards decoded console text unchanged while reading compiler lines from this output channel. */
+        /**
+         * Forwards decoded console text unchanged while reading compiler lines from this output channel.
+         */
         public synchronized OutputStream output(Charset charset, Consumer<String> sink) {
             var lines = new Lines();
             channels.add(lines);
@@ -98,31 +107,37 @@ public final class BuildProblems {
         public synchronized void finish(@Nullable Throwable failure) {
             if (finished)
                 return;
+
             finished = true;
             synchronized (BuildProblems.this) {
                 if (!running.remove(target, this) || failure == null)
                     return;
+
                 String message = failure.toString();
                 for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
                     if (cause instanceof CancellationException)
                         return;
+
                     if (cause.getMessage() != null && !cause.getMessage().isBlank()) {
                         message = cause.getMessage().strip();
                         message.lines().forEach(this::parse);
                     }
                 }
+
                 channels.forEach(Lines::end);
-                var result = new ArrayList<>(located);
-                for (var problem : parsed) {
+                List<Problem> result = new ArrayList<>(located);
+                for (Problem problem : parsed) {
                     boolean reported = located.stream().anyMatch(other -> other.file().equals(problem.file())
                         && other.line() == problem.line() && other.message().contains(problem.message()));
                     if (!reported) {
                         result.add(problem);
                     }
                 }
+
                 if (result.isEmpty()) {
                     result.add(new Problem(script, scriptLine, 1, message));
                 }
+
                 failures.put(target, List.copyOf(result));
                 publish();
             }
@@ -133,9 +148,11 @@ public final class BuildProblems {
                 Path source = directory.resolve(path).normalize();
                 if (source.startsWith(directory))
                     return source;
+
                 if (realDirectory == null) {
                     realDirectory = ProjectPathIdentityUtils.normalize(directory);
                 }
+
                 return source.startsWith(realDirectory) ? directory.resolve(realDirectory.relativize(source)) : source;
             } catch (InvalidPathException _) {
                 return null;
@@ -145,12 +162,14 @@ public final class BuildProblems {
         private void parse(String text) {
             if (!text.contains(".java:") && !text.contains(" file '"))
                 return;
+
             String line = COLOR.matcher(text).replaceAll("").strip();
             if (line.startsWith("> ")) {
                 line = line.substring(2).stripLeading();
             }
-            var compiler = JAVAC.matcher(line);
-            var buildScript = SCRIPT.matcher(line);
+
+            Matcher compiler = JAVAC.matcher(line);
+            Matcher buildScript = SCRIPT.matcher(line);
             try {
                 if (compiler.matches()) {
                     Path file = resolve(compiler.group(1));
@@ -189,6 +208,7 @@ public final class BuildProblems {
                 if (!oversized && !pending.isEmpty()) {
                     parse(pending.toString());
                 }
+
                 pending.setLength(0);
                 oversized = false;
             }

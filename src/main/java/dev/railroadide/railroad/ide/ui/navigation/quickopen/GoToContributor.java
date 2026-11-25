@@ -102,6 +102,7 @@ public interface GoToContributor<T> {
         Services.EDITOR_TAB_MANAGER.open(file);
         if (caret == null)
             return;
+
         Path normalized = file.toAbsolutePath().normalize();
         Platform.runLater(() -> Services.EDITOR_TAB_MANAGER.activeTab()
             .filter(tab -> tab.path().toAbsolutePath().normalize().equals(normalized))
@@ -112,6 +113,7 @@ public interface GoToContributor<T> {
     private static void moveCaret(TextEditorPane editor, int offset) {
         if (offset < 0 || offset > editor.getLength())
             return;
+
         editor.showSelection(offset, offset);
         editor.requestFocus();
     }

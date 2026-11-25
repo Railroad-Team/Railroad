@@ -14,6 +14,7 @@ public final class GitProgressParser {
     // Examples:
     // "Receiving objects: 42% (1234/5678), 1.23 MiB | 4.56 MiB/s"
     // "Resolving deltas: 90% (111/123)"
+
     private static final Pattern PERCENT_LINE = Pattern.compile(
         "^(?<phase>[A-Za-z ][A-Za-z ]+?):\\s*(?<pct>\\d{1,3})%(?:\\s*\\((?<done>\\d+)/(?<total>\\d+)\\))?.*$");
 
@@ -59,6 +60,7 @@ public final class GitProgressParser {
         }
 
         // Check for percentage line
+
         Matcher percentageMatcher = PERCENT_LINE.matcher(normalized);
         if (percentageMatcher.matches()) {
             String phase = normalizePhase(percentageMatcher.group("phase"));
@@ -67,10 +69,12 @@ public final class GitProgressParser {
             long total = count(percentageMatcher.group("total"));
             if (done < 0 || done > total || total <= 0)
                 return Optional.of(new GitProgressEvent.Percentage(phase, percent, -1, -1));
+
             return Optional.of(new GitProgressEvent.Percentage(phase, percent, done, total));
         }
 
         // Check for phase prefix
+
         Matcher phaseMatcher = PHASE_PREFIX.matcher(normalized);
         if (phaseMatcher.matches()) {
             String phase = normalizePhase(phaseMatcher.group("phase"));
@@ -78,6 +82,7 @@ public final class GitProgressParser {
         }
 
         // Fallback to message
+
         return Optional.of(new GitProgressEvent.Message(normalized));
     }
 
@@ -95,6 +100,7 @@ public final class GitProgressParser {
     private static long count(String value) {
         if (value == null)
             return -1;
+
         try {
             return Long.parseLong(value);
         } catch (NumberFormatException _) {

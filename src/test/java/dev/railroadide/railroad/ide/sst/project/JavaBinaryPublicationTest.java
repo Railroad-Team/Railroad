@@ -13,26 +13,28 @@ import static org.junit.jupiter.api.Assertions.*;
 public class JavaBinaryPublicationTest {
     @Test
     public void processRuntimeCacheDoesNotExposeMutableStubs() {
-        var stub = JavaSemanticAnalyzer
+        ClassStub stub = JavaSemanticAnalyzer
             .loadJdkClassStubsByQualifiedName().get("java.lang.String");
         assertNotNull(stub);
         assertThrows(UnsupportedOperationException.class, () -> stub.methods().clear());
         assertThrows(UnsupportedOperationException.class, () -> stub.interfaces().clear());
     }
+
     @Test
     public void publicationDetachesNestedInputsAndExposesImmutableValues() {
-        var arguments = new ArrayList<Type>(List.of(new Type.PrimitiveType("int")));
-        var bounds = new ArrayList<Type>(List.of(new Type.ClassType("List", arguments)));
+        List<Type> arguments = new ArrayList<Type>(List.of(new Type.PrimitiveType("int")));
+        List<Type> bounds = new ArrayList<Type>(List.of(new Type.ClassType("List", arguments)));
         int[] array = {1, 2};
-        var values = new HashMap<String, Object>();
+
+        Map<String, Object> values = new HashMap<String, Object>();
         values.put("numbers", array);
-        var annotations = new ArrayList<>(List.of(new AnnotationStub("Example", values)));
-        var fields = new ArrayList<>(List.of(new FieldStub("value", bounds.getFirst(), 0, annotations)));
-        var parameters = new ArrayList<>(List.of(new Parameter("value", bounds.getFirst(), annotations)));
-        var typeParameters = new ArrayList<>(List.of(new TypeParameter("T", bounds)));
-        var methods = new ArrayList<>(List.of(new MethodStub("method", bounds.getFirst(), parameters, 0,
+        List<AnnotationStub> annotations = new ArrayList<>(List.of(new AnnotationStub("Example", values)));
+        List<FieldStub> fields = new ArrayList<>(List.of(new FieldStub("value", bounds.getFirst(), 0, annotations)));
+        List<Parameter> parameters = new ArrayList<>(List.of(new Parameter("value", bounds.getFirst(), annotations)));
+        List<TypeParameter> typeParameters = new ArrayList<>(List.of(new TypeParameter("T", bounds)));
+        List<MethodStub> methods = new ArrayList<>(List.of(new MethodStub("method", bounds.getFirst(), parameters, 0,
             bounds, annotations, typeParameters)));
-        var constructors = new ArrayList<>(
+        List<ConstructorStub> constructors = new ArrayList<>(
             List.of(new ConstructorStub(parameters, 0, bounds, annotations, typeParameters)));
         var stub = new ClassStub("example", "Example", List.of(new TypeParameter("T", bounds)),
             null, bounds, fields, methods, constructors, 0, annotations);

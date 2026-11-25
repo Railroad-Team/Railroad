@@ -102,7 +102,7 @@ public class JavaBinaryWildcardInferenceTest {
         assertEquals(valid, exit == 0, () -> "javac: " + output);
         // Only Api's class files are indexed: caller output cannot hide an inference failure.
         var index = new CompositeJavaSymbolIndex(List.of(JavaLibrarySymbolIndex.build(List.of(classes)), JDK));
-        var diagnostics = JavaInspectionTestSupport.runProviders(
+        List<SemanticDiagnostic> diagnostics = JavaInspectionTestSupport.runProviders(
             List.of(new CoreAssignmentInspection(), new CoreCallResolutionInspection(),
                 new CoreMemberResolutionInspection()),
             caller, source, index);

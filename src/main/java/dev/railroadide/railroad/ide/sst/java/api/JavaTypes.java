@@ -211,6 +211,7 @@ public final class JavaTypes {
         public String displayName() {
             if (upperBound != null)
                 return "? extends " + upperBound.displayName();
+
             return "? super " + lowerBound.displayName();
         }
     }
@@ -219,6 +220,7 @@ public final class JavaTypes {
         value = Objects.requireNonNull(value, "displayName");
         if (value.isBlank())
             throw new IllegalArgumentException(name + " type displayName cannot be blank");
+
         return value;
     }
 }

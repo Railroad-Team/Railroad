@@ -38,6 +38,7 @@ public class KeybindHandler {
                 if (node.getProperties().containsKey("railroad:keybind-context"))
                     return;
             }
+
             for (Node node = captureNode; node != null; node = node.getParent()) {
                 Object registered = node.getProperties().get("railroad:keybind-context");
                 if (registered instanceof KeybindContexts.KeybindContext active &&
@@ -88,6 +89,7 @@ public class KeybindHandler {
             if (!keybind.getValidContexts().contains(context)
                 && !keybind.getValidContexts().contains(KeybindContexts.ALL))
                 continue;
+
             KeybindData binding = keybind.findMatchingBinding(event).orElse(null);
             if (binding == null)
                 continue;
@@ -98,6 +100,7 @@ public class KeybindHandler {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -108,7 +111,7 @@ public class KeybindHandler {
      *         combinations.
      */
     public static Map<String, List<KeybindData>> getDefaults() {
-        var map = new HashMap<String, List<KeybindData>>();
+        Map<String, List<KeybindData>> map = new HashMap<String, List<KeybindData>>();
 
         for (Keybind keybind : KEYBIND_REGISTRY.values()) {
             map.put(keybind.getId(), keybind.getDefaultKeys());

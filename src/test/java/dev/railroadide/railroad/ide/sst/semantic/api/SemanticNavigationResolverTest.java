@@ -209,14 +209,17 @@ public class SemanticNavigationResolverTest {
                             }
                         }
                     }
+
                     return null;
                 }));
             }
+
             try {
                 assertTrue(ready.await(10, TimeUnit.SECONDS));
             } finally {
                 start.countDown();
             }
+
             for (Future<?> task : tasks) {
                 task.get(20, TimeUnit.SECONDS);
             }

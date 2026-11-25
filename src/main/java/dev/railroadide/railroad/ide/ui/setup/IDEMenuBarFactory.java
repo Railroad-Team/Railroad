@@ -123,7 +123,7 @@ public final class IDEMenuBarFactory {
         var findPreviousItem = CommandMenuItems.create(EditCommands.FIND_PREVIOUS,
             () -> CommandContext.forProject(project, menuBar));
 
-        var toolWindowsMenu = createToolWindowsMenu(project, menuBar, workspaceActions);
+        LocalizedMenu toolWindowsMenu = createToolWindowsMenu(project, menuBar, workspaceActions);
 
         var navigateBackItem = CommandMenuItems.create(Commands.NAVIGATE_BACK,
             () -> CommandContext.withArgument(project, menuBar, workspaceActions));
@@ -177,6 +177,7 @@ public final class IDEMenuBarFactory {
             if (viewMode.getGraphic() != null) {
                 item.setGraphic(new FontIcon(viewMode.getGraphic()));
             }
+
             var command = Commands.viewMode(viewMode);
             if (command != null) {
                 CommandMenuItems.bind(item, command, () -> CommandContext.forProject(project, menuBar));
@@ -188,11 +189,13 @@ public final class IDEMenuBarFactory {
                 if (accelerator != null) {
                     bindConfiguredAccelerator(item, accelerator);
                 }
+
                 ObservableBooleanValue unavailable = viewMode.createUnavailableBinding(project);
                 if (unavailable != null) {
                     item.disableProperty().bind(unavailable);
                 }
             }
+
             viewModeItems.put(viewMode, item);
         }
 
@@ -297,6 +300,7 @@ public final class IDEMenuBarFactory {
             RunCommands.STEP_OUT)) {
             runMenu.getItems().add(CommandMenuItems.create(command, () -> CommandContext.forProject(project, menuBar)));
         }
+
         runMenu.getStyleClass().add("rr-menu");
 
         var toolsMenu = new LocalizedMenu("railroad.menu.tools");
@@ -307,6 +311,7 @@ public final class IDEMenuBarFactory {
         if (OperatingSystem.isMac()) {
             menuBar.useSystemMenuBarProperty().set(true);
         }
+
         menuBar.getStyleClass().add("rr-menu-bar");
         return menuBar;
     }
@@ -337,6 +342,7 @@ public final class IDEMenuBarFactory {
         toolWindowsMenu.setOnShowing(_ -> menuItems.forEach((dockItem, menuItem) -> {
             menuItem.setSelected(workspaceActions.isDockItemActive(dockItem));
         }));
+
         return toolWindowsMenu;
     }
 
@@ -354,5 +360,4 @@ public final class IDEMenuBarFactory {
             .map(KeybindData::getKeyCodeCombination)
             .ifPresentOrElse(menuItem::setAccelerator, () -> menuItem.setAccelerator(null));
     }
-
 }

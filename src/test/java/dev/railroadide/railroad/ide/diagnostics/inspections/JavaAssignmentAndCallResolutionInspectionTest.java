@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import dev.railroadide.railroad.ide.sst.semantic.api.Type;
 import javafx.beans.property.StringProperty;
 import java.lang.reflect.Modifier;
+import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 
 import static dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectionTestSupport.runProvider;
 import static org.junit.jupiter.api.Assertions.*;
@@ -45,7 +46,7 @@ public class JavaAssignmentAndCallResolutionInspectionTest {
                 }
             }
             """;
-        var diagnostics = runProvider(new CoreAssignmentInspection(), source);
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
         assertEquals(List.of("outside = 128", "digit = offset", "digit |= 1.5", "text -= offset",
             "flag += flag", "boxed += offset"),
             diagnostics.stream()
@@ -65,9 +66,9 @@ public class JavaAssignmentAndCallResolutionInspectionTest {
                 }
             }
             """;
-        var diagnostics = runProvider(new CoreAssignmentInspection(), source);
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
         assertEquals(2, diagnostics.size(), diagnostics::toString);
-        var problem = diagnostics.getFirst();
+        SemanticDiagnostic problem = diagnostics.getFirst();
         assertEquals("42", source.substring(problem.startOffset(), problem.endOffset()).strip());
         assertTrue(diagnostics.getLast().message().contains("java.lang.Object"));
     }
@@ -85,7 +86,7 @@ public class JavaAssignmentAndCallResolutionInspectionTest {
                 }
             }
             """;
-        var diagnostics = runProvider(new CoreAssignmentInspection(), source);
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
         assertEquals(1, diagnostics.size(), diagnostics::toString);
         assertTrue(diagnostics.getFirst().message().contains("Thread"));
     }
@@ -108,7 +109,8 @@ public class JavaAssignmentAndCallResolutionInspectionTest {
             if (!"JAVA_METHOD_INVOCATION_EXPRESSION".equals(node.kind().id())
                 || !source.substring(node.start(), node.end()).strip().endsWith(".clone()"))
                 return;
-            var symbol = context.resolvedSymbol(node).orElseThrow();
+
+            Symbol symbol = context.resolvedSymbol(node).orElseThrow();
             Type returnType = context.inferredType(node).orElseThrow();
             cloneTypes.add(returnType.displayName());
             if (returnType instanceof JavaTypes.ArrayType) {
@@ -119,6 +121,7 @@ public class JavaAssignmentAndCallResolutionInspectionTest {
                 assertEquals(List.of("java.lang.CloneNotSupportedException"), context.thrownTypeNames(symbol));
             }
         });
+
         assertEquals(List.of("int[]", "T[][]", "java.lang.Object"), cloneTypes);
     }
 
@@ -135,7 +138,7 @@ public class JavaAssignmentAndCallResolutionInspectionTest {
                 }
             }
             """;
-        var diagnostics = runProvider(new CoreAssignmentInspection(), source);
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
         assertEquals(List.of("Cannot assign 'boolean' to 'int'"),
             diagnostics.stream().map(SemanticDiagnostic::message).toList());
     }
@@ -202,6 +205,7 @@ public class JavaAssignmentAndCallResolutionInspectionTest {
                     + context.inferredType(node).map(type -> type.displayName() + type).orElse("<none>"));
             }
         });
+
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
 
         assertFalse(
@@ -265,6 +269,7 @@ public class JavaAssignmentAndCallResolutionInspectionTest {
                     + context.inferredType(node).map(Object::toString).orElse("<none>"));
             }
         });
+
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
 
         assertFalse(
@@ -454,6 +459,7 @@ public class JavaAssignmentAndCallResolutionInspectionTest {
                     + context.inferredType(node).map(Object::toString).orElse("<none>"));
             }
         });
+
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
 
         assertFalse(
@@ -896,5 +902,4 @@ public class JavaAssignmentAndCallResolutionInspectionTest {
             diagnostics.stream().anyMatch(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
-
 }

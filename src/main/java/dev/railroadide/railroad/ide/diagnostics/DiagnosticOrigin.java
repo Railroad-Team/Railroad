@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.ide.diagnostics;
 
-/** The stage that produced a diagnostic, independently of its provider or diagnostic code. */
+/**
+ * The stage that produced a diagnostic, independently of its provider or diagnostic code.
+ */
 public enum DiagnosticOrigin {
     /**
      * Reports a problem detected while parsing document syntax.

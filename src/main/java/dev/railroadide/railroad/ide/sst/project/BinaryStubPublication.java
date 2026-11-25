@@ -6,7 +6,9 @@ import dev.railroadide.railroad.ide.classparser.stub.*;
 import java.lang.reflect.Array;
 import java.util.*;
 
-/** Copies the small ASM stub model at the binary index publication boundary. */
+/**
+ * Copies the small ASM stub model at the binary index publication boundary.
+ */
 public final class BinaryStubPublication {
     private BinaryStubPublication() {
     }
@@ -31,7 +33,9 @@ public final class BinaryStubPublication {
             stub.modifiers(), annotations(stub.annotations()), name(stub.enclosingClassName()));
     }
 
-    /** Interns names, which recur heavily across the classes of a classpath. */
+    /**
+     * Interns names, which recur heavily across the classes of a classpath.
+     */
     private static String name(String value) {
         return value == null ? null : value.intern();
     }
@@ -73,20 +77,25 @@ public final class BinaryStubPublication {
     private static Object annotationValue(Object value) {
         if (value instanceof AnnotationStub annotation)
             return annotation(annotation);
+
         if (value instanceof List<?> list)
             return list.stream().map(BinaryStubPublication::annotationValue).toList();
+
         if (value != null && value.getClass().isArray()) {
             List<Object> elements = new ArrayList<>(Array.getLength(value));
             for (int i = 0; i < Array.getLength(value); i++) {
                 elements.add(annotationValue(Array.get(value, i)));
             }
+
             return List.copyOf(elements);
         }
+
         if (value instanceof String || value instanceof Boolean || value instanceof Character
             || value instanceof Byte || value instanceof Short || value instanceof Integer
             || value instanceof Long || value instanceof Float || value instanceof Double
             || value instanceof org.objectweb.asm.Type)
             return value;
+
         throw new IllegalArgumentException("Unsupported binary annotation value: " + value);
     }
 }

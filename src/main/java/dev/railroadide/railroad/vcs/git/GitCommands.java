@@ -473,6 +473,7 @@ public final class GitCommands {
         if (includeEmails) {
             builder.addArgs("--email");
         }
+
         builder.addArgs("HEAD");
         return builder.build();
     }

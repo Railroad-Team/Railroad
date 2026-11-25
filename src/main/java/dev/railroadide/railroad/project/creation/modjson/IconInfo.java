@@ -13,6 +13,8 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class IconInfo {
-    /** Icon resource paths keyed by width text or {@code default}. */
+    /**
+     * Icon resource paths keyed by width text or {@code default}.
+     */
     private Map<String, String> iconsByWidth;
 }

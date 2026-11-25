@@ -23,6 +23,7 @@ import javafx.util.Duration;
 
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.List;
 
 /**
  * Displays local Git branches and their branch-specific details and actions.
@@ -55,7 +56,7 @@ public class GitLocalBranchesListView extends AbstractGitBranchesListView<GitBra
 
     @Override
     protected Node createDetailsNode(GitBranch.LocalGitBranch branch) {
-        var rows = new ArrayList<Node>();
+        List<Node> rows = new ArrayList<Node>();
         String upstream = branch.remoteName();
         if (upstream == null || upstream.isBlank()) {
             rows.add(createLocalizedDetailsRow("railroad.git.branches.details.upstream",
@@ -63,6 +64,7 @@ public class GitLocalBranchesListView extends AbstractGitBranchesListView<GitBra
         } else {
             rows.add(createTextDetailsRow("railroad.git.branches.details.upstream", upstream));
         }
+
         rows.add(createLocalizedDetailsRow(
             "railroad.git.branches.details.current",
             branch.isCurrent()

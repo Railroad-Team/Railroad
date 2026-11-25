@@ -90,7 +90,7 @@ public class FeatureResultTest {
         var oldResult = new FeatureResult<>(original, "old result");
 
         assertFalse(oldResult.belongsTo(newerRequest));
-        var retained = assertInstanceOf(FeatureRequestContext.class, oldResult.context());
+        FeatureRequestContext retained = assertInstanceOf(FeatureRequestContext.class, oldResult.context());
         assertSame(document, retained.documentSnapshot());
         assertEquals(document.version(), retained.documentSnapshot().version());
         assertEquals("original text", document.text());
@@ -170,7 +170,8 @@ public class FeatureResultTest {
     public void workspaceAndDocumentInvocationsDoNotOwnEachOthersResults() {
         var source = new CancellationTokenSource();
         var workspaceRequest = new WorkspaceRequestContext(workspace, source.token(), Deadline.none());
-        var documentRequest = context(workspaceRequest.cancellationToken(), workspaceRequest.deadline());
+        FeatureRequestContext documentRequest = context(workspaceRequest.cancellationToken(),
+            workspaceRequest.deadline());
         var workspaceResult = new FeatureResult<>(workspaceRequest, "workspace result");
         var documentResult = new FeatureResult<>(documentRequest, "document result");
 

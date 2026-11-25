@@ -35,14 +35,15 @@ public class JavaSnapshotPublicationTest {
 
     @Test
     public void parseDiagnosticsAndReuseCandidatesAreDetachedFromCallerLists() {
-        var candidates = new ArrayList<>(List.of(new JavaSyntaxParser.ReuseCandidate("kind", 0, 1, 0, 1)));
+        List<JavaSyntaxParser.ReuseCandidate> candidates = new ArrayList<>(
+            List.of(new JavaSyntaxParser.ReuseCandidate("kind", 0, 1, 0, 1)));
         var plan = new JavaSyntaxParser.ReusePlan(0, 1, 0, 1, 0, candidates);
         candidates.clear();
         assertEquals(1, plan.candidates().size());
         assertThrows(UnsupportedOperationException.class, () -> plan.candidates().clear());
         var parsed = JavaSyntaxParser.parseWithDiagnostics("class {");
         assertFalse(parsed.diagnostics().isEmpty());
-        var diagnostics = new ArrayList<SyntaxDiagnostic>(parsed.diagnostics());
+        List<SyntaxDiagnostic> diagnostics = new ArrayList<SyntaxDiagnostic>(parsed.diagnostics());
         var copied = new JavaSyntaxParser.ParseResult(parsed.tree(), diagnostics);
         diagnostics.clear();
         assertEquals(parsed.diagnostics(), copied.diagnostics());

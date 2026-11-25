@@ -103,7 +103,7 @@ public class CompoundRunConfigurationType extends RunConfigurationType<CompoundR
         RunConfiguration<CompoundRunConfigurationData> configuration,
         boolean debug
     ) {
-        var children = getResolvedChildren(project, configuration);
+        List<RunConfiguration<?>> children = getResolvedChildren(project, configuration);
         if (children.isEmpty())
             return CompletableFuture.completedFuture(null);
 

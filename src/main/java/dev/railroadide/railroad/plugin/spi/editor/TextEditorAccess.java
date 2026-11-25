@@ -14,7 +14,9 @@ import java.util.function.Consumer;
  * Coordinates always refer to the returned snapshot, not raw file bytes.
  */
 public interface TextEditorAccess {
-    /** Reveals source, creating a lazy source editor if necessary. */
+    /**
+     * Reveals source, creating a lazy source editor if necessary.
+     */
     void reveal();
 
     /**

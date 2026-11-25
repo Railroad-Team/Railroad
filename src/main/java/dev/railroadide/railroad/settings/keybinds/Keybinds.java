@@ -264,7 +264,9 @@ public class Keybinds {
      */
     public static final Keybind SHOW_CODE_ACTIONS = registerCodeEditorCommand(Commands.SHOW_CODE_ACTIONS);
 
-    /** Shows the parameters of the call at the caret. */
+    /**
+     * Shows the parameters of the call at the caret.
+     */
     public static final Keybind PARAMETER_INFO = registerCodeEditorCommand(Commands.PARAMETER_INFO);
 
     /**
@@ -430,6 +432,7 @@ public class Keybinds {
             if (node instanceof CodeEditorPane editor)
                 return editor;
         }
+
         return Commands.activeCodeEditor();
     }
 

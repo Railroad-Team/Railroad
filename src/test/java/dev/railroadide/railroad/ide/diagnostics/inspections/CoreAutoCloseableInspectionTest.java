@@ -270,5 +270,4 @@ public class CoreAutoCloseableInspectionTest {
         assertTrue(
             diagnostics.stream().anyMatch(d -> "SEM_AUTO_CLOSEABLE_WITHOUT_TRY_WITH_RESOURCES".equals(d.code())));
     }
-
 }

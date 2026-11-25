@@ -49,6 +49,7 @@ public record FindQuery(String text, boolean matchCase, boolean wholeWords, bool
         if (!matchCase) {
             flags |= Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE;
         }
+
         return Pattern.compile(text, flags);
     }
 
@@ -61,7 +62,7 @@ public record FindQuery(String text, boolean matchCase, boolean wholeWords, bool
      * @throws PatternSyntaxException if this is a regular-expression query with invalid syntax
      */
     public List<TextRange> findAll(CharSequence document, int limit) {
-        var matches = new ArrayList<TextRange>();
+        List<TextRange> matches = new ArrayList<TextRange>();
         if (isEmpty() || limit <= 0)
             return matches;
 
@@ -71,6 +72,7 @@ public record FindQuery(String text, boolean matchCase, boolean wholeWords, bool
                 matches.add(new TextRange(matcher.start(), matcher.end()));
             }
         }
+
         return matches;
     }
 
@@ -109,7 +111,7 @@ public record FindQuery(String text, boolean matchCase, boolean wholeWords, bool
 
     private List<TextReplacement> replacements(String document, String replacement, TextRange only) {
         Objects.requireNonNull(replacement, "replacement");
-        var replacements = new ArrayList<TextReplacement>();
+        List<TextReplacement> replacements = new ArrayList<TextReplacement>();
         if (isEmpty())
             return replacements;
 
@@ -120,6 +122,7 @@ public record FindQuery(String text, boolean matchCase, boolean wholeWords, bool
         while (matcher.find()) {
             if (only != null && matcher.start() > only.start)
                 break;
+
             if (!accepts(document, matcher)
                 || only != null && (matcher.start() != only.start || matcher.end() != only.end))
                 continue;
@@ -131,6 +134,7 @@ public record FindQuery(String text, boolean matchCase, boolean wholeWords, bool
             expanded.setLength(0);
             appendPosition = matcher.end();
         }
+
         return replacements;
     }
 
@@ -139,6 +143,7 @@ public record FindQuery(String text, boolean matchCase, boolean wholeWords, bool
         int end = matcher.end();
         if (start == end)
             return false;
+
         if (!wholeWords)
             return true;
 

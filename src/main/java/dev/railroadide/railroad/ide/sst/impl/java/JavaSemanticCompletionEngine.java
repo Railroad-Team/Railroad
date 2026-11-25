@@ -79,6 +79,7 @@ public final class JavaSemanticCompletionEngine {
     ) {
         if (document == null || document.isEmpty() || triggerAt < 0 || triggerAt >= document.length())
             return null;
+
         if (document.charAt(triggerAt) != '.')
             return null;
 
@@ -94,7 +95,7 @@ public final class JavaSemanticCompletionEngine {
             return null;
 
         String currentPackage = currentPackageName(tree.root());
-        LinkedHashMap<String, CompletionItem> itemsByKey = new LinkedHashMap<>();
+        Map<String, CompletionItem> itemsByKey = new LinkedHashMap<>();
         collectMembersRecursive(
             model,
             projectIndex,
@@ -124,6 +125,7 @@ public final class JavaSemanticCompletionEngine {
             if (receiver != null)
                 return completionTargetForReceiver(receiver, current, model, projectIndex);
         }
+
         return null;
     }
 
@@ -150,6 +152,7 @@ public final class JavaSemanticCompletionEngine {
         if (resolved != null) {
             if (isTypeSymbol(resolved.kind()))
                 return completionTarget(resolved.qualifiedName().orElse(null), true);
+
             if (resolved.kind() == JavaSymbolKind.CONSTRUCTOR)
                 return completionTarget(ownerQualifiedName(resolved.qualifiedName().orElse(null)), false);
         }
@@ -159,6 +162,7 @@ public final class JavaSemanticCompletionEngine {
             String displayName = inferred.displayName();
             if (inferred.kind() == JavaTypes.Kind.ARRAY)
                 return new CompletionTarget("java.lang.Object", false);
+
             if (inferred.kind() == JavaTypes.Kind.DECLARED)
                 return completionTarget(resolveQualifiedTypeName(displayName, usageSite, model, projectIndex), false);
         }
@@ -179,6 +183,7 @@ public final class JavaSemanticCompletionEngine {
     ) {
         if (ownerQualifiedName == null || ownerQualifiedName.isBlank())
             return null;
+
         return new CompletionTarget(ownerQualifiedName, staticContext);
     }
 
@@ -246,6 +251,7 @@ public final class JavaSemanticCompletionEngine {
                             addTypeItem(out, declared.simpleName(), true);
                         }
                     }
+
                     default -> {
                     }
                 }
@@ -275,6 +281,7 @@ public final class JavaSemanticCompletionEngine {
                         addFieldItem(out, symbol.simpleName(), "?", symbol.isStatic());
                     }
                 }
+
                 case JavaSymbolKind.METHOD -> {
                     if (symbol.isStatic() == staticContext) {
                         addMethodItem(
@@ -285,6 +292,7 @@ public final class JavaSemanticCompletionEngine {
                             symbol.isStatic());
                     }
                 }
+
                 default -> {
                 }
             }
@@ -302,8 +310,10 @@ public final class JavaSemanticCompletionEngine {
             boolean isStatic = Modifier.isStatic(field.modifiers());
             if (isStatic != staticContext)
                 continue;
+
             if (!isAccessible(field.modifiers(), stub.packageName(), currentPackage))
                 continue;
+
             addFieldItem(out, field.name(), renderJvmType(field.type()), isStatic);
         }
 
@@ -312,8 +322,10 @@ public final class JavaSemanticCompletionEngine {
             boolean isStatic = Modifier.isStatic(method.modifiers());
             if (isStatic != staticContext)
                 continue;
+
             if (!isAccessible(method.modifiers(), stub.packageName(), currentPackage))
                 continue;
+
             List<String> parameters = method.parameters().stream()
                 .map(parameter -> renderJvmType(parameter.type()))
                 .toList();
@@ -345,6 +357,7 @@ public final class JavaSemanticCompletionEngine {
         SyntaxNode declaration = symbol.declaration().orElse(null);
         if (declaration == null)
             return new JavaTypes.UnknownType("?");
+
         SyntaxNode typeRef = JavaSemanticAnalyzer.directChild(declaration, JavaSyntaxKinds.TYPE_REFERENCE.id());
         if (typeRef == null) {
             SyntaxNode parent = declaration.parent().orElse(null);
@@ -352,6 +365,7 @@ public final class JavaSemanticCompletionEngine {
                 ? null
                 : JavaSemanticAnalyzer.directChild(parent, JavaSyntaxKinds.TYPE_REFERENCE.id());
         }
+
         return typeRef == null
             ? new JavaTypes.UnknownType("?")
             : model.inferredType(typeRef).orElse(new JavaTypes.UnknownType("?"));
@@ -373,10 +387,12 @@ public final class JavaSemanticCompletionEngine {
             ActivityCheckpoint.poll(activityCheck);
             if (!JavaSyntaxKinds.PARAMETER.id().equals(child.kind().id()))
                 continue;
+
             SyntaxNode typeRef = JavaSemanticAnalyzer.directChild(child, JavaSyntaxKinds.TYPE_REFERENCE.id());
             String text = typeRef == null ? null : JavaSemanticAnalyzer.canonicalTypeText(typeRef);
             result.add(text == null || text.isBlank() ? "?" : text);
         }
+
         return List.copyOf(result);
     }
 
@@ -384,13 +400,16 @@ public final class JavaSemanticCompletionEngine {
         if (symbol.structuredSignature() != null)
             return symbol.structuredSignature().parameters().stream()
                 .map(parameter -> parameter.type().displayName() + (parameter.varargs() ? "..." : "")).toList();
+
         String signature = symbol.signature();
         if (signature == null || signature.isBlank() || "()".equals(signature))
             return List.of();
+
         int open = signature.indexOf('(');
         int close = signature.lastIndexOf(')');
         if (open < 0 || close <= open + 1)
             return List.of();
+
         return Arrays.stream(signature.substring(open + 1, close).split(","))
             .map(String::trim)
             .filter(part -> !part.isEmpty())
@@ -400,6 +419,7 @@ public final class JavaSemanticCompletionEngine {
     private boolean isStaticDeclaration(SyntaxNode declaration) {
         if (JavaSemanticAnalyzer.hasTokenKind(declaration, JavaTokenType.STATIC_KEYWORD))
             return true;
+
         SyntaxNode parent = declaration.parent().orElse(null);
         return parent != null && JavaSemanticAnalyzer.hasTokenKind(parent, JavaTokenType.STATIC_KEYWORD);
     }
@@ -407,8 +427,10 @@ public final class JavaSemanticCompletionEngine {
     private boolean isAccessible(int modifiers, String declaringPackage, String currentPackage) {
         if (Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers))
             return true;
+
         if (Modifier.isPrivate(modifiers))
             return false;
+
         return Objects.equals(declaringPackage, currentPackage);
     }
 
@@ -419,6 +441,7 @@ public final class JavaSemanticCompletionEngine {
             if (declared != null && isTypeSymbol(declared.kind()))
                 return declared;
         }
+
         return null;
     }
 
@@ -453,18 +476,21 @@ public final class JavaSemanticCompletionEngine {
             if (stub.superClass() instanceof dev.railroadide.railroad.ide.classparser.Type.ClassType classType) {
                 result.add(classType.name());
             }
+
             for (dev.railroadide.railroad.ide.classparser.Type iface : stub.interfaces()) {
                 ActivityCheckpoint.poll(activityCheck);
                 if (iface instanceof dev.railroadide.railroad.ide.classparser.Type.ClassType classType) {
                     result.add(classType.name());
                 }
             }
+
             return List.copyOf(result);
         }
 
         TypeDeclarationInfo declarationInfo = typeDeclarationInfoForOwner(ownerQualifiedName, model, projectIndex);
         if (declarationInfo == null)
             return List.of();
+
         if (!declarationInfo.directSupertypes().isEmpty())
             return declarationInfo.directSupertypes();
 
@@ -491,6 +517,7 @@ public final class JavaSemanticCompletionEngine {
         if (projectIndex != null) {
             ownerQualifiedName = projectIndex.canonicalTypeName(ownerQualifiedName);
         }
+
         TypeDeclarationInfo inCurrentModel = typeDeclarationInfoInModel(ownerQualifiedName, model, projectIndex);
         if (inCurrentModel != null)
             return inCurrentModel;
@@ -572,6 +599,7 @@ public final class JavaSemanticCompletionEngine {
             out.add(node);
             return;
         }
+
         for (SyntaxNode child : node.children()) {
             ActivityCheckpoint.poll(activityCheck);
             collectDescendantTypeReferences(child, out);
@@ -590,6 +618,7 @@ public final class JavaSemanticCompletionEngine {
             if (isTypeSymbol(symbol.kind()))
                 return symbol.sourceFile();
         }
+
         return null;
     }
 
@@ -597,7 +626,7 @@ public final class JavaSemanticCompletionEngine {
         SemanticModel model,
         String ownerQualifiedName
     ) {
-        ArrayDeque<SyntaxNode> stack = new ArrayDeque<>();
+        Deque<SyntaxNode> stack = new ArrayDeque<>();
         stack.push(model.syntaxTree().root());
         while (!stack.isEmpty()) {
             ActivityCheckpoint.poll(activityCheck);
@@ -607,12 +636,14 @@ public final class JavaSemanticCompletionEngine {
                 && isTypeSymbol(symbol.kind())
                 && ownerQualifiedName.equals(symbol.qualifiedName().orElse(null)))
                 return node;
+
             List<SyntaxNode> children = node.children();
             for (int index = children.size() - 1; index >= 0; index--) {
                 ActivityCheckpoint.poll(activityCheck);
                 stack.push(children.get(index));
             }
         }
+
         return null;
     }
 
@@ -624,6 +655,7 @@ public final class JavaSemanticCompletionEngine {
     ) {
         if (text == null || text.isBlank())
             return null;
+
         while (text.endsWith("[]")) {
             ActivityCheckpoint.poll(activityCheck);
             text = text.substring(0, text.length() - 2);
@@ -631,6 +663,7 @@ public final class JavaSemanticCompletionEngine {
 
         if (Set.of("boolean", "byte", "short", "char", "int", "long", "float", "double", "void").contains(text))
             return text;
+
         if (text.indexOf('.') > 0)
             return text;
 
@@ -645,6 +678,7 @@ public final class JavaSemanticCompletionEngine {
             ActivityCheckpoint.poll(activityCheck);
             if (!JavaSyntaxKinds.IMPORT_DECLARATION.id().equals(child.kind().id()))
                 continue;
+
             if (JavaSemanticAnalyzer.hasTokenKind(child, JavaTokenType.STATIC_KEYWORD))
                 continue;
 
@@ -652,12 +686,14 @@ public final class JavaSemanticCompletionEngine {
             String qualified = importTarget == null ? null : JavaSemanticAnalyzer.canonicalQualifiedName(importTarget);
             if (qualified == null || qualified.isBlank())
                 continue;
+
             if (qualified.endsWith(".*")) {
                 String wildcardCandidate = qualified.substring(0, qualified.length() - 2) + "." + simpleName;
                 if (typeExists(wildcardCandidate, projectIndex))
                     return wildcardCandidate;
             } else if (simpleName.equals(JavaSemanticAnalyzer.lastSegment(qualified)))
                 return qualified;
+
         }
 
         String currentPackage = currentPackageName(root);
@@ -678,7 +714,7 @@ public final class JavaSemanticCompletionEngine {
     }
 
     private @Nullable Symbol enclosingOrRootTypeBySimpleName(SemanticModel model, String simpleName) {
-        ArrayDeque<SyntaxNode> stack = new ArrayDeque<>();
+        Deque<SyntaxNode> stack = new ArrayDeque<>();
         stack.push(model.syntaxTree().root());
         while (!stack.isEmpty()) {
             ActivityCheckpoint.poll(activityCheck);
@@ -686,20 +722,24 @@ public final class JavaSemanticCompletionEngine {
             Symbol symbol = model.declaredSymbol(node).orElse(null);
             if (symbol != null && isTypeSymbol(symbol.kind()) && simpleName.equals(symbol.simpleName()))
                 return symbol;
+
             List<SyntaxNode> children = node.children();
             for (int index = children.size() - 1; index >= 0; index--) {
                 ActivityCheckpoint.poll(activityCheck);
                 stack.push(children.get(index));
             }
         }
+
         return null;
     }
 
     private boolean typeExists(String qualifiedName, @Nullable JavaSymbolIndex projectIndex) {
         if (qualifiedName == null || qualifiedName.isBlank())
             return false;
+
         if (projectIndex != null)
             return !projectIndex.lookupQualifiedName(qualifiedName).isEmpty();
+
         return JavaSemanticAnalyzer.loadJdkQualifiedTypeNames(activityCheck).contains(qualifiedName);
     }
 
@@ -709,20 +749,24 @@ public final class JavaSemanticCompletionEngine {
     ) {
         if (qualifiedName == null || qualifiedName.isBlank())
             return null;
+
         if (projectIndex != null)
             return projectIndex.lookupClassStub(qualifiedName);
+
         return JavaSemanticAnalyzer.loadJdkClassStubsByQualifiedName(activityCheck).get(qualifiedName);
     }
 
     private @Nullable SyntaxNode findDeepestNodeContaining(SyntaxNode node, int offset) {
         if (offset < node.start() || offset >= node.end())
             return null;
+
         for (SyntaxNode child : node.children()) {
             ActivityCheckpoint.poll(activityCheck);
             SyntaxNode match = findDeepestNodeContaining(child, offset);
             if (match != null)
                 return match;
         }
+
         return node;
     }
 
@@ -731,16 +775,19 @@ public final class JavaSemanticCompletionEngine {
             ActivityCheckpoint.poll(activityCheck);
             if (!JavaSyntaxKinds.PACKAGE_DECLARATION.id().equals(child.kind().id()))
                 continue;
+
             SyntaxNode qualifiedName = JavaSemanticAnalyzer.directChild(child, JavaSyntaxKinds.QUALIFIED_NAME.id());
             String text = qualifiedName == null ? null : JavaSemanticAnalyzer.canonicalQualifiedName(qualifiedName);
             return text == null ? "" : text;
         }
+
         return "";
     }
 
     private @Nullable String ownerQualifiedName(@Nullable String qualifiedName) {
         if (qualifiedName == null || qualifiedName.isBlank())
             return null;
+
         int separator = qualifiedName.indexOf('#');
         return separator > 0 ? qualifiedName.substring(0, separator) : null;
     }

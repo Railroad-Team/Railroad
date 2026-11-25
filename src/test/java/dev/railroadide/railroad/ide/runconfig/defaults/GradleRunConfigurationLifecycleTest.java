@@ -27,6 +27,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
+import dev.railroadide.railroad.ide.diagnostics.BuildProblems;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -43,6 +45,7 @@ public class GradleRunConfigurationLifecycleTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(ready::countDown);
         }
+
         assertTrue(ready.await(10, TimeUnit.SECONDS));
     }
 
@@ -57,8 +60,8 @@ public class GradleRunConfigurationLifecycleTest {
                 }
             }
             """);
-        var type = type();
-        var configuration = configuration(type, "speak");
+        GradleRunConfigurationType type = type();
+        RunConfiguration<GradleRunConfigurationData> configuration = configuration(type, "speak");
         Project project = project();
 
         type.run(project, configuration).get(60, TimeUnit.SECONDS);
@@ -85,16 +88,17 @@ public class GradleRunConfigurationLifecycleTest {
                 }
             }
             """);
-        var type = type();
-        var configuration = configuration(type, "wait");
+        GradleRunConfigurationType type = type();
+        RunConfiguration<GradleRunConfigurationData> configuration = configuration(type, "wait");
         Project project = project();
-        var completion = type.run(project, configuration);
+        CompletableFuture<Void> completion = type.run(project, configuration);
         try {
             long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(60);
             while (!Files.exists(directory.resolve("started")) && !completion.isDone()
                 && System.nanoTime() < deadline) {
                 Thread.sleep(50);
             }
+
             assertTrue(Files.exists(directory.resolve("started")));
             type.stop(project, configuration).get(15, TimeUnit.SECONDS);
 
@@ -110,11 +114,11 @@ public class GradleRunConfigurationLifecycleTest {
         Path build = Files.createDirectories(directory.resolve("app")).resolve("build.gradle");
         Files.writeString(build,
             "tasks.register('broken') {\n    doLast {\n        throw new GradleException('Missing input')\n    }\n}");
-        var type = type();
-        var project = project();
-        var config = configuration(type, ":app:broken");
+        GradleRunConfigurationType type = type();
+        Project project = project();
+        RunConfiguration<GradleRunConfigurationData> config = configuration(type, ":app:broken");
         assertThrows(ExecutionException.class, () -> type.run(project, config).get(60, TimeUnit.SECONDS));
-        var errors = project.getRunSessions().buildProblems().problems();
+        List<BuildProblems.Problem> errors = project.getRunSessions().buildProblems().problems();
         assertEquals(1, errors.size(), errors::toString);
         assertEquals(build, errors.getFirst().file(), errors::toString);
         assertEquals(3, errors.getFirst().line());
@@ -125,13 +129,14 @@ public class GradleRunConfigurationLifecycleTest {
     public void buildFailurePreservesCauseAndAllowsRerun() throws Exception {
         Files.writeString(directory.resolve("settings.gradle"), "rootProject.name = 'lifecycle'");
         Files.writeString(directory.resolve("build.gradle"), "plugins { id 'java' }");
-        var type = type();
-        var configuration = configuration(type, "compileJava");
+        GradleRunConfigurationType type = type();
+        RunConfiguration<GradleRunConfigurationData> configuration = configuration(type, "compileJava");
         Project project = project();
         for (int attempt = 0; attempt < 2; attempt++) {
-            var completion = type.debug(project, configuration);
+            CompletableFuture<Void> completion = type.debug(project, configuration);
             assertTrue(type.isRunning(project, configuration));
-            var failure = assertThrows(ExecutionException.class, () -> completion.get(60, TimeUnit.SECONDS));
+            ExecutionException failure = assertThrows(ExecutionException.class,
+                () -> completion.get(60, TimeUnit.SECONDS));
             assertTrue(messages(failure).contains("Only JavaExec and Test"), messages(failure));
             assertFalse(type.isRunning(project, configuration));
             assertTrue(Services.DEBUG_SERVICE.getActiveSession().isEmpty());
@@ -153,12 +158,14 @@ public class GradleRunConfigurationLifecycleTest {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException(failure);
             }
+
             return GradleConnector.newConnector()
                 .useInstallation(new File(System.getProperty("railroad.test.gradleHome")));
         });
-        var configuration = configuration(type, "help");
+
+        RunConfiguration<GradleRunConfigurationData> configuration = configuration(type, "help");
         Project project = project();
-        var completion = type.debug(project, configuration);
+        CompletableFuture<Void> completion = type.debug(project, configuration);
         try {
             assertTrue(connecting.await(5, TimeUnit.SECONDS));
             var stop = new FutureTask<CompletableFuture<Void>>(() -> type.stop(project, configuration));
@@ -192,16 +199,17 @@ public class GradleRunConfigurationLifecycleTest {
                 mainClass = 'Missing'
             }
             """);
-        var type = type();
-        var configuration = configuration(type, "slow");
+        GradleRunConfigurationType type = type();
+        RunConfiguration<GradleRunConfigurationData> configuration = configuration(type, "slow");
         Project project = project();
-        var completion = type.debug(project, configuration);
+        CompletableFuture<Void> completion = type.debug(project, configuration);
         try {
             long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(60);
             while (!Files.exists(directory.resolve("started")) && !completion.isDone()
                 && System.nanoTime() < deadline) {
                 Thread.sleep(50);
             }
+
             assertTrue(Files.exists(directory.resolve("started")));
             type.stop(project, configuration).get(15, TimeUnit.SECONDS);
             assertTrue(completion.isCompletedExceptionally());
@@ -248,12 +256,12 @@ public class GradleRunConfigurationLifecycleTest {
         Files.writeString(directory.resolve("unrelated/build.gradle"), "plugins { id 'java' }");
         var project = new RailroadProject(directory, "Editor launch", new WritableImage(1, 1));
         assertTrue(EditorMain.supports(project, main));
-        var target = EditorMain.find(Files.readString(main), "Main.java").getFirst();
-        var config = target.configuration(project, main);
+        EditorMain target = EditorMain.find(Files.readString(main), "Main.java").getFirst();
+        RunConfiguration<?> config = target.configuration(project, main);
         assertSame(config, target.configuration(project, main));
-        var data = assertInstanceOf(GradleRunConfigurationData.class, config.data());
+        GradleRunConfigurationData data = assertInstanceOf(GradleRunConfigurationData.class, config.data());
         assertEquals("app/code/sample/Main.java", data.getMainSource());
-        var type = type();
+        GradleRunConfigurationType type = type();
         var configuration = new RunConfiguration<>(config.uuid(), type, data);
         data.setJavaHome(new JDK(Path.of(System.getProperty("java.home")), "Test JDK", JavaVersion.fromMajor(25)));
         configuration.run(project).get(60, TimeUnit.SECONDS);
@@ -262,16 +270,18 @@ public class GradleRunConfigurationLifecycleTest {
         assertTrue(output.contains("true"), output);
         Services.BREAKPOINT_SERVICE.add(main, 4);
         try {
-            var completion = configuration.debug(project);
+            CompletableFuture<Void> completion = configuration.debug(project);
             long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(60);
             while (!project.getDebuggingManager().isPaused() && !completion.isDone() && System.nanoTime() < deadline) {
                 flushFx();
                 Thread.sleep(25);
             }
+
             if (completion.isDone()) {
                 completion.join();
             }
-            var session = project.getRunSessions().sessions().getLast();
+
+            RunSession session = project.getRunSessions().sessions().getLast();
             assertTrue(project.getDebuggingManager().isPaused(),
                 () -> "Debugger did not suspend: " + session.retainedOutput());
             Platform.runLater(project.getDebuggingManager()::resume);
@@ -296,7 +306,7 @@ public class GradleRunConfigurationLifecycleTest {
     }
 
     private Project project() {
-        var manager = new DebuggingManager[1];
+        DebuggingManager[] manager = new DebuggingManager[1];
         var sessions = new RunSessionManager();
         Project project = (Project) Proxy.newProxyInstance(Project.class.getClassLoader(),
             new Class<?>[]{Project.class},
@@ -307,6 +317,7 @@ public class GradleRunConfigurationLifecycleTest {
                 case "getRunSessions" -> sessions;
                 default -> throw new UnsupportedOperationException(method.getName());
             });
+
         manager[0] = new DebuggingManager(project);
         return project;
     }

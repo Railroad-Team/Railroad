@@ -77,6 +77,7 @@ public final class LanguageSession implements AutoCloseable {
                 return;
             }
         }
+
         listener.run();
     }
 
@@ -116,12 +117,14 @@ public final class LanguageSession implements AutoCloseable {
                         case "equals" -> proxy == arguments[0];
                         default -> throw new UnsupportedOperationException(method.getName());
                     };
+
                 checkActive();
                 Object target;
                 synchronized (this) {
                     checkActive();
                     target = capabilities.find(key).orElseThrow();
                 }
+
                 Object[] controlled = arguments == null ? null : arguments.clone();
                 RequestContext original = null;
                 RequestContext child = null;
@@ -143,20 +146,25 @@ public final class LanguageSession implements AutoCloseable {
                         }
                     }
                 }
+
                 try {
                     if (child != null) {
                         child.checkActive();
                     }
+
                     Object result = method.invoke(target, controlled);
                     checkActive();
                     if (original != null) {
                         original.checkActive();
                     }
+
                     if (original != null && result instanceof FeatureResult<?> featureResult) {
                         if (!featureResult.belongsTo(child))
                             throw new IllegalStateException("Provider returned a result for another request");
+
                         return new FeatureResult<>(original, featureResult.value());
                     }
+
                     return result;
                 } catch (InvocationTargetException exception) {
                     throw exception.getCause();
@@ -176,12 +184,14 @@ public final class LanguageSession implements AutoCloseable {
         synchronized (this) {
             if (!lifetime.cancel())
                 return;
+
             released = capabilities;
             capabilities = CapabilityRegistry.empty();
             handles.clear();
             listeners = List.copyOf(closeListeners);
             closeListeners.clear();
         }
+
         Set<Object> closed = Collections.newSetFromMap(new IdentityHashMap<>());
         RuntimeException failure = null;
         for (Runnable listener : listeners) {
@@ -195,6 +205,7 @@ public final class LanguageSession implements AutoCloseable {
                 }
             }
         }
+
         for (Object value : released.values()) {
             if (value instanceof AutoCloseable closeable && closed.add(value)) {
                 try {
@@ -208,6 +219,7 @@ public final class LanguageSession implements AutoCloseable {
                 }
             }
         }
+
         if (failure != null)
             throw failure;
     }

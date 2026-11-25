@@ -28,6 +28,7 @@ import java.util.TreeMap;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import dev.railroadide.railroad.ide.sst.provider.api.UsageSearch;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -97,10 +98,10 @@ public class JavaLibraryNavigationTest {
     public Stream<DynamicTest> libraryMembersNavigateIntoAReadOnlyViewOfTheirClass() {
         return Stream.of(Layout.values()).map(layout -> DynamicTest.dynamicTest(layout.name(), () -> {
             Path jar = library(layout);
-            var source = document(directory.resolve("src/Main.java"), SOURCE);
-            var store = store(jar);
+            TextDocumentSnapshot source = document(directory.resolve("src/Main.java"), SOURCE);
+            DefaultDocumentStore store = store(jar);
             store.publishBacking(source);
-            var workspace = store.capture();
+            WorkspaceSnapshot workspace = store.capture();
             try (var services = new JavaSstServices(new JavaLibrarySources(directory.resolve("views")))) {
                 assertMember(services, workspace, source, "greet(\"a\")", "greet", "(", layout);
                 assertMember(services, workspace, source, "greet(\"a\", 2)", "greet", "int", layout);
@@ -124,15 +125,16 @@ public class JavaLibraryNavigationTest {
             new String[]{"ArrayList<", "ArrayList.java", "ArrayList"},
             new String[]{"size()", "ArrayList.java", "size"})
             .map(test -> DynamicTest.dynamicTest(test[0], () -> {
-                var source = document(directory.resolve("src/Main.java"), text);
-                var store = store();
+                TextDocumentSnapshot source = document(directory.resolve("src/Main.java"), text);
+                DefaultDocumentStore store = store();
                 store.publishBacking(source);
                 try (var services = new JavaSstServices(new JavaLibrarySources(directory.resolve("views")))) {
-                    var targets = services.definitions(context(store.capture(), source), text.indexOf(test[0]))
+                    List<DefinitionTarget> targets = services
+                        .definitions(context(store.capture(), source), text.indexOf(test[0]))
                         .value();
 
                     assertEquals(1, targets.size());
-                    var target = targets.getFirst();
+                    DefinitionTarget target = targets.getFirst();
                     assertEquals(test[1], target.snapshot().uri().fileName().orElseThrow());
                     assertEquals(test[2], text(target));
                     assertTrue(Set.of(ProvenanceKind.ATTACHED_SOURCE, ProvenanceKind.DECOMPILED)
@@ -143,18 +145,18 @@ public class JavaLibraryNavigationTest {
 
     @Test
     public void usagesFindTheExactLibraryMethodAcrossCandidateFilesAndRefreshByIdentity() throws Exception {
-        var store = store(library(Layout.NONE));
-        var main = document(directory.resolve("src/Main.java"), SOURCE);
-        var other = document(directory.resolve("src/Other.java"),
+        DefaultDocumentStore store = store(library(Layout.NONE));
+        TextDocumentSnapshot main = document(directory.resolve("src/Main.java"), SOURCE);
+        TextDocumentSnapshot other = document(directory.resolve("src/Other.java"),
             "import lib.Greeter; class Other { String s = Greeter.gr\\u0065et(\"b\"); }");
-        var unrelated = document(directory.resolve("src/Unrelated.java"), "class Unrelated {}");
+        TextDocumentSnapshot unrelated = document(directory.resolve("src/Unrelated.java"), "class Unrelated {}");
         store.publishBacking(main);
         store.publishBacking(other);
         store.publishBacking(unrelated);
-        var request = context(store.capture(), main);
+        FeatureRequestContext request = context(store.capture(), main);
         int offset = SOURCE.indexOf("greet(");
         try (var services = new JavaSstServices(new JavaLibrarySources(directory.resolve("views")))) {
-            var result = services
+            UsageSearch result = services
                 .usages(request, new UsageQuery.AtOffset(offset), (batch, searched, total) -> assertEquals(2, total))
                 .value();
 
@@ -169,9 +171,9 @@ public class JavaLibraryNavigationTest {
             assertEquals(result, services.usages(request, new UsageQuery.AtOffset(endOfName), UsageSink.NONE).value());
             assertNull(services.usages(request, new UsageQuery.AtOffset(endOfName + 1), UsageSink.NONE).value());
 
-            var target = services.definitions(request, offset).value().getFirst();
+            DefinitionTarget target = services.definitions(request, offset).value().getFirst();
             store.publishBacking(target.snapshot());
-            var fromDeclaration = services.usages(context(store.capture(), target.snapshot()),
+            UsageSearch fromDeclaration = services.usages(context(store.capture(), target.snapshot()),
                 new UsageQuery.AtOffset(target.location().range().start), UsageSink.NONE).value();
             assertEquals(result.symbol(), fromDeclaration.symbol());
             assertEquals(result.usages(), fromDeclaration.usages());
@@ -180,12 +182,12 @@ public class JavaLibraryNavigationTest {
 
     @Test
     public void usagesFromAnAttachedDeclarationFindOnlySourceSetsUsingThatArchive() throws Exception {
-        var dependency = library(Layout.MAVEN);
-        var otherVersion = library(Layout.GRADLE);
-        var settings = new HashMap<String, String>();
+        Path dependency = library(Layout.MAVEN);
+        Path otherVersion = library(Layout.GRADLE);
+        Map<String, String> settings = new HashMap<String, String>();
         settings.put("module.app.sourceSets", "main\ntest\nclient");
         settings.put("module.app.classpath", dependency + "\n" + otherVersion);
-        var callers = new ArrayList<TextDocumentSnapshot>();
+        List<TextDocumentSnapshot> callers = new ArrayList<TextDocumentSnapshot>();
         for (String set : List.of("main", "test", "client")) {
             Path root = directory.resolve(set);
             settings.put("module.app.set." + set + ".sources", root.toString());
@@ -194,14 +196,16 @@ public class JavaLibraryNavigationTest {
             callers.add(document(root.resolve("Caller.java"),
                 "import lib.Greeter; class Caller { String message = Greeter.greet(\"hi\"); }"));
         }
+
         var store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of("app"), settings));
         callers.forEach(store::publishBacking);
-        var main = callers.getFirst();
+        TextDocumentSnapshot main = callers.getFirst();
         try (var services = new JavaSstServices(new JavaLibrarySources(directory.resolve("views")))) {
-            var target = services.definitions(context(store.capture(), main), main.text().indexOf("greet("))
+            DefinitionTarget target = services
+                .definitions(context(store.capture(), main), main.text().indexOf("greet("))
                 .value().getFirst();
             store.publishBacking(target.snapshot());
-            var result = services.usages(context(store.capture(), target.snapshot()),
+            UsageSearch result = services.usages(context(store.capture(), target.snapshot()),
                 new UsageQuery.AtOffset(target.location().range().start), UsageSink.NONE).value();
 
             assertNotNull(result);
@@ -213,17 +217,18 @@ public class JavaLibraryNavigationTest {
     @Test
     public void aViewThatIsAlreadyOpenIsTargetedThroughTheWorkspace() throws Exception {
         Path jar = library(Layout.MAVEN);
-        var source = document(directory.resolve("src/Main.java"), SOURCE);
-        var store = store(jar);
+        TextDocumentSnapshot source = document(directory.resolve("src/Main.java"), SOURCE);
+        DefaultDocumentStore store = store(jar);
         store.publishBacking(source);
         try (var services = new JavaSstServices(new JavaLibrarySources(directory.resolve("views")))) {
             int offset = SOURCE.indexOf("VALUE");
-            var first = services.definitions(context(store.capture(), source), offset).value().getFirst();
+            DefinitionTarget first = services.definitions(context(store.capture(), source), offset).value().getFirst();
             var open = new TextDocumentSnapshot(DocumentId.create(), first.snapshot().uri(), DocumentVersion.initial(),
                 "java", first.snapshot().origin(), first.snapshot().text(), StandardCharsets.UTF_8);
             store.publishBacking(open);
 
-            var reopened = services.definitions(context(store.capture(), source), offset).value().getFirst();
+            DefinitionTarget reopened = services.definitions(context(store.capture(), source), offset).value()
+                .getFirst();
 
             assertEquals(open.id(), reopened.location().documentId());
             assertSame(open, reopened.snapshot());
@@ -241,7 +246,7 @@ public class JavaLibraryNavigationTest {
         Layout layout
     ) {
         int offset = SOURCE.indexOf(usage) + usage.indexOf(name);
-        var targets = services.definitions(context(workspace, source), offset).value();
+        List<DefinitionTarget> targets = services.definitions(context(workspace, source), offset).value();
 
         assertEquals(1, targets.size(), usage);
         DefinitionTarget target = targets.getFirst();
@@ -286,12 +291,14 @@ public class JavaLibraryNavigationTest {
             case GRADLE -> root.resolve("files-2.1/example/greeter/1.0/aaaa/greeter-1.0.jar");
             case MAVEN, NONE -> root.resolve("repository/example/greeter/1.0/greeter-1.0.jar");
         };
+
         Map<String, byte[]> entries = new TreeMap<>();
         try (var files = Files.walk(classes)) {
             for (Path file : files.filter(Files::isRegularFile).toList()) {
                 entries.put(classes.relativize(file).toString().replace('\\', '/'), Files.readAllBytes(file));
             }
         }
+
         zip(jar, entries);
         if (layout != Layout.NONE) {
             Path sources = layout == Layout.GRADLE
@@ -299,13 +306,14 @@ public class JavaLibraryNavigationTest {
                 : jar.resolveSibling("greeter-1.0-sources.jar");
             zip(sources, Map.of("lib/Greeter.java", LIBRARY.replace("\n", "\r\n").getBytes(StandardCharsets.UTF_8)));
         }
+
         return jar;
     }
 
     private static void zip(Path archive, Map<String, byte[]> entries) throws IOException {
         Files.createDirectories(archive.getParent());
         try (var output = new ZipOutputStream(Files.newOutputStream(archive))) {
-            for (var entry : entries.entrySet()) {
+            for (Map.Entry<String, byte[]> entry : entries.entrySet()) {
                 output.putNextEntry(new ZipEntry(entry.getKey()));
                 output.write(entry.getValue());
                 output.closeEntry();

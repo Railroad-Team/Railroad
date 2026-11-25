@@ -18,7 +18,7 @@ public class PathTreeItemTest {
     public void compactsPackagesAndRevealsFilesAndIntermediateDirectories() throws IOException {
         Path file = createFile("src/main/java/dev/railroadide/railroad/RailroadLauncher.java");
         var root = new PathTreeItem(new PathItem(project));
-        var packageItem = (PathTreeItem) PathTreeItem.find(root, file.getParent());
+        PathTreeItem packageItem = (PathTreeItem) PathTreeItem.find(root, file.getParent());
 
         assertEquals("dev.railroadide.railroad", packageItem.getDisplayName());
         assertEquals(file.getParent(), packageItem.getValue().getPath());
@@ -36,7 +36,7 @@ public class PathTreeItemTest {
         Path resource = createFile("src/main/resources/assets/railroad/lang/en_us.lang");
         var root = new PathTreeItem(new PathItem(project));
 
-        var dev = (PathTreeItem) PathTreeItem.find(root, project.resolve("src/main/java/dev"));
+        PathTreeItem dev = (PathTreeItem) PathTreeItem.find(root, project.resolve("src/main/java/dev"));
         assertEquals("dev", dev.getDisplayName());
         assertEquals(2, dev.getChildren().size());
         assertEquals("railroadide.railroad",
@@ -71,7 +71,7 @@ public class PathTreeItemTest {
 
         Path sibling = createFile("src/main/java/dev/another/Sibling.java");
         root.refresh(sibling.getParent());
-        var dev = (PathTreeItem) PathTreeItem.find(root, project.resolve("src/main/java/dev"));
+        PathTreeItem dev = (PathTreeItem) PathTreeItem.find(root, project.resolve("src/main/java/dev"));
         assertEquals("dev", dev.getDisplayName());
         assertNotNull(PathTreeItem.find(root, sibling));
         assertNotNull(PathTreeItem.find(root, file));
@@ -177,7 +177,7 @@ public class PathTreeItemTest {
     public void restoringExpansionKeepsSingleChildDirectoryCollapsed() throws IOException {
         createFile("a/b/Only.txt");
         var root = new PathTreeItem(new PathItem(project), false);
-        var a = (PathTreeItem) PathTreeItem.find(root, project.resolve("a"));
+        PathTreeItem a = (PathTreeItem) PathTreeItem.find(root, project.resolve("a"));
 
         a.restoreExpanded();
 

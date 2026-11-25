@@ -14,9 +14,13 @@ import java.util.Objects;
  * copied, so subsequent collection changes are visible through this snapshot.
  */
 public class JavaLexerSnapshot extends AbstractLexerSnapshot {
-    /** Lexical diagnostics retained by this snapshot. */
+    /**
+     * Lexical diagnostics retained by this snapshot.
+     */
     public final List<Lexer.LexError> diagnostics;
-    /** Tokens already produced for lookahead, in consumption order. */
+    /**
+     * Tokens already produced for lookahead, in consumption order.
+     */
     public final Deque<Token<JavaTokenType>> lookaheadBuffer;
 
     /**

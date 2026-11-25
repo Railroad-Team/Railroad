@@ -14,6 +14,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Supplier;
+import java.util.Queue;
 
 /**
  * Bounded shared scheduling for text and binary language requests. Each editor or
@@ -45,7 +46,7 @@ public final class SstScheduler implements AutoCloseable {
     }
 
     private final Object lock = new Object();
-    private final PriorityQueue<Task<?>> queue = new PriorityQueue<>();
+    private final Queue<Task<?>> queue = new PriorityQueue<>();
     private final Set<Scope> scopes = new HashSet<>();
     private final List<Thread> workers = new ArrayList<>();
     private final int queueCapacity;
@@ -71,6 +72,7 @@ public final class SstScheduler implements AutoCloseable {
     public SstScheduler(int parallelism, int queueCapacity) {
         if (parallelism <= 0 || queueCapacity <= 0)
             throw new IllegalArgumentException("parallelism and queueCapacity must be positive");
+
         this.queueCapacity = queueCapacity;
         for (int index = 0; index < parallelism; index++) {
             boolean interactiveOnly = parallelism > 1 && index == 0;
@@ -89,6 +91,7 @@ public final class SstScheduler implements AutoCloseable {
         synchronized (lock) {
             if (closed)
                 throw new RejectedExecutionException("SST scheduler is closed");
+
             var scope = new Scope();
             scopes.add(scope);
             return scope;
@@ -118,34 +121,42 @@ public final class SstScheduler implements AutoCloseable {
                             return;
                     }
                 }
+
                 if (closed)
                     return;
+
                 task = queue.remove();
                 task.runner = Thread.currentThread();
                 task.started = true;
             }
+
             task.run();
             Thread.interrupted();
         }
     }
 
-    /** Cancels all owned requests and stops dispatch without waiting for uncooperative work. */
+    /**
+     * Cancels all owned requests and stops dispatch without waiting for uncooperative work.
+     */
     @Override
     public void close() {
         List<Task<?>> cancelled = new ArrayList<>();
         synchronized (lock) {
             if (closed)
                 return;
+
             closed = true;
             for (Scope scope : scopes) {
                 scope.closed = true;
                 cancelled.addAll(scope.tasks.values());
                 scope.tasks.clear();
             }
+
             scopes.clear();
             cancelled.forEach(this::cancelLocked);
             lock.notifyAll();
         }
+
         cancelled.forEach(this::completeCancellation);
         workers.forEach(Thread::interrupt);
     }
@@ -153,6 +164,7 @@ public final class SstScheduler implements AutoCloseable {
     private void cancelLocked(Task<?> task) {
         if (task.outcomeCommitted)
             return;
+
         task.cancelled = true;
         task.cancellation.cancel();
         queue.remove(task);
@@ -166,8 +178,10 @@ public final class SstScheduler implements AutoCloseable {
         synchronized (lock) {
             if (!task.cancelled)
                 return;
+
             queued = !task.started;
         }
+
         task.result.cancel(false);
         if (queued) {
             task.finished.complete(null);
@@ -214,16 +228,19 @@ public final class SstScheduler implements AutoCloseable {
             Objects.requireNonNull(operation, "operation");
             if (context.cancellationToken() != cancellation.token())
                 throw new IllegalArgumentException("The request must observe the supplied cancellation source");
+
             Task<?> previous;
             Task<T> task;
             synchronized (lock) {
                 if (closed || SstScheduler.this.closed)
                     return CompletableFuture
                         .failedFuture(new RejectedExecutionException("SST request owner is closed"));
+
                 previous = tasks.remove(key);
                 if (previous != null) {
                     cancelLocked(previous);
                 }
+
                 task = new Task<>(this, key, priority, context, cancellation, operation, sequence++);
                 if (queue.size() < queueCapacity) {
                     tasks.put(key, task);
@@ -233,9 +250,11 @@ public final class SstScheduler implements AutoCloseable {
                     task.result.completeExceptionally(new RejectedExecutionException("SST request queue is full"));
                 }
             }
+
             if (previous != null) {
                 completeCancellation(previous);
             }
+
             task.result.whenComplete((_, _) -> {
                 if (task.result.isCancelled()) {
                     boolean queued;
@@ -244,11 +263,13 @@ public final class SstScheduler implements AutoCloseable {
                         cancelLocked(task);
                         queued = !task.started;
                     }
+
                     if (queued) {
                         task.finished.complete(null);
                     }
                 }
             });
+
             return task.result;
         }
 
@@ -265,6 +286,7 @@ public final class SstScheduler implements AutoCloseable {
                     cancelLocked(task);
                 }
             }
+
             if (task != null) {
                 completeCancellation(task);
             }
@@ -284,19 +306,23 @@ public final class SstScheduler implements AutoCloseable {
             }
         }
 
-        /** Cancels all requests owned by this scope and rejects future submissions. */
+        /**
+         * Cancels all requests owned by this scope and rejects future submissions.
+         */
         @Override
         public void close() {
             List<Task<?>> cancelled;
             synchronized (lock) {
                 if (closed)
                     return;
+
                 closed = true;
                 cancelled = List.copyOf(tasks.values());
                 tasks.clear();
                 scopes.remove(this);
                 cancelled.forEach(SstScheduler.this::cancelLocked);
             }
+
             cancelled.forEach(SstScheduler.this::completeCancellation);
         }
     }
@@ -350,21 +376,26 @@ public final class SstScheduler implements AutoCloseable {
             } catch (Throwable exception) {
                 failure = exception;
             }
+
             synchronized (lock) {
                 runner = null;
                 if (cancelled || scope.tasks.get(key) != this) {
                     failure = new CancellationException("SST request was superseded");
                 }
+
                 outcomeCommitted = true;
             }
+
             if (failure == null) {
                 result.complete(value);
             } else {
                 result.completeExceptionally(failure);
             }
+
             synchronized (lock) {
                 scope.tasks.remove(key, this);
             }
+
             finished.complete(null);
         }
     }

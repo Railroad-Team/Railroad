@@ -279,6 +279,7 @@ public final class JDK {
             }
 
             // If release properties are inconclusive, fall back to string matching on name and path
+
             for (Brand brand : values()) {
                 if (brand == UNKNOWN)
                     continue;

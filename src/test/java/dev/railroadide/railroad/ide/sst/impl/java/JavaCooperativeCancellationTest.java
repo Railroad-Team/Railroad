@@ -37,6 +37,7 @@ public class JavaCooperativeCancellationTest {
                 if (checks.incrementAndGet() == 20)
                     throw failure;
             })));
+
         assertEquals(20, checks.get());
         assertNotNull(JavaSemanticAnalyzer.analyzeFacts(tree, JavaProjectSemanticIndex.empty()));
     }
@@ -46,7 +47,7 @@ public class JavaCooperativeCancellationTest {
         var tree = JavaSyntaxParser.parse(largeSource());
         var clock = new AtomicLong();
         Deadline deadline = Deadline.after(Duration.ofNanos(12), clock::getAndIncrement);
-        var document = tree.documentSnapshot();
+        TextDocumentSnapshot document = tree.documentSnapshot();
         var context = new FeatureRequestContext(new WorkspaceSnapshot("test", Map.of(document.id(), document),
             new WorkspaceConfigurationSnapshot(0, Set.of()), 1), document, CancellationToken.none(), deadline);
         assertThrows(DeadlineExceededException.class,
@@ -66,7 +67,8 @@ public class JavaCooperativeCancellationTest {
                 if (checks.incrementAndGet() == 24)
                     throw failure;
             })));
-        var complete = indexer.indexFile(file, "class Large { int value; }");
+
+        JavaProjectSemanticIndex.SourceFileIndex complete = indexer.indexFile(file, "class Large { int value; }");
         assertEquals(2, complete.declaredSymbols().size());
     }
 
@@ -80,6 +82,7 @@ public class JavaCooperativeCancellationTest {
                 if (checks.incrementAndGet() == 12)
                     throw failure;
             })));
+
         assertEquals(12, checks.get());
         assertEquals(32, JavaLibrarySymbolIndex.build(List.of(archive)).declaredQualifiedNames().size());
         Files.delete(archive);
@@ -116,13 +119,14 @@ public class JavaCooperativeCancellationTest {
         } finally {
             Thread.interrupted();
         }
+
         assertEquals(updated, JavaSyntaxParser.parseIncremental(tree, original, updated, edit)
             .tree().documentSnapshot().text());
     }
 
     @Test
     public void suppliedLexerRemainsCallerOwnedWhenParsingIsInterrupted() {
-        var snapshot = JavaSyntaxParser.parse("class A {}").documentSnapshot();
+        TextDocumentSnapshot snapshot = JavaSyntaxParser.parse("class A {}").documentSnapshot();
         var closed = new AtomicBoolean();
         var lexer = new JavaLexer(snapshot.text()) {
             @Override
@@ -130,6 +134,7 @@ public class JavaCooperativeCancellationTest {
                 closed.set(true);
             }
         };
+
         Thread.currentThread().interrupt();
         try {
             assertThrows(CancellationException.class, () -> JavaSyntaxParser.parse(lexer));
@@ -139,12 +144,14 @@ public class JavaCooperativeCancellationTest {
         } finally {
             Thread.interrupted();
         }
+
         try {
             assertEquals(snapshot.text(), JavaSyntaxParser.parse(snapshot, lexer).documentSnapshot().text());
             assertFalse(closed.get());
         } finally {
             lexer.close();
         }
+
         assertTrue(closed.get());
     }
 
@@ -158,13 +165,14 @@ public class JavaCooperativeCancellationTest {
                 if (checks.incrementAndGet() == 32)
                     throw new CancellationException();
             }));
+
         assertEquals(32, checks.get());
     }
 
     @Test
     public void activeRequestPreservesItsDocumentIdentityAndExistingSemantics() {
         var tree = JavaSyntaxParser.parse("class A { int value = 1; int read(){ return value; } }");
-        var document = tree.documentSnapshot();
+        TextDocumentSnapshot document = tree.documentSnapshot();
         var context = new FeatureRequestContext(new WorkspaceSnapshot("test", Map.of(document.id(), document),
             new WorkspaceConfigurationSnapshot(0, Set.of()), 1), document, CancellationToken.none(), Deadline.none());
         var model = JavaSemanticAnalyzer.analyzeFacts(context, JavaProjectSemanticIndex.empty());
@@ -187,6 +195,7 @@ public class JavaCooperativeCancellationTest {
                 output.closeEntry();
             }
         }
+
         return archive;
     }
 
@@ -195,6 +204,7 @@ public class JavaCooperativeCancellationTest {
         for (int index = 0; index < 1200; index++) {
             source.append("int field").append(index).append(" = ").append(index).append(';');
         }
+
         return source.append('}').toString();
     }
 }

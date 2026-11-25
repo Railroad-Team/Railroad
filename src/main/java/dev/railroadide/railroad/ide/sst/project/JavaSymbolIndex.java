@@ -24,7 +24,9 @@ public interface JavaSymbolIndex {
         return this;
     }
 
-    /** Returns captured library sources that have declarations but no matching class file in the attached view. */
+    /**
+     * Returns captured library sources that have declarations but no matching class file in the attached view.
+     */
     default Map<Path, String> attachedSourceTexts() {
         return Map.of();
     }
@@ -65,12 +67,13 @@ public interface JavaSymbolIndex {
      * @return the indexed type names in qualified and simple forms
      */
     default Set<String> typeNames() {
-        LinkedHashSet<String> names = new LinkedHashSet<>();
+        Set<String> names = new LinkedHashSet<>();
         for (String qualifiedName : declaredQualifiedNames()) {
             names.add(qualifiedName);
             int separator = Math.max(qualifiedName.lastIndexOf('.'), qualifiedName.lastIndexOf('$'));
             names.add(separator < 0 ? qualifiedName : qualifiedName.substring(separator + 1));
         }
+
         return Set.copyOf(names);
     }
 

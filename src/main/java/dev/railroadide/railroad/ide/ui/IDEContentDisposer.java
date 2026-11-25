@@ -12,7 +12,9 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
 
-/** Disposes resources held by an IDE-owned content tree. */
+/**
+ * Disposes resources held by an IDE-owned content tree.
+ */
 public final class IDEContentDisposer {
     private static final Object DISPOSED_MARKER = new Object();
 
@@ -58,6 +60,7 @@ public final class IDEContentDisposer {
                 dispose(tab, disposed);
             }
         }
+
         if (node instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
                 dispose(child, disposed);

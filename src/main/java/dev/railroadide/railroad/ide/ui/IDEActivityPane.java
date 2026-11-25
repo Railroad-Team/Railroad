@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javafx.geometry.Point2D;
 
 /**
  * Shows the most recently started background activity, such as indexing or a build import, with a count of the
@@ -43,18 +44,21 @@ public class IDEActivityPane extends ToggleButton {
             double width = Math.min(getWidth(), taskList.maxWidth(-1));
             double bottom = Math.max(0, getHeight() - 4);
             double height = Math.min(bottom, Math.min(taskList.maxHeight(width), taskList.prefHeight(width)));
-            var anchor = sceneToLocal(IDEActivityPane.this.localToScene(IDEActivityPane.this.getWidth(), 0));
+            Point2D anchor = sceneToLocal(IDEActivityPane.this.localToScene(IDEActivityPane.this.getWidth(), 0));
             double left = Math.clamp(anchor.getX() - width, 0, getWidth() - width);
             taskList.resizeRelocate(snapPositionX(left), snapPositionY(bottom - height), width, height);
         }
     };
+
     private final LocalizedLabel empty = new LocalizedLabel("railroad.activity.none_running");
     private final Map<Long, ActivityRow> rows = new HashMap<>();
     private final PauseTransition etaTick = new PauseTransition(Duration.seconds(1));
     private final AtomicBoolean refreshQueued = new AtomicBoolean();
     private BackgroundActivities.Subscription subscription;
 
-    /** Creates a pane observing the shared activity registry while it is attached to a scene. */
+    /**
+     * Creates a pane observing the shared activity registry while it is attached to a scene.
+     */
     public IDEActivityPane() {
         this(BackgroundActivities.shared());
     }
@@ -105,6 +109,7 @@ public class IDEActivityPane extends ToggleButton {
                 subscription.close();
                 subscription = null;
             }
+
             if (scene != null) {
                 subscription = activities.observe(this::queueRefresh);
                 show(activities.running());
@@ -112,7 +117,9 @@ public class IDEActivityPane extends ToggleButton {
         });
     }
 
-    /** Returns the layer to stack over the workspace content immediately above the status bar. */
+    /**
+     * Returns the layer to stack over the workspace content immediately above the status bar.
+     */
     public Region getTaskOverlay() {
         return taskOverlay;
     }
@@ -134,7 +141,7 @@ public class IDEActivityPane extends ToggleButton {
     }
 
     private static String progressText(Activity activity) {
-        var parts = new ArrayList<String>();
+        List<String> parts = new ArrayList<String>();
         if (activity.total() >= 0) {
             parts.add(switch (activity.unit()) {
                 case BYTES -> byteCount(activity.completed(), activity.total());
@@ -142,6 +149,7 @@ public class IDEActivityPane extends ToggleButton {
                 default -> activity.completed() + "/" + activity.total();
             });
         }
+
         long seconds = activity.remainingSeconds();
         if (seconds > 0) {
             long minutes = Math.ceilDiv(seconds, 60);
@@ -153,19 +161,23 @@ public class IDEActivityPane extends ToggleButton {
                 parts.add(L18n.localize("railroad.activity.eta.hours", minutes / 60, minutes % 60));
             }
         }
+
         return String.join(" · ", parts);
     }
 
     private static String byteCount(long done, long total) {
         String[] units = {"B", "KiB", "MiB", "GiB", "TiB"};
+
         double divisor = 1;
         int unit = 0;
         while (unit < units.length - 1 && total / divisor >= 1024) {
             divisor *= 1024;
             unit++;
         }
+
         if (unit == 0)
             return done + "/" + total + " B";
+
         return "%.1f/%.1f %s".formatted(done / divisor, total / divisor, units[unit]);
     }
 
@@ -187,6 +199,7 @@ public class IDEActivityPane extends ToggleButton {
         } else {
             etaTick.stop();
         }
+
         if (!active) {
             indicator.setProgress(0);
             phase.setText("");
@@ -214,12 +227,14 @@ public class IDEActivityPane extends ToggleButton {
             taskRows.getChildren().setAll(empty);
             return;
         }
-        var items = new ArrayList<ActivityRow>(running.size());
+
+        List<ActivityRow> items = new ArrayList<ActivityRow>(running.size());
         for (Activity activity : running.reversed()) {
-            var row = rows.computeIfAbsent(activity.id(), _ -> new ActivityRow(activity));
+            ActivityRow row = rows.computeIfAbsent(activity.id(), _ -> new ActivityRow(activity));
             row.update(activity);
             items.add(row);
         }
+
         if (!taskRows.getChildren().equals(items)) {
             rows.values().retainAll(items);
             taskRows.getChildren().setAll(items);

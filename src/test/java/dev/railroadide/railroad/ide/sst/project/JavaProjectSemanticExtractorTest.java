@@ -34,8 +34,9 @@ public class JavaProjectSemanticExtractorTest {
         var snapshot = new TextDocumentSnapshot(DocumentId.create(), DocumentUri.fromPath(path),
             DocumentVersion.initial(), "java", source, StandardCharsets.UTF_8);
 
-        var discovered = new JavaProjectSemanticExtractor().discoverTypes(path, snapshot, () -> {
-        });
+        JavaProjectSemanticIndex.SourceFileIndex discovered = new JavaProjectSemanticExtractor().discoverTypes(path,
+            snapshot, () -> {
+            });
 
         assertEquals("demo", discovered.packageName());
         assertEquals(Set.of("demo.Outer", "demo.Outer.Contract", "demo.Outer.Contract.Nested", "demo.Outer.Data",
@@ -52,7 +53,7 @@ public class JavaProjectSemanticExtractorTest {
         String source = "package demo;\nimport java.util.List;\nclass Example { String text = "
             + "\"a\" + ".repeat(32_000) + "\"a\"; }\n";
 
-        var fileIndex = assertDoesNotThrow(() -> new JavaProjectSemanticExtractor()
+        JavaProjectSemanticIndex.SourceFileIndex fileIndex = assertDoesNotThrow(() -> new JavaProjectSemanticExtractor()
             .extract(Path.of("src/main/java/demo/Example.java"), source));
 
         assertEquals("demo", fileIndex.packageName());

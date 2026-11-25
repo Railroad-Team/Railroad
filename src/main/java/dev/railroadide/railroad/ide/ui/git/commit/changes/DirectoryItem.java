@@ -66,14 +66,12 @@ public record DirectoryItem(
     @Override
     public Consumer<Boolean> getSelectionHandler() {
         return isSelected -> {
-
         };
     }
 
     @Override
     public Consumer<MouseEvent> getDoubleClickHandler() {
         return event -> {
-
         };
     }
 

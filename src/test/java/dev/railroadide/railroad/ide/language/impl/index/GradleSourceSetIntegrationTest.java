@@ -24,6 +24,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
+import dev.railroadide.railroadplugin.dto.RailroadProject;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class GradleSourceSetIntegrationTest {
@@ -43,15 +44,15 @@ public class GradleSourceSetIntegrationTest {
                 independent
             }
             """);
-        var game = file("src/main/java/demo/Game.java",
+        TextDocumentSnapshot game = file("src/main/java/demo/Game.java",
             "package demo; public class Game { public static int value() { return 1; } }");
-        var test = file("src/test/java/demo/OnlyInTests.java",
+        TextDocumentSnapshot test = file("src/test/java/demo/OnlyInTests.java",
             "package demo; public class OnlyInTests { public int read() { return Game.value(); } }");
-        var client = file("client-code/demo/Client.java",
+        TextDocumentSnapshot client = file("client-code/demo/Client.java",
             "package demo; public class Client { int read() { return Game.value() + ClientApi.answer(); } }");
-        var duplicate = file("src/independent/java/demo/Game.java",
+        TextDocumentSnapshot duplicate = file("src/independent/java/demo/Game.java",
             "package demo; public class Game { public static int value() { return 2; } int read() { return value(); } }");
-        var dependency = file("library/src/main/java/demo/ClientApi.java",
+        TextDocumentSnapshot dependency = file("library/src/main/java/demo/ClientApi.java",
             "package demo; public class ClientApi { public static int answer() { return 3; } }");
         Files.writeString(directory.resolve("library/build.gradle"), "plugins { id 'java-library' }");
         Path init = directory.resolve("import.gradle");
@@ -61,7 +62,7 @@ public class GradleSourceSetIntegrationTest {
             initscript { dependencies { classpath files('%s') } }
             allprojects { apply plugin: dev.railroadide.railroadplugin.RailroadProjectPlugin }
             """.formatted(plugin));
-        try (var connection = GradleConnector.newConnector().forProjectDirectory(directory.toFile())
+        try (ProjectConnection connection = GradleConnector.newConnector().forProjectDirectory(directory.toFile())
             .useInstallation(new File(System.getProperty("railroad.test.gradleHome"))).connect();
             var provider = new JavaWorkspaceAnalysisProvider(() -> true,
                 (roots, _) -> JavaLibrarySymbolIndex.build(roots));
@@ -69,7 +70,7 @@ public class GradleSourceSetIntegrationTest {
             var initial = ProjectWorkspaceConfiguration.captureGradleConfiguration(model(connection, init));
             var store = new DefaultDocumentStore("fixture", initial);
             List.of(game, test, client, duplicate, dependency).forEach(store::publishBacking);
-            var before = store.capture();
+            WorkspaceSnapshot before = store.capture();
             var diagnostics = new JavaDiagnosticsProvider(null, null, provider::capture);
             assertFalse(provider.capture(before, client.id()).typeNames().contains("ClientApi"));
             assertTrue(
@@ -79,10 +80,10 @@ public class GradleSourceSetIntegrationTest {
 
             Files.writeString(build, "\ndependencies { clientImplementation project(':library') }",
                 StandardOpenOption.APPEND);
-            var updated = model(connection, init);
+            GradleBuildModel updated = model(connection, init);
             var config = ProjectWorkspaceConfiguration.captureGradleConfiguration(updated);
             store.publishConfiguration(new WorkspaceConfigurationSnapshot(1, config.moduleIds(), config.settings()));
-            var workspace = store.capture();
+            WorkspaceSnapshot workspace = store.capture();
             assertFalse(Files.exists(directory.resolve("library/build/classes/java/main/demo/ClientApi.class")));
             assertTrue(offersAnswer(provider.capture(workspace, client.id())));
             assertEquals(dependency.id(),
@@ -95,15 +96,15 @@ public class GradleSourceSetIntegrationTest {
             assertFalse(diagnostics.compute(workspace, client.id()).stream()
                 .anyMatch(d -> d.code().startsWith("SEM_UNRESOLVED")));
 
-            var clientContext = context(workspace, client);
+            FeatureRequestContext clientContext = context(workspace, client);
             assertEquals(game.id(), services.definitions(clientContext, client.text().indexOf("value")).value()
                 .getFirst().location().documentId());
-            var gameContext = context(workspace, game);
+            FeatureRequestContext gameContext = context(workspace, game);
             int offset = game.text().indexOf("value");
-            var usages = services.usages(gameContext, new UsageQuery.AtOffset(offset), UsageSink.NONE).value();
+            UsageSearch usages = services.usages(gameContext, new UsageQuery.AtOffset(offset), UsageSink.NONE).value();
             assertEquals(Set.of(test.id(), client.id()),
                 usages.usages().stream().map(Location::documentId).collect(Collectors.toSet()));
-            var rename = services.rename(gameContext, offset, usages.symbol(), "amount").value();
+            RenameProposal rename = services.rename(gameContext, offset, usages.symbol(), "amount").value();
             assertTrue(rename.applicable(), () -> rename.conflicts().toString());
             assertEquals(Set.of(game.id(), test.id(), client.id()), rename.edit().changes().stream()
                 .map(WorkspaceChange.TextEdit.class::cast).map(edit -> edit.expected().id())
@@ -111,7 +112,7 @@ public class GradleSourceSetIntegrationTest {
 
             var cache = new PersistedGradleModelStore(directory.resolve("cache"), "test");
             assertTrue(cache.save(directory, updated, Instant.now()));
-            var reopened = cache.load(directory).orElseThrow();
+            PersistedGradleModelStore.Restored reopened = cache.load(directory).orElseThrow();
             assertTrue(reopened.current());
             var restored = ProjectWorkspaceConfiguration.captureGradleConfiguration(reopened.model());
             assertEquals(config, restored);
@@ -120,21 +121,21 @@ public class GradleSourceSetIntegrationTest {
             assertTrue(offersAnswer(provider.capture(reopenedStore.capture(), client.id())));
             assertFalse(offersAnswer(provider.capture(reopenedStore.capture(), game.id())));
 
-            var leak = file("src/main/java/demo/Leak.java",
+            TextDocumentSnapshot leak = file("src/main/java/demo/Leak.java",
                 "package demo; class Leak { void run(OnlyInTests t) { t.read(); } }");
             store.publishBacking(leak);
-            var analysis = provider.capture(store.capture(), leak.id());
+            JavaWorkspaceAnalysis analysis = provider.capture(store.capture(), leak.id());
             var completion = JavaSemanticCompletionEngine.compute(leak.text(), leak.text().indexOf("t.read") + 1,
                 analysis);
             assertTrue(
                 completion == null || completion.items().stream().noneMatch(item -> item.insertText().equals("read")));
             assertTrue(diagnostics.compute(store.capture(), leak.id()).stream()
                 .anyMatch(d -> d.code().equals("SEM_UNRESOLVED_TYPE")));
-            var check = context(store.capture(), test);
+            FeatureRequestContext check = context(store.capture(), test);
             int readOffset = test.text().indexOf("read");
-            var read = services.usages(check, new UsageQuery.AtOffset(readOffset), UsageSink.NONE).value();
+            UsageSearch read = services.usages(check, new UsageQuery.AtOffset(readOffset), UsageSink.NONE).value();
             assertTrue(read.usages().isEmpty());
-            var renameRead = services.rename(check, readOffset, read.symbol(), "inspect").value();
+            RenameProposal renameRead = services.rename(check, readOffset, read.symbol(), "inspect").value();
             assertTrue(renameRead.applicable(), () -> renameRead.conflicts().toString());
             assertEquals(List.of(test.id()),
                 renameRead.edit().changes().stream().map(WorkspaceChange.TextEdit.class::cast)
@@ -151,7 +152,7 @@ public class GradleSourceSetIntegrationTest {
     }
 
     private GradleBuildModel model(ProjectConnection connection, Path init) {
-        var project = connection.action(new RailroadProjectAction())
+        RailroadProject project = connection.action(new RailroadProjectAction())
             .withArguments("--offline", "--init-script", init.toString()).run();
         return new GradleBuildModel("fixture", directory, null, project);
     }

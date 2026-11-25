@@ -36,7 +36,7 @@ public final class JDKUtils {
      * @return properties parsed from the file; empty if the file is missing or unreadable
      */
     public static Properties readReleaseProperties(Path javaHome) {
-        var props = new Properties();
+        Properties props = new Properties();
         Path release = javaHome.resolve("release");
         if (Files.isRegularFile(release)) {
             try (BufferedReader bufferedReader = Files.newBufferedReader(release)) {
@@ -56,7 +56,7 @@ public final class JDKUtils {
      * @return parsed {@link JavaVersion} or {@code null} if detection failed
      */
     public static JavaVersion readJavaVersion(Path javaHome, String javaExecutableName) {
-        var properties = readReleaseProperties(javaHome);
+        Properties properties = readReleaseProperties(javaHome);
         String versionStr = stripQuotes(properties.getProperty("JAVA_VERSION"));
         JavaVersion version = parseJavaVersionString(versionStr);
         if (version != null)
@@ -96,6 +96,7 @@ public final class JDKUtils {
                 major = minor;
                 minor = 0;
             }
+
             return new JavaVersion(major, minor != null ? minor : 0);
         } catch (NumberFormatException exception) {
             Railroad.LOGGER.warn("Failed to parse Java version string: {}", version, exception);

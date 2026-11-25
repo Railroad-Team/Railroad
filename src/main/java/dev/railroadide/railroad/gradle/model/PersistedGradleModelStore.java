@@ -171,6 +171,7 @@ public final class PersistedGradleModelStore {
         for (RailroadModule module : model.project().getModules()) {
             module.getContentRoots().forEach(root -> projectOutputs.addAll(root.getClassOutputs()));
         }
+
         for (RailroadModule module : model.project().getModules()) {
             for (List<File> roots : List.of(module.getClasspathRoots(), module.getDependencyRoots())) {
                 for (File file : roots) {
@@ -195,14 +196,16 @@ public final class PersistedGradleModelStore {
     private static GradleBuildModel readModel(DataInputStream input) throws IOException, ClassNotFoundException {
         var objects = new ObjectInputStream(input);
         objects.setObjectInputFilter(MODEL_FILTER);
-        var gradleVersion = (String) objects.readObject();
-        var rootDir = (String) objects.readObject();
-        var fabricData = (FabricDataModel) objects.readObject();
-        var project = (RailroadProject) objects.readObject();
+        String gradleVersion = (String) objects.readObject();
+        String rootDir = (String) objects.readObject();
+        FabricDataModel fabricData = (FabricDataModel) objects.readObject();
+        RailroadProject project = (RailroadProject) objects.readObject();
         return new GradleBuildModel(gradleVersion, rootDir == null ? null : Path.of(rootDir), fabricData, project);
     }
 
-    /** Models fetched through nested build actions are Tooling API proxies over plugin and Gradle interfaces. */
+    /**
+     * Models fetched through nested build actions are Tooling API proxies over plugin and Gradle interfaces.
+     */
     private static ObjectInputFilter.Status filterModelProxy(ObjectInputFilter.FilterInfo info) {
         Class<?> type = info.serialClass();
         if (type == null || !Proxy.isProxyClass(type))
@@ -216,7 +219,9 @@ public final class PersistedGradleModelStore {
         return ObjectInputFilter.Status.ALLOWED;
     }
 
-    /** Tooling models arrive as proxies that cannot be serialized, so they are copied into the plugin's own type. */
+    /**
+     * Tooling models arrive as proxies that cannot be serialized, so they are copied into the plugin's own type.
+     */
     private static @Nullable FabricDataModel serializableCopy(@Nullable FabricDataModel data) {
         if (data == null || data instanceof BasicFabricDataModel)
             return data;
@@ -230,7 +235,9 @@ public final class PersistedGradleModelStore {
             loom == null ? null : new BasicFabricDataModel.BasicLoomVersion(loom.version(), loom.isArchitecturyLoom()));
     }
 
-    /** Keys snapshots by the real path, so different spellings of one directory share a snapshot. */
+    /**
+     * Keys snapshots by the real path, so different spellings of one directory share a snapshot.
+     */
     private static Path canonical(Path projectRoot) {
         Path normalized = FileUtils.normalizePath(Objects.requireNonNull(projectRoot, "projectRoot"));
         try {

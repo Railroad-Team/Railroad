@@ -62,6 +62,7 @@ public record DocumentVersion(long value) implements Comparable<DocumentVersion>
     public DocumentVersion next() {
         if (value == Long.MAX_VALUE)
             throw new IllegalStateException("Document version is exhausted");
+
         return new DocumentVersion(value + 1);
     }
 

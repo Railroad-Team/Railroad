@@ -18,6 +18,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.jar.JarFile;
+import java.nio.file.DirectoryStream;
 
 // TODO: These are not all project creation specific, so they should be moved and modified to a more general util class
 /**
@@ -136,7 +137,7 @@ public class ProjectValidators {
             if (!Files.isDirectory(path))
                 return ValidationResult.error("railroad.project.creation.location.error.not_directory");
 
-            try (var stream = Files.newDirectoryStream(path)) {
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
                 // TODO: Do not validate if the directory is empty because we're going to create a new directory inside
                 // it
                 if (stream.iterator().hasNext())
@@ -511,6 +512,7 @@ public class ProjectValidators {
         }
 
         // remove any whitespace before a backslash
+
         path = path.replaceAll("\\s+\\\\", "\\");
 
         // remove any whitespace after a backslash

@@ -18,7 +18,7 @@ public class AnsiParserTest {
 
     @Test
     public void selectGraphicRenditionStylesFollowingText() {
-        var tokens = new AnsiParser().feed("a\u001B[31mb\u001B[1;4mc\u001B[0md");
+        List<AnsiParser.Token> tokens = new AnsiParser().feed("a\u001B[31mb\u001B[1;4mc\u001B[0md");
 
         assertEquals(List.of(
             new Text("a", AnsiStyle.PLAIN),
@@ -54,7 +54,7 @@ public class AnsiParserTest {
 
     @Test
     public void nonColourSequencesAndControlCharactersAreDiscarded() {
-        var tokens = new AnsiParser()
+        List<AnsiParser.Token> tokens = new AnsiParser()
             .feed("a\u001B[2K\u001B[?25lb\u001B]0;title\u0007c\u001B]8;;url\u001B\\d\u001B(Be\bf");
 
         assertEquals(List.of(new Text("abcdef", AnsiStyle.PLAIN)), tokens);
@@ -98,7 +98,7 @@ public class AnsiParserTest {
 
     @Test
     public void loneCarriageReturnRewritesLine() {
-        var tokens = new AnsiParser().feed("10%\r20%\r\n");
+        List<AnsiParser.Token> tokens = new AnsiParser().feed("10%\r20%\r\n");
 
         assertEquals(List.of(
             new Text("10%", AnsiStyle.PLAIN),
@@ -108,7 +108,7 @@ public class AnsiParserTest {
 
     @Test
     public void runawayControlSequenceIsAbandoned() {
-        var tokens = new AnsiParser().feed("\u001B[" + "1".repeat(300) + "visible");
+        List<AnsiParser.Token> tokens = new AnsiParser().feed("\u001B[" + "1".repeat(300) + "visible");
 
         assertEquals(List.of(new Text("1".repeat(43) + "visible", AnsiStyle.PLAIN)), tokens);
     }

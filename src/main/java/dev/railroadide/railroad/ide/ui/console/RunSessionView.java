@@ -65,6 +65,7 @@ public final class RunSessionView extends BorderPane implements AutoCloseable {
     private RunSession session;
     private Runnable unsubscribe = () -> {
     };
+
     private boolean closed;
 
     /**
@@ -85,7 +86,7 @@ public final class RunSessionView extends BorderPane implements AutoCloseable {
         var scroll = new VirtualizedScrollPane<>(output);
         follow.setSelected(true);
         wrap.selectedProperty().addListener((_, _, wrapped) -> output.setWrapText(wrapped));
-        var clear = toolButton(new RRButton(), "railroad.ide.console.clear", FontAwesomeSolid.TRASH_ALT);
+        RRButton clear = toolButton(new RRButton(), "railroad.ide.console.clear", FontAwesomeSolid.TRASH_ALT);
         clear.setOnAction(_ -> output.clear());
 
         var spacer = new Region();
@@ -187,6 +188,7 @@ public final class RunSessionView extends BorderPane implements AutoCloseable {
                 ended.set(true);
             }
         }
+
         flushBatch();
         trim();
         if (follow.isSelected()) {
@@ -203,11 +205,12 @@ public final class RunSessionView extends BorderPane implements AutoCloseable {
                     if (style.equals(AnsiStyle.PLAIN)) {
                         batch.add(new Segment(text, kindClasses));
                     } else {
-                        var classes = new ArrayList<>(kindClasses);
+                        List<String> classes = new ArrayList<>(kindClasses);
                         classes.addAll(style.styleClasses());
                         batch.add(new Segment(text, classes));
                     }
                 }
+
                 case AnsiParser.CarriageReturn _ -> {
                     flushBatch();
                     int lastParagraph = output.getParagraphs().size() - 1;
@@ -232,8 +235,10 @@ public final class RunSessionView extends BorderPane implements AutoCloseable {
                         ? "railroad.ide.console.finished"
                         : "railroad.ide.console.failed_without_reason");
             }
+
             case RUNNING -> throw new IllegalStateException("A running session has not ended");
         };
+
         flushBatch();
         int length = output.getLength();
         String separator = length == 0 || output.getText(length - 1, length).equals("\n") ? "" : "\n";
@@ -250,6 +255,7 @@ public final class RunSessionView extends BorderPane implements AutoCloseable {
             text.append(segment.text());
             spans.add(segment.styleClasses(), segment.text().length());
         }
+
         batch.clear();
         int start = output.getLength();
         output.appendText(text.toString());
@@ -296,6 +302,7 @@ public final class RunSessionView extends BorderPane implements AutoCloseable {
         } else if (button instanceof RRToggleButton toggle) {
             toggle.setVariant(ButtonVariant.GHOST);
         }
+
         return button;
     }
 

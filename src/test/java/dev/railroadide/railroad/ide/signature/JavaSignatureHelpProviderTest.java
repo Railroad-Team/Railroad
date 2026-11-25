@@ -57,13 +57,13 @@ public class JavaSignatureHelpProviderTest {
                 void run() { call(1, ""); }
             }
             """;
-        var document = snapshot(DocumentUri.virtual("generated", "/Example.java"), source);
+        TextDocumentSnapshot document = snapshot(DocumentUri.virtual("generated", "/Example.java"), source);
         var workspace = new WorkspaceSnapshot("signature-overloads", Map.of(document.id(), document),
             new WorkspaceConfigurationSnapshot(0, Set.of()), 0);
         var context = new FeatureRequestContext(workspace, document, CancellationToken.none(), Deadline.none());
         int caret = source.indexOf("call(1, ") + "call(1, ".length();
         var provider = new JavaSignatureHelpProvider();
-        var signatures = provider.compute(context, caret, true).value();
+        List<SignatureHelp> signatures = provider.compute(context, caret, true).value();
         assertEquals(3, signatures.size());
         assertEquals(List.of("row", "name"),
             signatures.getFirst().parameters().stream().map(SignatureHelp.ParameterInfo::name).toList());
@@ -104,7 +104,7 @@ public class JavaSignatureHelpProviderTest {
     @Test
     public void showsExpectedParametersInsideAnEmptyCallBeforeArgumentsAreTyped() {
         String text = SOURCE.replace("combine(1, true)", "combine()");
-        var snapshot = snapshot(DocumentUri.virtual("generated", "/demo/Example.java"), text);
+        TextDocumentSnapshot snapshot = snapshot(DocumentUri.virtual("generated", "/demo/Example.java"), text);
         SignatureHelpProvider provider = new JavaSignatureHelpProvider();
         int inside = text.lastIndexOf("combine(") + "combine(".length();
         SignatureHelp help = provider.compute(snapshot, inside);
@@ -118,7 +118,7 @@ public class JavaSignatureHelpProviderTest {
     @Test
     public void tracksTheArgumentAcrossTheCommaInAPartialCall() {
         String text = SOURCE.replace("combine(1, true)", "combine(1 /* , ) */ , )");
-        var snapshot = snapshot(DocumentUri.virtual("generated", "/demo/Example.java"), text);
+        TextDocumentSnapshot snapshot = snapshot(DocumentUri.virtual("generated", "/demo/Example.java"), text);
         SignatureHelpProvider provider = new JavaSignatureHelpProvider();
         int comma = text.lastIndexOf(',');
         assertEquals(0, provider.compute(snapshot, comma).activeParameter());
@@ -129,7 +129,7 @@ public class JavaSignatureHelpProviderTest {
     public void usesTheInnermostCallAndIgnoresParenthesesInAChainedReceiver() {
         String text = "class Example { Example next() { return this; } int read(int i) { return i; }"
             + " int inner(int i) { return i; } void run() { next().read(inner(1)); } }";
-        var snapshot = snapshot(DocumentUri.virtual("generated", "/demo/Example.java"), text);
+        TextDocumentSnapshot snapshot = snapshot(DocumentUri.virtual("generated", "/demo/Example.java"), text);
         SignatureHelpProvider provider = new JavaSignatureHelpProvider();
         int receiver = text.lastIndexOf("next(") + "next(".length();
         assertEquals("next", provider.compute(snapshot, receiver).methodName());
@@ -143,7 +143,7 @@ public class JavaSignatureHelpProviderTest {
         String text = "class Example { void write(boolean flag, long count) {} void write(int row, String value) {}"
             + " void run() { write(1, ); } }";
         var provider = new JavaSignatureHelpProvider();
-        var help = provider.compute(snapshot(DocumentUri.virtual("generated", "/Example.java"), text),
+        SignatureHelp help = provider.compute(snapshot(DocumentUri.virtual("generated", "/Example.java"), text),
             text.lastIndexOf(", ") + 2);
         assertNotNull(help);
         assertEquals(List.of("row", "value"),
@@ -154,7 +154,7 @@ public class JavaSignatureHelpProviderTest {
     @Test
     public void showsConstructorParametersAndKeepsTheVarargsParameterActive() {
         String text = "class Example { Example(int first, int... rest) {} void run() { new Example(1, 2, 3); } }";
-        var help = new JavaSignatureHelpProvider().compute(
+        SignatureHelp help = new JavaSignatureHelpProvider().compute(
             snapshot(DocumentUri.virtual("generated", "/Example.java"), text),
             text.lastIndexOf("3)"));
         assertNotNull(help);
@@ -185,7 +185,7 @@ public class JavaSignatureHelpProviderTest {
         Path file = tempDirectory.resolve("Example.java");
         Files.writeString(file, "class Example {}");
         SignatureHelpProvider provider = new JavaSignatureHelpProvider();
-        var snapshot = snapshot(DocumentUri.fromPath(file), SOURCE);
+        TextDocumentSnapshot snapshot = snapshot(DocumentUri.fromPath(file), SOURCE);
 
         SignatureHelp help = provider.compute(snapshot, CARET);
 
@@ -249,6 +249,7 @@ public class JavaSignatureHelpProviderTest {
             writer.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_NATIVE, "read",
                 "(" + parameter + ")I", null, null).visitEnd();
         }
+
         writer.visitEnd();
         try (var jar = new JarOutputStream(Files.newOutputStream(binary))) {
             jar.putNextEntry(new JarEntry("lib/Library.class"));
@@ -256,7 +257,7 @@ public class JavaSignatureHelpProviderTest {
         }
 
         String source = "import lib.Library; class Example { int a = Library.read(1); int b = Library.read(true); }";
-        var document = snapshot(DocumentUri.virtual("generated", "/Example.java"), source);
+        TextDocumentSnapshot document = snapshot(DocumentUri.virtual("generated", "/Example.java"), source);
         var workspace = new WorkspaceSnapshot("signature", Map.of(document.id(), document),
             new WorkspaceConfigurationSnapshot(0, Set.of(":"), Map.of("module.:.classpath", binary.toString())), 0);
         try (var analysis = new JavaWorkspaceAnalysisProvider(() -> true,
@@ -275,11 +276,13 @@ public class JavaSignatureHelpProviderTest {
                     }
                     """.getBytes(StandardCharsets.UTF_8));
             }
-            var parameter = provider.compute(workspace, document.id(), caret).parameters().getFirst();
+
+            SignatureHelp.ParameterInfo parameter = provider.compute(workspace, document.id(), caret).parameters()
+                .getFirst();
             assertEquals("rowIndex", parameter.name());
             assertEquals("int", parameter.type());
             var context = new FeatureRequestContext(workspace, document, CancellationToken.none(), Deadline.none());
-            var overloads = provider.compute(context, caret, true).value();
+            List<SignatureHelp> overloads = provider.compute(context, caret, true).value();
             assertEquals("rowIndex", overloads.getFirst().parameters().getFirst().name());
             assertEquals(Set.of("rowIndex", "byteOffset", "arg0"), overloads.stream()
                 .map(overload -> overload.parameters().getFirst().name()).collect(Collectors.toSet()));
@@ -314,6 +317,7 @@ public class JavaSignatureHelpProviderTest {
                 jar.write(string.toByteArray());
                 jar.closeEntry();
             }
+
             String source = "class Example { void run(String text) { text.substring(1); text.legacyOnly(); } }";
             SignatureHelpArchiveProbe.verify(tempDirectory, jdk, List.of(), source, source.indexOf("1)") + 1,
                 "java.lang.String", "substring", List.of("int"));

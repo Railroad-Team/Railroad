@@ -79,9 +79,10 @@ public class GitCommitCreateTagButton extends RRButton {
                         overwriteCheckbox.isSelected());
                 }
             });
+
         var dialog = WindowBuilder.createDialog("railroad.git.commit.details.new_tag_dialog.title", dialogBuilder);
 
-        var confirmButton = (RRButton) dialog.getScene().lookup(".rr-button.success");
+        RRButton confirmButton = (RRButton) dialog.getScene().lookup(".rr-button.success");
         if (confirmButton != null) {
             confirmButton.setDisable(true);
         }
@@ -98,6 +99,7 @@ public class GitCommitCreateTagButton extends RRButton {
                     if (confirmButton != null) {
                         confirmButton.setDisable(true);
                     }
+
                     return;
                 }
 
@@ -106,6 +108,7 @@ public class GitCommitCreateTagButton extends RRButton {
                     if (confirmButton != null) {
                         confirmButton.setDisable(true);
                     }
+
                     return;
                 }
 
@@ -114,6 +117,7 @@ public class GitCommitCreateTagButton extends RRButton {
                     if (confirmButton != null) {
                         confirmButton.setDisable(true);
                     }
+
                     return;
                 }
 
@@ -123,6 +127,5 @@ public class GitCommitCreateTagButton extends RRButton {
                 }
             }
         });
-
     }
 }

@@ -16,13 +16,15 @@ import org.objectweb.asm.Opcodes;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolDescriptor;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Builds Java type and member lookup tables from binary class stubs and their origins.
  */
 public class JavaStubSymbolIndex implements JavaSymbolIndex {
     private final Map<SymbolId, List<SymbolLocation>> alternateLocations;
-    private final ConcurrentHashMap<String, SemanticIndexShard> shardsByOwner;
+    private final ConcurrentMap<String, SemanticIndexShard> shardsByOwner;
     private final Map<String, DocumentUri> binaryLocations;
     private final Set<String> declaredQualifiedNames;
     private final Set<String> typeNames;
@@ -32,15 +34,19 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     private final Map<String, String> aliases;
     private final Map<String, ClassStub> visibleStubs;
     private final Map<String, Object> ownersBySimpleName;
-    private final ConcurrentHashMap<String, ClassDeclarations> declarationsByOwner;
+    private final ConcurrentMap<String, ClassDeclarations> declarationsByOwner;
     private final JavaBinarySymbolExtractor.TypeReferences typeReferences;
 
-    /** Reuses fully immutable lookup storage when wrapping an already published binary index. */
+    /**
+     * Reuses fully immutable lookup storage when wrapping an already published binary index.
+     */
     protected JavaStubSymbolIndex(JavaStubSymbolIndex source) {
         this(source, source.aliases);
     }
 
-    /** Shares physical declarations and their navigation identities while exposing attachment-local source names. */
+    /**
+     * Shares physical declarations and their navigation identities while exposing attachment-local source names.
+     */
     protected JavaStubSymbolIndex(JavaStubSymbolIndex source, Map<String, String> aliases) {
         this.aliases = Map.copyOf(aliases);
         alternateLocations = source.alternateLocations;
@@ -52,19 +58,21 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
             typeNames = source.typeNames;
             packages = source.packages;
         } else {
-            var visible = new HashMap<>(source.classStubsByQualifiedName);
-            var names = new HashSet<>(source.typeNames);
-            var packageNames = new HashSet<>(source.packages);
+            Map<String, ClassStub> visible = new HashMap<>(source.classStubsByQualifiedName);
+            Set<String> names = new HashSet<>(source.typeNames);
+            Set<String> packageNames = new HashSet<>(source.packages);
             aliases.forEach((alias, binary) -> {
                 visible.put(alias, source.classStubsByQualifiedName.get(binary));
                 names.add(alias);
                 packageNames.add(alias.substring(0, alias.lastIndexOf('.')));
             });
+
             visibleStubs = Map.copyOf(visible);
             declaredQualifiedNames = visibleStubs.keySet();
             typeNames = Set.copyOf(names);
             packages = Set.copyOf(packageNames);
         }
+
         classStubsByQualifiedName = source.classStubsByQualifiedName;
         sourceByQualifiedName = source.sourceByQualifiedName;
         ownersBySimpleName = source.ownersBySimpleName;
@@ -136,8 +144,10 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
             if (location == null) {
                 location = originLocations.computeIfAbsent(origins.get(name), DocumentUri::fromPath);
             }
+
             locations.put(name, location);
         }
+
         return Map.copyOf(locations);
     }
 
@@ -167,6 +177,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
                 published.put(entry.getKey(), BinaryStubPublication.copy(entry.getValue()));
             }
         }
+
         this.classStubsByQualifiedName = Map.copyOf(published);
         this.aliases = Map.of();
         this.visibleStubs = this.classStubsByQualifiedName;
@@ -199,6 +210,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
                 ActivityCheckpoint.poll(activityCheck);
                 indexOwner(ownersBySimpleName, field.name(), qualifiedName);
             }
+
             for (MethodStub method : stub.methods()) {
                 ActivityCheckpoint.poll(activityCheck);
                 if ((method.modifiers() & Opcodes.ACC_BRIDGE) == 0) {
@@ -219,8 +231,10 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         activityCheck.run();
         if (!classStubsByQualifiedName.containsKey(binaryName))
             return null;
-        var shard = shardsByOwner.computeIfAbsent(binaryName, name -> JavaBinarySymbolExtractor.withParameters(
-            declarations(name, activityCheck).shard(), alternateLocations, activityCheck));
+
+        SemanticIndexShard shard = shardsByOwner.computeIfAbsent(binaryName,
+            name -> JavaBinarySymbolExtractor.withParameters(
+                declarations(name, activityCheck).shard(), alternateLocations, activityCheck));
         activityCheck.run();
         return shard;
     }
@@ -234,7 +248,9 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         return binaryLocations;
     }
 
-    /** Returns the original class paths for preserving navigation in derived library views. */
+    /**
+     * Returns the original class paths for preserving navigation in derived library views.
+     */
     protected Map<String, Path> binaryOrigins() {
         return sourceByQualifiedName;
     }
@@ -263,16 +279,18 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     public List<JavaProjectSemanticIndex.SymbolDescriptor> lookupSimpleName(String simpleName) {
         if (simpleName == null || simpleName.isBlank())
             return List.of();
+
         String name = simpleName.trim();
         List<JavaProjectSemanticIndex.SymbolDescriptor> matches = new ArrayList<>();
         for (String owner : owners(name)) {
             ActivityCheckpoint.checkInterrupted();
-            for (var descriptor : declarations(owner).symbols()) {
+            for (JavaProjectSemanticIndex.SymbolDescriptor descriptor : declarations(owner).symbols()) {
                 if (descriptor.simpleName().equals(name)) {
                     matches.add(descriptor);
                 }
             }
         }
+
         return List.copyOf(matches);
     }
 
@@ -280,6 +298,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     public List<String> qualifiedTypeNames(String simpleName) {
         if (simpleName == null || simpleName.isBlank())
             return List.of();
+
         String name = simpleName.trim();
         return owners(name).stream().filter(owner -> classStubsByQualifiedName.get(owner).name().equals(name))
             .toList();
@@ -289,12 +308,14 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     public List<JavaProjectSemanticIndex.SymbolDescriptor> lookupQualifiedName(String qualifiedName) {
         if (qualifiedName == null || qualifiedName.isBlank())
             return List.of();
+
         String name = qualifiedName.trim();
         int separator = name.indexOf('#');
         String owner = separator < 0 ? name : name.substring(0, separator);
         String binary = aliases.getOrDefault(owner, owner);
         if (!classStubsByQualifiedName.containsKey(binary))
             return List.of();
+
         String target = separator < 0 ? binary : binary + name.substring(separator);
         return declarations(binary).symbols().stream().filter(symbol -> target.equals(symbol.qualifiedName())).toList();
     }
@@ -303,6 +324,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
     public List<JavaProjectSemanticIndex.SymbolDescriptor> lookupMembers(String qualifiedName) {
         if (qualifiedName == null || qualifiedName.isBlank())
             return List.of();
+
         String name = qualifiedName.trim();
         String owner = aliases.getOrDefault(name, name);
         return classStubsByQualifiedName.containsKey(owner) ? declarations(owner).members() : List.of();
@@ -363,7 +385,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
             List<JavaProjectSemanticIndex.SymbolDescriptor> symbols = new ArrayList<>();
             List<JavaProjectSemanticIndex.SymbolDescriptor> members = new ArrayList<>();
             SymbolId typeId = JavaSymbolIds.type(name);
-            for (var declaration : shard.declarations()) {
+            for (SymbolDescriptor declaration : shard.declarations()) {
                 activityCheck.run();
                 JavaSymbolKind kind = JavaSymbolKind.fromId(declaration.kind().id());
                 boolean type = declaration.id().equals(typeId);
@@ -375,9 +397,11 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
                     members.add(descriptor);
                 }
             }
+
             activityCheck.run();
             return new ClassDeclarations(shard, List.copyOf(symbols), List.copyOf(members));
         });
+
         activityCheck.run();
         return result;
     }

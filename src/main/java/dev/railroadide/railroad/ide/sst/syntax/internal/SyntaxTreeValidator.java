@@ -51,7 +51,7 @@ public final class SyntaxTreeValidator {
             throw new IllegalStateException("syntax root must start at 0, got " + root.start());
 
         // An explicit stack, because long expression chains nest deeper than the thread stack allows.
-        var pending = new ArrayDeque<PendingNode>();
+        Deque<PendingNode> pending = new ArrayDeque<PendingNode>();
         pending.push(new PendingNode(root, null));
         while (!pending.isEmpty()) {
             PendingNode next = pending.pop();

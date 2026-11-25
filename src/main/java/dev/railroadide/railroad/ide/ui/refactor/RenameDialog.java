@@ -115,17 +115,29 @@ public final class RenameDialog implements AutoCloseable {
         }
     }
 
-    /** Progress of the dialog. */
+    /**
+     * Progress of the dialog.
+     */
     public enum State {
-        /** The name is being edited and no preview is shown. */
+        /**
+         * The name is being edited and no preview is shown.
+         */
         EDITING,
-        /** The rename is being computed. */
+        /**
+         * The rename is being computed.
+         */
         COMPUTING,
-        /** A preview that can be applied is shown. */
+        /**
+         * A preview that can be applied is shown.
+         */
         PREVIEWED,
-        /** The rename cannot be applied; conflicts or problems are shown. */
+        /**
+         * The rename cannot be applied; conflicts or problems are shown.
+         */
         BLOCKED,
-        /** The rename was applied. */
+        /**
+         * The rename was applied.
+         */
         APPLIED
     }
 
@@ -179,6 +191,7 @@ public final class RenameDialog implements AutoCloseable {
     public void show(@Nullable Window owner) {
         if (closed || stage != null)
             return;
+
         stage = WindowBuilder.create()
             .title(L18n.localize("railroad.rename.title", request.symbol().kind()), false)
             .owner(owner)
@@ -259,11 +272,13 @@ public final class RenameDialog implements AutoCloseable {
         } catch (RuntimeException exception) {
             future = CompletableFuture.failedFuture(exception);
         }
+
         future.whenComplete((result, failure) -> Platform.runLater(() -> {
             if (activeContext != context) {
                 shown.complete(state);
                 return;
             }
+
             activeContext = null;
             activeCancellation = null;
             if (failure != null || result == null || !result.belongsTo(context)) {
@@ -271,15 +286,18 @@ public final class RenameDialog implements AutoCloseable {
                 if (cause != null && !(cause instanceof CancellationException)) {
                     Railroad.LOGGER.error("Failed to compute rename", cause);
                 }
+
                 block(cause instanceof DeadlineExceededException
                     ? "railroad.rename.status.timed_out"
                     : "railroad.rename.status.failed");
                 shown.complete(state);
                 return;
             }
+
             show(result.value(), workspace);
             shown.complete(state);
         }));
+
         return shown;
     }
 
@@ -296,11 +314,13 @@ public final class RenameDialog implements AutoCloseable {
         WorkspaceSnapshot basis = previewed;
         if (state != State.PREVIEWED || current == null || current.edit() == null || basis == null)
             return Optional.empty();
+
         Optional<WorkspaceEditService> service = request.edits().get();
         if (service.isEmpty()) {
             block("railroad.rename.status.no_project");
             return Optional.empty();
         }
+
         if (!sameInputs(basis, request.store().capture(), request.prepared().languageId())) {
             refreshed = true;
             computePreview();
@@ -315,6 +335,7 @@ public final class RenameDialog implements AutoCloseable {
             showProblems(result.problems());
             block("railroad.rename.status.apply_failed");
         }
+
         return Optional.of(result);
     }
 
@@ -376,6 +397,7 @@ public final class RenameDialog implements AutoCloseable {
     public void close() {
         if (closed)
             return;
+
         closed = true;
         cancelComputation();
         requests.close();
@@ -399,6 +421,7 @@ public final class RenameDialog implements AutoCloseable {
             block("railroad.rename.status.no_project");
             return;
         }
+
         WorkspaceEditPreview preview = service.get().preview(result.edit());
         if (!preview.applicable()) {
             showProblems(preview.problems());
@@ -429,15 +452,18 @@ public final class RenameDialog implements AutoCloseable {
     private static boolean sameInputs(WorkspaceSnapshot previewed, WorkspaceSnapshot current, String languageId) {
         if (!previewed.configuration().equals(current.configuration()))
             return false;
+
         Map<DocumentId, DocumentSnapshot> before = inputs(previewed, languageId);
         Map<DocumentId, DocumentSnapshot> after = inputs(current, languageId);
         if (!before.keySet().equals(after.keySet()))
             return false;
+
         for (DocumentSnapshot document : before.values()) {
             DocumentSnapshot other = after.get(document.id());
             if (!document.uri().equals(other.uri()) || !sameContent(document, other))
                 return false;
         }
+
         return true;
     }
 
@@ -448,6 +474,7 @@ public final class RenameDialog implements AutoCloseable {
                 inputs.put(id, document);
             }
         });
+
         return inputs;
     }
 
@@ -508,6 +535,7 @@ public final class RenameDialog implements AutoCloseable {
             activeCancellation.cancel();
             activeCancellation = null;
         }
+
         activeContext = null;
     }
 
@@ -521,6 +549,7 @@ public final class RenameDialog implements AutoCloseable {
             && cause.getCause() != null) {
             cause = cause.getCause();
         }
+
         return cause;
     }
 }

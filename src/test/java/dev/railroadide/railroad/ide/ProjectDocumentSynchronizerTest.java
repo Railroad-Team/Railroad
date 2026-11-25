@@ -12,6 +12,7 @@ import java.nio.file.*;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.BlockingQueue;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ProjectDocumentSynchronizerTest {
@@ -23,16 +24,17 @@ public class ProjectDocumentSynchronizerTest {
         LanguageSupports.initialize();
         Files.writeString(directory.resolve("one.txt"), "one");
         Files.writeString(directory.resolve("two.txt"), "two");
-        var publications = new LinkedBlockingQueue<Runnable>();
+        BlockingQueue<Runnable> publications = new LinkedBlockingQueue<Runnable>();
         var registry = BackgroundActivities.shared();
         var store = new DefaultDocumentStore("scan", new WorkspaceConfigurationSnapshot(0, Set.of()));
         try (var sync = new ProjectDocumentSynchronizer(directory, store, new DocumentIdentityRegistry(),
             _ -> false, publications::add)) {
-            var first = publications.poll(10, TimeUnit.SECONDS);
-            var second = publications.poll(10, TimeUnit.SECONDS);
+            Runnable first = publications.poll(10, TimeUnit.SECONDS);
+            Runnable second = publications.poll(10, TimeUnit.SECONDS);
             assertNotNull(first);
             assertNotNull(second);
-            var scan = registry.running().stream().filter(a -> a.titleKey().equals("railroad.activity.scanning_files"))
+            BackgroundActivities.Activity scan = registry.running().stream()
+                .filter(a -> a.titleKey().equals("railroad.activity.scanning_files"))
                 .findFirst().orElseThrow();
             assertEquals(2, scan.total());
             assertEquals(0, scan.completed());
@@ -81,6 +83,7 @@ public class ProjectDocumentSynchronizerTest {
         Path binary = directory.resolve("resource.bin");
         Files.writeString(source, "class Unopened {}");
         Files.write(binary, new byte[]{0, 1, 2});
+
         var identities = new DocumentIdentityRegistry();
         DocumentStore store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()));
         try (ProjectDocumentSynchronizer synchronizer = new ProjectDocumentSynchronizer(directory, store, identities,
@@ -107,6 +110,7 @@ public class ProjectDocumentSynchronizerTest {
             assertEquals(id, identities.findIdentity(DocumentUri.fromPath(source)).orElseThrow().id());
             assertEquals(changed.version().next(), store.current(id).orElseThrow().version());
             Files.write(binary, new byte[]{0, 9, 8});
+
             synchronizer.refresh(binary).get(10, TimeUnit.SECONDS);
             assertEquals(9, ((BinaryDocumentSnapshot) store.current(resource).orElseThrow()).bytes().get(1));
             assertEquals(1, ((BinaryDocumentSnapshot) before.document(resource).orElseThrow()).bytes().get(1));
@@ -136,6 +140,7 @@ public class ProjectDocumentSynchronizerTest {
             assertEquals(((TextDocumentSnapshot) original).text(), ((TextDocumentSnapshot) deleted.overlay()).text());
             WorkspaceSnapshot retained = store.capture();
             Files.write(file, new byte[]{(byte) 0xc3, 0x28});
+
             assertThrows(ExecutionException.class,
                 () -> synchronizer.refresh(file).get(10, TimeUnit.SECONDS));
             assertEquals(retained, store.capture());
@@ -153,6 +158,7 @@ public class ProjectDocumentSynchronizerTest {
         } catch (UnsupportedOperationException | IOException exception) {
             Assumptions.abort("Hard links are unavailable on this filesystem");
         }
+
         var identities = new DocumentIdentityRegistry();
         DocumentStore store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()));
         try (ProjectDocumentSynchronizer synchronizer = new ProjectDocumentSynchronizer(directory, store, identities,

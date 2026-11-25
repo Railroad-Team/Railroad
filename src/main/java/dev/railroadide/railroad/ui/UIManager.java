@@ -21,7 +21,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class UIManager {
     private final Map<UIId<?>, Assignment> idMap = new ConcurrentHashMap<>(UIIds.size());
 
-    /** Creates a manager with no registered nodes. */
+    /**
+     * Creates a manager with no registered nodes.
+     */
     public UIManager() {
     }
 
@@ -204,6 +206,7 @@ public final class UIManager {
             if (current == root)
                 return true;
         }
+
         return false;
     }
 

@@ -27,15 +27,16 @@ public class SstSchedulerTest {
     @Test
     public void sharedPrioritiesAndFifoOrderApplyAcrossOwners() throws Exception {
         try (var scheduler = new SstScheduler(1, 16)) {
-            var first = scheduler.newScope();
-            var second = scheduler.newScope();
+            SstScheduler.Scope first = scheduler.newScope();
+            SstScheduler.Scope second = scheduler.newScope();
             var entered = new CountDownLatch(1);
             var release = new CountDownLatch(1);
-            var blocker = submit(first, "blocker", RequestPriority.BACKGROUND_INDEXING, () -> {
+            CompletableFuture<Object> blocker = submit(first, "blocker", RequestPriority.BACKGROUND_INDEXING, () -> {
                 entered.countDown();
                 await(release);
                 return null;
             });
+
             await(entered);
             List<String> order = new ArrayList<>();
             List<CompletableFuture<?>> futures = new ArrayList<>();
@@ -46,6 +47,7 @@ public class SstSchedulerTest {
                 futures.add(submit(first, priority, priority, () -> order.add(priority.name() + "1")));
                 futures.add(submit(second, priority, priority, () -> order.add(priority.name() + "2")));
             }
+
             release.countDown();
             blocker.get(5, TimeUnit.SECONDS);
             CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).get(5, TimeUnit.SECONDS);
@@ -59,22 +61,26 @@ public class SstSchedulerTest {
     @Test
     public void supersessionCancelsAndInterruptsRunningWork() throws Exception {
         try (var scheduler = new SstScheduler(1, 4)) {
-            var scope = scheduler.newScope();
+            SstScheduler.Scope scope = scheduler.newScope();
             var cancellation = new CancellationTokenSource();
-            var context = context(cancellation, Deadline.none());
+            WorkspaceRequestContext context = context(cancellation, Deadline.none());
             var entered = new CountDownLatch(1);
             var interrupted = new CountDownLatch(1);
-            var old = scope.submit("completion", RequestPriority.COMPLETION, context, cancellation, () -> {
-                entered.countDown();
-                try {
-                    new CountDownLatch(1).await();
-                } catch (InterruptedException exception) {
-                    interrupted.countDown();
-                }
-                return "obsolete";
-            });
+            CompletableFuture<String> old = scope.submit("completion", RequestPriority.COMPLETION, context,
+                cancellation, () -> {
+                    entered.countDown();
+                    try {
+                        new CountDownLatch(1).await();
+                    } catch (InterruptedException exception) {
+                        interrupted.countDown();
+                    }
+
+                    return "obsolete";
+                });
+
             await(entered);
-            var replacement = submit(scope, "completion", RequestPriority.COMPLETION, () -> "current");
+            CompletableFuture<String> replacement = submit(scope, "completion", RequestPriority.COMPLETION,
+                () -> "current");
             await(interrupted);
             assertTrue(cancellation.token().isCancellationRequested());
             assertThrows(CancellationException.class, old::join);
@@ -85,7 +91,7 @@ public class SstSchedulerTest {
     @Test
     public void queuedSupersessionReclaimsCapacityWithoutInvokingOldProvider() throws Exception {
         try (var scheduler = new SstScheduler(1, 1)) {
-            var scope = scheduler.newScope();
+            SstScheduler.Scope scope = scheduler.newScope();
             var entered = new CountDownLatch(1);
             var release = new CountDownLatch(1);
             submit(scope, "blocker", RequestPriority.COMPLETION, () -> {
@@ -93,13 +99,16 @@ public class SstSchedulerTest {
                 await(release);
                 return null;
             });
+
             await(entered);
             var invoked = new AtomicBoolean();
-            var old = submit(scope, "same", RequestPriority.COMPLETION, () -> invoked.getAndSet(true));
+            CompletableFuture<Boolean> old = submit(scope, "same", RequestPriority.COMPLETION,
+                () -> invoked.getAndSet(true));
             CompletableFuture<Void> pending = scope.completion();
-            var replacement = submit(scope, "same", RequestPriority.COMPLETION, () -> "new");
+            CompletableFuture<String> replacement = submit(scope, "same", RequestPriority.COMPLETION, () -> "new");
             assertTrue(old.isCancelled());
-            var rejected = submit(scope, "overflow", RequestPriority.COMPLETION, () -> "unexpected");
+            CompletableFuture<String> rejected = submit(scope, "overflow", RequestPriority.COMPLETION,
+                () -> "unexpected");
             assertInstanceOf(RejectedExecutionException.class,
                 assertThrows(ExecutionException.class, () -> rejected.get(5, TimeUnit.SECONDS)).getCause());
             release.countDown();
@@ -112,16 +121,17 @@ public class SstSchedulerTest {
     @Test
     public void closingOneOwnerDoesNotStopOtherOwners() throws Exception {
         try (var scheduler = new SstScheduler(1, 4)) {
-            var scope = scheduler.newScope();
-            var other = scheduler.newScope();
+            SstScheduler.Scope scope = scheduler.newScope();
+            SstScheduler.Scope other = scheduler.newScope();
             var entered = new CountDownLatch(1);
             var cancellation = new CancellationTokenSource();
-            var running = scope.submit("running", RequestPriority.COMPLETION,
+            CompletableFuture<Object> running = scope.submit("running", RequestPriority.COMPLETION,
                 context(cancellation, Deadline.none()), cancellation, () -> {
                     entered.countDown();
                     await(new CountDownLatch(1));
                     return null;
                 });
+
             await(entered);
             scope.close();
             assertTrue(cancellation.token().isCancellationRequested());
@@ -136,11 +146,11 @@ public class SstSchedulerTest {
     @Test
     public void cancellationOfReturnedFutureStopsItsOperation() throws Exception {
         try (var scheduler = new SstScheduler(1, 4)) {
-            var scope = scheduler.newScope();
+            SstScheduler.Scope scope = scheduler.newScope();
             var entered = new CountDownLatch(1);
             var stopped = new CountDownLatch(1);
             var cancellation = new CancellationTokenSource();
-            var future = scope.submit("running", RequestPriority.COMPLETION,
+            CompletableFuture<Object> future = scope.submit("running", RequestPriority.COMPLETION,
                 context(cancellation, Deadline.none()), cancellation, () -> {
                     entered.countDown();
                     try {
@@ -148,8 +158,10 @@ public class SstSchedulerTest {
                     } finally {
                         stopped.countDown();
                     }
+
                     return null;
                 });
+
             await(entered);
             assertTrue(future.cancel(true));
             await(stopped);
@@ -160,17 +172,18 @@ public class SstSchedulerTest {
     @Test
     public void expiredRequestNeverEntersTheProviderAndFailuresDoNotKillWorkers() throws Exception {
         try (var scheduler = new SstScheduler(1, 4)) {
-            var scope = scheduler.newScope();
+            SstScheduler.Scope scope = scheduler.newScope();
             var cancellation = new CancellationTokenSource();
             var invoked = new AtomicBoolean();
-            var expired = scope.submit("expired", RequestPriority.COMPLETION,
+            CompletableFuture<Boolean> expired = scope.submit("expired", RequestPriority.COMPLETION,
                 context(cancellation, Deadline.after(Duration.ZERO)), cancellation, () -> invoked.getAndSet(true));
             assertInstanceOf(DeadlineExceededException.class,
                 assertThrows(CancellationException.class, expired::join).getCause());
             assertFalse(invoked.get());
-            var failure = submit(scope, "failure", RequestPriority.COMPLETION, () -> {
+            CompletableFuture<Object> failure = submit(scope, "failure", RequestPriority.COMPLETION, () -> {
                 throw new IllegalStateException("broken provider");
             });
+
             assertInstanceOf(IllegalStateException.class,
                 assertThrows(ExecutionException.class, () -> failure.get(5, TimeUnit.SECONDS)).getCause());
             assertEquals("healthy", submit(scope, "healthy", RequestPriority.COMPLETION, () -> "healthy")
@@ -181,15 +194,16 @@ public class SstSchedulerTest {
     @Test
     public void schedulerCloseCancelsQueuedAndRunningRequestsAndRejectsScopes() throws Exception {
         try (var scheduler = new SstScheduler(1, 4)) {
-            var scope = scheduler.newScope();
+            SstScheduler.Scope scope = scheduler.newScope();
             var entered = new CountDownLatch(1);
-            var running = submit(scope, "running", RequestPriority.COMPLETION, () -> {
+            CompletableFuture<Object> running = submit(scope, "running", RequestPriority.COMPLETION, () -> {
                 entered.countDown();
                 await(new CountDownLatch(1));
                 return null;
             });
+
             await(entered);
-            var queued = submit(scope, "queued", RequestPriority.COMPLETION, () -> null);
+            CompletableFuture<Object> queued = submit(scope, "queued", RequestPriority.COMPLETION, () -> null);
             scheduler.close();
             assertTrue(running.isCancelled());
             assertTrue(queued.isCancelled());
@@ -200,18 +214,20 @@ public class SstSchedulerTest {
     @Test
     public void completionBarrierIncludesSynchronousPublicationDispatch() throws Exception {
         try (var scheduler = new SstScheduler(1, 4)) {
-            var scope = scheduler.newScope();
+            SstScheduler.Scope scope = scheduler.newScope();
             var releaseProvider = new CountDownLatch(1);
             var enteredCallback = new CountDownLatch(1);
             var releaseCallback = new CountDownLatch(1);
-            var future = submit(scope, "request", RequestPriority.COMPLETION, () -> {
+            CompletableFuture<String> future = submit(scope, "request", RequestPriority.COMPLETION, () -> {
                 await(releaseProvider);
                 return "result";
             });
+
             future.thenAccept(_ -> {
                 enteredCallback.countDown();
                 await(releaseCallback);
             });
+
             CompletableFuture<Void> barrier = scope.completion();
             releaseProvider.countDown();
             await(enteredCallback);
@@ -224,24 +240,27 @@ public class SstSchedulerTest {
     @Test
     public void supersessionAndClosureCannotRevokeAnOutcomeAlreadyBeingDelivered() throws Exception {
         try (var scheduler = new SstScheduler(1, 4)) {
-            var scope = scheduler.newScope();
+            SstScheduler.Scope scope = scheduler.newScope();
             var releaseProvider = new CountDownLatch(1);
             var enteredCallback = new CountDownLatch(1);
             var releaseCallback = new CountDownLatch(1);
             var cancellation = new CancellationTokenSource();
-            var completed = scope.submit("request", RequestPriority.COMPLETION,
+            CompletableFuture<String> completed = scope.submit("request", RequestPriority.COMPLETION,
                 context(cancellation, Deadline.none()), cancellation, () -> {
                     await(releaseProvider);
                     return "committed";
                 });
+
             completed.thenAccept(_ -> {
                 enteredCallback.countDown();
                 await(releaseCallback);
             });
+
             releaseProvider.countDown();
             try {
                 await(enteredCallback);
-                var replacement = submit(scope, "request", RequestPriority.COMPLETION, () -> "new");
+                CompletableFuture<String> replacement = submit(scope, "request", RequestPriority.COMPLETION,
+                    () -> "new");
                 assertEquals("committed", completed.get(5, TimeUnit.SECONDS));
                 assertFalse(cancellation.token().isCancellationRequested());
                 scope.close();
@@ -257,16 +276,19 @@ public class SstSchedulerTest {
     @Test
     public void blockedBackgroundWorkCannotConsumeTheInteractiveReservation() throws Exception {
         try (var scheduler = new SstScheduler(2, 4)) {
-            var scope = scheduler.newScope();
+            SstScheduler.Scope scope = scheduler.newScope();
             var entered = new CountDownLatch(1);
             var release = new CountDownLatch(1);
-            var background = submit(scope, "background", RequestPriority.BACKGROUND_INDEXING, () -> {
-                entered.countDown();
-                await(release);
-                return null;
-            });
+            CompletableFuture<Object> background = submit(scope, "background", RequestPriority.BACKGROUND_INDEXING,
+                () -> {
+                    entered.countDown();
+                    await(release);
+                    return null;
+                });
+
             await(entered);
-            var secondBackground = submit(scope, "another", RequestPriority.BACKGROUND_INDEXING, () -> null);
+            CompletableFuture<Object> secondBackground = submit(scope, "another", RequestPriority.BACKGROUND_INDEXING,
+                () -> null);
             assertEquals("interactive", submit(scope, "completion", RequestPriority.COMPLETION, () -> "interactive")
                 .get(5, TimeUnit.SECONDS));
             assertEquals("highlighting",

@@ -72,6 +72,7 @@ public final class DecodingOutputStream extends OutputStream {
         while (decoder.flush(output).isOverflow()) {
             drain();
         }
+
         drain();
     }
 
@@ -84,6 +85,7 @@ public final class DecodingOutputStream extends OutputStream {
                 drain();
             }
         } while (result.isOverflow());
+
         input.compact();
         drain();
     }

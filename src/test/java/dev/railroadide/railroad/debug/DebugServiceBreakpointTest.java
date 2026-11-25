@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import dev.railroadide.railroad.debug.breakpoint.SourceBreakpoint;
+import dev.railroadide.railroad.debug.jdi.JdiDebugSession;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -43,12 +45,12 @@ public class DebugServiceBreakpointTest {
             "-g", "-d", directory.toString(), source.toString()));
 
         String executable = System.getProperty("os.name").startsWith("Windows") ? "java.exe" : "java";
-        var process = new ProcessBuilder(
+        Process process = new ProcessBuilder(
             Path.of(System.getProperty("java.home"), "bin", executable).toString(),
             "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:0",
             "-cp", directory.toString(), "BreakpointTarget")
             .redirectErrorStream(true).start();
-        var output = new LinkedBlockingQueue<String>();
+        BlockingQueue<String> output = new LinkedBlockingQueue<String>();
         Thread.ofPlatform().daemon().start(() -> {
             try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 reader.lines().forEach(output::add);
@@ -63,9 +65,9 @@ public class DebugServiceBreakpointTest {
             int port = Integer.parseInt(address.substring(address.lastIndexOf(':') + 1).trim());
             var breakpoints = new BreakpointService();
             breakpoints.add(source, 5);
-            var stops = new LinkedBlockingQueue<DebugSessionEvent.Suspended>();
+            BlockingQueue<DebugSessionEvent.Suspended> stops = new LinkedBlockingQueue<DebugSessionEvent.Suspended>();
             var resolver = new SourceResolver(List.of(directory), DependencySourceIndex.EMPTY);
-            var session = debug.startSession(new DebugEndpoint("127.0.0.1", port), resolver,
+            JdiDebugSession session = debug.startSession(new DebugEndpoint("127.0.0.1", port), resolver,
                 breakpoints, _ -> true, event -> {
                     if (event instanceof DebugSessionEvent.Suspended suspended) {
                         stops.add(suspended);
@@ -91,12 +93,12 @@ public class DebugServiceBreakpointTest {
             sendInput(process);
             assertStop(stops, DebugStopReason.BREAKPOINT);
             String original = Files.readString(source);
-            var breakpoint = breakpoints.get(source, 5).orElseThrow();
-            try (var tracking = breakpoints.trackDocument(source, original)) {
+            SourceBreakpoint breakpoint = breakpoints.get(source, 5).orElseThrow();
+            try (BreakpointService.DocumentTracking tracking = breakpoints.trackDocument(source, original)) {
                 tracking.update("\n" + original);
                 assertEquals(breakpoint.id(), breakpoints.get(source, 6).orElseThrow().id());
                 session.resume().get(10, TimeUnit.SECONDS);
-                var movedStop = assertStop(stops, DebugStopReason.BREAKPOINT);
+                DebugSessionEvent.Suspended movedStop = assertStop(stops, DebugStopReason.BREAKPOINT);
                 assertEquals(6, session.stackFrames(movedStop.threadId()).get(10, TimeUnit.SECONDS).getFirst().line());
                 session.resume().get(10, TimeUnit.SECONDS);
                 awaitOutput(output, "moved");
@@ -106,6 +108,7 @@ public class DebugServiceBreakpointTest {
                 movedStop = assertStop(stops, DebugStopReason.BREAKPOINT);
                 assertEquals(6, session.stackFrames(movedStop.threadId()).get(10, TimeUnit.SECONDS).getFirst().line());
             }
+
             debug.terminateActiveSession().get(10, TimeUnit.SECONDS);
             assertTrue(debug.getActiveSession().isEmpty());
         } finally {
@@ -141,6 +144,7 @@ public class DebugServiceBreakpointTest {
             if (line.startsWith(prefix))
                 return line;
         }
+
         throw new AssertionError("Missing debuggee output: " + prefix);
     }
 }

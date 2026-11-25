@@ -65,6 +65,7 @@ public final class ProjectStructure {
                 builder.gradleModule(module.getProjectDir(), module.getContentRoots());
             }
         }
+
         return builder.build();
     }
 
@@ -127,6 +128,7 @@ public final class ProjectStructure {
                     excluded(excluded.toPath());
                 }
             }
+
             excluded(moduleDir.resolve("build"));
             excluded(moduleDir.resolve(".gradle"));
             return this;
@@ -137,7 +139,7 @@ public final class ProjectStructure {
             Iterable<? extends RailroadSourceDirectory> directories,
             Role role
         ) {
-            for (var directory : directories) {
+            for (RailroadSourceDirectory directory : directories) {
                 sourceDirectory(moduleDir, directory.getDirectory().toPath(),
                     directory.isGenerated() ? Role.GENERATED_SOURCES : role);
             }
@@ -157,11 +159,13 @@ public final class ProjectStructure {
             directories.putIfAbsent(normalized, role);
             if (role == Role.GENERATED_SOURCES)
                 return this;
+
             Path owner = normalize(module);
             Path sourceSet = normalized.getParent();
             if (sourceSet != null && sourceSet.startsWith(owner) && !sourceSet.equals(owner)) {
                 sourceSets.putIfAbsent(sourceSet, Role.SOURCE_SET);
             }
+
             return this;
         }
 
@@ -187,8 +191,8 @@ public final class ProjectStructure {
             for (Path module : modules) {
                 roles.put(module, Role.MODULE);
             }
+
             return new ProjectStructure(roles);
         }
-
     }
 }

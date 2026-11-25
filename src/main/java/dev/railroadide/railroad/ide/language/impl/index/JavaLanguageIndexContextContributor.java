@@ -51,6 +51,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
             return new JavaLanguageIndexContext(resolveSourceRoots(project, gradleModel),
                 resolveGeneratedRoots(project, gradleModel), List.of(), List.of(), List.of(), null,
                 gradleModel.map(ProjectWorkspaceConfiguration::captureGradleConfiguration).orElse(null));
+
         return new JavaLanguageIndexContext(
             resolveSourceRoots(project, gradleModel),
             resolveGeneratedRoots(project, gradleModel),
@@ -72,6 +73,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
     public JavaLanguageIndexContext resolveWorkspace(Project project) {
         if (project.hasFacet(FacetManager.GRADLE) || !project.hasFacet(FacetManager.MAVEN))
             return (JavaLanguageIndexContext) resolve(project);
+
         Model model = MAVEN_MODELS.loadEffectiveModel(project.getPath())
             .orElseThrow(() -> new IllegalStateException("Cannot resolve Maven model for " + project.getPath()));
         List<Path> dependencies = new ArrayList<>();
@@ -259,6 +261,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
                 }
             });
         }
+
         try {
             for (File jar : fetch.fetch()) {
                 addReadableFile(roots, jar.toPath());
@@ -266,6 +269,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         } catch (CoursierError error) {
             if (failOnError)
                 throw new IllegalStateException("Cannot resolve Maven dependencies for " + project.getPath(), error);
+
             Railroad.LOGGER.error("Error resolving Maven dependencies for {}", project.getPath(), error);
         }
     }
@@ -382,6 +386,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         if (cachedModel.isEmpty()) {
             models.refreshModel(false);
         }
+
         return cachedModel;
     }
 }

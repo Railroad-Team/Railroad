@@ -89,6 +89,7 @@ public class Form {
         if (customSpacing) {
             vbox.setSpacing(spacing);
         }
+
         if (customPadding) {
             vbox.setPadding(padding);
         }
@@ -193,7 +194,7 @@ public class Form {
          * @see #appendSection(FormSection.Builder)
          */
         public Builder appendSection(String title, FormComponent<?, ?, ?, ?>... formComponents) {
-            var builder = new FormSection.Builder().title(title);
+            FormSection.Builder builder = new FormSection.Builder().title(title);
             Arrays.stream(formComponents).forEach(builder::appendComponent);
             return appendSection(builder);
         }

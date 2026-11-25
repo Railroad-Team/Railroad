@@ -82,7 +82,7 @@ public interface SignatureHelpProvider {
         int caretPosition,
         boolean includeOverloads
     ) {
-        var result = compute(context, caretPosition);
+        FeatureResult<SignatureHelp> result = compute(context, caretPosition);
         return new FeatureResult<>(result.context(), result.value() == null ? List.of() : List.of(result.value()));
     }
 }

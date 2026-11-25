@@ -46,6 +46,7 @@ import dev.railroadide.railroad.ide.sst.ast.typeref.*;
  *         for (AstNode child : node.children()) {
  *             child.accept(this);
  *         }
+ *
  *         return null;
  *     }
  *

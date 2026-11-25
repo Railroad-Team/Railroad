@@ -43,6 +43,7 @@ public record KeybindData(KeyCode keyCode, MouseButton mouseButton, KeyCombinati
     public KeyCodeCombination getKeyCodeCombination() {
         if (keyCode == null)
             return null;
+
         return modifiers == null || modifiers.length == 0
             ? new KeyCodeCombination(keyCode)
             : new KeyCodeCombination(keyCode, modifiers);
@@ -77,6 +78,7 @@ public record KeybindData(KeyCode keyCode, MouseButton mouseButton, KeyCombinati
                     case ANY -> true;
                 };
         }
+
         return !down;
     }
 }

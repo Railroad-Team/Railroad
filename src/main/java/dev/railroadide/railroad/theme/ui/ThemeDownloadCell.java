@@ -122,8 +122,10 @@ public class ThemeDownloadCell extends ListCell<Theme> {
                     return String.format("%.1f MB", sizeMB);
                 }
             }
+
             return "";
         });
+
         themeSizeLabel.textProperty().bind(themeSize);
 
         themeProperty.addListener((_, _, newValue) -> {

@@ -40,6 +40,7 @@ public final class CoreImportInspection implements JavaInspectionRuleProvider {
     public List<JavaInspectionRule> rules() {
         return RULES;
     }
+
     private static JavaInspectionRule rule(JavaSemanticRule semanticRule) {
         return new SimpleJavaInspectionRule(
             semanticRule.id(),
@@ -76,6 +77,7 @@ public final class CoreImportInspection implements JavaInspectionRuleProvider {
                 importEntry);
             if (previous == null)
                 continue;
+
             if (previous.qualifiedTarget().equals(importEntry.qualifiedTarget()))
                 continue;
 
@@ -104,10 +106,12 @@ public final class CoreImportInspection implements JavaInspectionRuleProvider {
                     reporter.report(importEntry.targetNode(), importEntry.ownerName());
                     continue;
                 }
+
                 if (!importEntry.isWildcard()
                     && !importIndex.hasResolvableStaticMember(importEntry.ownerName(), importEntry.importedName())) {
                     reporter.report(importEntry.targetNode(), importEntry.qualifiedTarget());
                 }
+
                 continue;
             }
 
@@ -116,6 +120,7 @@ public final class CoreImportInspection implements JavaInspectionRuleProvider {
                     && !importIndex.isResolvableType(importEntry.ownerName())) {
                     reporter.report(importEntry.targetNode(), importEntry.ownerName() + ".*");
                 }
+
                 continue;
             }
 

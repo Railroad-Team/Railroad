@@ -144,7 +144,7 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
         }
 
         var statusEvent = new GradleTaskStatusEvent(id, newState, messageKey, messageArgs);
-        for (var listener : statusListeners) {
+        for (Consumer<GradleTaskStatusEvent> listener : statusListeners) {
             listener.accept(statusEvent);
         }
     }
@@ -158,7 +158,7 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
         outputBuffer.add(output);
 
         var outputEvent = new GradleTaskOutputEvent(id, state, output);
-        for (var listener : outputListeners) {
+        for (Consumer<GradleTaskOutputEvent> listener : outputListeners) {
             listener.accept(outputEvent);
         }
     }
@@ -172,7 +172,7 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
         errorBuffer.add(error);
 
         var errorEvent = new GradleTaskErrorEvent(id, state, error);
-        for (var listener : errorListeners) {
+        for (Consumer<GradleTaskErrorEvent> listener : errorListeners) {
             listener.accept(errorEvent);
         }
     }

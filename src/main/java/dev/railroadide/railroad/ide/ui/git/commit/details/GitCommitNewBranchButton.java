@@ -169,7 +169,7 @@ public class GitCommitNewBranchButton extends RRButton {
                 } else {
                     // This should never happen since the confirm button is disabled when the branch name is
                     // invalid, but we check just in case
-                    var errorDialogBuilder = DialogBuilder.create()
+                    DialogBuilder errorDialogBuilder = DialogBuilder.create()
                         .title("railroad.git.commit.details.new_branch_dialog.error_invalid_branch_name")
                         .content("railroad.git.commit.details.new_branch_dialog.error_invalid_branch_name_message");
 
@@ -181,7 +181,7 @@ public class GitCommitNewBranchButton extends RRButton {
 
         var dialog = WindowBuilder.createDialog("railroad.git.commit.details.new_branch_dialog.title",
             dialogBuilder);
-        var confirmButton = (RRButton) dialog.getScene().lookup(".rr-button.success");
+        RRButton confirmButton = (RRButton) dialog.getScene().lookup(".rr-button.success");
         if (confirmButton != null) {
             confirmButton.setDisable(true);
         }

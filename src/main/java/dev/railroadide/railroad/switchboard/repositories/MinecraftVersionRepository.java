@@ -20,8 +20,7 @@ import java.util.concurrent.ExecutionException;
  * @param cache the cache used for version metadata
  */
 public record MinecraftVersionRepository(SwitchboardClient client, CacheManager cache)
-    implements
-        SwitchboardRepository {
+    implements SwitchboardRepository {
     /**
      * Returns all Minecraft versions.
      *

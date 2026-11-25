@@ -12,7 +12,7 @@ public class CompletionResultTest {
     @Test
     public void completionCandidatesAndSignatureParametersAreImmutableSnapshots() {
         var item = new CompletionItem("value", "value");
-        var items = new ArrayList<>(List.of(item));
+        List<CompletionItem> items = new ArrayList<>(List.of(item));
         var completion = new CompletionResult(0, items);
         items.clear();
         assertEquals(List.of(item), completion.items());
@@ -20,7 +20,7 @@ public class CompletionResultTest {
         assertThrows(IllegalArgumentException.class, () -> new CompletionResult(-1, List.of(item)));
 
         var parameter = new SignatureHelp.ParameterInfo("text", "value", false);
-        var parameters = new ArrayList<>(List.of(parameter));
+        List<SignatureHelp.ParameterInfo> parameters = new ArrayList<>(List.of(parameter));
         var signature = new SignatureHelp("", "", "print", parameters, 0, false, "unit", false);
         parameters.clear();
         assertEquals(List.of(parameter), signature.parameters());

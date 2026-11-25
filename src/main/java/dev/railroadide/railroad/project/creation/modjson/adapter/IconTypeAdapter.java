@@ -41,6 +41,7 @@ public class IconTypeAdapter extends TypeAdapter<IconInfo> {
                 String path = in.nextString();
                 iconMap.put(width, path);
             }
+
             in.endObject();
 
             return new IconInfo(iconMap);
@@ -78,6 +79,7 @@ public class IconTypeAdapter extends TypeAdapter<IconInfo> {
             for (Map.Entry<String, String> entry : iconMap.entrySet()) {
                 out.name(entry.getKey()).value(entry.getValue());
             }
+
             out.endObject();
         }
     }

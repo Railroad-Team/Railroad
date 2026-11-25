@@ -29,6 +29,7 @@ public record JavaSemanticRule(
         messageTemplate = Objects.requireNonNull(messageTemplate, "messageTemplate");
         if (id.isBlank())
             throw new IllegalArgumentException("id cannot be blank");
+
         if (messageTemplate.isBlank())
             throw new IllegalArgumentException("messageTemplate cannot be blank");
     }

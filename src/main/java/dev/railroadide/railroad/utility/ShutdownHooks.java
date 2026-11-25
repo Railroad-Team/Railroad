@@ -2,6 +2,7 @@ package dev.railroadide.railroad.utility;
 
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.List;
 
 /**
  * A utility class for managing shutdown hooks.
@@ -11,7 +12,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * It provides methods to add hooks, register hooks with automatic removal, and run all registered hooks.
  */
 public final class ShutdownHooks {
-    private static final CopyOnWriteArrayList<Runnable> HOOKS = new CopyOnWriteArrayList<>();
+    private static final List<Runnable> HOOKS = new CopyOnWriteArrayList<>();
 
     private ShutdownHooks() {
     }

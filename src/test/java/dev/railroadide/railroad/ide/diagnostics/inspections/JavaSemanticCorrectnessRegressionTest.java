@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -76,7 +77,7 @@ public class JavaSemanticCorrectnessRegressionTest {
 
     @Test
     public void patternBindingsAreNotVisibleOnUnmatchedPathsOrAfterNormalBranches() {
-        var errors = errors("""
+        List<SemanticDiagnostic> errors = errors("""
             class Example {
                 void run(Object input) {
                     if (input instanceof String text) {} else { consume(text); }
@@ -120,7 +121,7 @@ public class JavaSemanticCorrectnessRegressionTest {
 
     @Test
     public void boundedAssignmentsRejectUnrelatedTypesReverseAssignmentsAndShadowedBounds() {
-        var errors = errors("""
+        List<SemanticDiagnostic> errors = errors("""
             class Example<T extends Number> {
                 <T extends CharSequence> void run(T value, Number number) {
                     Number wrong = value;
@@ -134,7 +135,7 @@ public class JavaSemanticCorrectnessRegressionTest {
 
     @Test
     public void staticImportedBinaryVarargsAcceptZeroOneAndMultipleLambdas() throws Exception {
-        var junit = Path
+        Path junit = Path
             .of(Assertions.class.getProtectionDomain().getCodeSource().getLocation().toURI());
         var index = new CompositeJavaSymbolIndex(List.of(JavaLibrarySymbolIndex.build(List.of(junit)),
             JavaJdkSymbolIndex.fromCurrentRuntime()));
@@ -157,7 +158,7 @@ public class JavaSemanticCorrectnessRegressionTest {
             """);
         var index = new CompositeJavaSymbolIndex(List.of(new JavaProjectSemanticIndexer().build(List.of(file)),
             JavaJdkSymbolIndex.fromCurrentRuntime()));
-        var errors = errors("""
+        List<SemanticDiagnostic> errors = errors("""
             import static sample.Calls.*;
             class Example {
                 void run() {
@@ -172,7 +173,7 @@ public class JavaSemanticCorrectnessRegressionTest {
 
     @Test
     public void localArraysAreNotVarargsAndExpandedVarargsStillCheckElementTypes() {
-        var errors = errors("""
+        List<SemanticDiagnostic> errors = errors("""
             class Example {
                 void array(String[] values) {}
                 void many(String... values) {}
@@ -215,7 +216,7 @@ public class JavaSemanticCorrectnessRegressionTest {
         var model = JavaSemanticAnalyzer.analyzeFacts(source);
         var context = new JavaRuleContext(Path.of("Example.java"), source, model);
         // Assignment validation above also verifies the selected return type, without relying on declaration order.
-        var returnTypes = context.nodesOfKind("JAVA_METHOD_INVOCATION_EXPRESSION").stream()
+        List<String> returnTypes = context.nodesOfKind("JAVA_METHOD_INVOCATION_EXPRESSION").stream()
             .map(node -> context.inferredType(node).orElseThrow().displayName()).toList();
         assertTrue(returnTypes.contains("java.util.List"), () -> returnTypes.toString());
     }
@@ -247,7 +248,7 @@ public class JavaSemanticCorrectnessRegressionTest {
                 }
             }
             """, new CoreNameResolutionInspection(), new CoreCallResolutionInspection());
-        var errors = errors("""
+        List<SemanticDiagnostic> errors = errors("""
             class Example {
                 void run(Object input) {
                     while (input instanceof String text) { break; }
@@ -275,7 +276,7 @@ public class JavaSemanticCorrectnessRegressionTest {
         String source = "class Example { Object value = new sample.Constructed(\"one\", \"two\"); }";
         var model = JavaSemanticAnalyzer.analyzeFacts(source, index);
         var context = new JavaRuleContext(Path.of("Example.java"), source, model, index);
-        var creation = context.nodesOfKind("JAVA_CLASS_INSTANCE_CREATION_EXPRESSION").getFirst();
+        SyntaxNode creation = context.nodesOfKind("JAVA_CLASS_INSTANCE_CREATION_EXPRESSION").getFirst();
         assertTrue(context.resolvedSymbol(creation).isPresent());
     }
 
@@ -312,7 +313,7 @@ public class JavaSemanticCorrectnessRegressionTest {
     }
 
     private static void assertClean(String source, JavaInspectionRuleProvider... providers) {
-        var errors = errors(source, null, providers);
+        List<SemanticDiagnostic> errors = errors(source, null, providers);
         assertTrue(errors.isEmpty(), () -> errors.toString());
     }
 

@@ -18,16 +18,27 @@ import java.util.concurrent.CompletableFuture;
  * @param baseUrl the normalized base URL of the Switchboard service
  */
 public record SwitchboardClient(String baseUrl) {
-    /** Type token for a JSON list of version strings. */
+    /**
+     * Type token for a JSON list of version strings.
+     */
     public static final TypeToken<List<String>> LIST_OF_STRINGS = new TypeToken<>() {
     };
-    /** Type token for a JSON list of Fabric Loader versions. */
+
+    /**
+     * Type token for a JSON list of Fabric Loader versions.
+     */
     public static final TypeToken<List<FabricLoaderVersion>> LIST_OF_FABRIC_LOADER_VERSIONS = new TypeToken<>() {
     };
-    /** Type token for a JSON list of Parchment versions. */
+
+    /**
+     * Type token for a JSON list of Parchment versions.
+     */
     public static final TypeToken<List<ParchmentVersion>> LIST_OF_PARCHMENT_VERSIONS = new TypeToken<>() {
     };
-    /** Type token for Parchment versions grouped by Minecraft version. */
+
+    /**
+     * Type token for Parchment versions grouped by Minecraft version.
+     */
     public static final TypeToken<Map<String, List<ParchmentVersion>>> MAP_OF_PARCHMENT_VERSIONS = new TypeToken<>() {
     };
 

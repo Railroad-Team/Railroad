@@ -53,14 +53,14 @@ public class GradleDebugIntegrationTest {
         for (int iteration = 0; iteration < 2; iteration++) {
             var breakpoints = new BreakpointService();
             breakpoints.add(source, 5);
-            try (var build = start(":run")) {
-                var stops = new LinkedBlockingQueue<DebugSessionEvent.Suspended>();
-                var session = build.attach(sources, breakpoints, stops);
-                var stop = stops.poll(60, TimeUnit.SECONDS);
+            try (Build build = start(":run")) {
+                BlockingQueue<DebugSessionEvent.Suspended> stops = new LinkedBlockingQueue<DebugSessionEvent.Suspended>();
+                JdiDebugSession session = build.attach(sources, breakpoints, stops);
+                DebugSessionEvent.Suspended stop = stops.poll(60, TimeUnit.SECONDS);
                 assertNotNull(stop, build.output.toString());
                 assertEquals(DebugStopReason.BREAKPOINT, stop.reason());
-                var frame = session.stackFrames(stop.threadId()).get(10, TimeUnit.SECONDS).getFirst();
-                var variables = session.variables(frame.id()).get(10, TimeUnit.SECONDS);
+                DebugFrame frame = session.stackFrames(stop.threadId()).get(10, TimeUnit.SECONDS).getFirst();
+                List<DebugVariable> variables = session.variables(frame.id()).get(10, TimeUnit.SECONDS);
                 assertTrue(variables.stream().anyMatch(value -> value.name().equals("x") && value.value().equals("5")));
                 assertTrue(
                     variables.stream().anyMatch(value -> value.name().equals("y") && value.value().equals("10")));
@@ -111,9 +111,9 @@ public class GradleDebugIntegrationTest {
         for (int iteration = 0; iteration < 2; iteration++) {
             var breakpoints = new BreakpointService();
             breakpoints.add(source, 5);
-            try (var build = start(":test")) {
-                var stops = new LinkedBlockingQueue<DebugSessionEvent.Suspended>();
-                var session = build.attach(sources, breakpoints, stops);
+            try (Build build = start(":test")) {
+                BlockingQueue<DebugSessionEvent.Suspended> stops = new LinkedBlockingQueue<DebugSessionEvent.Suspended>();
+                JdiDebugSession session = build.attach(sources, breakpoints, stops);
                 assertNotNull(stops.poll(60, TimeUnit.SECONDS), build.output.toString());
                 session.resume().get(10, TimeUnit.SECONDS);
                 build.completion.get(60, TimeUnit.SECONDS);
@@ -125,13 +125,15 @@ public class GradleDebugIntegrationTest {
     public void unsupportedTaskFailsBeforeAttachmentWithoutWaitingForTimeout() throws Exception {
         Files.writeString(directory.resolve("settings.gradle"), "rootProject.name = 'unsupported'");
         Files.writeString(directory.resolve("build.gradle"), "plugins { id 'java' }");
-        try (var build = start(":compileJava")) {
+        try (Build build = start(":compileJava")) {
             var debug = new DebugService();
-            var attachment = debug.startSession(new DebugEndpoint("127.0.0.1", build.port),
+            CompletableFuture<JdiDebugSession> attachment = debug.startSession(
+                new DebugEndpoint("127.0.0.1", build.port),
                 new SourceResolver(List.of(directory), DependencySourceIndex.EMPTY), new BreakpointService(),
                 _ -> true, _ -> {
                 }, Duration.ofMinutes(1), build.completion::isDone);
-            var failure = assertThrows(ExecutionException.class, () -> build.completion.get(60, TimeUnit.SECONDS));
+            ExecutionException failure = assertThrows(ExecutionException.class,
+                () -> build.completion.get(60, TimeUnit.SECONDS));
             assertTrue(messages(failure).contains("Only JavaExec and Test"), messages(failure));
             assertThrows(ExecutionException.class, () -> attachment.get(3, TimeUnit.SECONDS));
             assertTrue(debug.getActiveSession().isEmpty());
@@ -147,9 +149,10 @@ public class GradleDebugIntegrationTest {
         try (var socket = new ServerSocket(0)) {
             port = socket.getLocalPort();
         }
+
         Path script = Files.createTempFile(directory, "debug-", ".init.gradle");
         Files.writeString(script, GradleRunConfigurationType.debugInitScript(task, port));
-        var connection = GradleConnector.newConnector().forProjectDirectory(directory.toFile())
+        ProjectConnection connection = GradleConnector.newConnector().forProjectDirectory(directory.toFile())
             .useInstallation(new File(System.getProperty("railroad.test.gradleHome"))).connect();
         var build = new Build(port, script, connection);
         connection.newBuild().forTasks(task).setJavaHome(new File(System.getProperty("java.home")))
@@ -160,10 +163,12 @@ public class GradleDebugIntegrationTest {
                 public void onComplete(Void result) {
                     build.completion.complete(null);
                 }
+
                 public void onFailure(GradleConnectionException failure) {
                     build.completion.completeExceptionally(failure);
                 }
             });
+
         return build;
     }
 

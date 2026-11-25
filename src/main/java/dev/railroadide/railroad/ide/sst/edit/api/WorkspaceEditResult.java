@@ -31,11 +31,17 @@ public record WorkspaceEditResult(Status status, List<WorkspaceEditProblem> prob
         return status == Status.APPLIED;
     }
 
-    /** Overall outcome of an application attempt. */
+    /**
+     * Overall outcome of an application attempt.
+     */
     public enum Status {
-        /** Every change was applied and published. */
+        /**
+         * Every change was applied and published.
+         */
         APPLIED,
-        /** Validation failed before anything was changed. */
+        /**
+         * Validation failed before anything was changed.
+         */
         REJECTED,
         /**
          * A step failed after mutation began and every completed step was reverted. Reverted documents hold their

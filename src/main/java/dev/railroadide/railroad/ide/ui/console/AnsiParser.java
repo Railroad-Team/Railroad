@@ -22,6 +22,7 @@ public final class AnsiParser {
         {127, 127, 127}, {255, 0, 0}, {0, 255, 0}, {255, 255, 0},
         {92, 92, 255}, {255, 0, 255}, {0, 255, 255}, {255, 255, 255}
     };
+
     private static final int[] CUBE_LEVELS = {0, 95, 135, 175, 215, 255};
 
     private final StringBuilder sequence = new StringBuilder();
@@ -37,7 +38,7 @@ public final class AnsiParser {
      */
     public List<Token> feed(CharSequence input) {
         Objects.requireNonNull(input, "input");
-        var tokens = new ArrayList<Token>();
+        List<Token> tokens = new ArrayList<Token>();
         var text = new StringBuilder();
         for (int index = 0; index < input.length(); index++) {
             char character = input.charAt(index);
@@ -49,20 +50,25 @@ public final class AnsiParser {
                             text.append('\n');
                             continue;
                         }
+
                         flush(text, tokens);
                         tokens.add(CarriageReturn.INSTANCE);
                     }
+
                     readText(character, text, tokens);
                 }
+
                 case ESCAPE -> state = switch (character) {
                     case '[' -> {
                         sequence.setLength(0);
                         yield State.CSI;
                     }
+
                     case ']' -> State.OSC;
                     case '(', ')', '*', '+' -> State.CHARSET;
                     default -> State.TEXT;
                 };
+
                 case CHARSET -> state = State.TEXT;
                 case CSI -> readControlSequence(character, text, tokens);
                 case OSC -> {
@@ -72,9 +78,11 @@ public final class AnsiParser {
                         state = State.OSC_ESCAPE;
                     }
                 }
+
                 case OSC_ESCAPE -> state = character == '\\' ? State.TEXT : State.OSC;
             }
         }
+
         flush(text, tokens);
         return tokens;
     }
@@ -104,6 +112,7 @@ public final class AnsiParser {
                 flush(text, tokens);
                 state = State.ESCAPE;
             }
+
             case '\r' -> pendingCarriageReturn = true;
             case '\n', '\t' -> text.append(character);
             default -> {
@@ -120,6 +129,7 @@ public final class AnsiParser {
                 flush(text, tokens);
                 applySelectGraphicRendition(sequence.toString());
             }
+
             state = State.TEXT;
         } else if (sequence.length() >= MAX_SEQUENCE_LENGTH) {
             state = State.TEXT;
@@ -138,6 +148,7 @@ public final class AnsiParser {
         } else {
             tokens.add(new Text(text.toString(), style));
         }
+
         text.setLength(0);
     }
 
@@ -146,6 +157,7 @@ public final class AnsiParser {
             style = AnsiStyle.PLAIN;
             return;
         }
+
         if (!Character.isDigit(parameters.charAt(0)) && parameters.charAt(0) != ';')
             return;
 
@@ -171,6 +183,7 @@ public final class AnsiParser {
                     style = code == 38 ? style.withForeground(color) : style.withBackground(color);
                     index += consumed;
                 }
+
                 default -> {
                     if (code >= 30 && code <= 37) {
                         style = style.withForeground(code - 30);
@@ -249,6 +262,7 @@ public final class AnsiParser {
                 nearestDistance = distance;
             }
         }
+
         return nearest;
     }
 

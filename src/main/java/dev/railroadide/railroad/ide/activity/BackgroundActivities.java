@@ -34,7 +34,9 @@ public final class BackgroundActivities {
         this(System::nanoTime);
     }
 
-    /** Creates a registry with a monotonic nanosecond clock for estimating phase durations. */
+    /**
+     * Creates a registry with a monotonic nanosecond clock for estimating phase durations.
+     */
     public BackgroundActivities(LongSupplier nanoTime) {
         this.nanoTime = Objects.requireNonNull(nanoTime);
     }
@@ -60,6 +62,7 @@ public final class BackgroundActivities {
             handle = new Handle(++nextId, Objects.requireNonNull(titleKey));
             running.put(handle.id, handle);
         }
+
         notifyListeners();
         return handle;
     }
@@ -113,11 +116,14 @@ public final class BackgroundActivities {
         public double fraction() {
             if (total == 0)
                 return 1;
+
             return total > 0 ? (double) completed / total : -1;
         }
     }
 
-    /** Stops notifications when closed. */
+    /**
+     * Stops notifications when closed.
+     */
     @FunctionalInterface
     public interface Subscription extends AutoCloseable {
         @Override
@@ -144,14 +150,17 @@ public final class BackgroundActivities {
             Objects.requireNonNull(unit);
             if (initial < 0 || total < -1 || total >= 0 && initial > total)
                 throw new IllegalArgumentException("Invalid progress range");
+
             Phase next;
             synchronized (BackgroundActivities.this) {
                 if (phase == null)
                     return _ -> {
                     };
+
                 next = new Phase(label, unit, initial, total);
                 phase = next;
             }
+
             notifyListeners();
             return next;
         }
@@ -161,9 +170,11 @@ public final class BackgroundActivities {
             synchronized (BackgroundActivities.this) {
                 if (phase == null)
                     return;
+
                 phase = null;
                 running.remove(id);
             }
+
             notifyListeners();
         }
 
@@ -192,6 +203,7 @@ public final class BackgroundActivities {
                     long done = Math.min(value, total);
                     if (phase != this || done <= completed)
                         return;
+
                     completed = done;
                     samples++;
                     sampledAt = nanoTime.getAsLong();
@@ -202,6 +214,7 @@ public final class BackgroundActivities {
                         estimate = (long) Math.ceil(seconds * (total - done) / (done - initial));
                     }
                 }
+
                 notifyListeners();
             }
 

@@ -8,7 +8,9 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** Immutable typed services. Absence means unsupported; duplicate names are rejected. */
+/**
+ * Immutable typed services. Absence means unsupported; duplicate names are rejected.
+ */
 public final class CapabilityRegistry {
     private final Map<String, Entry> entries;
 
@@ -47,8 +49,10 @@ public final class CapabilityRegistry {
         Entry entry = entries.get(key.id());
         if (entry == null)
             return Optional.empty();
+
         if (!entry.key.equals(key))
             throw new IllegalArgumentException("Conflicting capability type for " + key.id());
+
         return Optional.of(key.type().cast(entry.value));
     }
 
@@ -95,6 +99,7 @@ public final class CapabilityRegistry {
             key.type().cast(value);
             if (entries.putIfAbsent(key.id(), new Entry(key, value)) != null)
                 throw new IllegalArgumentException("Duplicate capability: " + key.id());
+
             return this;
         }
 

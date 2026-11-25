@@ -14,7 +14,9 @@ import java.util.*;
 import dev.railroadide.railroad.ide.sst.document.api.ContentKind;
 import javafx.scene.control.Label;
 
-/** Host presentation and storage adapter over the single language runtime. */
+/**
+ * Host presentation and storage adapter over the single language runtime.
+ */
 public final class LanguageSupportRegistry {
     private static final LanguageRuntime RUNTIME = new LanguageRuntime();
 
@@ -212,6 +214,7 @@ public final class LanguageSupportRegistry {
             if (contentKind() != ContentKind.TEXT)
                 return new EditorOpenView(new Label("Binary document: " + file.getFileName()),
                     null, languageId());
+
             var editor = new CodeEditorPane(project, documentId, file,
                 CodeEditorConfig.fromLanguageSupport(project, file, this, null)) {
                 @Override
@@ -219,6 +222,7 @@ public final class LanguageSupportRegistry {
                     return textChanged;
                 }
             };
+
             return new EditorOpenView(editor, editor, languageId());
         }
     }

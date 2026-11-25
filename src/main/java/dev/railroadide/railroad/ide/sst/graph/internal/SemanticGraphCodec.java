@@ -6,7 +6,9 @@ import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 
-/** Internal codec for the disposable index snapshot; record constructors validate loaded facts. */
+/**
+ * Internal codec for the disposable index snapshot; record constructors validate loaded facts.
+ */
 public final class SemanticGraphCodec {
     private static final int MAXIMUM_RECORD_BYTES = 64 * 1024 * 1024;
     private static final Gson GSON = new GsonBuilder()
@@ -30,9 +32,11 @@ public final class SemanticGraphCodec {
             output.writeInt(-1);
             return;
         }
+
         byte[] bytes = GSON.toJson(value).getBytes(StandardCharsets.UTF_8);
         if (bytes.length > MAXIMUM_RECORD_BYTES)
             throw new IOException("Semantic index record exceeds cache size limit");
+
         output.writeInt(bytes.length);
         output.write(bytes);
     }
@@ -50,8 +54,10 @@ public final class SemanticGraphCodec {
         int length = input.readInt();
         if (length == -1)
             return null;
+
         if (length < 0 || length > MAXIMUM_RECORD_BYTES)
             throw new IOException("Invalid semantic index record length");
+
         byte[] bytes = new byte[length];
         input.readFully(bytes);
         try {
@@ -74,9 +80,7 @@ public final class SemanticGraphCodec {
     }
 
     private static final class DocumentUriAdapter
-        implements
-            JsonSerializer<DocumentUri>,
-            JsonDeserializer<DocumentUri> {
+        implements JsonSerializer<DocumentUri>, JsonDeserializer<DocumentUri> {
         @Override
         public JsonElement serialize(DocumentUri value, Type type, JsonSerializationContext context) {
             return new JsonPrimitive(value.toString());
@@ -101,12 +105,13 @@ public final class SemanticGraphCodec {
                 json.addProperty("line", text.line());
                 json.addProperty("column", text.column());
             }
+
             return json;
         }
 
         @Override
         public Location<?> deserialize(JsonElement value, Type type, JsonDeserializationContext context) {
-            var json = value.getAsJsonObject();
+            JsonObject json = value.getAsJsonObject();
             var id = DocumentId.parse(json.get("id").getAsString());
             var version = new DocumentVersion(json.get("version").getAsLong());
             int start = json.get("start").getAsInt();

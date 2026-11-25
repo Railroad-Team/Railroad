@@ -33,16 +33,19 @@ public class RunSessionTest {
                     for (int index = 0; index < chunksPerWriter; index++) {
                         session.append(RunOutput.Kind.STDOUT, id + ":" + index + "\n");
                     }
+
                     return null;
                 }));
             }
-            var received = Collections.synchronizedList(new ArrayList<RunOutput>());
+
+            List<RunOutput> received = Collections.synchronizedList(new ArrayList<RunOutput>());
             start.countDown();
             Thread.sleep(5);
             Runnable unsubscribe = session.subscribe(new RecordingListener(received));
             for (Future<?> future : futures) {
                 future.get(30, TimeUnit.SECONDS);
             }
+
             unsubscribe.run();
 
             assertEquals(session.retainedOutput(), received);
@@ -115,7 +118,7 @@ public class RunSessionTest {
         session.finish(0, null);
         session.append(RunOutput.Kind.STDOUT, "ignored");
 
-        var events = new ArrayList<Object>();
+        List<Object> events = new ArrayList<Object>();
         session.subscribe(new RunSessionListener() {
             @Override
             public void outputAppended(RunOutput output) {
@@ -137,7 +140,7 @@ public class RunSessionTest {
     @Test
     public void unsubscribedListenerStopsReceiving() {
         var session = new RunSession(configuration(), false);
-        var received = new ArrayList<RunOutput>();
+        List<RunOutput> received = new ArrayList<RunOutput>();
         Runnable unsubscribe = session.subscribe(new RecordingListener(received));
         session.append(RunOutput.Kind.STDOUT, "one");
         unsubscribe.run();
@@ -152,7 +155,7 @@ public class RunSessionTest {
         InputStream input = session.input(StandardCharsets.UTF_8);
         assertTrue(session.sendInput("héllo\n"));
 
-        var buffer = new byte[64];
+        byte[] buffer = new byte[64];
         int read = input.read(buffer);
         assertEquals("héllo\n", new String(buffer, 0, read, StandardCharsets.UTF_8));
 
@@ -163,6 +166,7 @@ public class RunSessionTest {
                 throw new CompletionException(exception);
             }
         });
+
         Thread.sleep(50);
         assertFalse(reader.isDone());
         session.finish(0, null);
@@ -195,6 +199,7 @@ public class RunSessionTest {
                 }
             }
         }
+
         assertEquals("echo: ping", stdout.toString().strip());
         assertTrue(stderr.toString().strip().endsWith("to stderr"), stderr.toString());
         assertEquals(RunSessionState.SUCCEEDED, session.state());

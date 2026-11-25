@@ -83,7 +83,8 @@ public class JavaLibraryStubCacheTest {
             List.of(new ConstructorStub(List.of(new Parameter(null, generic, List.of())), 2, List.of(),
                 List.of(), List.of())),
             33, List.of(annotation), "sample.Everything");
-        var classes = List.of(new JavaLibraryStubCache.ArchiveClass("sample/Everything$Inner.class", stub));
+        List<JavaLibraryStubCache.ArchiveClass> classes = List
+            .of(new JavaLibraryStubCache.ArchiveClass("sample/Everything$Inner.class", stub));
 
         cache.save(archive, 1, 2, classes);
 
@@ -111,7 +112,8 @@ public class JavaLibraryStubCacheTest {
                 List.of())),
             List.of(), 1, List.of());
         Path other = Files.writeString(temp.resolve("other.jar"), "jar");
-        var classes = List.of(new JavaLibraryStubCache.ArchiveClass("sample/Box.class", stub));
+        List<JavaLibraryStubCache.ArchiveClass> classes = List
+            .of(new JavaLibraryStubCache.ArchiveClass("sample/Box.class", stub));
         cache.save(archive, 1, 2, classes);
         cache.save(other, 1, 2, classes);
 
@@ -154,6 +156,7 @@ public class JavaLibraryStubCacheTest {
     @Test
     public void unpublishedAnnotationValuesAreRejected() {
         var annotation = new AnnotationStub("sample.Values", Map.of("ints", new int[]{1, 2}));
+
         var stub = new ClassStub("sample", "Box", List.of(), null, List.of(), List.of(), List.of(), List.of(), 1,
             List.of(annotation));
 

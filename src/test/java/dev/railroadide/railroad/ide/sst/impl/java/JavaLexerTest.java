@@ -72,7 +72,7 @@ public class JavaLexerTest {
 
     @Test
     public void preservesRawSpellingAndLongestMatchForEscapedHyphens() {
-        var tokens = significant("non\\u002dsealed \\u002d- -\\u003e");
+        List<Token<JavaTokenType>> tokens = significant("non\\u002dsealed \\u002d- -\\u003e");
         assertEquals(List.of(JavaTokenType.IDENTIFIER, JavaTokenType.MINUS, JavaTokenType.SEALED_KEYWORD,
             JavaTokenType.MINUS_MINUS, JavaTokenType.ARROW, JavaTokenType.EOF),
             tokens.stream().map(Token::type).toList());
@@ -130,15 +130,19 @@ public class JavaLexerTest {
         for (String literal : List.of("0", "42", "1_000", "1__000", "5L", "0L")) {
             literals.put(literal, JavaTokenType.NUMBER_INT_LITERAL);
         }
+
         for (String literal : List.of("017", "0_7", "07L")) {
             literals.put(literal, JavaTokenType.NUMBER_OCTAL_LITERAL);
         }
+
         for (String literal : List.of("0x1F", "0XffL", "0x1_f")) {
             literals.put(literal, JavaTokenType.NUMBER_HEXADECIMAL_LITERAL);
         }
+
         for (String literal : List.of("0b1010", "0B1_0L")) {
             literals.put(literal, JavaTokenType.NUMBER_BINARY_LITERAL);
         }
+
         for (String literal : List.of("0.5f", "3.5F", "3.5d", "3.5D", "1_000.5f", "3.5", "1.", "1.f", "1.e3", ".5",
             ".5f", "1f", "1D", "1e3", "1E-3F", "1.0e+3d", "09.5", "07.5", "0e1", "0x1p3f", "0x1.8p1", "0x.8P-1D")) {
             literals.put(literal, JavaTokenType.NUMBER_FLOATING_POINT_LITERAL);

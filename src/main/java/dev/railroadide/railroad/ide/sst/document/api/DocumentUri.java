@@ -31,6 +31,7 @@ public record DocumentUri(URI value) {
         value = Objects.requireNonNull(value, "value");
         if (!value.isAbsolute() || value.getScheme() == null || value.getScheme().isBlank())
             throw new IllegalArgumentException("Document URI must be absolute: " + value);
+
         if (value.getRawSchemeSpecificPart() == null || value.getRawSchemeSpecificPart().isBlank())
             throw new IllegalArgumentException("Document URI must identify a resource: " + value);
     }
@@ -147,6 +148,7 @@ public record DocumentUri(URI value) {
         value = Objects.requireNonNull(value, name).trim();
         if (value.isEmpty())
             throw new IllegalArgumentException(name + " cannot be blank");
+
         return value;
     }
 }

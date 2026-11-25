@@ -450,5 +450,4 @@ public class RRToggleButton extends ToggleButton {
             case LARGE -> styleClass.add("large");
         }
     }
-
 }

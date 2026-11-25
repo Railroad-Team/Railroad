@@ -69,6 +69,7 @@ public class FormTextField extends InformativeLabeledHBox<TextField> implements 
         if (promptText != null) {
             params.put("promptText", promptText);
         }
+
         params.put("editable", editable);
         params.put("translate", translate);
         params.put("autoCompleteOptions", autoCompleteOptions);
@@ -96,7 +97,7 @@ public class FormTextField extends InformativeLabeledHBox<TextField> implements 
         }
 
         if (useAutoComplete) {
-            var autoCompleteTextField = translate
+            RRAutoCompleteTextField autoCompleteTextField = translate
                 ? new RRAutoCompleteTextField(promptText)
                 : new RRAutoCompleteTextField();
             if (!translate) {

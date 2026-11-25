@@ -13,21 +13,27 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.io.File;
+import dev.railroadide.railroad.ide.runconfig.defaults.data.GradleRunConfigurationData;
+import dev.railroadide.railroad.ide.runconfig.defaults.data.JavaApplicationRunConfigurationData;
+import java.util.Map;
 
-/** A main declaration in the editor and the binary name accepted by the Java launcher. */
+/**
+ * A main declaration in the editor and the binary name accepted by the Java launcher.
+ */
 public record EditorMain(int line, String className) {
     public static List<EditorMain> find(String source, String filename) {
         if (!source.contains("main"))
             return List.of();
+
         var parser = ASTParser.newParser(AST.getJLSLatest());
-        var options = new HashMap<String, String>();
+        Map<String, String> options = new HashMap<String, String>();
         JavaCore.setComplianceOptions(JavaCore.latestSupportedJavaVersion(), options);
         options.put(JavaCore.COMPILER_PB_ENABLE_PREVIEW_FEATURES, JavaCore.ENABLED);
         parser.setCompilerOptions(options);
         parser.setSource(source.toCharArray());
         parser.setUnitName(filename);
         parser.setIgnoreMethodBodies(true);
-        var unit = (CompilationUnit) parser.createAST(null);
+        CompilationUnit unit = (CompilationUnit) parser.createAST(null);
         String prefix = unit.getPackage() == null ? "" : unit.getPackage().getName().getFullyQualifiedName() + ".";
         List<EditorMain> targets = new ArrayList<>();
         for (Object declaration : unit.types()) {
@@ -38,6 +44,7 @@ public record EditorMain(int line, String className) {
                 collect(unit, type, prefix + name, targets);
             }
         }
+
         return List.copyOf(targets);
     }
 
@@ -62,17 +69,21 @@ public record EditorMain(int line, String className) {
             || !(method.getReturnType2() instanceof PrimitiveType result)
             || result.getPrimitiveTypeCode() != PrimitiveType.VOID)
             return false;
+
         if (method.parameters().isEmpty())
             return true;
+
         if (method.parameters().size() != 1)
             return false;
-        var parameter = (SingleVariableDeclaration) method.parameters().getFirst();
+
+        SingleVariableDeclaration parameter = (SingleVariableDeclaration) method.parameters().getFirst();
         Type type = parameter.getType();
         int dimensions = parameter.getExtraDimensions() + (parameter.isVarargs() ? 1 : 0);
         if (type instanceof ArrayType array) {
             dimensions += array.getDimensions();
             type = array.getElementType();
         }
+
         return dimensions == 1 && (type.toString().equals("String") || type.toString().equals("java.lang.String"));
     }
 
@@ -87,30 +98,33 @@ public record EditorMain(int line, String className) {
         String source = ProjectPathIdentityUtils.normalize(project.getPath())
             .relativize(ProjectPathIdentityUtils.normalize(file)).toString().replace(File.separatorChar, '/');
         UUID id = UUID.nameUUIDFromBytes(("editor-main:" + source + ":" + className).getBytes(StandardCharsets.UTF_8));
-        var manager = project.getRunConfigManager();
-        var existing = manager.getConfigurationByUUID(id);
+        RunConfigurationManager manager = project.getRunConfigManager();
+        RunConfiguration<?> existing = manager.getConfigurationByUUID(id);
         if (existing != null)
             return existing;
 
         RunConfiguration<?> config;
         if (project.getGradleManager().isGradleProject()) {
             var type = RunConfigurationTypes.GRADLE;
-            var data = type.createDataInstance(project);
+            GradleRunConfigurationData data = type.createDataInstance(project);
             data.setMainClass(className);
             data.setMainSource(source);
             var jdk = project.getGradleManager().getGradleSettings().getGradleJvm();
             if (jdk != null) {
                 data.setJavaHome(jdk);
             }
+
             config = new RunConfiguration<>(id, type, data);
         } else {
             var type = RunConfigurationTypes.JAVA_APPLICATION;
-            var data = type.createDataInstance(project);
+            JavaApplicationRunConfigurationData data = type.createDataInstance(project);
             data.setMainClass(className);
             data.setBuildBeforeRun(true);
             data.setClasspathEntries(new String[]{".railroad/classes"});
+
             config = new RunConfiguration<>(id, type, data);
         }
+
         config.data().setName(className + ".main()");
         manager.addConfiguration(config);
         return config;

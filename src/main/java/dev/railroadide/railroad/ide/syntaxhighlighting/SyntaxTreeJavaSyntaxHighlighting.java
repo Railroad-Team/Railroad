@@ -65,17 +65,21 @@ public final class SyntaxTreeJavaSyntaxHighlighting {
         String kind = token.kind().id().toUpperCase(Locale.ROOT);
         if (kind.contains("LINE_COMMENT") || kind.contains("BLOCK_COMMENT") || kind.contains("JAVADOC_COMMENT"))
             return "comment";
+
         if (kind.endsWith("_KEYWORD"))
             return "keyword";
+
         if (kind.contains("STRING_LITERAL") || kind.contains("CHARACTER_LITERAL")
             || kind.contains("TEXT_BLOCK_LITERAL"))
             return "literal";
+
         if (kind.contains("NUMBER_") || kind.contains("BOOLEAN_LITERAL") || kind.contains("NULL_LITERAL"))
             return "literal";
 
         String text = token.text();
         if (text.equals("@"))
             return "annotation";
+
         if (OPERATOR_TOKENS.contains(text))
             return "operator";
 

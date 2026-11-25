@@ -201,6 +201,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
                 return data.keyFunction.toString(object);
             }
         };
+
         private Callback<ListView<T>, ListCell<T>> cellFactory = param -> new ListCell<>() {
             @Override
             protected void updateItem(T item, boolean empty) {
@@ -215,6 +216,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
                 }
             }
         };
+
         private ListCell<T> buttonCell = cellFactory.call(null);
         private Supplier<T> defaultValue;
 
@@ -440,6 +442,7 @@ public class ComboBoxComponent<T> extends FormComponent<FormComboBox<T>, ComboBo
                 } else
                     throw new IllegalArgumentException(
                         "Unsupported component type: " + toComponent.getValue().getClass().getName());
+
             }, valueMapper);
         }
 

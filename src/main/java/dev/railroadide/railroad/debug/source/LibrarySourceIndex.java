@@ -75,6 +75,7 @@ public final class LibrarySourceIndex implements DependencySourceIndex {
                 }
             });
         }
+
         return new LibrarySourceIndex(classpath, JavaLibrarySources.shared());
     }
 
@@ -112,6 +113,7 @@ public final class LibrarySourceIndex implements DependencySourceIndex {
             if (file.isPresent())
                 return Optional.of(new DebugSource.FileSource(file.get()));
         }
+
         return Optional.empty();
     }
 
@@ -124,6 +126,7 @@ public final class LibrarySourceIndex implements DependencySourceIndex {
             if (archivesByPackage == null) {
                 archivesByPackage = buildPackageIndex(archives);
             }
+
             return archivesByPackage;
         }
     }
@@ -136,7 +139,7 @@ public final class LibrarySourceIndex implements DependencySourceIndex {
 
             Set<String> packages = new HashSet<>();
             try (var zip = new ZipFile(archive.toFile())) {
-                for (var entries = zip.entries(); entries.hasMoreElements();) {
+                for (Enumeration<? extends ZipEntry> entries = zip.entries(); entries.hasMoreElements();) {
                     ZipEntry entry = entries.nextElement();
                     String name = entry.getName();
                     if (entry.isDirectory() || !name.endsWith(".class") || name.startsWith("META-INF/"))
@@ -149,10 +152,12 @@ public final class LibrarySourceIndex implements DependencySourceIndex {
                 Railroad.LOGGER.debug("Failed to list classes in {}", archive, exception);
                 continue;
             }
+
             for (String packagePath : packages) {
                 index.computeIfAbsent(packagePath, _ -> new ArrayList<>()).add(archive);
             }
         }
+
         return Map.copyOf(index);
     }
 

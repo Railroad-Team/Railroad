@@ -6,7 +6,9 @@ import java.nio.file.NoSuchFileException;
 import java.io.IOException;
 import java.util.Optional;
 
-/** A Java symbol index whose source declarations come from captured document contents. */
+/**
+ * A Java symbol index whose source declarations come from captured document contents.
+ */
 public interface JavaSourceSnapshotIndex extends JavaSymbolIndex {
     /**
      * Returns captured source content without reading a live source file.

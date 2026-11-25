@@ -203,7 +203,8 @@ public class JavaParserJavacAcceptanceTest {
                 return source;
             }
         };
-        var task = (JavacTask) ToolProvider.getSystemJavaCompiler()
+
+        JavacTask task = (JavacTask) ToolProvider.getSystemJavaCompiler()
             .getTask(null, null, diagnostics, List.of("-proc:none"), null, List.of(file));
         task.parse();
         return diagnostics.getDiagnostics().stream()

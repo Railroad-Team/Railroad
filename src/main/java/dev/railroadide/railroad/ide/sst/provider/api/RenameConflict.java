@@ -27,9 +27,13 @@ public record RenameConflict(Severity severity, String message, Location.@Nullab
             throw new IllegalArgumentException("Conflicts need a message");
     }
 
-    /** How a conflict affects the rename. */
+    /**
+     * How a conflict affects the rename.
+     */
     public enum Severity {
-        /** The rename would break or change the meaning of code and is not offered. */
+        /**
+         * The rename would break or change the meaning of code and is not offered.
+         */
         ERROR,
         /**
          * The rename can be applied, but something it cannot verify, such as an unresolved occurrence or a

@@ -110,5 +110,4 @@ public class CoreFieldCanBeLocalVariableInspection implements JavaInspectionRule
 
         return current;
     }
-
 }

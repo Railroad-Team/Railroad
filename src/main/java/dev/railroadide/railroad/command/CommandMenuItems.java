@@ -53,6 +53,7 @@ public final class CommandMenuItems {
                 item.setDisable(!command.canExecute(contextSupplier.get()));
             }
         });
+
         bindConfiguredAccelerator(item, command);
     }
 

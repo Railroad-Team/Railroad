@@ -17,9 +17,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
-/** Parses Railroad layout files into a tree of named items and their properties. */
+/**
+ * Parses Railroad layout files into a tree of named items and their properties.
+ */
 public class LayoutParser {
-    /** Creates a stateless parser; layout parsing operations are exposed as static methods. */
+    /**
+     * Creates a stateless parser; layout parsing operations are exposed as static methods.
+     */
     public LayoutParser() {
     }
 
@@ -118,6 +122,7 @@ public class LayoutParser {
                     if (stack.isEmpty())
                         return tree;
                 }
+
                 case COMMA -> {
                     if (parent.getChildren().isEmpty() && parent.getValue().getProperties().isEmpty()) {
                         tree.print();
@@ -127,6 +132,7 @@ public class LayoutParser {
 
                     parent = stack.peek();
                 }
+
                 case PROPERTY_OBJECT -> { // TODO: Handle non-layout objects
                     String[] parts = token.value().split(":");
                     if (parts.length != 2) {
@@ -138,6 +144,7 @@ public class LayoutParser {
                     Tree<LayoutItem> subTree = constructTree(tokenize(parts[1]));
                     parent.getValue().setProperty(parts[0], subTree.getRoot().getValue());
                 }
+
                 case PROPERTY_ARRAY -> { // TODO: Handle nested arrays or objects and convert types
                     String[] parts = token.value().split(":");
                     if (parts.length != 2) {
@@ -148,6 +155,7 @@ public class LayoutParser {
 
                     parent.getValue().setProperty(parts[0], parts[1]);
                 }
+
                 case PROPERTY_STRING -> {
                     String[] parts = token.value().split(":");
                     if (parts.length != 2) {
@@ -159,6 +167,7 @@ public class LayoutParser {
                     parent.getValue().setProperty(parts[0],
                         parts[1].substring(1, parts[1].length() - 1).replace("\\\\", "\\"));
                 }
+
                 case PROPERTY_NUMBER -> {
                     String[] parts = token.value().split(":");
                     if (parts.length != 2) {
@@ -175,6 +184,7 @@ public class LayoutParser {
                             + " column " + token.startColumn(), exception);
                     }
                 }
+
                 case PROPERTY_BOOLEAN -> {
                     String[] parts = token.value().split(":");
                     if (parts.length != 2) {
@@ -185,6 +195,7 @@ public class LayoutParser {
 
                     parent.getValue().setProperty(parts[0], Boolean.parseBoolean(parts[1]));
                 }
+
                 case PERCENT -> parent.getValue().setProperty("size", token.value());
                 case IDENTIFIER -> {
                     var child = new Node<>(new LayoutItem(token.value()));
@@ -192,6 +203,7 @@ public class LayoutParser {
                     parent = child;
                     stack.push(parent);
                 }
+
                 case EOF -> {
                     if (stack.size() != 1) {
                         tree.print();
@@ -199,6 +211,7 @@ public class LayoutParser {
                             + " column " + token.startColumn());
                     }
                 }
+
                 default -> {
                     tree.print();
                     throw new LayoutParseException("Unexpected token: (" + token.type() + ", " + token.value()
@@ -329,6 +342,7 @@ public class LayoutParser {
             } else
                 throw new LayoutParseException(
                     "Invalid property value: '" + value + "' at line " + line + " column " + column);
+
         } else if (value.startsWith("[")) {
             int endIndex = findClosingBracketIndex(value);
             if (endIndex != -1) {
@@ -340,6 +354,7 @@ public class LayoutParser {
             } else
                 throw new LayoutParseException(
                     "Invalid property value: '" + value + "' at line " + line + " column " + column);
+
         } else if (Character.isDigit(value.charAt(0))) {
             String number = extractNumber(value);
             return new Pair<>(
@@ -357,6 +372,7 @@ public class LayoutParser {
             } else
                 throw new LayoutParseException(
                     "Invalid property value: '" + value + "' at line " + line + " column " + column);
+
         } else if (value.startsWith("true") || value.startsWith("false")) {
             int beginIndex = value.contains(" ") ? value.indexOf(" ") : value.length();
             return new Pair<>(
@@ -366,6 +382,7 @@ public class LayoutParser {
         } else
             throw new LayoutParseException(
                 "Invalid property value: '" + value + "' at line " + line + " column " + column);
+
     }
 
     private static int findClosingBraceIndex(String content) {
@@ -407,6 +424,7 @@ public class LayoutParser {
                 sb.append(c);
             } else
                 break;
+
         }
 
         return sb.toString();
@@ -451,31 +469,55 @@ public class LayoutParser {
      * @param endColumn ending column recorded by the tokenizer
      */
     public record Token(Type type, String value, int startLine, int startColumn, int endLine, int endColumn) {
-        /** Token categories recognized by the layout parser. */
+        /**
+         * Token categories recognized by the layout parser.
+         */
         @Getter
         public enum Type {
-            /** Opens a group of child items or properties. */
+            /**
+             * Opens a group of child items or properties.
+             */
             OPEN_BRACE("{"),
-            /** Closes the current group. */
+            /**
+             * Closes the current group.
+             */
             CLOSE_BRACE("}"),
-            /** Separates sibling items. */
+            /**
+             * Separates sibling items.
+             */
             COMMA(","),
-            /** Percentage assigned to an item's size property. */
+            /**
+             * Percentage assigned to an item's size property.
+             */
             PERCENT("%"),
-            /** Name identifying a layout element. */
+            /**
+             * Name identifying a layout element.
+             */
             IDENTIFIER(""),
-            /** Property containing a nested object. */
+            /**
+             * Property containing a nested object.
+             */
             PROPERTY_OBJECT(
                 ":"),
-            /** Property containing an array, currently retained as text. */
+            /**
+             * Property containing an array, currently retained as text.
+             */
             PROPERTY_ARRAY(":"),
-            /** Property containing a quoted string. */
+            /**
+             * Property containing a quoted string.
+             */
             PROPERTY_STRING(":"),
-            /** Property parsed as a double-precision number. */
+            /**
+             * Property parsed as a double-precision number.
+             */
             PROPERTY_NUMBER(":"),
-            /** Property parsed as a boolean. */
+            /**
+             * Property parsed as a boolean.
+             */
             PROPERTY_BOOLEAN(":"),
-            /** Marks the end of the source text. */
+            /**
+             * Marks the end of the source text.
+             */
             EOF("");
 
             /**

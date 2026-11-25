@@ -111,7 +111,9 @@ public class ToolingGradleModelService implements GradleModelService {
         try (ProjectConnection connection = connector.connect()) {
             initScriptPath = writeInitScript();
             String[] initScriptArgs = {"--init-script", initScriptPath.toAbsolutePath().toString()};
-            var step = ActivityProgress.current().count("railroad.activity.import_steps", ActivityProgress.Unit.STEPS,
+
+            Runnable step = ActivityProgress.current().count("railroad.activity.import_steps",
+                ActivityProgress.Unit.STEPS,
                 5);
             configureJvm(connection.newBuild(), environment)
                 .withArguments(initScriptArgs)
@@ -140,6 +142,7 @@ public class ToolingGradleModelService implements GradleModelService {
             if (ProjectPathIdentityUtils.matches(rootDir, project.getPath())) {
                 rootDir = project.getPath();
             }
+
             return new GradleBuildModel(gradleVersion, rootDir, fabricDataModel, gradleProject);
         } catch (Exception exception) {
             throw new RuntimeException("Failed to load Gradle model", exception);
@@ -242,7 +245,8 @@ public class ToolingGradleModelService implements GradleModelService {
 
             refresh = CompletableFuture.supplyAsync(
                 safely(() -> {
-                    try (var activity = BackgroundActivities.shared().start("railroad.activity.importing_gradle")) {
+                    try (BackgroundActivities.Handle activity = BackgroundActivities.shared()
+                        .start("railroad.activity.importing_gradle")) {
                         Instant importStarted = Instant.now();
                         GradleBuildModel model = ScopedValue.where(ActivityProgress.CURRENT, activity)
                             .call(() -> loadModel(project, environment));

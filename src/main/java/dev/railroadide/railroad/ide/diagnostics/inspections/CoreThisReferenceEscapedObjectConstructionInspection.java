@@ -157,6 +157,7 @@ public class CoreThisReferenceEscapedObjectConstructionInspection implements Jav
         if (Objects.equals(kindId, JavaSyntaxKinds.ASSIGNMENT_EXPRESSION.id())) {
             if (isLhs(context, lambdaNode, parentNode))
                 return null;
+
             return "assignment";
         }
 
@@ -192,7 +193,8 @@ public class CoreThisReferenceEscapedObjectConstructionInspection implements Jav
         if (Objects.equals(kindId, JavaSyntaxKinds.LAMBDA_EXPRESSION.id())
             || Objects.equals(kindId, JavaSyntaxKinds.ANONYMOUS_CLASS_BODY.id()))
             return false; // 'this' references inside nested lambdas or anonymous classes do not escape the constructor,
-                          // as they capture the correct 'this' context.
+
+        // as they capture the correct 'this' context.
 
         for (SyntaxNode child : node.children()) {
             if (doesSubtreeContainThisOutsideOfNestedScopes(child))

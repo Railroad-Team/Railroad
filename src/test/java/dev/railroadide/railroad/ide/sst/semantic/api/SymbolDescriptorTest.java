@@ -42,15 +42,16 @@ public class SymbolDescriptorTest {
 
     @Test
     public void copiesEveryCollectionAtPublication() {
-        var arguments = new ArrayList<>(List.of(new TypeReference("Element")));
+        List<TypeReference> arguments = new ArrayList<>(List.of(new TypeReference("Element")));
         var type = new TypeReference("List", arguments, 1, new SymbolId("test:List"));
-        var parameters = new ArrayList<>(List.of(new SymbolSignature.Parameter("values", type, true)));
+        List<SymbolSignature.Parameter> parameters = new ArrayList<>(
+            List.of(new SymbolSignature.Parameter("values", type, true)));
         var signature = new SymbolSignature(List.of(), parameters, new TypeReference("void"), List.of());
-        var modifiers = new HashSet<>(Set.of("static"));
-        var extensions = new HashMap<>(Map.of("test:property", "value"));
+        Set<String> modifiers = new HashSet<>(Set.of("static"));
+        Map<String, String> extensions = new HashMap<>(Map.of("test:property", "value"));
         var metadata = new SymbolMetadata(modifiers, "public", true, List.of(new TypeReference("Deprecated")),
             extensions);
-        var locations = new ArrayList<SymbolLocation>();
+        List<SymbolLocation> locations = new ArrayList<SymbolLocation>();
         var descriptor = new SymbolDescriptor(new SymbolId("test:method"), new SymbolKindId("test:callable"),
             "run", null, null, signature, type, metadata, locations);
         arguments.clear();

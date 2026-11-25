@@ -34,7 +34,7 @@ public class SyntaxHighlightingProviderRequestTest {
             return spans;
         };
 
-        var result = provider.compute(context);
+        FeatureResult<StyleSpans<Collection<String>>> result = provider.compute(context);
 
         assertEquals(1, calls.get());
         assertSame(context, result.context());
@@ -58,6 +58,7 @@ public class SyntaxHighlightingProviderRequestTest {
     public void binaryInputIsRejectedBeforeProviderWork() {
         var binary = new BinaryDocumentSnapshot(id, document.uri(), document.version(),
             "independent-binary-provider", new byte[]{1, 2, 3});
+
         FeatureRequestContext context = context(binary, CancellationToken.none(), Deadline.none());
         var calls = new AtomicInteger();
         SyntaxHighlightingProvider provider = text -> {
@@ -162,8 +163,8 @@ public class SyntaxHighlightingProviderRequestTest {
         FeatureRequestContext current = context(newer, CancellationToken.none(), Deadline.none());
         SyntaxHighlightingProvider provider = SyntaxHighlightingProviderRequestTest::styles;
 
-        var currentResult = provider.compute(current);
-        var oldResult = provider.compute(old);
+        FeatureResult<StyleSpans<Collection<String>>> currentResult = provider.compute(current);
+        FeatureResult<StyleSpans<Collection<String>>> oldResult = provider.compute(old);
 
         assertSame(current, currentResult.context());
         assertSame(old, oldResult.context());
@@ -179,7 +180,7 @@ public class SyntaxHighlightingProviderRequestTest {
         FeatureRequestContext context = context(empty, CancellationToken.none(), Deadline.none());
         SyntaxHighlightingProvider provider = SyntaxHighlightingProviderRequestTest::styles;
 
-        var result = provider.compute(context);
+        FeatureResult<StyleSpans<Collection<String>>> result = provider.compute(context);
 
         assertSame(context, result.context());
         assertEquals(0, result.value().length());
@@ -195,7 +196,7 @@ public class SyntaxHighlightingProviderRequestTest {
             throw new AssertionError("Inactive request must not run");
         };
 
-        var failure = assertThrows(CancellationException.class, () -> provider.compute(context));
+        CancellationException failure = assertThrows(CancellationException.class, () -> provider.compute(context));
 
         assertEquals(CancellationException.class, failure.getClass());
     }

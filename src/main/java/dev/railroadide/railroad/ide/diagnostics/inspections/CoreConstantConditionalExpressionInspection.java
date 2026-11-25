@@ -219,6 +219,7 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         }
 
         // 2. Unary expressions
+
         if (JavaSyntaxKinds.UNARY_EXPRESSION.id().equals(kindId)) {
             SyntaxNode operand = context.firstExpressionChild(inner);
             if (operand == null)
@@ -236,6 +237,7 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
         }
 
         // 3. Binary expressions
+
         if (JavaSyntaxKinds.BINARY_EXPRESSION.id().equals(kindId)) {
             List<SyntaxNode> operands = context.directExpressionChildren(inner);
             if (operands.size() != 2)
@@ -306,8 +308,10 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
             for (SyntaxNode node : blockNode.children()) {
                 if (node instanceof SyntaxToken)
                     continue;
+
                 analyzeBlockForDataFlowConstants(context, reporter, node, scopedFacts);
             }
+
             return;
         }
 
@@ -327,6 +331,7 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
                     knownFacts.remove(name);
                 }
             }
+
             return;
         }
 
@@ -335,6 +340,7 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
             if (expression != null) {
                 applyExpressionFacts(context, expression, knownFacts);
             }
+
             return;
         }
 
@@ -349,6 +355,7 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
                 if (branchFact != null) {
                     thenBranchFacts.put(branchFact.variableName(), branchFact.truthValue());
                 }
+
                 analyzeBlockForDataFlowConstants(context, reporter, thenBranch, thenBranchFacts);
             }
 
@@ -358,8 +365,10 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
                 if (branchFact != null) {
                     elseBranchFacts.put(branchFact.variableName(), !branchFact.truthValue());
                 }
+
                 analyzeBlockForDataFlowConstants(context, reporter, elseBranch, elseBranchFacts);
             }
+
             return;
         }
 
@@ -374,8 +383,10 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
                 if (branchFact != null) {
                     bodyFacts.put(branchFact.variableName(), branchFact.truthValue());
                 }
+
                 analyzeBlockForDataFlowConstants(context, reporter, body, bodyFacts);
             }
+
             return;
         }
 
@@ -405,14 +416,17 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
                         loopFacts.put(branchFact.variableName(), branchFact.truthValue());
                     }
                 }
+
                 analyzeBlockForDataFlowConstants(context, reporter, body, loopFacts);
             }
+
             return;
         }
 
         for (SyntaxNode child : blockNode.children()) {
             if (child instanceof SyntaxToken)
                 continue;
+
             analyzeBlockForDataFlowConstants(context, reporter, child, knownFacts);
         }
     }
@@ -637,11 +651,13 @@ public class CoreConstantConditionalExpressionInspection implements JavaInspecti
                     if ("&&".equals(operator)) {
                         if (Boolean.FALSE.equals(leftValue) || Boolean.FALSE.equals(rightValue))
                             return false;
+
                         if (leftValue != null && rightValue != null)
                             return leftValue && rightValue;
                     } else if ("||".equals(operator)) {
                         if (Boolean.TRUE.equals(leftValue) || Boolean.TRUE.equals(rightValue))
                             return true;
+
                         if (leftValue != null && rightValue != null)
                             return leftValue || rightValue;
                     }

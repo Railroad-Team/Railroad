@@ -33,10 +33,13 @@ public record SyntaxDiagnostic(
         message = Objects.requireNonNull(message, "message");
         if (code.isBlank())
             throw new IllegalArgumentException("code cannot be blank");
+
         if (message.isBlank())
             throw new IllegalArgumentException("message cannot be blank");
+
         if (startOffset < 0)
             throw new IllegalArgumentException("startOffset cannot be negative");
+
         if (endOffset < startOffset)
             throw new IllegalArgumentException("endOffset cannot be less than startOffset");
     }

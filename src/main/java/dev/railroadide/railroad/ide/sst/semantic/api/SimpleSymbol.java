@@ -54,6 +54,7 @@ public final class SimpleSymbol implements Symbol {
         this.simpleName = Objects.requireNonNull(simpleName, "simpleName");
         if (simpleName.isBlank())
             throw new IllegalArgumentException("simpleName cannot be blank");
+
         this.qualifiedName = qualifiedName;
         this.declaration = declaration;
     }

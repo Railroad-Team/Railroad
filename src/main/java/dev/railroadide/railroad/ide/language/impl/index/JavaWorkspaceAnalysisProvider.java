@@ -24,8 +24,11 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
+import com.google.common.cache.CacheStats;
 
-/** Builds reusable Java analysis inputs exclusively from captured documents and configuration. */
+/**
+ * Builds reusable Java analysis inputs exclusively from captured documents and configuration.
+ */
 public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     private static final Path RUNNING_JDK = Path.of(System.getProperty("java.home")).toAbsolutePath().normalize();
     private static final ExecutorService BINARY_LOADS = Executors.newThreadPerTaskExecutor(
@@ -39,7 +42,9 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     private volatile boolean closed;
     private volatile long cacheGeneration;
 
-    /** Creates bounded caches retaining at most four workspace results, 512 source revisions and two binary indexes. */
+    /**
+     * Creates bounded caches retaining at most four workspace results, 512 source revisions and two binary indexes.
+     */
     public JavaWorkspaceAnalysisProvider() {
         this(() -> true);
     }
@@ -149,6 +154,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
             if (generation != cacheGeneration)
                 throw new CancellationException("Java analysis caches were cleared");
         };
+
         check.run();
         try {
             while (!analysisLock.tryLock(25, TimeUnit.MILLISECONDS)) {
@@ -158,13 +164,14 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
             Thread.currentThread().interrupt();
             throw new CancellationException("Java analysis cancelled while waiting for cache load");
         }
+
         try {
             check.run();
 
             DocumentSnapshot document = request == null ? null : workspace.document(request).orElseThrow();
 
             Path file = document == null ? null : document.uri().filePath().orElse(null);
-            var scope = sourceContext(workspace.configuration(), file, document);
+            SourceContext scope = sourceContext(workspace.configuration(), file, document);
             Set<Path> roots = scope.sourceSet() == null
                 ? sourceRoots(workspace.configuration())
                 : scope.sourceSet().visibleRoots();
@@ -174,6 +181,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
             if (scope.archive() != null) {
                 extra = request;
             }
+
             var key = new WorkspaceKey(workspace, extra, scope);
             WorkspaceBuild result = workspaces.getIfPresent(key);
             if (result == null) {
@@ -184,6 +192,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
                 result = build(workspace, extra, roots, scope, previous, check);
                 publish(workspaces, key, result, check);
             }
+
             check.run();
             return result.analysis();
         } finally {
@@ -213,50 +222,58 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
             check.run();
             if (!(document instanceof TextDocumentSnapshot text) || !"java".equals(text.languageId()))
                 continue;
+
             if (!text.id().equals(request) && !includedSource(text, roots, scope, configuration))
                 continue;
+
             Path path = text.uri().filePath().orElseGet(() -> Path.of(".railroad", "virtual", text.id().toString(),
                 text.uri().fileName().orElse("Snapshot.java")).toAbsolutePath().normalize());
             DiscoveredSource input = previous == null ? null : previous.inputs().get(path);
             if (input == null || input.snapshot() != text) {
-                var indexed = files.getIfPresent(text);
+                JavaProjectSemanticIndex.SourceFileIndex indexed = files.getIfPresent(text);
                 if (indexed == null) {
                     indexed = extractor.discoverTypes(path, text, check);
                     publish(files, text, indexed, check);
                 }
+
                 input = new DiscoveredSource(text, indexed);
             }
+
             builder.putFile(input.types());
             texts.put(input.types().path(), text.text());
             inputs.put(input.types().path(), input);
         }
+
         JavaProjectSemanticIndex sources = builder.build();
         JavaSymbolIndex binary = awaitBinaries(binaryLoad, check);
         binary.attachedSourceTexts().forEach(texts::putIfAbsent);
         check.run();
         boolean sameBinaries = previous != null && previous.binary() == binary;
-        var discovered = sameBinaries
+        JavaSourcePrecedenceIndex discovered = sameBinaries
             ? previous.symbols().withSources(sources)
             : new JavaSourcePrecedenceIndex(sources, binary);
         boolean reuse = sameBinaries && inputs.size() == previous.inputs().size()
             && inputs.entrySet().stream().allMatch(e -> e.getValue().sameTypes(previous.inputs().get(e.getKey())));
         JavaProjectSemanticIndex.Builder canonical = JavaProjectSemanticIndex.builder();
-        for (var entry : inputs.entrySet()) {
+        for (Map.Entry<Path, DiscoveredSource> entry : inputs.entrySet()) {
             check.run();
             if (reuse && previous.inputs().get(entry.getKey()) == entry.getValue()) {
                 canonical.putFile(previous.analysis().sourceIndex().getFileIndex(entry.getKey()));
                 continue;
             }
+
             var tree = JavaSyntaxParser.parse(entry.getValue().snapshot(), check);
             var model = JavaSemanticAnalyzer.analyzeProjectDeclarations(tree, discovered, check);
-            var indexed = extractor.extractProjectDeclarations(entry.getKey(), model, discovered, check);
+            JavaProjectSemanticIndex.SourceFileIndex indexed = extractor.extractProjectDeclarations(entry.getKey(),
+                model, discovered, check);
             canonical.putFile(new JavaProjectSemanticIndex.SourceFileIndex(indexed.path(), indexed.packageName(),
                 indexed.imports(), indexed.declaredSymbols(), sources.getFileIndex(entry.getKey()).sourceHash(),
                 indexed.semanticShard()));
         }
+
         sources = canonical.build();
         check.run();
-        var symbols = discovered.withSources(sources);
+        JavaSourcePrecedenceIndex symbols = discovered.withSources(sources);
         var analysis = new JavaWorkspaceAnalysis(sources, symbols, texts, classpath, jdk);
         return new WorkspaceBuild(analysis, Map.copyOf(inputs), binary, symbols);
     }
@@ -276,6 +293,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
             JavaSymbolIndex cached = binaries.getIfPresent(key);
             if (cached != null)
                 return CompletableFuture.completedFuture(cached);
+
             CompletableFuture<JavaSymbolIndex> load = binaryLoads.get(key);
             return load == null ? startBinaryLoad(key, jdk) : load;
         }
@@ -293,8 +311,10 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
             } catch (ExecutionException exception) {
                 if (exception.getCause() instanceof RuntimeException runtime)
                     throw runtime;
+
                 if (exception.getCause() instanceof Error error)
                     throw error;
+
                 throw new IllegalStateException("Failed to load Java binary index", exception.getCause());
             }
         }
@@ -310,12 +330,14 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
             if (generation != cacheGeneration)
                 throw new CancellationException("Java analysis caches were cleared");
         };
+
         CompletableFuture<JavaSymbolIndex> load;
         if (key.archive() == null && binaryLoader != null) {
             load = CompletableFuture.supplyAsync(() -> binaryLoader.apply(key.classpath(), jdk), BINARY_LOADS);
         } else if (key.archive() == null) {
             load = CompletableFuture.supplyAsync(() -> {
-                try (var activity = BackgroundActivities.shared().start("railroad.activity.indexing_libraries")) {
+                try (BackgroundActivities.Handle activity = BackgroundActivities.shared()
+                    .start("railroad.activity.indexing_libraries")) {
                     return ScopedValue.where(ActivityProgress.CURRENT, activity)
                         .call(() -> new CompositeJavaSymbolIndex(
                             List.of(JavaLibrarySymbolIndex.build(key.classpath(), loadCheck),
@@ -323,9 +345,11 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
                 }
             }, BINARY_LOADS);
         } else {
-            var base = loadBinaries(new BinaryKey(key.configuration(), key.classpath(), null, jdk), jdk, loadCheck);
+            CompletableFuture<JavaSymbolIndex> base = loadBinaries(
+                new BinaryKey(key.configuration(), key.classpath(), null, jdk), jdk, loadCheck);
             load = base.thenApplyAsync(index -> index.forAttachedSource(key.archive(), loadCheck), BINARY_LOADS);
         }
+
         binaryLoads.put(key, load);
         load.whenComplete((index, failure) -> {
             synchronized (publicationLock) {
@@ -335,6 +359,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
                 }
             }
         });
+
         return load;
     }
 
@@ -345,7 +370,9 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
         }
     }
 
-    /** Releases retained results and rejects publication from loads already in progress. */
+    /**
+     * Releases retained results and rejects publication from loads already in progress.
+     */
     public void clearCaches() {
         synchronized (publicationLock) {
             cacheGeneration++;
@@ -356,7 +383,9 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
         }
     }
 
-    /** Releases retained results without waiting for scanners and rejects future captures. */
+    /**
+     * Releases retained results without waiting for scanners and rejects future captures.
+     */
     @Override
     public void close() {
         synchronized (publicationLock) {
@@ -371,7 +400,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
      * @return current entry counts and cumulative lookups/evictions
      */
     public CacheUsage cacheUsage() {
-        var totals = workspaces.stats().plus(files.stats()).plus(binaries.stats());
+        CacheStats totals = workspaces.stats().plus(files.stats()).plus(binaries.stats());
         return new CacheUsage(workspaces.size(), files.size(), binaries.size(),
             totals.hitCount(), totals.missCount(), totals.evictionCount());
     }
@@ -429,9 +458,11 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
         if (document.origin().backing() == BackingKind.ARCHIVE_ENTRY
             || document.origin().provenance() == ProvenanceKind.ATTACHED_SOURCE)
             return false;
+
         if (scope.sourceSet() != null)
             return document.uri().filePath()
                 .filter(path -> JavaSourceSets.of(configuration).visible(scope.sourceSet(), path)).isPresent();
+
         return document.uri().filePath().map(path -> roots.stream()
             .anyMatch(path.toAbsolutePath().normalize()::startsWith)).orElse(true);
     }
@@ -441,6 +472,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
         for (String module : configuration.moduleIds()) {
             roots.addAll(sourceRoots(configuration, module));
         }
+
         return Set.copyOf(roots);
     }
 
@@ -454,16 +486,18 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     private static String moduleForPath(WorkspaceConfigurationSnapshot configuration, Path path) {
         if (path == null)
             return null;
+
         Path file = path.toAbsolutePath().normalize();
         String owner = null;
         int bestSource = -1;
         int bestDirectory = -1;
         for (String module : configuration.moduleIds().stream().sorted().toList()) {
             String prefix = "module." + module + ".";
-            var settings = configuration.settings();
+            Map<String, String> settings = configuration.settings();
             if (!settings.containsKey(prefix + "classpath") && !settings.containsKey(prefix + "modulePath")
                 && !settings.containsKey(prefix + "dependencies"))
                 continue;
+
             String directory = settings.get(prefix + "directory");
             int directoryDepth = directory == null || directory.isBlank()
                 ? -1
@@ -476,6 +510,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
                 bestDirectory = directoryDepth;
             }
         }
+
         return owner;
     }
 
@@ -505,28 +540,34 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
         return sourceContext(configuration, file, null).classpath(configuration);
     }
 
-    /** Identifies the importing module and the binary owning an attached source document, when available. */
+    /**
+     * Identifies the importing module and the binary owning an attached source document, when available.
+     */
     public static SourceContext sourceContext(
         WorkspaceConfigurationSnapshot configuration,
         Path file,
         DocumentSnapshot document
     ) {
         var sets = JavaSourceSets.of(configuration);
-        var owner = sets.owner(file);
+        JavaSourceSets.Scope owner = sets.owner(file);
         String module = owner == null ? moduleForPath(configuration, file) : owner.module();
         if (module != null && (document == null || document.origin().provenance() != ProvenanceKind.ATTACHED_SOURCE))
             return new SourceContext(module, null, owner);
+
         if (document == null && file == null)
             return new SourceContext(null, null);
-        var roots = classpath(configuration);
+
+        List<Path> roots = classpath(configuration);
         var sources = JavaLibrarySources.shared();
-        var archive = (document == null ? sources.ownerArchive(file, roots) : sources.ownerArchive(document, roots))
+        Path archive = (document == null ? sources.ownerArchive(file, roots) : sources.ownerArchive(document, roots))
             .orElse(null);
         String importer = archive == null ? module : moduleForArchive(configuration, archive);
         return new SourceContext(importer, archive, sets.importing(importer, archive));
     }
 
-    /** Classpath ownership for a project source or an attached dependency source. */
+    /**
+     * Classpath ownership for a project source or an attached dependency source.
+     */
     public record SourceContext(String module, Path archive, JavaSourceSets.Scope sourceSet) {
         public SourceContext(String module, Path archive) {
             this(module, archive, null);
@@ -538,18 +579,23 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
                 : JavaWorkspaceAnalysisProvider.jdkHome(configuration);
         }
 
-        /** Returns the ordered binary roots for this source. */
+        /**
+         * Returns the ordered binary roots for this source.
+         */
         public List<Path> classpath(WorkspaceConfigurationSnapshot configuration) {
             if (sourceSet != null)
                 return sourceSet.classpath();
-            var roots = JavaWorkspaceAnalysisProvider.classpath(configuration, module);
+
+            List<Path> roots = JavaWorkspaceAnalysisProvider.classpath(configuration, module);
             if (module == null || archive == null)
                 return roots;
+
             String prefix = "module." + module + ".";
-            var settings = configuration.settings();
+            Map<String, String> settings = configuration.settings();
             String selected = settings.getOrDefault(prefix + "mainCompileArtifacts", "");
             if (selected.lines().map(Path::of).noneMatch(archive::equals))
                 return roots;
+
             Set<Path> excluded = settings.getOrDefault(prefix + "otherCompileVersions", "").lines().map(Path::of)
                 .collect(Collectors.toSet());
             return roots.stream().filter(path -> !excluded.contains(path)).toList();
@@ -563,7 +609,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     }
 
     private static List<Path> classpath(WorkspaceConfigurationSnapshot configuration, String selectedModule) {
-        LinkedHashSet<Path> roots = new LinkedHashSet<>();
+        Set<Path> roots = new LinkedHashSet<>();
         Set<Path> outputs = new HashSet<>(JavaSourceSets.of(configuration).outputs());
         for (String module : configuration.moduleIds()) {
             for (String kind : List.of("output", "testOutput")) {
@@ -573,12 +619,13 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
                 }
             }
         }
+
         List<String> modules = selectedModule == null
             ? configuration.moduleIds().stream().sorted().toList()
             : List.of(selectedModule);
         for (String module : modules) {
             String prefix = "module." + module + ".";
-            var settings = configuration.settings();
+            Map<String, String> settings = configuration.settings();
             List<String> kinds = settings.containsKey(prefix + "classpath")
                 || settings.containsKey(prefix + "modulePath")
                     ? List.of("classpath", "modulePath")
@@ -592,6 +639,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
                 }
             }
         }
+
         return List.copyOf(roots);
     }
 

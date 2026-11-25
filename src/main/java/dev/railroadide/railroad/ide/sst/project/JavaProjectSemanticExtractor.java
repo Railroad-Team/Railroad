@@ -26,6 +26,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolDescriptor;
 
 /**
  * Extracts package, import, type, and member descriptors from Java declaration facts.
@@ -34,7 +35,9 @@ public final class JavaProjectSemanticExtractor {
     private final Runnable activityCheck;
     private final JavaSymbolIndex symbolIndex;
 
-    /** Creates a source extractor that observes worker interruption. */
+    /**
+     * Creates a source extractor that observes worker interruption.
+     */
     public JavaProjectSemanticExtractor() {
         this(ActivityCheckpoint::checkInterrupted);
     }
@@ -60,6 +63,7 @@ public final class JavaProjectSemanticExtractor {
         return new JavaProjectSemanticExtractor(
             new ActivityCheckpoint(activityCheck)).extract(path, source);
     }
+
     /**
      * Extracts package, import, type, and member descriptors for one Java source file.
      *
@@ -119,7 +123,7 @@ public final class JavaProjectSemanticExtractor {
         TextDocumentSnapshot snapshot,
         Runnable check
     ) {
-        var root = JavaSyntaxParser.parse(snapshot, check).root();
+        SyntaxNode root = JavaSyntaxParser.parse(snapshot, check).root();
         var worker = new JavaProjectSemanticExtractor(new ActivityCheckpoint(check));
         String packageName = worker.extractPackageName(root);
         List<JavaProjectSemanticIndex.SymbolDescriptor> types = new ArrayList<>();
@@ -148,6 +152,7 @@ public final class JavaProjectSemanticExtractor {
                 case RECORD -> JavaTokenType.RECORD_KEYWORD;
                 default -> throw new IllegalStateException("Unexpected type kind: " + kind);
             });
+
             if (name != null && !name.isBlank()) {
                 String prefix = enclosingType == null ? packageName : enclosingType;
                 owner = prefix == null ? name : prefix + "." + name;
@@ -161,6 +166,7 @@ public final class JavaProjectSemanticExtractor {
             default -> false;
         })
             return;
+
         for (SyntaxNode child : node.children()) {
             collectTypeNames(child, path, packageName, owner, types);
         }
@@ -197,11 +203,12 @@ public final class JavaProjectSemanticExtractor {
         } catch (StackOverflowError error) {
             // Very deep trees, such as long string concatenations, outgrow the recursive extraction passes.
             Railroad.LOGGER.warn("Indexed no declarations for {}: its syntax tree is nested too deeply", path);
-            var snapshot = model.syntaxTree().documentSnapshot();
+            TextDocumentSnapshot snapshot = model.syntaxTree().documentSnapshot();
             shard = new SemanticIndexShard(snapshot.id(), snapshot.version(), snapshot.uri(), List.of(), List.of(),
                 List.of());
             symbols.clear();
         }
+
         activityCheck.run();
 
         return new JavaProjectSemanticIndex.SourceFileIndex(path, packageName, imports, symbols, null, shard);
@@ -265,6 +272,7 @@ public final class JavaProjectSemanticExtractor {
     ) {
         if (projectDeclarationsOnly && JavaDeclarationAnalysis.isExecutableBody(node))
             return;
+
         model.declaredSymbol(node)
             .filter(symbol -> isIndexedKind(symbol.kind()) && isProjectDeclaration(node))
             .ifPresent(symbol -> symbols.add(toDescriptor(path, node, symbol, shard)));
@@ -286,6 +294,7 @@ public final class JavaProjectSemanticExtractor {
     private static boolean isProjectDeclaration(SyntaxNode node) {
         if (node.kind().id().equals("JAVA_ANONYMOUS_CLASS_BODY"))
             return false;
+
         for (SyntaxNode owner = node.parent().orElse(null); owner != null; owner = owner.parent().orElse(null)) {
             if (switch (owner.kind().id()) {
                 case "JAVA_METHOD_DECLARATION", "JAVA_CONSTRUCTOR_DECLARATION", "JAVA_RECORD_COMPACT_CONSTRUCTOR",
@@ -294,6 +303,7 @@ public final class JavaProjectSemanticExtractor {
             })
                 return false;
         }
+
         return true;
     }
 
@@ -305,8 +315,10 @@ public final class JavaProjectSemanticExtractor {
     ) {
         SyntaxNode container = declarationContainer(node);
         String qualifiedName = symbol.qualifiedName().orElse(null);
-        var descriptor = JavaSourceSymbolIds.deriveSymbolId(symbol).flatMap(id -> shard.declarations().stream()
-            .filter(candidate -> candidate.id().equals(id)).findFirst()).orElse(null);
+        SymbolDescriptor descriptor = JavaSourceSymbolIds.deriveSymbolId(symbol)
+            .flatMap(id -> shard.declarations().stream()
+                .filter(candidate -> candidate.id().equals(id)).findFirst())
+            .orElse(null);
 
         return new JavaProjectSemanticIndex.SymbolDescriptor(
             symbol.kind(),
@@ -343,6 +355,7 @@ public final class JavaProjectSemanticExtractor {
                     if (hasTokenKind(child, JavaTokenType.ELLIPSIS)) {
                         text += "[]";
                     }
+
                     parameterTypes.add(text);
                 }
             }
@@ -374,6 +387,7 @@ public final class JavaProjectSemanticExtractor {
     private boolean isStaticDeclaration(SyntaxNode node) {
         if (JavaSyntaxKinds.ENUM_CONSTANT.id().equals(node.kind().id()))
             return true;
+
         return hasTokenKind(node, JavaTokenType.STATIC_KEYWORD);
     }
 

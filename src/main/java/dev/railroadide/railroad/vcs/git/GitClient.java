@@ -38,7 +38,9 @@ import java.util.regex.Pattern;
 public class GitClient {
     private static final Pattern STASH_SUBJECT_PATTERN = Pattern.compile("^(?:WIP on|On)\\s+(.+?):\\s*(.*)$");
 
-    /** Process runner used by this client and subclasses to execute Git commands. */
+    /**
+     * Process runner used by this client and subclasses to execute Git commands.
+     */
     protected final GitProcessRunner runner;
 
     /**
@@ -1013,6 +1015,7 @@ public class GitClient {
                 branch = matcher.group(1).trim();
                 message = matcher.group(2).trim();
             }
+
             if (message.isBlank()) {
                 message = parts[3];
             }
@@ -1679,6 +1682,7 @@ public class GitClient {
         if (authorName != null && authorName.isBlank()) {
             authorName = null;
         }
+
         if (authorEmail != null && authorEmail.isBlank()) {
             authorEmail = null;
         }

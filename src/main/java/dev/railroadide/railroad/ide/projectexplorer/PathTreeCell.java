@@ -68,6 +68,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
     private static Node createIcon(Path path, ProjectStructure.Role role) {
         if (role == null)
             return FileUtils.getIcon(path);
+
         return new FontIcon(switch (role) {
             case MODULE -> FontAwesomeSolid.CUBE;
             case SOURCE_SET -> FontAwesomeSolid.LAYER_GROUP;
@@ -102,7 +103,9 @@ public class PathTreeCell extends TreeCell<PathItem> {
         }
     }
 
-    /** Builds the menu once per cell; its commands read the cell's current item when they run. */
+    /**
+     * Builds the menu once per cell; its commands read the cell's current item when they run.
+     */
     private ContextMenu contextMenu(boolean directory) {
         if (contextMenu == null) {
             directoryItems = List.of(new SeparatorMenuItem(),
@@ -111,6 +114,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
             contextMenu = createContextMenu(this);
             contextMenu.getItems().addAll(directoryItems);
         }
+
         directoryItems.forEach(item -> item.setVisible(directory));
         return contextMenu;
     }
@@ -199,6 +203,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
                                 CommandContext.withArgument(Railroad.PROJECT_MANAGER.getOpenProject(), this,
                                     new ExplorerTarget(getTreeView(), getTreeItem(), getScene().getWindow())));
                         }
+
                         event.consume();
                     }
                 });
@@ -218,6 +223,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
             if (textField == null) {
                 createTextField();
             }
+
             textField.setText(getItem().toString());
 
             setText(null);
@@ -288,6 +294,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
     private String getString() {
         if (getTreeItem() instanceof PathTreeItem pathTreeItem)
             return pathTreeItem.getDisplayName();
+
         return getItem() == null ? "" : getItem().toString();
     }
 

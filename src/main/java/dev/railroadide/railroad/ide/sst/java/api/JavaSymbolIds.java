@@ -80,9 +80,11 @@ public final class JavaSymbolIds {
         String value = symbol.value();
         if (!value.startsWith(NAMESPACE + "module/"))
             return null;
+
         int moduleEnd = value.indexOf('/', (NAMESPACE + "module/").length());
         if (moduleEnd < 0 || !value.startsWith("/type/", moduleEnd))
             return null;
+
         int start = moduleEnd + "/type/".length();
         int end = value.indexOf('/', start);
         try {
@@ -228,12 +230,15 @@ public final class JavaSymbolIds {
                 erased.append(character == '/' ? '.' : character);
             }
         }
+
         if (depth != 0 || erased.isEmpty())
             throw new IllegalArgumentException("Invalid parameter type: " + spelling);
+
         String normalized = erased.toString();
         if (!PARAMETER_TYPE.matcher(normalized).matches()
             || normalized.equals("void"))
             throw new IllegalArgumentException("Parameter type must be a resolved erased Java type: " + spelling);
+
         return normalized;
     }
 
@@ -259,15 +264,19 @@ public final class JavaSymbolIds {
                     found = true;
                     break;
                 }
+
                 if (!isTrivia(sibling)) {
                     ordinal++;
                 }
             }
+
             if (!found)
                 throw new IllegalArgumentException("Inconsistent syntax parent");
+
             path.add(Integer.toString(ordinal));
             current = parent;
         }
+
         Collections.reverse(path);
         return path.isEmpty() ? "self" : String.join(".", path);
     }
@@ -298,14 +307,17 @@ public final class JavaSymbolIds {
         String value = Objects.requireNonNull(id, "id").value();
         if (!value.startsWith(NAMESPACE))
             throw new IllegalArgumentException("Not a Java symbol identity: " + value);
+
         String[] parts = value.substring(NAMESPACE.length()).split("/", -1);
         if (parts.length % 2 != 0)
             throw new IllegalArgumentException("Malformed Java symbol identity: " + value);
+
         List<Component> components = new ArrayList<>();
         for (int index = 0; index < parts.length; index += 2) {
             components.add(new Component(parts[index],
                 new String(Base64.getUrlDecoder().decode(parts[index + 1]), StandardCharsets.UTF_8)));
         }
+
         return List.copyOf(components);
     }
 
@@ -318,13 +330,16 @@ public final class JavaSymbolIds {
     public static SymbolId fromComponents(List<Component> components) {
         if (components.isEmpty())
             throw new IllegalArgumentException("A Java symbol identity needs at least one component");
+
         var value = new StringBuilder(NAMESPACE);
         for (Component component : components) {
             if (value.length() > NAMESPACE.length()) {
                 value.append('/');
             }
+
             value.append(component.kind()).append('/').append(part(component.value()));
         }
+
         return new SymbolId(value.toString());
     }
 
@@ -362,6 +377,7 @@ public final class JavaSymbolIds {
     private static String ordinal(int index) {
         if (index < 0)
             throw new IllegalArgumentException("Declaration ordinal cannot be negative");
+
         return Integer.toString(index);
     }
 
@@ -369,6 +385,7 @@ public final class JavaSymbolIds {
         Objects.requireNonNull(name, "name");
         if (name.isBlank())
             throw new IllegalArgumentException("Name cannot be blank");
+
         return name;
     }
 

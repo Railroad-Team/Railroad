@@ -61,6 +61,7 @@ public abstract class AbstractPathListPane extends RRVBox {
                 setText(empty || item == null ? null : item.toString());
             }
         });
+
         VBox.setVgrow(listView, Priority.NEVER);
 
         var controls = new RRHBox();
@@ -185,7 +186,7 @@ public abstract class AbstractPathListPane extends RRVBox {
      * @return a JSON array containing the supplied paths
      */
     public static JsonElement toJson(List<Path> paths) {
-        var array = new JsonArray();
+        JsonArray array = new JsonArray();
         for (Path path : paths) {
             array.add(path.toString());
         }
@@ -200,11 +201,11 @@ public abstract class AbstractPathListPane extends RRVBox {
      * @return the paths represented by the value, or an empty list when it is not an array
      */
     public static List<Path> fromJson(JsonElement jsonElement) {
-        var paths = new ArrayList<Path>();
+        List<Path> paths = new ArrayList<Path>();
         if (jsonElement == null || !jsonElement.isJsonArray())
             return paths;
 
-        var jsonArray = jsonElement.getAsJsonArray();
+        Iterable<JsonElement> jsonArray = jsonElement.getAsJsonArray();
         for (JsonElement element : jsonArray) {
             try {
                 Path path = Path.of(element.getAsString());

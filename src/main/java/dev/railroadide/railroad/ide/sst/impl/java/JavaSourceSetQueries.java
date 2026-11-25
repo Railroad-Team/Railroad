@@ -12,7 +12,9 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-/** Resolves references from dependent source sets with each caller's own compile inputs. */
+/**
+ * Resolves references from dependent source sets with each caller's own compile inputs.
+ */
 public final class JavaSourceSetQueries {
     private final FeatureRequestContext request;
     private final Function<FeatureRequestContext, JavaWorkspaceAnalysis> capture;
@@ -30,7 +32,7 @@ public final class JavaSourceSetQueries {
         this.origin = capture.apply(request);
         this.sets = JavaSourceSets.of(request.workspaceSnapshot().configuration());
         this.scope = owner(request.documentSnapshot());
-        var provenance = request.documentSnapshot().origin().provenance();
+        ProvenanceKind provenance = request.documentSnapshot().origin().provenance();
         this.libraryView = !sets.isEmpty() && (provenance == ProvenanceKind.ATTACHED_SOURCE
             || provenance == ProvenanceKind.DECOMPILED);
     }
@@ -42,22 +44,25 @@ public final class JavaSourceSetQueries {
     }
 
     public UsageSearch usages(UsageQuery query, UsageSink sink) {
-        var workspace = request.workspaceSnapshot();
-        var document = request.documentSnapshot();
+        WorkspaceSnapshot workspace = request.workspaceSnapshot();
+        DocumentSnapshot document = request.documentSnapshot();
         if (scope == null && !libraryView)
             return origin.usages(workspace, document, query, sink, request::checkActive);
+
         int[] searched = {0};
+
         UsageSearch first = origin.usages(workspace, document, query, (batch, count, total) -> {
             searched[0] = count;
             sink.accept(batch, count, total);
         }, request::checkActive, path -> sets.owner(path) == scope);
         if (first == null)
             return null;
+
         List<Location<?>> results = new ArrayList<>(first.usages());
         var target = new UsageQuery.OfSymbol(first.symbol());
         visitScopes(Set.of(first.symbol()), false, (candidate, analysis) -> {
             int previous = searched[0];
-            var additional = analysis.usages(workspace, document, target, (batch, count, total) -> {
+            UsageSearch additional = analysis.usages(workspace, document, target, (batch, count, total) -> {
                 searched[0] = previous + count;
                 sink.accept(batch, searched[0], previous + total);
             }, request::checkActive, path -> sets.owner(path) == candidate);
@@ -65,6 +70,7 @@ public final class JavaSourceSetQueries {
                 results.addAll(additional.usages());
             }
         });
+
         results.sort(Comparator
             .comparing(
                 (Location<?> location) -> workspace.document(location.documentId()).orElseThrow().uri().toString())
@@ -73,37 +79,41 @@ public final class JavaSourceSetQueries {
     }
 
     public WorkspaceSymbolGraph graph(SymbolId target, boolean rename) {
-        var base = rename ? origin.renameGraph(request::checkActive) : origin.resolvedGraph(request::checkActive);
+        WorkspaceSymbolGraph base = rename
+            ? origin.renameGraph(request::checkActive)
+            : origin.resolvedGraph(request::checkActive);
         if ((scope == null && !libraryView) || target == null)
             return base;
 
         Set<SymbolId> anchors = new HashSet<>();
         anchors.add(target);
         if (rename) {
-            var pending = new ArrayDeque<>(anchors);
+            Deque<SymbolId> pending = new ArrayDeque<>(anchors);
             while (!pending.isEmpty()) {
-                for (var edge : base.outgoingEdges(pending.removeFirst())) {
+                for (SymbolEdge edge : base.outgoingEdges(pending.removeFirst())) {
                     if (edge.kind().equals(EdgeKindId.OVERRIDE) && anchors.add(edge.target())) {
                         pending.add(edge.target());
                     }
                 }
             }
         }
+
         Map<DocumentId, SemanticIndexShard> shards = new LinkedHashMap<>();
-        for (var shard : base.shards().values()) {
+        for (SemanticIndexShard shard : base.shards().values()) {
             request.checkActive();
-            var source = request.workspaceSnapshot().document(shard.documentId());
+            Optional<DocumentSnapshot> source = request.workspaceSnapshot().document(shard.documentId());
             if (source.isEmpty() || owner(source.get()) == scope) {
                 shards.put(shard.documentId(), shard);
             }
         }
+
         visitScopes(anchors, true, (candidate, analysis) -> {
-            var graph = rename
+            WorkspaceSymbolGraph graph = rename
                 ? analysis.renameGraph(request::checkActive)
                 : analysis.resolvedGraph(request::checkActive);
-            for (var shard : graph.shards().values()) {
+            for (SemanticIndexShard shard : graph.shards().values()) {
                 request.checkActive();
-                var document = request.workspaceSnapshot().document(shard.documentId());
+                Optional<DocumentSnapshot> document = request.workspaceSnapshot().document(shard.documentId());
                 if (document.isEmpty()) {
                     shards.putIfAbsent(shard.documentId(), shard);
                 } else if (owner(document.get()) == candidate) {
@@ -111,6 +121,7 @@ public final class JavaSourceSetQueries {
                 }
             }
         });
+
         return WorkspaceSymbolGraph.of(shards.values(), request::checkActive);
     }
 
@@ -124,41 +135,49 @@ public final class JavaSourceSetQueries {
             String name = JavaSymbolIds.owningTypeName(target);
             if (name == null)
                 continue;
-            var shard = origin.declarationShard(name, request::checkActive);
+
+            SemanticIndexShard shard = origin.declarationShard(name, request::checkActive);
             if (shard != null) {
                 declarations.put(name, shard);
             }
         }
+
         if (declarations.isEmpty())
             return;
+
         Set<JavaSourceSets.Scope> visited = Collections.newSetFromMap(new IdentityHashMap<>());
         visited.add(scope);
-        var workspace = request.workspaceSnapshot();
-        for (var document : workspace.documents().values()) {
+        WorkspaceSnapshot workspace = request.workspaceSnapshot();
+        for (DocumentSnapshot document : workspace.documents().values()) {
             request.checkActive();
             if (!(document instanceof TextDocumentSnapshot) || !"java".equals(document.languageId()))
                 continue;
-            var candidate = owner(document);
+
+            JavaSourceSets.Scope candidate = owner(document);
             if (candidate == null || !visited.add(candidate))
                 continue;
+
             boolean reachable = declarations.values().stream().anyMatch(shard -> shard.uri().filePath()
                 .filter(path -> sets.owner(path) != null).map(path -> sets.visible(candidate, path)).orElse(true));
             boolean dependency = includeDependencies && scope != null && document.uri().filePath()
                 .filter(path -> sets.visible(scope, path)).isPresent();
             if (!reachable && !dependency)
                 continue;
+
             var context = new FeatureRequestContext(workspace, document, request.cancellationToken(),
                 request.deadline());
-            var analysis = capture.apply(context);
+            JavaWorkspaceAnalysis analysis = capture.apply(context);
             if (dependency) {
                 visit.accept(candidate, analysis);
                 continue;
             }
-            for (var declaration : declarations.entrySet()) {
-                var actual = analysis.declarationShard(declaration.getKey(), request::checkActive);
+
+            for (Map.Entry<String, SemanticIndexShard> declaration : declarations.entrySet()) {
+                SemanticIndexShard actual = analysis.declarationShard(declaration.getKey(), request::checkActive);
                 if (actual == null)
                     continue;
-                var expected = declaration.getValue().uri();
+
+                DocumentUri expected = declaration.getValue().uri();
                 boolean sameView = libraryView && expected.equals(request.documentSnapshot().uri())
                     && analysis.topLevelBinaryLocation(declaration.getKey())
                         .map(binary -> request.documentSnapshot().origin().sources()

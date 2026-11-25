@@ -220,6 +220,7 @@ public class GitCommitCherryPickButton extends RRButton {
 
             cancelButton.setOnAction(_ -> {
                 canContinueRef.complete(new boolean[]{false, false});
+
                 dialog.close();
             });
 
@@ -227,9 +228,9 @@ public class GitCommitCherryPickButton extends RRButton {
                 gitManager.stashChanges(
                     "Railroad: before cherry-pick " + currentCommit.map(GitCommit::shortHash).orElse("HEAD"), true);
                 canContinueRef.complete(new boolean[]{true, true});
+
                 dialog.close();
             });
-
         });
 
         return canContinueRef;

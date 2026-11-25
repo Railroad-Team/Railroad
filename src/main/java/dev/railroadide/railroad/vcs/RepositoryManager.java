@@ -23,7 +23,9 @@ public class RepositoryManager implements VCSService {
      */
     private final ObservableList<VCSProfile> profiles = FXCollections.observableArrayList();
 
-    /** Creates a repository manager with no VCS profiles. */
+    /**
+     * Creates a repository manager with no VCS profiles.
+     */
     public RepositoryManager() {
     }
 

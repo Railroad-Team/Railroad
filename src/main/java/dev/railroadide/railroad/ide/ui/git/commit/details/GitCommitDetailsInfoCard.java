@@ -45,9 +45,10 @@ public class GitCommitDetailsInfoCard extends RRVBox {
 
         var parentHashesFlow = new RRFlowPane(4, 4);
         parentHashesFlow.getStyleClass().add("git-commit-details-parent-hashes-flow");
-        for (var parentHash : commit.parentHashes()) {
+        for (String parentHash : commit.parentHashes()) {
             parentHashesFlow.getChildren().add(createChip(parentHash, "git-commit-details-parent-hash"));
         }
+
         parentsHbox.getChildren().add(parentHashesFlow);
         HBox.setHgrow(parentHashesFlow, Priority.ALWAYS);
 
@@ -99,7 +100,7 @@ public class GitCommitDetailsInfoCard extends RRVBox {
     }
 
     private RRHBox createChip(String text, String styleClass) {
-        var valueText = (text == null || text.isBlank())
+        Text valueText = (text == null || text.isBlank())
             ? new LocalizedText("railroad.git.commit.details.unknown")
             : new Text(text);
         valueText.getStyleClass().add(styleClass);

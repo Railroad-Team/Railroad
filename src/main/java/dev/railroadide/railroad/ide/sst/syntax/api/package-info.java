@@ -26,6 +26,7 @@
  *     if ("JAVA_IMPORT_DECLARATION".equals(node.kind().id())) {
  *         // inspect and report
  *     }
+ *
  * });
  * }</pre>
  */

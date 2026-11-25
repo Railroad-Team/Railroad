@@ -79,6 +79,7 @@ public abstract class AbstractGitBranchesListView<T extends GitBranch> extends R
                     onBranchDoubleClicked(branch, cell);
                 }
             });
+
             return cell;
         };
 
@@ -140,6 +141,7 @@ public abstract class AbstractGitBranchesListView<T extends GitBranch> extends R
                 activeDetailsPopup = null;
             }
         });
+
         activeDetailsPopup = popup;
     }
 
@@ -165,7 +167,7 @@ public abstract class AbstractGitBranchesListView<T extends GitBranch> extends R
 
         header.getChildren().addAll(name, spacer, status);
 
-        var actionRow = createActionButtonsRow(branch);
+        HBox actionRow = createActionButtonsRow(branch);
 
         var body = new RRVBox(6);
         body.getStyleClass().add("git-branch-details-body");
@@ -183,13 +185,13 @@ public abstract class AbstractGitBranchesListView<T extends GitBranch> extends R
         row.getStyleClass().add("git-branch-details-actions");
         row.setAlignment(Pos.CENTER_LEFT);
 
-        var checkoutButton = createActionButton("railroad.git.branches.actions.checkout", FontAwesomeSolid.CHECK);
-        var setUpstreamButton = createActionButton("railroad.git.branches.actions.set_upstream",
+        RRButton checkoutButton = createActionButton("railroad.git.branches.actions.checkout", FontAwesomeSolid.CHECK);
+        RRButton setUpstreamButton = createActionButton("railroad.git.branches.actions.set_upstream",
             FontAwesomeSolid.CODE_BRANCH);
-        var unsetUpstreamButton = createActionButton("railroad.git.branches.actions.unset_upstream",
+        RRButton unsetUpstreamButton = createActionButton("railroad.git.branches.actions.unset_upstream",
             FontAwesomeSolid.TIMES);
-        var renameButton = createActionButton("railroad.git.branches.actions.rename", FontAwesomeSolid.PENCIL_ALT);
-        var deleteButton = createActionButton("railroad.git.branches.actions.delete", FontAwesomeSolid.TRASH);
+        RRButton renameButton = createActionButton("railroad.git.branches.actions.rename", FontAwesomeSolid.PENCIL_ALT);
+        RRButton deleteButton = createActionButton("railroad.git.branches.actions.delete", FontAwesomeSolid.TRASH);
 
         unsetUpstreamButton.setVariant(ButtonVariant.DANGER);
         deleteButton.setVariant(ButtonVariant.DANGER);
@@ -276,6 +278,7 @@ public abstract class AbstractGitBranchesListView<T extends GitBranch> extends R
         if (remoteBranches.contains(defaultUpstream)) {
             upstreamComboBox.getEditor().setText(defaultUpstream);
         }
+
         content.getChildren().add(upstreamComboBox);
 
         var errorText = new LocalizedText("");
@@ -293,7 +296,7 @@ public abstract class AbstractGitBranchesListView<T extends GitBranch> extends R
             });
 
         var dialog = WindowBuilder.createDialog("railroad.git.branches.set_upstream_dialog.title", dialogBuilder);
-        var confirmButton = (RRButton) dialog.getScene().lookup(".rr-button.success");
+        RRButton confirmButton = (RRButton) dialog.getScene().lookup(".rr-button.success");
         if (confirmButton != null) {
             validateUpstreamSelection(upstreamComboBox.getEditor().getText(), remoteBranches, errorText, confirmButton);
             upstreamComboBox.getEditor().textProperty().addListener((
@@ -400,7 +403,7 @@ public abstract class AbstractGitBranchesListView<T extends GitBranch> extends R
             });
 
         var dialog = WindowBuilder.createDialog("railroad.git.branches.rename_dialog.title", dialogBuilder);
-        var confirmButton = (RRButton) dialog.getScene().lookup(".rr-button.success");
+        RRButton confirmButton = (RRButton) dialog.getScene().lookup(".rr-button.success");
         if (confirmButton != null) {
             validateRenameBranchName(localBranch.name(), newNameField.getText(), errorText, confirmButton);
             newNameField.textProperty().addListener((
@@ -639,6 +642,7 @@ public abstract class AbstractGitBranchesListView<T extends GitBranch> extends R
                         if (forceDialogStage != null) {
                             forceDialogStage.close();
                         }
+
                         dialog.close();
                     }
                 });
@@ -648,7 +652,7 @@ public abstract class AbstractGitBranchesListView<T extends GitBranch> extends R
                 forceDialogBuilder);
             forceDialogRef.set(forceDialog);
 
-            var confirmButton = (RRButton) forceDialog.getScene().lookup(".rr-button.primary");
+            RRButton confirmButton = (RRButton) forceDialog.getScene().lookup(".rr-button.primary");
             if (confirmButton != null) {
                 confirmButton.setDisable(true);
                 discardTextField.textProperty()
@@ -801,10 +805,13 @@ public abstract class AbstractGitBranchesListView<T extends GitBranch> extends R
     public boolean canExecuteBranchAction(String action, GitBranch branch) {
         if (branch == null || !project.getGitManager().isActive())
             return false;
+
         if (action.equals("checkout"))
             return !(branch instanceof GitBranch.LocalGitBranch local) || !local.isCurrent();
+
         if (!(branch instanceof GitBranch.LocalGitBranch local))
             return false;
+
         return !action.equals("delete") || !local.isCurrent();
     }
 
@@ -817,11 +824,13 @@ public abstract class AbstractGitBranchesListView<T extends GitBranch> extends R
     public void executeBranchAction(String action, GitBranch branch) {
         if (!canExecuteBranchAction(action, branch))
             return;
+
         if (action.equals("checkout")) {
             checkoutBranch(branch);
             return;
         }
-        var local = (GitBranch.LocalGitBranch) branch;
+
+        GitBranch.LocalGitBranch local = (GitBranch.LocalGitBranch) branch;
         switch (action) {
             case "set_upstream" -> openSetUpstreamDialog(local);
             case "unset_upstream" -> openUnsetUpstreamDialog(local);

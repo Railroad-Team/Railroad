@@ -19,7 +19,9 @@ public final class DefaultProjectIndexContextResolver implements ProjectIndexCon
     private final Function<Project, ProjectLanguageIndexService.Session> sessions;
     private final LanguageRuntime runtime;
 
-    /** Creates a resolver for standalone contexts without live index ownership. */
+    /**
+     * Creates a resolver for standalone contexts without live index ownership.
+     */
     public DefaultProjectIndexContextResolver() {
         this(_ -> null);
     }
@@ -46,10 +48,11 @@ public final class DefaultProjectIndexContextResolver implements ProjectIndexCon
         this.sessions = Objects.requireNonNull(sessions);
         this.runtime = Objects.requireNonNull(runtime);
     }
+
     @Override
     public ProjectIndexContext resolve(Project project) {
         Objects.requireNonNull(project, "project");
-        var session = sessions.apply(project);
+        ProjectLanguageIndexService.Session session = sessions.apply(project);
         long generation = session == null ? 0 : session.configurationGeneration();
         if (project instanceof RailroadProject railroadProject) {
             railroadProject.awaitFacetDiscovery();

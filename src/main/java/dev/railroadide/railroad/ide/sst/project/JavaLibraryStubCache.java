@@ -158,7 +158,9 @@ public final class JavaLibraryStubCache {
         }
     }
 
-    /** Hashes the class file of {@code type}, its nested classes and its anonymous classes. */
+    /**
+     * Hashes the class file of {@code type}, its nested classes and its anonymous classes.
+     */
     private static void hashClassFiles(Class<?> type, MessageDigest digest) throws IOException {
         String simpleBinaryName = type.getName().substring(type.getName().lastIndexOf('.') + 1);
         if (!hashResource(type, simpleBinaryName + ".class", digest))
@@ -223,7 +225,9 @@ public final class JavaLibraryStubCache {
             output.writeInt(count);
         }
 
-        /** Writes each distinct string once; later occurrences refer back to it by index. */
+        /**
+         * Writes each distinct string once; later occurrences refer back to it by index.
+         */
         private void string(@Nullable String value) throws IOException {
             if (value == null) {
                 output.writeInt(-1);
@@ -314,18 +318,22 @@ public final class JavaLibraryStubCache {
                     string(classType.name());
                     types(classType.typeArguments());
                 }
+
                 case Type.PrimitiveType primitive -> {
                     output.writeByte(2);
                     string(primitive.name());
                 }
+
                 case Type.ArrayType array -> {
                     output.writeByte(3);
                     type(array.componentType());
                 }
+
                 case Type.TypeVariable variable -> {
                     output.writeByte(4);
                     string(variable.name());
                 }
+
                 case Type.WildcardType wildcard -> {
                     output.writeByte(5);
                     type(wildcard.bound());
@@ -352,42 +360,52 @@ public final class JavaLibraryStubCache {
                     output.writeByte(1);
                     string(string);
                 }
+
                 case Integer number -> {
                     output.writeByte(2);
                     output.writeInt(number);
                 }
+
                 case Long number -> {
                     output.writeByte(3);
                     output.writeLong(number);
                 }
+
                 case Float number -> {
                     output.writeByte(4);
                     output.writeFloat(number);
                 }
+
                 case Double number -> {
                     output.writeByte(5);
                     output.writeDouble(number);
                 }
+
                 case Boolean bool -> {
                     output.writeByte(6);
                     output.writeBoolean(bool);
                 }
+
                 case Byte number -> {
                     output.writeByte(7);
                     output.writeByte(number);
                 }
+
                 case Character character -> {
                     output.writeByte(8);
                     output.writeChar(character);
                 }
+
                 case Short number -> {
                     output.writeByte(9);
                     output.writeShort(number);
                 }
+
                 case org.objectweb.asm.Type type -> {
                     output.writeByte(10);
                     string(type.getDescriptor());
                 }
+
                 case List<?> list -> {
                     output.writeByte(11);
                     output.writeInt(list.size());
@@ -395,10 +413,12 @@ public final class JavaLibraryStubCache {
                         annotationValue(element);
                     }
                 }
+
                 case AnnotationStub annotation -> {
                     output.writeByte(12);
                     annotations(List.of(annotation));
                 }
+
                 default -> throw new IOException("Unsupported annotation value " + value.getClass().getName());
             }
         }
@@ -443,7 +463,7 @@ public final class JavaLibraryStubCache {
                 byte[] bytes = new byte[count()];
                 input.readFully(bytes);
                 // Names recur across archives; interning lets every restored archive share one copy.
-                var value = new String(bytes, StandardCharsets.UTF_8).intern();
+                String value = new String(bytes, StandardCharsets.UTF_8).intern();
                 strings.add(value);
                 return value;
             }
@@ -547,7 +567,9 @@ public final class JavaLibraryStubCache {
             return immutable(annotations);
         }
 
-        /** Most stub lists are empty; sharing {@link List#of()} for them keeps restored stubs small. */
+        /**
+         * Most stub lists are empty; sharing {@link List#of()} for them keeps restored stubs small.
+         */
         private static <T> List<T> immutable(List<T> values) {
             return values.isEmpty() ? List.of() : values.stream().toList();
         }
@@ -571,14 +593,18 @@ public final class JavaLibraryStubCache {
                     for (int index = 0; index < count; index++) {
                         elements.add(annotationValue());
                     }
+
                     yield List.copyOf(elements);
                 }
+
                 case 12 -> {
                     List<AnnotationStub> annotations = annotations();
                     if (annotations.size() != 1)
                         throw new IOException("Invalid nested annotation");
+
                     yield annotations.getFirst();
                 }
+
                 default -> throw new IOException("Invalid annotation value tag " + tag);
             };
         }

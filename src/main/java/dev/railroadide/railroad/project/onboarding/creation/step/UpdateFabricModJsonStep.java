@@ -63,7 +63,7 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
                         if (!entry.getValue().isJsonArray())
                             return;
 
-                        JsonArray array = entry.getValue().getAsJsonArray();
+                        Iterable<JsonElement> array = entry.getValue().getAsJsonArray();
                         boolean requiresNormalization = false;
                         for (JsonElement element : array) {
                             if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
@@ -75,7 +75,7 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
                         if (!requiresNormalization)
                             return;
 
-                        var normalized = new JsonArray();
+                        JsonArray normalized = new JsonArray();
                         for (JsonElement element : array) {
                             if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
                                 var obj = new JsonObject();
@@ -93,6 +93,7 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
 
                 // We're in version 1, using
                 // 'https://wiki.fabricmc.net/documentation:fabric_mod_json_spec#version_1_current'
+
                 FabricModJson modJson = Railroad.GSON.fromJson(json, FabricModJson.class);
 
                 String modId = ctx.data().getAsString(MinecraftProjectKeys.MOD_ID);
@@ -120,13 +121,14 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
 
                 String groupId = ctx.data().getAsString(MavenProjectKeys.GROUP_ID);
                 String mainClass = ctx.data().getAsString(MinecraftProjectKeys.MAIN_CLASS);
-                var entrypoints = new EntrypointContainer();
+                EntrypointContainer entrypoints = new EntrypointContainer();
                 entrypoints.put("main",
                     Collections.singletonList(Entrypoint.of(groupId + "." + modId + "." + mainClass)));
                 if (ctx.data().getAsBoolean(FabricProjectKeys.SPLIT_SOURCES, false)) {
                     entrypoints.put("client",
                         Collections.singletonList(Entrypoint.of(groupId + "." + modId + "." + mainClass + "Client")));
                 }
+
                 modJson.setEntrypoints(entrypoints);
 
                 List<MixinEnvironment> mixinConfigs = new ArrayList<>();
@@ -134,6 +136,7 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
                 if (ctx.data().getAsBoolean(FabricProjectKeys.SPLIT_SOURCES, false)) {
                     mixinConfigs.add(new MixinEnvironment(modId + ".client.mixins.json", "client"));
                 }
+
                 modJson.setMixins(mixinConfigs);
 
                 Map<String, VersionRange> depends = modJson.getDepends();
@@ -169,6 +172,7 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
                     Railroad.LOGGER.warn(
                         "No fabric api version found in context during project creation, setting fabric dependency to '*'.");
                 }
+
                 modJson.setDepends(depends);
 
                 modJson.setSuggests(null); // Clear out example suggests
@@ -211,12 +215,15 @@ public record UpdateFabricModJsonStep(FilesService files) implements CreationSte
                 if (ctx.data().contains(ProjectData.DefaultKeys.ISSUES_URL)) {
                     contact.setIssues(ctx.data().getAsString(ProjectData.DefaultKeys.ISSUES_URL));
                 }
+
                 if (ctx.data().contains(ProjectData.DefaultKeys.HOMEPAGE_URL)) {
                     contact.setHomepage(ctx.data().getAsString(ProjectData.DefaultKeys.HOMEPAGE_URL));
                 }
+
                 if (ctx.data().contains(ProjectData.DefaultKeys.SOURCES_URL)) {
                     contact.setSources(ctx.data().getAsString(ProjectData.DefaultKeys.SOURCES_URL));
                 }
+
                 modJson.setContact(contact);
 
                 files.writeString(fabricModJson, Railroad.GSON.toJson(modJson));

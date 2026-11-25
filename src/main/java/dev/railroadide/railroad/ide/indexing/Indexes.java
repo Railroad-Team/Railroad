@@ -53,6 +53,7 @@ public class Indexes {
         }
 
         // check if its using java 9 modules
+
         if (Files.isRegularFile(javaHome.resolve("lib").resolve("rt.jar"))) {
             scanRTJar(javaHome, stubs, activityCheck);
         } else if (Files.isRegularFile(javaHome.resolve("jmods").resolve("java.base.jmod"))) {
@@ -70,7 +71,7 @@ public class Indexes {
         Path rtJar = javaHome.resolve("lib").resolve("rt.jar");
         try (var jar = new JarFile(rtJar.toFile())) {
             Enumeration<JarEntry> entries = jar.entries();
-            var processed = ActivityProgress.current().count("railroad.activity.archive_entries",
+            Runnable processed = ActivityProgress.current().count("railroad.activity.archive_entries",
                 ActivityProgress.Unit.COUNT, jar.size());
             for (; entries.hasMoreElements(); processed.run()) {
                 activityCheck.run();
@@ -93,8 +94,9 @@ public class Indexes {
     private static void scanJMods(Path javaHome, List<ClassStub> stubs, Runnable activityCheck) {
         Path jmods = javaHome.resolve("jmods");
         try (var paths = Files.list(jmods)) {
-            var modules = paths.filter(path -> path.getFileName().toString().endsWith(".jmod")).sorted().toList();
-            var processed = ActivityProgress.current().count("railroad.activity.jdk_modules",
+            List<Path> modules = paths.filter(path -> path.getFileName().toString().endsWith(".jmod")).sorted()
+                .toList();
+            Runnable processed = ActivityProgress.current().count("railroad.activity.jdk_modules",
                 ActivityProgress.Unit.COUNT, modules.size());
             for (Path jmodPath : modules) {
                 activityCheck.run();
@@ -138,8 +140,8 @@ public class Indexes {
 
             Path modules = fileSystem.getPath("/modules");
             try (var children = Files.list(modules)) {
-                var moduleRoots = children.filter(Files::isDirectory).toList();
-                var indexed = ActivityProgress.current().count("railroad.activity.jdk_modules",
+                List<Path> moduleRoots = children.filter(Files::isDirectory).toList();
+                Runnable indexed = ActivityProgress.current().count("railroad.activity.jdk_modules",
                     ActivityProgress.Unit.COUNT, moduleRoots.size());
                 for (Path module : moduleRoots) {
                     activityCheck.run();
@@ -152,6 +154,7 @@ public class Indexes {
                             })
                             .forEach(path -> parseRuntimeClass(path, stubs, activityCheck));
                     }
+
                     indexed.run();
                 }
             }

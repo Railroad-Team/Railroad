@@ -78,6 +78,7 @@ public final class JavaParserParitySupport {
         for (String issue : issues) {
             builder.append("- ").append(issue).append('\n');
         }
+
         return builder.toString().trim();
     }
 
@@ -105,10 +106,12 @@ public final class JavaParserParitySupport {
             if (node.kind().id().equals(kindId)) {
                 count++;
             }
+
             for (SyntaxNode child : node.children()) {
                 stack.push(child);
             }
         }
+
         return count;
     }
 
@@ -146,10 +149,12 @@ public final class JavaParserParitySupport {
             if (kindId.startsWith("JAVA_MODULE_") && kindId.endsWith(MODULE_DIRECTIVE_SUFFIX)) {
                 count++;
             }
+
             for (SyntaxNode child : node.children()) {
                 stack.push(child);
             }
         }
+
         return count;
     }
 

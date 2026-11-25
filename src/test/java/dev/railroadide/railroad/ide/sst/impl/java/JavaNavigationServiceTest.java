@@ -25,6 +25,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.stream.Stream;
+import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
+import dev.railroadide.railroad.ide.sst.graph.api.WorkspaceSymbolGraph;
+import dev.railroadide.railroad.ide.sst.provider.api.UsageSearch;
+import dev.railroadide.railroad.ide.sst.request.api.FeatureResult;
+import dev.railroadide.railroad.ide.sst.semantic.api.DefinitionTarget;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -41,20 +46,20 @@ public class JavaNavigationServiceTest {
 
     private void resolvesCrossFileMethodsFieldsAndOverloadedConstructors(String expression) {
         String declarations = "class Helper { static int VALUE; static void run() {} Helper() {} Helper(int n) {} }";
-        var helper = document("Helper.java", declarations);
-        var source = document("Main.java", "class Main { void test() { " + expression + "; } }");
-        var store = store(source, helper);
+        TextDocumentSnapshot helper = document("Helper.java", declarations);
+        TextDocumentSnapshot source = document("Main.java", "class Main { void test() { " + expression + "; } }");
+        DefaultDocumentStore store = store(source, helper);
         String name = expression.contains("run") ? "run" : expression.contains("VALUE") ? "VALUE" : "Helper";
         int offset = source.text().lastIndexOf(name);
         String expected = expression.equals("new Helper(42)")
             ? "Helper(int"
             : expression.equals("new Helper()") ? "Helper()" : name;
         try (var services = new JavaSstServices()) {
-            var context = context(store.capture(), source);
-            var result = services.definitions(context, offset);
+            FeatureRequestContext context = context(store.capture(), source);
+            FeatureResult<List<DefinitionTarget>> result = services.definitions(context, offset);
             assertTrue(result.belongsTo(context));
             assertEquals(1, result.value().size());
-            var target = result.value().getFirst().location();
+            Location.TextLocation target = result.value().getFirst().location();
             assertEquals(helper.id(), target.documentId());
             assertEquals(declarations.indexOf(expected), target.range().start);
             assertEquals(name, declarations.substring(target.range().start, target.range().end));
@@ -71,11 +76,12 @@ public class JavaNavigationServiceTest {
 
     private void preservesSameFileFieldParameterAndLocalNavigation(String name) {
         String text = "class Example { int value; int read(int argument) { int local = argument; return value + local; } }";
-        var source = document("Example.java", text);
+        TextDocumentSnapshot source = document("Example.java", text);
         try (var services = new JavaSstServices()) {
-            var result = services.definitions(context(store(source).capture(), source), text.lastIndexOf(name));
+            FeatureResult<List<DefinitionTarget>> result = services
+                .definitions(context(store(source).capture(), source), text.lastIndexOf(name));
             assertEquals(1, result.value().size());
-            var target = result.value().getFirst().location();
+            Location.TextLocation target = result.value().getFirst().location();
             assertEquals(source.id(), target.documentId());
             assertEquals(text.indexOf(name), target.range().start);
         }
@@ -84,24 +90,25 @@ public class JavaNavigationServiceTest {
     @Test
     public void definitionsResolveOnlyTheRequestingDocument() throws Exception {
         String declarations = "class Helper { static void run() {} }";
-        var helper = document("Helper.java", declarations);
-        var other = document("Other.java",
+        TextDocumentSnapshot helper = document("Helper.java", declarations);
+        TextDocumentSnapshot other = document("Other.java",
             "class Other { void unrelated() { int unrelatedLocal = 1; Helper.run(); } }");
-        var source = document("Main.java", "class Main { void test() { int local = 1; Helper.run(); local++; } }");
-        var store = store(source, helper, other);
+        TextDocumentSnapshot source = document("Main.java",
+            "class Main { void test() { int local = 1; Helper.run(); local++; } }");
+        DefaultDocumentStore store = store(source, helper, other);
         try (var services = new JavaSstServices()) {
-            var context = context(store.capture(), source);
-            var call = services.definitions(context, source.text().lastIndexOf("run")).value();
-            var local = services.definitions(context, source.text().lastIndexOf("local")).value();
+            FeatureRequestContext context = context(store.capture(), source);
+            List<DefinitionTarget> call = services.definitions(context, source.text().lastIndexOf("run")).value();
+            List<DefinitionTarget> local = services.definitions(context, source.text().lastIndexOf("local")).value();
 
-            var target = call.getFirst().location();
+            Location.TextLocation target = call.getFirst().location();
             assertEquals(helper.id(), target.documentId());
             assertEquals(declarations.indexOf("run"), target.range().start);
-            var localTarget = local.getFirst().location();
+            Location.TextLocation localTarget = local.getFirst().location();
             assertEquals(source.id(), localTarget.documentId());
             assertEquals(source.text().indexOf("local"), localTarget.range().start);
-            var analysis = services.capture(context);
-            var otherShard = analysis.sourceIndex().semanticShards().stream()
+            JavaWorkspaceAnalysis analysis = services.capture(context);
+            SemanticIndexShard otherShard = analysis.sourceIndex().semanticShards().stream()
                 .filter(shard -> shard.documentId().equals(other.id())).findFirst().orElseThrow();
             assertTrue(otherShard.declarations().stream().anyMatch(symbol -> symbol.simpleName().equals("unrelated")));
             assertFalse(otherShard.declarations().stream()
@@ -116,9 +123,9 @@ public class JavaNavigationServiceTest {
 
     @Test
     public void whitespacePunctuationUnknownCallsAndOutOfBoundsReturnNoTargets() {
-        var source = document("Main.java", "class Main { void test() { missing(); } }");
+        TextDocumentSnapshot source = document("Main.java", "class Main { void test() { missing(); } }");
         try (var services = new JavaSstServices()) {
-            var context = context(store(source).capture(), source);
+            FeatureRequestContext context = context(store(source).capture(), source);
             for (int offset : List.of(-1, 5, source.text().indexOf("missing"), source.text().indexOf(';'),
                 source.text().length(), source.text().length() + 1)) {
                 assertTrue(services.definitions(context, offset).value().isEmpty(), "Offset: " + offset);
@@ -128,17 +135,18 @@ public class JavaNavigationServiceTest {
 
     @Test
     public void oldRequestKeepsItsDestinationRevisionAfterAnOverlayIsPublished() {
-        var helper = document("Helper.java", "class Helper { static int VALUE; }");
-        var source = document("Main.java", "class Main { int x = Helper.VALUE; }");
-        var store = store(source, helper);
-        var old = context(store.capture(), source);
+        TextDocumentSnapshot helper = document("Helper.java", "class Helper { static int VALUE; }");
+        TextDocumentSnapshot source = document("Main.java", "class Main { int x = Helper.VALUE; }");
+        DefaultDocumentStore store = store(source, helper);
+        FeatureRequestContext old = context(store.capture(), source);
         var changed = new TextDocumentSnapshot(helper.id(), helper.uri(), helper.version().next(), "java",
             helper.origin(), "\n\n" + helper.text(), StandardCharsets.UTF_8);
         store.publishOverlay(changed);
         try (var services = new JavaSstServices()) {
             int offset = source.text().indexOf("VALUE");
-            var before = services.definitions(old, offset).value().getFirst().location();
-            var after = services.definitions(context(store.capture(), source), offset).value().getFirst().location();
+            Location.TextLocation before = services.definitions(old, offset).value().getFirst().location();
+            Location.TextLocation after = services.definitions(context(store.capture(), source), offset).value()
+                .getFirst().location();
             assertEquals(helper.version(), before.documentVersion());
             assertEquals(changed.version(), after.documentVersion());
             assertEquals(before.range().start + 2, after.range().start);
@@ -147,8 +155,8 @@ public class JavaNavigationServiceTest {
 
     @Test
     public void cancelledRequestsAndClosedServicesRejectNavigation() {
-        var source = document("Main.java", "class Main {}");
-        var workspace = store(source).capture();
+        TextDocumentSnapshot source = document("Main.java", "class Main {}");
+        WorkspaceSnapshot workspace = store(source).capture();
         var cancellation = new CancellationTokenSource();
         cancellation.cancel();
         var cancelled = new FeatureRequestContext(workspace, source, cancellation.token(), Deadline.none());
@@ -158,12 +166,14 @@ public class JavaNavigationServiceTest {
         } finally {
             services.close();
         }
+
         assertThrows(CancellationException.class, () -> services.definitions(context(workspace, source), 6));
     }
 
     @Test
     public void capturedOverlayResolvesForRequestsOutsideSourceRoots() {
-        var source = document("Scratch.java", "class Scratch { int value; int read() { return value; } }");
+        TextDocumentSnapshot source = document("Scratch.java",
+            "class Scratch { int value; int read() { return value; } }");
         var store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()));
         store.publishBacking(source);
         var changed = new TextDocumentSnapshot(source.id(), source.uri(), source.version().next(), "java",
@@ -171,12 +181,12 @@ public class JavaNavigationServiceTest {
         store.publishOverlay(changed);
         try (var provider = new JavaWorkspaceAnalysisProvider()) {
             int offset = changed.text().lastIndexOf("value");
-            var workspace = store.capture();
-            var graph = provider.capture(workspace, source.id()).resolvedGraph();
-            var id = SemanticNavigationResolver.symbolAt(graph, changed, offset).orElseThrow();
-            var targets = SemanticNavigationResolver.definitionsOf(graph, workspace, id);
+            WorkspaceSnapshot workspace = store.capture();
+            WorkspaceSymbolGraph graph = provider.capture(workspace, source.id()).resolvedGraph();
+            SymbolId id = SemanticNavigationResolver.symbolAt(graph, changed, offset).orElseThrow();
+            List<DefinitionTarget> targets = SemanticNavigationResolver.definitionsOf(graph, workspace, id);
             assertEquals(1, targets.size());
-            var target = targets.getFirst();
+            DefinitionTarget target = targets.getFirst();
             assertSame(changed, target.snapshot());
             assertEquals(changed.text().indexOf("value"), target.location().range().start);
         }
@@ -184,18 +194,20 @@ public class JavaNavigationServiceTest {
 
     @Test
     public void implementationsOfATypeListEveryTransitiveSubtypeInRankOrder() {
-        var shape = document("Shape.java", "interface Shape { double area(); }");
-        var circle = document("Circle.java", "class Circle implements Shape { public double area() { return 1; } }");
-        var square = document("Square.java", "class Square extends Circle { public double area() { return 2; } }");
-        var store = store(shape, circle, square);
+        TextDocumentSnapshot shape = document("Shape.java", "interface Shape { double area(); }");
+        TextDocumentSnapshot circle = document("Circle.java",
+            "class Circle implements Shape { public double area() { return 1; } }");
+        TextDocumentSnapshot square = document("Square.java",
+            "class Square extends Circle { public double area() { return 2; } }");
+        DefaultDocumentStore store = store(shape, circle, square);
         try (var services = new JavaSstServices()) {
-            var context = context(store.capture(), shape);
-            var types = services.implementations(context, shape.text().indexOf("Shape")).value();
+            FeatureRequestContext context = context(store.capture(), shape);
+            List<DefinitionTarget> types = services.implementations(context, shape.text().indexOf("Shape")).value();
             assertEquals(List.of(circle.id(), square.id()),
                 types.stream().map(target -> target.location().documentId()).toList());
             assertEquals(circle.text().indexOf("Circle"), types.getFirst().location().range().start);
 
-            var methods = services.implementations(context, shape.text().indexOf("area")).value();
+            List<DefinitionTarget> methods = services.implementations(context, shape.text().indexOf("area")).value();
             assertEquals(List.of(circle.id(), square.id()),
                 methods.stream().map(target -> target.location().documentId()).toList());
             assertEquals(circle.text().indexOf("area"), methods.getFirst().location().range().start);
@@ -206,25 +218,27 @@ public class JavaNavigationServiceTest {
 
     @Test
     public void usagesStreamPerDocumentAndIncludeUnsavedOverlays() {
-        var helper = document("Helper.java", "class Helper { static void run() {} }");
-        var main = document("Main.java", "class Main { void a() { Helper.run(); Helper.run(); } }");
-        var other = document("Other.java", "class Other { }");
-        var store = store(helper, main, other);
+        TextDocumentSnapshot helper = document("Helper.java", "class Helper { static void run() {} }");
+        TextDocumentSnapshot main = document("Main.java", "class Main { void a() { Helper.run(); Helper.run(); } }");
+        TextDocumentSnapshot other = document("Other.java", "class Other { }");
+        DefaultDocumentStore store = store(helper, main, other);
         var edited = new TextDocumentSnapshot(other.id(), other.uri(), other.version().next(), "java",
             other.origin(), "class Other { void b() { Helper.run(); } }", StandardCharsets.UTF_8);
         store.publishOverlay(edited);
-        var batches = new ArrayList<List<Location<?>>>();
-        var progress = new ArrayList<Integer>();
+        List<List<Location<?>>> batches = new ArrayList<List<Location<?>>>();
+        List<Integer> progress = new ArrayList<Integer>();
         try (var services = new JavaSstServices()) {
-            var context = context(store.capture(), helper);
-            var result = services.usages(context, new UsageQuery.AtOffset(helper.text().indexOf("run")),
+            FeatureRequestContext context = context(store.capture(), helper);
+            FeatureResult<UsageSearch> result = services.usages(context,
+                new UsageQuery.AtOffset(helper.text().indexOf("run")),
                 (batch, searched, total) -> {
                     batches.add(batch);
                     progress.add(searched);
                     assertEquals(3, total);
                 });
+
             assertTrue(result.belongsTo(context));
-            var search = result.value();
+            UsageSearch search = result.value();
             assertEquals(3, search.usages().size());
             assertEquals(List.of(main.id(), main.id(), other.id()),
                 search.usages().stream().map(Location::documentId).toList());
@@ -233,17 +247,19 @@ public class JavaNavigationServiceTest {
             assertEquals(List.of(0, 0, 2, 1), batches.stream().map(List::size).toList());
             assertTrue(search.displayName().contains("run"));
 
-            var refreshed = services.usages(context(store.capture(), main), new UsageQuery.OfSymbol(search.symbol()),
-                UsageSink.NONE).value();
+            UsageSearch refreshed = services
+                .usages(context(store.capture(), main), new UsageQuery.OfSymbol(search.symbol()),
+                    UsageSink.NONE)
+                .value();
             assertEquals(search.usages(), refreshed.usages());
         }
     }
 
     @Test
     public void usagesOfAnUnresolvedPositionOrUnknownSymbolAreUnsupported() {
-        var source = document("Main.java", "class Main { void test() { missing(); } }");
+        TextDocumentSnapshot source = document("Main.java", "class Main { void test() { missing(); } }");
         try (var services = new JavaSstServices()) {
-            var context = context(store(source).capture(), source);
+            FeatureRequestContext context = context(store(source).capture(), source);
             assertNull(services.usages(context, new UsageQuery.AtOffset(source.text().indexOf("missing")),
                 UsageSink.NONE).value());
             assertNull(services.usages(context, new UsageQuery.OfSymbol(new SymbolId("java:Unknown")),
@@ -253,18 +269,19 @@ public class JavaNavigationServiceTest {
 
     @Test
     public void cancelledUsageSearchesPublishNothing() {
-        var source = document("Main.java", "class Main { int value; int read() { return value; } }");
+        TextDocumentSnapshot source = document("Main.java", "class Main { int value; int read() { return value; } }");
         var cancellation = new CancellationTokenSource();
         cancellation.cancel();
         var cancelled = new FeatureRequestContext(store(source).capture(), source, cancellation.token(),
             Deadline.none());
-        var batches = new ArrayList<List<Location<?>>>();
+        List<List<Location<?>>> batches = new ArrayList<List<Location<?>>>();
         try (var services = new JavaSstServices()) {
             assertThrows(CancellationException.class, () -> services.usages(cancelled,
                 new UsageQuery.AtOffset(source.text().lastIndexOf("value")), (batch, _, _) -> batches.add(batch)));
             assertThrows(CancellationException.class,
                 () -> services.implementations(cancelled, source.text().indexOf("Main")));
         }
+
         assertTrue(batches.isEmpty());
     }
 
@@ -290,16 +307,16 @@ public class JavaNavigationServiceTest {
             new String[]{"Point::x", "x", "x,"},
             new String[]{"Point::label", "label", "label)"})
             .map(test -> DynamicTest.dynamicTest(test[0], () -> {
-                var helper = document("Declarations.java", declarations);
-                var source = document("Main.java", usages);
+                TextDocumentSnapshot helper = document("Declarations.java", declarations);
+                TextDocumentSnapshot source = document("Main.java", usages);
                 try (var services = new JavaSstServices()) {
-                    var context = context(store(source, helper).capture(), source);
+                    FeatureRequestContext context = context(store(source, helper).capture(), source);
                     int offset = usages.indexOf(test[0]) + test[0].indexOf(test[1]);
 
-                    var result = services.definitions(context, offset).value();
+                    List<DefinitionTarget> result = services.definitions(context, offset).value();
 
                     assertEquals(1, result.size());
-                    var target = result.getFirst().location();
+                    Location.TextLocation target = result.getFirst().location();
                     assertEquals(helper.id(), target.documentId());
                     assertEquals(declarations.indexOf(test[2]), target.range().start);
                     assertEquals(test[1], declarations.substring(target.range().start, target.range().end));
@@ -311,13 +328,13 @@ public class JavaNavigationServiceTest {
     public void recordAccessorsNavigateWithinTheirOwnRecord() {
         String text = "import java.util.function.*; record Box(int size) { "
             + "static ToIntFunction<Box> SIZE = Box::size; int twice() { return size() * 2; } }";
-        var source = document("Box.java", text);
+        TextDocumentSnapshot source = document("Box.java", text);
         try (var services = new JavaSstServices()) {
-            var context = context(store(source).capture(), source);
+            FeatureRequestContext context = context(store(source).capture(), source);
             int component = text.indexOf("size)");
 
             for (int offset : List.of(text.indexOf("Box::size") + 5, text.indexOf("size()"), component)) {
-                var result = services.definitions(context, offset).value();
+                List<DefinitionTarget> result = services.definitions(context, offset).value();
                 assertEquals(1, result.size(), "Offset: " + offset);
                 assertEquals(component, result.getFirst().location().range().start, "Offset: " + offset);
             }
@@ -327,16 +344,16 @@ public class JavaNavigationServiceTest {
     @Test
     public void explicitRecordAccessorReplacesTheImplicitOne() {
         String declarations = "record Temperature(double celsius) { public double celsius() { return celsius; } }";
-        var helper = document("Temperature.java", declarations);
-        var source = document("Main.java",
+        TextDocumentSnapshot helper = document("Temperature.java", declarations);
+        TextDocumentSnapshot source = document("Main.java",
             "import java.util.function.*; class Main { double read(Temperature t) { "
                 + "ToDoubleFunction<Temperature> f = Temperature::celsius; return t.celsius(); } }");
         try (var services = new JavaSstServices()) {
-            var context = context(store(source, helper).capture(), source);
+            FeatureRequestContext context = context(store(source, helper).capture(), source);
             int explicit = declarations.indexOf("celsius()");
 
             for (int offset : List.of(source.text().indexOf("::celsius") + 2, source.text().lastIndexOf("celsius"))) {
-                var result = services.definitions(context, offset).value();
+                List<DefinitionTarget> result = services.definitions(context, offset).value();
                 assertEquals(1, result.size(), "Offset: " + offset);
                 assertEquals(explicit, result.getFirst().location().range().start, "Offset: " + offset);
             }
@@ -355,11 +372,11 @@ public class JavaNavigationServiceTest {
             .map(keyword -> DynamicTest.dynamicTest(keyword, () -> {
                 String text = "class Base { Base(int n) {} } class Example extends Base { "
                     + "Example(int n) { super(n); } Example() { " + keyword + "(1); } }";
-                var source = document("Example.java", text);
+                TextDocumentSnapshot source = document("Example.java", text);
                 int start = text.lastIndexOf(keyword + "(1)");
                 try (var services = new JavaSstServices()) {
-                    var context = context(store(source).capture(), source);
-                    var result = services.definitions(context, start).value();
+                    FeatureRequestContext context = context(store(source).capture(), source);
+                    List<DefinitionTarget> result = services.definitions(context, start).value();
                     assertEquals(1, result.size());
                     assertEquals(text.indexOf(keyword.equals("this") ? "Example(int" : "Base(int"),
                         result.getFirst().location().range().start);
@@ -375,9 +392,10 @@ public class JavaNavigationServiceTest {
         var configuration = new WorkspaceConfigurationSnapshot(0, Set.of("main"),
             Map.of("module.main.sources", directory.toString()));
         var store = new DefaultDocumentStore("test", configuration);
-        for (var document : documents) {
+        for (TextDocumentSnapshot document : documents) {
             store.publishBacking(document);
         }
+
         return store;
     }
 

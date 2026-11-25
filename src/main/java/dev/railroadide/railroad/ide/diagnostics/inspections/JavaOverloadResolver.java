@@ -95,6 +95,7 @@ public final class JavaOverloadResolver {
         SyntaxNode argumentList = context.directChild(invocation, JavaSyntaxKinds.ARGUMENT_LIST.id());
         if (argumentList != null && hasUnresolvedName(argumentList))
             return ERRONEOUS;
+
         List<Argument> arguments = arguments(argumentList);
         List<MethodDescriptor> members = arguments == null ? null : memberMethods(invocation, name);
         if (members == null)
@@ -118,10 +119,12 @@ public final class JavaOverloadResolver {
             String kindId = child.kind().id();
             if (JavaSyntaxKinds.ARGUMENT_LIST.id().equals(kindId))
                 return false;
+
             if (JavaSyntaxKinds.TYPE_ARGUMENTS.id().equals(kindId)
                 || context.directChild(child, JavaSyntaxKinds.TYPE_ARGUMENTS.id()) != null)
                 return true;
         }
+
         return false;
     }
 
@@ -133,11 +136,14 @@ public final class JavaOverloadResolver {
         for (SyntaxNode child : argumentList.children()) {
             if (!context.isExpressionNode(child))
                 continue;
+
             Argument argument = argument(child);
             if (argument == null)
                 return null;
+
             arguments.add(argument);
         }
+
         return List.copyOf(arguments);
     }
 
@@ -145,15 +151,19 @@ public final class JavaOverloadResolver {
         SyntaxNode unwrapped = context.unwrapTransparentExpression(expression);
         if (unwrapped == null || POLY_EXPRESSION_KINDS.contains(unwrapped.kind().id()))
             return null;
+
         String kindId = unwrapped.kind().id();
         if (JavaSyntaxKinds.LITERAL_EXPRESSION.id().equals(kindId)
             && context.hasTokenKind(unwrapped, JavaTokenType.NULL_LITERAL))
             return new Argument(new JavaTypes.UnknownType("null"), true);
+
         if (JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id().equals(kindId) && mayInferResult(unwrapped))
             return null;
+
         if (JavaSyntaxKinds.CLASS_INSTANCE_CREATION_EXPRESSION.id().equals(kindId)
             && containsKind(unwrapped, JavaSyntaxKinds.DIAMOND_TYPE_ARGUMENTS.id()))
             return null;
+
         if (hasImplicitLambdaParameter(unwrapped))
             return null;
 
@@ -187,13 +197,16 @@ public final class JavaOverloadResolver {
         if (JavaSyntaxKinds.LAMBDA_EXPRESSION.id().equals(kindId)
             || JavaSyntaxKinds.ANONYMOUS_CLASS_BODY.id().equals(kindId))
             return false;
+
         if (JavaSyntaxKinds.NAME_EXPRESSION.id().equals(kindId) && !context.isSelectorNameExpression(node)
             && test.test(context.resolvedSymbol(node).orElse(null)))
             return true;
+
         for (SyntaxNode child : node.children()) {
             if (anyName(child, test))
                 return true;
         }
+
         return false;
     }
 
@@ -231,6 +244,7 @@ public final class JavaOverloadResolver {
             String owner = receiverType(receiver);
             if (owner == null || !context.isTypeHierarchyKnown(owner))
                 return null;
+
             List<MethodDescriptor> members = members(owner, name);
             return members.isEmpty() ? null : members;
         }
@@ -241,16 +255,20 @@ public final class JavaOverloadResolver {
             if (JavaSyntaxKinds.ANONYMOUS_CLASS_BODY.id().equals(kindId)
                 || JavaSyntaxKinds.ENUM_CONSTANT.id().equals(kindId))
                 return null;
+
             Symbol declared = context.declaredSymbol(current).orElse(null);
             if (declared == null || !context.isTypeSymbol(declared.kind()))
                 continue;
+
             String owner = declared.qualifiedName().orElse(null);
             if (owner == null || !context.isTypeHierarchyKnown(owner))
                 return null;
+
             List<MethodDescriptor> members = members(owner, name);
             if (!members.isEmpty())
                 return members;
         }
+
         return null;
     }
 
@@ -272,11 +290,13 @@ public final class JavaOverloadResolver {
                 bySignature.putIfAbsent(signature(method), method);
             }
         }
+
         for (MethodDescriptor method : context.inheritedMethodDescriptors(owner)) {
             if (method.name().equals(name) && isInherited(method, owner)) {
                 bySignature.putIfAbsent(signature(method), method);
             }
         }
+
         if (context.isInterfaceType(owner)) {
             for (MethodDescriptor method : context.methodDescriptorsForType(OBJECT)) {
                 if (method.name().equals(name) && Modifier.isPublic(method.modifiers())) {
@@ -284,12 +304,14 @@ public final class JavaOverloadResolver {
                 }
             }
         }
+
         return List.copyOf(bySignature.values());
     }
 
     private boolean isInherited(MethodDescriptor method, String owner) {
         if (Modifier.isPrivate(method.modifiers()))
             return false;
+
         return !hasPackageAccess(method)
             || context.packageNameOfType(method.ownerQualifiedName()).equals(context.packageNameOfType(owner));
     }
@@ -301,6 +323,7 @@ public final class JavaOverloadResolver {
                 .orElse(null);
             return Objects.equals(context.topLevelTypeQualifiedName(method.ownerQualifiedName()), currentTopLevel);
         }
+
         return !hasPackageAccess(method)
             || context.packageNameOfType(method.ownerQualifiedName()).equals(context.currentPackageName());
     }
@@ -317,16 +340,20 @@ public final class JavaOverloadResolver {
             for (MethodDescriptor candidate : candidates) {
                 if (phase == Phase.VARIABLE_ARITY && !context.isVariableArityMethod(candidate))
                     continue;
+
                 Fit fit = applicability(candidate, arguments, phase);
                 if (fit == Fit.MAYBE)
                     return UNDETERMINED;
+
                 if (fit == Fit.YES) {
                     applicable.add(candidate);
                 }
             }
+
             if (!applicable.isEmpty())
                 return mostSpecific(applicable, arguments.size(), phase);
         }
+
         return new Resolution(Outcome.INAPPLICABLE, candidates);
     }
 
@@ -336,21 +363,26 @@ public final class JavaOverloadResolver {
         if (phase != Phase.VARIABLE_ARITY) {
             if (parameters.size() != arguments.size())
                 return Fit.NO;
+
             for (int index = 0; index < parameters.size(); index++) {
                 fit = fit.and(parameterFit(method, parameters.get(index), arguments.get(index), phase == Phase.LOOSE));
             }
         } else {
             if (parameters.isEmpty() || arguments.size() < parameters.size() - 1)
                 return Fit.NO;
+
             if (!(parameters.getLast() instanceof JavaTypes.ArrayType variableArity))
                 return Fit.MAYBE;
+
             int fixed = parameters.size() - 1;
             for (int index = 0; index < arguments.size(); index++) {
                 Type parameter = index < fixed ? parameters.get(index) : variableArity.componentType();
                 fit = fit.and(parameterFit(method, parameter, arguments.get(index), true));
             }
         }
+
         // Inference may still fail to satisfy a generic method's bounds.
+
         return fit == Fit.YES && !method.typeParameters().isEmpty() ? Fit.MAYBE : fit;
     }
 
@@ -380,18 +412,24 @@ public final class JavaOverloadResolver {
         if (parameter.kind() == JavaTypes.Kind.PRIMITIVE) {
             if (source.kind() == JavaTypes.Kind.PRIMITIVE)
                 return Fit.of(widens(source.displayName(), parameter.displayName()));
+
             if (!loose || source.kind() != JavaTypes.Kind.DECLARED)
                 return Fit.NO;
+
             String unboxed = unboxedName(source);
             return Fit.of(unboxed != null && widens(unboxed, parameter.displayName()));
         }
+
         if (source.kind() == JavaTypes.Kind.PRIMITIVE) {
             if (isTypeVariable(parameter))
                 return Fit.MAYBE;
+
             if (!loose)
                 return Fit.NO;
+
             return subtype(new JavaTypes.DeclaredType(BOXED_TYPES.get(source.displayName()), List.of()), parameter);
         }
+
         return subtype(source, parameter);
     }
 
@@ -399,6 +437,7 @@ public final class JavaOverloadResolver {
         if (isTypeVariable(subtype) || isTypeVariable(supertype)
             || subtype.kind() == JavaTypes.Kind.UNKNOWN || supertype.kind() == JavaTypes.Kind.UNKNOWN)
             return subtype.equals(supertype) ? Fit.YES : Fit.MAYBE;
+
         if (subtype.kind() == JavaTypes.Kind.PRIMITIVE || supertype.kind() == JavaTypes.Kind.PRIMITIVE)
             return Fit.of(subtype.kind() == supertype.kind()
                 && widens(subtype.displayName(), supertype.displayName()));
@@ -410,11 +449,14 @@ public final class JavaOverloadResolver {
                 if (subComponent.kind() == JavaTypes.Kind.PRIMITIVE
                     || superComponent.kind() == JavaTypes.Kind.PRIMITIVE)
                     return Fit.of(subComponent.equals(superComponent));
+
                 return subtype(subComponent, superComponent);
             }
+
             String superName = qualifiedName(supertype);
             return superName == null ? Fit.MAYBE : Fit.of(ARRAY_SUPERTYPES.contains(superName));
         }
+
         if (supertype.kind() == JavaTypes.Kind.ARRAY)
             return Fit.NO;
 
@@ -422,18 +464,23 @@ public final class JavaOverloadResolver {
         String superName = qualifiedName(supertype);
         if (subName == null || superName == null)
             return Fit.MAYBE;
+
         if (OBJECT.equals(superName))
             return Fit.YES;
+
         if (!subName.equals(superName) && !context.isSubtype(subName, superName))
             return Fit.NO;
+
         if (!hasTypeArguments(supertype))
             return Fit.YES;
+
         return subtype.equals(supertype) ? Fit.YES : Fit.MAYBE;
     }
 
     private Resolution mostSpecific(List<MethodDescriptor> applicable, int argumentCount, Phase phase) {
         if (applicable.size() == 1)
             return new Resolution(Outcome.RESOLVED, applicable);
+
         // A generic method is more specific only if inference succeeds (JLS 18.5.4).
         if (applicable.stream().anyMatch(method -> !method.typeParameters().isEmpty()))
             return UNDETERMINED;
@@ -444,9 +491,11 @@ public final class JavaOverloadResolver {
             for (int second = 0; second < count; second++) {
                 if (first == second)
                     continue;
+
                 Fit fit = moreSpecific(applicable.get(first), applicable.get(second), argumentCount, phase);
                 if (fit == Fit.MAYBE)
                     return UNDETERMINED;
+
                 moreSpecific[first][second] = fit == Fit.YES;
             }
         }
@@ -457,16 +506,20 @@ public final class JavaOverloadResolver {
             for (int other = 0; other < count && !dominated; other++) {
                 dominated = moreSpecific[other][candidate] && !moreSpecific[candidate][other];
             }
+
             if (!dominated) {
                 maximal.add(applicable.get(candidate));
             }
         }
+
         if (maximal.size() == 1)
             return new Resolution(Outcome.RESOLVED, maximal);
+
         // Override-equivalent maximal methods are resolved by their modifiers rather than reported (JLS 15.12.2.5).
         String firstSignature = erasedParameters(maximal.getFirst());
         if (maximal.stream().allMatch(method -> erasedParameters(method).equals(firstSignature)))
             return new Resolution(Outcome.RESOLVED, maximal);
+
         return new Resolution(Outcome.AMBIGUOUS, List.copyOf(maximal));
     }
 
@@ -478,9 +531,11 @@ public final class JavaOverloadResolver {
         for (int index = 0; index < argumentCount; index++) {
             fit = fit.and(subtype(firstTypes.get(index), secondTypes.get(index)));
         }
+
         if (variableArity && second.parameterTypes().size() == argumentCount + 1) {
             fit = fit.and(subtype(firstTypes.get(argumentCount), secondTypes.get(argumentCount)));
         }
+
         return fit;
     }
 
@@ -492,6 +547,7 @@ public final class JavaOverloadResolver {
         for (int index = 0; index < count; index++) {
             types.add(index < fixed ? parameters.get(index) : component);
         }
+
         return types;
     }
 
@@ -508,16 +564,19 @@ public final class JavaOverloadResolver {
     private String erasure(Type type) {
         if (type instanceof JavaTypes.ArrayType array)
             return erasure(array.componentType()) + "[]";
+
         if (type.kind() == JavaTypes.Kind.DECLARED) {
             String name = qualifiedName(type);
             return name == null ? type.displayName() : name;
         }
+
         return type.kind().id() + ":" + type.displayName();
     }
 
     private @Nullable String qualifiedName(Type type) {
         if (type.kind() != JavaTypes.Kind.DECLARED)
             return null;
+
         String name = context.resolveQualifiedTypeName(type.displayName());
         return name == null || !context.isTypeHierarchyKnown(name) ? null : name;
     }
@@ -528,6 +587,7 @@ public final class JavaOverloadResolver {
             if (entry.getValue().equals(name))
                 return entry.getKey();
         }
+
         return null;
     }
 
@@ -547,10 +607,12 @@ public final class JavaOverloadResolver {
     private static boolean containsKind(SyntaxNode node, String kindId) {
         if (kindId.equals(node.kind().id()))
             return true;
+
         for (SyntaxNode child : node.children()) {
             if (containsKind(child, kindId))
                 return true;
         }
+
         return false;
     }
 
@@ -607,6 +669,7 @@ public final class JavaOverloadResolver {
         private Fit and(Fit other) {
             if (this == NO || other == NO)
                 return NO;
+
             return this == MAYBE || other == MAYBE ? MAYBE : YES;
         }
     }

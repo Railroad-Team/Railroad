@@ -42,6 +42,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
+import dev.railroadide.railroad.ide.runconfig.session.RunSessionManager;
+import java.io.InputStream;
 
 /**
  * Executes Gradle tasks through the Tooling API and tracks cancellable build connections.
@@ -91,7 +93,8 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         if (executions.putIfAbsent(configuration.uuid(), execution) != null)
             return CompletableFuture
                 .failedFuture(new IllegalStateException("This Gradle configuration is already running"));
-        var sessions = project.getRunSessions();
+
+        RunSessionManager sessions = project.getRunSessions();
         execution.session = sessions.start(configuration, debug);
         Path directory = configuration.data().getGradleProjectPath();
         execution.problems = sessions.buildProblems().begin(configuration.uuid().toString(),
@@ -105,6 +108,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
                 execution.setupComplete.complete(null);
             }
         });
+
         return execution.completion;
     }
 
@@ -113,6 +117,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         GradleExecutionHandle execution = executions.get(configuration.uuid());
         if (execution == null)
             return CompletableFuture.completedFuture(null);
+
         execution.session.requestStop();
         execution.cancel();
         finish(configuration, execution, new CancellationException("Gradle execution stopped"));
@@ -202,9 +207,11 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         synchronized (execution) {
             if (execution.finishing)
                 return;
+
             execution.finishing = true;
             execution.ended = true;
         }
+
         handleCloser.execute(() -> {
             Throwable outcome = failure;
             try {
@@ -212,6 +219,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
                 if (failure != null && execution.cancellation != null) {
                     execution.cancellation.cancel();
                 }
+
                 JdiDebugSession session = execution.attachment.handle((attached, _) -> attached).join();
                 if (session != null) {
                     if (failure == null) {
@@ -246,6 +254,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
                     }
                 }
             }
+
             closeQuietly(execution.stdout);
             closeQuietly(execution.stderr);
             execution.problems.finish(outcome instanceof BuildCancelledException ? null : outcome);
@@ -256,6 +265,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
             } else {
                 execution.completion.completeExceptionally(outcome);
             }
+
             execution.cleaned.complete(null);
         });
     }
@@ -274,36 +284,44 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         if (debug && !task.startsWith(":")) {
             task = ":" + task;
         }
+
         Path gradleProjectPath = requireGradleProjectPath(data);
         Map<String, String> environmentVariables = new HashMap<>(System.getenv());
         if (data.getEnvironmentVariables() != null) {
             environmentVariables.putAll(data.getEnvironmentVariables());
         }
+
         String[] vmOptions = data.getVmOptions() == null ? new String[0] : data.getVmOptions();
         JDK javaHome = editorMain ? data.getJavaHome() : requireJavaHome(data);
 
         if (execution.ended)
             return;
+
         execution.cancellation = GradleConnector.newCancellationTokenSource();
         if (execution.ended)
             return;
+
         int port = -1;
         if (debug) {
             try (var socket = new ServerSocket(0)) {
                 port = socket.getLocalPort();
             }
         }
+
         if (editorMain || debug) {
             execution.script = Files.createTempFile("railroad-launch-", ".init.gradle");
             String init = editorMain ? loadRunMainClassInitScript() : "";
             Files.writeString(execution.script, init + (debug ? debugInitScript(task, port) : ""));
         }
+
         if (execution.ended)
             return;
+
         execution.connection = connectors.get()
             .forProjectDirectory(gradleProjectPath.toFile()).connect();
         if (execution.ended)
             return;
+
         RunSession runSession = execution.session;
         Charset charset = Charset.defaultCharset();
         execution.stdout = execution.problems.output(charset, text -> runSession.append(RunOutput.Kind.STDOUT, text));
@@ -323,8 +341,9 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         if (javaHome != null) {
             launcher.setJavaHome(javaHome.path().toFile());
         }
+
         if (execution.script != null) {
-            var arguments = new ArrayList<>(
+            List<String> arguments = new ArrayList<>(
                 List.of("--init-script", execution.script.toString(), "--no-configuration-cache"));
             if (editorMain) {
                 arguments.add("--no-configure-on-demand");
@@ -335,10 +354,13 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
                     arguments.add("--offline");
                 }
             }
+
             launcher.withArguments(arguments);
         }
+
         if (execution.ended)
             return;
+
         launcher.run(new ResultHandler<>() {
             @Override
             public void onComplete(Void result) {
@@ -350,6 +372,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
                 finish(configuration, execution, failure);
             }
         });
+
         if (debug && !execution.ended) {
             Path root = ProjectPathIdentityUtils.normalize(project.getPath());
             int moduleSeparator = task.lastIndexOf(':');
@@ -362,6 +385,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
                 : ProjectSourceResolver.create(root, dependencies);
             if (execution.ended)
                 return;
+
             execution.attachment = project.getDebuggingManager().startSession(
                 new DebugEndpoint("127.0.0.1", port), resolver,
                 Services.BREAKPOINT_SERVICE,
@@ -379,10 +403,11 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
     }
 
     private static String loadRunMainClassInitScript() throws IOException {
-        try (var input = GradleRunConfigurationType.class
+        try (InputStream input = GradleRunConfigurationType.class
             .getResourceAsStream("/assets/railroad/scripts/init-run-main-class.gradle")) {
             if (input == null)
                 throw new IOException("Missing init-run-main-class.gradle");
+
             return new String(input.readAllBytes(), StandardCharsets.UTF_8) + "\n";
         }
     }

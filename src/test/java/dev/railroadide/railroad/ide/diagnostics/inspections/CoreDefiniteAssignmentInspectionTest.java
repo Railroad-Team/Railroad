@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class CoreDefiniteAssignmentInspectionTest {
     @Test
     public void yieldsInNestedSwitchesAndLoopsReturnToTheEnclosingSwitchExpression() {
-        var diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 enum Mode { FIRST, SECOND }
                 int run(Mode mode, int input) {
@@ -44,7 +44,7 @@ public class CoreDefiniteAssignmentInspectionTest {
 
     @Test
     public void switchExpressionTracksAssignmentsBeforeYieldAndAtTheJoin() {
-        var diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 int run(int mode) {
                     final int assigned;
@@ -74,7 +74,7 @@ public class CoreDefiniteAssignmentInspectionTest {
 
     @Test
     public void localClassMethodsReceiveAssignedCapturedParametersAndLocals() {
-        var diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 Object create(int parameter) {
                     final int local = parameter;
@@ -92,7 +92,7 @@ public class CoreDefiniteAssignmentInspectionTest {
 
     @Test
     public void localClassCaptureIsCheckedAtDeclarationAndOwnUnassignedLocalsRemainChecked() {
-        var diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 Object create() {
                     int missingCapture;
@@ -115,7 +115,7 @@ public class CoreDefiniteAssignmentInspectionTest {
 
     @Test
     public void anonymousMethodsReceiveAssignedCapturedParametersAndLocals() {
-        var diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 Object create(int parameter) {
                     final int local = parameter;
@@ -131,7 +131,7 @@ public class CoreDefiniteAssignmentInspectionTest {
 
     @Test
     public void anonymousCaptureIsCheckedAtCreationAndOwnUnassignedLocalsRemainChecked() {
-        var diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 Object create() {
                     int missingCapture;
@@ -481,5 +481,4 @@ public class CoreDefiniteAssignmentInspectionTest {
         assertFalse(diagnostics.stream()
             .anyMatch(d -> "SEM_UNINITIALIZED_FINAL_FIELD".equals(d.code()) && d.message().contains("value")));
     }
-
 }

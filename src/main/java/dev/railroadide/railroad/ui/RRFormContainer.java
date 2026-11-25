@@ -110,6 +110,7 @@ public class RRFormContainer extends VBox {
         if (titleLabel.isVisible()) {
             getChildren().add(titleLabel);
         }
+
         getChildren().add(formContent);
     }
 

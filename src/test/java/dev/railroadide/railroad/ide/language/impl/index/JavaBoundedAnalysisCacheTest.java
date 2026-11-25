@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,21 +24,21 @@ public class JavaBoundedAnalysisCacheTest {
             loads.incrementAndGet();
             return emptyIndex();
         }, 2, 3, 1)) {
-            var store = store();
-            var original = source(DocumentId.create(), 0, "class Original {}");
-            var stable = source(DocumentId.create(), 0, "class Stable {}");
+            DefaultDocumentStore store = store();
+            TextDocumentSnapshot original = source(DocumentId.create(), 0, "class Original {}");
+            TextDocumentSnapshot stable = source(DocumentId.create(), 0, "class Stable {}");
             store.publishBacking(original);
             store.publishBacking(stable);
-            var captured = store.capture();
-            var first = provider.capture(captured);
-            var cold = provider.cacheUsage();
+            WorkspaceSnapshot captured = store.capture();
+            JavaWorkspaceAnalysis first = provider.capture(captured);
+            JavaWorkspaceAnalysisProvider.CacheUsage cold = provider.cacheUsage();
             assertEquals(4, cold.misses());
             assertSame(first, provider.capture(captured));
             assertEquals(cold.misses(), provider.cacheUsage().misses());
             assertEquals(cold.hits() + 1, provider.cacheUsage().hits());
 
             store.publishOverlay(source(original.id(), 1, "class Changed {}"));
-            var updated = provider.capture(store.capture());
+            JavaWorkspaceAnalysis updated = provider.capture(store.capture());
             assertTrue(updated.declaredQualifiedNames().contains("Changed"));
             assertFalse(updated.declaredQualifiedNames().contains("Original"));
             assertTrue(first.declaredQualifiedNames().contains("Original"));
@@ -48,22 +50,23 @@ public class JavaBoundedAnalysisCacheTest {
     @Test
     public void bodyEditsReuseOtherFilesAndTypeNameChangesRebuildDependentDeclarations() {
         try (var provider = new JavaWorkspaceAnalysisProvider(() -> true, (_, _) -> emptyIndex())) {
-            var store = store();
-            var type = source(DocumentId.create(), 0, "package api; class Value { int count() { return 0; } }");
-            var client = source(DocumentId.create(), 0,
+            DefaultDocumentStore store = store();
+            TextDocumentSnapshot type = source(DocumentId.create(), 0,
+                "package api; class Value { int count() { return 0; } }");
+            TextDocumentSnapshot client = source(DocumentId.create(), 0,
                 "package app; import api.*; class Client { void use(Value v) {} }");
             store.publishBacking(type);
             store.publishBacking(client);
-            var original = provider.capture(store.capture()).sourceIndex();
-            var clientPath = original.lookupQualifiedName("app.Client").getFirst().sourceFile();
-            var typePath = original.lookupQualifiedName("api.Value").getFirst().sourceFile();
+            JavaProjectSemanticIndex original = provider.capture(store.capture()).sourceIndex();
+            Path clientPath = original.lookupQualifiedName("app.Client").getFirst().sourceFile();
+            Path typePath = original.lookupQualifiedName("api.Value").getFirst().sourceFile();
             store.publishOverlay(source(type.id(), 1, type.text().replace("return 0", "return 1")));
-            var edited = provider.capture(store.capture()).sourceIndex();
+            JavaProjectSemanticIndex edited = provider.capture(store.capture()).sourceIndex();
             assertSame(original.getFileIndex(clientPath), edited.getFileIndex(clientPath));
             assertNotSame(original.getFileIndex(typePath), edited.getFileIndex(typePath));
 
             store.publishOverlay(source(type.id(), 2, "package api; class Other {}"));
-            var renamed = provider.capture(store.capture()).sourceIndex();
+            JavaProjectSemanticIndex renamed = provider.capture(store.capture()).sourceIndex();
             assertNotSame(edited.getFileIndex(clientPath), renamed.getFileIndex(clientPath));
             assertFalse(renamed.declaredQualifiedNames().contains("api.Value"));
             assertTrue(renamed.declaredQualifiedNames().contains("api.Other"));
@@ -74,19 +77,20 @@ public class JavaBoundedAnalysisCacheTest {
     @Test
     public void revisionAndConfigurationChurnRemainBoundedAndEvictedResultsStayUsable() {
         try (var provider = new JavaWorkspaceAnalysisProvider(() -> true, (_, _) -> emptyIndex(), 2, 3, 1)) {
-            var store = store();
+            DefaultDocumentStore store = store();
             var id = DocumentId.create();
             store.publishBacking(source(id, 0, "class First {}"));
-            var retained = provider.capture(store.capture());
+            JavaWorkspaceAnalysis retained = provider.capture(store.capture());
             for (int revision = 1; revision <= 40; revision++) {
                 store.publishOverlay(source(id, revision, "class Revision" + revision + " {}"));
                 store.publishConfiguration(new WorkspaceConfigurationSnapshot(revision, Set.of()));
                 provider.capture(store.capture());
-                var usage = provider.cacheUsage();
+                JavaWorkspaceAnalysisProvider.CacheUsage usage = provider.cacheUsage();
                 assertTrue(usage.workspaces() <= 2);
                 assertTrue(usage.sourceFiles() <= 3);
                 assertTrue(usage.binaries() <= 1);
             }
+
             assertTrue(provider.cacheUsage().evictions() > 0);
             assertTrue(retained.declaredQualifiedNames().contains("First"));
             provider.clearCaches();
@@ -104,8 +108,9 @@ public class JavaBoundedAnalysisCacheTest {
             await(release);
             return emptyIndex();
         });
+
         try (var workers = Executors.newFixedThreadPool(2)) {
-            var result = workers.submit(() -> provider.capture(store().capture()));
+            Future<JavaWorkspaceAnalysis> result = workers.submit(() -> provider.capture(store().capture()));
             assertTrue(entered.await(5, TimeUnit.SECONDS));
             try {
                 workers.submit(provider::close).get(5, TimeUnit.SECONDS);
@@ -113,6 +118,7 @@ public class JavaBoundedAnalysisCacheTest {
             } finally {
                 release.countDown();
             }
+
             assertInstanceOf(CancellationException.class,
                 assertThrows(ExecutionException.class, () -> result.get(5, TimeUnit.SECONDS)).getCause());
             assertEmpty(provider);
@@ -130,15 +136,17 @@ public class JavaBoundedAnalysisCacheTest {
             entered.countDown();
             await(release);
             return emptyIndex();
-        }); var workers = Executors.newFixedThreadPool(2)) {
-            var capture = store().capture();
-            var first = workers.submit(() -> provider.capture(capture));
+        });
+
+            var workers = Executors.newFixedThreadPool(2)) {
+            WorkspaceSnapshot capture = store().capture();
+            Future<JavaWorkspaceAnalysis> first = workers.submit(() -> provider.capture(capture));
             assertTrue(entered.await(5, TimeUnit.SECONDS));
             var context = new WorkspaceRequestContext(capture, () -> {
                 polled.countDown();
                 return cancellation.token().isCancellationRequested();
             }, Deadline.none());
-            var second = workers.submit(() -> provider.capture(context));
+            Future<JavaWorkspaceAnalysis> second = workers.submit(() -> provider.capture(context));
             try {
                 assertTrue(polled.await(5, TimeUnit.SECONDS));
                 cancellation.cancel();
@@ -148,6 +156,7 @@ public class JavaBoundedAnalysisCacheTest {
             } finally {
                 release.countDown();
             }
+
             assertNotNull(first.get(5, TimeUnit.SECONDS));
         }
     }
@@ -161,7 +170,7 @@ public class JavaBoundedAnalysisCacheTest {
             await(sourceIndexed);
             return emptyIndex();
         })) {
-            var store = store();
+            DefaultDocumentStore store = store();
             store.publishBacking(source(DocumentId.create(), 0, "class Example {}"));
             var context = new WorkspaceRequestContext(store.capture(), () -> {
                 if (provider.cacheUsage().sourceFiles() == 1 && sourceIndexed.getCount() != 0) {
@@ -171,6 +180,7 @@ public class JavaBoundedAnalysisCacheTest {
                         sourceIndexed.countDown();
                     }
                 }
+
                 return false;
             }, Deadline.none());
 
@@ -189,10 +199,12 @@ public class JavaBoundedAnalysisCacheTest {
             entered.countDown();
             await(release);
             return emptyIndex();
-        }); var worker = Executors.newSingleThreadExecutor()) {
-            var capture = store().capture();
+        });
+
+            var worker = Executors.newSingleThreadExecutor()) {
+            WorkspaceSnapshot capture = store().capture();
             var context = new WorkspaceRequestContext(capture, cancellation.token(), Deadline.none());
-            var first = worker.submit(() -> provider.capture(context));
+            Future<JavaWorkspaceAnalysis> first = worker.submit(() -> provider.capture(context));
             assertTrue(entered.await(5, TimeUnit.SECONDS));
             cancellation.cancel();
             assertInstanceOf(CancellationException.class,
@@ -217,10 +229,13 @@ public class JavaBoundedAnalysisCacheTest {
                 entered.countDown();
                 await(release);
             }
+
             return emptyIndex();
-        }); var worker = Executors.newSingleThreadExecutor()) {
-            var capture = store().capture();
-            var result = worker.submit(() -> provider.capture(capture));
+        });
+
+            var worker = Executors.newSingleThreadExecutor()) {
+            WorkspaceSnapshot capture = store().capture();
+            Future<JavaWorkspaceAnalysis> result = worker.submit(() -> provider.capture(capture));
             assertTrue(entered.await(5, TimeUnit.SECONDS));
             provider.clearCaches();
             release.countDown();
@@ -241,9 +256,9 @@ public class JavaBoundedAnalysisCacheTest {
             loads.incrementAndGet();
             return emptyIndex();
         }, 0, 0, 0)) {
-            var store = store();
+            DefaultDocumentStore store = store();
             store.publishBacking(source(DocumentId.create(), 0, "class Example {}"));
-            var capture = store.capture();
+            WorkspaceSnapshot capture = store.capture();
             assertThrows(DeadlineExceededException.class, () -> provider.capture(new WorkspaceRequestContext(
                 capture, CancellationToken.none(), Deadline.after(Duration.ZERO))));
             assertEquals(0, loads.get());
@@ -267,7 +282,7 @@ public class JavaBoundedAnalysisCacheTest {
     }
 
     private static void assertEmpty(JavaWorkspaceAnalysisProvider provider) {
-        var usage = provider.cacheUsage();
+        JavaWorkspaceAnalysisProvider.CacheUsage usage = provider.cacheUsage();
         assertEquals(0, usage.workspaces());
         assertEquals(0, usage.sourceFiles());
         assertEquals(0, usage.binaries());

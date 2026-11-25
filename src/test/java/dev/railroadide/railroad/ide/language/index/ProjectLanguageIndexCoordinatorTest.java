@@ -40,6 +40,7 @@ import dev.railroadide.railroad.ide.language.impl.index.BasicLanguageIndexContex
 import java.util.concurrent.atomic.AtomicInteger;
 import dev.railroadide.railroad.ide.language.impl.index.JavaProjectLanguageIndexer;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticPersistence;
+import java.util.concurrent.Future;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -56,10 +57,10 @@ public class ProjectLanguageIndexCoordinatorTest {
             var service = new ProjectLanguageIndexService(runtime);
             var lowerUpdates = new AtomicInteger();
             var higherUpdates = new AtomicInteger();
-            var lower = indexingContribution("example:lower", 1, lowerUpdates);
-            var higher = indexingContribution("example:higher", 10, higherUpdates);
+            LanguageContribution lower = indexingContribution("example:lower", 1, lowerUpdates);
+            LanguageContribution higher = indexingContribution("example:higher", 10, higherUpdates);
             runtime.register("lower-plugin", lower);
-            var context = createContext(tempDir, service);
+            ProjectIndexContext context = createContext(tempDir, service);
             var coordinator = new ProjectLanguageIndexCoordinator(context, service);
             coordinator.handleFileChange(file, StandardWatchEventKinds.ENTRY_MODIFY);
             assertEquals(1, lowerUpdates.get());
@@ -87,7 +88,7 @@ public class ProjectLanguageIndexCoordinatorTest {
             runtime.register("low", indexingContribution("example:low", 1, new AtomicInteger()));
             runtime.register("high", indexingContribution("example:high", 10, new AtomicInteger()));
             var service = new ProjectLanguageIndexService(runtime);
-            var context = createContext(tempDir, service);
+            ProjectIndexContext context = createContext(tempDir, service);
             var coordinator = new ProjectLanguageIndexCoordinator(context, service);
             coordinator.warmIndexes();
             assertNull(service.current(context.project(), "example:low").getFileIndex(file));
@@ -108,7 +109,7 @@ public class ProjectLanguageIndexCoordinatorTest {
         try (var runtime = new LanguageRuntime()) {
             runtime.register("low", indexingContribution("example:low", 1, new AtomicInteger()));
             var service = new ProjectLanguageIndexService(runtime);
-            var context = createContext(tempDir, service);
+            ProjectIndexContext context = createContext(tempDir, service);
             var coordinator = new ProjectLanguageIndexCoordinator(context, service);
             coordinator.warmIndexes();
             assertNotNull(service.current(context.project(), "example:low").getFileIndex(file));
@@ -130,7 +131,7 @@ public class ProjectLanguageIndexCoordinatorTest {
             runtime.register("tiny", indexingContribution("example:tiny", 1, new AtomicInteger(),
                 LanguageMatcher.shebang("tiny")));
             var service = new ProjectLanguageIndexService(runtime);
-            var context = createContext(tempDir, service);
+            ProjectIndexContext context = createContext(tempDir, service);
             var coordinator = new ProjectLanguageIndexCoordinator(context, service);
             coordinator.warmIndexes();
             assertNotNull(service.current(context.project(), "example:tiny").getFileIndex(file));
@@ -151,7 +152,7 @@ public class ProjectLanguageIndexCoordinatorTest {
             runtime.register("other", indexingContribution("example:other", 1, new AtomicInteger(),
                 LanguageMatcher.shebang("other")));
             var service = new ProjectLanguageIndexService(runtime);
-            var context = createContext(tempDir, service);
+            ProjectIndexContext context = createContext(tempDir, service);
             var coordinator = new ProjectLanguageIndexCoordinator(context, service);
             coordinator.warmIndexes();
             Files.writeString(file, "#!/usr/bin/env other\nvalue = 2");
@@ -176,9 +177,11 @@ public class ProjectLanguageIndexCoordinatorTest {
                     entered.countDown();
                     release.join();
                 }));
+
             var service = new ProjectLanguageIndexService(runtime);
-            var context = createContext(tempDir, service);
-            var pending = executor.submit(() -> service.index(context.project(), "example:low"));
+            ProjectIndexContext context = createContext(tempDir, service);
+            Future<? extends ProjectLanguageIndex<?>> pending = executor
+                .submit(() -> service.index(context.project(), "example:low"));
             try {
                 assertTrue(entered.await(5, TimeUnit.SECONDS));
                 runtime.register("high", indexingContribution("example:high", 10, new AtomicInteger()));
@@ -216,37 +219,44 @@ public class ProjectLanguageIndexCoordinatorTest {
         LanguageMatcher matcher,
         Runnable build
     ) {
-        var indexer = (ProjectLanguageIndexer<?, ?>) Proxy.newProxyInstance(
-            ProjectLanguageIndexer.class.getClassLoader(), new Class<?>[]{ProjectLanguageIndexer.class},
-            (proxy, method, arguments) -> switch (method.getName()) {
-                case "languageId" -> id;
-                case "supports" -> true;
-                case "build" -> {
-                    build.run();
-                    Map<Path, LanguageFileIndex> files = new HashMap<>();
-                    for (Object value : (Collection<?>) arguments[1]) {
-                        Path path = (Path) value;
-                        files.put(path, () -> path);
+        ProjectLanguageIndexer<? extends ProjectLanguageIndex<?>, ?> indexer = (ProjectLanguageIndexer<?, ?>) Proxy
+            .newProxyInstance(
+                ProjectLanguageIndexer.class.getClassLoader(), new Class<?>[]{ProjectLanguageIndexer.class},
+                (proxy, method, arguments) -> switch (method.getName()) {
+                    case "languageId" -> id;
+                    case "supports" -> true;
+                    case "build" -> {
+                        build.run();
+                        Map<Path, LanguageFileIndex> files = new HashMap<>();
+                        for (Object value : (Collection<?>) arguments[1]) {
+                            Path path = (Path) value;
+                            files.put(path, () -> path);
+                        }
+
+                        yield new TestIndex(id, files);
                     }
-                    yield new TestIndex(id, files);
-                }
-                case "indexFile" -> {
-                    updates.incrementAndGet();
-                    yield (LanguageFileIndex) () -> (Path) arguments[1];
-                }
-                case "withUpdatedFile", "withRemovedFile" -> {
-                    var current = (TestIndex) arguments[0];
-                    var files = new HashMap<>(current.files());
-                    Path path = (Path) arguments[1];
-                    if (method.getName().equals("withUpdatedFile")) {
-                        files.put(path, (LanguageFileIndex) arguments[2]);
-                    } else {
-                        files.remove(path);
+
+                    case "indexFile" -> {
+                        updates.incrementAndGet();
+                        yield (LanguageFileIndex) () -> (Path) arguments[1];
                     }
-                    yield new TestIndex(id, files);
-                }
-                default -> throw new UnsupportedOperationException(method.getName());
-            });
+
+                    case "withUpdatedFile", "withRemovedFile" -> {
+                        TestIndex current = (TestIndex) arguments[0];
+                        Map<Path, LanguageFileIndex> files = new HashMap<>(current.files());
+                        Path path = (Path) arguments[1];
+                        if (method.getName().equals("withUpdatedFile")) {
+                            files.put(path, (LanguageFileIndex) arguments[2]);
+                        } else {
+                            files.remove(path);
+                        }
+
+                        yield new TestIndex(id, files);
+                    }
+
+                    default -> throw new UnsupportedOperationException(method.getName());
+                });
+
         LanguageIndexContextContributor contributor = new LanguageIndexContextContributor() {
             @Override
             public String languageId() {
@@ -258,6 +268,7 @@ public class ProjectLanguageIndexCoordinatorTest {
                 return new BasicLanguageIndexContext(id, List.of(project.getPath()), List.of(), List.of());
             }
         };
+
         return new LanguageContribution() {
             @Override
             public LanguageId id() {
@@ -375,6 +386,7 @@ public class ProjectLanguageIndexCoordinatorTest {
             release.join();
             Thread.interrupted();
         });
+
         ProjectLanguageIndexer<?, ?> healthyIndexer = fakeIndexer("healthy", () -> healthy.set(true));
         IndexTestProviders.indexer(service, badIndexer);
         IndexTestProviders.indexer(service, healthyIndexer);
@@ -408,6 +420,7 @@ public class ProjectLanguageIndexCoordinatorTest {
                     build.run();
                     yield new TestIndex(id);
                 }
+
                 default -> throw new UnsupportedOperationException(method.getName());
             });
     }
@@ -422,8 +435,7 @@ public class ProjectLanguageIndexCoordinatorTest {
     }
 
     private record TestIndex(String languageId, Map<Path, LanguageFileIndex> files)
-        implements
-            ProjectLanguageIndex<LanguageFileIndex> {
+        implements ProjectLanguageIndex<LanguageFileIndex> {
         private TestIndex {
             files = Map.copyOf(files);
         }
@@ -445,16 +457,19 @@ public class ProjectLanguageIndexCoordinatorTest {
         var entered = new CountDownLatch(1);
         var release = new CompletableFuture<Void>();
         var first = new AtomicBoolean(true);
-        var indexer = (ProjectLanguageIndexer<?, ?>) Proxy.newProxyInstance(getClass().getClassLoader(),
-            new Class<?>[]{ProjectLanguageIndexer.class}, (proxy, method, arguments) -> {
-                Object value = method.invoke(delegate, arguments);
-                if (method.getName().equals("build") && first.compareAndSet(true, false)) {
-                    entered.countDown();
-                    release.join();
-                    Thread.interrupted();
-                }
-                return value;
-            });
+        ProjectLanguageIndexer<? extends ProjectLanguageIndex<?>, ?> indexer = (ProjectLanguageIndexer<?, ?>) Proxy
+            .newProxyInstance(getClass().getClassLoader(),
+                new Class<?>[]{ProjectLanguageIndexer.class}, (proxy, method, arguments) -> {
+                    Object value = method.invoke(delegate, arguments);
+                    if (method.getName().equals("build") && first.compareAndSet(true, false)) {
+                        entered.countDown();
+                        release.join();
+                        Thread.interrupted();
+                    }
+
+                    return value;
+                });
+
         var service = IndexTestProviders.service();
         IndexTestProviders.indexer(service, indexer);
         ProjectIndexContext context = createContext(root, service);
@@ -466,7 +481,7 @@ public class ProjectLanguageIndexCoordinatorTest {
             new WorkspaceConfigurationSnapshot(0, Set.of()), 0);
         var request = new WorkspaceRequestContext(workspace, cancellation.token(), deadline);
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-            var pending = executor.submit(() -> coordinator.warmIndexes(request));
+            Future<?> pending = executor.submit(() -> coordinator.warmIndexes(request));
             try {
                 assertTrue(entered.await(10, TimeUnit.SECONDS));
                 if (expire) {
@@ -474,6 +489,7 @@ public class ProjectLanguageIndexCoordinatorTest {
                 } else {
                     cancellation.cancel();
                 }
+
                 release.complete(null);
                 assertInstanceOf(CancellationException.class,
                     assertThrows(ExecutionException.class, () -> pending.get(10, TimeUnit.SECONDS)).getCause());
@@ -509,7 +525,8 @@ public class ProjectLanguageIndexCoordinatorTest {
                 case "toString" -> "TestProject[" + root + "]";
                 default -> throw new UnsupportedOperationException(method.getName());
             });
-        var context = new DefaultProjectIndexContextResolver().resolve(project);
+
+        ProjectIndexContext context = new DefaultProjectIndexContextResolver().resolve(project);
         return new ProjectIndexContext(project, root, context.languages(), service.openProject(project));
     }
 

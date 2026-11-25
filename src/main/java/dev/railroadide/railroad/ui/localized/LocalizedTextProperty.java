@@ -98,7 +98,9 @@ public class LocalizedTextProperty extends StringPropertyBase {
         }
     }
 
-    /** Disables automatic translation when the text differs from the last translated value. */
+    /**
+     * Disables automatic translation when the text differs from the last translated value.
+     */
     @Override
     protected void invalidated() {
         if (!Objects.equals(get(), translated)) {
@@ -206,5 +208,4 @@ public class LocalizedTextProperty extends StringPropertyBase {
 
         updateTranslation(true);
     }
-
 }

@@ -45,6 +45,7 @@ public class IndependentSemanticModelTest {
         DocumentId id = DocumentId.create();
         var snapshot = new BinaryDocumentSnapshot(id, DocumentUri.inMemory(id), DocumentVersion.initial(),
             "example:packet", new byte[]{1, 2, 3});
+
         var symbol = new SimpleSymbol(() -> "example:packet-field", "header", null, null);
         var location = Location.BinaryLocation.from(snapshot, 0, 2);
 
@@ -54,7 +55,7 @@ public class IndependentSemanticModelTest {
         assertEquals(2, location.range().content(snapshot).remaining());
     }
 
-    private record ConfigType(Type.Kind kind, String displayName) implements Type {
+    private record ConfigType(Kind kind, String displayName) implements Type {
     }
 
     private record ConfigToken(String text) implements SyntaxToken {

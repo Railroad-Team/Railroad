@@ -40,6 +40,7 @@ public record GutterColumn(
         Objects.requireNonNull(markerFactory, "markerFactory");
         if (id.isBlank())
             throw new IllegalArgumentException("Column id must not be blank");
+
         if (!Double.isFinite(width) || width <= 0)
             throw new IllegalArgumentException("Column width must be finite and positive");
     }

@@ -14,6 +14,10 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import dev.railroadide.railroad.ide.sst.semantic.api.Scope;
+import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolDescriptor;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaNestedDeclarationScopeTest {
@@ -34,7 +38,8 @@ public class JavaNestedDeclarationScopeTest {
         var model = JavaSemanticAnalyzer.analyzeFacts(source, index);
         assertResolvedCalls(model, model.syntaxTree().root());
         var context = new JavaRuleContext(Path.of("Example.java"), source, model, index);
-        var diagnostics = JavaInspectionRuleEngine.collectDiagnostics(new CoreAccessibilityInspection(), context);
+        List<SemanticDiagnostic> diagnostics = JavaInspectionRuleEngine
+            .collectDiagnostics(new CoreAccessibilityInspection(), context);
         assertEquals(2, diagnostics.size(), diagnostics.toString());
         assertTrue(diagnostics.stream()
             .allMatch(diagnostic -> diagnostic.startOffset() > source.indexOf("void unrelatedReceiver")));
@@ -59,8 +64,9 @@ public class JavaNestedDeclarationScopeTest {
             }
             """;
         Path path = Path.of("Example.java").toAbsolutePath().normalize();
-        var declarations = new JavaProjectSemanticExtractor().extract(path, source);
-        var sources = JavaProjectSemanticIndex.builder().putFile(declarations).build();
+        JavaProjectSemanticIndex.SourceFileIndex declarations = new JavaProjectSemanticExtractor().extract(path,
+            source);
+        JavaProjectSemanticIndex sources = JavaProjectSemanticIndex.builder().putFile(declarations).build();
         var symbols = new CompositeJavaSymbolIndex(List.of(sources, JavaJdkSymbolIndex.fromCurrentRuntime()));
         var index = new JavaWorkspaceAnalysis(sources, symbols, Map.of(path, source), List.of(),
             Path.of(System.getProperty("java.home")));
@@ -134,16 +140,18 @@ public class JavaNestedDeclarationScopeTest {
             }
             """;
         var model = JavaSemanticAnalyzer.analyzeDeclarationsFacts(source);
-        var outerScope = model.rootScope().children().getFirst();
+        Scope outerScope = model.rootScope().children().getFirst();
         assertTrue(outerScope.lookupLocal("hidden").isEmpty());
         assertTrue(outerScope.lookupLocal("onlyInside").isEmpty());
         assertEquals(1, outerScope.lookupLocal("outer").size());
-        var file = new JavaProjectSemanticExtractor().extract(Path.of("Example.java"), model);
-        var index = JavaProjectSemanticIndex.builder().putFile(file).build();
+        JavaProjectSemanticIndex.SourceFileIndex file = new JavaProjectSemanticExtractor()
+            .extract(Path.of("Example.java"), model);
+        JavaProjectSemanticIndex index = JavaProjectSemanticIndex.builder().putFile(file).build();
         assertTrue(index.lookupMember("Example", "hidden").isEmpty());
         assertTrue(index.lookupMember("Example", "onlyInside").isEmpty());
         assertTrue(index.lookupSimpleName("hidden").isEmpty());
-        var owners = file.semanticShard().declarations().stream().filter(symbol -> symbol.simpleName().equals("hidden"))
+        List<SymbolId> owners = file.semanticShard().declarations().stream()
+            .filter(symbol -> symbol.simpleName().equals("hidden"))
             .map(symbol -> symbol.ownerId()).toList();
         assertEquals(2, owners.size());
         assertEquals(2, new HashSet<>(owners).size());
@@ -152,10 +160,12 @@ public class JavaNestedDeclarationScopeTest {
     @Test
     public void sameNamedLocalTypesHaveDistinctInternalQualifiedNames() {
         String source = "class Example { void first() { class Local { int value; } } void second() { class Local { int value; } } }";
-        var file = new JavaProjectSemanticExtractor().extract(Path.of("Example.java"), source);
-        var index = JavaProjectSemanticIndex.builder().putFile(file).build();
+        JavaProjectSemanticIndex.SourceFileIndex file = new JavaProjectSemanticExtractor()
+            .extract(Path.of("Example.java"), source);
+        JavaProjectSemanticIndex index = JavaProjectSemanticIndex.builder().putFile(file).build();
         assertTrue(index.lookupSimpleName("Local").isEmpty());
-        var types = file.semanticShard().declarations().stream().filter(symbol -> symbol.simpleName().equals("Local"))
+        List<SymbolDescriptor> types = file.semanticShard().declarations().stream()
+            .filter(symbol -> symbol.simpleName().equals("Local"))
             .toList();
         assertEquals(2, types.size());
         assertNotEquals(types.getFirst().qualifiedName(), types.getLast().qualifiedName());
@@ -166,6 +176,7 @@ public class JavaNestedDeclarationScopeTest {
         if (node.kind().id().equals("JAVA_METHOD_INVOCATION_EXPRESSION")) {
             assertTrue(model.resolvedSymbol(node).isPresent(), "Unresolved call at " + node.start());
         }
+
         for (SyntaxNode child : node.children()) {
             assertResolvedCalls(model, child);
         }

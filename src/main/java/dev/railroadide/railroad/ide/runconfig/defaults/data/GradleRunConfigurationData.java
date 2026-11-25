@@ -169,7 +169,7 @@ public class GradleRunConfigurationData extends RunConfigurationData {
             return List.of();
         }
 
-        LinkedHashSet<String> suggestions = new LinkedHashSet<>();
+        Set<String> suggestions = new LinkedHashSet<>();
         for (RailroadGradleTask task : cachedTasks) {
             if (task == null)
                 continue;
@@ -360,6 +360,7 @@ public class GradleRunConfigurationData extends RunConfigurationData {
         if (mainSource == null) {
             this.task = formData.get("task", String.class);
         }
+
         this.gradleProjectPath = Path.of(formData.get("gradleProjectPath", String.class));
         this.environmentVariables = StringUtils
             .stringToEnvironmentVariables(formData.get("environmentVariables", String.class));

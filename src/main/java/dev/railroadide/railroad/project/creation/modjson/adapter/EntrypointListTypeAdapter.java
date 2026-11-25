@@ -48,7 +48,9 @@ public class EntrypointListTypeAdapter extends TypeAdapter<List<Entrypoint>> {
                 in.nextNull();
             } else
                 throw new IOException("Expected string, object, or null for Entrypoint but got " + token);
+
         }
+
         in.endArray();
 
         return entrypoints;
@@ -82,9 +84,11 @@ public class EntrypointListTypeAdapter extends TypeAdapter<List<Entrypoint>> {
                 if (!"default".equals(entrypoint.getAdapter()) && entrypoint.getAdapter() != null) {
                     out.name("adapter").value(entrypoint.getAdapter());
                 }
+
                 out.endObject();
             }
         }
+
         out.endArray();
     }
 }
