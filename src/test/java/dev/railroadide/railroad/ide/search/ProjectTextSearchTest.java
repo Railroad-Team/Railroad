@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.ide.search;
 
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.ide.search.ProjectTextSearch.FileMatches;
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceChange;
@@ -92,13 +94,35 @@ public class ProjectTextSearchTest {
     }
 
     @Test
+    public void reportsSearchedFilesAsActivityProgress() {
+        publish("a.txt", "needle");
+        publish("b.txt", "hay");
+        publish("c.txt", "needle");
+        var activities = new BackgroundActivities();
+        List<BackgroundActivities.Activity> reported = new ArrayList<>();
+        activities.observe(() -> reported.addAll(activities.running()));
+
+        try (BackgroundActivities.Handle activity = activities.start("railroad.activity.searching_files")) {
+            ProjectTextSearch.search(store.capture(), ROOT, query("needle"), FileMask.all(), 10, () -> false,
+                activity, _ -> {
+                });
+        }
+
+        BackgroundActivities.Activity last = reported.getLast();
+        assertEquals("railroad.activity.files", last.phase());
+        assertEquals(3, last.completed());
+        assertEquals(3, last.total());
+        assertTrue(activities.running().isEmpty());
+    }
+
+    @Test
     public void stopsAtTheMatchLimitAndReportsIt() {
         publish("a.txt", "x x x");
         publish("b.txt", "x x");
         publish("c.txt", "x");
 
         ProjectTextSearch.Result result = ProjectTextSearch.search(store.capture(), ROOT, query("x"), FileMask.all(),
-            4, () -> false, _ -> {
+            4, () -> false, ActivityProgress.NONE, _ -> {
             });
 
         assertTrue(result.limitReached());
@@ -112,7 +136,8 @@ public class ProjectTextSearchTest {
         publish("a.txt", "x");
 
         assertThrows(CancellationException.class, () -> ProjectTextSearch.search(store.capture(), ROOT, query("x"),
-            FileMask.all(), 10, () -> true, _ -> fail("Cancelled searches must not report files")));
+            FileMask.all(), 10, () -> true, ActivityProgress.NONE,
+            _ -> fail("Cancelled searches must not report files")));
     }
 
     @Test
@@ -121,7 +146,7 @@ public class ProjectTextSearchTest {
         int[] checks = new int[1];
 
         assertThrows(CancellationException.class, () -> ProjectTextSearch.search(store.capture(), ROOT,
-            query("b"), FileMask.all(), 10, () -> ++checks[0] > 1, _ -> {
+            query("b"), FileMask.all(), 10, () -> ++checks[0] > 1, ActivityProgress.NONE, _ -> {
             }));
 
         assertEquals(2, checks[0], "The second check must happen inside the document");
@@ -180,13 +205,64 @@ public class ProjectTextSearchTest {
             () -> ProjectTextSearch.replacementEdit("Replace", result.files(), regex, "$2"));
     }
 
+    @Test
+    public void rebaseMovesMatchesOntoANewRevisionWithTheSameText() {
+        TextDocumentSnapshot searched = publish("a.txt", "x needle");
+        WorkspaceSnapshot before = store.capture();
+        FileMatches matches = search(query("needle"), FileMask.all()).files().getFirst();
+        TextDocumentSnapshot opened = republish(searched, "x needle");
+
+        FileMatches rebased = ProjectTextSearch.rebase(matches, store.capture()).orElseThrow();
+
+        assertSame(opened, rebased.document());
+        assertEquals(matches.matches(), rebased.matches());
+        assertTrue(ProjectTextSearch.sameText(before, store.capture()));
+    }
+
+    @Test
+    public void rebaseShiftsMatchesWhenCrlfBecameLf() {
+        TextDocumentSnapshot searched = publish("a.txt", "one\r\ntwo needle\r\nneedle");
+        WorkspaceSnapshot before = store.capture();
+        FileMatches matches = search(query("needle"), FileMask.all()).files().getFirst();
+        TextDocumentSnapshot normalized = republish(searched, "one\ntwo needle\nneedle");
+
+        FileMatches rebased = ProjectTextSearch.rebase(matches, store.capture()).orElseThrow();
+
+        assertSame(normalized, rebased.document());
+        assertEquals(List.of(new TextRange(8, 14), new TextRange(15, 21)), rebased.matches());
+        assertEquals(List.of("needle", "needle"), rebased.matches().stream()
+            .map(range -> normalized.text().substring(range.start, range.end)).toList());
+        assertTrue(ProjectTextSearch.sameText(before, store.capture()));
+    }
+
+    @Test
+    public void changedTextIsNeitherRebasedNorTheSame() {
+        TextDocumentSnapshot searched = publish("a.txt", "needle");
+        WorkspaceSnapshot before = store.capture();
+        FileMatches matches = search(query("needle"), FileMask.all()).files().getFirst();
+        republish(searched, "moved needle");
+
+        assertTrue(ProjectTextSearch.rebase(matches, store.capture()).isEmpty());
+        assertFalse(ProjectTextSearch.sameText(before, store.capture()));
+    }
+
+    @Test
+    public void aNewFileMakesTheWorkspaceDifferent() {
+        publish("a.txt", "needle");
+        WorkspaceSnapshot before = store.capture();
+        publish("b.txt", "needle");
+
+        assertFalse(ProjectTextSearch.sameText(before, store.capture()));
+    }
+
     private ProjectTextSearch.Result search(FindQuery query, FileMask mask) {
         return search(query, mask, _ -> {
         });
     }
 
     private ProjectTextSearch.Result search(FindQuery query, FileMask mask, Consumer<FileMatches> sink) {
-        return ProjectTextSearch.search(store.capture(), ROOT, query, mask, 1_000, () -> false, sink);
+        return ProjectTextSearch.search(store.capture(), ROOT, query, mask, 1_000, () -> false, ActivityProgress.NONE,
+            sink);
     }
 
     private static FindQuery query(String text) {
@@ -195,6 +271,13 @@ public class ProjectTextSearchTest {
 
     private static List<String> paths(ProjectTextSearch.Result result) {
         return result.files().stream().map(FileMatches::relativePath).toList();
+    }
+
+    private TextDocumentSnapshot republish(TextDocumentSnapshot previous, String text) {
+        var snapshot = new TextDocumentSnapshot(previous.id(), previous.uri(), previous.version().next(), "plaintext",
+            DocumentOrigin.original(previous.uri()), text, StandardCharsets.UTF_8);
+        store.publishOverlay(snapshot);
+        return snapshot;
     }
 
     private TextDocumentSnapshot publish(String relativePath, String text) {

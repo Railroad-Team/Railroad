@@ -18,6 +18,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -93,11 +94,39 @@ public class IDEActivityPaneTest {
     }
 
     @Test
+    public void briefActivitiesStayHiddenAndLongerOnesAppearAfterTheGracePeriod() throws Exception {
+        var activities = new BackgroundActivities();
+        IDEActivityPane pane = onFx(() -> {
+            var created = new IDEActivityPane(activities, Duration.millis(300));
+            new Scene(created);
+            return created;
+        });
+
+        BackgroundActivities.Handle quick = activities.start("railroad.activity.searching_files");
+        assertFalse(onFx(pane::isVisible));
+        quick.close();
+        Thread.sleep(450);
+        assertFalse(onFx(pane::isVisible));
+
+        BackgroundActivities.Handle slow = activities.start("railroad.activity.finding_usages");
+        assertFalse(onFx(pane::isVisible));
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (!onFx(pane::isVisible)) {
+            assertTrue(System.nanoTime() < deadline, "The activity was never shown");
+            Thread.sleep(20);
+        }
+
+        assertEquals(L18n.localize("railroad.activity.finding_usages"), onFx(() -> labels(pane)).getFirst());
+        slow.close();
+        assertFalse(onFx(pane::isVisible));
+    }
+
+    @Test
     public void statusBarKeepsActivityBesideCaretAtRightEdge() throws Exception {
         onFx(() -> {
             try (BackgroundActivities.Handle _ = BackgroundActivities.shared()
                 .start("railroad.activity.indexing_libraries")) {
-                var statusBar = new IDEStatusBarPane(new Pane(), new IDEActivityPane());
+                var statusBar = new IDEStatusBarPane(new Pane(), new IDEActivityPane(BackgroundActivities.shared()));
                 var scene = new Scene(statusBar, 900, 32);
                 try {
                     statusBar.applyCss();

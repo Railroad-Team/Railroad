@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.ui.search;
 
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.ide.edit.WorkspaceEditService;
 import dev.railroadide.railroad.ide.edit.WorkspaceEditorHost;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
@@ -12,6 +13,8 @@ import dev.railroadide.railroad.localization.Languages;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +24,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -36,6 +40,7 @@ public class ProjectSearchPaneTest {
     private DefaultDocumentStore store;
     private DocumentIdentityRegistry identities;
     private WorkspaceEditService edits;
+    private final BackgroundActivities activities = new BackgroundActivities();
     private ProjectSearchPane pane;
 
     @BeforeAll
@@ -54,7 +59,8 @@ public class ProjectSearchPaneTest {
         store = new DefaultDocumentStore("project-search", new WorkspaceConfigurationSnapshot(0, Set.of()));
         identities = new DocumentIdentityRegistry();
         edits = new WorkspaceEditService(root, store, identities, new NoEditors());
-        pane = onFx(() -> new ProjectSearchPane(root, () -> Optional.of(store), () -> Optional.of(edits)));
+        pane = onFx(() -> new ProjectSearchPane(root, () -> Optional.of(store), () -> Optional.of(edits),
+            activities));
     }
 
     @AfterEach
@@ -113,6 +119,9 @@ public class ProjectSearchPaneTest {
 
             pane.requestReplaceAll();
             assertTrue(pane.isConfirmationVisible());
+            assertEquals(new ProjectSearchPane.Message(ProjectSearchPane.Severity.QUESTION,
+                "Replace 2 matches in 2 files?", "Files that aren't open in an editor are saved straight away."),
+                pane.message().orElseThrow());
             return pane.replaceAll();
         });
 
@@ -123,9 +132,31 @@ public class ProjectSearchPaneTest {
         onFx(() -> {
             assertFalse(pane.isConfirmationVisible());
             assertEquals(List.of("a.json"), pane.results().stream().map(FileMatches::relativePath).toList());
-            assertEquals("Replaced 2 matches in 2 files · 1 match in 1 file", pane.statusText());
+            assertEquals("1 match in 1 file", pane.statusText());
+            assertEquals(new ProjectSearchPane.Message(ProjectSearchPane.Severity.SUCCESS,
+                "Replaced 2 matches in 2 files", ""), pane.message().orElseThrow());
             return null;
         });
+    }
+
+    @Test
+    public void searchesAreShownAsStatusBarActivitiesUntilTheyFinish() throws Exception {
+        disk("a.txt", "needle");
+        disk("b.txt", "needle");
+        List<String> seen = new ArrayList<>();
+        activities.observe(() -> activities.running().forEach(activity -> {
+            synchronized (seen) {
+                seen.add(activity.titleKey() + " " + activity.completed() + "/" + activity.total());
+            }
+        }));
+
+        search("needle");
+
+        synchronized (seen) {
+            assertTrue(seen.contains("railroad.activity.searching_files 2/2"), seen::toString);
+        }
+
+        assertTrue(activities.running().isEmpty());
     }
 
     @Test
@@ -156,6 +187,12 @@ public class ProjectSearchPaneTest {
         });
 
         waitUntil(() -> pane.state() == ProjectSearchPane.State.OUTDATED);
+        onFx(() -> {
+            assertEquals(new ProjectSearchPane.Message(ProjectSearchPane.Severity.WARNING,
+                "Results may be out of date", "Files changed since this search."), pane.message().orElseThrow());
+            return null;
+        });
+
         Optional<WorkspaceEditResult> result = onFx(() -> {
             pane.open(null, true);
             pane.replaceField().setText("pin");
@@ -165,7 +202,8 @@ public class ProjectSearchPaneTest {
         assertFalse(result.orElseThrow().applied());
         assertEquals("needle", Files.readString(root.resolve("a.txt")));
         onFx(() -> {
-            assertTrue(pane.statusText().startsWith("Nothing was replaced"), pane.statusText());
+            assertEquals(new ProjectSearchPane.Message(ProjectSearchPane.Severity.ERROR, "Nothing was replaced",
+                "a.txt changed after the search. Search again, then replace."), pane.message().orElseThrow());
             return null;
         });
     }
@@ -179,7 +217,11 @@ public class ProjectSearchPaneTest {
             pane.searchField().setText("(");
             pane.search();
             assertEquals(ProjectSearchPane.State.INVALID, pane.state());
-            assertTrue(pane.statusText().startsWith("Invalid regex"), pane.statusText());
+            ProjectSearchPane.Message message = pane.message().orElseThrow();
+            assertEquals(ProjectSearchPane.Severity.ERROR, message.severity());
+            assertEquals("Invalid regular expression", message.title());
+            assertTrue(message.detail().startsWith("Unclosed group"), message.detail());
+            assertEquals("", pane.statusText());
             pane.searchField().setText("(b)");
             pane.search();
             return null;
@@ -189,13 +231,82 @@ public class ProjectSearchPaneTest {
         onFx(() -> {
             pane.open(null, true);
             pane.replaceField().setText("$2");
-            assertTrue(pane.statusText().startsWith("Invalid replacement"), pane.statusText());
+            assertEquals(new ProjectSearchPane.Message(ProjectSearchPane.Severity.ERROR, "Invalid replacement",
+                "$2 refers to a group the search doesn't have. The search has 1 group, so use $1."),
+                pane.message().orElseThrow());
             pane.requestReplaceAll();
             assertFalse(pane.isConfirmationVisible());
             return null;
         });
 
         assertEquals("abc", Files.readString(root.resolve("a.txt")));
+    }
+
+    @Test
+    public void openingAMatchedFileKeepsResultsCurrentAndReplaceable() throws Exception {
+        TextDocumentSnapshot document = disk("a.txt", "needle");
+
+        search("needle");
+        onFx(() -> {
+            store.publishOverlay(new TextDocumentSnapshot(document.id(), document.uri(), document.version().next(),
+                "plaintext", DocumentOrigin.original(document.uri()), "needle", StandardCharsets.UTF_8));
+            return null;
+        });
+
+        onFx(() -> null);
+        Optional<WorkspaceEditResult> result = onFx(() -> {
+            assertEquals(ProjectSearchPane.State.COMPLETE, pane.state());
+            assertTrue(pane.message().isEmpty(), () -> pane.message().toString());
+            pane.open(null, true);
+            pane.replaceField().setText("pin");
+            return pane.replaceAll();
+        });
+
+        assertTrue(result.orElseThrow().applied(), result.orElseThrow().problems()::toString);
+        assertEquals("pin", ((TextDocumentSnapshot) store.current(document.id()).orElseThrow()).text());
+    }
+
+    @Test
+    public void lineEndingNormalizationAfterTheSearchKeepsMatchesReplaceable() throws Exception {
+        TextDocumentSnapshot document = disk("a.txt", "first\r\nneedle\r\n");
+
+        search("needle");
+        onFx(() -> {
+            store.publishOverlay(new TextDocumentSnapshot(document.id(), document.uri(), document.version().next(),
+                "plaintext", DocumentOrigin.original(document.uri()), "first\nneedle\n", StandardCharsets.UTF_8));
+            return null;
+        });
+
+        onFx(() -> null);
+        Optional<WorkspaceEditResult> result = onFx(() -> {
+            assertEquals(ProjectSearchPane.State.COMPLETE, pane.state());
+            pane.open(null, true);
+            pane.replaceField().setText("pin");
+            return pane.replaceAll();
+        });
+
+        assertTrue(result.orElseThrow().applied(), result.orElseThrow().problems()::toString);
+        assertEquals("first\npin\n", ((TextDocumentSnapshot) store.current(document.id()).orElseThrow()).text());
+    }
+
+    @Test
+    public void escapeCancelsTheConfirmation() throws Exception {
+        disk("a.txt", "needle");
+
+        search("needle");
+        onFx(() -> {
+            pane.open(null, true);
+            pane.requestReplaceAll();
+            assertEquals(new ProjectSearchPane.Message(ProjectSearchPane.Severity.QUESTION,
+                "Delete 1 match in 1 file?", "Files that aren't open in an editor are saved straight away."),
+                pane.message().orElseThrow());
+            pane.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.ESCAPE, false, false, false, false));
+            assertFalse(pane.isConfirmationVisible());
+            assertTrue(pane.message().isEmpty());
+            return null;
+        });
+
+        assertEquals("needle", Files.readString(root.resolve("a.txt")));
     }
 
     @Test

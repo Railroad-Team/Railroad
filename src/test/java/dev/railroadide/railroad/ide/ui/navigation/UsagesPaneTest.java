@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.ui.navigation;
 
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.provider.api.NavigationProvider;
 import dev.railroadide.railroad.ide.sst.provider.api.UsageQuery;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.*;
 import javafx.scene.control.TreeItem;
@@ -100,6 +102,34 @@ public class UsagesPaneTest {
             assertEquals("2 usages in 1 file", pane.statusText());
             return null;
         });
+    }
+
+    @Test
+    public void runningSearchIsShownInTheStatusBarWithItsFileProgress() throws Exception {
+        var finish = new CountDownLatch(1);
+        start(provider((context, query, sink) -> {
+            sink.accept(List.of(usage(first, 0)), 1, 2);
+            await(finish);
+            return search(context, usage(first, 0));
+        }), new UsageQuery.AtOffset(0));
+
+        try {
+            waitUntil(() -> findingUsages().filter(activity -> activity.completed() == 1).isPresent());
+            BackgroundActivities.Activity activity = findingUsages().orElseThrow();
+            assertEquals("railroad.activity.files", activity.phase());
+            assertEquals(2, activity.total());
+        } finally {
+            finish.countDown();
+        }
+
+        waitUntil(() -> pane.state() == UsagesPane.State.COMPLETE);
+        waitUntil(() -> findingUsages().isEmpty());
+    }
+
+    private static Optional<BackgroundActivities.Activity> findingUsages() {
+        return BackgroundActivities.shared().running().stream()
+            .filter(activity -> activity.titleKey().equals("railroad.activity.finding_usages"))
+            .findFirst();
     }
 
     private Button groupButton(String key) {
@@ -221,8 +251,8 @@ public class UsagesPaneTest {
 
     @Test
     public void workspaceChangesMarkResultsOutdatedAndRefreshSearchesBySymbol() throws Exception {
-        BlockingQueue<UsageQuery> queries = new LinkedBlockingQueue<UsageQuery>();
-        BlockingQueue<WorkspaceSnapshot> workspaces = new LinkedBlockingQueue<WorkspaceSnapshot>();
+        BlockingQueue<UsageQuery> queries = new LinkedBlockingQueue<>();
+        BlockingQueue<WorkspaceSnapshot> workspaces = new LinkedBlockingQueue<>();
         start(provider((context, query, sink) -> {
             queries.add(query);
             workspaces.add(context.workspaceSnapshot());

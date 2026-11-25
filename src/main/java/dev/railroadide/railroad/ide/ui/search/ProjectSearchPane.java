@@ -2,11 +2,13 @@ package dev.railroadide.railroad.ide.ui.search;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.ide.edit.WorkspaceEditService;
 import dev.railroadide.railroad.ide.search.FileMask;
 import dev.railroadide.railroad.ide.search.ProjectTextSearch;
 import dev.railroadide.railroad.ide.search.ProjectTextSearch.FileMatches;
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceChange;
 import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceEdit;
 import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceEditProblem;
 import dev.railroadide.railroad.ide.sst.edit.api.WorkspaceEditResult;
@@ -16,6 +18,7 @@ import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.ui.RRButton;
 import dev.railroadide.railroad.ui.localized.LocalizedTextProperty;
 import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
+import dev.railroadide.railroad.ui.styling.ButtonSize;
 import dev.railroadide.railroad.ui.styling.ButtonVariant;
 import dev.railroadide.railroad.utility.FileUtils;
 import javafx.animation.PauseTransition;
@@ -38,6 +41,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 /**
@@ -46,9 +51,10 @@ import java.util.regex.PatternSyntaxException;
  * <p>
  * All state is owned by the JavaFX thread. Searches run against one capture of the project's document store, so
  * they include unsaved editor content, and a newer search or closing the pane cancels the running one. Listed
- * matches stay bound to the captured revisions: once the workspace changes the results are marked outdated, and a
- * replacement is applied through the project's {@link WorkspaceEditService} as one transaction that is refused if
- * any affected document changed since the search.
+ * matches stay bound to the captured text: once it changes the results are marked outdated, and a replacement is
+ * applied through the project's {@link WorkspaceEditService} as one transaction that is refused if any affected
+ * document's text changed since the search. Problems, warnings, results of a replacement and its confirmation are
+ * shown in one message banner above the results.
  */
 public final class ProjectSearchPane extends BorderPane implements AutoCloseable {
     /**
@@ -57,8 +63,9 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
     public static final int MATCH_LIMIT = 10_000;
     private static final int MAX_SEED_LENGTH = 1_000;
     private static final Duration SEARCH_DELAY = Duration.millis(200);
-    private static final PseudoClass WARNING = PseudoClass.getPseudoClass("warning");
-    private static final PseudoClass FAILED = PseudoClass.getPseudoClass("failed");
+    private static final PseudoClass ERROR = PseudoClass.getPseudoClass("error");
+    private static final Pattern MISSING_GROUP = Pattern.compile("No group (\\d+)");
+    private static final Pattern MISSING_NAMED_GROUP = Pattern.compile("No group with name \\{(.*)}");
     private static final ExecutorService SEARCHES = Executors.newSingleThreadExecutor(task -> {
         var thread = new Thread(task, "Railroad project search");
         thread.setDaemon(true);
@@ -68,6 +75,7 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
     private final Path root;
     private final Supplier<Optional<DocumentStore>> stores;
     private final Supplier<Optional<WorkspaceEditService>> edits;
+    private final BackgroundActivities activities;
     private final TextField searchField = new TextField();
     private final TextField replaceField = new TextField();
     private final TextField maskField = new TextField();
@@ -78,8 +86,12 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
         FontAwesomeSolid.CHEVRON_RIGHT);
     private final RRButton replaceAllButton = new RRButton("railroad.editor.find.replace_all");
     private final HBox replaceRow;
-    private final Label confirmMessage = new Label();
-    private final HBox confirmBar;
+    private final FontIcon bannerIcon = new FontIcon();
+    private final Label bannerTitle = new Label();
+    private final Label bannerDetail = new Label();
+    private final HBox bannerActions = new HBox();
+    private final RRButton bannerClose = toolButton("railroad.ide.find_in_files.dismiss", FontAwesomeSolid.TIMES);
+    private final HBox banner;
     private final Label status = new Label();
     private final ProgressBar progress = new ProgressBar(ProgressBar.INDETERMINATE_PROGRESS);
     private final HBox groupActions = new HBox();
@@ -98,10 +110,13 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
     private @Nullable FindQuery query;
     private @Nullable WorkspaceSnapshot searched;
     private @Nullable AtomicBoolean activeCancellation;
+    private BackgroundActivities.@Nullable Handle activity;
     private DocumentStore.@Nullable ChangeSubscription storeSubscription;
     private @Nullable DocumentStore observedStore;
     private @Nullable String replacementError;
-    private @Nullable String notice;
+    private @Nullable Banner notice;
+    private @Nullable Banner confirmation;
+    private @Nullable Banner shownBanner;
     private String failureMessage = "";
     private State state = State.IDLE;
     private int matchCount;
@@ -114,7 +129,8 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
      * @param project project whose files are searched
      */
     public ProjectSearchPane(Project project) {
-        this(project.getPath(), Services.IDE_STATE::getDocumentStore, Services.IDE_STATE::getWorkspaceEdits);
+        this(project.getPath(), Services.IDE_STATE::getDocumentStore, Services.IDE_STATE::getWorkspaceEdits,
+            BackgroundActivities.shared());
     }
 
     /**
@@ -123,15 +139,18 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
      * @param root project directory; only files inside it are searched
      * @param stores supplies the project's document store when a search starts
      * @param edits supplies the project's workspace-edit service when replacing
+     * @param activities registry that shows running searches in the status bar
      */
     public ProjectSearchPane(
         Path root,
         Supplier<Optional<DocumentStore>> stores,
-        Supplier<Optional<WorkspaceEditService>> edits
+        Supplier<Optional<WorkspaceEditService>> edits,
+        BackgroundActivities activities
     ) {
         this.root = root.toAbsolutePath().normalize();
         this.stores = Objects.requireNonNull(stores, "stores");
         this.edits = Objects.requireNonNull(edits, "edits");
+        this.activities = Objects.requireNonNull(activities, "activities");
         getStyleClass().add("project-search-pane");
 
         searchField.getStyleClass().add("project-search-field");
@@ -162,18 +181,28 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
         replaceRow.getStyleClass().add("project-search-row");
         replaceRow.setAlignment(Pos.CENTER_LEFT);
 
-        var confirm = new RRButton("railroad.ide.find_in_files.confirm_replace");
-        confirm.setVariant(ButtonVariant.PRIMARY);
-        confirm.setOnAction(_ -> replaceAll());
-        var dismiss = new RRButton("railroad.generic.cancel");
-        dismiss.setVariant(ButtonVariant.SECONDARY);
-        dismiss.setOnAction(_ -> hideConfirmation());
-        confirmMessage.setWrapText(true);
-        confirmMessage.setMinWidth(0);
-        HBox.setHgrow(confirmMessage, Priority.ALWAYS);
-        confirmBar = new HBox(confirmMessage, confirm, dismiss);
-        confirmBar.getStyleClass().add("project-search-confirm");
-        confirmBar.setAlignment(Pos.CENTER_LEFT);
+        bannerIcon.getStyleClass().add("project-search-banner-icon");
+        bannerTitle.getStyleClass().add("project-search-banner-title");
+        bannerDetail.getStyleClass().add("project-search-banner-detail");
+        for (Label label : List.of(bannerTitle, bannerDetail)) {
+            label.setWrapText(true);
+            label.setMinWidth(0);
+            label.setMinHeight(USE_PREF_SIZE);
+        }
+
+        var bannerText = new VBox(bannerTitle, bannerDetail);
+        bannerText.getStyleClass().add("project-search-banner-text");
+        bannerText.setMinWidth(0);
+        HBox.setHgrow(bannerText, Priority.ALWAYS);
+        var bannerIconTile = new StackPane(bannerIcon);
+        bannerIconTile.getStyleClass().add("project-search-banner-icon-tile");
+        bannerActions.getStyleClass().add("project-search-banner-actions");
+        bannerActions.setAlignment(Pos.CENTER_RIGHT);
+        bannerActions.setMinWidth(USE_PREF_SIZE);
+        bannerClose.setOnAction(_ -> dismissMessage());
+        banner = new HBox(bannerIconTile, bannerText, bannerActions, bannerClose);
+        banner.getStyleClass().add("project-search-banner");
+        banner.setAlignment(Pos.CENTER_LEFT);
 
         RRButton collapse = toolButton("railroad.generic.collapse_all", FontAwesomeSolid.COMPRESS_ALT);
         collapse.setOnAction(_ -> groups.values().forEach(item -> item.setExpanded(false)));
@@ -196,7 +225,7 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
 
         progress.getStyleClass().add("usages-progress");
         progress.setMaxWidth(Double.MAX_VALUE);
-        var header = new VBox(searchRow, replaceRow, confirmBar, statusRow, progress);
+        var header = new VBox(searchRow, replaceRow, banner, statusRow, progress);
         header.getStyleClass().add("project-search-header");
         setTop(header);
 
@@ -232,7 +261,8 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
         emptyTitle.setWrapText(true);
         emptyDetail.setWrapText(true);
         setCenter(new StackPane(tree, empty));
-        for (Region node : List.of(replaceRow, confirmBar, progress, groupActions, tree, empty)) {
+        for (Region node : List.of(replaceRow, banner, bannerDetail, bannerActions, bannerClose, progress, groupActions,
+            tree, empty)) {
             node.managedProperty().bind(node.visibleProperty());
         }
 
@@ -250,6 +280,14 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
 
         replaceField.setOnAction(_ -> requestReplaceAll());
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleOptionShortcut);
+        addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ESCAPE && shownBanner != null && (shownBanner == confirmation
+                || shownBanner.dismissible())) {
+                dismissMessage();
+                event.consume();
+            }
+        });
+
         setReplaceVisible(false);
         updateStatus();
     }
@@ -286,7 +324,8 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
         searchDelay.stop();
         cancelRunningSearch();
         clearResults();
-        hideConfirmation();
+        confirmation = null;
+        notice = null;
         replacementError = null;
         var next = new FindQuery(searchField.getText(), matchCase.isSelected(), wholeWords.isSelected(),
             regex.isSelected());
@@ -304,7 +343,10 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
             query = null;
             searched = null;
             state = State.INVALID;
-            failureMessage = exception.getDescription();
+            failureMessage = exception.getIndex() < 0
+                ? L18n.localize("railroad.ide.find_in_files.invalid_regex_detail", exception.getDescription())
+                : L18n.localize("railroad.ide.find_in_files.invalid_regex_at", exception.getDescription(),
+                    exception.getIndex() + 1);
             updateStatus();
             return;
         }
@@ -314,7 +356,7 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
             query = null;
             searched = null;
             state = State.FAILED;
-            failureMessage = L18n.localize("railroad.ide.find_in_files.no_project");
+            failureMessage = L18n.localize("railroad.ide.find_in_files.no_project_detail");
             updateStatus();
             return;
         }
@@ -327,98 +369,125 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
         query = next;
         searched = workspace;
         state = State.SEARCHING;
+        BackgroundActivities.Handle handle = activities.start("railroad.activity.searching_files");
+        activity = handle;
         updateStatus();
 
         CompletableFuture.supplyAsync(() -> ProjectTextSearch.search(workspace, root, next, mask, MATCH_LIMIT,
-            cancellation::get, file -> {
+            cancellation::get, handle, file -> {
                 pendingFiles.add(file);
                 if (flushQueued.compareAndSet(false, true)) {
                     Platform.runLater(() -> flush(cancellation));
                 }
-            }), SEARCHES).whenComplete((result, throwable) -> Platform.runLater(() -> {
-                if (activeCancellation != cancellation)
-                    return;
+            }), SEARCHES).whenComplete((result, throwable) -> {
+                handle.close();
+                Platform.runLater(() -> {
+                    if (activeCancellation != cancellation)
+                        return;
 
-                flush(cancellation);
-                activeCancellation = null;
-                Throwable cause = throwable instanceof CompletionException && throwable.getCause() != null
-                    ? throwable.getCause()
-                    : throwable;
-                if (cause == null) {
-                    limitReached = result.limitReached();
-                    state = isCurrent(workspace) ? State.COMPLETE : State.OUTDATED;
-                } else if (cause instanceof CancellationException) {
-                    state = State.IDLE;
-                } else {
-                    Railroad.LOGGER.error("Project search failed for {}", next, cause);
-                    state = State.FAILED;
-                    failureMessage = cause.getMessage() == null || cause.getMessage().isBlank()
-                        ? cause.getClass().getSimpleName()
-                        : cause.getMessage();
-                }
+                    flush(cancellation);
+                    activeCancellation = null;
+                    activity = null;
+                    Throwable cause = throwable instanceof CompletionException && throwable.getCause() != null
+                        ? throwable.getCause()
+                        : throwable;
+                    if (cause == null) {
+                        limitReached = result.limitReached();
+                        state = isCurrent(workspace) ? State.COMPLETE : State.OUTDATED;
+                    } else if (cause instanceof CancellationException) {
+                        state = State.IDLE;
+                    } else {
+                        Railroad.LOGGER.error("Project search failed for {}", next, cause);
+                        state = State.FAILED;
+                        failureMessage = cause.getMessage() == null || cause.getMessage().isBlank()
+                            ? cause.getClass().getSimpleName()
+                            : cause.getMessage();
+                    }
 
-                validateReplacement();
-                updateStatus();
-            }));
+                    validateReplacement();
+                    updateStatus();
+                });
+            });
     }
 
     /**
-     * Shows the confirmation for replacing every listed match, or reports why nothing can be replaced.
+     * Asks for confirmation before replacing every listed match, or reports why nothing can be replaced.
      */
     public void requestReplaceAll() {
         if (!isReplaceVisible() || state == State.SEARCHING || matchCount == 0)
             return;
 
         validateReplacement();
-        if (replacementError != null) {
-            updateStatus();
-            return;
+        if (replacementError == null) {
+            boolean deleting = replaceField.getText().isEmpty();
+            String title = L18n.localize(deleting
+                ? "railroad.ide.find_in_files.confirm_delete_title"
+                : "railroad.ide.find_in_files.confirm_replace_title", matchText(matchCount), fileText(groups.size()));
+            confirmation = new Banner(new Message(Severity.QUESTION, title,
+                L18n.localize("railroad.ide.find_in_files.confirm_detail")),
+                List.of(
+                    new BannerAction(deleting
+                        ? "railroad.ide.find_in_files.confirm_delete"
+                        : "railroad.ide.find_in_files.confirm_replace",
+                        deleting ? ButtonVariant.DANGER : ButtonVariant.PRIMARY, this::replaceAll),
+                    new BannerAction("railroad.generic.cancel", ButtonVariant.GHOST, this::dismissMessage)),
+                false);
         }
 
-        confirmMessage.setText(L18n.localize("railroad.ide.find_in_files.confirm_message", matchText(matchCount),
-            fileText(groups.size()), replaceField.getText()));
-        confirmBar.setVisible(true);
+        updateStatus();
     }
 
     /**
      * Replaces every listed match through the project's workspace-edit service as one transaction, then searches
-     * again. Nothing is replaced if any affected file changed since the search.
+     * again. Matches are first moved onto the current revision of their file, so opening or saving a file after the
+     * search does not prevent the replacement; nothing is replaced if any affected file's text changed since.
      *
      * @return outcome, or an empty optional when nothing could be attempted
      */
     public Optional<WorkspaceEditResult> replaceAll() {
-        hideConfirmation();
+        confirmation = null;
         FindQuery current = query;
-        if (current == null || state == State.SEARCHING || matchCount == 0)
+        if (current == null || state == State.SEARCHING || matchCount == 0) {
+            updateStatus();
             return Optional.empty();
+        }
 
         Optional<WorkspaceEditService> service = edits.get();
-        if (service.isEmpty()) {
-            notice = L18n.localize("railroad.ide.find_in_files.no_project");
+        DocumentStore store = observedStore;
+        if (service.isEmpty() || store == null) {
+            notice = new Banner(new Message(Severity.ERROR,
+                L18n.localize("railroad.ide.find_in_files.replace_failed_title"),
+                L18n.localize("railroad.ide.find_in_files.no_project_detail")), List.of(), true);
             updateStatus();
             return Optional.empty();
         }
 
+        WorkspaceSnapshot workspace = store.capture();
+        List<FileMatches> files = results().stream()
+            .map(file -> ProjectTextSearch.rebase(file, workspace).orElse(file))
+            .toList();
         WorkspaceEdit edit;
         try {
-            edit = ProjectTextSearch.replacementEdit(L18n.localize("railroad.ide.find_in_files.edit_label"),
-                results(), current, replaceField.getText());
+            edit = ProjectTextSearch.replacementEdit(L18n.localize("railroad.ide.find_in_files.edit_label"), files,
+                current, replaceField.getText());
         } catch (IllegalArgumentException | IndexOutOfBoundsException exception) {
-            replacementError = exception.getMessage();
+            replacementError = describeReplacementError(exception, current);
             updateStatus();
             return Optional.empty();
         }
 
-        int replacedMatches = matchCount;
-        int replacedFiles = groups.size();
+        int replacedMatches = edit.changes().stream()
+            .mapToInt(change -> ((WorkspaceChange.TextEdit) change).replacements().size())
+            .sum();
+        int replacedFiles = edit.changes().size();
         WorkspaceEditResult result = service.get().apply(edit);
         if (result.applied()) {
             search();
-            notice = L18n.localize("railroad.ide.find_in_files.replaced", matchText(replacedMatches),
-                fileText(replacedFiles));
+            notice = new Banner(new Message(Severity.SUCCESS, L18n.localize("railroad.ide.find_in_files.replaced",
+                matchText(replacedMatches), fileText(replacedFiles)), ""), List.of(), true);
         } else {
-            notice = L18n.localize("railroad.ide.find_in_files.replace_failed", result.problems().stream()
-                .findFirst().map(WorkspaceEditProblem::message).orElse(result.status().toString()));
+            Railroad.LOGGER.warn("Replace in Files was refused: {}", result.problems());
+            notice = replaceFailure(result.problems());
             if (state == State.COMPLETE && searched != null && !isCurrent(searched)) {
                 state = State.OUTDATED;
             }
@@ -494,9 +563,9 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
     }
 
     /**
-     * Returns the user-facing status line.
+     * Returns the result summary shown above the results.
      *
-     * @return status text
+     * @return status text, empty when no search produced results
      */
     public String statusText() {
         return status.getText();
@@ -571,7 +640,17 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
      * @return whether a replacement awaits confirmation
      */
     public boolean isConfirmationVisible() {
-        return confirmBar.isVisible();
+        return confirmation != null && shownBanner == confirmation;
+    }
+
+    /**
+     * Returns the message shown above the results, such as a problem with the query, a warning about the results,
+     * the outcome of a replacement or a pending confirmation.
+     *
+     * @return shown message, or an empty optional
+     */
+    public Optional<Message> message() {
+        return Optional.ofNullable(shownBanner).map(Banner::message);
     }
 
     @Override
@@ -595,10 +674,6 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
         replaceRow.setVisible(visible);
         replaceToggle
             .setGraphic(new FontIcon(visible ? FontAwesomeSolid.CHEVRON_DOWN : FontAwesomeSolid.CHEVRON_RIGHT));
-        if (!visible) {
-            hideConfirmation();
-        }
-
         replacementChanged();
     }
 
@@ -608,7 +683,7 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
     }
 
     private void replacementChanged() {
-        hideConfirmation();
+        confirmation = null;
         notice = null;
         for (TreeItem<Row> group : groups.values()) {
             if (group.getValue() instanceof FileRow file) {
@@ -631,7 +706,7 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
         try {
             ProjectTextSearch.replacements(first.matches(), current, replaceField.getText());
         } catch (IllegalArgumentException | IndexOutOfBoundsException exception) {
-            replacementError = exception.getMessage();
+            replacementError = describeReplacementError(exception, current);
         }
     }
 
@@ -694,10 +769,20 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
         if (match == null)
             return;
 
-        TextDocumentSnapshot snapshot = match.file().matches().document();
-        Location.TextLocation location = Location.TextLocation.from(snapshot, match.range().start, match.range().end);
+        var searchedMatch = new FileMatches(match.file().matches().document(),
+            match.file().matches().relativePath(), List.of(match.range()));
+        FileMatches target = observedStore == null
+            ? searchedMatch
+            : ProjectTextSearch.rebase(searchedMatch, observedStore.capture())
+                .filter(file -> file.matches().size() == 1)
+                .orElse(searchedMatch);
+        TextDocumentSnapshot snapshot = target.document();
+        TextRange range = target.matches().getFirst();
+        Location.TextLocation location = Location.TextLocation.from(snapshot, range.start, range.end);
         if (!Services.EDITOR_TAB_MANAGER.navigateTo(null, snapshot, location)) {
-            notice = L18n.localize("railroad.ide.find_in_files.outdated_target");
+            notice = new Banner(new Message(Severity.WARNING,
+                L18n.localize("railroad.ide.find_in_files.open_outdated_title"),
+                L18n.localize("railroad.ide.find_in_files.open_outdated_detail")), List.of(searchAgain()), true);
             updateStatus();
         }
     }
@@ -710,7 +795,7 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
     }
 
     private void exclude(TreeItem<Row> item) {
-        hideConfirmation();
+        confirmation = null;
         TreeItem<Row> group = item.getValue() instanceof FileRow ? item : item.getParent();
         if (item.getValue() instanceof FileRow) {
             matchCount -= item.getChildren().size();
@@ -727,8 +812,14 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
         updateStatus();
     }
 
-    private void hideConfirmation() {
-        confirmBar.setVisible(false);
+    private void dismissMessage() {
+        if (confirmation != null) {
+            confirmation = null;
+        } else {
+            notice = null;
+        }
+
+        updateStatus();
     }
 
     private void observe(DocumentStore store) {
@@ -759,13 +850,18 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
 
     private boolean isCurrent(WorkspaceSnapshot workspace) {
         DocumentStore store = observedStore;
-        return store != null && store.capture().documents().equals(workspace.documents());
+        return store != null && ProjectTextSearch.sameText(workspace, store.capture());
     }
 
     private void cancelRunningSearch() {
         if (activeCancellation != null) {
             activeCancellation.set(true);
             activeCancellation = null;
+        }
+
+        if (activity != null) {
+            activity.close();
+            activity = null;
         }
 
         pendingFiles.clear();
@@ -787,59 +883,187 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
         boolean hasResults = matchCount > 0;
         boolean searching = state == State.SEARCHING;
         tree.setVisible(hasResults);
-        empty.setVisible(!hasResults);
         groupActions.setVisible(hasResults);
         progress.setVisible(searching);
         replaceAllButton.setDisable(searching || !hasResults || replacementError != null);
-        pseudoClassStateChanged(WARNING, state == State.OUTDATED || limitReached && state == State.COMPLETE);
-        pseudoClassStateChanged(FAILED, state == State.INVALID || state == State.FAILED
-            || replacementError != null && isReplaceVisible());
+        searchField.pseudoClassStateChanged(ERROR, state == State.INVALID);
+        replaceField.pseudoClassStateChanged(ERROR, replacementError != null);
 
         String summary = L18n.localize("railroad.ide.find_in_files.summary", matchText(matchCount),
             fileText(groups.size()));
-        String text = switch (state) {
-            case IDLE -> "";
+        status.setText(switch (state) {
+            case IDLE, INVALID, FAILED -> "";
             case SEARCHING -> L18n.localize("railroad.ide.find_in_files.searching", summary);
-            case COMPLETE -> limitReached
-                ? L18n.localize("railroad.ide.find_in_files.limit_reached", summary)
-                : summary;
-            case OUTDATED -> L18n.localize("railroad.ide.find_in_files.outdated");
-            case INVALID -> L18n.localize("railroad.ide.find_in_files.invalid_regex", failureMessage);
-            case FAILED -> L18n.localize("railroad.ide.find_in_files.failed", failureMessage);
-        };
+            case COMPLETE, OUTDATED -> summary;
+        });
 
-        if (replacementError != null && isReplaceVisible() && state != State.INVALID) {
-            text = L18n.localize("railroad.editor.find.invalid_replacement", replacementError);
-        } else if (notice != null) {
-            text = text.isEmpty() ? notice : notice + " · " + text;
-        }
-
-        status.setText(text);
-        if (!hasResults) {
+        renderBanner(currentBanner());
+        empty.setVisible(!hasResults && state != State.INVALID && state != State.FAILED);
+        if (empty.isVisible()) {
             updateEmptyState();
         }
     }
 
-    private void updateEmptyState() {
-        emptyIcon.setIconCode(switch (state) {
-            case INVALID, FAILED, OUTDATED -> FontAwesomeSolid.EXCLAMATION_CIRCLE;
-            default -> FontAwesomeSolid.SEARCH;
+    private @Nullable Banner currentBanner() {
+        if (confirmation != null)
+            return confirmation;
+
+        if (state == State.INVALID)
+            return problem("railroad.ide.find_in_files.invalid_regex_title", failureMessage);
+
+        if (state == State.FAILED)
+            return problem("railroad.ide.find_in_files.failed_title", failureMessage);
+
+        if (replacementError != null && isReplaceVisible())
+            return problem("railroad.ide.find_in_files.invalid_replacement_title", replacementError);
+
+        if (notice != null)
+            return notice;
+
+        if (state == State.OUTDATED)
+            return new Banner(new Message(Severity.WARNING,
+                L18n.localize("railroad.ide.find_in_files.outdated_title"),
+                L18n.localize("railroad.ide.find_in_files.outdated_detail")), List.of(searchAgain()), false);
+
+        if (state == State.COMPLETE && limitReached)
+            return new Banner(new Message(Severity.WARNING,
+                L18n.localize("railroad.ide.find_in_files.limit_title", matchText(matchCount)),
+                L18n.localize("railroad.ide.find_in_files.limit_detail")), List.of(), false);
+
+        return null;
+    }
+
+    private static Banner problem(String titleKey, String detail) {
+        return new Banner(new Message(Severity.ERROR, L18n.localize(titleKey), detail), List.of(), false);
+    }
+
+    private BannerAction searchAgain() {
+        return new BannerAction("railroad.ide.find_in_files.search_again", ButtonVariant.SECONDARY, this::search);
+    }
+
+    private void renderBanner(@Nullable Banner next) {
+        banner.setVisible(next != null);
+        if (next == null) {
+            shownBanner = null;
+            bannerActions.getChildren().clear();
+            return;
+        }
+
+        if (shownBanner != null && shownBanner.looksLike(next)) {
+            shownBanner = next;
+            return;
+        }
+
+        shownBanner = next;
+        Severity severity = next.message().severity();
+        for (Severity each : Severity.values()) {
+            banner.pseudoClassStateChanged(each.pseudoClass, each == severity);
+        }
+
+        bannerIcon.setIconCode(switch (severity) {
+            case SUCCESS -> FontAwesomeSolid.CHECK;
+            case WARNING -> FontAwesomeSolid.EXCLAMATION_TRIANGLE;
+            case ERROR -> FontAwesomeSolid.TIMES_CIRCLE;
+            case QUESTION -> FontAwesomeSolid.EXCLAMATION_CIRCLE;
         });
 
+        bannerTitle.setText(next.message().title());
+        bannerDetail.setText(next.message().detail());
+        bannerDetail.setVisible(!next.message().detail().isBlank());
+        bannerClose.setVisible(next.dismissible());
+        List<RRButton> buttons = new ArrayList<>();
+        for (BannerAction action : next.actions()) {
+            var button = new RRButton(action.labelKey());
+            button.setVariant(action.variant());
+            button.setButtonSize(ButtonSize.SMALL);
+            button.setOnAction(_ -> action.handler().run());
+            buttons.add(button);
+        }
+
+        bannerActions.getChildren().setAll(buttons);
+        bannerActions.setVisible(!buttons.isEmpty());
+        if (next == confirmation && !buttons.isEmpty()) {
+            Platform.runLater(buttons.getFirst()::requestFocus);
+        }
+    }
+
+    private Banner replaceFailure(List<WorkspaceEditProblem> problems) {
+        String title = L18n.localize("railroad.ide.find_in_files.replace_failed_title");
+        if (problems.isEmpty())
+            return new Banner(new Message(Severity.ERROR, title,
+                L18n.localize("railroad.ide.find_in_files.problem.unknown")), List.of(searchAgain()), true);
+
+        WorkspaceEditProblem first = problems.getFirst();
+        String file = first.uri() == null
+            ? L18n.localize("railroad.ide.find_in_files.problem.a_file")
+            : first.uri().fileName().orElse(first.uri().toString());
+        String key = switch (first.kind()) {
+            case STALE -> "stale";
+            case MISSING -> "missing";
+            case READ_ONLY -> "read_only";
+            case OUTSIDE_WORKSPACE -> "outside";
+            case IO_FAILURE -> "io";
+            default -> "other";
+        };
+
+        String detail = L18n.localize("railroad.ide.find_in_files.problem." + key, file);
+        long otherFiles = problems.stream()
+            .map(WorkspaceEditProblem::uri)
+            .filter(Objects::nonNull)
+            .distinct()
+            .count() - 1;
+        if (otherFiles > 0) {
+            detail += " " + L18n.localize(otherFiles == 1
+                ? "railroad.ide.find_in_files.problem.one_more_file"
+                : "railroad.ide.find_in_files.problem.more_files", otherFiles);
+        }
+
+        boolean retry = first.kind() == WorkspaceEditProblem.Kind.STALE
+            || first.kind() == WorkspaceEditProblem.Kind.MISSING;
+        return new Banner(new Message(Severity.ERROR, title, detail), retry ? List.of(searchAgain()) : List.of(),
+            true);
+    }
+
+    /**
+     * Turns the regular-expression library's replacement errors into guidance about the template.
+     */
+    private static String describeReplacementError(RuntimeException exception, FindQuery query) {
+        String message = exception.getMessage() == null ? "" : exception.getMessage();
+        Matcher missing = MISSING_GROUP.matcher(message);
+        if (exception instanceof IndexOutOfBoundsException && missing.find()) {
+            String reference = "$" + missing.group(1);
+            int groups = query.compile().matcher("").groupCount();
+            if (groups == 0)
+                return L18n.localize("railroad.ide.find_in_files.replacement.no_groups", reference);
+
+            return L18n.localize(groups == 1
+                ? "railroad.ide.find_in_files.replacement.one_group"
+                : "railroad.ide.find_in_files.replacement.group_count", reference, groups);
+        }
+
+        Matcher named = MISSING_NAMED_GROUP.matcher(message);
+        if (named.find())
+            return L18n.localize("railroad.ide.find_in_files.replacement.unknown_name", named.group(1));
+
+        if (message.contains("character to be escaped is missing"))
+            return L18n.localize("railroad.ide.find_in_files.replacement.trailing_backslash");
+
+        return L18n.localize("railroad.ide.find_in_files.replacement.syntax");
+    }
+
+    private void updateEmptyState() {
+        emptyIcon.setIconCode(FontAwesomeSolid.SEARCH);
         String key = switch (state) {
-            case IDLE -> "idle";
+            case IDLE, INVALID, FAILED -> "idle";
             case SEARCHING -> "searching_title";
-            case COMPLETE -> "no_results";
-            case OUTDATED -> "outdated_title";
-            case INVALID -> "invalid_title";
-            case FAILED -> "failed_title";
+            case COMPLETE, OUTDATED -> "no_results";
         };
 
         emptyTitle.setText(L18n.localize("railroad.ide.find_in_files." + key));
         emptyDetail.setText(switch (state) {
-            case IDLE -> L18n.localize("railroad.ide.find_in_files.idle_detail");
-            case COMPLETE -> L18n.localize("railroad.ide.find_in_files.no_results_detail");
-            case SEARCHING, OUTDATED, INVALID, FAILED -> status.getText();
+            case IDLE, INVALID, FAILED -> L18n.localize("railroad.ide.find_in_files.idle_detail");
+            case SEARCHING -> status.getText();
+            case COMPLETE, OUTDATED -> L18n.localize("railroad.ide.find_in_files.no_results_detail");
         });
     }
 
@@ -922,6 +1146,51 @@ public final class ProjectSearchPane extends BorderPane implements AutoCloseable
          * The search could not run or failed.
          */
         FAILED
+    }
+
+    /**
+     * Kind of message shown above the results.
+     */
+    public enum Severity {
+        /**
+         * A replacement succeeded.
+         */
+        SUCCESS,
+        /**
+         * The results may be incomplete or out of date.
+         */
+        WARNING,
+        /**
+         * The query or replacement is invalid, or the search or replacement failed.
+         */
+        ERROR,
+        /**
+         * A replacement awaits confirmation.
+         */
+        QUESTION;
+
+        private final PseudoClass pseudoClass = PseudoClass.getPseudoClass(name().toLowerCase(Locale.ROOT));
+    }
+
+    /**
+     * A message shown above the results.
+     *
+     * @param severity kind of message
+     * @param title short summary
+     * @param detail explanation or next step, possibly empty
+     */
+    public record Message(Severity severity, String title, String detail) {
+    }
+
+    private record BannerAction(String labelKey, ButtonVariant variant, Runnable handler) {
+    }
+
+    private record Banner(Message message, List<BannerAction> actions, boolean dismissible) {
+        private boolean looksLike(Banner other) {
+            return message.equals(other.message) && dismissible == other.dismissible
+                && actions.stream().map(BannerAction::labelKey).toList()
+                    .equals(other.actions.stream().map(BannerAction::labelKey).toList());
+        }
     }
 
     private sealed interface Row permits FileRow, MatchRow {

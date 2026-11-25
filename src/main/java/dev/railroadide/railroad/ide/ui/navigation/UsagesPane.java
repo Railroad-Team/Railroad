@@ -2,6 +2,8 @@ package dev.railroadide.railroad.ide.ui.navigation;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.provider.api.*;
 import dev.railroadide.railroad.ide.sst.request.api.*;
@@ -31,6 +33,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.LongConsumer;
 
 /**
  * Shows the streamed results of one Find Usages search, grouped by document.
@@ -67,6 +70,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
     private @Nullable Request request;
     private @Nullable FeatureRequestContext activeContext;
     private @Nullable CancellationTokenSource activeCancellation;
+    private BackgroundActivities.@Nullable Handle activeActivity;
     private DocumentStore.@Nullable ChangeSubscription storeSubscription;
     private @Nullable SymbolId symbol;
     private @Nullable String symbolName;
@@ -356,9 +360,13 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
             Deadline.after(SEARCH_BUDGET));
         activeCancellation = cancellation;
         activeContext = context;
+        BackgroundActivities.Handle activity = BackgroundActivities.shared().start("railroad.activity.finding_usages");
+        activeActivity = activity;
         updateStatus();
 
+        var searchedFiles = new FileProgress(activity);
         UsageSink sink = (batch, searched, total) -> {
+            searchedFiles.report(searched, total);
             List<Location<?>> copy = List.copyOf(batch);
             Platform.runLater(() -> {
                 if (activeContext != context || state != State.SEARCHING)
@@ -380,6 +388,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
             future = CompletableFuture.failedFuture(exception);
         }
 
+        future.whenComplete((_, _) -> activity.close());
         future.thenAccept(result -> Platform.runLater(() -> {
             if (activeContext != context || result == null || !result.belongsTo(context))
                 return;
@@ -509,6 +518,10 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
     private void releaseRequest() {
         activeCancellation = null;
         activeContext = null;
+        if (activeActivity != null) {
+            activeActivity.close();
+            activeActivity = null;
+        }
     }
 
     private void clearResults() {
@@ -648,6 +661,33 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
         }
 
         return cause;
+    }
+
+    /**
+     * Reports the searched document count of a running search to its status bar activity, starting a new phase
+     * whenever the provider reports a different total.
+     */
+    private static final class FileProgress {
+        private final ActivityProgress activity;
+        private long total = -1;
+        private LongConsumer files = _ -> {
+        };
+
+        private FileProgress(ActivityProgress activity) {
+            this.activity = activity;
+        }
+
+        private synchronized void report(int searched, int total) {
+            if (total <= 0)
+                return;
+
+            if (total != this.total) {
+                this.total = total;
+                files = activity.begin("railroad.activity.files", ActivityProgress.Unit.COUNT, 0, total);
+            }
+
+            files.accept(searched);
+        }
     }
 
     private sealed interface Row permits FileRow, UsageRow {

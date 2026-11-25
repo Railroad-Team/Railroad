@@ -4,14 +4,13 @@
 
 .project-search-header {
     -fx-padding: 0.4em 0.65em 0 0.65em;
-    -fx-spacing: 0.35em;
+    -fx-spacing: 0.4em;
     -fx-border-color: -color-border-subtle;
     -fx-border-width: 0 0 1px 0;
 }
 
 .project-search-row,
-.project-search-status-row,
-.project-search-confirm {
+.project-search-status-row {
     -fx-spacing: 0.35em;
 }
 
@@ -20,26 +19,107 @@
     -fx-min-width: 8em;
 }
 
-.project-search-confirm {
-    -fx-background-color: -color-warning-subtle;
-    -fx-background-radius: 5px;
-    -fx-padding: 0.35em 0.5em;
+.project-search-field:error,
+.project-search-field:error:focused {
+    -fx-border-color: -color-danger-emphasis;
 }
 
 .project-search-status-row {
     -fx-padding: 0 0 0.2em 0;
 }
 
-.project-search-pane:warning .usages-summary,
-.project-search-pane:warning .usages-empty .ikonli-font-icon {
-    -fx-text-fill: -color-warning-fg;
+/* One message at a time: problems, warnings, outcomes and the replace confirmation. */
+.project-search-banner {
+    -fx-spacing: 0.7em;
+    -fx-padding: 0.5em 0.5em 0.5em 0.55em;
+    -fx-background-color: -color-neutral-subtle;
+    -fx-background-radius: 6px;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-radius: 6px;
+    -fx-border-width: 1px;
+}
+
+.project-search-banner-icon-tile {
+    -fx-min-width: 2em;
+    -fx-min-height: 2em;
+    -fx-max-width: 2em;
+    -fx-max-height: 2em;
+    -fx-background-radius: 5px;
+}
+
+.project-search-banner-icon {
+    -fx-icon-size: 14px;
+}
+
+.project-search-banner-text {
+    -fx-spacing: 0.1em;
+    -fx-alignment: center-left;
+}
+
+.project-search-banner-title {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-weight: bold;
+}
+
+.project-search-banner-detail {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 0.92em;
+}
+
+.project-search-banner-actions {
+    -fx-spacing: 0.4em;
+}
+
+.project-search-banner:error {
+    -fx-background-color: -color-danger-subtle;
+    -fx-border-color: -color-danger-muted;
+}
+
+.project-search-banner:error .project-search-banner-icon-tile {
+    -fx-background-color: -color-danger-muted;
+}
+
+.project-search-banner:error .project-search-banner-icon {
+    -fx-icon-color: -color-danger-fg;
+}
+
+.project-search-banner:warning {
+    -fx-background-color: -color-warning-subtle;
+    -fx-border-color: -color-warning-muted;
+}
+
+.project-search-banner:warning .project-search-banner-icon-tile {
+    -fx-background-color: -color-warning-muted;
+}
+
+.project-search-banner:warning .project-search-banner-icon {
     -fx-icon-color: -color-warning-fg;
 }
 
-.project-search-pane:failed .usages-summary,
-.project-search-pane:failed .usages-empty .ikonli-font-icon {
-    -fx-text-fill: -color-danger-fg;
-    -fx-icon-color: -color-danger-fg;
+.project-search-banner:success {
+    -fx-background-color: -color-success-subtle;
+    -fx-border-color: -color-success-muted;
+}
+
+.project-search-banner:success .project-search-banner-icon-tile {
+    -fx-background-color: -color-success-muted;
+}
+
+.project-search-banner:success .project-search-banner-icon {
+    -fx-icon-color: -color-success-fg;
+}
+
+.project-search-banner:question {
+    -fx-background-color: -color-accent-subtle;
+    -fx-border-color: -color-accent-muted;
+}
+
+.project-search-banner:question .project-search-banner-icon-tile {
+    -fx-background-color: -color-accent-muted;
+}
+
+.project-search-banner:question .project-search-banner-icon {
+    -fx-icon-color: -color-accent-fg;
 }
 
 .project-search-tree .tree-cell:replacing .usages-match .text {

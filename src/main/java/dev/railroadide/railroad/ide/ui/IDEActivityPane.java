@@ -27,10 +27,20 @@ import javafx.geometry.Point2D;
 
 /**
  * Shows the most recently started background activity, such as indexing or a build import, with a count of the
- * others still running. Its toggle opens a task popup over the workspace until explicitly dismissed.
+ * others still running. Its toggle opens a task popup over the workspace until explicitly dismissed. Activities
+ * appear only once they have run for a short grace period, so quick work such as a search while typing does not
+ * flash in the status bar.
  */
 public class IDEActivityPane extends ToggleButton {
+    /**
+     * How long an activity must run before it is shown.
+     */
+    public static final Duration DEFAULT_GRACE = Duration.millis(400);
+
     private final BackgroundActivities activities;
+    private final long graceNanos;
+    private final Map<Long, Long> firstSeen = new HashMap<>();
+    private final PauseTransition graceTick = new PauseTransition();
     private final ProgressBar indicator = new ProgressBar();
     private final Label phase = new Label();
     private final Label detail = new Label();
@@ -60,16 +70,27 @@ public class IDEActivityPane extends ToggleButton {
      * Creates a pane observing the shared activity registry while it is attached to a scene.
      */
     public IDEActivityPane() {
-        this(BackgroundActivities.shared());
+        this(BackgroundActivities.shared(), DEFAULT_GRACE);
+    }
+
+    /**
+     * Creates a pane observing the given registry while it is attached to a scene, showing activities immediately.
+     *
+     * @param activities registry whose running work is shown
+     */
+    public IDEActivityPane(BackgroundActivities activities) {
+        this(activities, Duration.ZERO);
     }
 
     /**
      * Creates a pane observing the given registry while it is attached to a scene.
      *
      * @param activities registry whose running work is shown
+     * @param grace how long an activity must run before it is shown
      */
-    public IDEActivityPane(BackgroundActivities activities) {
+    public IDEActivityPane(BackgroundActivities activities, Duration grace) {
         this.activities = activities;
+        graceNanos = (long) (grace.toMillis() * 1_000_000);
         getStyleClass().add("rr-activity-pane");
         setAccessibleText(L18n.localize("railroad.activity.running_tasks"));
         indicator.setPrefWidth(110);
@@ -101,11 +122,13 @@ public class IDEActivityPane extends ToggleButton {
         localToSceneTransformProperty().addListener((_, _, _) -> taskOverlay.requestLayout());
         selectedProperty().addListener(_ -> show(activities.running()));
         etaTick.setOnFinished(_ -> show(activities.running()));
+        graceTick.setOnFinished(_ -> show(activities.running()));
         show(List.of());
 
         sceneProperty().addListener((_, _, scene) -> {
             if (subscription != null) {
                 etaTick.stop();
+                graceTick.stop();
                 subscription.close();
                 subscription = null;
             }
@@ -141,7 +164,7 @@ public class IDEActivityPane extends ToggleButton {
     }
 
     private static String progressText(Activity activity) {
-        List<String> parts = new ArrayList<String>();
+        List<String> parts = new ArrayList<>();
         if (activity.total() >= 0) {
             parts.add(switch (activity.unit()) {
                 case BYTES -> byteCount(activity.completed(), activity.total());
@@ -181,7 +204,8 @@ public class IDEActivityPane extends ToggleButton {
         return "%.1f/%.1f %s".formatted(done / divisor, total / divisor, units[unit]);
     }
 
-    private void show(List<Activity> running) {
+    private void show(List<Activity> all) {
+        List<Activity> running = settled(all);
         boolean active = !running.isEmpty();
         setVisible(active || isSelected());
         setManaged(isVisible());
@@ -221,6 +245,37 @@ public class IDEActivityPane extends ToggleButton {
         }
     }
 
+    /**
+     * Keeps the activities that have run for the grace period and schedules a refresh for the next one to settle.
+     */
+    private List<Activity> settled(List<Activity> all) {
+        if (graceNanos <= 0)
+            return all;
+
+        long now = System.nanoTime();
+        firstSeen.keySet().retainAll(all.stream().map(Activity::id).toList());
+        List<Activity> settled = new ArrayList<>(all.size());
+        long nextSettle = Long.MAX_VALUE;
+        for (Activity activity : all) {
+            long age = now - firstSeen.computeIfAbsent(activity.id(), _ -> now);
+            if (age >= graceNanos) {
+                settled.add(activity);
+            } else {
+                nextSettle = Math.min(nextSettle, graceNanos - age);
+            }
+        }
+
+        if (nextSettle == Long.MAX_VALUE) {
+            graceTick.stop();
+        } else {
+            graceTick.stop();
+            graceTick.setDuration(Duration.millis(Math.max(1, nextSettle / 1_000_000.0)));
+            graceTick.play();
+        }
+
+        return settled;
+    }
+
     private void updateRows(List<Activity> running) {
         if (running.isEmpty()) {
             rows.clear();
@@ -228,7 +283,7 @@ public class IDEActivityPane extends ToggleButton {
             return;
         }
 
-        List<ActivityRow> items = new ArrayList<ActivityRow>(running.size());
+        List<ActivityRow> items = new ArrayList<>(running.size());
         for (Activity activity : running.reversed()) {
             ActivityRow row = rows.computeIfAbsent(activity.id(), _ -> new ActivityRow(activity));
             row.update(activity);

@@ -1,5 +1,7 @@
 package dev.railroadide.railroad.ide.search;
 
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
 import dev.railroadide.railroad.ide.sst.document.api.TextRange;
@@ -96,6 +98,7 @@ public final class ProjectTextSearch {
      * @param limit maximum total number of matches
      * @param cancelled checked between and during documents; the search ends with a {@link CancellationException}
      *            once it returns {@code true}
+     * @param progress receives the number of searched files, for example to show the search in the status bar
      * @param sink receives each matching file, on the calling thread
      * @return all matching files
      * @throws PatternSyntaxException if the query is an invalid regular expression
@@ -108,6 +111,7 @@ public final class ProjectTextSearch {
         FileMask mask,
         int limit,
         BooleanSupplier cancelled,
+        ActivityProgress progress,
         Consumer<FileMatches> sink
     ) {
         Objects.requireNonNull(workspace, "workspace");
@@ -135,6 +139,8 @@ public final class ProjectTextSearch {
 
         candidates.sort(Comparator.comparing(Candidate::relativePath, String.CASE_INSENSITIVE_ORDER)
             .thenComparing(Candidate::relativePath));
+        Runnable searchedFile = progress.count("railroad.activity.files", ActivityProgress.Unit.COUNT,
+            candidates.size());
         List<FileMatches> found = new ArrayList<>();
         int remaining = limit;
         int searched = 0;
@@ -149,6 +155,7 @@ public final class ProjectTextSearch {
             List<TextRange> matches = query.findAll(new CancellableText(candidate.document().text(), cancelled),
                 remaining + 1);
             searched++;
+            searchedFile.run();
             if (matches.size() > remaining) {
                 matches = matches.subList(0, remaining);
                 limitReached = true;
@@ -239,6 +246,98 @@ public final class ProjectTextSearch {
         }
 
         return edit.build();
+    }
+
+    /**
+     * Moves matches onto the current revision of their document when its text is unchanged. Opening a file in an
+     * editor publishes a new revision, and may convert CRLF line endings to LF, without changing what the matches
+     * refer to; ranges are shifted accordingly. Applying an edit requires the exact current revision, so matches must
+     * be rebased before replacing.
+     *
+     * @param file matches bound to the searched revision
+     * @param workspace current workspace capture
+     * @return matches bound to the current revision, or an empty optional when the document moved, disappeared or
+     *         its text changed
+     */
+    public static Optional<FileMatches> rebase(FileMatches file, WorkspaceSnapshot workspace) {
+        TextDocumentSnapshot searched = file.document();
+        if (!(workspace.document(searched.id()).orElse(null) instanceof TextDocumentSnapshot current)
+            || !current.uri().equals(searched.uri()))
+            return Optional.empty();
+
+        if (current.text().equals(searched.text()))
+            return Optional.of(new FileMatches(current, file.relativePath(), file.matches()));
+
+        String before = searched.text();
+        if (before.indexOf('\r') < 0 || !normalizeLineEndings(before).equals(current.text()))
+            return Optional.empty();
+
+        List<TextRange> ranges = new ArrayList<>(file.matches().size());
+        for (TextRange range : file.matches()) {
+            int start = range.start - crlfBefore(before, range.start);
+            int end = range.end - crlfBefore(before, range.end);
+            if (start < end) {
+                ranges.add(new TextRange(start, end));
+            }
+        }
+
+        return Optional.of(new FileMatches(current, file.relativePath(), ranges));
+    }
+
+    /**
+     * Reports whether two workspace captures hold the same text documents, at the same locations, with the same text
+     * apart from line endings. Revisions are ignored, so opening or saving an unchanged file keeps results current.
+     *
+     * @param searched capture a search ran against
+     * @param current later capture
+     * @return whether a search of {@code current} would find the same matches
+     */
+    public static boolean sameText(WorkspaceSnapshot searched, WorkspaceSnapshot current) {
+        Map<DocumentId, DocumentSnapshot> before = searched.documents();
+        Map<DocumentId, DocumentSnapshot> after = current.documents();
+        if (!before.keySet().equals(after.keySet()))
+            return false;
+
+        for (Map.Entry<DocumentId, DocumentSnapshot> entry : before.entrySet()) {
+            DocumentSnapshot first = entry.getValue();
+            DocumentSnapshot second = after.get(entry.getKey());
+            if (first == second)
+                continue;
+
+            if (!first.uri().equals(second.uri()))
+                return false;
+
+            boolean firstText = first instanceof TextDocumentSnapshot;
+            boolean secondText = second instanceof TextDocumentSnapshot;
+            if (firstText != secondText)
+                return false;
+
+            if (firstText && !sameLines(((TextDocumentSnapshot) first).text(), ((TextDocumentSnapshot) second).text()))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static boolean sameLines(String first, String second) {
+        if (first.equals(second))
+            return true;
+
+        return (first.indexOf('\r') >= 0 || second.indexOf('\r') >= 0)
+            && normalizeLineEndings(first).equals(normalizeLineEndings(second));
+    }
+
+    private static String normalizeLineEndings(String text) {
+        return text.replace("\r\n", "\n").replace('\r', '\n');
+    }
+
+    private static int crlfBefore(String text, int offset) {
+        int count = 0;
+        for (int index = text.indexOf("\r\n"); index >= 0 && index < offset; index = text.indexOf("\r\n", index + 2)) {
+            count++;
+        }
+
+        return count;
     }
 
     private static void checkCancelled(BooleanSupplier cancelled) {
