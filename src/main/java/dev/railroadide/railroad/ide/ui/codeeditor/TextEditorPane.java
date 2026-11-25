@@ -160,6 +160,27 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
     }
 
     /**
+     * Selects a range, unfolding regions that hide it, and scrolls it into view without taking focus.
+     * Call on the JavaFX thread.
+     *
+     * @param anchor selection anchor offset
+     * @param caret caret offset
+     * @throws IndexOutOfBoundsException if either offset lies outside the document
+     */
+    public void showSelection(int anchor, int caret) {
+        if (anchor < 0 || caret < 0 || anchor > getLength() || caret > getLength())
+            throw new IndexOutOfBoundsException("Selection lies outside the document");
+        int lastParagraph = offsetToPosition(Math.max(anchor, caret), TwoDimensional.Bias.Forward).getMajor();
+        for (int paragraph = 0; paragraph <= lastParagraph; paragraph++) {
+            if (isFolded(paragraph)) {
+                unfoldParagraphs(Math.max(0, paragraph - 1));
+            }
+        }
+        selectRange(anchor, caret);
+        requestFollowCaret();
+    }
+
+    /**
      * Clears debugger highlighting without changing the caret or other paragraph styles.
      */
     public void clearExecutionLine() {
@@ -425,15 +446,8 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
                     return validation;
                 if (selection == null || selection.anchor() > getLength() || selection.caret() > getLength())
                     return EditResult.INVALID;
-                int lastParagraph = offsetToPosition(Math.max(selection.anchor(), selection.caret()),
-                    TwoDimensional.Bias.Forward).getMajor();
-                for (int paragraph = 0; paragraph <= lastParagraph; paragraph++) {
-                    if (isFolded(paragraph)) {
-                        unfoldParagraphs(Math.max(0, paragraph - 1));
-                    }
-                }
-                selectRange(selection.anchor(), selection.caret());
-                reveal();
+                showSelection(selection.anchor(), selection.caret());
+                requestFocus();
                 return EditResult.APPLIED;
             }
         }

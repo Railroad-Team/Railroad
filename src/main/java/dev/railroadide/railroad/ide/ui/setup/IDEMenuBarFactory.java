@@ -111,11 +111,17 @@ public final class IDEMenuBarFactory {
         var pasteItem = CommandMenuItems.create(EditCommands.PASTE, () -> CommandContext.forProject(project, menuBar));
         pasteItem.setGraphic(new FontIcon(FontAwesomeSolid.PASTE));
 
-        var findItem = new LocalizedMenuItem("railroad.menu.edit.find");
+        var findItem = CommandMenuItems.create(EditCommands.FIND, () -> CommandContext.forProject(project, menuBar));
         findItem.setGraphic(new FontIcon(FontAwesomeSolid.SEARCH));
 
-        var replaceItem = new LocalizedMenuItem("railroad.menu.edit.replace");
+        var replaceItem = CommandMenuItems.create(EditCommands.REPLACE,
+            () -> CommandContext.forProject(project, menuBar));
         replaceItem.setGraphic(new FontIcon(FontAwesomeSolid.SEARCH_PLUS));
+
+        var findNextItem = CommandMenuItems.create(EditCommands.FIND_NEXT,
+            () -> CommandContext.forProject(project, menuBar));
+        var findPreviousItem = CommandMenuItems.create(EditCommands.FIND_PREVIOUS,
+            () -> CommandContext.forProject(project, menuBar));
 
         var toolWindowsMenu = createToolWindowsMenu(project, menuBar, workspaceActions);
 
@@ -243,7 +249,9 @@ public final class IDEMenuBarFactory {
             pasteItem,
             new SeparatorMenuItem(),
             findItem,
-            replaceItem);
+            replaceItem,
+            findNextItem,
+            findPreviousItem);
         editMenu.getStyleClass().add("rr-menu");
 
         var viewMenu = new LocalizedMenu("railroad.menu.view");

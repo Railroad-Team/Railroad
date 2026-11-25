@@ -136,6 +136,22 @@ public class Keybinds {
      * Configurable shortcut for the edit paste command.
      */
     public static final Keybind EDIT_PASTE = registerIDECommand(EditCommands.PASTE);
+    /**
+     * Configurable shortcut for opening the editor find bar.
+     */
+    public static final Keybind FIND = registerIDECommand(EditCommands.FIND);
+    /**
+     * Configurable shortcut for opening the editor find bar with replacement.
+     */
+    public static final Keybind REPLACE = registerIDECommand(EditCommands.REPLACE);
+    /**
+     * Configurable shortcut for selecting the next find match.
+     */
+    public static final Keybind FIND_NEXT = registerIDECommand(EditCommands.FIND_NEXT);
+    /**
+     * Configurable shortcut for selecting the previous find match.
+     */
+    public static final Keybind FIND_PREVIOUS = registerIDECommand(EditCommands.FIND_PREVIOUS);
 
     /**
      * Configurable shortcut for the new file command.

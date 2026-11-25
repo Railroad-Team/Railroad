@@ -1,0 +1,67 @@
+.find-replace-bar {
+    -fx-background-color: -color-surface-panel;
+    -fx-background-radius: 0 0 6px 0;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 1px 1px 0;
+    -fx-border-radius: 0 0 6px 0;
+    -fx-padding: 0.3em 0.5em;
+    -fx-spacing: 0.3em;
+}
+
+.find-replace-bar:overlaying {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 8, 0, 0, 2);
+}
+
+.find-replace-row {
+    -fx-spacing: 0.35em;
+}
+
+.find-replace-field {
+    -fx-pref-width: 20em;
+    -fx-max-width: 32em;
+}
+
+.find-replace-field:error {
+    -fx-border-color: -color-danger-emphasis;
+}
+
+.find-replace-options {
+    -fx-spacing: 0.1em;
+}
+
+.find-replace-option {
+    -fx-background-color: transparent;
+    -fx-background-radius: 4px;
+    -fx-border-width: 0;
+    -fx-padding: 0.15em 0.4em;
+    -fx-font-family: "JetBrains Mono";
+    -fx-text-fill: -color-fg-muted;
+}
+
+.find-replace-option:hover {
+    -fx-background-color: -color-neutral-subtle;
+}
+
+.find-replace-option:selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-text-fill: -color-accent-fg;
+}
+
+.find-replace-status {
+    -fx-text-fill: -color-fg-muted;
+    -fx-padding: 0 0.4em;
+}
+
+.find-replace-status:error {
+    -fx-text-fill: -color-danger-fg;
+}
+
+.code-area .find-match {
+    -fx-fill: -color-warning-emphasis;
+    -fx-opacity: 0.3;
+}
+
+.code-area .find-match-current {
+    -fx-fill: -color-accent-emphasis;
+    -fx-opacity: 0.45;
+}

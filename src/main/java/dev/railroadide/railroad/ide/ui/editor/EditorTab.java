@@ -9,6 +9,7 @@ import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
+import dev.railroadide.railroad.ide.ui.codeeditor.find.EditorFindHost;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
@@ -48,6 +49,7 @@ public final class EditorTab {
     private final Document document;
     private final Tab tab;
     private final EditorOpenView view;
+    private final EditorFindHost findHost;
 
     private final ObjectProperty<Path> path;
     private final StringProperty editorGroupId;
@@ -101,10 +103,13 @@ public final class EditorTab {
         this.saveFailed = new ReadOnlyBooleanWrapper(this, "saveFailed");
 
         TextEditorPane editor = view.activeEditor();
+        this.findHost = new EditorFindHost(view.content());
+        findHost.setEditor(editor);
         if (editor != null) {
             this.saveState.bind(editor.saveStateProperty());
         }
         view.observeSourceEditor(current -> {
+            findHost.setEditor(current);
             this.saveState.unbind();
             if (current != null) {
                 this.saveState.bind(current.saveStateProperty());
@@ -121,7 +126,7 @@ public final class EditorTab {
             this.dirty.addListener((_, _, isDirty) -> fileSystemDocument.setDirty(isDirty));
         }
 
-        this.tab = new Tab(path.getFileName().toString(), view.content());
+        this.tab = new Tab(path.getFileName().toString(), findHost);
         this.tab.setId("editor:" + identity.id());
         this.tab.getStyleClass().add("editor-tab");
         this.tab.setGraphic(createTabGraphic());
@@ -216,6 +221,15 @@ public final class EditorTab {
      */
     public EditorOpenView view() {
         return view;
+    }
+
+    /**
+     * Returns the tab content, which hosts the view below its find and replace bar.
+     *
+     * @return find host shown as the tab content
+     */
+    public EditorFindHost findHost() {
+        return findHost;
     }
 
     /**
