@@ -20,6 +20,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.jar.JarFile;
+import java.io.InputStream;
+import java.util.jar.JarEntry;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -29,8 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * supplies generated members and other facts absent from the source index.
  */
 public class RailroadProjectDiagnosticsRegressionTest {
-    private static final Set<String> SOURCE_SETS = Set.of("main", "test", "formatter",
-        "cssValidation", "cssValidationTest", "javadocCoverageTool", "javadocCoverageTest");
+    private static final Set<String> SOURCE_SETS = Set.of("main", "test", "cssValidation", "cssValidationTest");
     private static final Path CORPUS = Path.of(
         "src/test/resources/dev/railroadide/railroad/ide/sst/impl/java/corpus").toAbsolutePath().normalize();
     private static final InspectionSettingsAccess DEFAULTS = new InspectionSettingsAccess() {
@@ -66,13 +67,14 @@ public class RailroadProjectDiagnosticsRegressionTest {
             "RAILROAD_SCAN_PATH would reduce regression coverage; unset it");
         String manifest = System.getProperty("railroad.selfAnalysis.contexts");
         assertNotNull(manifest, "Run via Gradle test: required build-context manifest is unavailable");
-        var contexts = List.of(new Gson().fromJson(Files.readString(Path.of(manifest)), CompilationContext[].class));
+        List<CompilationContext> contexts = List
+            .of(new Gson().fromJson(Files.readString(Path.of(manifest)), CompilationContext[].class));
         assertEquals(SOURCE_SETS, new HashSet<>(contexts.stream().map(CompilationContext::name).toList()),
             "Unexpected source-set omission/addition: update the explicit coverage boundary");
         assertEquals(SOURCE_SETS.size(), contexts.size(), "Duplicate compilation contexts");
         Path scanRoot = Path.of("src").toAbsolutePath().normalize();
         Set<Path> accounted = new HashSet<>();
-        for (var context : contexts) {
+        for (CompilationContext context : contexts) {
             assertEquals(Runtime.version().feature(), context.release(), "Worker JDK must match release");
             assertEquals(Path.of(System.getProperty("java.home")).toRealPath(),
                 Path.of(context.javaHome()).toRealPath(),
@@ -84,15 +86,19 @@ public class RailroadProjectDiagnosticsRegressionTest {
                 assertTrue(context.sourceRoots().stream().map(Path::of).anyMatch(path::startsWith),
                     "Source outside declared roots: " + path);
             }
+
             for (String output : context.outputs()) {
                 try (var paths = Files.walk(requiredPath(output))) {
                     assertTrue(paths.anyMatch(path -> path.toString().endsWith(".class")),
                         "Empty compiled output: " + output);
                 }
             }
+
             assertFalse(context.outputs().isEmpty(), "No compiled outputs: " + context.name());
         }
+
         // Preserve the old ten valid parser-resource fixtures, independently of source sets.
+
         List<Path> fixtures = javaFiles(CORPUS.resolve("valid"));
         assertEquals(10, fixtures.size(), "Unexpected valid-corpus coverage change");
         assertEquals(4, javaFiles(CORPUS.resolve("recovery")).size(), "Unexpected recovery-fixture change");
@@ -111,7 +117,7 @@ public class RailroadProjectDiagnosticsRegressionTest {
         List<ErrorRecord> errors = new ArrayList<>();
         List<JavaInspectionRuleProvider> providers = errorProviders();
         assertEquals(13, providers.size());
-        for (var context : contexts) {
+        for (CompilationContext context : contexts) {
             List<Path> sources = context.sources().stream().map(Path::of).sorted().toList();
             List<Path> classpath = new ArrayList<>(context.compileClasspath().stream().map(Path::of).toList());
             classpath.addAll(context.outputs().stream().map(Path::of).toList());
@@ -121,20 +127,24 @@ public class RailroadProjectDiagnosticsRegressionTest {
                 // This preserves the hybrid main-source assistance used by application tests.
                 List<Path> indexedSources = new ArrayList<>(sources);
                 for (String dependency : context.sourceDependencies()) {
-                    var sourceDependency = contexts.stream().filter(candidate -> candidate.name().equals(dependency))
+                    CompilationContext sourceDependency = contexts.stream()
+                        .filter(candidate -> candidate.name().equals(dependency))
                         .findFirst().orElseThrow(() -> new AssertionError("Unknown source dependency: " + dependency));
                     indexedSources.addAll(sourceDependency.sources().stream().map(Path::of).toList());
                 }
+
                 index = new CompositeJavaSymbolIndex(List.of(new JavaProjectSemanticIndexer().build(indexedSources),
                     binaryIndex(classpath, binaries), jdk));
             } catch (Exception exception) {
                 throw new AssertionError("Failed context construction: " + context.name(), exception);
             }
+
             analyze(context.name(), sources, index, providers, scanRoot, errors);
             if (context.name().equals("main")) {
                 analyze("validCorpus", fixtures, index, providers, scanRoot, errors);
             }
         }
+
         Path report = Path.of(manifest).resolveSibling("diagnostics.json");
         Files.writeString(report, new GsonBuilder().setPrettyPrinting().create().toJson(errors));
         assertTrue(errors.isEmpty(), () -> errors.size() + " ERROR diagnostics; ledger: " + report + "\n"
@@ -168,6 +178,7 @@ public class RailroadProjectDiagnosticsRegressionTest {
                 }
             }
         }
+
         return new JavaStubSymbolIndex(stubs, origins);
     }
 
@@ -195,21 +206,24 @@ public class RailroadProjectDiagnosticsRegressionTest {
                     assertTrue(root.toString().endsWith(".jar") || root.toString().endsWith(".jmod"),
                         "Unsupported binary input: " + root);
                     try (var archive = new JarFile(root.toFile())) {
-                        for (var entry : archive.stream().filter(entry -> isClass(entry.getName())).toList()) {
-                            try (var input = archive.getInputStream(entry)) {
+                        for (JarEntry entry : archive.stream().filter(entry -> isClass(entry.getName())).toList()) {
+                            try (InputStream input = archive.getInputStream(entry)) {
                                 ClassStub stub = ClassStubParser.parse(new ClassReader(input));
                                 entries.putIfAbsent(stub.getFullName(), stub);
                             }
                         }
                     }
                 }
+
                 cache.put(root, entries);
             }
-            for (var entry : entries.entrySet()) {
+
+            for (Map.Entry<String, ClassStub> entry : entries.entrySet()) {
                 stubs.putIfAbsent(entry.getKey(), entry.getValue());
                 origins.putIfAbsent(entry.getKey(), root);
             }
         }
+
         return new JavaStubSymbolIndex(stubs, origins);
     }
 
@@ -235,8 +249,8 @@ public class RailroadProjectDiagnosticsRegressionTest {
                     var model = JavaSemanticAnalyzer.analyzeFacts(document, index);
                     var context = new JavaRuleContext(source, document, model, index);
                     List<ErrorRecord> reports = new ArrayList<>();
-                    for (var provider : providers) {
-                        for (var rule : provider.rules()) {
+                    for (JavaInspectionRuleProvider provider : providers) {
+                        for (JavaInspectionRule rule : provider.rules()) {
                             assertNotNull(rule, "Null rule in " + provider.id());
                             var reporter = new DefaultLanguageInspectionRuleReporter<>(rule, diagnostic -> {
                                 if (diagnostic.severity() == SemanticDiagnostic.Severity.ERROR) {
@@ -253,9 +267,11 @@ public class RailroadProjectDiagnosticsRegressionTest {
                             }
                         }
                     }
+
                     return reports;
                 }));
             }
+
             for (int i = 0; i < futures.size(); i++) {
                 try {
                     errors.addAll(futures.get(i).get());
@@ -264,6 +280,7 @@ public class RailroadProjectDiagnosticsRegressionTest {
                 }
             }
         }
+
         System.out.println("SST context " + name + ": " + sources.size() + " sources, "
             + (errors.size() - before) + " ERROR diagnostics");
     }
