@@ -1364,6 +1364,15 @@ railroad.debugger.state.failed=Debug session failed
 
 railroad.debugger.select_thread=Select a thread
 railroad.debugger.inspection=Threads & Variables
+railroad.menu.navigate.go_to_file=Go to File...
+railroad.menu.navigate.go_to_class=Go to Class...
+railroad.ide.go_to.file.title=Go to File
+railroad.ide.go_to.class.title=Go to Class
+railroad.ide.go_to.prompt=Type a name, optionally followed by :line
+railroad.ide.go_to.hint=↑↓ to select, Enter to open
+railroad.ide.go_to.loading=Searching…
+railroad.ide.go_to.no_matches=No matches
+railroad.ide.go_to.failed=Could not list the project's contents
 railroad.menu.navigate.go_to_definition=Go to Definition
 railroad.menu.navigate.go_to_implementation=Go to Implementation
 railroad.menu.navigate.find_usages=Find Usages

@@ -13,6 +13,10 @@ import dev.railroadide.railroad.ide.ui.IDEWorkspaceActions;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
 import dev.railroadide.railroad.ide.ui.editor.EditorTab;
 import dev.railroadide.railroad.ide.ui.editor.EditorTabManager;
+import dev.railroadide.railroad.ide.ui.navigation.quickopen.GoToClassContributor;
+import dev.railroadide.railroad.ide.ui.navigation.quickopen.GoToContributor;
+import dev.railroadide.railroad.ide.ui.navigation.quickopen.GoToFileContributor;
+import dev.railroadide.railroad.ide.ui.navigation.quickopen.GoToPopup;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.OpenProjectDialog;
@@ -28,6 +32,7 @@ import dev.railroadide.railroad.window.WindowBuilder;
 import dev.railroadide.railroad.window.WindowManager;
 import javafx.application.Platform;
 import javafx.event.Event;
+import javafx.scene.Node;
 import javafx.scene.input.*;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
@@ -342,6 +347,31 @@ public final class Commands {
         IDEWorkspaceActions.class));
 
     /**
+     * Shows a popup that searches the project's files by name and opens the chosen one.
+     */
+    public static final Command<Void> GO_TO_FILE = registerBasicCommand(
+        "railroad:go_to_file",
+        "railroad.menu.navigate.go_to_file",
+        context -> context.project() != null,
+        context -> showGoTo(context, new GoToFileContributor()),
+        List.of(new KeybindData(
+            KeyCode.N,
+            new KeyCombination.Modifier[]{
+                KeyCombination.SHORTCUT_DOWN,
+                KeyCombination.SHIFT_DOWN
+            })));
+
+    /**
+     * Shows a popup that searches the types declared in the project's sources and opens the chosen declaration.
+     */
+    public static final Command<Void> GO_TO_CLASS = registerBasicCommand(
+        "railroad:go_to_class",
+        "railroad.menu.navigate.go_to_class",
+        context -> context.project() != null,
+        context -> showGoTo(context, new GoToClassContributor()),
+        List.of(new KeybindData(KeyCode.T, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN})));
+
+    /**
      * Navigates from the caret of the supplied code editor to its symbol's declaration.
      */
     public static final Command<CodeEditorPane> GO_TO_DEFINITION = registerCodeEditorCommand(
@@ -407,6 +437,13 @@ public final class Commands {
             .filter(CodeEditorPane.class::isInstance)
             .map(CodeEditorPane.class::cast)
             .orElse(null);
+    }
+
+    private static <T> void showGoTo(CommandContext<Void> context, GoToContributor<T> contributor) {
+        Node source = context.source() != null && context.source().getScene() != null
+            ? context.source()
+            : Railroad.WINDOW_MANAGER.getPrimaryStage().getScene().getRoot();
+        GoToPopup.show(source, context.project(), contributor);
     }
 
     private static Command<CodeEditorPane> registerCodeEditorCommand(

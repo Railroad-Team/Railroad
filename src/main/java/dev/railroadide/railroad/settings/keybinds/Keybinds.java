@@ -225,6 +225,16 @@ public class Keybinds {
             Services.UI_MANAGER.lookupOrThrow(UIIds.IDE.IDE)));
 
     /**
+     * Searches the project's files by name.
+     */
+    public static final Keybind GO_TO_FILE = registerIDECommand(Commands.GO_TO_FILE);
+
+    /**
+     * Searches the types declared in the project's sources.
+     */
+    public static final Keybind GO_TO_CLASS = registerIDECommand(Commands.GO_TO_CLASS);
+
+    /**
      * Context used while a code editor owns keyboard focus.
      */
     public static final KeybindContexts.KeybindContext CODE_EDITOR = KeybindContexts.of(CodeEditorPane.KEYBIND_CONTEXT);
