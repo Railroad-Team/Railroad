@@ -7,6 +7,7 @@ import dev.railroadide.railroad.debug.model.DebugEndpoint;
 import dev.railroadide.railroad.debug.source.DebugSource;
 import dev.railroadide.railroad.debug.source.LibrarySourceIndex;
 import dev.railroadide.railroad.debug.source.ProjectSourceResolver;
+import dev.railroadide.railroad.debug.source.SourceResolver;
 import dev.railroadide.railroad.ide.diagnostics.BuildProblems;
 import dev.railroadide.railroad.gradle.service.impl.GradleBuildProblems;
 import dev.railroadide.railroad.ide.runconfig.session.RunOutput;
@@ -379,7 +380,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
             String modulePath = !editorMain && moduleSeparator > 0 ? task.substring(0, moduleSeparator) : null;
             var dependencies = LibrarySourceIndex.forProject(project, List.of(), modulePath,
                 editorMain || modulePath != null ? null : gradleProjectPath);
-            var resolver = editorMain
+            SourceResolver resolver = editorMain
                 ? ProjectSourceResolver.create(root, gradleProjectPath.resolve(data.getMainSource()),
                     data.getMainClass(), dependencies)
                 : ProjectSourceResolver.create(root, dependencies);

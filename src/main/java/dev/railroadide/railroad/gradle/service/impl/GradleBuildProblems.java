@@ -14,6 +14,12 @@ public final class GradleBuildProblems {
     private GradleBuildProblems() {
     }
 
+    /**
+     * Forwards the error-severity problems Gradle reports during a build, with their source locations.
+     *
+     * @param launcher build launcher to observe
+     * @param report report that receives each problem's file, line, column and message
+     */
     public static void listen(BuildLauncher launcher, BuildProblems.Report report) {
         launcher.addProgressListener((ProgressListener) event -> {
             if (!(event instanceof SingleProblemEvent single))

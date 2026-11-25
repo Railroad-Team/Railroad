@@ -4,6 +4,7 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.command.CommandContext;
 import dev.railroadide.railroad.command.RunCommands;
 import dev.railroadide.railroad.ide.runconfig.EditorMain;
+import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.ui.codeeditor.BreakpointGutterBinding;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorConfig;
@@ -118,7 +119,7 @@ public class JavaCodeEditorPane extends CodeEditorPane {
             if (isEditorClosed() || !mains.contains(main) || !getText().equals(parsedSource))
                 return;
 
-            var configuration = main.configuration(project, getFilePath());
+            RunConfiguration<?> configuration = main.configuration(project, getFilePath());
             (debug ? RunCommands.DEBUG : RunCommands.RUN)
                 .execute(CommandContext.withArgument(project, this, configuration));
         });

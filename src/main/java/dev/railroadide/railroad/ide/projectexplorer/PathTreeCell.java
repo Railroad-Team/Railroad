@@ -302,7 +302,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
         textField = new TextField(getString());
         textField.setOnKeyReleased(event -> {
             if (event.getCode() == KeyCode.ENTER) {
-                var path = Path.of(getItem().getPath().getParent().toAbsolutePath().toString(), textField.getText());
+                Path path = Path.of(getItem().getPath().getParent().toAbsolutePath().toString(), textField.getText());
                 commitEdit(new PathItem(path));
             } else if (event.getCode() == KeyCode.ESCAPE) {
                 cancelEdit();

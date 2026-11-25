@@ -94,10 +94,10 @@ public class CreateFileDialog {
 
             TypeSelection selectedItem = listView.getSelectionModel().getSelectedItem();
             if (type != FileCreateType.FOLDER && selectedItem != null) {
-                var template = selectedItem.getTemplate();
+                String template = selectedItem.getTemplate();
                 String fileName = textField.getText();
-                var extension = selectedItem.getExtension();
-                var content = template
+                String extension = selectedItem.getExtension();
+                String content = template
                     .replace("<package_loc>", path.toString().replace("\\", ".").replace("/", "."))
                     .replace("<class_name>", fileName);
 

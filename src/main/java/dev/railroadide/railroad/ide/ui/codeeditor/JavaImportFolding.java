@@ -20,6 +20,9 @@ import java.util.Objects;
 import java.util.Optional;
 import javafx.geometry.Bounds;
 
+/**
+ * Lets the user fold a Java file's import block from a gutter chevron, with a placeholder while folded.
+ */
 public final class JavaImportFolding {
     private static final PseudoClass HAS_CARET = PseudoClass.getPseudoClass("has-caret");
     private final TextEditorPane editor;
@@ -33,6 +36,11 @@ public final class JavaImportFolding {
         }
     };
 
+    /**
+     * Adds the fold control to an editor's gutter.
+     *
+     * @param editor editor showing a Java file
+     */
     public JavaImportFolding(TextEditorPane editor) {
         this.editor = editor;
         update();
@@ -154,11 +162,17 @@ public final class JavaImportFolding {
         }
     }
 
+    /**
+     * Stops showing the folded-imports placeholder.
+     */
     public void close() {
         closed = true;
         hidePlaceholder();
     }
 
+    /**
+     * Finds the import block again after the editor's text changed.
+     */
     public void update() {
         Range next = findRange(editor.getText());
         if (!Objects.equals(range, next)) {
@@ -168,6 +182,12 @@ public final class JavaImportFolding {
         }
     }
 
+    /**
+     * Finds the lines of a Java file's import block.
+     *
+     * @param text Java source text
+     * @return lines of the first and last import, or {@code null} when the imports do not span several lines
+     */
     public static Range findRange(String text) {
         var lexer = new JavaLexer(text);
         int start = -1;
@@ -219,6 +239,12 @@ public final class JavaImportFolding {
         return paragraph;
     }
 
+    /**
+     * Lines of an import block.
+     *
+     * @param start zero-based line of the first import
+     * @param end zero-based line of the last import
+     */
     public record Range(int start, int end) {
     }
 }

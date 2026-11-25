@@ -19,6 +19,8 @@ import java.util.Set;
 
 /**
  * Java parameter information from the SST argument list, semantic resolver and captured symbol index.
+ *
+ * @param analysis supplies the Java workspace analysis for a request
  */
 public record JavaSignatureHelpProvider(Function<RequestContext, JavaWorkspaceAnalysis> analysis)
     implements SignatureHelpProvider {

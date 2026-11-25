@@ -18,6 +18,11 @@ import java.util.Objects;
 public final class RunSessionManager {
     private final BuildProblems buildProblems = new BuildProblems();
 
+    /**
+     * Returns the build problems of the project's runs.
+     *
+     * @return build problems shared by every session
+     */
     public BuildProblems buildProblems() {
         return buildProblems;
     }

@@ -403,6 +403,14 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
 
     /**
      * Searches the selected candidate files, resolving their references with this compile classpath.
+     *
+     * @param workspace workspace capture this analysis was built from
+     * @param document requesting revision for an offset query
+     * @param query position or stable identity of the target symbol
+     * @param sink receiver for usage batches and candidate file counts
+     * @param activityCheck checks cancellation and the request deadline
+     * @param include selects the candidate files to search
+     * @return complete ordered results, or null when the symbol cannot be resolved
      */
     public @Nullable UsageSearch usages(
         WorkspaceSnapshot workspace,
@@ -622,6 +630,9 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
 
     /**
      * The compiled top-level class used to open the library view containing this type.
+     *
+     * @param name qualified name of a library type
+     * @return location of the binary top-level class, or an empty optional when it is unknown
      */
     public Optional<DocumentUri> topLevelBinaryLocation(String name) {
         ClassStub topLevel = topLevelClass(name);

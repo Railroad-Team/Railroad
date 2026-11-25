@@ -18,6 +18,14 @@ import java.util.regex.Matcher;
  * Source locations and messages from each build target's latest execution in one project.
  */
 public final class BuildProblems {
+    /**
+     * One build error.
+     *
+     * @param file source or build script containing the error, or {@code null} when unknown
+     * @param line one-based line of the error, or 0 when unknown
+     * @param column one-based column of the error
+     * @param message error message
+     */
     public record Problem(@Nullable Path file, int line, int column, String message) {
     }
 
@@ -26,6 +34,13 @@ public final class BuildProblems {
     private final Map<String, Report> running = new HashMap<>();
     private final Map<String, List<Problem>> failures = new LinkedHashMap<>();
 
+    /**
+     * Starts collecting problems for a new execution of a build target, clearing its previous problems.
+     *
+     * @param target identifier of the built target, such as a task path
+     * @param directory build directory that relative file names are resolved against
+     * @return report receiving the execution's output and outcome
+     */
     public synchronized Report begin(String target, Path directory) {
         var report = new Report(directory, target);
         running.put(target, report);
@@ -36,12 +51,20 @@ public final class BuildProblems {
         return report;
     }
 
+    /**
+     * Returns the problems of every target whose latest execution failed.
+     *
+     * @return current problems
+     */
     public synchronized List<Problem> problems() {
         return problems;
     }
 
     /**
      * Replays the current list and delivers replacements, in order, on the publishing thread.
+     *
+     * @param listener receives the current problems and every later replacement
+     * @return action that stops delivery
      */
     public synchronized Runnable subscribe(Consumer<List<Problem>> listener) {
         listeners.add(listener);
@@ -62,6 +85,9 @@ public final class BuildProblems {
         listeners.forEach(listener -> listener.accept(next));
     }
 
+    /**
+     * Collects the problems of one execution of a build target from compiler events and console output.
+     */
     public final class Report {
         private static final Pattern JAVAC = Pattern.compile("^(.*?\\.java):(\\d+):(?:(\\d+):)?\\s*error:\\s*(.+)$");
         private static final Pattern SCRIPT = Pattern.compile("^(?:Build|Settings) file '(.+)' line: (\\d+)$");
@@ -81,6 +107,14 @@ public final class BuildProblems {
             this.target = target;
         }
 
+        /**
+         * Records a problem whose location the build tool reported directly.
+         *
+         * @param file file path, absolute or relative to the build directory
+         * @param line one-based line
+         * @param column one-based column, or a smaller value when unknown
+         * @param message problem message
+         */
         public synchronized void location(String file, int line, int column, String message) {
             Path path = resolve(file);
             if (!finished && path != null && line > 0) {
@@ -90,6 +124,10 @@ public final class BuildProblems {
 
         /**
          * Forwards decoded console text unchanged while reading compiler lines from this output channel.
+         *
+         * @param charset encoding of the build output
+         * @param sink receives the decoded text
+         * @return stream to pass to the build as one output channel
          */
         public synchronized OutputStream output(Charset charset, Consumer<String> sink) {
             var lines = new Lines();
@@ -104,6 +142,11 @@ public final class BuildProblems {
             });
         }
 
+        /**
+         * Ends the execution and publishes its problems if it failed. Cancelled executions report nothing.
+         *
+         * @param failure failure of the execution, or {@code null} when it succeeded
+         */
         public synchronized void finish(@Nullable Throwable failure) {
             if (finished)
                 return;

@@ -17,6 +17,9 @@ public final class GitListeners {
 
     /**
      * Forwards Git's per-phase counts or percentages to one running activity.
+     *
+     * @param progress activity receiving one phase per Git progress phase
+     * @return listener for Git progress events
      */
     public static Consumer<GitProgressEvent> activity(ActivityProgress progress) {
         return new Consumer<>() {

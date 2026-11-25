@@ -329,6 +329,10 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
 
     /**
      * Resolves live diagnostics using the document's source attachment when present.
+     *
+     * @param project the project whose files and configuration are used
+     * @param document document being analyzed
+     * @return the combined index for the document, or {@code null} if none exists
      */
     public @Nullable JavaSymbolIndex indexForDocument(Project project, DocumentSnapshot document) {
         return indexForDocument(resolver.resolve(project), document);
@@ -336,6 +340,10 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
 
     /**
      * Resolves a captured diagnostics document in a live indexing session.
+     *
+     * @param context the project indexing context
+     * @param document captured document being analyzed
+     * @return the combined index for the document, or {@code null} if none exists
      */
     public @Nullable JavaSymbolIndex indexForDocument(ProjectIndexContext context, DocumentSnapshot document) {
         return index(context, document.uri().filePath().orElse(null), document);

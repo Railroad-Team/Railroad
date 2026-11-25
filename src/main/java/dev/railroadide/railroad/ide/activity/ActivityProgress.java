@@ -8,14 +8,22 @@ import java.util.function.LongConsumer;
  */
 @FunctionalInterface
 public interface ActivityProgress {
+    /**
+     * Reporter that discards every phase and update.
+     */
     ActivityProgress NONE = (phase, unit, initial, total) -> _ -> {
     };
 
+    /**
+     * Reporter bound to the current call scope by a tracked operation.
+     */
     ScopedValue<ActivityProgress> CURRENT = ScopedValue.newInstance();
 
     /**
      * Returns the reporter bound to this call scope, or a no-op reporter outside a tracked operation.
      * Separate executor tasks must bind the captured reporter or receive a phase counter explicitly.
+     *
+     * @return reporter of the current call scope
      */
     static ActivityProgress current() {
         return CURRENT.orElse(NONE);
@@ -35,6 +43,11 @@ public interface ActivityProgress {
 
     /**
      * Starts a countable phase and returns an increment callback safe for concurrent workers.
+     *
+     * @param phase translation key or external phase name
+     * @param unit measurement used in the status bar
+     * @param total known work, or -1 when the total is unavailable
+     * @return callback that records one more completed unit
      */
     default Runnable count(String phase, Unit unit, long total) {
         if (this == NONE)
@@ -46,6 +59,11 @@ public interface ActivityProgress {
         return () -> sink.accept(completed.incrementAndGet());
     }
 
+    /**
+     * Starts a phase whose amount of work is unknown.
+     *
+     * @param phase translation key or external phase name
+     */
     default void indeterminate(String phase) {
         begin(phase, Unit.COUNT, 0, -1);
     }
@@ -54,9 +72,21 @@ public interface ActivityProgress {
      * Steps have known counts but unequal costs, so their count does not drive a time estimate.
      */
     enum Unit {
+        /**
+         * Countable items, such as files.
+         */
         COUNT,
+        /**
+         * Steps of unequal cost.
+         */
         STEPS,
+        /**
+         * Bytes, shown with binary size units.
+         */
         BYTES,
+        /**
+         * Percentage points from 0 to 100.
+         */
         PERCENT
     }
 }

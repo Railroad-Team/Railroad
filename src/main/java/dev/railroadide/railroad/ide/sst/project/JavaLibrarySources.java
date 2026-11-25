@@ -304,6 +304,12 @@ public final class JavaLibrarySources {
 
     /**
      * Adds declarations shipped only as source to the owning archive's analysis view.
+     *
+     * @param binary archive whose attached sources are read
+     * @param symbols index of the archive's analysis view
+     * @param unscoped index used when switching to another archive's attached sources
+     * @param check checks cancellation
+     * @return index that also declares the source-only types
      */
     public JavaSymbolIndex withSourceOnlyTypes(
         Path binary,
@@ -438,6 +444,10 @@ public final class JavaLibrarySources {
 
     /**
      * Finds the imported binary owning a materialized attached source file.
+     *
+     * @param file materialized attached source file, or {@code null}
+     * @param roots imported binary roots
+     * @return owning binary, or an empty optional when the file is not an attached source of these roots
      */
     public Optional<Path> ownerArchive(@Nullable Path file, List<Path> roots) {
         Path views = directory.resolve("sources");

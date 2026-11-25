@@ -29,6 +29,10 @@ public final class CompositeJavaSymbolIndex implements JavaSymbolIndex {
 
     /**
      * Combines an attachment's declarations and captured texts, using the base index when switching archives.
+     *
+     * @param delegates the indexes to combine, ordered from highest to lowest binary-stub precedence
+     * @param unscoped index used when switching to another archive's attached sources, or {@code null}
+     * @param sourceTexts captured texts of attached sources by file
      */
     public CompositeJavaSymbolIndex(
         List<? extends JavaSymbolIndex> delegates,

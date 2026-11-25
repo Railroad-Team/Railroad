@@ -105,6 +105,12 @@ public final class JavaLibrarySymbolIndex extends JavaStubSymbolIndex {
 
     /**
      * Builds an index using the specified phase label for its root scan, including JDK module scans.
+     *
+     * @param roots binary roots in lookup order; a class found in an earlier root takes precedence
+     * @param activityCheck request activity check, run on the calling thread
+     * @param cache the stub cache to use, or {@code null} to parse every archive
+     * @param phase translation key of the progress phase shown while scanning
+     * @return complete index; cancelled scans never publish a partial index
      */
     public static JavaLibrarySymbolIndex build(
         List<Path> roots,

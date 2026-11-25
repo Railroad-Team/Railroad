@@ -135,6 +135,15 @@ public class GitClient {
         commitChanges(repo, commit, pushAfterCommit, event -> GitLog.LOGGER.debug("Git push: {}", event));
     }
 
+    /**
+     * Commits selected changes and optionally pushes after commit, reporting push progress.
+     *
+     * @param repo repository to commit in
+     * @param commit commit details
+     * @param pushAfterCommit whether to run push after successful commit
+     * @param progress receives push progress events
+     * @throws GitExecutionException when command execution fails
+     */
     public void commitChanges(
         GitRepository repo,
         GitCommitData commit,

@@ -449,6 +449,15 @@ public final class JavaSemanticAnalyzer {
 
     /**
      * Resolves parameter information and optional overloads for an argument list.
+     *
+     * @param tree syntax tree containing the call
+     * @param arguments argument list of a method invocation or instance creation
+     * @param caret caret offset inside the argument list
+     * @param index symbol index used to resolve the called methods
+     * @param includeOverloads whether to return every applicable overload, not only the resolved one
+     * @param attachedSignature looks up a signature from attached library sources
+     * @param check checks cancellation
+     * @return parameter information, empty when the node is not a call's argument list
      */
     public static List<SignatureHelp> signatureHelp(
         SyntaxTree tree,

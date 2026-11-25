@@ -27,6 +27,11 @@ public final class BuildProblemsPane extends BorderPane implements AutoCloseable
     private final Runnable unsubscribe;
     private boolean closed;
 
+    /**
+     * Creates a pane listing the build problems of a project's runs.
+     *
+     * @param project project whose build problems are shown
+     */
     public BuildProblemsPane(Project project) {
         BuildProblems problems = project.getRunSessions().buildProblems();
         Path root = project.getPath().toAbsolutePath().normalize();

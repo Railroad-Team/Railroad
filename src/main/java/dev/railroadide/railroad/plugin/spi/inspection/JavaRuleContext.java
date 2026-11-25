@@ -901,6 +901,9 @@ public final class JavaRuleContext implements LanguageRuleContext {
      * Checks whether an unresolved field selection has a receiver whose fields we can check.
      * An attachment-local relocation provides positive member matches, but a repackaged class can omit
      * static constants inlined into the library. Its missing fields do not establish a missing source constant.
+     *
+     * @param access unresolved field access
+     * @return whether the receiver's fields are known well enough to report the field as missing
      */
     public boolean hasKnownFieldOwner(SyntaxNode access) {
         SyntaxNode receiver = unwrapTransparentExpression(explicitReceiver(access));
@@ -957,6 +960,9 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
     /**
      * Returns whether the expression is assigned to or incremented/decremented.
+     *
+     * @param expression expression to check
+     * @return whether the expression is the target of an assignment, increment or decrement
      */
     public boolean isWriteTarget(SyntaxNode expression) {
         SyntaxNode target = expression;
@@ -4641,8 +4647,17 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
     /**
      * A method type parameter and its ordered upper bounds.
+     *
+     * @param name type parameter name
+     * @param bounds upper bounds in declaration order; {@code java.lang.Object} when none are declared
      */
     public record MethodTypeParameter(String name, List<Type> bounds) {
+        /**
+         * Copies the bounds, using {@code java.lang.Object} when none are declared.
+         *
+         * @param name type parameter name
+         * @param bounds upper bounds in declaration order, possibly empty
+         */
         public MethodTypeParameter {
             bounds = bounds.isEmpty() ? List.of(new DeclaredType("java.lang.Object", List.of())) : List.copyOf(bounds);
         }
@@ -4683,6 +4698,8 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
         /**
          * Returns this method's return type with method variables identified by declaration position.
+         *
+         * @return return type comparable with that of an overriding or overridden method
          */
         public Type overrideReturnType() {
             return typeParameters.isEmpty() ? returnType : substituteType(returnType, overrideVariables());
@@ -4690,6 +4707,9 @@ public final class JavaRuleContext implements LanguageRuleContext {
 
         /**
          * Compares method type parameter bounds after adapting their names to a common signature.
+         *
+         * @param other method to compare with
+         * @return whether both methods declare equivalent type parameters
          */
         public boolean hasEquivalentTypeParameters(MethodDescriptor other) {
             if (typeParameters.size() != other.typeParameters.size())

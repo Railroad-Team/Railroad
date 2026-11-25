@@ -1094,6 +1094,8 @@ public final class Commands {
 
     /**
      * Saves dirty editors and reports any files that prevented an operation from continuing.
+     *
+     * @return whether every dirty editor was saved
      */
     public static boolean saveAll() {
         EditorTabManager.SaveResult result = Services.EDITOR_TAB_MANAGER.saveAll();

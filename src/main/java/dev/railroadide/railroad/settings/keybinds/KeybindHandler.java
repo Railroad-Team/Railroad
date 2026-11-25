@@ -94,7 +94,7 @@ public class KeybindHandler {
             if (binding == null)
                 continue;
 
-            var action = keybind.getActions().get(context);
+            Consumer<KeybindActionContext> action = keybind.getActions().get(context);
             if (action != null) {
                 action.accept(new KeybindActionContext(keybind, context, binding, event, target));
                 return true;

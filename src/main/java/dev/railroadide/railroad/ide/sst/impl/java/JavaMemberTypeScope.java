@@ -67,6 +67,12 @@ public final class JavaMemberTypeScope {
     /**
      * Resolves a member type named through an explicit type qualifier. A declaration on one branch hides its
      * ancestors on that branch. Multiple paths to the same declaration still denote a single type.
+     *
+     * @param owner qualified name of the qualifying type
+     * @param simpleName simple name of the member type
+     * @param resolveType resolves a qualified name to a declared type, or returns {@code null}
+     * @param directSuperTypes returns the direct supertypes of a type, or {@code null} to search only the owner
+     * @return qualified name of the member type, or {@code null} when it is missing or ambiguous
      */
     public static @Nullable String resolveQualifiedMember(
         String owner,

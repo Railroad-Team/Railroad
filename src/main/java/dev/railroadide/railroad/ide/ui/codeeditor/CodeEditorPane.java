@@ -2364,6 +2364,8 @@ public abstract class CodeEditorPane extends TextEditorPane {
     }
 
     /**
+     * Reports whether the editor can show signature help.
+     *
      * @return whether the editor can request parameter information from its language provider
      */
     public boolean supportsSignatureHelp() {

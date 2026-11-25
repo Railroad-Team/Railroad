@@ -142,6 +142,8 @@ public class IDEActivityPane extends ToggleButton {
 
     /**
      * Returns the layer to stack over the workspace content immediately above the status bar.
+     *
+     * @return overlay hosting the running tasks popup
      */
     public Region getTaskOverlay() {
         return taskOverlay;

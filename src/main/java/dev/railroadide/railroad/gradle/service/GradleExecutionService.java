@@ -21,6 +21,13 @@ public interface GradleExecutionService {
         return runTask(request, null);
     }
 
+    /**
+     * Begins execution of the provided request and reports its compiler problems.
+     *
+     * @param request the Gradle task request to execute
+     * @param problems report that receives the build's compiler problems, or {@code null} to skip reporting
+     * @return a handle that can be used to observe and control the running task
+     */
     GradleTaskExecutionHandle runTask(GradleTaskExecutionRequest request, BuildProblems.@Nullable Report problems);
 
     /**

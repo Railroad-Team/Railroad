@@ -14,12 +14,21 @@ public final class DownloadProgress {
     private final SequencedMap<String, Transfer> transfers = new LinkedHashMap<>();
     private LongConsumer displayed;
 
+    /**
+     * Creates a tracker that reports transfers as phases of an activity.
+     *
+     * @param progress activity receiving one phase per displayed transfer
+     */
     public DownloadProgress(ActivityProgress progress) {
         this.progress = progress;
     }
 
     /**
-     * A negative total preserves a length supplied earlier for the same URL.
+     * Records the progress of a transfer. A negative total preserves a length supplied earlier for the same URL.
+     *
+     * @param url address of the transferred artifact
+     * @param completed bytes transferred so far
+     * @param total transfer length in bytes, or a negative value when unknown
      */
     public synchronized void update(String url, long completed, long total) {
         Transfer transfer = transfers.get(url);
@@ -46,6 +55,11 @@ public final class DownloadProgress {
         }
     }
 
+    /**
+     * Ends a transfer and shows the next one still running, if any.
+     *
+     * @param url address of the finished artifact
+     */
     public synchronized void finish(String url) {
         if (transfers.isEmpty())
             return;

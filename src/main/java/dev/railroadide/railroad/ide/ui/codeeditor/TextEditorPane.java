@@ -128,6 +128,8 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
 
     /**
      * Adds an unmanaged visual overlay without changing the document.
+     *
+     * @param overlay node drawn over the editor
      */
     public void addFoldOverlay(Node overlay) {
         getChildren().add(overlay);
@@ -135,6 +137,8 @@ public class TextEditorPane extends CodeArea implements AutoCloseable {
 
     /**
      * Removes a previously added fold overlay.
+     *
+     * @param overlay node previously passed to {@link #addFoldOverlay(Node)}
      */
     public void removeFoldOverlay(Node overlay) {
         getChildren().remove(overlay);

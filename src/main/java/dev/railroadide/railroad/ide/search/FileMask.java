@@ -21,6 +21,7 @@ public record FileMask(String text) {
     /**
      * Validates the mask text.
      *
+     * @param text the mask as typed
      * @throws NullPointerException if {@code text} is {@code null}
      */
     public FileMask {

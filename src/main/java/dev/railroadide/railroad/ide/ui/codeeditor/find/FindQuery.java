@@ -23,6 +23,10 @@ public record FindQuery(String text, boolean matchCase, boolean wholeWords, bool
     /**
      * Validates the query components.
      *
+     * @param text literal text or regular expression to search for
+     * @param matchCase whether letter case must match exactly
+     * @param wholeWords whether matches must not continue a word on either side
+     * @param regex whether {@code text} is a regular expression and replacements may reference its groups
      * @throws NullPointerException if {@code text} is {@code null}
      */
     public FindQuery {

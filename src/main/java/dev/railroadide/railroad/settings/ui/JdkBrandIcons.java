@@ -9,6 +9,7 @@ import org.apache.batik.transcoder.TranscoderOutput;
 import org.apache.batik.transcoder.image.ImageTranscoder;
 
 import java.awt.image.BufferedImage;
+import java.io.InputStream;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -37,7 +38,7 @@ public final class JdkBrandIcons {
         // Render above the logical display size so icons remain sharp on scaled displays.
         transcoder.addTranscodingHint(ImageTranscoder.KEY_WIDTH, 60f);
         transcoder.addTranscodingHint(ImageTranscoder.KEY_HEIGHT, 60f);
-        try (var stream = AppResources.getResourceAsStream(brand.getImagePath())) {
+        try (InputStream stream = AppResources.getResourceAsStream(brand.getImagePath())) {
             transcoder.transcode(new TranscoderInput(stream), null);
         }
 

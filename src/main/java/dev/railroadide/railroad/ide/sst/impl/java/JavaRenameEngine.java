@@ -97,6 +97,7 @@ public final class JavaRenameEngine {
      *
      * @param context captured requesting document and workspace
      * @param capture analysis capture for a request context, used again to verify the renamed workspace
+     * @param target symbol to rename
      */
     public JavaRenameEngine(
         FeatureRequestContext context,

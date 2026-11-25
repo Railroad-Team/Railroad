@@ -247,7 +247,7 @@ public class CodeEditorSignatureRequestTest {
 
     @Test
     public void placesParameterInfoAboveOrBelowTheCaretAccordingToTheSetting() throws Exception {
-        var previous = Settings.PARAMETER_POPUP_POSITION.getValue();
+        ParameterPopupPosition previous = Settings.PARAMETER_POPUP_POSITION.getValue();
         try (Fixture fixture = open(context -> help(context, "call"))) {
             onFx(() -> {
                 fixture.stage.centerOnScreen();

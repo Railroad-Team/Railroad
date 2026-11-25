@@ -23,6 +23,12 @@ public final class JavaSourceSetQueries {
     private final JavaSourceSets.Scope scope;
     private final boolean libraryView;
 
+    /**
+     * Creates queries for the source set of a request's document.
+     *
+     * @param request captured requesting document and workspace
+     * @param capture analysis capture for a request context
+     */
     public JavaSourceSetQueries(
         FeatureRequestContext request,
         Function<FeatureRequestContext, JavaWorkspaceAnalysis> capture
@@ -43,6 +49,13 @@ public final class JavaSourceSetQueries {
             : document.uri().filePath().map(sets::owner).orElse(null);
     }
 
+    /**
+     * Searches usages of a symbol, resolving each dependent source set with its own compile inputs.
+     *
+     * @param query position or stable identity of the target symbol
+     * @param sink receiver for usage batches and candidate file counts
+     * @return complete ordered results, or null when the symbol cannot be resolved
+     */
     public UsageSearch usages(UsageQuery query, UsageSink sink) {
         WorkspaceSnapshot workspace = request.workspaceSnapshot();
         DocumentSnapshot document = request.documentSnapshot();
@@ -78,6 +91,14 @@ public final class JavaSourceSetQueries {
         return new UsageSearch(first.symbol(), first.displayName(), results);
     }
 
+    /**
+     * Returns the resolved symbol graph for a target, with references from dependent source sets resolved using
+     * their own compile inputs.
+     *
+     * @param target symbol whose references are needed
+     * @param rename whether the graph is used to rename the symbol
+     * @return resolved symbol graph
+     */
     public WorkspaceSymbolGraph graph(SymbolId target, boolean rename) {
         WorkspaceSymbolGraph base = rename
             ? origin.renameGraph(request::checkActive)

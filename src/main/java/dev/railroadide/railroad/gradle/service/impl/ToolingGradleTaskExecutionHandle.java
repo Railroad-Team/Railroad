@@ -129,6 +129,14 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
         updateProgress(newState, -1, messageKey, messageArgs);
     }
 
+    /**
+     * Updates the current state and progress of the task and notifies listeners.
+     *
+     * @param newState the new state of the task
+     * @param fraction completed fraction between 0 and 1, or a negative value when progress is unknown
+     * @param messageKey the message key for status updates
+     * @param messageArgs optional arguments for the message
+     */
     public void updateProgress(GradleTaskState newState, double fraction, String messageKey, Object... messageArgs) {
         this.state = newState;
 

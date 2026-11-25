@@ -542,6 +542,11 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
 
     /**
      * Identifies the importing module and the binary owning an attached source document, when available.
+     *
+     * @param configuration captured module settings
+     * @param file requesting source file, or null for the workspace fallback
+     * @param document requesting document, or null to identify an attached source by its file alone
+     * @return module, owning archive and importing source set of the source
      */
     public static SourceContext sourceContext(
         WorkspaceConfigurationSnapshot configuration,
@@ -567,12 +572,28 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
 
     /**
      * Classpath ownership for a project source or an attached dependency source.
+     *
+     * @param module module owning or importing the source, or null for the workspace fallback
+     * @param archive binary owning an attached source, or null for a project source
+     * @param sourceSet source set importing the archive, or null when unknown
      */
     public record SourceContext(String module, Path archive, JavaSourceSets.Scope sourceSet) {
+        /**
+         * Creates a context without a known importing source set.
+         *
+         * @param module module owning or importing the source, or null for the workspace fallback
+         * @param archive binary owning an attached source, or null for a project source
+         */
         public SourceContext(String module, Path archive) {
             this(module, archive, null);
         }
 
+        /**
+         * Returns the JDK used to compile this source.
+         *
+         * @param configuration captured module settings
+         * @return the source set's JDK home, or the workspace JDK home when the source set has none
+         */
         public Path jdkHome(WorkspaceConfigurationSnapshot configuration) {
             return sourceSet != null && sourceSet.jdkHome() != null
                 ? sourceSet.jdkHome()
@@ -581,6 +602,9 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
 
         /**
          * Returns the ordered binary roots for this source.
+         *
+         * @param configuration captured module settings
+         * @return the source set's classpath, or the module's roots honouring its main compile versions
          */
         public List<Path> classpath(WorkspaceConfigurationSnapshot configuration) {
             if (sourceSet != null)

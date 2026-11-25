@@ -30,12 +30,17 @@ public final class BackgroundActivities {
     private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
     private long nextId;
 
+    /**
+     * Creates a registry that estimates phase durations with the system's monotonic clock.
+     */
     public BackgroundActivities() {
         this(System::nanoTime);
     }
 
     /**
      * Creates a registry with a monotonic nanosecond clock for estimating phase durations.
+     *
+     * @param nanoTime monotonic clock in nanoseconds
      */
     public BackgroundActivities(LongSupplier nanoTime) {
         this.nanoTime = Objects.requireNonNull(nanoTime);
@@ -113,6 +118,11 @@ public final class BackgroundActivities {
         long total,
         long remainingSeconds
     ) {
+        /**
+         * Returns the completed fraction of the current phase.
+         *
+         * @return fraction between 0 and 1, or -1 when the total is unknown
+         */
         public double fraction() {
             if (total == 0)
                 return 1;

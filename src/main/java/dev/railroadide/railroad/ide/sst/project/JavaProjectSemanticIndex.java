@@ -71,6 +71,8 @@ public final class JavaProjectSemanticIndex
     }
 
     /**
+     * Returns the semantic facts of every indexed source file.
+     *
      * @return the declaration and reference shards of the indexed source files
      */
     public List<SemanticIndexShard> semanticShards() {

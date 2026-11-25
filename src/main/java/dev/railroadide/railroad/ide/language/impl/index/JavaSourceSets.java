@@ -14,6 +14,15 @@ public final class JavaSourceSets {
     private static final LoadingCache<WorkspaceConfigurationSnapshot, JavaSourceSets> CACHE = CacheBuilder.newBuilder()
         .weakKeys().maximumSize(16).build(CacheLoader.from(JavaSourceSets::new));
 
+    /**
+     * The compile inputs of one source set.
+     *
+     * @param module identifier of the owning module
+     * @param name source set name, such as {@code main} or {@code test}
+     * @param visibleRoots source roots whose declarations the source set can see, including its own
+     * @param classpath binary compile classpath in configured order
+     * @param jdkHome JDK used to compile the source set, or {@code null} when unknown
+     */
     public record Scope(
         String module,
         String name,
@@ -73,6 +82,12 @@ public final class JavaSourceSets {
         scopes = List.copyOf(selected);
     }
 
+    /**
+     * Returns the source sets of an imported build, cached per configuration.
+     *
+     * @param configuration captured workspace configuration
+     * @return source sets described by the configuration
+     */
     public static JavaSourceSets of(WorkspaceConfigurationSnapshot configuration) {
         return CACHE.getUnchecked(configuration);
     }
@@ -84,10 +99,21 @@ public final class JavaSourceSets {
             : normalized;
     }
 
+    /**
+     * Reports whether the configuration describes no source sets, such as before a build is imported.
+     *
+     * @return whether there are no source sets
+     */
     public boolean isEmpty() {
         return scopes.isEmpty();
     }
 
+    /**
+     * Finds the source set whose source roots contain a file.
+     *
+     * @param path file or directory to look up
+     * @return owning source set, or {@code null} when no source set owns the path
+     */
     public Scope owner(Path path) {
         return owners.get(owningRoot(path));
     }
@@ -104,6 +130,13 @@ public final class JavaSourceSets {
         return null;
     }
 
+    /**
+     * Finds the source set of a module that compiles against an archive, preferring {@code main}.
+     *
+     * @param module identifier of the importing module
+     * @param archive binary on the classpath
+     * @return importing source set, or {@code null} when none of the module's source sets uses the archive
+     */
     public Scope importing(String module, Path archive) {
         if (archive == null || module == null)
             return null;
@@ -112,11 +145,23 @@ public final class JavaSourceSets {
             .min(Comparator.comparing(scope -> !scope.name().equals("main"))).orElse(null);
     }
 
+    /**
+     * Reports whether a source set can see the declarations of a file.
+     *
+     * @param scope source set resolving references
+     * @param path source file declaring the referenced symbol
+     * @return whether the file lies in one of the source set's visible roots
+     */
     public boolean visible(Scope scope, Path path) {
         Path root = owningRoot(path);
         return root != null && scope.visibleRoots().contains(root);
     }
 
+    /**
+     * Returns the compiled output directories of every source set.
+     *
+     * @return normalized output directories
+     */
     public Set<Path> outputs() {
         return outputs;
     }

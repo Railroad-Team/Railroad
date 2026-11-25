@@ -168,6 +168,11 @@ public final class SemanticNavigationResolver {
 
     /**
      * Collects usages from a single resolved file using the same range and revision checks as a graph query.
+     *
+     * @param shard captured facts of one file
+     * @param workspace workspace capture the facts were built from
+     * @param symbolId symbol whose usages are queried
+     * @return usages ordered by document address and offset
      */
     public static List<Location.TextLocation> usagesOf(
         SemanticIndexShard shard,
@@ -268,6 +273,11 @@ public final class SemanticNavigationResolver {
 
     /**
      * Resolves the symbol at an offset using only the source file's captured facts.
+     *
+     * @param shard captured facts of the file
+     * @param snapshot captured revision containing the offset
+     * @param offset zero-based UTF-16 offset
+     * @return resolved symbol, or an empty optional when the facts belong to another revision or are ambiguous
      */
     public static Optional<SymbolId> symbolAt(SemanticIndexShard shard, TextDocumentSnapshot snapshot, int offset) {
         if (!shard.documentId().equals(snapshot.id())

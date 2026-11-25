@@ -117,6 +117,9 @@ public final class WorkspaceSymbolGraph {
 
     /**
      * Returns the visible facts for one document, including its overlay when present.
+     *
+     * @param id document identity
+     * @return the document's facts, or an empty optional when the graph has none
      */
     public Optional<SemanticIndexShard> shard(DocumentId id) {
         return Optional.ofNullable(overlays.getOrDefault(id, disk.get(id)));

@@ -16,11 +16,22 @@ import java.io.File;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.GradleRunConfigurationData;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.JavaApplicationRunConfigurationData;
 import java.util.Map;
+import dev.railroadide.railroad.java.JDK;
 
 /**
  * A main declaration in the editor and the binary name accepted by the Java launcher.
+ *
+ * @param line one-based line of the main method's name
+ * @param className binary name of the class declaring the method
  */
 public record EditorMain(int line, String className) {
+    /**
+     * Finds the launchable main methods declared in a Java source file.
+     *
+     * @param source Java source text
+     * @param filename name of the source file, used to parse it as a compilation unit
+     * @return main declarations in source order
+     */
     public static List<EditorMain> find(String source, String filename) {
         if (!source.contains("main"))
             return List.of();
@@ -87,6 +98,13 @@ public record EditorMain(int line, String className) {
         return dimensions == 1 && (type.toString().equals("String") || type.toString().equals("java.lang.String"));
     }
 
+    /**
+     * Reports whether a project can run main methods declared in a file.
+     *
+     * @param project project containing the file
+     * @param file source file
+     * @return whether the file is a Gradle project source, or a main source of a plain Java project
+     */
     public static boolean supports(Project project, Path file) {
         Path root = ProjectPathIdentityUtils.normalize(project.getPath());
         Path source = ProjectPathIdentityUtils.normalize(file);
@@ -94,6 +112,13 @@ public record EditorMain(int line, String className) {
             || (!project.hasFacet(FacetManager.MAVEN) && source.startsWith(root.resolve("src/main/java"))));
     }
 
+    /**
+     * Returns the run configuration for this main method, creating and registering it on first use.
+     *
+     * @param project project containing the file
+     * @param file source file declaring the main method
+     * @return existing or new run configuration
+     */
     public RunConfiguration<?> configuration(Project project, Path file) {
         String source = ProjectPathIdentityUtils.normalize(project.getPath())
             .relativize(ProjectPathIdentityUtils.normalize(file)).toString().replace(File.separatorChar, '/');
@@ -109,7 +134,7 @@ public record EditorMain(int line, String className) {
             GradleRunConfigurationData data = type.createDataInstance(project);
             data.setMainClass(className);
             data.setMainSource(source);
-            var jdk = project.getGradleManager().getGradleSettings().getGradleJvm();
+            JDK jdk = project.getGradleManager().getGradleSettings().getGradleJvm();
             if (jdk != null) {
                 data.setJavaHome(jdk);
             }

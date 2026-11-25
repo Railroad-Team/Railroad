@@ -678,6 +678,12 @@ public final class JavaSemanticGraphExtractor {
 
     /**
      * Reads the signature of a single source declaration from an analyzed model.
+     *
+     * @param model analyzed model of the declaring file
+     * @param symbol declared symbol
+     * @param index symbol index used to resolve types, or {@code null}
+     * @param check checks cancellation
+     * @return the declaration's signature, or {@code null} when it has none
      */
     public static @Nullable SymbolSignature declarationSignature(
         SemanticModel model,

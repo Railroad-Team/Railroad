@@ -24,9 +24,21 @@ public record CompletionItem(
      * Symbol categories displayed by the completion popup.
      */
     public enum Kind {
+        /**
+         * Plain text supplied by a provider.
+         */
         TEXT,
+        /**
+         * A method or constructor.
+         */
         METHOD,
+        /**
+         * A field or variable.
+         */
         FIELD,
+        /**
+         * A class, interface, enum or record.
+         */
         TYPE
     }
 
@@ -41,6 +53,8 @@ public record CompletionItem(
     }
 
     /**
+     * Creates a method suggestion.
+     *
      * @param name method name to insert
      * @param parameters formatted parameter list without parentheses
      * @param returnType return type displayed beside the signature
@@ -53,6 +67,8 @@ public record CompletionItem(
     }
 
     /**
+     * Creates a field suggestion.
+     *
      * @param name field name to insert
      * @param type declared field type
      * @param isStatic whether the field is static
@@ -63,6 +79,8 @@ public record CompletionItem(
     }
 
     /**
+     * Creates a type suggestion.
+     *
      * @param name type name to insert
      * @param isStatic whether the type is static
      * @return a type suggestion
@@ -76,6 +94,8 @@ public record CompletionItem(
     }
 
     /**
+     * Returns the full label of this suggestion.
+     *
      * @return complete label for accessibility, tooltips and plain-text consumers
      */
     public String displayText() {

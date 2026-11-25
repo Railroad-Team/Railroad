@@ -404,7 +404,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             List<File> files = clipboard.getFiles();
             boolean isCut = clipboard.hasString() && clipboard.getString().equals("cut");
             for (File file : files) {
-                var targetPath = Path.of(item.getPath().toAbsolutePath().toString(), file.getName());
+                Path targetPath = Path.of(item.getPath().toAbsolutePath().toString(), file.getName());
                 if (Files.exists(targetPath, LinkOption.NOFOLLOW_LINKS)) {
                     var replaceProperty = new SimpleBooleanProperty();
                     CopyModalDialog.open(replaceProperty);
@@ -715,7 +715,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             boolean success = false;
             if (dragboard.hasFiles()) {
                 Path sourcePath = dragboard.getFiles().getFirst().toPath();
-                var targetPath = Path.of(
+                Path targetPath = Path.of(
                     cell.getTreeItem().getValue().getPath().toAbsolutePath().toString(),
                     sourcePath.getFileName().toString());
 

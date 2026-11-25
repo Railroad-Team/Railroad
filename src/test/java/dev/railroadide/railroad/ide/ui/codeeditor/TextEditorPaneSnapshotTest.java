@@ -380,7 +380,8 @@ public class TextEditorPaneSnapshotTest {
         onFxThread(() -> {
             var editor = new TextEditorPane(DocumentId.create(), file, "plaintext");
             var service = new BreakpointService();
-            var binding = new BreakpointGutterBinding(editor.getGutter(), editor, editor::getFilePath, service);
+            BreakpointGutterBinding binding = new BreakpointGutterBinding(editor.getGutter(), editor,
+                editor::getFilePath, service);
             try {
                 var store = new DefaultDocumentStore("granular-test",
                     new WorkspaceConfigurationSnapshot(0, Set.of()));

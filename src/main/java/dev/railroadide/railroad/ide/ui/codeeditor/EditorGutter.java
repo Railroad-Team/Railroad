@@ -52,6 +52,8 @@ public final class EditorGutter {
 
     /**
      * Registers a column after the ordinary marker columns.
+     *
+     * @param column column to add, replacing any column with the same identifier
      */
     public void addTrailingColumn(GutterColumn column) {
         Objects.requireNonNull(column, "column");

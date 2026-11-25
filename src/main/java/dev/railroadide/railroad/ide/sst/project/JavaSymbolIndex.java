@@ -26,6 +26,8 @@ public interface JavaSymbolIndex {
 
     /**
      * Returns captured library sources that have declarations but no matching class file in the attached view.
+     *
+     * @return source texts by file, empty for indexes without attached sources
      */
     default Map<Path, String> attachedSourceTexts() {
         return Map.of();
