@@ -132,6 +132,7 @@ public final class DiffParser {
         }
 
         // noinspection ConstantValue
+
         if (currentHunk != null && currentFile != null) {
             currentFile.hunks().add(currentHunk);
         }

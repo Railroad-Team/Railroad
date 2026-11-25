@@ -14,6 +14,8 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
+import dev.railroadide.railroad.ide.sst.semantic.api.DefinitionTarget;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class IndependentLanguageProviderTest {
@@ -22,40 +24,43 @@ public class IndependentLanguageProviderTest {
         TextDocumentSnapshot document = tiny("let answer 42\nuse answer\nuse missing\n");
         FeatureRequestContext request = request(document);
         try (LanguageSession session = new TinyLanguageContribution().openSession(context())) {
-            var tree = session.capability(SstCapabilities.PARSING).orElseThrow().parse(request);
+            FeatureResult<SyntaxTree> tree = session.capability(SstCapabilities.PARSING).orElseThrow().parse(request);
             assertTrue(tree.belongsTo(request));
             assertSame(document, tree.value().documentSnapshot());
             assertEquals(document.text().length(), tree.value().root().end());
 
-            var diagnostics = session.capability(SstCapabilities.DIAGNOSTICS).orElseThrow().compute(request);
+            FeatureResult diagnostics = session.capability(SstCapabilities.DIAGNOSTICS).orElseThrow().compute(request);
             List<?> reports = (List<?>) diagnostics.value();
             assertEquals(2, reports.size());
             for (Object report : reports) {
-                var diagnostic = (EditorDiagnostic<?>) report;
+                EditorDiagnostic<?> diagnostic = (EditorDiagnostic<?>) report;
                 assertEquals("example:tiny", diagnostic.source());
                 diagnostic.location().validateAgainst(document);
             }
-            var symbols = session.capability(SstCapabilities.INDEX_EXTRACTION).orElseThrow().extract(request);
+
+            FeatureResult<List<SymbolOccurrence>> symbols = session.capability(SstCapabilities.INDEX_EXTRACTION)
+                .orElseThrow().extract(request);
             assertEquals("answer", symbols.value().getFirst().symbol().simpleName());
             assertEquals("example:tiny.variable", symbols.value().getFirst().symbol().kind().id());
-            var targets = session.capability(SstCapabilities.NAVIGATION).orElseThrow()
+            FeatureResult<List<DefinitionTarget>> targets = session.capability(SstCapabilities.NAVIGATION).orElseThrow()
                 .definitions(request, document.text().toString().indexOf("use answer") + 4);
             assertEquals(1, targets.value().size());
             Location<?> declaration = symbols.value().getFirst().location();
-            Location<?> target = targets.value().getFirst();
+            Location<?> target = targets.value().getFirst().location();
             assertEquals(declaration.documentId(), target.documentId());
             assertEquals(declaration.documentVersion(), target.documentVersion());
             assertEquals(declaration.range().start, target.range().start);
             assertEquals(declaration.range().end, target.range().end);
-            var query = session.capability(SstCapabilities.INDEX_QUERY).orElseThrow().query(
-                new WorkspaceRequestContext(request.workspaceSnapshot(), CancellationToken.none(), Deadline.none()),
-                "answer");
+            FeatureResult<List<SymbolOccurrence>> query = session.capability(SstCapabilities.INDEX_QUERY).orElseThrow()
+                .query(
+                    new WorkspaceRequestContext(request.workspaceSnapshot(), CancellationToken.none(), Deadline.none()),
+                    "answer");
             assertEquals(1, query.value().size());
             assertTrue(session.capability(SstCapabilities.COMPLETION).isEmpty());
 
-            var action = session.capability(SstCapabilities.CODE_ACTIONS).orElseThrow()
+            CodeAction action = session.capability(SstCapabilities.CODE_ACTIONS).orElseThrow()
                 .actions(request, whole(document)).value().getFirst();
-            var change = (WorkspaceChange.TextEdit) action.edit().changes().getFirst();
+            WorkspaceChange.TextEdit change = (WorkspaceChange.TextEdit) action.edit().changes().getFirst();
             assertSame(document, change.expected());
             assertEquals(action.title(), action.edit().label());
             TextReplacement replacement = change.replacements().getFirst();
@@ -70,13 +75,16 @@ public class IndependentLanguageProviderTest {
         DocumentId id = DocumentId.create();
         var binary = new BinaryDocumentSnapshot(id, DocumentUri.inMemory(id), DocumentVersion.initial(),
             PacketLanguageContribution.ID.value(), new byte[]{0, 1, 2});
-        try (var session = new PacketLanguageContribution().openSession(context())) {
+
+        try (LanguageSession session = new PacketLanguageContribution().openSession(context())) {
             assertTrue(session.capability(SstCapabilities.PARSING).isEmpty());
-            var result = session.capability(SstCapabilities.DIAGNOSTICS).orElseThrow().compute(request(binary));
-            var diagnostic = (EditorDiagnostic<?>) ((List<?>) result.value()).getFirst();
+            FeatureResult result = session.capability(SstCapabilities.DIAGNOSTICS).orElseThrow()
+                .compute(request(binary));
+            EditorDiagnostic<?> diagnostic = (EditorDiagnostic<?>) ((List<?>) result.value()).getFirst();
             assertInstanceOf(Location.BinaryLocation.class, diagnostic.location());
             diagnostic.location().validateAgainst(binary);
-            var symbols = session.capability(SstCapabilities.INDEX_EXTRACTION).orElseThrow().extract(request(binary));
+            FeatureResult<List<SymbolOccurrence>> symbols = session.capability(SstCapabilities.INDEX_EXTRACTION)
+                .orElseThrow().extract(request(binary));
             assertEquals("header", symbols.value().getFirst().symbol().simpleName());
             assertTrue(symbols.value().getFirst().symbol().declaration().isEmpty());
         }
@@ -84,14 +92,14 @@ public class IndependentLanguageProviderTest {
 
     @Test
     public void cancellationAndUnloadRejectRequestsAndRetainedCapabilities() {
-        var document = tiny("let answer = 42\n");
-        var original = request(document);
+        TextDocumentSnapshot document = tiny("let answer = 42\n");
+        FeatureRequestContext original = request(document);
         var cancellation = new CancellationTokenSource();
         cancellation.cancel();
         var cancelled = new FeatureRequestContext(original.workspaceSnapshot(), document, cancellation.token(),
             Deadline.none());
-        var session = new TinyLanguageContribution().openSession(context());
-        var parser = session.capability(SstCapabilities.PARSING).orElseThrow();
+        LanguageSession session = new TinyLanguageContribution().openSession(context());
+        ParsingProvider parser = session.capability(SstCapabilities.PARSING).orElseThrow();
         assertThrows(CancellationException.class, () -> parser.parse(cancelled));
         session.close();
         session.close();
@@ -101,14 +109,15 @@ public class IndependentLanguageProviderTest {
 
     @Test
     public void diagnosticsAndActionsRemainBoundToTheirInputRevision() {
-        var document = tiny("let value 10");
-        try (var session = new TinyLanguageContribution().openSession(context())) {
-            var result = session.capability(SstCapabilities.DIAGNOSTICS).orElseThrow().compute(request(document));
-            var diagnostic = (EditorDiagnostic<?>) ((List<?>) result.value()).getFirst();
+        TextDocumentSnapshot document = tiny("let value 10");
+        try (LanguageSession session = new TinyLanguageContribution().openSession(context())) {
+            FeatureResult result = session.capability(SstCapabilities.DIAGNOSTICS).orElseThrow()
+                .compute(request(document));
+            EditorDiagnostic<?> diagnostic = (EditorDiagnostic<?>) ((List<?>) result.value()).getFirst();
             var newer = new TextDocumentSnapshot(document.id(), document.uri(), document.version().next(),
                 document.languageId(), "let value = 10", StandardCharsets.UTF_8);
             assertThrows(IllegalArgumentException.class, () -> diagnostic.location().validateAgainst(newer));
-            var action = session.capability(SstCapabilities.CODE_ACTIONS).orElseThrow()
+            CodeAction action = session.capability(SstCapabilities.CODE_ACTIONS).orElseThrow()
                 .actions(request(document), whole(document)).value().getFirst();
             assertNotEquals(newer.version(),
                 ((WorkspaceChange.TextEdit) action.edit().changes().getFirst()).expected().version());

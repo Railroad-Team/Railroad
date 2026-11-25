@@ -100,6 +100,7 @@ public class FormSection {
         if (customSpacing) {
             vbox.setSpacing(spacing);
         }
+
         if (customPadding) {
             vbox.setPadding(padding);
         }
@@ -360,7 +361,7 @@ public class FormSection {
          * @return the form section
          */
         public FormSection build(Form.Builder formBuilder) {
-            var formSection = build();
+            FormSection formSection = build();
             formBuilder.formSections.add(formSection);
             return formSection;
         }

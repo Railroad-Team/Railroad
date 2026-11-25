@@ -320,6 +320,7 @@ public class TextAreaComponent extends FormComponent<FormTextArea, TextAreaCompo
                 } else
                     throw new IllegalArgumentException(
                         "Unsupported component type: " + toComponent.getValue().getClass().getName());
+
             }, valueMapper));
             return this;
         }

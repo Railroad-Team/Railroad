@@ -16,7 +16,9 @@ public final class GitLog {
     private static final String LOGGER_NAME = "dev.railroadide.railroad.vcs.git";
     private static final String APPENDER_NAME = "GIT_FILE";
 
-    /** Shared Git subsystem logger, configured to append to {@code logs/git.log} when Logback is active. */
+    /**
+     * Shared Git subsystem logger, configured to append to {@code logs/git.log} when Logback is active.
+     */
     public static final Logger LOGGER = LoggerFactory.getLogger(LOGGER_NAME);
 
     static {
@@ -39,17 +41,19 @@ public final class GitLog {
         if (!(LoggerFactory.getILoggerFactory() instanceof LoggerContext context))
             return;
 
-        var gitLogger = context.getLogger(LOGGER_NAME);
+        ch.qos.logback.classic.Logger gitLogger = context.getLogger(LOGGER_NAME);
         if (gitLogger.getAppender(APPENDER_NAME) == null) {
             gitLogger.addAppender(createFileAppender(context));
         }
+
         gitLogger.setLevel(Level.DEBUG);
         gitLogger.setAdditive(false);
 
-        var jgitLogger = context.getLogger("org.eclipse.jgit");
+        ch.qos.logback.classic.Logger jgitLogger = context.getLogger("org.eclipse.jgit");
         if (jgitLogger.getAppender(APPENDER_NAME) == null) {
             jgitLogger.addAppender(gitLogger.getAppender(APPENDER_NAME));
         }
+
         jgitLogger.setLevel(Level.WARN);
         jgitLogger.setAdditive(false);
     }

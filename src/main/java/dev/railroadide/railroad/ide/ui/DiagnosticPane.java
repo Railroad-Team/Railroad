@@ -37,10 +37,10 @@ public class DiagnosticPane extends BorderPane {
      * @param sourcePath the source file, or {@code null} when navigation is unavailable
      */
     public DiagnosticPane(EditorDiagnostic diagnostic, Path sourcePath) {
-        var message = diagnostic.message(null);
+        String message = diagnostic.message(null);
 
-        var line = 0;
-        var column = diagnostic.location().range().start;
+        int line = 0;
+        int column = diagnostic.location().range().start;
 
         if (diagnostic instanceof TextEditorDiagnostic textDiagnostic) {
             line = textDiagnostic.location().line() + 1;
@@ -67,7 +67,7 @@ public class DiagnosticPane extends BorderPane {
      */
     public DiagnosticPane(Collection<? extends EditorDiagnostic<?>> diagnostics) {
         var message = new StringBuilder();
-        for (var diagnostic : diagnostics) {
+        for (EditorDiagnostic<?> diagnostic : diagnostics) {
             message.append(diagnostic.message(null)).append("\n");
         }
 

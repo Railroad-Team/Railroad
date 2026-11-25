@@ -37,11 +37,17 @@ public record DiffHunkLine(
      * Type of line represented in a diff hunk.
      */
     public enum LineType {
-        /** An unchanged line present in both the old and new file. */
+        /**
+         * An unchanged line present in both the old and new file.
+         */
         CONTEXT,
-        /** A line present only in the new file. */
+        /**
+         * A line present only in the new file.
+         */
         ADDITION,
-        /** A line present only in the old file. */
+        /**
+         * A line present only in the old file.
+         */
         DELETION
     }
 }

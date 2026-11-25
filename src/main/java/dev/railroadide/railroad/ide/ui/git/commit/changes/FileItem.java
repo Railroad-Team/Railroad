@@ -51,7 +51,6 @@ public record FileItem(Project project, GitFileChange change) implements ChangeI
     @Override
     public Consumer<Boolean> getSelectionHandler() {
         return isSelected -> {
-
         };
     }
 

@@ -7,14 +7,22 @@ import lombok.Getter;
  */
 @Getter
 public enum GitBranchStatus {
-    /** The branch has uncommitted changes or has diverged from its upstream. */
+    /**
+     * The branch has uncommitted changes or has diverged from its upstream.
+     */
     DIRTY("railroad.git.branch.status.dirty"),
-    /** The local branch is ahead of its upstream without being behind it. */
+    /**
+     * The local branch is ahead of its upstream without being behind it.
+     */
     LOCAL("railroad.git.branch.status.local"),
-    /** The local branch is behind its upstream without being ahead of it. */
+    /**
+     * The local branch is behind its upstream without being ahead of it.
+     */
     REMOTE(
         "railroad.git.branch.status.remote"),
-    /** No uncommitted changes or upstream differences were detected. */
+    /**
+     * No uncommitted changes or upstream differences were detected.
+     */
     CLEAN("railroad.git.branch.status.clean");
 
     /**

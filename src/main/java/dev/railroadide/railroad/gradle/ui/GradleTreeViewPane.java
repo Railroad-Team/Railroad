@@ -80,6 +80,7 @@ public abstract class GradleTreeViewPane<T> extends RRVBox {
                 updateLoadingState();
             }
         };
+
         var modelListenerRegistered = new AtomicBoolean(true);
         modelService.addListener(modelListener);
         sceneProperty().addListener((observable, oldScene, newScene) -> {
@@ -105,6 +106,7 @@ public abstract class GradleTreeViewPane<T> extends RRVBox {
             Platform.runLater(() -> {
                 if (generation != reloadGeneration.get())
                     return;
+
                 treeView.setRoot(root);
                 isLoading.set(false);
                 updateLoadingState();

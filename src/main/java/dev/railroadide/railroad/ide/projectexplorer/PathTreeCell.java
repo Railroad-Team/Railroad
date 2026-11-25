@@ -13,31 +13,82 @@ import dev.railroadide.railroad.utility.FileUtils;
 import dev.railroadide.railroad.utility.OperatingSystem;
 import javafx.application.Platform;
 import javafx.beans.property.StringProperty;
+import javafx.css.PseudoClass;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeRegular;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * An editable project explorer cell with file icons and rename support.
  */
 public class PathTreeCell extends TreeCell<PathItem> {
+    private static final Map<ProjectStructure.Role, PseudoClass> ROLE_PSEUDO_CLASSES = new EnumMap<>(
+        ProjectStructure.Role.class);
+
+    static {
+        for (ProjectStructure.Role role : ProjectStructure.Role.values()) {
+            ROLE_PSEUDO_CLASSES.put(role,
+                PseudoClass.getPseudoClass(role.name().toLowerCase(Locale.ROOT).replace('_', '-')));
+        }
+    }
+
     private final StringProperty messageProperty;
+    private final Supplier<ProjectStructure> structure;
     private TextField textField;
     private Path editingPath;
+    private ContextMenu contextMenu;
+    private List<MenuItem> directoryItems;
+
     /**
      * Creates an editable file cell that publishes operation messages.
      *
      * @param messageProperty property receiving file operation messages
+     * @param structure current build roles used to decorate module and source directories
      */
-    public PathTreeCell(StringProperty messageProperty) {
+    public PathTreeCell(StringProperty messageProperty, Supplier<ProjectStructure> structure) {
         super();
 
         this.messageProperty = messageProperty;
+        this.structure = structure;
+    }
+
+    private static Node createIcon(Path path, ProjectStructure.Role role) {
+        if (role == null)
+            return FileUtils.getIcon(path);
+
+        return new FontIcon(switch (role) {
+            case MODULE -> FontAwesomeSolid.CUBE;
+            case SOURCE_SET -> FontAwesomeSolid.LAYER_GROUP;
+            case SOURCES, TEST_SOURCES, GENERATED_SOURCES -> FontAwesomeSolid.FOLDER;
+            case RESOURCES, TEST_RESOURCES -> FontAwesomeSolid.ARCHIVE;
+            case EXCLUDED -> FontAwesomeRegular.FOLDER;
+        });
+    }
+
+    private ProjectStructure.Role role(Path path) {
+        return structure.get().roleOf(path);
+    }
+
+    private Node icon(Path path) {
+        return createIcon(path, role(path));
+    }
+
+    private void updateRole(ProjectStructure.Role role) {
+        ROLE_PSEUDO_CLASSES.forEach((candidate, pseudoClass) -> pseudoClassStateChanged(pseudoClass,
+            candidate == role));
     }
 
     @Override
@@ -50,6 +101,22 @@ public class PathTreeCell extends TreeCell<PathItem> {
             disclosure.relocate(disclosure.getLayoutX(),
                 snapPositionY((getHeight() - disclosure.getLayoutBounds().getHeight()) / 2));
         }
+    }
+
+    /**
+     * Builds the menu once per cell; its commands read the cell's current item when they run.
+     */
+    private ContextMenu contextMenu(boolean directory) {
+        if (contextMenu == null) {
+            directoryItems = List.of(new SeparatorMenuItem(),
+                commandItem("railroad.project_explorer.menu.expand_all", Commands.EXPAND_EXPLORER, this),
+                commandItem("railroad.project_explorer.menu.collapse_all", Commands.COLLAPSE_EXPLORER, this));
+            contextMenu = createContextMenu(this);
+            contextMenu.getItems().addAll(directoryItems);
+        }
+
+        directoryItems.forEach(item -> item.setVisible(directory));
+        return contextMenu;
     }
 
     private static ContextMenu createContextMenu(PathTreeCell cell) {
@@ -70,18 +137,12 @@ public class PathTreeCell extends TreeCell<PathItem> {
                 Commands.REVEAL_PROJECT_EXPLORER_ITEM, cell),
             commandItem("railroad.project_explorer.menu.terminal", Commands.OPEN_PROJECT_EXPLORER_ITEM_IN_TERMINAL,
                 cell));
-        var menu = new ContextMenu(newMenu,
+        return new ContextMenu(newMenu,
             commandItem("railroad.project_explorer.menu.cut", Commands.CUT_PROJECT_EXPLORER_ITEM, cell),
             commandItem("railroad.project_explorer.menu.copy", Commands.COPY_PROJECT_EXPLORER_ITEM, cell),
             commandItem("railroad.project_explorer.menu.paste", Commands.PASTE_PROJECT_EXPLORER_ITEM, cell),
             commandItem("railroad.project_explorer.menu.rename", Commands.RENAME_PROJECT_EXPLORER_ITEM, cell),
             commandItem("railroad.project_explorer.menu.delete", Commands.DELETE_PROJECT_EXPLORER_ITEM, cell), openIn);
-        if (Files.isDirectory(cell.getItem().getPath())) {
-            menu.getItems().addAll(new SeparatorMenuItem(),
-                commandItem("railroad.project_explorer.menu.expand_all", Commands.EXPAND_EXPLORER, cell),
-                commandItem("railroad.project_explorer.menu.collapse_all", Commands.COLLAPSE_EXPLORER, cell));
-        }
-        return menu;
     }
 
     private static MenuItem commandItem(String labelKey, Command<ExplorerTarget> command, PathTreeCell cell) {
@@ -97,6 +158,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
     protected void updateItem(PathItem item, boolean empty) {
         super.updateItem(item, empty);
 
+        updateRole(empty || item == null ? null : role(item.getPath()));
         if (empty) {
             setContextMenu(null);
             setText(null);
@@ -106,7 +168,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
         } else {
             String text = getString();
             setTooltip(new Tooltip(item.getPath().toString()));
-            Node image = FileUtils.getIcon(item.getPath());
+            Node image = icon(item.getPath());
             if (isEditing()) {
                 if (textField != null) {
                     textField.setText(item.toString());
@@ -122,7 +184,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
                 setText(text);
                 setGraphic(image);
 
-                setContextMenu(createContextMenu(this));
+                setContextMenu(contextMenu(Files.isDirectory(item.getPath())));
 
                 // Double-click to open, not rename
                 setOnMouseClicked(event -> {
@@ -141,6 +203,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
                                 CommandContext.withArgument(Railroad.PROJECT_MANAGER.getOpenProject(), this,
                                     new ExplorerTarget(getTreeView(), getTreeItem(), getScene().getWindow())));
                         }
+
                         event.consume();
                     }
                 });
@@ -160,12 +223,13 @@ public class PathTreeCell extends TreeCell<PathItem> {
             if (textField == null) {
                 createTextField();
             }
+
             textField.setText(getItem().toString());
 
             setText(null);
 
             var hbox = new RRHBox();
-            hbox.getChildren().addAll(FileUtils.getIcon(getItem().getPath()), textField);
+            hbox.getChildren().addAll(icon(getItem().getPath()), textField);
             setGraphic(hbox);
             textField.selectAll();
 
@@ -214,7 +278,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
 
         super.commitEdit(newValue);
         setText(getString());
-        setGraphic(FileUtils.getIcon(newValue.getPath()));
+        setGraphic(icon(newValue.getPath()));
     }
 
     /**
@@ -224,12 +288,13 @@ public class PathTreeCell extends TreeCell<PathItem> {
     public void cancelEdit() {
         super.cancelEdit();
         setText(getString());
-        setGraphic(getItem() == null ? null : FileUtils.getIcon(getItem().getPath()));
+        setGraphic(getItem() == null ? null : icon(getItem().getPath()));
     }
 
     private String getString() {
         if (getTreeItem() instanceof PathTreeItem pathTreeItem)
             return pathTreeItem.getDisplayName();
+
         return getItem() == null ? "" : getItem().toString();
     }
 
@@ -237,7 +302,7 @@ public class PathTreeCell extends TreeCell<PathItem> {
         textField = new TextField(getString());
         textField.setOnKeyReleased(event -> {
             if (event.getCode() == KeyCode.ENTER) {
-                var path = Path.of(getItem().getPath().getParent().toAbsolutePath().toString(), textField.getText());
+                Path path = Path.of(getItem().getPath().getParent().toAbsolutePath().toString(), textField.getText());
                 commitEdit(new PathItem(path));
             } else if (event.getCode() == KeyCode.ESCAPE) {
                 cancelEdit();

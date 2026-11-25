@@ -110,6 +110,38 @@ This is parser validation, not a complete runtime style check: unknown property 
 looked-up colors, selector matches, image availability, and control-specific conversions may require
 applying styles to a live scene. Validator regression tests run with `./gradlew cssValidationTest`.
 
+## Running the OpenJDK javac suite against SST
+
+`sstJavacTest` runs headlessly against a local OpenJDK Git checkout. The default Railroad test suite has no OpenJDK
+checkout dependency. Use a checkout outside Railroad and keep its working tree clean for reproducible results. The
+recommended baseline is OpenJDK `jdk-25+36`, which matches Railroad's Java 25 toolchain. A sparse checkout is enough.
+
+```sh
+git clone --depth 1 --filter=blob:none --sparse --branch jdk-25+36 https://github.com/openjdk/jdk.git ../openjdk-25
+git -C ../openjdk-25 sparse-checkout set test/langtools test/lib
+./gradlew sstJavacTest -PopenJdkCheckout=../openjdk-25
+```
+
+On Windows use `./gradlew.bat`. Use `-PsstJavacFilter=path` to select a file or directory relative to
+`test/langtools/tools/javac`. Append `#id` to select one description in a file, for example
+`'-PsstJavacFilter=Example.java#id0'`. A file selection without an ID runs all its descriptions.
+
+The harness discovers tagged test descriptions and runs `@compile`, `@run compile` and source-based `@build` actions
+in order. It resolves explicitly named sources and build dependencies, including `@library` source roots. Each Java
+input must round-trip through SST exactly and agree with the Java 25 javac parser on whether it has syntax errors.
+Supported compile actions check SST errors against the expected compile outcome. Negative actions with `/ref`
+compare mapped diagnostic categories and source locations from the reference file.
+
+The harness reads source and reference files in place and never executes test programs or annotation processors.
+Runtime assertions, bytecode checks, generated sources, module setups, other source levels, and unmapped reference
+diagnostics receive an unsupported reason. A tagged Java driver can still be checked as on-disk parser input.
+SST requests share a 30-second deadline per case. A separate worker JVM has a 45-second watchdog. The runner records
+timeouts and analysis crashes as case errors, then replaces the worker when needed.
+
+The console summary and `build/reports/sst-javac/results.json` record the checkout revision, toolchain, case IDs, and
+results. A mismatch or harness error fails the Gradle task. Unsupported checks are reported separately, with any
+completed syntax and compile checks counted in the same case record.
+
 ## Formatting code
 
 Run the formatter before committing Java, CSS, Groovy, or Gradle script changes:
@@ -121,15 +153,14 @@ Run the formatter before committing Java, CSS, Groovy, or Gradle script changes:
 Formatting is ratcheted from `HEAD` by default, so only changed and untracked files are touched.
 CSS files under `src` use Prettier (requires Node.js and npm); Groovy files under `src` and Gradle scripts in the project root, `gradle`, and
 `src` use Groovy-Eclipse. Both use four-space indentation, trim trailing whitespace, and end files with a newline.
-CSS settings live in `build.gradle` and preserve spaces around selector combinators such as `>`.
+The quality plugin supplies the CSS and Groovy settings.
 The wide CSS print width keeps long selectors inline because JavaFX rejects line breaks before `>`.
-Groovy settings live in `config/format/railroad-groovy.properties`.
 Gradle templates under `templates` are excluded because they contain template directives.
 
 For Java, this applies Railroad's syntax-aware style rules first, followed by the Eclipse JDT formatter.
 In particular, a control-flow block whose
 only statement is `return`, `throw`, `break`, `continue`, or `yield` is written without braces; every non-terminal
-control-flow body uses braces. `else if` chains remain compact. An exact local construction such as
+control-flow body uses braces. `else if` chains remain compact. An exact non-collection local construction such as
 `Widget widget = new Widget()` uses `var`; declarations involving target-type inference, a different declared type,
 anonymous classes, fields, or multiple variables retain their explicit type. Unused-variable conventions named
 `ignored`, `$`, or `$` followed by digits use Java 25's unnamed variable `_` where the declaration context permits it;
@@ -162,9 +193,8 @@ To intentionally reformat every supported source file instead of only current ch
 ./gradlew format -PformatAll
 ```
 
-The canonical whitespace and wrapping settings are stored in
-`config/format/railroad-eclipse-formatter.xml`. Structural rules and their tests live under `src/formatter/java` and
-`src/test/java/dev/railroadide/railroad/formatter`, respectively.
+The [Railroad quality plugin](https://github.com/Railroad-Team/railroad-quality-plugin) owns the formatting profiles,
+semantic rules, and their tests. The version is pinned in `build.gradle`.
 
 ## Javadoc coverage
 
@@ -202,15 +232,7 @@ with incomplete coverage, so it can be used while improving documentation. Neith
 requires its dependencies; invalid Java syntax fails report generation. `javadocCoverageCheck` is opt-in and is not
 attached to `check`, since the existing documentation is not yet complete.
 
-Run the coverage tool's focused tests with `./gradlew javadocCoverageTest` (also included in `check`). The implementation,
-report assets, and tests live in `src/javadocCoverageTool` and `src/javadocCoverageTest`; Gradle wiring is in
-`gradle/javadoc-coverage.gradle`. Both Java source sets are included in `format` and `formatCheck`, including the
-semantic style rules and Spotless checks.
-
-The HTML layout lives in `src/javadocCoverageTool/resources/dev/railroadide/railroad/docs/report.ftlh`, rendered with
-FreeMarker and automatic HTML escaping. Edit that template to change the report structure; `report.css` and `report.js`
-are embedded verbatim so the output remains a single self-contained HTML file. FreeMarker is a coverage-tool dependency
-and is not added to the application.
+The quality plugin supplies the report generator, its tests, and the embedded HTML, CSS, and JavaScript assets.
 
 ## Running
 

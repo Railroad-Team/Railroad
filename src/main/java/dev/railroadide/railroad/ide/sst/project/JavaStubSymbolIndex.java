@@ -1,50 +1,83 @@
 package dev.railroadide.railroad.ide.sst.project;
 
-import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
-import dev.railroadide.railroad.ide.classparser.stub.*;
-import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
-
-import java.nio.file.Path;
+import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
+import dev.railroadide.railroad.ide.classparser.stub.FieldStub;
+import dev.railroadide.railroad.ide.classparser.stub.MethodStub;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolIds;
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
+import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolLocation;
-import java.util.*;
-import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolIds;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
+
+import java.nio.file.Path;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolDescriptor;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Builds Java type and member lookup tables from binary class stubs and their origins.
  */
 public class JavaStubSymbolIndex implements JavaSymbolIndex {
     private final Map<SymbolId, List<SymbolLocation>> alternateLocations;
-    private final ReentrantLock graphLock = new ReentrantLock();
-    private volatile List<SemanticIndexShard> semanticShards;
+    private final ConcurrentMap<String, SemanticIndexShard> shardsByOwner;
     private final Map<String, DocumentUri> binaryLocations;
     private final Set<String> declaredQualifiedNames;
     private final Set<String> typeNames;
     private final Set<String> packages;
     private final Map<String, ClassStub> classStubsByQualifiedName;
     private final Map<String, Path> sourceByQualifiedName;
-    private final Map<String, Set<String>> ownersBySimpleName;
-    private final ConcurrentHashMap<String, ClassDeclarations> declarationsByOwner;
+    private final Map<String, String> aliases;
+    private final Map<String, ClassStub> visibleStubs;
+    private final Map<String, Object> ownersBySimpleName;
+    private final ConcurrentMap<String, ClassDeclarations> declarationsByOwner;
+    private final JavaBinarySymbolExtractor.TypeReferences typeReferences;
 
-    /** Reuses fully immutable lookup storage when wrapping an already published binary index. */
+    /**
+     * Reuses fully immutable lookup storage when wrapping an already published binary index.
+     */
     protected JavaStubSymbolIndex(JavaStubSymbolIndex source) {
+        this(source, source.aliases);
+    }
+
+    /**
+     * Shares physical declarations and their navigation identities while exposing attachment-local source names.
+     */
+    protected JavaStubSymbolIndex(JavaStubSymbolIndex source, Map<String, String> aliases) {
+        this.aliases = Map.copyOf(aliases);
         alternateLocations = source.alternateLocations;
-        semanticShards = source.semanticShards;
+        shardsByOwner = source.shardsByOwner;
         binaryLocations = source.binaryLocations;
-        declaredQualifiedNames = source.declaredQualifiedNames;
-        typeNames = source.typeNames;
-        packages = source.packages;
+        if (aliases.equals(source.aliases)) {
+            visibleStubs = source.visibleStubs;
+            declaredQualifiedNames = source.declaredQualifiedNames;
+            typeNames = source.typeNames;
+            packages = source.packages;
+        } else {
+            Map<String, ClassStub> visible = new HashMap<>(source.classStubsByQualifiedName);
+            Set<String> names = new HashSet<>(source.typeNames);
+            Set<String> packageNames = new HashSet<>(source.packages);
+            aliases.forEach((alias, binary) -> {
+                visible.put(alias, source.classStubsByQualifiedName.get(binary));
+                names.add(alias);
+                packageNames.add(alias.substring(0, alias.lastIndexOf('.')));
+            });
+
+            visibleStubs = Map.copyOf(visible);
+            declaredQualifiedNames = visibleStubs.keySet();
+            typeNames = Set.copyOf(names);
+            packages = Set.copyOf(packageNames);
+        }
+
         classStubsByQualifiedName = source.classStubsByQualifiedName;
         sourceByQualifiedName = source.sourceByQualifiedName;
         ownersBySimpleName = source.ownersBySimpleName;
         declarationsByOwner = source.declarationsByOwner;
+        typeReferences = source.typeReferences;
     }
 
     /**
@@ -91,13 +124,36 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         Map<SymbolId, List<SymbolLocation>> alternateLocations,
         Runnable activityCheck
     ) {
-        this(classStubsByQualifiedName, sourceByQualifiedName, binaryLocations, alternateLocations, activityCheck,
-            true);
+        this(classStubsByQualifiedName, sourceByQualifiedName,
+            completeLocations(classStubsByQualifiedName.keySet(), sourceByQualifiedName, binaryLocations,
+                activityCheck),
+            alternateLocations, activityCheck, true);
+    }
+
+    private static Map<String, DocumentUri> completeLocations(
+        Set<String> names,
+        Map<String, Path> origins,
+        Map<String, DocumentUri> exactLocations,
+        Runnable activityCheck
+    ) {
+        Map<String, DocumentUri> locations = new HashMap<>();
+        Map<Path, DocumentUri> originLocations = new HashMap<>();
+        for (String name : names) {
+            ActivityCheckpoint.poll(activityCheck);
+            DocumentUri location = exactLocations.get(name);
+            if (location == null) {
+                location = originLocations.computeIfAbsent(origins.get(name), DocumentUri::fromPath);
+            }
+
+            locations.put(name, location);
+        }
+
+        return Map.copyOf(locations);
     }
 
     /**
      * Constructs lookup storage, optionally reusing stubs from an already deeply immutable publication.
-     * The trusted path is restricted to internal subclasses; external mutable inputs must be copied.
+     * The supplied location map must be immutable and cover every binary name. Its values may be resolved on demand.
      */
     protected JavaStubSymbolIndex(
         Map<String, ClassStub> classStubsByQualifiedName,
@@ -111,39 +167,37 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         Map<SymbolId, List<SymbolLocation>> alternatives = new LinkedHashMap<>();
         alternateLocations.forEach((id, entries) -> alternatives.put(id, List.copyOf(entries)));
         this.alternateLocations = Map.copyOf(alternatives);
-        Map<String, DocumentUri> locations = new LinkedHashMap<>();
-        Map<Path, DocumentUri> originLocations = new HashMap<>();
-        classStubsByQualifiedName.forEach((name, stub) -> {
-            ActivityCheckpoint.poll(activityCheck);
-            DocumentUri location = binaryLocations.get(name);
-            if (location == null) {
-                location = originLocations.computeIfAbsent(sourceByQualifiedName.get(name), DocumentUri::fromPath);
-            }
-            locations.put(name, location);
-        });
-        this.binaryLocations = Map.copyOf(locations);
-        Map<String, ClassStub> published = new LinkedHashMap<>();
-        Objects.requireNonNull(classStubsByQualifiedName, "classStubsByQualifiedName")
-            .forEach((name, stub) -> {
+        this.binaryLocations = binaryLocations;
+        Objects.requireNonNull(classStubsByQualifiedName, "classStubsByQualifiedName");
+        Map<String, ClassStub> published = classStubsByQualifiedName;
+        if (copyStubs) {
+            published = new LinkedHashMap<>();
+            for (Map.Entry<String, ClassStub> entry : classStubsByQualifiedName.entrySet()) {
                 ActivityCheckpoint.poll(activityCheck);
-                published.put(name, copyStubs ? BinaryStubPublication.copy(stub) : stub);
-            });
+                published.put(entry.getKey(), BinaryStubPublication.copy(entry.getValue()));
+            }
+        }
+
         this.classStubsByQualifiedName = Map.copyOf(published);
+        this.aliases = Map.of();
+        this.visibleStubs = this.classStubsByQualifiedName;
         this.sourceByQualifiedName = Map.copyOf(sourceByQualifiedName);
+        this.declaredQualifiedNames = this.classStubsByQualifiedName.keySet();
         declarationsByOwner = new ConcurrentHashMap<>();
+        shardsByOwner = new ConcurrentHashMap<>();
+        typeReferences = new JavaBinarySymbolExtractor.TypeReferences();
 
-        Set<String> declaredQualifiedNames = new LinkedHashSet<>();
-        Set<String> typeNames = new LinkedHashSet<>();
-        Set<String> packages = new LinkedHashSet<>();
-        Map<String, Set<String>> ownersBySimpleName = new LinkedHashMap<>();
+        Set<String> typeNames = new HashSet<>();
+        Set<String> packages = new HashSet<>();
+        Map<String, Object> ownersBySimpleName = new HashMap<>();
 
-        for (Map.Entry<String, ClassStub> entry : this.classStubsByQualifiedName.entrySet()) {
+        for (Map.Entry<String, ClassStub> entry : published.entrySet()) {
             ActivityCheckpoint.poll(activityCheck);
             String qualifiedName = entry.getKey();
             ClassStub stub = entry.getValue();
-            Objects.requireNonNull(sourceByQualifiedName.get(qualifiedName),
-                "Missing source for " + qualifiedName);
-            declaredQualifiedNames.add(qualifiedName);
+            if (this.sourceByQualifiedName.get(qualifiedName) == null)
+                throw new NullPointerException("Missing source for " + qualifiedName);
+
             typeNames.add(qualifiedName);
             int typeNameSeparator = Math.max(qualifiedName.lastIndexOf('.'), qualifiedName.lastIndexOf('$'));
             typeNames.add(typeNameSeparator < 0 ? qualifiedName : qualifiedName.substring(typeNameSeparator + 1));
@@ -156,6 +210,7 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
                 ActivityCheckpoint.poll(activityCheck);
                 indexOwner(ownersBySimpleName, field.name(), qualifiedName);
             }
+
             for (MethodStub method : stub.methods()) {
                 ActivityCheckpoint.poll(activityCheck);
                 if ((method.modifiers() & Opcodes.ACC_BRIDGE) == 0) {
@@ -164,62 +219,40 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
             }
         }
 
-        this.declaredQualifiedNames = Set.copyOf(declaredQualifiedNames);
         this.typeNames = Set.copyOf(typeNames);
         this.packages = Set.copyOf(packages);
-        Map<String, Set<String>> frozenOwners = new LinkedHashMap<>();
-        ownersBySimpleName.forEach((name, owners) -> {
-            ActivityCheckpoint.poll(activityCheck);
-            frozenOwners.put(name, Collections.unmodifiableSet(new LinkedHashSet<>(owners)));
-        });
-        this.ownersBySimpleName = Map.copyOf(frozenOwners);
+        ownersBySimpleName.replaceAll((_, owners) -> owners instanceof List<?> list ? List.copyOf(list) : owners);
+        this.ownersBySimpleName = Map.copyOf(ownersBySimpleName);
         activityCheck.run();
     }
 
     @Override
-    public List<SemanticIndexShard> semanticShards() {
-        return semanticShards(ActivityCheckpoint::checkInterrupted);
-    }
+    public @Nullable SemanticIndexShard declarationShard(String binaryName, Runnable activityCheck) {
+        activityCheck.run();
+        if (!classStubsByQualifiedName.containsKey(binaryName))
+            return null;
 
-    @Override
-    public List<SemanticIndexShard> semanticShards(Runnable activityCheck) {
-        Objects.requireNonNull(activityCheck, "activityCheck").run();
-        var completed = semanticShards;
-        if (completed != null)
-            return completed;
-        try {
-            while (!graphLock.tryLock(25, TimeUnit.MILLISECONDS)) {
-                activityCheck.run();
-            }
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            throw new CancellationException("Binary graph enrichment interrupted");
-        }
-        try {
-            activityCheck.run();
-            if (semanticShards == null) {
-                List<SemanticIndexShard> enriched = new ArrayList<>(classStubsByQualifiedName.size());
-                for (String owner : classStubsByQualifiedName.keySet()) {
-                    enriched.add(JavaBinarySymbolExtractor.withParameters(declarations(owner, activityCheck).shard(),
-                        alternateLocations,
-                        activityCheck));
-                }
-                activityCheck.run();
-                semanticShards = List.copyOf(enriched);
-            }
-            return semanticShards;
-        } finally {
-            graphLock.unlock();
-        }
+        SemanticIndexShard shard = shardsByOwner.computeIfAbsent(binaryName,
+            name -> JavaBinarySymbolExtractor.withParameters(
+                declarations(name, activityCheck).shard(), alternateLocations, activityCheck));
+        activityCheck.run();
+        return shard;
     }
 
     /**
-     * Returns exact class-entry addresses retained by the scanner.
+     * Returns an immutable lookup of exact binary addresses. Reading an archive value resolves its entry URI.
      *
      * @return immutable mapping of qualified class names to exact binary entry addresses
      */
     public Map<String, DocumentUri> binaryLocations() {
         return binaryLocations;
+    }
+
+    /**
+     * Returns the original class paths for preserving navigation in derived library views.
+     */
+    protected Map<String, Path> binaryOrigins() {
+        return sourceByQualifiedName;
     }
 
     @Override
@@ -239,43 +272,61 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
 
     @Override
     public Map<String, ClassStub> classStubsByQualifiedName() {
-        return classStubsByQualifiedName;
+        return visibleStubs;
     }
 
     @Override
     public List<JavaProjectSemanticIndex.SymbolDescriptor> lookupSimpleName(String simpleName) {
         if (simpleName == null || simpleName.isBlank())
             return List.of();
+
         String name = simpleName.trim();
         List<JavaProjectSemanticIndex.SymbolDescriptor> matches = new ArrayList<>();
-        for (String owner : ownersBySimpleName.getOrDefault(name, Set.of())) {
+        for (String owner : owners(name)) {
             ActivityCheckpoint.checkInterrupted();
-            for (var descriptor : declarations(owner).symbols()) {
+            for (JavaProjectSemanticIndex.SymbolDescriptor descriptor : declarations(owner).symbols()) {
                 if (descriptor.simpleName().equals(name)) {
                     matches.add(descriptor);
                 }
             }
         }
+
         return List.copyOf(matches);
+    }
+
+    @Override
+    public List<String> qualifiedTypeNames(String simpleName) {
+        if (simpleName == null || simpleName.isBlank())
+            return List.of();
+
+        String name = simpleName.trim();
+        return owners(name).stream().filter(owner -> classStubsByQualifiedName.get(owner).name().equals(name))
+            .toList();
     }
 
     @Override
     public List<JavaProjectSemanticIndex.SymbolDescriptor> lookupQualifiedName(String qualifiedName) {
         if (qualifiedName == null || qualifiedName.isBlank())
             return List.of();
+
         String name = qualifiedName.trim();
         int separator = name.indexOf('#');
         String owner = separator < 0 ? name : name.substring(0, separator);
-        if (!classStubsByQualifiedName.containsKey(owner))
+        String binary = aliases.getOrDefault(owner, owner);
+        if (!classStubsByQualifiedName.containsKey(binary))
             return List.of();
-        return declarations(owner).symbols().stream().filter(symbol -> name.equals(symbol.qualifiedName())).toList();
+
+        String target = separator < 0 ? binary : binary + name.substring(separator);
+        return declarations(binary).symbols().stream().filter(symbol -> target.equals(symbol.qualifiedName())).toList();
     }
 
     @Override
     public List<JavaProjectSemanticIndex.SymbolDescriptor> lookupMembers(String qualifiedName) {
         if (qualifiedName == null || qualifiedName.isBlank())
             return List.of();
-        String owner = qualifiedName.trim();
+
+        String name = qualifiedName.trim();
+        String owner = aliases.getOrDefault(name, name);
         return classStubsByQualifiedName.containsKey(owner) ? declarations(owner).members() : List.of();
     }
 
@@ -286,11 +337,40 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
             .toList();
     }
 
-    private static void indexOwner(Map<String, Set<String>> index, String key, String owner) {
+    /**
+     * Records {@code owner} as declaring {@code key}. Most names have a single owner, which is stored as the string
+     * itself; a name shared by several owners is stored as a list. A class adds all of its names before the next
+     * class adds any, so a repeated owner is always the last one recorded.
+     */
+    @SuppressWarnings("unchecked")
+    private static void indexOwner(Map<String, Object> index, String key, String owner) {
         if (key == null || key.isBlank())
             return;
 
-        index.computeIfAbsent(key, _ -> new LinkedHashSet<>()).add(owner);
+        Object existing = index.putIfAbsent(key, owner);
+        if (existing == null || existing.equals(owner))
+            return;
+
+        if (existing instanceof String single) {
+            List<String> owners = new ArrayList<>(2);
+            owners.add(single);
+            owners.add(owner);
+            index.put(key, owners);
+        } else {
+            List<String> owners = (List<String>) existing;
+            if (!owners.getLast().equals(owner)) {
+                owners.add(owner);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> owners(String simpleName) {
+        return switch (ownersBySimpleName.get(simpleName)) {
+            case null -> List.of();
+            case String owner -> List.of(owner);
+            case Object owners -> (List<String>) owners;
+        };
     }
 
     private ClassDeclarations declarations(String owner) {
@@ -301,11 +381,11 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
         activityCheck.run();
         ClassDeclarations result = declarationsByOwner.computeIfAbsent(owner, name -> {
             var shard = JavaBinarySymbolExtractor.extractDeclarations(classStubsByQualifiedName.get(name),
-                binaryLocations.get(name), alternateLocations, activityCheck);
+                binaryLocations.get(name), alternateLocations, typeReferences, activityCheck);
             List<JavaProjectSemanticIndex.SymbolDescriptor> symbols = new ArrayList<>();
             List<JavaProjectSemanticIndex.SymbolDescriptor> members = new ArrayList<>();
             SymbolId typeId = JavaSymbolIds.type(name);
-            for (var declaration : shard.declarations()) {
+            for (SymbolDescriptor declaration : shard.declarations()) {
                 activityCheck.run();
                 JavaSymbolKind kind = JavaSymbolKind.fromId(declaration.kind().id());
                 boolean type = declaration.id().equals(typeId);
@@ -317,9 +397,11 @@ public class JavaStubSymbolIndex implements JavaSymbolIndex {
                     members.add(descriptor);
                 }
             }
+
             activityCheck.run();
             return new ClassDeclarations(shard, List.copyOf(symbols), List.copyOf(members));
         });
+
         activityCheck.run();
         return result;
     }

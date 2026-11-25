@@ -75,7 +75,7 @@ public class ForgeProjectOnboarding {
      * @param showView callback that displays the setup UI and subsequent project creation view
      */
     public void startIn(Consumer<Parent> showView) {
-        var flow = OnboardingFlow.builder()
+        OnboardingFlow flow = OnboardingFlow.builder()
             .addStep("project_details", this::createProjectDetailsStep)
             .addStep("maven_coordinates", this::createMavenCoordinatesStep)
             .addStep("minecraft_version", this::createMinecraftVersionStep)

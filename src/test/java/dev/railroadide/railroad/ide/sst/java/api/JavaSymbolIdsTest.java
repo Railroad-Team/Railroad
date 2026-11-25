@@ -41,6 +41,23 @@ public class JavaSymbolIdsTest {
     }
 
     @Test
+    public void owningTypeNamesPreserveNestedBinaryNamesAcrossMemberSignatures() {
+        String name = "sample.Outer$Nested";
+        var type = JavaSymbolIds.type("sample.module", name);
+        var method = JavaSymbolIds.binaryMethod(type, "read", List.of("other.Argument"), "other.Result");
+        for (SymbolId symbol : List.of(type, method, JavaSymbolIds.parameter(method, 0),
+            JavaSymbolIds.typeParameter(type, 0),
+            JavaSymbolIds.field(type, "field"), JavaSymbolIds.constructor(type, List.of()))) {
+            assertEquals(name, JavaSymbolIds.owningTypeName(symbol));
+        }
+
+        for (SymbolId symbol : List.of(JavaSymbolIds.packageId("", "sample"), JavaSymbolIds.module("sample"),
+            new SymbolId("other:type"), new SymbolId("java:module//type/!"))) {
+            assertNull(JavaSymbolIds.owningTypeName(symbol));
+        }
+    }
+
+    @Test
     public void structuralLocalAnchorsSurviveWhitespaceAndCommentEdits() {
         String original = "class Example { void run() { int first=1; { int first=2; } class Local {} new Object() {}; } }";
         String edited = """
@@ -81,6 +98,7 @@ public class JavaSymbolIdsTest {
         if (node.kind().id().equals("JAVA_VARIABLE_DECLARATOR") || node.kind().id().equals("JAVA_CLASS_DECLARATION")) {
             anchors.add(JavaSymbolIds.lexicalPath(node, root));
         }
+
         for (SyntaxNode child : node.children()) {
             collectAnchors(child, root, anchors);
         }

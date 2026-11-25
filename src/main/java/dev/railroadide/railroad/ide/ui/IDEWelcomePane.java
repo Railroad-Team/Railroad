@@ -33,20 +33,20 @@ public class IDEWelcomePane extends ScrollPane {
         content.setMinWidth(0);
         content.setPrefWidth(800);
 
-        var welcomeCard = createWelcomeCard();
+        VBox welcomeCard = createWelcomeCard();
         content.getChildren().add(welcomeCard);
 
-        var featuresCard = createFeaturesCard();
+        VBox featuresCard = createFeaturesCard();
         content.getChildren().add(featuresCard);
 
-        var gettingStartedCard = createGettingStartedCard();
+        VBox gettingStartedCard = createGettingStartedCard();
         content.getChildren().add(gettingStartedCard);
 
         setContent(content);
         setFitToWidth(true);
         setFitToHeight(false);
-        setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
+        setHbarPolicy(ScrollBarPolicy.NEVER);
         setPannable(true);
 
         getStyleClass().addAll("welcome-scroll-pane", "ide-welcome-root");
@@ -62,10 +62,10 @@ public class IDEWelcomePane extends ScrollPane {
         welcomeIcon.setIconSize(20);
         welcomeIcon.getStyleClass().add("welcome-icon");
 
-        var welcomeText = label("railroad.ide.welcome.message");
+        LocalizedLabel welcomeText = label("railroad.ide.welcome.message");
         welcomeText.getStyleClass().addAll("ide-welcome-text", "welcome-title");
 
-        var descriptionText = label("railroad.ide.welcome.message.description");
+        LocalizedLabel descriptionText = label("railroad.ide.welcome.message.description");
         descriptionText.getStyleClass().addAll("ide-description-text", "welcome-description");
 
         card.getChildren().addAll(welcomeIcon, welcomeText, descriptionText);
@@ -83,7 +83,7 @@ public class IDEWelcomePane extends ScrollPane {
         featuresIcon.setIconSize(16);
         featuresIcon.getStyleClass().add("features-icon");
 
-        var featuresTitle = label("railroad.ide.welcome.features");
+        LocalizedLabel featuresTitle = label("railroad.ide.welcome.features");
         featuresTitle.getStyleClass().addAll("ide-features-text", "section-title");
 
         featuresHeader.getChildren().addAll(featuresIcon, featuresTitle);
@@ -91,7 +91,7 @@ public class IDEWelcomePane extends ScrollPane {
         var featuresGrid = new VBox(8);
         featuresGrid.getStyleClass().add("features-grid");
 
-        var features = new FeatureItem[]{
+        FeatureItem[] features = new FeatureItem[]{
             new FeatureItem(FontAwesomeSolid.CUBE, "railroad.ide.welcome.feature.model_viewer_editor"),
             new FeatureItem(FontAwesomeSolid.BUILDING, "railroad.ide.welcome.feature.structure_viewer_editor"),
             new FeatureItem(FontAwesomeSolid.IMAGE, "railroad.ide.welcome.feature.texture_viewer_editor"),
@@ -99,7 +99,7 @@ public class IDEWelcomePane extends ScrollPane {
             new FeatureItem(FontAwesomeSolid.CODE, "railroad.ide.welcome.feature.mixin_support")
         };
 
-        for (var feature : features) {
+        for (FeatureItem feature : features) {
             featuresGrid.getChildren().add(createFeatureItem(feature));
         }
 
@@ -116,7 +116,7 @@ public class IDEWelcomePane extends ScrollPane {
         icon.setIconSize(16);
         icon.getStyleClass().add("feature-icon");
 
-        var text = label(feature.localizationKey());
+        LocalizedLabel text = label(feature.localizationKey());
         text.getStyleClass().add("feature-text");
 
         container.getChildren().addAll(icon, text);
@@ -134,12 +134,12 @@ public class IDEWelcomePane extends ScrollPane {
         headerIcon.setIconSize(16);
         headerIcon.getStyleClass().add("getting-started-icon");
 
-        var headerTitle = label("railroad.ide.welcome.getting_started");
+        LocalizedLabel headerTitle = label("railroad.ide.welcome.getting_started");
         headerTitle.getStyleClass().addAll("ide-getting-started-text", "section-title");
 
         header.getChildren().addAll(headerIcon, headerTitle);
 
-        var descriptionText = label("railroad.ide.welcome.getting_started.description");
+        LocalizedLabel descriptionText = label("railroad.ide.welcome.getting_started.description");
         descriptionText.getStyleClass().addAll("ide-getting-started-description", "section-description");
 
         var buttonsContainer = new FlowPane(8, 8);

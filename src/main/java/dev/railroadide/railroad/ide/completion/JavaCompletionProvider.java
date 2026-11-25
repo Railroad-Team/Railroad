@@ -54,6 +54,7 @@ public record JavaCompletionProvider(
         if (!(context.documentSnapshot() instanceof TextDocumentSnapshot text)
             || !JavaLanguageSupport.LANGUAGE_ID.equals(text.languageId()))
             return new FeatureResult<>(context, null);
+
         CompletionResult result = JavaSemanticCompletionEngine.compute(text.text(), triggerAt,
             analysis.apply(context), context::checkActive);
         context.checkActive();
@@ -69,9 +70,11 @@ public record JavaCompletionProvider(
         if (!(workspace.document(id).orElseThrow() instanceof TextDocumentSnapshot text)
             || !JavaLanguageSupport.LANGUAGE_ID.equals(text.languageId()))
             return null;
+
         return compute(new FeatureRequestContext(workspace, text, CancellationToken.none(), Deadline.none()), triggerAt)
             .value();
     }
+
     /**
      * Creates a completion provider whose document location is supplied by each snapshot.
      *

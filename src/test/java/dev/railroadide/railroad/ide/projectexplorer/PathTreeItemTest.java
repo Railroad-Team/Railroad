@@ -18,7 +18,7 @@ public class PathTreeItemTest {
     public void compactsPackagesAndRevealsFilesAndIntermediateDirectories() throws IOException {
         Path file = createFile("src/main/java/dev/railroadide/railroad/RailroadLauncher.java");
         var root = new PathTreeItem(new PathItem(project));
-        var packageItem = (PathTreeItem) PathTreeItem.find(root, file.getParent());
+        PathTreeItem packageItem = (PathTreeItem) PathTreeItem.find(root, file.getParent());
 
         assertEquals("dev.railroadide.railroad", packageItem.getDisplayName());
         assertEquals(file.getParent(), packageItem.getValue().getPath());
@@ -36,7 +36,7 @@ public class PathTreeItemTest {
         Path resource = createFile("src/main/resources/assets/railroad/lang/en_us.lang");
         var root = new PathTreeItem(new PathItem(project));
 
-        var dev = (PathTreeItem) PathTreeItem.find(root, project.resolve("src/main/java/dev"));
+        PathTreeItem dev = (PathTreeItem) PathTreeItem.find(root, project.resolve("src/main/java/dev"));
         assertEquals("dev", dev.getDisplayName());
         assertEquals(2, dev.getChildren().size());
         assertEquals("railroadide.railroad",
@@ -71,7 +71,7 @@ public class PathTreeItemTest {
 
         Path sibling = createFile("src/main/java/dev/another/Sibling.java");
         root.refresh(sibling.getParent());
-        var dev = (PathTreeItem) PathTreeItem.find(root, project.resolve("src/main/java/dev"));
+        PathTreeItem dev = (PathTreeItem) PathTreeItem.find(root, project.resolve("src/main/java/dev"));
         assertEquals("dev", dev.getDisplayName());
         assertNotNull(PathTreeItem.find(root, sibling));
         assertNotNull(PathTreeItem.find(root, file));
@@ -128,7 +128,7 @@ public class PathTreeItemTest {
         Path file = createFile("src/main/java/dev/example/Match.java");
         createFile("src/main/java/dev/example/Other.java");
         var root = PathTreeItem.filtered(project.resolve("src/main/java"));
-        var dev = PathTreeItem.filtered(root.getValue().getPath().resolve("dev"));
+        PathTreeItem dev = PathTreeItem.filtered(root.getValue().getPath().resolve("dev"));
         var example = PathTreeItem.filtered(file.getParent());
         root.getChildren().add(dev);
         dev.getChildren().add(example);
@@ -144,6 +144,45 @@ public class PathTreeItemTest {
         assertEquals(1, dev.getChildren().size());
         assertEquals(file, dev.getChildren().getFirst().getValue().getPath());
         assertSame(dev, dev.getChildren().getFirst().getParent());
+    }
+
+    @Test
+    public void expandingCascadesThroughSingleChildDirectoriesOnly() throws IOException {
+        createFile("a/b/c/First.txt");
+        createFile("a/b/c/Second.txt");
+        createFile("a/b/d/Third.txt");
+        var root = new PathTreeItem(new PathItem(project), false);
+        TreeItem<PathItem> a = PathTreeItem.find(root, project.resolve("a"));
+        TreeItem<PathItem> b = PathTreeItem.find(root, project.resolve("a/b"));
+        TreeItem<PathItem> c = PathTreeItem.find(root, project.resolve("a/b/c"));
+
+        a.setExpanded(true);
+
+        assertTrue(b.isExpanded());
+        assertFalse(c.isExpanded());
+    }
+
+    @Test
+    public void doesNotCascadeIntoASingleFile() throws IOException {
+        Path file = createFile("a/Only.txt");
+        var root = new PathTreeItem(new PathItem(project), false);
+        TreeItem<PathItem> a = PathTreeItem.find(root, file.getParent());
+
+        a.setExpanded(true);
+
+        assertFalse(PathTreeItem.find(root, file).isExpanded());
+    }
+
+    @Test
+    public void restoringExpansionKeepsSingleChildDirectoryCollapsed() throws IOException {
+        createFile("a/b/Only.txt");
+        var root = new PathTreeItem(new PathItem(project), false);
+        PathTreeItem a = (PathTreeItem) PathTreeItem.find(root, project.resolve("a"));
+
+        a.restoreExpanded();
+
+        assertTrue(a.isExpanded());
+        assertFalse(PathTreeItem.find(root, project.resolve("a/b")).isExpanded());
     }
 
     private Path createFile(String relative) throws IOException {

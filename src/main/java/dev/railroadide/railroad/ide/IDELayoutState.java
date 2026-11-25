@@ -43,7 +43,7 @@ public record IDELayoutState(
             currentModeId = WorkspaceMode.defaultMode().getId();
         }
 
-        var normalizedModes = new LinkedHashMap<String, ModeLayout>();
+        Map<String, ModeLayout> normalizedModes = new LinkedHashMap<String, ModeLayout>();
         if (modes != null) {
             modes.forEach((modeId, layout) -> {
                 String normalizedModeId = normalizeModeId(modeId);
@@ -52,6 +52,7 @@ public record IDELayoutState(
                 }
             });
         }
+
         modes = Collections.unmodifiableMap(normalizedModes);
         toolWindows = toolWindows == null
             ? List.of()
@@ -113,7 +114,7 @@ public record IDELayoutState(
      * @return immutable layouts keyed by registered mode
      */
     public Map<WorkspaceMode, ModeLayout> knownModeLayouts() {
-        var knownModes = new LinkedHashMap<WorkspaceMode, ModeLayout>();
+        Map<WorkspaceMode, ModeLayout> knownModes = new LinkedHashMap<WorkspaceMode, ModeLayout>();
         modes.forEach((modeId, layout) -> WorkspaceMode.fromId(modeId)
             .ifPresent(mode -> knownModes.put(mode, layout)));
         return Collections.unmodifiableMap(knownModes);
@@ -123,12 +124,13 @@ public record IDELayoutState(
         if (modes == null || modes.isEmpty())
             return Map.of();
 
-        var persistedModes = new LinkedHashMap<String, ModeLayout>();
+        Map<String, ModeLayout> persistedModes = new LinkedHashMap<String, ModeLayout>();
         modes.forEach((mode, layout) -> {
             if (mode != null && layout != null) {
                 persistedModes.put(mode.getId(), layout);
             }
         });
+
         return persistedModes;
     }
 
@@ -365,6 +367,7 @@ public record IDELayoutState(
             if (!dockItemIds.contains(selectedDockItemId)) {
                 selectedDockItemId = dockItemIds.isEmpty() ? null : dockItemIds.getFirst();
             }
+
             x = finiteOr(x, 100.0);
             y = finiteOr(y, 100.0);
             width = positiveOr(width, 400.0);

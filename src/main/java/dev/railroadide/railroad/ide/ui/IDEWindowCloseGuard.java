@@ -21,7 +21,9 @@ import javafx.stage.WindowEvent;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-/** Flushes editor autosaves and protects failed documents when the IDE window closes. */
+/**
+ * Flushes editor autosaves and protects failed documents when the IDE window closes.
+ */
 public final class IDEWindowCloseGuard implements AutoCloseable {
     private final Node owner;
     private final EventHandler<WindowEvent> closeRequestHandler = this::handleCloseRequest;
@@ -50,6 +52,7 @@ public final class IDEWindowCloseGuard implements AutoCloseable {
         if (oldScene != null) {
             oldScene.windowProperty().removeListener(windowListener);
         }
+
         changeWindow(oldScene == null ? null : oldScene.getWindow(), newScene == null ? null : newScene.getWindow());
         observedScene = newScene;
         if (newScene != null) {
@@ -61,6 +64,7 @@ public final class IDEWindowCloseGuard implements AutoCloseable {
         if (oldWindow instanceof Stage oldStage) {
             oldStage.removeEventFilter(WindowEvent.WINDOW_CLOSE_REQUEST, closeRequestHandler);
         }
+
         observedStage = newWindow instanceof Stage stage ? stage : null;
         if (observedStage != null) {
             observedStage.addEventFilter(WindowEvent.WINDOW_CLOSE_REQUEST, closeRequestHandler);
@@ -76,6 +80,7 @@ public final class IDEWindowCloseGuard implements AutoCloseable {
             if (!closeActiveProject()) {
                 event.consume();
             }
+
             return;
         }
 
@@ -126,10 +131,12 @@ public final class IDEWindowCloseGuard implements AutoCloseable {
                 updateDialogContent(retryResult);
             }
         });
+
         discardButton.setOnAction(_ -> {
             Services.EDITOR_TAB_MANAGER.discardUnsavedChangesOnClose();
             permitAndClose(currentDialog);
         });
+
         cancelButton.setOnAction(_ -> currentDialog.close());
     }
 
@@ -146,6 +153,7 @@ public final class IDEWindowCloseGuard implements AutoCloseable {
     private void permitAndClose(Stage dialog) {
         if (!closeActiveProject())
             return;
+
         allowClose = true;
         dialog.close();
         if (observedStage != null) {
@@ -158,6 +166,7 @@ public final class IDEWindowCloseGuard implements AutoCloseable {
         if (project != null) {
             project.close();
         }
+
         return Railroad.PROJECT_MANAGER.getOpenProject() == null;
     }
 
@@ -167,13 +176,16 @@ public final class IDEWindowCloseGuard implements AutoCloseable {
         if (observedScene != null) {
             observedScene.windowProperty().removeListener(windowListener);
         }
+
         if (observedStage != null) {
             observedStage.removeEventFilter(WindowEvent.WINDOW_CLOSE_REQUEST, closeRequestHandler);
         }
+
         if (saveDialog != null) {
             saveDialog.close();
             saveDialog = null;
         }
+
         observedScene = null;
         observedStage = null;
         dialogContent = null;

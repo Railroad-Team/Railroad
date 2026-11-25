@@ -43,6 +43,31 @@ public class JavaSourceSymbolIdsTest {
     }
 
     @Test
+    public void cachedImportedTypesStillRespectNestedTypeShadowing() {
+        String source = """
+            package sample;
+            import java.util.List;
+            class Example {
+                void outer(List value) { List copy = value; }
+                class Nested {
+                    class List {}
+                    void inner(List value) { List copy = value; }
+                }
+                void again(List value) { List copy = value; }
+            }
+            """;
+        List<SymbolId> symbols = ids(declarations(source));
+        var outerType = JavaSymbolIds.type("sample.Example");
+        var nestedType = JavaSymbolIds.type("sample.Example$Nested");
+        var outer = JavaSymbolIds.method(outerType, "outer", List.of("java.util.List"));
+        var inner = JavaSymbolIds.method(nestedType, "inner", List.of("sample.Example$Nested$List"));
+        var again = JavaSymbolIds.method(outerType, "again", List.of("java.util.List"));
+
+        assertTrue(symbols.containsAll(List.of(outer, inner, again, JavaSymbolIds.parameter(outer, 0),
+            JavaSymbolIds.parameter(inner, 0), JavaSymbolIds.parameter(again, 0))));
+    }
+
+    @Test
     public void anonymousDeclarationsDoNotShareIdentity() {
         String source = """
             class Example {
@@ -82,7 +107,7 @@ public class JavaSourceSymbolIdsTest {
         List<SymbolId> original = ids(nested);
         assertEquals(4, new HashSet<>(original).size());
         assertTrue(original.stream().allMatch(id -> id.value().contains("/localType/")));
-        var edited = declarations(source.replace("{", "{ /* nested comment */\n"))
+        List<Symbol> edited = declarations(source.replace("{", "{ /* nested comment */\n"))
             .stream().filter(symbol -> symbol.simpleName().equals("Nested")).toList();
         assertEquals(original, ids(edited));
     }
@@ -110,6 +135,7 @@ public class JavaSourceSymbolIdsTest {
             && JavaSourceSymbolIds.child(node, "JAVA_ANONYMOUS_CLASS_BODY") != null) {
             output.add(node);
         }
+
         for (SyntaxNode child : node.children()) {
             collectAnonymous(child, output);
         }

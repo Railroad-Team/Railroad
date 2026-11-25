@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.language.index;
 
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.sst.provider.api.LanguageContribution;
@@ -84,6 +85,7 @@ public final class ProjectLanguageIndexCoordinator {
         this.providerBudget = Objects.requireNonNull(providerBudget, "providerBudget");
         if (providerBudget.isNegative())
             throw new IllegalArgumentException("Provider budget must not be negative");
+
         this.indexService = Objects.requireNonNull(indexService, "indexService");
     }
 
@@ -114,6 +116,7 @@ public final class ProjectLanguageIndexCoordinator {
             } catch (CancellationException exception) {
                 if (request == null)
                     throw exception;
+
                 request.checkActive();
                 operation.checkActive();
                 continue;
@@ -126,11 +129,13 @@ public final class ProjectLanguageIndexCoordinator {
             }
 
             try {
+                ActivityProgress.current().indeterminate("railroad.activity.auxiliary");
                 runProvider(support, request, "auxiliary", operation,
                     child -> indexService.warmAdditionalIndexes(operation.project(), languageId, child));
             } catch (CancellationException exception) {
                 if (request == null)
                     throw exception;
+
                 request.checkActive();
                 operation.checkActive();
             } catch (RuntimeException exception) {
@@ -164,6 +169,7 @@ public final class ProjectLanguageIndexCoordinator {
         ProjectIndexContext previous = context;
         if (previous.session() == null || previous.session().isClosed())
             return;
+
         ProjectIndexContext operation = withRequest(refreshContext(), request);
         operation.checkActive();
         Objects.requireNonNull(path, "path");
@@ -178,6 +184,7 @@ public final class ProjectLanguageIndexCoordinator {
         boolean deleted = kind == StandardWatchEventKinds.ENTRY_DELETE;
         if (!deleted && kind != StandardWatchEventKinds.ENTRY_CREATE && kind != StandardWatchEventKinds.ENTRY_MODIFY)
             return;
+
         if (!deleted && Files.isDirectory(path))
             return;
 
@@ -186,10 +193,12 @@ public final class ProjectLanguageIndexCoordinator {
             String languageId = indexService.indexLanguageId(operation.project(), support);
             if (!indexService.hasIndexer(operation.project(), languageId))
                 continue;
+
             boolean ownsFile = winner != null && winner.id().equals(support.id());
             ProjectLanguageIndex<?> current = indexService.current(operation, languageId);
             if (!ownsFile && (current == null || current.getFileIndex(path.toAbsolutePath().normalize()) == null))
                 continue;
+
             try {
                 runProvider(support, request, "source", operation, child -> {
                     if (ownsFile) {
@@ -202,6 +211,7 @@ public final class ProjectLanguageIndexCoordinator {
                 indexService.invalidate(operation.project(), languageId);
                 if (request == null)
                     throw exception;
+
                 request.checkActive();
                 operation.checkActive();
             } catch (RuntimeException exception) {
@@ -224,9 +234,11 @@ public final class ProjectLanguageIndexCoordinator {
             work.accept(inputs);
             return;
         }
+
+        var scope = ScopedValue.where(ActivityProgress.CURRENT, ActivityProgress.current());
         providers.executeWithContext("project-index:" + indexService.indexLanguageId(inputs.project(), support) + ":"
             + support.getClass().getName() + ":" + operation, request, providerBudget, child -> {
-                work.accept(withRequest(inputs, child));
+                scope.run(() -> work.accept(withRequest(inputs, child)));
                 return null;
             });
     }
@@ -238,16 +250,17 @@ public final class ProjectLanguageIndexCoordinator {
             context = indexService.refreshContext(context);
             languageRegistrationRevision = revision;
         }
+
         return context;
     }
 
     private static ProjectIndexContext withRequest(ProjectIndexContext context, RequestContext request) {
         if (request == null)
             return context;
+
         request.checkActive();
         return new ProjectIndexContext(context.project(), context.projectRoot(), context.languages(), context.session(),
             context.configurationGeneration(), () -> context.cancellationToken().isCancellationRequested()
                 || request.cancellationToken().isCancellationRequested() || request.deadline().isExpired());
     }
-
 }

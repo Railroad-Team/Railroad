@@ -4,11 +4,15 @@ import dev.railroadide.railroad.project.ProjectType;
 import javafx.scene.control.ListCell;
 import javafx.scene.image.ImageView;
 
-/** Displays a project type's icon and name; native cell states drive selection styling. */
+/**
+ * Displays a project type's icon and name; native cell states drive selection styling.
+ */
 public class ProjectTypeCell extends ListCell<ProjectType> {
     private final ImageView imageView = new ImageView();
 
-    /** Creates an empty cell with a 16-pixel icon area. */
+    /**
+     * Creates an empty cell with a 16-pixel icon area.
+     */
     public ProjectTypeCell() {
         this.imageView.setFitWidth(16);
         this.imageView.setFitHeight(16);
@@ -29,12 +33,10 @@ public class ProjectTypeCell extends ListCell<ProjectType> {
         if (empty || item == null) {
             setGraphic(null);
             setText(null);
-
         } else {
             this.imageView.setImage(item.getIcon());
             setGraphic(this.imageView);
             setText(item.getName());
-
         }
     }
 }

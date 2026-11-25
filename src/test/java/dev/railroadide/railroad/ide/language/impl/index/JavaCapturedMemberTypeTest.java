@@ -21,8 +21,9 @@ public class JavaCapturedMemberTypeTest {
     @Test
     public void compactRecordConstructorQualifiesLambdaParametersUsingItsOwnImports() {
         var store = new DefaultDocumentStore("record-members", new WorkspaceConfigurationSnapshot(0, Set.of()));
-        var event = source("Event.java", "package eventtypes; public class Event { public void consume() {} }");
-        var column = source("Column.java", """
+        TextDocumentSnapshot event = source("Event.java",
+            "package eventtypes; public class Event { public void consume() {} }");
+        TextDocumentSnapshot column = source("Column.java", """
             package api;
             import java.util.function.BiConsumer;
             import eventtypes.Event;
@@ -31,21 +32,23 @@ public class JavaCapturedMemberTypeTest {
                 public Column(int ignored) { this(null); }
             }
             """);
-        var use = source("Use.java", """
+        TextDocumentSnapshot use = source("Use.java", """
             import api.Column;
             class Use { void run() { new Column((line, event) -> event.consume()); } }
             """);
-        for (var document : List.of(event, column, use)) {
+        for (TextDocumentSnapshot document : List.of(event, column, use)) {
             store.publishBacking(document);
         }
+
         var jdk = JavaJdkSymbolIndex.fromCurrentRuntime();
         try (var provider = new JavaWorkspaceAnalysisProvider(() -> true, (_, _) -> jdk)) {
-            var analysis = provider.capture(store.capture());
+            JavaWorkspaceAnalysis analysis = provider.capture(store.capture());
             var model = JavaSemanticAnalyzer.analyzeFacts(JavaSyntaxParser.parse(use), analysis, () -> {
             });
-            var calls = new ArrayList<SyntaxNode>();
+
+            List<SyntaxNode> calls = new ArrayList<SyntaxNode>();
             collectCalls(model.syntaxTree().root(), calls);
-            var consume = calls.stream().filter(node -> model.resolvedSymbol(node)
+            SyntaxNode consume = calls.stream().filter(node -> model.resolvedSymbol(node)
                 .map(symbol -> symbol.simpleName().equals("consume")).orElse(false)).findFirst().orElseThrow();
             assertEquals(JavaSymbolIds.method(JavaSymbolIds.type("eventtypes.Event"), "consume", List.of()),
                 model.resolvedSymbol(consume).orElseThrow().id().orElseThrow());
@@ -56,39 +59,41 @@ public class JavaCapturedMemberTypeTest {
     @Test
     public void wildcardCallableIdentityKeepsCapturedReturnTypeForChainedMemberResolution() {
         var store = new DefaultDocumentStore("members", new WorkspaceConfigurationSnapshot(0, Set.of()));
-        var widget = source("Widget.java", "package dependency; public class Widget {}");
-        var result = source("Result.java",
+        TextDocumentSnapshot widget = source("Widget.java", "package dependency; public class Widget {}");
+        TextDocumentSnapshot result = source("Result.java",
             "package dependency; public class Result { public int value() { return 1; } }");
-        var library = source("Library.java", """
+        TextDocumentSnapshot library = source("Library.java", """
             package api;
             import dependency.*;
             public class Library { public Result find(Widget widget) { return null; } }
             """);
-        var use = source("Use.java", """
+        TextDocumentSnapshot use = source("Use.java", """
             import dependency.*;
             import api.Library;
             class Use { int read(Library library, Widget widget) { return library.find(widget).value(); } }
             """);
-        for (var document : List.of(widget, result, library, use)) {
+        for (TextDocumentSnapshot document : List.of(widget, result, library, use)) {
             store.publishBacking(document);
         }
+
         try (var provider = new JavaWorkspaceAnalysisProvider(() -> true, (_, _) -> JavaProjectSemanticIndex.empty())) {
-            var analysis = provider.capture(store.capture());
+            JavaWorkspaceAnalysis analysis = provider.capture(store.capture());
             store.publishOverlay(new TextDocumentSnapshot(library.id(), library.uri(), library.version().next(),
                 "java", "package api; public class Library {}", StandardCharsets.UTF_8));
             var model = JavaSemanticAnalyzer.analyzeFacts(JavaSyntaxParser.parse(use), analysis, () -> {
             });
+
             assertTrue(
                 model.diagnostics().stream().noneMatch(diagnostic -> diagnostic.code().equals("SEM_UNRESOLVED_CALL")),
                 () -> model.diagnostics().toString());
-            var calls = new ArrayList<SyntaxNode>();
+            List<SyntaxNode> calls = new ArrayList<SyntaxNode>();
             collectCalls(model.syntaxTree().root(), calls);
-            var find = calls.stream().filter(node -> model.resolvedSymbol(node)
+            SyntaxNode find = calls.stream().filter(node -> model.resolvedSymbol(node)
                 .map(symbol -> symbol.simpleName().equals("find")).orElse(false)).findFirst().orElseThrow();
             assertEquals(JavaSymbolIds.method(JavaSymbolIds.type("api.Library"), "find", List.of("dependency.Widget")),
                 model.resolvedSymbol(find).orElseThrow().id().orElseThrow());
             assertEquals("dependency.Result", model.inferredType(find).orElseThrow().displayName());
-            var value = calls.stream().filter(node -> model.resolvedSymbol(node)
+            SyntaxNode value = calls.stream().filter(node -> model.resolvedSymbol(node)
                 .map(symbol -> symbol.simpleName().equals("value")).orElse(false)).findFirst().orElseThrow();
             assertEquals("int", model.inferredType(value).orElseThrow().displayName());
         }
@@ -98,6 +103,7 @@ public class JavaCapturedMemberTypeTest {
         if (node.kind().equals(JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION)) {
             calls.add(node);
         }
+
         node.children().forEach(child -> collectCalls(child, calls));
     }
 

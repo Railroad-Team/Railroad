@@ -229,6 +229,7 @@ public class CheckBoxComponent extends FormComponent<FormCheckBox, CheckBoxCompo
                 } else
                     throw new IllegalArgumentException(
                         "Unsupported component type: " + toComponent.getValue().getClass().getName());
+
             }, valueMapper));
             return this;
         }

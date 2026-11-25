@@ -33,9 +33,13 @@ import java.util.function.Function;
  * refer to them. Edits are computed only on resolution.
  */
 public final class JavaCodeActions {
-    /** Diagnostic code of an unused import. */
+    /**
+     * Diagnostic code of an unused import.
+     */
     public static final String UNUSED_IMPORT = "SEM_UNUSED_IMPORT";
-    /** Diagnostic code of a repeated import. */
+    /**
+     * Diagnostic code of a repeated import.
+     */
     public static final String DUPLICATE_IMPORT = "SEM_DUPLICATE_IMPORT";
     private static final Set<String> UNRESOLVED_CODES = Set.of("SEM_UNRESOLVED_TYPE", "SEM_UNRESOLVED_NAME");
     private static final String ADD_IMPORT = "java:add-import:";
@@ -87,6 +91,7 @@ public final class JavaCodeActions {
         Objects.requireNonNull(request, "request");
         if (snapshot == null)
             return List.of();
+
         List<TextEditorDiagnostic> diagnostics = currentDiagnostics(request.diagnostics());
         List<CodeAction> actions = new ArrayList<>();
         discoverImportRemovals(request, diagnostics, actions);
@@ -106,16 +111,21 @@ public final class JavaCodeActions {
         String data = action.data();
         if (!action.available() || action.isResolved())
             return action;
+
         if (snapshot == null || data == null)
             return action.asUnavailable("Unsupported action");
+
         if (data.startsWith(REMOVE_UNUSED))
             return resolveRemoval(action, data.substring(REMOVE_UNUSED.length()),
                 JavaImports.unusedImports(root(), context::checkActive), "The import is used");
+
         if (data.startsWith(REMOVE_DUPLICATE))
             return resolveRemoval(action, data.substring(REMOVE_DUPLICATE.length()),
                 JavaImports.duplicateImports(root()), "The import is no longer repeated");
+
         if (data.startsWith(ADD_IMPORT))
             return resolveAddition(action, data.substring(ADD_IMPORT.length()));
+
         return action.asUnavailable("Unsupported action");
     }
 
@@ -127,6 +137,7 @@ public final class JavaCodeActions {
         List<JavaImports.ImportDeclaration> imports = JavaImports.imports(root());
         if (imports.stream().noneMatch(declaration -> touches(request, diagnostics, declaration)))
             return;
+
         Set<Integer> duplicates = new HashSet<>();
         JavaImports.duplicateImports(root()).forEach(declaration -> duplicates.add(declaration.start()));
         Set<Integer> unused = new HashSet<>();
@@ -136,6 +147,7 @@ public final class JavaCodeActions {
             context.checkActive();
             if (!touches(request, diagnostics, declaration))
                 continue;
+
             String shown = (declaration.isStatic() ? "static " : "") + declaration.target();
             if (duplicates.contains(declaration.start())) {
                 actions.add(CodeAction.deferred("Remove duplicate import '" + shown + "'",
@@ -165,6 +177,7 @@ public final class JavaCodeActions {
                 touched.merge(reference.name(), reference.annotation(), Boolean::logicalAnd);
             }
         }
+
         for (Map.Entry<String, Boolean> reference : touched.entrySet()) {
             context.checkActive();
             String name = reference.getKey();
@@ -172,6 +185,7 @@ public final class JavaCodeActions {
             Candidates candidates = candidates(name, annotation);
             if (candidates == null || candidates.names().isEmpty())
                 continue;
+
             List<TextEditorDiagnostic> fixed = diagnostics.stream()
                 .filter(diagnostic -> UNRESOLVED_CODES.contains(diagnostic.code()))
                 .filter(diagnostic -> names().references().stream().anyMatch(other -> other.name()
@@ -210,14 +224,17 @@ public final class JavaCodeActions {
         } catch (NumberFormatException exception) {
             return action.asUnavailable("Unsupported action");
         }
+
         for (JavaImports.ImportDeclaration declaration : removable) {
             if (declaration.start() != start)
                 continue;
+
             TextRange range = removalRange(declaration);
             return action.withEdit(WorkspaceEdit.builder(action.title())
                 .replace(snapshot, new TextReplacement(range, ""))
                 .build());
         }
+
         return action.asUnavailable(reason);
     }
 
@@ -230,6 +247,7 @@ public final class JavaCodeActions {
         Candidates candidates = referenced ? candidates(name, annotation) : null;
         if (candidates == null || !candidates.names().equals(List.of(qualifiedName)) || !candidates.accessible())
             return action.asUnavailable("'" + name + "' no longer needs this import");
+
         return action.withEdit(WorkspaceEdit.builder(action.title())
             .replace(snapshot, insertion(qualifiedName))
             .build());
@@ -242,6 +260,7 @@ public final class JavaCodeActions {
     private @Nullable Candidates candidates(String name, boolean annotation) {
         if (names().declared().contains(name))
             return null;
+
         List<JavaImports.ImportDeclaration> imports = JavaImports.imports(root());
         if (imports.stream().anyMatch(declaration -> !declaration.isWildcard()
             && declaration.importedName().equals(name)))
@@ -254,22 +273,29 @@ public final class JavaCodeActions {
             || symbol.kind() instanceof JavaSymbolKind kind && TYPE_KINDS.contains(kind) && !symbol.isTopLevel());
         if (isType(index, "java.lang." + name) || isType(index, qualify(names().packageName(), name)))
             return null;
+
         if (nestedOrField && names().inherits())
             return null;
+
         for (JavaImports.ImportDeclaration declaration : imports) {
             if (!declaration.isWildcard())
                 continue;
+
             String owner = declaration.owner();
             if (declaration.isStatic()) {
                 if (nestedOrField)
                     return null;
+
                 continue;
             }
+
             if (isType(index, owner + "." + name))
                 return null;
+
             boolean ownerIsType = isType(index, owner);
             if (!ownerIsType && !index.containsPackage(owner))
                 return null;
+
             if (ownerIsType && nestedOrField)
                 return null;
         }
@@ -279,13 +305,16 @@ public final class JavaCodeActions {
             if (!(symbol.kind() instanceof JavaSymbolKind kind) || !TYPE_KINDS.contains(kind) || !symbol.isTopLevel()
                 || annotation && kind != JavaSymbolKind.ANNOTATION)
                 continue;
+
             String qualifiedName = symbol.qualifiedName();
             if (qualifiedName == null || qualifiedName.indexOf('.') < 0 || qualifiedName.indexOf('$') >= 0
                 || !qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1).equals(name)
                 || JdkPackages.hidden(qualifiedName.substring(0, qualifiedName.lastIndexOf('.'))))
                 continue;
+
             types.merge(qualifiedName, symbol, (first, second) -> accessible(first) ? first : second);
         }
+
         List<String> accessible = types.entrySet().stream()
             .filter(type -> accessible(type.getValue()))
             .map(Map.Entry::getKey)
@@ -300,7 +329,9 @@ public final class JavaCodeActions {
         return symbol.descriptor() != null && "public".equals(symbol.descriptor().metadata().visibility());
     }
 
-    /** Packages of the JDK's system modules that no module exports to all code. */
+    /**
+     * Packages of the JDK's system modules that no module exports to all code.
+     */
     private static final class JdkPackages {
         private static final Set<String> HIDDEN = hiddenPackages();
 
@@ -317,6 +348,7 @@ public final class JavaCodeActions {
                     .filter(export -> !export.isQualified())
                     .forEach(export -> exported.add(export.source()));
             }
+
             packages.removeAll(exported);
             return Set.copyOf(packages);
         }
@@ -338,13 +370,17 @@ public final class JavaCodeActions {
             if (declaration.target().compareTo(qualifiedName) > 0)
                 return before(text, declaration.start(), statement, newline);
         }
+
         if (!plain.isEmpty())
             return insertAt(afterTrailingComment(text, plain.getLast().end()), newline + statement);
+
         if (!imports.isEmpty())
             return before(text, imports.getFirst().start(), statement, newline);
+
         int packageEnd = names().packageEnd();
         if (packageEnd >= 0)
             return insertAt(packageEnd, newline + newline + statement);
+
         int first = names().firstDeclaration();
         int lineStart = text.lastIndexOf('\n', first - 1) + 1;
         return text.substring(lineStart, first).isBlank()
@@ -382,10 +418,12 @@ public final class JavaCodeActions {
         if (text.substring(lineStart, declaration.start()).isBlank()
             && text.substring(declaration.end(), lineEnd).isBlank())
             return new TextRange(lineStart, newline < 0 ? text.length() : newline + 1);
+
         int end = declaration.end();
         while (end < lineEnd && (text.charAt(end) == ' ' || text.charAt(end) == '\t')) {
             end++;
         }
+
         return new TextRange(declaration.start(), end);
     }
 
@@ -399,6 +437,7 @@ public final class JavaCodeActions {
                 // Diagnostics of another revision say nothing about this one.
             }
         }
+
         return List.copyOf(current);
     }
 
@@ -443,6 +482,7 @@ public final class JavaCodeActions {
         if (root == null) {
             root = JavaSyntaxParser.parse(Objects.requireNonNull(snapshot), context::checkActive).root();
         }
+
         return root;
     }
 
@@ -450,6 +490,7 @@ public final class JavaCodeActions {
         if (symbols == null) {
             symbols = capture.apply(context).symbols();
         }
+
         return symbols;
     }
 
@@ -457,6 +498,7 @@ public final class JavaCodeActions {
         if (names == null) {
             names = Names.collect(root(), context::checkActive);
         }
+
         return names;
     }
 
@@ -497,16 +539,19 @@ public final class JavaCodeActions {
                     packageName = packageName(child);
                 }
             }
+
             Deque<SyntaxNode> pending = new ArrayDeque<>(root.children());
             int visited = 0;
             while (!pending.isEmpty()) {
                 if ((++visited & 255) == 0) {
                     check.run();
                 }
+
                 SyntaxNode node = pending.removeFirst();
                 String kind = node.kind().id();
                 if (SKIPPED_DECLARATIONS.contains(kind))
                     continue;
+
                 inherits |= INHERITING.contains(kind);
                 if (node instanceof SyntaxToken token) {
                     if (firstDeclaration < 0 && kind.equals("JAVA_TOKEN_JAVADOC_COMMENT")) {
@@ -515,15 +560,19 @@ public final class JavaCodeActions {
                         && !kind.endsWith("_COMMENT") && !kind.equals("JAVA_TOKEN_EOF")) {
                         firstDeclaration = documentation >= 0 ? documentation : token.start();
                     }
+
                     tokens.add(token);
                     continue;
                 }
+
                 node.children().reversed().forEach(pending::addFirst);
             }
+
             for (int index = 0; index < tokens.size(); index++) {
                 SyntaxToken token = tokens.get(index);
                 if (!token.kind().id().equals(IDENTIFIER))
                     continue;
+
                 String name = JavaUnicodeEscapes.translate(token.text());
                 SyntaxNode parent = token.parent().orElse(null);
                 String parentKind = parent == null ? "" : parent.kind().id();
@@ -533,11 +582,13 @@ public final class JavaCodeActions {
                             references.add(new Reference(name, token.start(), token.end(), false));
                         }
                     }
+
                     case NAME_EXPRESSION -> {
                         if (qualifier(tokens, index)) {
                             references.add(new Reference(name, token.start(), token.end(), false));
                         }
                     }
+
                     case QUALIFIED_NAME -> {
                         if (parent.parent().filter(grand -> grand.kind().id().equals(ANNOTATION)).isEmpty()) {
                             declared.add(name);
@@ -546,11 +597,14 @@ public final class JavaCodeActions {
                             references.add(new Reference(name, token.start(), token.end(), true));
                         }
                     }
+
                     case ANNOTATION -> {
                     }
+
                     default -> declared.add(name);
                 }
             }
+
             check.run();
             return new Names(List.copyOf(references), Set.copyOf(declared), inherits, packageName, packageEnd,
                 firstDeclaration < 0 ? 0 : firstDeclaration);
@@ -560,9 +614,11 @@ public final class JavaCodeActions {
             for (SyntaxNode child : node.children()) {
                 if (child.kind().id().equals(IDENTIFIER))
                     return child;
+
                 if (!child.kind().id().equals("JAVA_TOKEN_WHITESPACE") && !child.kind().id().endsWith("_COMMENT"))
                     return null;
             }
+
             return null;
         }
 
@@ -580,6 +636,7 @@ public final class JavaCodeActions {
                 if (!kind.equals("JAVA_TOKEN_WHITESPACE") && !kind.endsWith("_COMMENT"))
                     return Optional.of(tokens.get(next));
             }
+
             return Optional.empty();
         }
 
@@ -596,6 +653,7 @@ public final class JavaCodeActions {
                     node.children().reversed().forEach(pending::addFirst);
                 }
             }
+
             return name.toString();
         }
     }

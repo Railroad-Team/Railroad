@@ -148,6 +148,7 @@ public class GitSyncInfoPane extends RRVBox {
                     gitManager.setPullStrategy(selectedStrategy);
                 }
             });
+
             pullStrategyComboBox.getStyleClass().add("git-sync-strategy-combobox");
             pullStrategyHbox.getChildren().addAll(
                 pullStrategyLabel, pullStrategyComboBox);
@@ -163,6 +164,7 @@ public class GitSyncInfoPane extends RRVBox {
                     gitManager.setPushStrategy(selectedStrategy);
                 }
             });
+
             pushStrategyComboBox.getStyleClass().add("git-sync-strategy-combobox");
             pushStrategyHbox.getChildren().addAll(
                 pushStrategyLabel, pushStrategyComboBox);

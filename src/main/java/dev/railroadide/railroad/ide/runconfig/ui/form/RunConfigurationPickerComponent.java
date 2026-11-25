@@ -20,9 +20,8 @@ import java.util.function.Supplier;
 /**
  * Form component wrapping {@link FormRunConfigurationPicker}.
  */
-public class RunConfigurationPickerComponent
-    extends
-        FormComponent<FormRunConfigurationPicker, RunConfigurationPickerComponent.Data, FormRunConfigurationPicker, RunConfiguration<?>[]> {
+public class RunConfigurationPickerComponent extends
+    FormComponent<FormRunConfigurationPicker, RunConfigurationPickerComponent.Data, FormRunConfigurationPicker, RunConfiguration<?>[]> {
     private final Supplier<List<RunConfiguration<?>>> initialSelectionSupplier;
 
     /**
@@ -121,9 +120,8 @@ public class RunConfigurationPickerComponent
     /**
      * Builds a run configuration picker with configurable choices, validation, and initial selection.
      */
-    public static class Builder
-        implements
-            FormComponentBuilder<RunConfigurationPickerComponent, FormRunConfigurationPicker, RunConfiguration<?>[], Builder> {
+    public static class Builder implements
+        FormComponentBuilder<RunConfigurationPickerComponent, FormRunConfigurationPicker, RunConfiguration<?>[], Builder> {
         private final String dataKey;
         private final Data data = new Data();
         private FormComponentValidator<FormRunConfigurationPicker> validator;

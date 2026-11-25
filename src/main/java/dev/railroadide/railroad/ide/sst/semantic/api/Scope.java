@@ -82,6 +82,7 @@ public final class Scope {
         while (root.parent != null) {
             root = root.parent;
         }
+
         if (root.frozen)
             return this;
 
@@ -93,6 +94,7 @@ public final class Scope {
             scope.frozen = true;
             pending.addAll(scope.children);
         }
+
         return this;
     }
 
@@ -126,6 +128,7 @@ public final class Scope {
         List<Symbol> symbols = declarationsByName.get(name);
         if (symbols == null)
             return List.of();
+
         return List.copyOf(symbols);
     }
 
@@ -142,6 +145,7 @@ public final class Scope {
             if (!local.isEmpty())
                 return local;
         }
+
         return List.of();
     }
 
@@ -157,6 +161,7 @@ public final class Scope {
         for (Scope current = this; current != null; current = current.parent) {
             result.addAll(current.lookupLocal(name));
         }
+
         return List.copyOf(result);
     }
 

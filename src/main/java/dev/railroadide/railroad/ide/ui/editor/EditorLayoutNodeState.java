@@ -49,6 +49,7 @@ public record EditorLayoutNodeState(
         boolean leaf = groupId != null;
         if (leaf == !children.isEmpty())
             throw new IllegalArgumentException("An editor layout node must be exactly one of a group or split");
+
         if (!leaf && orientation == null) {
             orientation = Orientation.HORIZONTAL;
         }
@@ -66,6 +67,7 @@ public record EditorLayoutNodeState(
         if (resolvedGroupId == null) {
             resolvedGroupId = EditorTabSessionState.DEFAULT_EDITOR_GROUP_ID;
         }
+
         return new EditorLayoutNodeState(resolvedGroupId, selectedDocumentId, null, List.of(), List.of());
     }
 
@@ -97,6 +99,7 @@ public record EditorLayoutNodeState(
     private static String normalize(String value) {
         if (value == null || value.isBlank())
             return null;
+
         return value.trim();
     }
 

@@ -1,15 +1,66 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaProjectSemanticExtractorTest {
+
+    @Test
+    public void discoversOnlyNamedProjectTypesWithoutBuildingGraphFacts() {
+        String source = """
+            package demo;
+            class Outer {
+                interface Contract { class Nested {} }
+                record Data(int value) {}
+                class module {}
+                enum Mode { ONE { class Hidden {} }; class Nested {} }
+                @interface Marker { class Nested {} }
+                Object field = new Object() { class Hidden {} };
+                void run() { class Local {} }
+                static { class Local {} }
+            }
+            """;
+        Path path = Path.of("Outer.java");
+        var snapshot = new TextDocumentSnapshot(DocumentId.create(), DocumentUri.fromPath(path),
+            DocumentVersion.initial(), "java", source, StandardCharsets.UTF_8);
+
+        JavaProjectSemanticIndex.SourceFileIndex discovered = new JavaProjectSemanticExtractor().discoverTypes(path,
+            snapshot, () -> {
+            });
+
+        assertEquals("demo", discovered.packageName());
+        assertEquals(Set.of("demo.Outer", "demo.Outer.Contract", "demo.Outer.Contract.Nested", "demo.Outer.Data",
+            "demo.Outer.module",
+            "demo.Outer.Mode", "demo.Outer.Mode.Nested", "demo.Outer.Marker", "demo.Outer.Marker.Nested"),
+            discovered.declaredSymbols().stream().map(JavaProjectSemanticIndex.SymbolDescriptor::qualifiedName)
+                .collect(Collectors.toSet()));
+        assertNotNull(discovered.sourceHash());
+        assertNull(discovered.semanticShard());
+    }
+
+    @Test
+    public void indexesNoDeclarationsForTreesNestedDeeperThanTheThreadStack() {
+        String source = "package demo;\nimport java.util.List;\nclass Example { String text = "
+            + "\"a\" + ".repeat(32_000) + "\"a\"; }\n";
+
+        JavaProjectSemanticIndex.SourceFileIndex fileIndex = assertDoesNotThrow(() -> new JavaProjectSemanticExtractor()
+            .extract(Path.of("src/main/java/demo/Example.java"), source));
+
+        assertEquals("demo", fileIndex.packageName());
+        assertEquals(1, fileIndex.imports().size());
+        assertTrue(fileIndex.declaredSymbols().isEmpty());
+        assertTrue(fileIndex.semanticShard().declarations().isEmpty());
+    }
 
     @Test
     public void extractsPackageImportsAndProjectSymbolsFromSource() {

@@ -1,11 +1,19 @@
 package dev.railroadide.railroad.ui.styling;
 
-/** Size presets mapped to CSS classes by Railroad buttons. */
+/**
+ * Size presets mapped to CSS classes by Railroad buttons.
+ */
 public enum ButtonSize {
-    /** Compact button dimensions and padding. */
+    /**
+     * Compact button dimensions and padding.
+     */
     SMALL,
-    /** Default button dimensions and padding. */
+    /**
+     * Default button dimensions and padding.
+     */
     MEDIUM,
-    /** Larger button dimensions and padding. */
+    /**
+     * Larger button dimensions and padding.
+     */
     LARGE
 }

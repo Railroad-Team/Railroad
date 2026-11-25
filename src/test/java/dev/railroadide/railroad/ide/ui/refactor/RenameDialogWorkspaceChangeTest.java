@@ -77,11 +77,13 @@ public class RenameDialogWorkspaceChangeTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
         onFx(() -> {
             LanguageSupports.initialize();
             return null;
         });
+
         services = new JavaSstServices();
     }
 
@@ -112,6 +114,7 @@ public class RenameDialogWorkspaceChangeTest {
                 store.relocate(identity.id(), DocumentUri.fromPath(newPath));
             }
         });
+
         save("p/Calc.java", CALC);
         save("p/Use.java", USE);
         save("p/Main.java", MAIN.formatted("Use.call()"));
@@ -124,6 +127,7 @@ public class RenameDialogWorkspaceChangeTest {
             if (dialog != null) {
                 dialog.close();
             }
+
             edits.close();
             return null;
         });
@@ -167,7 +171,8 @@ public class RenameDialogWorkspaceChangeTest {
         WorkspaceEditResult result = onFx(dialog::apply).orElseThrow();
         assertTrue(result.applied(), result.problems()::toString);
 
-        var draft = (TextDocumentSnapshot) store.state(documents.get("p/Main.java").id()).orElseThrow().overlay();
+        TextDocumentSnapshot draft = (TextDocumentSnapshot) store.state(documents.get("p/Main.java").id()).orElseThrow()
+            .overlay();
         assertNotNull(draft, "The unsaved document must stay unsaved");
         assertTrue(draft.text().contains("Calc.compute(7L)"), draft.text());
         assertEquals(MAIN.formatted("Use.call()"), Files.readString(root.resolve("p/Main.java")));
@@ -208,7 +213,7 @@ public class RenameDialogWorkspaceChangeTest {
         TextDocumentSnapshot use = documents.get("p/Use.java");
         int offset = use.text().indexOf("calc(5)");
         var context = new FeatureRequestContext(store.capture(), use, CancellationToken.none(), Deadline.none());
-        var symbol = assertInstanceOf(RenamePreparation.Renameable.class,
+        RenamePreparation.Renameable symbol = assertInstanceOf(RenamePreparation.Renameable.class,
             services.prepareRename(context, offset).value());
         dialog = onFx(() -> {
             var created = new RenameDialog(new RenameDialog.Request(services, CancellationToken.none(), store, use,
@@ -224,18 +229,21 @@ public class RenameDialogWorkspaceChangeTest {
             assertTrue(System.nanoTime() < deadline, "Timed out waiting for the preview");
             Thread.sleep(20);
         }
+
         assertEquals(RenameDialog.State.PREVIEWED, onFx(dialog::state),
             () -> String.valueOf(quietly(dialog::messages)));
     }
 
-    /** Writes a file and publishes it as a saved revision, as a change made outside the editor does. */
+    /**
+     * Writes a file and publishes it as a saved revision, as a change made outside the editor does.
+     */
     private void save(String file, String text) throws IOException {
         Path path = root.resolve(file);
         Files.createDirectories(path.getParent());
         Files.writeString(path, text);
         TextDocumentSnapshot saved = documents.get(file);
         var uri = DocumentUri.fromPath(path);
-        var document = saved == null
+        TextDocumentSnapshot document = saved == null
             ? new TextDocumentSnapshot(DocumentId.create(), uri, DocumentVersion.initial(), "java",
                 DocumentOrigin.original(uri), text, StandardCharsets.UTF_8)
             : new TextDocumentSnapshot(saved.id(), saved.uri(), saved.version().next(), "java", saved.origin(), text,
@@ -263,6 +271,7 @@ public class RenameDialogWorkspaceChangeTest {
         for (String file : documents.keySet()) {
             texts.put(file, Files.readString(root.resolve(file)));
         }
+
         return texts;
     }
 
@@ -277,6 +286,7 @@ public class RenameDialogWorkspaceChangeTest {
     private static <T> T onFx(Callable<T> action) throws Exception {
         if (Platform.isFxApplicationThread())
             return action.call();
+
         var task = new FutureTask<>(action);
         Platform.runLater(task);
         return task.get(30, TimeUnit.SECONDS);

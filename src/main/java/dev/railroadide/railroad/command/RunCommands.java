@@ -111,7 +111,8 @@ public final class RunCommands {
     private static RunConfiguration<?> target(CommandContext<RunConfiguration<?>> context) {
         if (context.argument() != null)
             return context.argument();
-        var controls = controls(context);
+
+        RunControlsPane controls = controls(context);
         return controls == null ? null : controls.selectedConfiguration();
     }
 

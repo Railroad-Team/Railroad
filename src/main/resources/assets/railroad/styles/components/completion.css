@@ -1,0 +1,132 @@
+.completion-popup {
+    -fx-pref-width: 33em;
+    -fx-background-color: -color-surface-panel;
+    -fx-background-radius: 6px;
+    -fx-border-color: -color-border-default;
+    -fx-border-radius: 6px;
+    -fx-border-width: 1px;
+}
+
+.completion-body {
+    -fx-padding: 4px;
+}
+
+.completion-popup .list-view.rr-list-view,
+.completion-popup .list-view.rr-list-view:focused {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+
+.completion-popup .rr-list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-background-radius: 3px;
+    -fx-border-width: 0 0 0 2px;
+    -fx-border-color: transparent;
+    -fx-border-radius: 3px;
+    -fx-padding: 0 8px 0 5px;
+}
+
+.completion-popup .rr-list-view .list-cell:filled:hover {
+    -fx-background-color: -color-neutral-subtle !important;
+}
+
+.completion-popup .rr-list-view .list-cell:filled:selected {
+    -fx-background-color: -color-accent-muted !important;
+    -fx-border-color: transparent transparent transparent -color-accent-emphasis;
+}
+
+.completion-row,
+.completion-footer,
+.completion-hint {
+    -fx-alignment: center-left;
+}
+
+.completion-row {
+    -fx-spacing: 0.55em;
+}
+
+.completion-symbol {
+    -fx-min-width: 1.55em;
+    -fx-pref-width: 1.55em;
+    -fx-min-height: 1.55em;
+    -fx-max-height: 1.55em;
+    -fx-background-radius: 4px;
+    -fx-background-color: -color-neutral-muted;
+}
+
+.completion-symbol .ikonli-font-icon {
+    -fx-icon-size: 12px;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.completion-method {
+    -fx-background-color: -color-accent-subtle;
+}
+
+.completion-method .ikonli-font-icon {
+    -fx-icon-color: -color-accent-fg;
+}
+
+.completion-field {
+    -fx-background-color: -color-success-subtle;
+}
+
+.completion-field .ikonli-font-icon {
+    -fx-icon-color: -color-success-fg;
+}
+
+.completion-type {
+    -fx-background-color: -color-warning-subtle;
+}
+
+.completion-type .ikonli-font-icon {
+    -fx-icon-color: -color-warning-fg;
+}
+
+.completion-name,
+.completion-suffix,
+.completion-detail {
+    -fx-font-family: "JetBrains Mono";
+    -fx-font-size: 0.93em;
+}
+
+.completion-name {
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.completion-suffix,
+.completion-detail,
+.completion-caption,
+.completion-count {
+    -fx-text-fill: -color-fg-muted;
+}
+
+.completion-footer {
+    -fx-border-width: 1px 0 0 0;
+    -fx-border-color: -color-border-subtle;
+    -fx-padding: 0.35em 0.65em;
+    -fx-spacing: 0.45em;
+}
+
+.completion-caption,
+.completion-count,
+.completion-key {
+    -fx-font-size: 0.85em;
+}
+
+.completion-count {
+    -fx-background-color: -color-neutral-muted;
+    -fx-background-radius: 0.7em;
+    -fx-padding: 0 0.45em;
+}
+
+.completion-hint {
+    -fx-spacing: 0.3em;
+    -fx-padding: 0 0 0 0.35em;
+}
+
+.completion-key {
+    -fx-text-fill: -color-fg-default;
+}

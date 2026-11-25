@@ -3,7 +3,9 @@ package dev.railroadide.railroad.plugin.spi.events.input;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 
-/** Provides access to the JavaFX mouse event wrapped by a plugin event. */
+/**
+ * Provides access to the JavaFX mouse event wrapped by a plugin event.
+ */
 public interface GenericMouseEvent extends GenericInputEvent {
     /**
      * Returns the underlying mouse event.

@@ -21,7 +21,9 @@ public class JavaSemanticGraphExtractorTest {
         var shard = JavaSemanticGraphExtractor.extract(
             JavaSemanticAnalyzer.analyzeFacts(source, JavaProjectSemanticIndex.empty()), () -> {
             });
-        var calls = shard.references().stream().filter(reference -> reference.kind().equals(ReferenceKindId.CALL))
+
+        List<ReferenceOccurrence> calls = shard.references().stream()
+            .filter(reference -> reference.kind().equals(ReferenceKindId.CALL))
             .toList();
         assertEquals(List.of(source.indexOf("run.run") + 4, source.indexOf("this.run") + 5),
             calls.stream().map(reference -> reference.location().range().start).toList());
@@ -33,10 +35,34 @@ public class JavaSemanticGraphExtractorTest {
 
     @Test
     public void enumConstantBodiesPreventImplicitFinality() {
-        var shard = new JavaProjectSemanticExtractor().extract(Path.of("Mode.java"),
+        SemanticIndexShard shard = new JavaProjectSemanticExtractor().extract(Path.of("Mode.java"),
             "enum Mode { A { void work() {} }; Mode() {} }").semanticShard();
         assertFalse(named(shard, "Mode").metadata().modifiers().contains("final"));
         assertTrue(named(shard, "Mode").metadata().modifiers().contains("sealed"));
+    }
+
+    @Test
+    public void constantSpecificMethodsBelongToDistinctSubtypesOfTheEnum() {
+        String source = """
+            enum Mode {
+                A { int value() { return 1; } },
+                B { int value() { return 2; } };
+                abstract int value();
+            }
+            """;
+        var model = JavaSemanticAnalyzer.analyzeFacts(source, JavaProjectSemanticIndex.empty());
+        var shard = JavaSemanticGraphExtractor.extract(model, () -> {
+        });
+
+        SymbolId enumId = named(shard, "Mode").id();
+        Set<SymbolId> subtypeIds = shard.edges().stream()
+            .filter(edge -> edge.kind().equals(EdgeKindId.SUBTYPE) && edge.target().equals(enumId))
+            .map(SymbolEdge::source).collect(Collectors.toSet());
+        assertEquals(2, subtypeIds.size());
+        Set<SymbolId> owners = shard.declarations().stream().filter(symbol -> symbol.simpleName().equals("value"))
+            .map(SymbolDescriptor::ownerId).collect(Collectors.toSet());
+        assertTrue(owners.remove(enumId));
+        assertEquals(subtypeIds, owners);
     }
 
     @Test
@@ -51,15 +77,16 @@ public class JavaSemanticGraphExtractorTest {
         var model = JavaSemanticAnalyzer.analyzeFacts(source, JavaProjectSemanticIndex.empty());
         var shard = JavaSemanticGraphExtractor.extract(model, () -> {
         });
-        var anonymous = shard.declarations().stream()
+
+        List<SymbolDescriptor> anonymous = shard.declarations().stream()
             .filter(symbol -> symbol.simpleName().equals("<anonymous>")).toList();
         assertEquals(2, anonymous.size());
-        var edges = shard.edges().stream().filter(edge -> edge.kind().equals(EdgeKindId.SUBTYPE)).toList();
+        List<SymbolEdge> edges = shard.edges().stream().filter(edge -> edge.kind().equals(EdgeKindId.SUBTYPE)).toList();
         assertEquals(1, edges.size());
         assertEquals(anonymous.getFirst().id(), edges.getFirst().source());
         assertEquals(named(shard, "Parent").id(), edges.getFirst().target());
         assertEquals("java.lang.String", edges.getFirst().typeArguments().getFirst().name());
-        var inheritance = shard.references().stream()
+        List<ReferenceOccurrence> inheritance = shard.references().stream()
             .filter(reference -> reference.kind().equals(ReferenceKindId.INHERITANCE)).toList();
         assertEquals(1, inheritance.size());
         assertEquals(anonymous.getFirst().id(), inheritance.getFirst().enclosingSymbol());
@@ -78,8 +105,9 @@ public class JavaSemanticGraphExtractorTest {
                 void ordinary() { class Nested { static int unrelated; } }
             }
             """;
-        var indexed = new JavaProjectSemanticExtractor().extract(Path.of("Example.java"), source);
-        var method = named(indexed.semanticShard(), "transform");
+        JavaProjectSemanticIndex.SourceFileIndex indexed = new JavaProjectSemanticExtractor()
+            .extract(Path.of("Example.java"), source);
+        SymbolDescriptor method = named(indexed.semanticShard(), "transform");
         assertEquals("List", method.signature().returnType().name());
         assertEquals(1, method.signature().returnType().arguments().getFirst().arrayDimensions());
         assertEquals("Number", method.signature().typeParameters().getFirst().bounds().getFirst().name());
@@ -88,7 +116,7 @@ public class JavaSemanticGraphExtractorTest {
         assertEquals(Set.of("public", "static"), method.metadata().modifiers());
         assertTrue(method.metadata().deprecated());
         assertFalse(named(indexed.semanticShard(), "ordinary").metadata().modifiers().contains("static"));
-        var location = (Location.TextLocation) method.locations().getFirst().selection();
+        Location.TextLocation location = (Location.TextLocation) method.locations().getFirst().selection();
         assertEquals("transform", source.substring(location.range().start, location.range().end));
         assertEquals(JavaSymbolIds.method(JavaSymbolIds.type("sample.Example"), "transform",
             List.of("java.lang.Number", "java.lang.String[]")), method.id());
@@ -106,8 +134,9 @@ public class JavaSemanticGraphExtractorTest {
             }
             """;
         var model = JavaSemanticAnalyzer.analyzeFacts(source);
-        var shard = new JavaProjectSemanticExtractor().extract(Path.of("Example.java"), model).semanticShard();
-        var field = named(shard, "value").id();
+        SemanticIndexShard shard = new JavaProjectSemanticExtractor().extract(Path.of("Example.java"), model)
+            .semanticShard();
+        SymbolId field = named(shard, "value").id();
         assertTrue(shard.references().stream().anyMatch(reference -> reference.target().equals(field)
             && reference.kind().equals(ReferenceKindId.WRITE)));
         assertTrue(shard.references().stream().anyMatch(reference -> reference.target().equals(field)
@@ -134,14 +163,15 @@ public class JavaSemanticGraphExtractorTest {
             }
             """;
         var extractor = new JavaProjectSemanticExtractor();
-        var first = extractor.extract(Path.of("Example.java"), source).semanticShard();
-        var second = extractor.extract(Path.of("Example.java"), source.replace("{", "{ /* comment */\n "))
+        SemanticIndexShard first = extractor.extract(Path.of("Example.java"), source).semanticShard();
+        SemanticIndexShard second = extractor
+            .extract(Path.of("Example.java"), source.replace("{", "{ /* comment */\n "))
             .semanticShard();
         assertEquals(first.declarations().stream().map(SymbolDescriptor::id).collect(Collectors.toSet()),
             second.declarations().stream().map(SymbolDescriptor::id).collect(Collectors.toSet()));
         assertEquals(2, first.declarations().stream().filter(symbol -> symbol.simpleName().equals("same")).count());
         assertEquals(JavaSymbolIds.type("p.Example$Nested"), named(first, "Nested").id());
-        var alias = extractor.extract(Path.of("Example.java"),
+        JavaProjectSemanticIndex.SourceFileIndex alias = extractor.extract(Path.of("Example.java"),
             source.replace("java.util.List<String>", "List<String>"));
         assertEquals(
             first.declarations().stream().filter(symbol -> symbol.simpleName().equals("run")).map(SymbolDescriptor::id)
@@ -157,7 +187,7 @@ public class JavaSemanticGraphExtractorTest {
         var snapshot = new TextDocumentSnapshot(id, uri, DocumentVersion.initial().next(), "java", "class Example {}",
             StandardCharsets.UTF_8);
         var extractor = new JavaProjectSemanticExtractor();
-        var shard = extractor.extract(Path.of("Example.java"), snapshot, () -> {
+        SemanticIndexShard shard = extractor.extract(Path.of("Example.java"), snapshot, () -> {
         }).semanticShard();
         assertEquals(id, shard.documentId());
         assertEquals(snapshot.version(), shard.documentVersion());
@@ -172,9 +202,9 @@ public class JavaSemanticGraphExtractorTest {
     @Test
     public void resolvesProjectWildcardSignaturesAndExternalDocumentation() {
         var extractor = new JavaProjectSemanticExtractor();
-        var dependency = extractor.extract(Path.of("dependency/Item.java"),
+        JavaProjectSemanticIndex.SourceFileIndex dependency = extractor.extract(Path.of("dependency/Item.java"),
             "package dependency; public class Item { public void accept(String value) {} }");
-        var index = JavaProjectSemanticIndex.builder().putFile(dependency).build();
+        JavaProjectSemanticIndex index = JavaProjectSemanticIndex.builder().putFile(dependency).build();
         String source = """
             package sample;
             import dependency.*;
@@ -182,7 +212,7 @@ public class JavaSemanticGraphExtractorTest {
             class Example { void use(Item item) {} }
             """;
         var model = JavaSemanticAnalyzer.analyzeFacts(source, index);
-        var shard = extractor.extract(Path.of("Example.java"), model, index, () -> {
+        SemanticIndexShard shard = extractor.extract(Path.of("Example.java"), model, index, () -> {
         }).semanticShard();
         assertEquals(JavaSymbolIds.method(JavaSymbolIds.type("sample.Example"), "use", List.of("dependency.Item")),
             named(shard, "use").id());
@@ -192,7 +222,7 @@ public class JavaSemanticGraphExtractorTest {
 
     @Test
     public void erasesRecursiveGenericBoundsAndNestedTypeParameters() {
-        var shard = new JavaProjectSemanticExtractor().extract(Path.of("Example.java"), """
+        SemanticIndexShard shard = new JavaProjectSemanticExtractor().extract(Path.of("Example.java"), """
             package p;
             class Example {
                 class Nested {}
@@ -224,13 +254,15 @@ public class JavaSemanticGraphExtractorTest {
     public void partialDeclarationIndexOmitsUnresolvedWildcardCallableIdentity() {
         String source = "package sample; import dependency.*; class Example { void use(Item item) {} }";
         var extractor = new JavaProjectSemanticExtractor();
-        var partial = extractor.extract(Path.of("Example.java"), source);
+        JavaProjectSemanticIndex.SourceFileIndex partial = extractor.extract(Path.of("Example.java"), source);
         assertTrue(partial.declaredSymbols().stream().anyMatch(symbol -> symbol.simpleName().equals("use")));
         assertTrue(
             partial.semanticShard().declarations().stream().noneMatch(symbol -> symbol.simpleName().equals("use")));
-        var dependency = extractor.extract(Path.of("Item.java"), "package dependency; public class Item {}");
-        var index = JavaProjectSemanticIndex.builder().putFile(dependency).putFile(partial).build();
-        var complete = extractor
+        JavaProjectSemanticIndex.SourceFileIndex dependency = extractor.extract(Path.of("Item.java"),
+            "package dependency; public class Item {}");
+        JavaProjectSemanticIndex index = JavaProjectSemanticIndex.builder().putFile(dependency).putFile(partial)
+            .build();
+        SemanticIndexShard complete = extractor
             .extract(Path.of("Example.java"), JavaSemanticAnalyzer.analyzeFacts(source, index), index, () -> {
             }).semanticShard();
         assertEquals(JavaSymbolIds.method(JavaSymbolIds.type("sample.Example"), "use", List.of("dependency.Item")),
@@ -238,10 +270,43 @@ public class JavaSemanticGraphExtractorTest {
     }
 
     @Test
-    public void compactRecordConstructorUsesCanonicalComponentSignature() {
-        var shard = new JavaProjectSemanticExtractor().extract(Path.of("Box.java"), "record Box(int value) { Box {} }")
+    public void indexesAnnotatedVarargsRecordAccessorAndCanonicalConstructor() {
+        String source = """
+            import java.lang.annotation.*;
+            @Target(ElementType.TYPE_USE) @interface Mark {}
+            record Batch<T>(T value, @Mark String[] @Mark ... conditions) { Batch {} }
+            """;
+        SemanticIndexShard shard = new JavaProjectSemanticExtractor().extract(Path.of("Batch.java"), source)
             .semanticShard();
-        var constructor = shard.declarations().stream().filter(symbol -> symbol.kind().id().equals("java:constructor"))
+        var record = JavaSymbolIds.type("Batch");
+        SymbolDescriptor accessor = shard.declarations().stream()
+            .filter(symbol -> symbol.id().equals(JavaSymbolIds.method(record, "conditions", List.of())))
+            .findFirst().orElseThrow();
+        assertEquals("String[][]", accessor.signature().returnType().displayName());
+        SymbolDescriptor constructor = shard.declarations().stream()
+            .filter(symbol -> symbol.id()
+                .equals(JavaSymbolIds.constructor(record, List.of("java.lang.Object", "java.lang.String[][]"))))
+            .findFirst().orElseThrow();
+        assertTrue(constructor.signature().parameters().getLast().varargs());
+        assertEquals("String[]", constructor.signature().parameters().getLast().type().displayName());
+    }
+
+    @Test
+    public void incompleteRecordComponentDoesNotCreateAnAccessor() {
+        SemanticIndexShard shard = new JavaProjectSemanticExtractor().extract(Path.of("Batch.java"),
+            "record Batch(int valid, String...) {}").semanticShard();
+        assertEquals(List.of("valid"), shard.declarations().stream()
+            .filter(symbol -> symbol.kind().id().equals("java:method"))
+            .map(SymbolDescriptor::simpleName).toList());
+    }
+
+    @Test
+    public void compactRecordConstructorUsesCanonicalComponentSignature() {
+        SemanticIndexShard shard = new JavaProjectSemanticExtractor()
+            .extract(Path.of("Box.java"), "record Box(int value) { Box {} }")
+            .semanticShard();
+        SymbolDescriptor constructor = shard.declarations().stream()
+            .filter(symbol -> symbol.kind().id().equals("java:constructor"))
             .findFirst().orElseThrow();
         assertEquals(JavaSymbolIds.constructor(JavaSymbolIds.type("Box"), List.of("int")), constructor.id());
         assertEquals("int", constructor.signature().parameters().getFirst().type().name());
@@ -249,11 +314,12 @@ public class JavaSemanticGraphExtractorTest {
 
     @Test
     public void localAndAnonymousDeclarationsStayOutOfProjectMemberLookups() {
-        var file = new JavaProjectSemanticExtractor().extract(Path.of("Example.java"), """
-            class Example {
-                void run() { class Local { void local() {} } Object value = new Object() { void anonymous() {} }; }
-            }
-            """);
+        JavaProjectSemanticIndex.SourceFileIndex file = new JavaProjectSemanticExtractor()
+            .extract(Path.of("Example.java"), """
+                class Example {
+                    void run() { class Local { void local() {} } Object value = new Object() { void anonymous() {} }; }
+                }
+                """);
         assertTrue(
             file.semanticShard().declarations().stream().anyMatch(symbol -> symbol.simpleName().equals("local")));
         assertTrue(
@@ -268,6 +334,7 @@ public class JavaSemanticGraphExtractorTest {
         var model = JavaSemanticAnalyzer.analyzeFacts(source, JavaProjectSemanticIndex.empty());
         var shard = JavaSemanticGraphExtractor.extract(model, () -> {
         });
+
         assertTrue(
             shard.references().stream().noneMatch(reference -> reference.kind().equals(ReferenceKindId.DOCUMENTATION)));
     }

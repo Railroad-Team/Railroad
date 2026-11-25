@@ -37,6 +37,7 @@ public record RenameProposal(
             .anyMatch(conflict -> conflict.severity() == RenameConflict.Severity.ERROR);
         if (blocked && edit != null)
             throw new IllegalArgumentException("A rename with error conflicts cannot carry an edit");
+
         if (!blocked && edit == null)
             throw new IllegalArgumentException("A rename without error conflicts needs an edit");
     }

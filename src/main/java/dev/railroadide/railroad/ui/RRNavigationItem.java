@@ -326,11 +326,17 @@ public class RRNavigationItem extends VBox {
      * CSS size variants for a navigation item.
      */
     public enum NavigationItemSize {
-        /** The small size variant. */
+        /**
+         * The small size variant.
+         */
         SMALL,
-        /** The default medium size variant. */
+        /**
+         * The default medium size variant.
+         */
         MEDIUM,
-        /** The large size variant. */
+        /**
+         * The large size variant.
+         */
         LARGE
     }
 
@@ -338,13 +344,21 @@ public class RRNavigationItem extends VBox {
      * Visual state variants; the disabled variant also suppresses hover animations.
      */
     public enum NavigationItemState {
-        /** The default, unaccented state. */
+        /**
+         * The default, unaccented state.
+         */
         NORMAL,
-        /** The active-item style. */
+        /**
+         * The active-item style.
+         */
         ACTIVE,
-        /** The disabled style, with hover animations suppressed. */
+        /**
+         * The disabled style, with hover animations suppressed.
+         */
         DISABLED,
-        /** The highlighted-item style. */
+        /**
+         * The highlighted-item style.
+         */
         HIGHLIGHTED
     }
 }

@@ -87,6 +87,7 @@ public class ClassStubVisitor extends ClassVisitor {
                 fieldType = genericFieldType[0];
             }
         }
+
         Type resolvedFieldType = fieldType;
         List<AnnotationStub> fieldAnnotations = new ArrayList<>();
         return new FieldVisitor(Opcodes.ASM9) {
@@ -145,12 +146,15 @@ public class ClassStubVisitor extends ClassVisitor {
                 && descriptorParameters[0].getClassName().equals(enclosingClassName)) {
                 hiddenParameters = 1;
             }
+
             // Generic signatures can already omit the compiler-supplied constructor prefix.
+
             if (hiddenParameters > 0
                 && parameterTypes.size() == descriptorParameters.length) {
                 parameterTypes = parameterTypes.subList(hiddenParameters, parameterTypes.size());
             }
         }
+
         List<String> parameterNames = new ArrayList<>();
         List<List<AnnotationStub>> parameterAnnotations = new ArrayList<>(parameterTypes.size());
         for (int i = 0; i < parameterTypes.size(); i++) {

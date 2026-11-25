@@ -10,7 +10,9 @@ import java.nio.file.StandardOpenOption;
  * implementations other than {@link #NIO} exist to observe or inject failures.
  */
 public interface WorkspaceFiles {
-    /** Direct NIO operations. */
+    /**
+     * Direct NIO operations.
+     */
     WorkspaceFiles NIO = new WorkspaceFiles() {
         @Override
         public boolean exists(Path path) {

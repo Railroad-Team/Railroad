@@ -80,7 +80,7 @@ public final class CoreFunctionalInterfaceInspection implements JavaInspectionRu
             if (qualifiedAnnotationName.equals(name) || simpleName.equals(name))
                 return true;
         }
+
         return false;
     }
-
 }

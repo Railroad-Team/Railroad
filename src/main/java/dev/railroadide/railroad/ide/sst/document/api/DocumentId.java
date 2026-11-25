@@ -63,6 +63,7 @@ public record DocumentId(UUID value) {
     public boolean equals(Object other) {
         if (other instanceof DocumentId otherDocId)
             return this.value.equals(otherDocId.value);
+
         return false;
     }
 

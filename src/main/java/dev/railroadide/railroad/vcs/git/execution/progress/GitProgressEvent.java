@@ -24,8 +24,10 @@ public sealed interface GitProgressEvent {
      * Percentage progress update for a specific phase.
      *
      * @param phase phase name
+     * @param completed completed items, or -1 when Git supplies only a percentage
+     * @param total total items for the phase, or -1 when unknown
      * @param percent completion percentage
      */
-    record Percentage(String phase, int percent) implements GitProgressEvent {
+    record Percentage(String phase, int percent, long completed, long total) implements GitProgressEvent {
     }
 }

@@ -78,7 +78,7 @@ public record EditorViewState(
     }
 
     private static List<FoldRange> captureFolds(TextEditorPane editor) {
-        var folds = new ArrayList<FoldRange>();
+        List<FoldRange> folds = new ArrayList<FoldRange>();
         int paragraphCount = editor.getParagraphs().size();
         int paragraph = 0;
         while (paragraph < paragraphCount) {
@@ -91,9 +91,11 @@ public record EditorViewState(
             while (paragraph + 1 < paragraphCount && editor.isFolded(paragraph + 1)) {
                 paragraph++;
             }
+
             folds.add(new FoldRange(Math.max(0, firstFoldedParagraph - 1), paragraph));
             paragraph++;
         }
+
         return List.copyOf(folds);
     }
 

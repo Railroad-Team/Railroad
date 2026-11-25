@@ -56,6 +56,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
         Objects.requireNonNull(classFilePath, "Class file path cannot be null");
         if (!classFilePath.toString().endsWith(".class"))
             throw new IllegalArgumentException("Provided path is not a .class file: " + classFilePath);
+
         return new JavaExecutableCLIBuilder(LaunchType.CLASS_FILE, jdk, classFilePath.toString());
     }
 
@@ -161,7 +162,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     public JavaExecutableCLIBuilder agentlib(String agentLib, String... options) {
         Objects.requireNonNull(agentLib, "Agent library cannot be null");
         Objects.requireNonNull(options, "Options array cannot be null");
-        var agentArgument = new StringBuilder("-agentlib:").append(agentLib);
+        StringBuilder agentArgument = new StringBuilder("-agentlib:").append(agentLib);
         if (options.length > 0) {
             agentArgument.append("=");
             agentArgument.append(String.join(",", options));
@@ -181,7 +182,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     public JavaExecutableCLIBuilder agentpath(Path agentPath, String... options) {
         Objects.requireNonNull(agentPath, "Agent path cannot be null");
         Objects.requireNonNull(options, "Options array cannot be null");
-        var agentArgument = new StringBuilder("-agentpath:").append(agentPath);
+        StringBuilder agentArgument = new StringBuilder("-agentpath:").append(agentPath);
         if (options.length > 0) {
             agentArgument.append("=");
             agentArgument.append(String.join(",", options));
@@ -264,6 +265,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
         if (jdk.version().major() < 24)
             throw new UnsupportedOperationException(
                 "Setting illegal native access mode is only supported in JDK 24 and above.");
+
         if (mode == AccessMode.DEBUG)
             throw new UnsupportedOperationException("DEBUG mode is not available for illegal native access.");
 
@@ -500,7 +502,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     public JavaExecutableCLIBuilder javaagent(String javaAgentPath, String... options) {
         Objects.requireNonNull(javaAgentPath, "Java agent path cannot be null");
         Objects.requireNonNull(options, "Options array cannot be null");
-        var agentArgument = new StringBuilder("-javaagent:").append(javaAgentPath);
+        StringBuilder agentArgument = new StringBuilder("-javaagent:").append(javaAgentPath);
         if (options.length > 0) {
             agentArgument.append("=");
             agentArgument.append(String.join(",", options));
@@ -3261,6 +3263,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
         if (!preArgument.isEmpty()) {
             command.add(preArgument);
         }
+
         command.add(primaryArgument);
         command.addAll(arguments);
 
@@ -3444,7 +3447,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
     public static final class LoggingConfiguration {
         private final List<LogSelection> selections = new ArrayList<>();
         private LogOutput output;
-        private final EnumSet<LogDecorator> decorators = EnumSet.noneOf(LogDecorator.class);
+        private final Set<LogDecorator> decorators = EnumSet.noneOf(LogDecorator.class);
 
         /**
          * Appends a log selection to this configuration.
@@ -3596,6 +3599,7 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
             for (String tag : tags) {
                 if (tag == null || tag.isBlank())
                     throw new IllegalArgumentException("Log tag cannot be null or blank");
+
                 this.tags.add(tag);
             }
 
@@ -3815,8 +3819,10 @@ public class JavaExecutableCLIBuilder implements CLIBuilder<Process, JavaExecuta
         public LogOutput rotateFiles(int fileCount, long fileSize, ByteUnit unit) {
             if (fileCount <= 0)
                 throw new IllegalArgumentException("File count must be positive");
+
             if (fileSize <= 0)
                 throw new IllegalArgumentException("File size must be positive");
+
             Objects.requireNonNull(unit, "Byte unit cannot be null");
             this.options.add("filecount=" + fileCount);
             this.options.add("filesize=" + fileSize + unit.getUnit());

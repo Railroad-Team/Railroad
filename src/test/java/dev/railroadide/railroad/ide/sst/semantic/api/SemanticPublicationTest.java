@@ -28,7 +28,7 @@ public class SemanticPublicationTest {
         root.declare(second);
         child.declare(local);
 
-        var model = SemanticModel.builder(JavaSyntaxParser.parse(""), root).build();
+        SemanticModel model = SemanticModel.builder(JavaSyntaxParser.parse(""), root).build();
 
         assertSame(root, model.rootScope());
         assertSame(root, child.parent().orElseThrow());
@@ -47,6 +47,7 @@ public class SemanticPublicationTest {
             assertThrows(UnsupportedOperationException.class, () -> scope.snapshotDeclarations().clear());
             assertSame(scope, scope.freeze());
         }
+
         assertThrows(UnsupportedOperationException.class, () -> root.lookupLocal("run").clear());
         assertThrows(UnsupportedOperationException.class,
             () -> root.snapshotDeclarations().get("run").add(local));
@@ -67,24 +68,24 @@ public class SemanticPublicationTest {
     public void builderReuseAndAdditionalDiagnosticInputsCannotChangePublishedModels() {
         SyntaxTree tree = JavaSyntaxParser.parse("class Example {}");
         var builder = SemanticModel.builder(tree, Scope.root());
-        var first = builder.build();
+        SemanticModel first = builder.build();
         var diagnostic = new SemanticDiagnostic(SemanticDiagnostic.Severity.INFO, "test", "message", 0, 1, tree.root());
         Symbol declaration = symbol("Example");
         builder.declare(tree.root(), declaration).resolve(tree.root(), declaration)
             .type(tree.root(), new JavaTypes.PrimitiveType("int")).diagnostic(diagnostic);
-        var second = builder.build();
+        SemanticModel second = builder.build();
         assertTrue(first.declaredSymbol(tree.root()).isEmpty());
         assertTrue(first.resolvedSymbol(tree.root()).isEmpty());
         assertTrue(first.inferredType(tree.root()).isEmpty());
         assertTrue(first.diagnostics().isEmpty());
         assertSame(declaration, second.declaredSymbol(tree.root()).orElseThrow());
-        var additional = new ArrayList<>(List.of(diagnostic));
-        var augmented = first.withAdditionalDiagnostics(additional);
+        List<SemanticDiagnostic> additional = new ArrayList<>(List.of(diagnostic));
+        SemanticModel augmented = first.withAdditionalDiagnostics(additional);
         additional.clear();
         assertEquals(List.of(diagnostic), augmented.diagnostics());
         assertThrows(UnsupportedOperationException.class, () -> augmented.diagnostics().clear());
         assertSame(first.rootScope(), augmented.rootScope());
-        var arguments = new ArrayList<Type>(List.of(new JavaTypes.PrimitiveType("int")));
+        List<Type> arguments = new ArrayList<Type>(List.of(new JavaTypes.PrimitiveType("int")));
         var type = new JavaTypes.DeclaredType("Box", arguments);
         arguments.clear();
         assertEquals(1, type.typeArguments().size());
@@ -99,7 +100,7 @@ public class SemanticPublicationTest {
         assertNotSame(first, second);
         Symbol a = symbol("a");
         Symbol b = symbol("b");
-        var model = SemanticModel.builder(new SyntaxTree(first), Scope.root())
+        SemanticModel model = SemanticModel.builder(new SyntaxTree(first), Scope.root())
             .declare(first, a).declare(second, b)
             .resolve(first, b).resolve(second, a)
             .type(first, new JavaTypes.PrimitiveType("int"))
@@ -117,24 +118,26 @@ public class SemanticPublicationTest {
     @Test
     public void javaAnalysisPublishesFrozenScopesAndConsistentConcurrentResults() throws Exception {
         var model = JavaSemanticAnalyzer.analyzeFacts("class Example { int x; int run(int p) { return p + x; } }");
-        var scopes = new ArrayList<Scope>();
-        var pending = new ArrayDeque<Scope>();
+        List<Scope> scopes = new ArrayList<Scope>();
+        Deque<Scope> pending = new ArrayDeque<Scope>();
         pending.add(model.rootScope());
         while (!pending.isEmpty()) {
             Scope scope = pending.removeFirst();
             scopes.add(scope);
             pending.addAll(scope.children());
         }
+
         assertTrue(scopes.size() >= 3, "Expected nested type/method scopes");
         for (Scope scope : scopes) {
             assertThrows(IllegalStateException.class, () -> scope.declare(symbol("late")));
         }
-        var declarations = scopes.stream().map(Scope::snapshotDeclarations).toList();
-        var nodes = new ArrayList<SyntaxNode>();
+
+        List<Map<String, List<Symbol>>> declarations = scopes.stream().map(Scope::snapshotDeclarations).toList();
+        List<SyntaxNode> nodes = new ArrayList<SyntaxNode>();
         collect(model.syntaxTree().root(), nodes);
-        var symbols = nodes.stream().map(model::declaredSymbol).toList();
-        var resolved = nodes.stream().map(model::resolvedSymbol).toList();
-        var types = nodes.stream().map(model::inferredType).toList();
+        List<Optional<Symbol>> symbols = nodes.stream().map(model::declaredSymbol).toList();
+        List<Optional<Symbol>> resolved = nodes.stream().map(model::resolvedSymbol).toList();
+        List<Optional<Type>> types = nodes.stream().map(model::inferredType).toList();
         var ready = new CountDownLatch(4);
         var start = new CountDownLatch(1);
         try (var executor = Executors.newFixedThreadPool(4)) {
@@ -151,14 +154,17 @@ public class SemanticPublicationTest {
                         assertEquals("class Example { int x; int run(int p) { return p + x; } }",
                             model.syntaxTree().documentSnapshot().text());
                     }
+
                     return null;
                 }));
             }
+
             try {
                 assertTrue(ready.await(10, TimeUnit.SECONDS));
             } finally {
                 start.countDown();
             }
+
             for (Future<?> task : tasks) {
                 task.get(20, TimeUnit.SECONDS);
             }

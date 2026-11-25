@@ -13,9 +13,9 @@ import static org.junit.jupiter.api.Assertions.*;
 public class SyntaxPublicationTest {
     @Test
     public void coldChildCachePublishesStableIdentitiesAndCopiesGreenInputs() throws Exception {
-        var tokens = new ArrayList<GreenElement>(List.of(new GreenToken(SyntaxKind.ROOT, "ab")));
+        List<GreenElement> tokens = new ArrayList<GreenElement>(List.of(new GreenToken(SyntaxKind.ROOT, "ab")));
         var nested = new GreenNode(SyntaxKind.ROOT, tokens);
-        var children = new ArrayList<GreenElement>(List.of(nested));
+        List<GreenElement> children = new ArrayList<GreenElement>(List.of(nested));
         var green = GreenNode.root(children);
         tokens.clear();
         children.clear();
@@ -24,12 +24,12 @@ public class SyntaxPublicationTest {
         var ready = new CountDownLatch(4);
         var start = new CountDownLatch(1);
         try (var executor = Executors.newFixedThreadPool(4)) {
-            var tasks = new ArrayList<Future<List<SyntaxNode>>>();
+            List<Future<List<SyntaxNode>>> tasks = new ArrayList<Future<List<SyntaxNode>>>();
             for (int worker = 0; worker < 4; worker++) {
                 tasks.add(executor.submit(() -> {
                     ready.countDown();
                     assertTrue(start.await(10, TimeUnit.SECONDS));
-                    var result = root.children();
+                    List<SyntaxNode> result = root.children();
                     SyntaxNode child = result.getFirst();
                     SyntaxNode token = child.children().getFirst();
                     assertSame(root, child.parent().orElseThrow());
@@ -41,17 +41,20 @@ public class SyntaxPublicationTest {
                     return result;
                 }));
             }
+
             try {
                 assertTrue(ready.await(10, TimeUnit.SECONDS));
             } finally {
                 start.countDown();
             }
-            var first = tasks.getFirst().get(20, TimeUnit.SECONDS);
-            for (var task : tasks) {
+
+            List<SyntaxNode> first = tasks.getFirst().get(20, TimeUnit.SECONDS);
+            for (Future<List<SyntaxNode>> task : tasks) {
                 assertSame(first, task.get(20, TimeUnit.SECONDS));
                 assertSame(first.getFirst(), task.get().getFirst());
             }
         }
+
         assertEquals(2, green.width());
         assertThrows(UnsupportedOperationException.class, () -> green.children().clear());
     }

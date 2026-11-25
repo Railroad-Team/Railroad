@@ -316,6 +316,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
                 } else
                     throw new IllegalArgumentException(
                         "Unsupported component type: " + toComponent.getValue().getClass().getName());
+
             }, valueMapper));
             return this;
         }
@@ -541,6 +542,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
             if (autoCompleteOptions == null) {
                 autoCompleteOptions = new AutoCompleteOptions();
             }
+
             return autoCompleteOptions;
         }
 
@@ -553,6 +555,7 @@ public class TextFieldComponent extends FormComponent<FormTextField, TextFieldCo
         public AutoCompleteOptions getAutoCompleteOptions() {
             if (autoCompleteOptions == null || !autoCompleteOptions.isConfigured())
                 return null;
+
             return autoCompleteOptions;
         }
     }

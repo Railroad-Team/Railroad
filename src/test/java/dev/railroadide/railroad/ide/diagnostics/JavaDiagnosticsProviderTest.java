@@ -5,6 +5,7 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.gradle.project.GradleManager;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
+import dev.railroadide.railroad.ide.runconfig.session.RunSessionManager;
 import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic.TextEditorDiagnostic;
 import dev.railroadide.railroad.ide.diagnostics.inspections.CoreNameResolutionInspection;
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
@@ -42,9 +43,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import dev.railroadide.railroad.ide.sst.document.api.WorkspaceConfigurationSnapshot;
 import java.util.Set;
 import dev.railroadide.railroad.ide.language.LanguageSupports;
+import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -119,7 +122,7 @@ public class JavaDiagnosticsProviderTest {
                 "class Example {}",
                 StandardCharsets.UTF_8);
 
-            List<EditorDiagnostic.TextEditorDiagnostic> diagnostics = providerRunner.compute(snapshot);
+            List<TextEditorDiagnostic> diagnostics = providerRunner.compute(snapshot);
             assertTrue(diagnostics.stream().anyMatch(diagnostic -> PLUGIN_RULE_ID.equals(diagnostic.code())));
             assertTrue(diagnostics.stream().anyMatch(diagnostic -> diagnostic.kind() == DiagnosticSeverity.WARNING));
             TextEditorDiagnostic pluginDiagnostic = diagnostics.stream()
@@ -168,7 +171,7 @@ public class JavaDiagnosticsProviderTest {
                     """,
                 StandardCharsets.UTF_8);
 
-            List<EditorDiagnostic.TextEditorDiagnostic> disabledDiagnostics = provider.compute(snapshot);
+            List<TextEditorDiagnostic> disabledDiagnostics = provider.compute(snapshot);
             assertFalse(
                 disabledDiagnostics.stream().anyMatch(diagnostic -> "SEM_UNRESOLVED_NAME".equals(diagnostic.code())));
         } finally {
@@ -193,8 +196,8 @@ public class JavaDiagnosticsProviderTest {
                     """,
                 StandardCharsets.UTF_8);
 
-            List<EditorDiagnostic.TextEditorDiagnostic> overriddenDiagnostics = provider.compute(snapshot);
-            EditorDiagnostic.TextEditorDiagnostic unresolved = overriddenDiagnostics.stream()
+            List<TextEditorDiagnostic> overriddenDiagnostics = provider.compute(snapshot);
+            TextEditorDiagnostic unresolved = overriddenDiagnostics.stream()
                 .filter(diagnostic -> "SEM_UNRESOLVED_NAME".equals(diagnostic.code()))
                 .findFirst()
                 .orElse(null);
@@ -211,7 +214,7 @@ public class JavaDiagnosticsProviderTest {
         Path projectRoot = Path.of(".").toAbsolutePath().normalize();
         Path file = projectRoot.resolve("src/main/java/dev/railroadide/railroad/vcs/git/GitCommands.java");
         Project project = new TestProject(projectRoot);
-        var session = Services.PROJECT_LANGUAGE_INDEX_SERVICE.openProject(project);
+        ProjectLanguageIndexService.Session session = Services.PROJECT_LANGUAGE_INDEX_SERVICE.openProject(project);
         var indexes = JavaLanguageSupport.analysisContextProvider();
         var configuration = new WorkspaceConfigurationSnapshot(0, Set.of());
         indexes.adoptConfiguration(session, indexes.prepareConfiguration(session, configuration));
@@ -346,7 +349,7 @@ public class JavaDiagnosticsProviderTest {
         }
 
         @Override
-        public CompletableFuture<Runnable> build(JDK jdk) {
+        public CompletableFuture<Runnable> build(JDK jdk, Consumer<String> output, Consumer<String> error) {
             throw unsupported();
         }
 
@@ -382,6 +385,11 @@ public class JavaDiagnosticsProviderTest {
 
         @Override
         public DebuggingManager getDebuggingManager() {
+            throw unsupported();
+        }
+
+        @Override
+        public RunSessionManager getRunSessions() {
             throw unsupported();
         }
 

@@ -4,7 +4,9 @@ import dev.railroadide.railroad.ide.completion.CompletionProvider;
 import dev.railroadide.railroad.ide.diagnostics.DiagnosticsProvider;
 import dev.railroadide.railroad.ide.signature.SignatureHelpProvider;
 
-/** Standard optional SST contracts. Providers may also publish their own typed keys. */
+/**
+ * Standard optional SST contracts. Providers may also publish their own typed keys.
+ */
 public final class SstCapabilities {
     /**
      * Reports versioned diagnostics for captured documents.

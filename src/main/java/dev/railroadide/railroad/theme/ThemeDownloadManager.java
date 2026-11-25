@@ -47,6 +47,7 @@ public class ThemeDownloadManager {
             LOGGER.error("Theme download URL is null");
             return false;
         }
+
         String url = theme.getDownloadUrl();
         String[] split = url.split("[/\\s]");
         String fileName = split[split.length - 1];

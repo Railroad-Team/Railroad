@@ -1,17 +1,19 @@
 package dev.railroadide.railroad.ide.sst.project;
 
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
-
-import java.util.*;
 import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
-import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
-import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
+import org.jetbrains.annotations.Nullable;
+
+import java.nio.file.Path;
+import java.util.*;
 
 /**
  * Combines symbol indexes, deduplicating lookup results and preferring earlier delegates for binary class stubs.
  */
 public final class CompositeJavaSymbolIndex implements JavaSymbolIndex {
     private final List<JavaSymbolIndex> delegates;
+    private final JavaSymbolIndex unscoped;
+    private final Map<Path, String> attachedSourceTexts;
     private final Set<String> declaredQualifiedNames;
     private final Set<String> typeNames;
     private final Map<String, ClassStub> classStubsByQualifiedName;
@@ -22,51 +24,70 @@ public final class CompositeJavaSymbolIndex implements JavaSymbolIndex {
      * @param delegates the indexes to combine, ordered from highest to lowest binary-stub precedence
      */
     public CompositeJavaSymbolIndex(List<? extends JavaSymbolIndex> delegates) {
+        this(delegates, null, Map.of());
+    }
+
+    /**
+     * Combines an attachment's declarations and captured texts, using the base index when switching archives.
+     *
+     * @param delegates the indexes to combine, ordered from highest to lowest binary-stub precedence
+     * @param unscoped index used when switching to another archive's attached sources, or {@code null}
+     * @param sourceTexts captured texts of attached sources by file
+     */
+    public CompositeJavaSymbolIndex(
+        List<? extends JavaSymbolIndex> delegates,
+        JavaSymbolIndex unscoped,
+        Map<Path, String> sourceTexts
+    ) {
+        this.unscoped = unscoped;
+        Map<Path, String> texts = new HashMap<>(sourceTexts);
         this.delegates = List.copyOf(Objects.requireNonNull(delegates, "delegates"));
         Set<String> qualifiedNames = new LinkedHashSet<>();
         Set<String> typeNames = new LinkedHashSet<>();
         Map<String, ClassStub> classStubs = new LinkedHashMap<>();
         for (JavaSymbolIndex delegate : this.delegates) {
+            delegate.attachedSourceTexts().forEach(texts::putIfAbsent);
             qualifiedNames.addAll(delegate.declaredQualifiedNames());
             typeNames.addAll(delegate.typeNames());
             delegate.classStubsByQualifiedName().forEach(classStubs::putIfAbsent);
         }
 
+        attachedSourceTexts = Map.copyOf(texts);
         this.declaredQualifiedNames = Set.copyOf(qualifiedNames);
         this.typeNames = Set.copyOf(typeNames);
         this.classStubsByQualifiedName = Map.copyOf(classStubs);
     }
 
     @Override
-    public List<SemanticIndexShard> semanticShards() {
-        return semanticShards(ActivityCheckpoint::checkInterrupted);
-    }
-
-    @Override
-    public List<SemanticIndexShard> semanticShards(Runnable activityCheck) {
-        Objects.requireNonNull(activityCheck, "activityCheck").run();
-        Set<SymbolId> seen = new HashSet<>();
-        List<SemanticIndexShard> result = new ArrayList<>();
-        for (JavaSymbolIndex delegate : delegates) {
-            for (var shard : delegate.semanticShards(activityCheck)) {
-                activityCheck.run();
-                var declarations = shard.declarations().stream().filter(symbol -> {
-                    activityCheck.run();
-                    return seen.add(symbol.id());
-                }).toList();
-                if (!declarations.isEmpty()) {
-                    result.add(new SemanticIndexShard(shard.documentId(),
-                        shard.documentVersion(), shard.uri(), declarations, shard.references(), shard.edges()));
-                }
-            }
-        }
+    public @Nullable SemanticIndexShard declarationShard(String binaryName, Runnable activityCheck) {
         activityCheck.run();
-        return List.copyOf(result);
+        for (JavaSymbolIndex delegate : delegates) {
+            SemanticIndexShard shard = delegate.declarationShard(binaryName, activityCheck);
+            if (shard != null)
+                return shard;
+        }
+
+        return null;
     }
 
     @Override
     public Set<String> declaredQualifiedNames() {
         return declaredQualifiedNames;
+    }
+
+    @Override
+    public JavaSymbolIndex forAttachedSource(Path archive, Runnable check) {
+        if (unscoped != null)
+            return unscoped.forAttachedSource(archive, check);
+
+        List<JavaSymbolIndex> scoped = delegates.stream().map(delegate -> delegate.forAttachedSource(archive, check))
+            .toList();
+        return scoped.equals(delegates) ? this : new CompositeJavaSymbolIndex(scoped);
+    }
+
+    @Override
+    public Map<Path, String> attachedSourceTexts() {
+        return attachedSourceTexts;
     }
 
     @Override
@@ -90,6 +111,12 @@ public final class CompositeJavaSymbolIndex implements JavaSymbolIndex {
             .flatMap(delegate -> delegate.lookupSimpleName(simpleName).stream())
             .distinct()
             .toList();
+    }
+
+    @Override
+    public List<String> qualifiedTypeNames(String simpleName) {
+        return delegates.stream().flatMap(delegate -> delegate.qualifiedTypeNames(simpleName).stream())
+            .distinct().toList();
     }
 
     @Override

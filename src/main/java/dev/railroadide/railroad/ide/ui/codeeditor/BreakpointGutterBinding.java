@@ -62,6 +62,7 @@ public final class BreakpointGutterBinding implements AutoCloseable {
                 trackedPath = currentPath;
                 documentTracking = service.trackDocument(trackedPath, previousText);
             }
+
             String text = editor.getText();
             documentTracking.update(previousText, text, changes.stream()
                 .map(change -> new BreakpointService.TextChange(change.getPosition(), change.getRemoved(),
@@ -69,6 +70,7 @@ public final class BreakpointGutterBinding implements AutoCloseable {
                 .toList());
             previousText = text;
         });
+
         service.addListener(listener);
         gutter.addColumn(new GutterColumn(COLUMN_ID, 16, this::createMarker, (line, event) -> {
             if (!closed && event.getButton() == MouseButton.PRIMARY) {
@@ -96,6 +98,7 @@ public final class BreakpointGutterBinding implements AutoCloseable {
             case BreakpointEvent.Removed removed -> removed.breakpoint();
             case BreakpointEvent.Changed changed -> changed.breakpoint();
         };
+
         JavaFXUtils.runOnApplicationThread(() -> {
             if (!closed && breakpoint.source().matches(new DebugSource.FileSource(filePath.get()))) {
                 gutter.refresh();
@@ -103,7 +106,9 @@ public final class BreakpointGutterBinding implements AutoCloseable {
         });
     }
 
-    /** Removes the service listener and gutter column when the editor closes. */
+    /**
+     * Removes the service listener and gutter column when the editor closes.
+     */
     @Override
     public void close() {
         if (closed)

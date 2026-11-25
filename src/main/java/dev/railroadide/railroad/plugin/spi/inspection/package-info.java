@@ -42,6 +42,7 @@
  *                     for (var node : context.nodesOfKind("JAVA_IMPORT_DECLARATION")) {
  *                         // detect and report
  *                     }
+ *
  *                 }
  *             });
  *         }

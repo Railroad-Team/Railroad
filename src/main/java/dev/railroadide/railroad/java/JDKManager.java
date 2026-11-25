@@ -118,18 +118,21 @@ public class JDKManager {
         }
 
         // Location 1b: JDK_HOME environment variable
+
         String jdkHome = System.getenv("JDK_HOME");
         if (jdkHome != null && !jdkHome.isEmpty()) {
             addIfValid(jdks, JDKUtils.createJDKFromAnyPath(jdkHome), excludedPaths);
         }
 
         // Location 2: System PATH
+
         String javaPath = JDKUtils.findJavaOnPath();
         if (javaPath != null) {
             addIfValid(jdks, JDKUtils.createJDKFromAnyPath(javaPath), excludedPaths);
         }
 
         // Location 3: Common installation directories
+
         discoverJDKsInCommonDirectories(jdks, excludedPaths);
 
         // Location 4: User-provided JDK executables
@@ -283,6 +286,7 @@ public class JDKManager {
                     }
                 }
             }
+
             case MAC -> {
                 // System-wide JDK bundles
                 candidates.add(FileUtils.normalizePath(Path.of("/Library/Java/JavaVirtualMachines")));
@@ -294,9 +298,11 @@ public class JDKManager {
                 }
 
                 // Homebrew (Apple Silicon + Intel)
+
                 candidates.add(FileUtils.normalizePath(Path.of("/opt/homebrew/opt"))); // ARM
                 candidates.add(FileUtils.normalizePath(Path.of("/usr/local/opt"))); // Intel
             }
+
             case LINUX -> LINUX_JDK_PATHS.forEach(path -> candidates.add(FileUtils.normalizePath(Path.of(path))));
         }
 

@@ -5,14 +5,13 @@ import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.ShellScriptRunConfigurationData;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.ShellScriptRunConfigurationData.ExecuteMode;
+import dev.railroadide.railroad.ide.runconfig.session.RunSession;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import javafx.scene.paint.Color;
 import org.jetbrains.annotations.UnknownNullability;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Executes script files or supplied script text through a configured interpreter.
  */
 public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellScriptRunConfigurationData> {
-    private final Map<RunConfiguration<?>, Process> runningProcesses = new ConcurrentHashMap<>();
+    private final Map<RunConfiguration<?>, Running> runningProcesses = new ConcurrentHashMap<>();
     private final Map<RunConfiguration<?>, Path> temporaryScripts = new ConcurrentHashMap<>();
 
     /**
@@ -64,10 +63,11 @@ public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellS
         Project project,
         RunConfiguration<ShellScriptRunConfigurationData> configuration
     ) {
-        Process process = runningProcesses.get(configuration);
-        if (process != null && process.isAlive()) {
-            process.destroy();
-            process.onExit().thenRun(() -> {
+        Running running = runningProcesses.get(configuration);
+        if (running != null && running.process().isAlive()) {
+            running.session().requestStop();
+            running.process().destroy();
+            running.process().onExit().thenRun(() -> {
                 runningProcesses.remove(configuration);
                 cleanupTemporaryScript(configuration);
             });
@@ -80,8 +80,8 @@ public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellS
 
     @Override
     public boolean isRunning(Project project, RunConfiguration<ShellScriptRunConfigurationData> configuration) {
-        Process process = runningProcesses.get(configuration);
-        return process != null && process.isAlive();
+        Running running = runningProcesses.get(configuration);
+        return running != null && running.process().isAlive();
     }
 
     @Override
@@ -102,6 +102,7 @@ public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellS
         Project project,
         RunConfiguration<ShellScriptRunConfigurationData> configuration
     ) {
+        RunSession session = project.getRunSessions().start(configuration, false);
         return CompletableFuture.runAsync(() -> {
             ShellScriptRunConfigurationData data = configuration.data();
             Path workingDirectory = resolveWorkingDirectory(project, data);
@@ -115,26 +116,20 @@ public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellS
 
             try {
                 ProcessBuilder builder = new ProcessBuilder(command).directory(workingDirectory.toFile());
-                if (data.isExecuteInTerminal()) {
-                    builder.inheritIO();
-                } else {
-                    builder.redirectOutput(ProcessBuilder.Redirect.PIPE).redirectError(ProcessBuilder.Redirect.PIPE);
-                }
-
                 if (!environment.isEmpty()) {
                     builder.environment().putAll(environment);
                 }
 
+                session.appendSystemLine(String.join(" ", command));
                 Process process = builder.start();
-                runningProcesses.put(configuration, process);
+                var running = new Running(process, session);
+                runningProcesses.put(configuration, running);
+                CompletableFuture<Void> drained = session.connect(process, RunSession.processCharset());
 
-                if (!data.isExecuteInTerminal()) {
-                    new ProcessOutputHandler(process, configuration.data().getName()).run();
-                }
-
-                process.onExit().thenAccept(p -> {
-                    runningProcesses.remove(configuration);
+                process.onExit().thenCombine(drained, (p, _) -> p).thenAccept(p -> {
+                    runningProcesses.remove(configuration, running);
                     cleanupTemporaryScript(configuration);
+                    session.finish(p.exitValue(), null);
                     if (p.exitValue() != 0) {
                         Railroad.LOGGER.error("Shell script exited with code {} for configuration: {}", p.exitValue(),
                             configuration.data().getName());
@@ -146,6 +141,10 @@ public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellS
             } catch (IOException exception) {
                 cleanupTemporaryScript(configuration);
                 throw new IllegalStateException("Failed to start shell script process", exception);
+            }
+        }).whenComplete((_, failure) -> {
+            if (failure != null) {
+                session.finish(null, failure);
             }
         });
     }
@@ -229,30 +228,6 @@ public class ShellScriptRunConfigurationType extends RunConfigurationType<ShellS
     private record ScriptDescriptor(Path scriptPath, boolean isTemporary) {
     }
 
-    private record ProcessOutputHandler(Process process, String name) implements Runnable {
-        @Override
-        public void run() {
-            new Thread(() -> {
-                try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        System.out.println("[" + name + " OUT] " + line);
-                    }
-                } catch (IOException exception) {
-                    System.err.println("[" + name + " ERR] Error reading stdout: " + exception.getMessage());
-                }
-            }, name + "-stdout-reader").start();
-
-            new Thread(() -> {
-                try (var reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        System.err.println("[" + name + " ERR] " + line);
-                    }
-                } catch (IOException exception) {
-                    System.err.println("[" + name + " ERR] Error reading stderr: " + exception.getMessage());
-                }
-            }, name + "-stderr-reader").start();
-        }
+    private record Running(Process process, RunSession session) {
     }
 }

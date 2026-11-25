@@ -35,6 +35,7 @@ public class IDESetupStartupTest {
             session.set(Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project));
             throw new IllegalStateException("View construction failed");
         }));
+
         assertNotNull(session.get());
         assertTrue(session.get().isClosed());
         assertNull(manager.getOpenProject());
@@ -46,17 +47,20 @@ public class IDESetupStartupTest {
         var manager = new ProjectManager(() -> {
         }, _ -> {
         });
+
         var previous = new RailroadProject(root, "Veto", new WritableImage(1, 1)) {
             @Override
             public void close() {
             }
         };
+
         manager.setCurrentProject(previous);
         var next = new RailroadProject(root.resolve("next"), "Next", new WritableImage(1, 1));
         assertNull(IDESetup.constructProjectView(manager, next, () -> {
             fail("Veto must precede construction");
             return null;
         }));
+
         assertSame(previous, manager.getOpenProject());
     }
 
@@ -78,6 +82,7 @@ public class IDESetupStartupTest {
                 events.incrementAndGet();
             }
         };
+
         Railroad.EVENT_BUS.subscribe(ProjectConfigurationChangedEvent.class, listener);
         try (var worker = Executors.newSingleThreadExecutor()) {
             var unowned = new ProjectLanguageIndexCoordinator(project, null);
@@ -89,11 +94,13 @@ public class IDESetupStartupTest {
                     throw new AssertionError(exception);
                 }
             });
+
             Services.IDE_STATE.getWorkspaceConfiguration().ready().get(10, TimeUnit.SECONDS);
             Files.writeString(source, "package demo; class A { static int VALUE; }");
             assertTrue(Services.PROJECT_LANGUAGE_INDEX_SERVICE.hasIndexer(project, "java"));
             coordinator.handleFileChange(source, StandardWatchEventKinds.ENTRY_MODIFY);
-            var context = new DefaultProjectIndexContextResolver(Services.PROJECT_LANGUAGE_INDEX_SERVICE::session)
+            ProjectIndexContext context = new DefaultProjectIndexContextResolver(
+                Services.PROJECT_LANGUAGE_INDEX_SERVICE::session)
                 .resolve(project);
             JavaProjectSemanticIndex index = Services.PROJECT_LANGUAGE_INDEX_SERVICE.currentTyped(context,
                 JavaLanguageSupport.LANGUAGE_ID);

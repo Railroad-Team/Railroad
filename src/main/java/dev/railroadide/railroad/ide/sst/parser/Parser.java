@@ -259,6 +259,7 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
             // If the current token starts a new construct or is in the follow set, stop skipping.
             if (followSet.contains(lookaheadType(1)) || startsSyncBoundary(previous(), current()))
                 return;
+
             advance();
         }
     }
@@ -300,6 +301,7 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
             R r = element.apply(this);
             if (r == null)
                 break; // element parse declined
+
             out.add(r);
         }
 
@@ -321,6 +323,7 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
         R first = element.apply(this);
         if (first == null)
             return out;
+
         out.add(first);
 
         while (match(separator)) {
@@ -332,6 +335,7 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
                     marker.rollback();
                     break;
                 }
+
                 marker.rollback();
                 reportError("List element expected after separator");
                 break;
@@ -379,7 +383,7 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
      */
     private Token<T> eof() {
         // LA ensures this only happens at end; pull from lexer to get proper offset/line/col
-        var t = lexer.lookahead(1);
+        Token<T> t = lexer.lookahead(1);
         if (t.channel() == TokenChannel.TRIVIA)
             // force a default EOF token if lexer puts EOF on default channel anyway
             return new Token.MissingToken<>(null, lexer.offset(), lexer.line(), lexer.column());
@@ -517,7 +521,7 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
      **/
     protected final class Marker {
         private final Lexer.Snapshot lexSnapshot;
-        private final ArrayDeque<Token<T>> laCopy;
+        private final Deque<Token<T>> laCopy;
         private final Token<T> prevCopy;
         private final List<ParseDiagnostic> diagnosticsCopy;
         private boolean active = true;
@@ -550,6 +554,7 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
         public void rollback() {
             if (!active)
                 return;
+
             lexer.restore(lexSnapshot);
             lookaheadBuffer.clear();
             lookaheadBuffer.addAll(laCopy);
@@ -597,8 +602,10 @@ public abstract class Parser<T extends Enum<T>, N, E extends N> {
 
             if (offset < 0)
                 throw new IllegalArgumentException("Offset cannot be negative");
+
             if (line < 1)
                 throw new IllegalArgumentException("Line number must be at least 1");
+
             if (column < 1)
                 throw new IllegalArgumentException("Column number must be at least 1");
         }

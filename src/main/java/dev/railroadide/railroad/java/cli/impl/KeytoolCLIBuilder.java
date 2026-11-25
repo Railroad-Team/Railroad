@@ -446,6 +446,7 @@ public class KeytoolCLIBuilder implements CLIBuilder<Process, KeytoolCLIBuilder>
     public KeytoolCLIBuilder keySize(int size) {
         if (size <= 0)
             throw new IllegalArgumentException("Key size must be positive");
+
         this.arguments.add("-keysize " + size);
         return this;
     }
@@ -471,6 +472,7 @@ public class KeytoolCLIBuilder implements CLIBuilder<Process, KeytoolCLIBuilder>
     public KeytoolCLIBuilder validityDays(int days) {
         if (days <= 0)
             throw new IllegalArgumentException("Validity days must be positive");
+
         this.arguments.add("-validity " + days);
         return this;
     }
@@ -955,6 +957,7 @@ public class KeytoolCLIBuilder implements CLIBuilder<Process, KeytoolCLIBuilder>
         for (String extension : extensions) {
             extension(extension);
         }
+
         return this;
     }
 

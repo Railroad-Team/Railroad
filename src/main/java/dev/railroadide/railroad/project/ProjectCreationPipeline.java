@@ -32,7 +32,7 @@ public class ProjectCreationPipeline {
      */
     public void run(ProjectContext ctx, ProgressReporter reporter) throws Exception {
         for (int i = 0; i < steps.size(); i++) {
-            var step = steps.get(i);
+            CreationStep step = steps.get(i);
             reporter.progress(i, steps.size());
             reporter.info("→ " + step.translationKey());
             step.run(ctx, reporter);

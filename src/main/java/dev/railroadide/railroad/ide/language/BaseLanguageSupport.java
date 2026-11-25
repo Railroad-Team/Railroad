@@ -30,5 +30,4 @@ public abstract class BaseLanguageSupport implements LanguageSupport {
     public Set<String> fileExtensions() {
         return extensions;
     }
-
 }

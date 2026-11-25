@@ -84,6 +84,7 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
         // int shortValue = 3;
         // shortValue = intValue; // implicit numeric conversion from int to short
         // shortValue += 5; // implicit numeric conversion from int to short in compound assignment
+
         for (SyntaxNode node : context.nodesOfKind(JavaSyntaxKinds.ASSIGNMENT_EXPRESSION.id())) {
             inspectAssignmentExpression(context, reporter, node);
         }
@@ -92,6 +93,7 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
         // int x = 5;
         // return x; // implicit numeric conversion from int to long in return statement
         // }
+
         for (SyntaxNode node : context.nodesOfKind(JavaSyntaxKinds.RETURN_STATEMENT.id())) {
             inspectReturnStatement(context, reporter, node);
         }
@@ -107,6 +109,7 @@ public class CoreImplicitNumericConversionInspection implements JavaInspectionRu
         //
         // long myLong = 10L;
         // MyClass obj = new MyClass(myLong); // implicit numeric conversion from long to int in class instance creation
+
         for (SyntaxNode node : context.nodesOfKinds(JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id(),
             JavaSyntaxKinds.CLASS_INSTANCE_CREATION_EXPRESSION.id())) {
             inspectMethodInvocation(context, reporter, node);

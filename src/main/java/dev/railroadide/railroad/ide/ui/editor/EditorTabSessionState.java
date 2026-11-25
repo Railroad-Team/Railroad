@@ -49,18 +49,22 @@ public record EditorTabSessionState(
     public EditorTabSessionState {
         if (identity == null && path == null)
             throw new IllegalArgumentException("Document identity or path must be present");
+
         if (path != null) {
             path = path.toAbsolutePath().normalize();
         }
+
         if (identity == null) {
             identity = new DocumentIdentity(DocumentId.create(), DocumentUri.fromPath(path));
         }
+
         order = Math.max(0, order);
         if (editorGroupId == null || editorGroupId.isBlank()) {
             editorGroupId = DEFAULT_EDITOR_GROUP_ID;
         } else {
             editorGroupId = editorGroupId.trim();
         }
+
         viewState = Objects.requireNonNullElse(viewState, EditorViewState.EMPTY);
     }
 

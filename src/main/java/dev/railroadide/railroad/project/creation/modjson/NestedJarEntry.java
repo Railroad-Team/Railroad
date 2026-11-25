@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class NestedJarEntry {
-    /** The nested JAR's resource path within the containing mod. */
+    /**
+     * The nested JAR's resource path within the containing mod.
+     */
     private String file;
 }

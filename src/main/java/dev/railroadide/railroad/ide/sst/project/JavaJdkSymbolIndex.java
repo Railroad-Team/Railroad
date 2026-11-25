@@ -1,8 +1,10 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
@@ -17,16 +19,21 @@ import java.util.Map;
  * Binary symbol index for a selected JDK or the currently running Java runtime.
  */
 public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
+    private final @Nullable JavaLibrarySymbolIndex archiveIndex;
+
     private JavaJdkSymbolIndex(JavaLibrarySymbolIndex index) {
         super(index);
+        archiveIndex = index;
     }
+
     private JavaJdkSymbolIndex(
         Map<String, ClassStub> classStubsByQualifiedName,
         Map<String, Path> sourceByQualifiedName,
         Map<String, DocumentUri> locations,
         Runnable activityCheck
     ) {
-        super(classStubsByQualifiedName, sourceByQualifiedName, locations, Map.of(), activityCheck, false);
+        super(classStubsByQualifiedName, sourceByQualifiedName, Map.copyOf(locations), Map.of(), activityCheck, false);
+        archiveIndex = null;
     }
 
     /**
@@ -56,6 +63,7 @@ public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
         if (!Files.isRegularFile(rtJar)) {
             rtJar = jdkHome.resolve("lib/rt.jar");
         }
+
         if (Files.isRegularFile(rtJar)) {
             roots.add(rtJar);
         } else {
@@ -73,7 +81,9 @@ public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
         if (roots.isEmpty())
             return fromCurrentRuntime(activityCheck);
 
-        JavaLibrarySymbolIndex index = JavaLibrarySymbolIndex.build(roots, activityCheck);
+        JavaLibrarySymbolIndex index = JavaLibrarySymbolIndex.build(roots, activityCheck,
+            JavaLibraryStubCache.shared().orElse(null),
+            Files.isRegularFile(rtJar) ? "railroad.activity.jdk_runtime" : "railroad.activity.jdk_modules");
         activityCheck.run();
         return new JavaJdkSymbolIndex(index);
     }
@@ -95,21 +105,24 @@ public final class JavaJdkSymbolIndex extends JavaStubSymbolIndex {
      */
     public static JavaJdkSymbolIndex fromCurrentRuntime(Runnable activityCheck) {
         activityCheck.run();
+        ActivityProgress.current().indeterminate("railroad.activity.jdk_runtime");
         Map<String, ClassStub> classStubsByQualifiedName = JavaSemanticAnalyzer
             .loadJdkClassStubsByQualifiedName(activityCheck);
+        ActivityProgress.current().indeterminate("railroad.activity.finalizing");
         Map<String, Path> sourceByQualifiedName = new LinkedHashMap<>();
         Map<String, DocumentUri> locations = new LinkedHashMap<>();
         Path runtimeHome = Path.of(System.getProperty("java.home")).toAbsolutePath().normalize();
+        DocumentUri runtimeLocation = DocumentUri.fromPath(runtimeHome);
         classStubsByQualifiedName.keySet()
             .forEach(qualifiedName -> {
                 ActivityCheckpoint.poll(activityCheck);
                 sourceByQualifiedName.put(qualifiedName, runtimeHome);
                 String entry = qualifiedName.replace('.', '/') + ".class";
                 var resource = ClassLoader.getSystemResource(entry);
-                if (resource != null) {
-                    locations.put(qualifiedName, DocumentUri.parse(resource.toExternalForm()));
-                }
+                locations.put(qualifiedName,
+                    resource == null ? runtimeLocation : DocumentUri.parse(resource.toExternalForm()));
             });
+
         return new JavaJdkSymbolIndex(classStubsByQualifiedName, sourceByQualifiedName, locations, activityCheck);
     }
 }

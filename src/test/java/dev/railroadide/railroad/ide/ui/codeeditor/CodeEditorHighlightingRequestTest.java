@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -48,6 +49,7 @@ public class CodeEditorHighlightingRequestTest {
                 fixture.editor.setDocumentStore(fixture.store);
                 return null;
             });
+
             FeatureRequestContext context = fixture.nextRequest();
             assertSame(fixture.store.capture().document(context.documentSnapshot().id()).orElseThrow(),
                 context.documentSnapshot());
@@ -78,6 +80,7 @@ public class CodeEditorHighlightingRequestTest {
             if (call == 1) {
                 await(releaseOld);
             }
+
             return styles(context, call == 1 ? "OLD" : "NEW");
         })) {
             try {
@@ -91,9 +94,11 @@ public class CodeEditorHighlightingRequestTest {
                     } else {
                         fixture.editor.request();
                     }
+
                     assertTrue(old.cancellationToken().isCancellationRequested());
                     return null;
                 });
+
                 FeatureRequestContext current = fixture.nextRequest();
                 assertNotSame(old, current);
                 assertSame(old.documentSnapshot(), current.documentSnapshot());
@@ -138,6 +143,7 @@ public class CodeEditorHighlightingRequestTest {
                     fixture.editor.replaceText("class Example { int edited; }");
                     assertTrue(context.cancellationToken().isCancellationRequested());
                 };
+
                 if (alreadyQueued) {
                     try (FxBlocker blocker = FxBlocker.start(edit)) {
                         release.countDown();
@@ -149,9 +155,11 @@ public class CodeEditorHighlightingRequestTest {
                         edit.run();
                         return null;
                     });
+
                     release.countDown();
                     awaitRequests(fixture.editor.featureRequests);
                 }
+
                 onFx(() -> {
                     assertTrue(fixture.editor.highlightLabels().isEmpty());
                     return null;
@@ -185,6 +193,7 @@ public class CodeEditorHighlightingRequestTest {
             if (call == 1) {
                 await(releaseOld);
             }
+
             return styles(context, call == 1 ? "OLD_WORKSPACE" : "NEW_WORKSPACE");
         })) {
             try {
@@ -200,11 +209,13 @@ public class CodeEditorHighlightingRequestTest {
                         fixture.store.relocate(old.documentSnapshot().id(),
                             DocumentUri.fromPath(directory.resolve("Renamed.java")));
                     }
+
                     fixture.editor.refreshWorkspace();
-                    assertTrue(old.cancellationToken().isCancellationRequested());
                     return null;
                 });
+
                 FeatureRequestContext current = fixture.nextRequest();
+                assertTrue(old.cancellationToken().isCancellationRequested());
                 assertEquals(old.documentSnapshot().version(), current.documentSnapshot().version());
                 assertEquals(((TextDocumentSnapshot) old.documentSnapshot()).text(),
                     ((TextDocumentSnapshot) current.documentSnapshot()).text());
@@ -222,6 +233,78 @@ public class CodeEditorHighlightingRequestTest {
                 });
             } finally {
                 releaseOld.countDown();
+            }
+        }
+    }
+
+    @Test
+    public void stylesForUnchangedTextApplyAfterAnUnrelatedWorkspaceChange() throws Exception {
+        var releaseOld = new CountDownLatch(1);
+        var releaseRetry = new CountDownLatch(1);
+        var calls = new AtomicInteger();
+        try (Fixture fixture = open(context -> {
+            int call = calls.incrementAndGet();
+            await(call == 1 ? releaseOld : releaseRetry);
+            return styles(context, call == 1 ? "OLD_WORKSPACE" : "NEW_WORKSPACE");
+        })) {
+            try {
+                fixture.nextRequest();
+                try (FxBlocker blocker = FxBlocker.start(() -> fixture.store
+                    .publishConfiguration(new WorkspaceConfigurationSnapshot(1, Set.of("changed"))))) {
+                    releaseOld.countDown();
+                    awaitRequests(fixture.editor.featureRequests);
+                    blocker.releaseAndAwait();
+                }
+
+                onFx(() -> {
+                    assertEquals(List.of("OLD_WORKSPACE"), fixture.editor.highlightLabels());
+                    return null;
+                });
+
+                fixture.nextRequest();
+                releaseRetry.countDown();
+                awaitRequests(fixture.editor.featureRequests);
+                onFx(() -> {
+                    assertEquals(List.of("NEW_WORKSPACE"), fixture.editor.highlightLabels());
+                    return null;
+                });
+            } finally {
+                releaseOld.countDown();
+                releaseRetry.countDown();
+            }
+        }
+    }
+
+    @Test
+    public void highlightingIsNotQueuedBehindBackgroundIndexing() throws Exception {
+        var entered = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        var workspace = new WorkspaceSnapshot("background", Map.of(), new WorkspaceConfigurationSnapshot(0, Set.of()),
+            0);
+        try (SstScheduler.Scope background = SstScheduler.shared().newScope()) {
+            try {
+                for (int index = 0; index < 16; index++) {
+                    var cancellation = new CancellationTokenSource();
+                    background.submit(index, RequestPriority.BACKGROUND_INDEXING,
+                        new WorkspaceRequestContext(workspace, cancellation.token(), Deadline.none()), cancellation,
+                        () -> {
+                            entered.countDown();
+                            await(release);
+                            return null;
+                        });
+                }
+
+                await(entered);
+                try (Fixture fixture = open(context -> styles(context, "WHILE_INDEXING"))) {
+                    fixture.nextRequest();
+                    awaitRequests(fixture.editor.featureRequests);
+                    onFx(() -> {
+                        assertEquals(List.of("WHILE_INDEXING"), fixture.editor.highlightLabels());
+                        return null;
+                    });
+                }
+            } finally {
+                release.countDown();
             }
         }
     }
@@ -262,6 +345,7 @@ public class CodeEditorHighlightingRequestTest {
                     awaitRequests(fixture.editor.featureRequests);
                     blocker.releaseAndAwait();
                 }
+
                 onFx(() -> {
                     assertTrue(fixture.editor.isEditorClosed());
                     assertTrue(fixture.editor.highlightLabels().isEmpty());
@@ -279,6 +363,7 @@ public class CodeEditorHighlightingRequestTest {
         try (Fixture fixture = open(context -> {
             if (calls.incrementAndGet() == 1)
                 throw new CompletionException(new IllegalStateException("Provider failed"));
+
             return styles(context, "RECOVERED");
         })) {
             fixture.nextRequest();
@@ -287,6 +372,7 @@ public class CodeEditorHighlightingRequestTest {
                 fixture.editor.request();
                 return null;
             });
+
             fixture.nextRequest();
             awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
@@ -329,7 +415,7 @@ public class CodeEditorHighlightingRequestTest {
         store.publishBacking(dependency);
         var provider = new ControlledProvider(computation);
         return onFx(() -> {
-            var failures = new LinkedBlockingQueue<Throwable>();
+            BlockingQueue<Throwable> failures = new LinkedBlockingQueue<Throwable>();
             Thread.UncaughtExceptionHandler previousHandler = Thread.currentThread().getUncaughtExceptionHandler();
             Thread.currentThread().setUncaughtExceptionHandler((_, failure) -> failures.add(failure));
             Project project = new RailroadProject(directory, "Highlighting request", new WritableImage(1, 1));
@@ -339,6 +425,7 @@ public class CodeEditorHighlightingRequestTest {
             if (attach) {
                 pane.setDocumentStore(store);
             }
+
             return new Fixture(pane, store, dependency, provider, failures, previousHandler);
         });
     }
@@ -374,8 +461,10 @@ public class CodeEditorHighlightingRequestTest {
                 } finally {
                     Thread.currentThread().setUncaughtExceptionHandler(previousHandler);
                 }
+
                 return null;
             });
+
             CodeEditorRequestTestSupport.awaitRequests(editor.featureRequests);
             if (!fxFailures.isEmpty())
                 throw new AssertionError("Uncaught JavaFX publication failure", fxFailures.peek());

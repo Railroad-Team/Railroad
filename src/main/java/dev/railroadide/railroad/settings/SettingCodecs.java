@@ -22,9 +22,13 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-/** Application-specific codecs for settings whose controls are custom Railroad UI components. */
+/**
+ * Application-specific codecs for settings whose controls are custom Railroad UI components.
+ */
 public class SettingCodecs {
-    /** Selects the application language from the registered languages. */
+    /**
+     * Selects the application language from the registered languages.
+     */
     public static final SettingCodec<Language, ComboBox<Language>> LANGUAGE = SettingCodec
         .<Language, ComboBox<Language>>builder("railroad:language")
         .nodeToValue(ComboBox::getValue)
@@ -43,7 +47,9 @@ public class SettingCodecs {
         })
         .build();
 
-    /** Selects the active application theme. */
+    /**
+     * Selects the active application theme.
+     */
     public static final SettingCodec<String, ThemeSettingsSection> THEME = SettingCodec
         .<String, ThemeSettingsSection>builder("railroad:theme")
         .nodeToValue(ThemeSettingsSection::getSelectedTheme)
@@ -53,7 +59,9 @@ public class SettingCodecs {
         .createNode(ThemeSettingsSection::new)
         .build();
 
-    /** Selects automatic, installed-font, or custom-family terminal font behavior. */
+    /**
+     * Selects automatic, installed-font, or custom-family terminal font behavior.
+     */
     public static final SettingCodec<TerminalFontMode, ComboBox<TerminalFontMode>> TERMINAL_FONT_MODE = SettingCodec
         .<TerminalFontMode, ComboBox<TerminalFontMode>>builder("railroad:terminal_font_mode")
         .nodeToValue(comboBox -> comboBox.getValue() == null ? TerminalFontMode.AUTO : comboBox.getValue())
@@ -79,11 +87,28 @@ public class SettingCodecs {
                 case "Custom Family" -> TerminalFontMode.CUSTOM_FAMILY;
                 default -> TerminalFontMode.AUTO;
             }));
+
             return comboBox;
         })
         .build();
 
-    /** Stores the selected installed terminal font family. */
+    /**
+     * Stores the preferred side of the caret for parameter information.
+     */
+    public static final SettingCodec<ParameterPopupPosition, ComboBox<ParameterPopupPosition>> PARAMETER_POPUP_POSITION = DefaultSettingCodecs
+        .ofEnum("railroad:parameter_popup_position", ParameterPopupPosition.class,
+            ParameterPopupPosition::name, ParameterPopupPosition::valueOf,
+            new ComboBoxConverter<>(
+                position -> L18n.localize(position == ParameterPopupPosition.ABOVE
+                    ? "railroad.settings.editor.parameter_popup_position.above"
+                    : "railroad.settings.editor.parameter_popup_position.below"),
+                label -> label.equals(L18n.localize("railroad.settings.editor.parameter_popup_position.above"))
+                    ? ParameterPopupPosition.ABOVE
+                    : ParameterPopupPosition.BELOW));
+
+    /**
+     * Stores the selected installed terminal font family.
+     */
     public static final SettingCodec<String, InstalledFontPane> INSTALLED_FONT = SettingCodec
         .<String, InstalledFontPane>builder("railroad:installed_font")
         .createNode(InstalledFontPane::new)
@@ -93,7 +118,9 @@ public class SettingCodecs {
         .jsonEncoder(font -> font == null ? JsonNull.INSTANCE : new JsonPrimitive(font))
         .build();
 
-    /** Stores the selected editor font family. */
+    /**
+     * Stores the selected editor font family.
+     */
     public static final SettingCodec<String, InstalledFontPane> EDITOR_FONT_FAMILY = SettingCodec
         .<String, InstalledFontPane>builder("railroad:editor_font_family")
         .createNode(InstalledFontPane::new)
@@ -103,7 +130,9 @@ public class SettingCodecs {
         .jsonEncoder(font -> font == null ? JsonNull.INSTANCE : new JsonPrimitive(font))
         .build();
 
-    /** Stores the custom terminal font family text. */
+    /**
+     * Stores the custom terminal font family text.
+     */
     public static final SettingCodec<String, TerminalCustomFontFamilyPane> TERMINAL_CUSTOM_FONT_FAMILY = SettingCodec
         .<String, TerminalCustomFontFamilyPane>builder("railroad:terminal_custom_font_family")
         .createNode(TerminalCustomFontFamilyPane::new)
@@ -113,7 +142,9 @@ public class SettingCodecs {
         .jsonEncoder(fontFamily -> fontFamily == null ? JsonNull.INSTANCE : new JsonPrimitive(fontFamily))
         .build();
 
-    /** Maps plugin descriptors to their enabled state in the plugin settings pane. */
+    /**
+     * Maps plugin descriptors to their enabled state in the plugin settings pane.
+     */
     public static final SettingCodec<Map<PluginDescriptor, Boolean>, PluginsPane> ENABLED_PLUGINS = SettingCodec
         .<Map<PluginDescriptor, Boolean>, PluginsPane>builder("railroad:enabled_plugins")
         .nodeToValue(PluginsPane::getEnabledPlugins)
@@ -123,7 +154,9 @@ public class SettingCodecs {
         .createNode(PluginsPane::new)
         .build();
 
-    /** Serializes and displays the user keybind map. */
+    /**
+     * Serializes and displays the user keybind map.
+     */
     public static final SettingCodec<Map<String, List<KeybindData>>, KeybindsList> KEYBINDS = SettingCodec
         .<Map<String, List<KeybindData>>, KeybindsList>builder("railroad:keybinds")
         .createNode(KeybindsList::new)
@@ -133,7 +166,9 @@ public class SettingCodecs {
         .jsonDecoder(KeybindsList::fromJson)
         .build();
 
-    /** Serializes a list of directories selected for scanning or discovery. */
+    /**
+     * Serializes a list of directories selected for scanning or discovery.
+     */
     public static final SettingCodec<List<Path>, DirectoryListPane> DIRECTORY_PATH_LIST = SettingCodec
         .<List<Path>, DirectoryListPane>builder("railroad:directory_path_list")
         .createNode(DirectoryListPane::new)
@@ -143,7 +178,9 @@ public class SettingCodecs {
         .jsonDecoder(AbstractPathListPane::fromJson)
         .build();
 
-    /** Serializes a list of file paths. */
+    /**
+     * Serializes a list of file paths.
+     */
     public static final SettingCodec<List<Path>, FileListPane> FILE_PATH_LIST = SettingCodec
         .<List<Path>, FileListPane>builder("railroad:file_path_list")
         .createNode(FileListPane::new)
@@ -153,7 +190,9 @@ public class SettingCodecs {
         .jsonDecoder(AbstractPathListPane::fromJson)
         .build();
 
-    /** Serializes the optional Git executable path. */
+    /**
+     * Serializes the optional Git executable path.
+     */
     public static final SettingCodec<Path, GitExecutablePathPane> GIT_EXECUTABLE_PATH = SettingCodec
         .<Path, GitExecutablePathPane>builder("railroad:git_executable_path")
         .createNode(GitExecutablePathPane::new)
@@ -163,7 +202,9 @@ public class SettingCodecs {
         .jsonDecoder(json -> (json == null || json.isJsonNull()) ? null : Path.of(json.getAsString()))
         .build();
 
-    /** Binds the current Java inspection rule state to its settings pane. */
+    /**
+     * Binds the current Java inspection rule state to its settings pane.
+     */
     public static final SettingCodec<JavaInspectionRuleSettingsState, JavaInspectionRuleSettingsPane> JAVA_INSPECTION_RULE_SETTINGS = SettingCodec
         .<JavaInspectionRuleSettingsState, JavaInspectionRuleSettingsPane>builder(
             "railroad:java_inspection_rule_settings")
@@ -173,7 +214,9 @@ public class SettingCodecs {
         .jsonEncoder(state -> JsonNull.INSTANCE)
         .jsonDecoder(json -> JavaInspectionRuleSettingsState.empty())
         .build();
-    /** Serializes the optional Windows Terminal settings path. */
+    /**
+     * Serializes the optional Windows Terminal settings path.
+     */
     public static final SettingCodec<Path, WindowsTerminalSettingsPathPane> WINDOWS_TERMINAL_SETTINGS_PATH = SettingCodec
         .<Path, WindowsTerminalSettingsPathPane>builder("railroad:windows_terminal_settings_path")
         .createNode(WindowsTerminalSettingsPathPane::new)
@@ -183,7 +226,9 @@ public class SettingCodecs {
         .jsonDecoder(json -> (json == null || json.isJsonNull()) ? null : Path.of(json.getAsString()))
         .build();
 
-    /** Serializes the caret position format and provides its localized dropdown. */
+    /**
+     * Serializes the caret position format and provides its localized dropdown.
+     */
     public static final SettingCodec<CaretPositionFormat, ComboBox<CaretPositionFormat>> CARET_POSITION_FORMAT = DefaultSettingCodecs
         .ofEnum("railroad:caret_position_format",
             CaretPositionFormat.class,

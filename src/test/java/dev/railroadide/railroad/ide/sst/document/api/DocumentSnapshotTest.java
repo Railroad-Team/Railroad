@@ -147,7 +147,8 @@ public class DocumentSnapshotTest {
         var input = new StringBuilder("original");
         var old = new TextDocumentSnapshot(id, uri, version, "text", input, StandardCharsets.UTF_8);
         var binary = new BinaryDocumentSnapshot(id, uri, version, "binary", new byte[]{1, 2, 3});
-        var owned = new ArrayList<DocumentSnapshot>();
+
+        List<DocumentSnapshot> owned = new ArrayList<DocumentSnapshot>();
         owned.add(old);
         input.replace(0, input.length(), "edited");
         owned.set(0, new TextDocumentSnapshot(id, uri, version.next(), "text", input, StandardCharsets.UTF_8));
@@ -155,7 +156,7 @@ public class DocumentSnapshotTest {
         var ready = new CountDownLatch(4);
         var start = new CountDownLatch(1);
         try (var executor = Executors.newFixedThreadPool(4)) {
-            var tasks = new ArrayList<Future<?>>();
+            List<Future<?>> tasks = new ArrayList<Future<?>>();
             for (int worker = 0; worker < 4; worker++) {
                 tasks.add(executor.submit(() -> {
                     ready.countDown();
@@ -163,20 +164,23 @@ public class DocumentSnapshotTest {
                     for (int read = 0; read < 20; read++) {
                         assertEquals("original", old.text());
                         assertEquals(version, old.version());
-                        var view = binary.bytes();
+                        ByteBuffer view = binary.bytes();
                         assertEquals(0, view.position());
                         assertEquals(1, view.get());
                         assertArrayEquals(new byte[]{1, 2, 3}, binary.copyBytes());
                     }
+
                     return null;
                 }));
             }
+
             try {
                 assertTrue(ready.await(10, TimeUnit.SECONDS));
             } finally {
                 start.countDown();
             }
-            for (var task : tasks) {
+
+            for (Future<?> task : tasks) {
                 task.get(20, TimeUnit.SECONDS);
             }
         }
@@ -258,6 +262,7 @@ public class DocumentSnapshotTest {
         var binary = new BinaryDocumentSnapshot(
             DocumentId.create(), binaryUri, DocumentVersion.initial(), "application/java-vm",
             DocumentOrigin.original(binaryUri), new byte[]{(byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE});
+
         DocumentId decompiledId = DocumentId.create();
         DocumentUri decompiledUri = DocumentUri.virtual("decompiled", "demo/Example.java");
         var origin = new DocumentOrigin(
@@ -327,6 +332,7 @@ public class DocumentSnapshotTest {
     @Test
     public void binarySnapshotCopiesInputsAndExposesIndependentReadOnlyViews() {
         byte[] content = {1, 2, 3, 4};
+
         var snapshot = new BinaryDocumentSnapshot(
             DocumentId.create(),
             DocumentUri.virtual("memory", "images/icon.bin"),
@@ -354,6 +360,7 @@ public class DocumentSnapshotTest {
     @Test
     public void binarySnapshotCopiesOnlyRemainingBytesWithoutMovingSourcePosition() {
         ByteBuffer source = ByteBuffer.wrap(new byte[]{10, 20, 30, 40});
+
         source.position(1);
         source.limit(3);
 
@@ -432,8 +439,10 @@ public class DocumentSnapshotTest {
                 "java", "class Example {}", StandardCharsets.UTF_8);
             var bytes = new BinaryDocumentSnapshot(DocumentId.create(), uri, DocumentVersion.initial(),
                 "binary", new byte[]{1});
+
             var buffer = new BinaryDocumentSnapshot(DocumentId.create(), uri, DocumentVersion.initial(),
                 "binary", ByteBuffer.wrap(new byte[]{1}));
+
             var expected = new DocumentOrigin(BackingKind.VIRTUAL, ProvenanceKind.UNSPECIFIED);
 
             assertEquals(expected, text.origin());

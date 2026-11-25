@@ -4,7 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-/** A mutable named layout element with arbitrary properties consumed by the layout builder. */
+/**
+ * A mutable named layout element with arbitrary properties consumed by the layout builder.
+ */
 public class LayoutItem {
     private final Map<String, Object> properties = new HashMap<>();
     private String name;
@@ -116,8 +118,10 @@ public class LayoutItem {
     public boolean equals(Object o) {
         if (this == o)
             return true;
+
         if (!(o instanceof LayoutItem that))
             return false;
+
         return Objects.equals(name, that.name) && Objects.equals(properties, that.properties);
     }
 

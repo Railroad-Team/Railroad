@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
+import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -15,15 +16,16 @@ public class JavaWorkspaceSymbolIdentityTest {
     @Test
     public void capturedWildcardSignaturesUseDiscoveredProjectTypesAndKeepDocumentRevision() {
         var store = new DefaultDocumentStore("symbols", new WorkspaceConfigurationSnapshot(0, Set.of()));
-        var dependency = source("Widget.java", "package dependency; public class Widget {}");
-        var use = source("Use.java", "import dependency.*; class Use { void accept(Widget value) {} }");
+        TextDocumentSnapshot dependency = source("Widget.java", "package dependency; public class Widget {}");
+        TextDocumentSnapshot use = source("Use.java",
+            "import dependency.*; class Use { void accept(Widget value) {} }");
         store.publishBacking(dependency);
         store.publishBacking(use);
         try (var provider = new JavaWorkspaceAnalysisProvider(() -> true, (_, _) -> JavaProjectSemanticIndex.empty())) {
-            var workspace = store.capture();
-            var analysis = provider.capture(workspace);
+            WorkspaceSnapshot workspace = store.capture();
+            JavaWorkspaceAnalysis analysis = provider.capture(workspace);
             var id = JavaSymbolIds.method(JavaSymbolIds.type("Use"), "accept", List.of("dependency.Widget"));
-            var shard = analysis.graph().shards().get(use.id());
+            SemanticIndexShard shard = analysis.graph().shards().get(use.id());
             assertNotNull(shard);
             assertEquals(use.version(), shard.documentVersion());
             assertTrue(shard.declarations().stream().anyMatch(symbol -> symbol.id().equals(id)));

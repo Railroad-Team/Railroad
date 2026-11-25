@@ -8,11 +8,19 @@ import dev.railroadide.railroad.ide.sst.document.api.ProvenanceKind;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentUri;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentVersion;
 import dev.railroadide.railroad.ide.sst.document.api.TextDocumentSnapshot;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxTree;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxKind;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxToken;
+import java.util.Deque;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -72,6 +80,164 @@ public class JavaSyntaxParserTest {
 
         SyntaxTree tree = JavaSyntaxParser.parse(source);
         assertEquals(source, JavaParserTestSupport.syntaxText(tree));
+    }
+
+    @Test
+    public void parsesSeparatorsBetweenDeclaredAndReferencedTryResources() {
+        String source = """
+            class Example {
+                void run(Resource existing) throws Exception {
+                    try (Resource first = open();
+                         Resource second = open(); existing;) {}
+                }
+            }
+            """;
+        var result = JavaSyntaxParser.parseWithDiagnostics(source);
+        assertTrue(result.diagnostics().isEmpty(), result.diagnostics()::toString);
+        assertEquals(source, JavaParserTestSupport.syntaxText(result.tree()));
+        assertFalse(JavaSyntaxParser.parseWithDiagnostics(source.replace("open();", "open()"))
+            .diagnostics().isEmpty());
+    }
+
+    @Test
+    public void recognizesNonSealedOnlyInTypeDeclarationPrefixes() {
+        String source = """
+            sealed interface Root permits Root.Child, Branch {
+                @Deprecated n\\u006fn\\u002ds\\u0065aled interface Child extends Root {}
+            }
+            non-sealed class Branch implements Root {
+                int difference(int non, int sealed) { return non-sealed; }
+            }
+            """;
+        var result = JavaSyntaxParser.parseWithDiagnostics(source);
+        assertTrue(result.diagnostics().isEmpty(), result.diagnostics()::toString);
+        assertEquals(source, JavaParserTestSupport.syntaxText(result.tree()));
+        List<SyntaxToken> tokens = JavaParserTestSupport.collectSyntaxTokens(result.tree());
+        assertEquals(2, tokens.stream()
+            .filter(token -> token.kind().equals(JavaSyntaxKinds.tokenKind(JavaTokenType.NON_SEALED_KEYWORD))).count());
+        assertEquals(1, tokens.stream()
+            .filter(token -> token.kind().equals(JavaSyntaxKinds.tokenKind(JavaTokenType.MINUS))).count());
+
+        for (String spelling : List.of("non -sealed", "non- sealed", "non/*gap*/-sealed", "non-sealedExtra")) {
+            assertFalse(JavaSyntaxParser.parseWithDiagnostics(source.replace("non-sealed class", spelling + " class"))
+                .diagnostics().isEmpty(), spelling);
+        }
+    }
+
+    @Test
+    public void parsesAnnotatedReturnTypesAfterAdjacentGenericClosers() {
+        String source = """
+            class Example {
+                <T extends Box<X>> @Nullable T get() { return null; }
+                <T extends Box<Box<X>>> @Nullable T nested() { return null; }
+            }
+            """;
+        var checkpoints = new AtomicInteger();
+        SyntaxTree tree = JavaSyntaxParser.parse(source,
+            () -> assertTrue(checkpoints.incrementAndGet() < 1000, "Parser stalled at a return-type annotation"));
+
+        assertEquals(source, JavaParserTestSupport.syntaxText(tree));
+        assertTrue(JavaSyntaxParser.parseWithDiagnostics(source).diagnostics().isEmpty());
+    }
+
+    @Test
+    public void typeLookaheadPreservesShiftOperatorsBeforeAnnotatedCreation() {
+        String source = """
+            class Example {
+                boolean compare(int left, int right) {
+                    return left < right >> new @A Box().value;
+                }
+
+                boolean compareUnsigned(int left, int right) {
+                    return (left < right >>> new @A Box().value);
+                }
+            }
+            """;
+        var checkpoints = new AtomicInteger();
+        SyntaxTree tree = JavaSyntaxParser.parse(source,
+            () -> assertTrue(checkpoints.incrementAndGet() < 1000, "Parser stalled after type lookahead"));
+
+        assertEquals(source, JavaParserTestSupport.syntaxText(tree));
+        var result = JavaSyntaxParser.parseWithDiagnostics(source);
+        assertTrue(result.diagnostics().isEmpty(), result.diagnostics()::toString);
+        List<SyntaxKind> tokenKinds = JavaParserTestSupport.collectSyntaxTokens(tree).stream()
+            .map(token -> token.kind()).toList();
+        assertTrue(tokenKinds.contains(JavaSyntaxKinds.tokenKind(JavaTokenType.RIGHT_SHIFT)));
+        assertTrue(tokenKinds.contains(JavaSyntaxKinds.tokenKind(JavaTokenType.UNSIGNED_RIGHT_SHIFT)));
+    }
+
+    @Test
+    public void parsesTypeAnnotationsOnArrayCreationDimensions() {
+        String source = """
+            class Example {
+                int[][] sized = new @A int @B [1] @C [2];
+                int[][] mixed = new int[1] @A [];
+                int[] initialized = new int @A [] {1};
+
+                int[] make() { return new int @A(value = 1) [1]; }
+            }
+            """;
+
+        JavaSyntaxAssertions.assertParsesWithoutRecovery(source);
+    }
+
+    @Test
+    public void parsesReceiverParametersSeparatelyFromFormalParameters() {
+        String source = """
+            class Example<T> {
+                void plain(Example<T> this) {}
+                void annotated(@A Example<T> this, int value) {}
+                class Inner {
+                    Inner(final Example<T> Example.this) {}
+                    void nested(Example<T>.Inner this) {}
+                }
+            }
+            """;
+
+        JavaSyntaxAssertions.assertParsesWithoutRecovery(source);
+        List<String> kinds = new ArrayList<String>();
+        Deque<SyntaxNode> pending = new ArrayDeque<SyntaxNode>(List.of(JavaSyntaxParser.parse(source).root()));
+        while (!pending.isEmpty()) {
+            SyntaxNode node = pending.pop();
+            kinds.add(node.kind().id());
+            node.children().forEach(pending::push);
+        }
+
+        assertEquals(4, countKind(kinds, JavaSyntaxKinds.RECEIVER_PARAMETER.id()));
+        assertEquals(1, countKind(kinds, JavaSyntaxKinds.PARAMETER.id()));
+
+        var misplaced = JavaSyntaxParser.parseWithDiagnostics("class Example { void later(int a, Example this) {} }");
+        assertFalse(misplaced.diagnostics().isEmpty(), "Only the first parameter can be a receiver");
+    }
+
+    @Test
+    public void parsesParenthesizedConditionalCaseConstantsWithoutLooping() {
+        String source = """
+            class Example {
+                static final int one = 0;
+                void run(int value) {
+                    switch (value) {
+                        case (true ? 0 : 1):
+                        case (one == 5 ? 1 : 2):
+                        case ((3)):
+                        case (4):
+                    }
+                }
+            }
+            """;
+
+        assertTimeoutPreemptively(Duration.ofSeconds(10),
+            () -> JavaSyntaxAssertions.assertParsesWithoutRecovery(source));
+    }
+
+    @Test
+    public void parsesConcatenationsDeeperThanTheThreadStack() {
+        String source = "class Example { String text = " + "\"a\" + ".repeat(32_000) + "\"a\"; }\n";
+
+        var result = JavaSyntaxParser.parseWithDiagnostics(source);
+
+        assertTrue(result.diagnostics().isEmpty(), result.diagnostics()::toString);
+        assertEquals(source, JavaParserTestSupport.syntaxText(result.tree()));
     }
 
     @Test
@@ -271,8 +437,10 @@ public class JavaSyntaxParserTest {
         SyntaxTree tree = JavaSyntaxParser.parse(snapshot);
         var edit = new JavaSyntaxParser.TextEdit(oldSource.indexOf("1"), 1, "20");
 
-        var next = JavaSyntaxParser.parseIncremental(tree, oldSource, newSource, edit).tree().documentSnapshot();
-        var versioned = JavaSyntaxParser.parseIncremental(tree, new DocumentVersion(9), oldSource, newSource, edit)
+        TextDocumentSnapshot next = JavaSyntaxParser.parseIncremental(tree, oldSource, newSource, edit).tree()
+            .documentSnapshot();
+        TextDocumentSnapshot versioned = JavaSyntaxParser
+            .parseIncremental(tree, new DocumentVersion(9), oldSource, newSource, edit)
             .tree().documentSnapshot();
 
         assertSame(origin, next.origin());

@@ -10,7 +10,9 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.layout.HBox;
 
-/** Sidebar cell displaying a VCS profile or the {@code REPO_URL_OPTION} entry for importing by URL. */
+/**
+ * Sidebar cell displaying a VCS profile or the {@code REPO_URL_OPTION} entry for importing by URL.
+ */
 public class AccountListCell extends ListCell<Object> {
     private final HBox container = new HBox(8);
     private final MFXFontIcon forkIcon = new MFXFontIcon();
@@ -19,7 +21,9 @@ public class AccountListCell extends ListCell<Object> {
     private final Label subtitle = new Label();
     private final VBox titleContainer;
 
-    /** Builds the reusable icon and label layout and installs selection styling. */
+    /**
+     * Builds the reusable icon and label layout and installs selection styling.
+     */
     public AccountListCell() {
         getStyleClass().add("account-list-cell");
         setMinWidth(0);

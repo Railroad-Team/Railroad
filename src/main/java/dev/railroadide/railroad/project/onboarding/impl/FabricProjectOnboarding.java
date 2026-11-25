@@ -70,7 +70,7 @@ public class FabricProjectOnboarding {
      * @param showView callback that displays the setup UI and subsequent project creation view
      */
     public void startIn(Consumer<Parent> showView) {
-        var flow = OnboardingFlow.builder()
+        OnboardingFlow flow = OnboardingFlow.builder()
             .addStep("project_details", this::createProjectDetailsStep)
             .addStep("maven_coordinates", this::createMavenCoordinatesStep)
             .addStep("minecraft_version", this::createMinecraftVersionStep)
@@ -140,15 +140,19 @@ public class FabricProjectOnboarding {
         if (ctx.contains(ProjectData.DefaultKeys.AUTHOR)) {
             data.set(ProjectData.DefaultKeys.AUTHOR, ctx.get(ProjectData.DefaultKeys.AUTHOR));
         }
+
         if (ctx.contains(ProjectData.DefaultKeys.DESCRIPTION)) {
             data.set(ProjectData.DefaultKeys.DESCRIPTION, ctx.get(ProjectData.DefaultKeys.DESCRIPTION));
         }
+
         if (ctx.contains(ProjectData.DefaultKeys.ISSUES_URL)) {
             data.set(ProjectData.DefaultKeys.ISSUES_URL, ctx.get(ProjectData.DefaultKeys.ISSUES_URL));
         }
+
         if (ctx.contains(ProjectData.DefaultKeys.HOMEPAGE_URL)) {
             data.set(ProjectData.DefaultKeys.HOMEPAGE_URL, ctx.get(ProjectData.DefaultKeys.HOMEPAGE_URL));
         }
+
         if (ctx.contains(ProjectData.DefaultKeys.SOURCES_URL)) {
             data.set(ProjectData.DefaultKeys.SOURCES_URL, ctx.get(ProjectData.DefaultKeys.SOURCES_URL));
         }

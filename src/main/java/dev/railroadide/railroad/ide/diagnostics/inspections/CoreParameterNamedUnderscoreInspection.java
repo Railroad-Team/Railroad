@@ -42,13 +42,13 @@ public class CoreParameterNamedUnderscoreInspection implements JavaInspectionRul
 
     private static void reportParameterNamedUnderscore(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
         for (SyntaxNode syntaxNode : context.nodesOfKind("JAVA_PARAMETER")) {
-            Symbol symbol = context.declaredSymbol(syntaxNode).orElse(null);
-            if (symbol == null)
+            SyntaxNode parent = syntaxNode.parent().orElse(null);
+            if (parent == null || !"JAVA_PARAMETER_LIST".equals(parent.kind().id()))
                 continue;
 
-            String name = symbol.simpleName();
-            if (name.equalsIgnoreCase("_")) {
-                reporter.report(syntaxNode, name);
+            Symbol symbol = context.declaredSymbol(syntaxNode).orElse(null);
+            if (symbol != null && "_".equals(symbol.simpleName())) {
+                reporter.report(syntaxNode, symbol.simpleName());
             }
         }
     }

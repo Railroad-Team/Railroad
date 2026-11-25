@@ -1,19 +1,21 @@
 package dev.railroadide.railroad.ide.sst.project;
 
-import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
 import dev.railroadide.railroad.ide.language.index.LanguageFileIndex;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndex;
-import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
 import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
 import dev.railroadide.railroad.ide.sst.graph.api.WorkspaceSymbolGraph;
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolIds;
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolSignature;
 import dev.railroadide.railroad.utility.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.*;
-import dev.railroadide.railroad.ide.sst.semantic.api.SymbolSignature;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolLocation;
 
 /**
  * Immutable source index with defensively copied file and descriptor collections.
@@ -21,9 +23,7 @@ import dev.railroadide.railroad.ide.sst.semantic.api.SymbolSignature;
  * This index does not yet carry document revision or workspace generation tokens.
  */
 public final class JavaProjectSemanticIndex
-    implements
-        ProjectLanguageIndex<JavaProjectSemanticIndex.SourceFileIndex>,
-        JavaSymbolIndex {
+    implements ProjectLanguageIndex<JavaProjectSemanticIndex.SourceFileIndex>, JavaSymbolIndex {
     private final Map<Path, SourceFileIndex> filesByPath;
     private final Map<String, List<SourceFileIndex>> filesByPackage;
     private final Map<String, List<SymbolDescriptor>> symbolsBySimpleName;
@@ -43,17 +43,19 @@ public final class JavaProjectSemanticIndex
         this.symbolsBySimpleName = buildSymbolsBySimpleName(this.filesByPath.values());
         this.symbolsByQualifiedName = buildSymbolsByQualifiedName(this.filesByPath.values());
         this.membersByOwnerQualifiedName = buildMembersByOwnerQualifiedName(this.filesByPath.values());
-        LinkedHashSet<String> qualifiedNames = new LinkedHashSet<>();
-        LinkedHashSet<String> names = new LinkedHashSet<>();
+        Set<String> qualifiedNames = new LinkedHashSet<>();
+        Set<String> names = new LinkedHashSet<>();
         for (SourceFileIndex file : this.filesByPath.values()) {
             for (SymbolDescriptor symbol : file.declaredSymbols()) {
                 if (!isTypeSymbol(symbol.kind()) || symbol.qualifiedName() == null)
                     continue;
+
                 qualifiedNames.add(symbol.qualifiedName());
                 names.add(symbol.qualifiedName());
                 names.add(symbol.simpleName());
             }
         }
+
         this.declaredQualifiedNames = Set.copyOf(qualifiedNames);
         this.typeNames = Set.copyOf(names);
         this.graph = graph == null ? WorkspaceSymbolGraph.of(semanticShards()) : graph;
@@ -68,9 +70,27 @@ public final class JavaProjectSemanticIndex
         return graph;
     }
 
-    @Override
+    /**
+     * Returns the semantic facts of every indexed source file.
+     *
+     * @return the declaration and reference shards of the indexed source files
+     */
     public List<SemanticIndexShard> semanticShards() {
         return filesByPath.values().stream().map(SourceFileIndex::semanticShard).filter(Objects::nonNull).toList();
+    }
+
+    @Override
+    public @Nullable SemanticIndexShard declarationShard(String binaryName, Runnable activityCheck) {
+        activityCheck.run();
+        for (dev.railroadide.railroad.ide.sst.semantic.api.SymbolDescriptor symbol : graph
+            .symbols(JavaSymbolIds.type(binaryName))) {
+            for (SymbolLocation location : symbol.locations()) {
+                if (location.declaration() != null)
+                    return graph.shard(location.declaration().documentId()).orElse(null);
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -86,16 +106,19 @@ public final class JavaProjectSemanticIndex
                 && entry.getValue().semanticShard() != null
                 && entry.getValue().semanticShard().documentId().equals(file.semanticShard().documentId()));
         }
-        var previous = updated.put(file.path(), file);
-        var updatedGraph = graph;
+
+        SourceFileIndex previous = updated.put(file.path(), file);
+        WorkspaceSymbolGraph updatedGraph = graph;
         if (previous != null && previous.semanticShard() != null
             && (file.semanticShard() == null
                 || !previous.semanticShard().documentId().equals(file.semanticShard().documentId()))) {
             updatedGraph = updatedGraph.removeShard(previous.semanticShard().documentId());
         }
+
         if (file.semanticShard() != null) {
             updatedGraph = updatedGraph.replaceShard(file.semanticShard());
         }
+
         return new JavaProjectSemanticIndex(updated, updatedGraph);
     }
 
@@ -107,8 +130,8 @@ public final class JavaProjectSemanticIndex
      */
     public JavaProjectSemanticIndex withoutFile(Path path) {
         Map<Path, SourceFileIndex> updated = new HashMap<>(filesByPath);
-        var previous = updated.remove(FileUtils.normalizePath(path));
-        var updatedGraph = previous == null || previous.semanticShard() == null
+        SourceFileIndex previous = updated.remove(FileUtils.normalizePath(path));
+        WorkspaceSymbolGraph updatedGraph = previous == null || previous.semanticShard() == null
             ? graph
             : graph.removeShard(previous.semanticShard().documentId());
         return new JavaProjectSemanticIndex(updated, updatedGraph);
@@ -346,7 +369,9 @@ public final class JavaProjectSemanticIndex
         return filesByPath.get(FileUtils.normalizePath(path));
     }
 
-    /** Thread-confined construction state; each build returns an independent index. */
+    /**
+     * Thread-confined construction state; each build returns an independent index.
+     */
     public static final class Builder {
         private final Map<Path, SourceFileIndex> filesByPath = new LinkedHashMap<>();
 
@@ -552,6 +577,7 @@ public final class JavaProjectSemanticIndex
                             + ")";
                 isStatic = descriptor.metadata().modifiers().contains("static");
             }
+
             kind = Objects.requireNonNull(kind, "kind");
             simpleName = requireName(simpleName, "simpleName");
             qualifiedName = normalizeOptionalName(qualifiedName);

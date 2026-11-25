@@ -14,6 +14,9 @@ import dev.railroadide.railroad.command.CommandButtons;
 import dev.railroadide.railroad.command.CommandContext;
 import dev.railroadide.railroad.command.Commands;
 import dev.railroadide.railroad.command.ExplorerTarget;
+import dev.railroadide.railroad.gradle.model.GradleBuildModel;
+import dev.railroadide.railroad.gradle.model.GradleModelListener;
+import dev.railroadide.railroad.gradle.service.GradleModelService;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexCoordinator;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CopyModalDialog;
 import dev.railroadide.railroad.ide.projectexplorer.dialog.CreateFileDialog;
@@ -22,6 +25,7 @@ import dev.railroadide.railroad.ide.projectexplorer.task.FileCopyTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.SearchTask;
 import dev.railroadide.railroad.ide.projectexplorer.task.WatchTask;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.settings.Settings;
 import dev.railroadide.railroad.settings.keybinds.KeybindContexts;
 import dev.railroadide.railroad.settings.keybinds.KeybindHandler;
@@ -68,6 +72,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import javafx.beans.binding.Bindings;
+import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService;
 
 /**
  * Project filesystem browser with search, file operations, watching, and editor navigation.
@@ -83,6 +88,23 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     private final TextField searchField;
     private final ShutdownHooks.Registration shutdownRegistration;
     private boolean closed;
+    private volatile ProjectStructure structure = ProjectStructure.EMPTY;
+    private GradleModelService gradleModels;
+    private final GradleModelListener gradleModelListener = new GradleModelListener() {
+        @Override
+        public void modelReloadStarted() {
+        }
+
+        @Override
+        public void modelReloadSucceeded(GradleBuildModel model) {
+            updateStructure(ProjectStructure.fromGradle(model));
+        }
+
+        @Override
+        public void modelReloadFailed(Throwable error) {
+        }
+    };
+
     private final BiConsumer<Boolean, Boolean> compactPackagesListener = (_, _) -> Platform.runLater(() -> {
         if (!closed) {
             refreshProjectExplorer();
@@ -90,7 +112,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     });
 
     /**
-     * Builds the project tree and starts filesystem watching and index warming.
+     * Builds the project tree and starts filesystem watching that keeps project indexes current.
      *
      * @param project project displayed by the explorer
      */
@@ -100,19 +122,17 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             indexRequests.close();
             executorService.shutdownNow();
         });
-        var indexSession = Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project);
-        this.projectLanguageIndexCoordinator = submitIndex("initialize", request -> {
+
+        ProjectLanguageIndexService.Session indexSession = Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project);
+        this.projectLanguageIndexCoordinator = submitIndex("initialize", _ -> {
             try {
-                var coordinator = new ProjectLanguageIndexCoordinator(project, indexSession);
-                coordinator.warmIndexes(request);
-                return coordinator;
-            } catch (CancellationException exception) {
-                throw exception;
+                return new ProjectLanguageIndexCoordinator(project, indexSession);
             } catch (RuntimeException exception) {
                 Railroad.LOGGER.error("Failed to initialize project indexes for {}", project.getPath(), exception);
                 throw exception;
             }
         });
+
         try {
             Path rootPath = project.getPath();
             getStyleClass().add("rr-project-explorer");
@@ -120,7 +140,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             this.searchField = new RRTextField("railroad.ide.project_explorer.search_field");
             this.searchField.getStyleClass().add("rr-search-field");
 
-            var header = createModernHeader(project);
+            Node header = createModernHeader(project);
 
             this.treeView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
             this.treeView
@@ -128,10 +148,11 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             this.treeView.setEditable(true);
             this.treeView.getStyleClass().add("rr-tree-view");
             this.treeView.setCellFactory(_ -> {
-                var cell = new PathTreeCell(messageProperty);
+                var cell = new PathTreeCell(messageProperty, () -> structure);
                 handleDragDrop(cell);
                 return cell;
             });
+
             this.treeView.getSelectionModel().selectedItemProperty().addListener((_, _, selectedItem) -> {
                 if (selectedItem == null)
                     return;
@@ -141,12 +162,14 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                     Services.EDITOR_TAB_MANAGER.openPreview(selectedPath);
                 }
             });
+
             this.treeView.getRoot().setExpanded(true);
             this.treeView.setMinHeight(0);
             VBox.setVgrow(this.treeView, Priority.ALWAYS);
             sortTreeItems(this.treeView.getRoot());
 
             handleSearchEvents(rootPath);
+            trackProjectStructure(rootPath);
 
             var watchTask = new WatchTask(rootPath, this);
             this.executorService.submit(watchTask);
@@ -164,7 +187,32 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 Throwable cause = failure;
                 cause.addSuppressed(cleanup);
             }
+
             throw failure;
+        }
+    }
+
+    private void trackProjectStructure(Path rootPath) {
+        if (!project.hasFacet(FacetManager.GRADLE)) {
+            structure = ProjectStructure.conventional(rootPath);
+            return;
+        }
+
+        gradleModels = project.getGradleManager().getGradleModelService();
+        gradleModels.addListener(gradleModelListener);
+        gradleModels.getCachedModel().ifPresent(model -> updateStructure(ProjectStructure.fromGradle(model)));
+    }
+
+    private void updateStructure(ProjectStructure updated) {
+        structure = updated;
+        if (Platform.isFxApplicationThread()) {
+            treeView.refresh();
+        } else {
+            Platform.runLater(() -> {
+                if (!closed) {
+                    treeView.refresh();
+                }
+            });
         }
     }
 
@@ -187,6 +235,10 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
 
         closed = true;
         Settings.COMPACT_MIDDLE_PACKAGES.removeListener(compactPackagesListener);
+        if (gradleModels != null) {
+            gradleModels.removeListener(gradleModelListener);
+        }
+
         shutdownRegistration.close();
         indexRequests.close();
         projectLanguageIndexCoordinator.cancel(true);
@@ -323,7 +375,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             }
         }
 
-        var content = new ClipboardContent();
+        ClipboardContent content = new ClipboardContent();
         content.putFiles(List.of(pathItem.getValue().getPath().toFile()));
         content.putString("cut");
         clipboard.setContent(content);
@@ -336,7 +388,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
      */
     public static void copy(PathItem item) {
         var clipboard = Clipboard.getSystemClipboard();
-        var content = new ClipboardContent();
+        ClipboardContent content = new ClipboardContent();
         content.putFiles(List.of(item.getPath().toFile()));
         clipboard.setContent(content);
     }
@@ -349,10 +401,10 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     public static void paste(PathItem item) {
         var clipboard = Clipboard.getSystemClipboard();
         if (clipboard.hasFiles()) {
-            var files = clipboard.getFiles();
+            List<File> files = clipboard.getFiles();
             boolean isCut = clipboard.hasString() && clipboard.getString().equals("cut");
             for (File file : files) {
-                var targetPath = Path.of(item.getPath().toAbsolutePath().toString(), file.getName());
+                Path targetPath = Path.of(item.getPath().toAbsolutePath().toString(), file.getName());
                 if (Files.exists(targetPath, LinkOption.NOFOLLOW_LINKS)) {
                     var replaceProperty = new SimpleBooleanProperty();
                     CopyModalDialog.open(replaceProperty);
@@ -486,12 +538,14 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             searchMenu.show(searchButton, Side.BOTTOM, 0, 0);
             popupSearch.requestFocus();
         });
+
         searchMenu.setOnHidden(_ -> searchButton.requestFocus());
         sceneProperty().addListener((_, _, scene) -> {
             if (scene == null) {
                 searchMenu.hide();
             }
         });
+
         var narrow = Bindings.createBooleanBinding(
             () -> header.getWidth() - header.getInsets().getLeft()
                 - header.getInsets().getRight() < searchField.getFont().getSize() * 14,
@@ -505,6 +559,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 searchMenu.hide();
             }
         });
+
         actionButtons.getChildren().addFirst(searchButton);
 
         return header;
@@ -518,27 +573,38 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             search(searchField.getText());
             return;
         }
+
         List<Path> expanded = new ArrayList<>();
         collectExpandedPaths(treeView.getRoot(), expanded);
         Path selected = selectedTreeItem().map(item -> item.getValue().getPath()).orElse(null);
         treeView
             .setRoot(new PathTreeItem(new PathItem(project.getPath()), Settings.COMPACT_MIDDLE_PACKAGES.getValue()));
-        treeView.getRoot().setExpanded(true);
-        for (Path path : expanded) {
-            TreeItem<PathItem> item = PathTreeItem.find(treeView.getRoot(), path);
-            while (item != null) {
-                item.setExpanded(true);
-                item = item.getParent();
-            }
-        }
+        ((PathTreeItem) treeView.getRoot()).restoreExpanded();
+        restoreExpandedPaths(treeView.getRoot(), expanded);
         if (selected != null) {
             revealPath(selected);
+        }
+    }
+
+    private static void restoreExpandedPaths(TreeItem<PathItem> root, List<Path> expanded) {
+        for (Path path : expanded) {
+            TreeItem<PathItem> item = PathTreeItem.find(root, path);
+            while (item != null) {
+                if (item instanceof PathTreeItem pathTreeItem) {
+                    pathTreeItem.restoreExpanded();
+                } else {
+                    item.setExpanded(true);
+                }
+
+                item = item.getParent();
+            }
         }
     }
 
     private static void collectExpandedPaths(TreeItem<PathItem> item, List<Path> expanded) {
         if (!item.isExpanded())
             return;
+
         expanded.add(item.getValue().getPath());
         for (TreeItem<PathItem> child : getLoadedChildren(item)) {
             collectExpandedPaths(child, expanded);
@@ -569,6 +635,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             Railroad.LOGGER.warn("Project index update was not completed for {}; invalidating cached indexes", path,
                 exception.getCause());
         }
+
         if (kind != StandardWatchEventKinds.ENTRY_CREATE && kind != StandardWatchEventKinds.ENTRY_DELETE)
             return;
 
@@ -576,21 +643,17 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         Platform.runLater(() -> {
             if (closed)
                 return;
+
             if (!searchField.getText().isBlank()) {
                 search(searchField.getText());
                 return;
             }
+
             List<Path> expanded = new ArrayList<>();
             collectExpandedPaths(treeView.getRoot(), expanded);
             TreeItem<PathItem> selected = treeView.getSelectionModel().getSelectedItem();
             ((PathTreeItem) treeView.getRoot()).refresh(path);
-            for (Path expandedPath : expanded) {
-                TreeItem<PathItem> item = PathTreeItem.find(treeView.getRoot(), expandedPath);
-                while (item != null) {
-                    item.setExpanded(true);
-                    item = item.getParent();
-                }
-            }
+            restoreExpandedPaths(treeView.getRoot(), expanded);
             if (selected != null) {
                 treeView.getSelectionModel()
                     .select(PathTreeItem.find(treeView.getRoot(), selected.getValue().getPath()));
@@ -603,7 +666,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             TreeItem<PathItem> item = cell.getTreeItem();
             if (item != null && item.isLeaf()) {
                 Dragboard dragboard = cell.startDragAndDrop(TransferMode.COPY);
-                var content = new ClipboardContent();
+                ClipboardContent content = new ClipboardContent();
                 List<File> files = List.of(item.getValue().getPath().toFile());
                 content.putFiles(files);
                 dragboard.setContent(content);
@@ -616,7 +679,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             if ((item != null && !item.isLeaf()) && event.getGestureSource() != cell
                 && event.getDragboard().hasFiles()) {
                 Path targetPath = cell.getTreeItem().getValue().getPath();
-                var sourceCell = (PathTreeCell) event.getGestureSource();
+                PathTreeCell sourceCell = (PathTreeCell) event.getGestureSource();
                 Path sourceParentPath = sourceCell.getTreeItem().getValue().getPath().getParent();
                 if (sourceParentPath.compareTo(targetPath) != 0) {
                     event.acceptTransferModes(TransferMode.COPY);
@@ -631,7 +694,8 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             if ((item != null && !item.isLeaf()) && event.getGestureSource() != cell
                 && event.getDragboard().hasFiles()) {
                 Path targetPath = cell.getTreeItem().getValue().getPath();
-                var sourceCell = (PathTreeCell) event.getGestureSource(); // TODO: This breaks if from external source
+                PathTreeCell sourceCell = (PathTreeCell) event.getGestureSource(); // TODO: This breaks if from external
+                                                                                   // source
                 Path sourceParentPath = sourceCell.getTreeItem().getValue().getPath().getParent();
                 if (sourceParentPath.compareTo(targetPath) != 0) {
                     cell.getStyleClass().add("project-explorer-drag-target");
@@ -651,7 +715,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
             boolean success = false;
             if (dragboard.hasFiles()) {
                 Path sourcePath = dragboard.getFiles().getFirst().toPath();
-                var targetPath = Path.of(
+                Path targetPath = Path.of(
                     cell.getTreeItem().getValue().getPath().toAbsolutePath().toString(),
                     sourcePath.getFileName().toString());
 
@@ -704,6 +768,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
                 updateTreeViewWithSearchResults(task.getMatchedPaths());
             }
         });
+
         executorService.submit(task);
     }
 
@@ -712,6 +777,7 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
         for (Path path : matchedPaths) {
             findOrCreateTreeItem(root, path);
         }
+
         PathTreeItem.compactFilteredPackages(root, Settings.COMPACT_MIDDLE_PACKAGES.getValue());
         sortTreeItems(root);
         treeView.setRoot(root);
@@ -721,11 +787,13 @@ public class ProjectExplorerPane extends RRVBox implements WatchTask.FileChangeL
     private TreeItem<PathItem> findOrCreateTreeItem(TreeItem<PathItem> rootItem, Path path) {
         if (path == null || path.equals(rootItem.getValue().getPath()))
             return rootItem;
+
         TreeItem<PathItem> parent = findOrCreateTreeItem(rootItem, path.getParent());
         for (TreeItem<PathItem> child : parent.getChildren()) {
             if (child.getValue().getPath().equals(path))
                 return child;
         }
+
         var item = PathTreeItem.filtered(path);
         parent.getChildren().add(item);
         return item;

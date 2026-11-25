@@ -41,13 +41,13 @@ public class ThemeDownloadPane {
         var mainContainer = new BorderPane();
         mainContainer.getStyleClass().add("theme-download-pane");
 
-        var headerSection = createHeaderSection();
+        VBox headerSection = createHeaderSection();
         mainContainer.setTop(headerSection);
 
-        var themesSection = createThemesSection();
+        VBox themesSection = createThemesSection();
         mainContainer.setCenter(themesSection);
 
-        var footerSection = createFooterSection();
+        HBox footerSection = createFooterSection();
         mainContainer.setBottom(footerSection);
 
         loadThemes();
@@ -128,8 +128,8 @@ public class ThemeDownloadPane {
         closeButton.setVariant(ButtonVariant.SECONDARY);
         closeButton.setCancelButton(true);
         closeButton.setOnAction(event -> {
-            var target = (Node) event.getTarget();
-            var stage = (Stage) target.sceneProperty().get().getWindow();
+            Node target = (Node) event.getTarget();
+            Stage stage = (Stage) target.sceneProperty().get().getWindow();
             stage.close();
         });
 

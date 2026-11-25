@@ -1,9 +1,15 @@
 package dev.railroadide.railroad.settings;
 
-/** Selects whether the editor inserts tab characters or spaces for indentation. */
+/**
+ * Selects whether the editor inserts tab characters or spaces for indentation.
+ */
 public enum IndentMode {
-    /** Insert tab characters. */
+    /**
+     * Insert tab characters.
+     */
     TABS,
-    /** Insert space characters. */
+    /**
+     * Insert space characters.
+     */
     SPACES
 }

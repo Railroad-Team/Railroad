@@ -43,6 +43,7 @@ public record WorkspaceEdit(
         Objects.requireNonNull(label, "label");
         if (label.isBlank())
             throw new IllegalArgumentException("Workspace edit label must not be blank");
+
         changes = List.copyOf(changes);
         annotations = Collections.unmodifiableMap(new LinkedHashMap<>(annotations));
         for (Map.Entry<String, ChangeAnnotation> entry : annotations.entrySet()) {
@@ -50,6 +51,7 @@ public record WorkspaceEdit(
             if (entry.getKey() == null || entry.getKey().isBlank())
                 throw new IllegalArgumentException("Annotation keys must not be blank");
         }
+
         for (WorkspaceChange change : changes) {
             String annotationId = change.annotationId();
             if (annotationId != null && !annotations.containsKey(annotationId))
@@ -67,7 +69,9 @@ public record WorkspaceEdit(
         return new Builder(label);
     }
 
-    /** Accumulates changes in declaration order. Builders are not thread-safe. */
+    /**
+     * Accumulates changes in declaration order. Builders are not thread-safe.
+     */
     public static final class Builder {
         private final String label;
         private final List<WorkspaceChange> changes = new ArrayList<>();

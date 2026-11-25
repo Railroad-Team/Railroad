@@ -3,6 +3,7 @@ package dev.railroadide.railroad.ide.sst.graph.api;
 import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolDescriptor;
 import java.util.*;
+import dev.railroadide.railroad.ide.sst.semantic.api.SymbolLocation;
 
 /**
  * Immutable facts for exactly one input revision. No syntax nodes or live services are retained.
@@ -41,11 +42,12 @@ public record SemanticIndexShard(
         declarations = List.copyOf(declarations);
         references = List.copyOf(references);
         edges = List.copyOf(edges);
-        var ids = new HashSet<>();
-        for (var declaration : declarations) {
+        Set<Object> ids = new HashSet<>();
+        for (SymbolDescriptor declaration : declarations) {
             if (!ids.add(declaration.id()))
                 throw new IllegalArgumentException("Duplicate declaration identity: " + declaration.id());
-            for (var location : declaration.locations()) {
+
+            for (SymbolLocation location : declaration.locations()) {
                 if (location.declaration() != null
                     && (location.uri().equals(uri) || location.declaration().documentId().equals(documentId))
                     && (!location.uri().equals(uri) || !location.declaration().documentId().equals(documentId)
@@ -53,7 +55,8 @@ public record SemanticIndexShard(
                     throw new IllegalArgumentException("Declaration location belongs to another document revision");
             }
         }
-        for (var reference : references) {
+
+        for (ReferenceOccurrence reference : references) {
             if (!documentId.equals(reference.location().documentId())
                 || !documentVersion.equals(reference.location().documentVersion()))
                 throw new IllegalArgumentException("Reference location belongs to another document revision");
@@ -66,13 +69,14 @@ public record SemanticIndexShard(
      * @param workspace captured workspace against which document identity, revision and ranges are checked
      */
     public void validateAgainst(WorkspaceSnapshot workspace) {
-        var document = workspace.document(documentId)
+        DocumentSnapshot document = workspace.document(documentId)
             .orElseThrow(() -> new IllegalArgumentException("Shard document is absent from workspace"));
         if (!document.version().equals(documentVersion) || !document.uri().equals(uri))
             throw new IllegalArgumentException("Shard document revision or address differs from workspace");
+
         references.forEach(reference -> reference.location().validateAgainst(document));
-        for (var symbol : declarations) {
-            for (var location : symbol.locations()) {
+        for (SymbolDescriptor symbol : declarations) {
+            for (SymbolLocation location : symbol.locations()) {
                 if (location.uri().equals(uri) && location.declaration() != null) {
                     location.declaration().validateAgainst(document);
                     if (location.selection() != null) {

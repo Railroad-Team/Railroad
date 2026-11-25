@@ -1,0 +1,174 @@
+.usages-pane {
+    -fx-background-color: -color-surface-panel;
+}
+
+.usages-toolbar {
+    -fx-alignment: center-left;
+    -fx-spacing: 0.5em;
+    -fx-padding: 0.4em 0.65em;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.usages-group-actions {
+    -fx-alignment: center;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 1px 0 0;
+    -fx-padding: 0 0.4em 0 0;
+}
+
+.usages-search-icon {
+    -fx-icon-size: 15px;
+    -fx-icon-color: -color-accent-fg;
+}
+
+.usages-search-tile {
+    -fx-background-color: -color-accent-subtle;
+    -fx-background-radius: 5px;
+    -fx-min-width: 2.15em;
+    -fx-pref-height: 2.15em;
+    -fx-max-height: 2.15em;
+}
+
+.usages-heading {
+    -fx-font-size: 1.1em;
+}
+
+.usages-heading,
+.usages-file-name,
+.usages-empty-title {
+    -fx-text-fill: -color-fg-default;
+    -fx-font-weight: bold;
+}
+
+.usages-summary,
+.usages-directory,
+.usages-empty-detail {
+    -fx-text-fill: -color-fg-muted;
+}
+
+.usages-summary,
+.usages-directory {
+    -fx-font-size: 0.9em;
+}
+
+.usages-pane:warning .usages-summary,
+.usages-pane:warning .usages-empty .ikonli-font-icon {
+    -fx-text-fill: -color-warning-fg;
+    -fx-icon-color: -color-warning-fg;
+}
+
+.usages-pane:failed .usages-summary,
+.usages-pane:failed .usages-empty .ikonli-font-icon {
+    -fx-text-fill: -color-danger-fg;
+    -fx-icon-color: -color-danger-fg;
+}
+
+.usages-progress {
+    -fx-min-height: 3px;
+    -fx-pref-height: 3px;
+    -fx-max-height: 3px;
+    -fx-padding: 0;
+}
+
+.usages-progress > .track,
+.usages-progress > .bar {
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+}
+
+.usages-progress > .track {
+    -fx-background-color: -color-border-subtle;
+}
+
+.usages-progress > .bar {
+    -fx-background-color: -color-accent-emphasis;
+}
+
+.usages-empty {
+    -fx-alignment: center;
+    -fx-spacing: 0.35em;
+    -fx-padding: 0.75em 1.25em;
+}
+
+.usages-empty .ikonli-font-icon {
+    -fx-icon-size: 24px;
+    -fx-icon-color: -color-fg-muted;
+}
+
+.usages-empty-title {
+    -fx-padding: 0.2em 0 0 0;
+    -fx-font-size: 1.05em;
+}
+
+.usages-empty-title,
+.usages-empty-detail {
+    -fx-text-alignment: center;
+}
+
+.tree-view.rr-tree-view.usages-tree {
+    -fx-fixed-cell-size: 2em;
+}
+
+.usages-tree .tree-cell:file-group {
+    -fx-background-color: -color-neutral-subtle;
+}
+
+.usages-file-line,
+.usages-usage-line,
+.usages-snippet {
+    -fx-alignment: center-left;
+}
+
+.usages-file-line {
+    -fx-spacing: 0.6em;
+}
+
+.usages-file-name {
+    -fx-graphic-text-gap: 0.5em;
+}
+
+.usages-file-count {
+    -fx-background-color: -color-neutral-muted;
+    -fx-background-radius: 0.7em;
+    -fx-text-fill: -color-fg-muted;
+    -fx-padding: 0 0.45em;
+    -fx-font-size: 0.85em;
+}
+
+.usages-directory {
+    -fx-max-width: 42em;
+}
+
+.usages-position,
+.usages-code,
+.usages-match {
+    -fx-font-family: "JetBrains Mono";
+    -fx-font-size: 0.93em;
+}
+
+.usages-position {
+    -fx-alignment: center-right;
+    -fx-min-width: 5em;
+    -fx-pref-width: 5em;
+    -fx-text-fill: -color-fg-muted;
+    -fx-padding: 0 0.7em 0 0;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 1px 0 0;
+}
+
+.usages-snippet {
+    -fx-padding: 0 0 0 0.7em;
+}
+
+.usages-code {
+    -fx-text-fill: -color-fg-default;
+}
+
+.usages-match {
+    -fx-text-fill: -color-fg-default;
+    -fx-background-color: -color-accent-muted;
+    -fx-background-radius: 2px;
+    -fx-font-weight: bold;
+}

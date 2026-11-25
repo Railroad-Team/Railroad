@@ -8,7 +8,9 @@ import lombok.Getter;
 import java.util.*;
 import java.util.function.Consumer;
 
-/** Defines a user-configurable keyboard or mouse action and its dispatch behavior. */
+/**
+ * Defines a user-configurable keyboard or mouse action and its dispatch behavior.
+ */
 public class Keybind {
     @Getter
     private final String id;

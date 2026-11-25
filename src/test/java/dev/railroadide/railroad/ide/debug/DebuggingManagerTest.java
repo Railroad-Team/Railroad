@@ -12,6 +12,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -24,6 +26,7 @@ public class DebuggingManagerTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
     }
 
@@ -80,7 +83,7 @@ public class DebuggingManagerTest {
             manager.addWatch("  count  ");
             manager.addWatch(" ");
             assertEquals(1, manager.getWatchResults().size());
-            var watch = manager.getWatchResults().getFirst().watch();
+            DebugWatch watch = manager.getWatchResults().getFirst().watch();
             assertEquals("count", watch.expression());
             manager.removeWatch(watch);
             assertTrue(manager.getWatchResults().isEmpty());
@@ -115,28 +118,28 @@ public class DebuggingManagerTest {
         CompletableFuture<JdiDebugSession> connection,
         DebugSessionEvent event
     ) throws Exception {
-        var method = DebuggingManager.class.getDeclaredMethod("acceptEvent", CompletableFuture.class,
+        Method method = DebuggingManager.class.getDeclaredMethod("acceptEvent", CompletableFuture.class,
             DebugSessionEvent.class);
         method.setAccessible(true);
         method.invoke(manager, connection, event);
     }
 
     private static void set(DebuggingManager manager, String name, Object value) throws Exception {
-        var field = DebuggingManager.class.getDeclaredField(name);
+        Field field = DebuggingManager.class.getDeclaredField(name);
         field.setAccessible(true);
         field.set(manager, value);
     }
 
     @SuppressWarnings("unchecked")
     private static ObservableList<Object> list(DebuggingManager manager, String name) throws Exception {
-        var field = DebuggingManager.class.getDeclaredField(name);
+        Field field = DebuggingManager.class.getDeclaredField(name);
         field.setAccessible(true);
         return (ObservableList<Object>) field.get(manager);
     }
 
     @SuppressWarnings("unchecked")
     private static ObjectProperty<Object> property(DebuggingManager manager, String name) throws Exception {
-        var field = DebuggingManager.class.getDeclaredField(name);
+        Field field = DebuggingManager.class.getDeclaredField(name);
         field.setAccessible(true);
         return (ObjectProperty<Object>) field.get(manager);
     }
@@ -146,6 +149,7 @@ public class DebuggingManagerTest {
             action.run();
             return null;
         });
+
         Platform.runLater(task);
         task.get(10, TimeUnit.SECONDS);
     }

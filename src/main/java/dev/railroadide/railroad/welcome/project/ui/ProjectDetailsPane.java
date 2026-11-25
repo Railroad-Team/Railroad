@@ -12,12 +12,16 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Onboarding host that caches one interface per selected project type. */
+/**
+ * Onboarding host that caches one interface per selected project type.
+ */
 public class ProjectDetailsPane extends BorderPane {
     private final Map<ProjectType, Node> projectDetailsPanes = new HashMap<>();
     private final ObjectProperty<ProjectType> projectType = new SimpleObjectProperty<>(ProjectTypeRegistry.FABRIC);
 
-    /** Creates a pane whose content follows the selected project type, initially Fabric. */
+    /**
+     * Creates a pane whose content follows the selected project type, initially Fabric.
+     */
     public ProjectDetailsPane() {
         setMinWidth(0);
         setMinHeight(0);

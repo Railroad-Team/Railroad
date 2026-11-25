@@ -70,7 +70,10 @@ public class WindowManager {
         this.primaryStage = primaryStage;
         this.primaryScene = primaryStage.getScene();
         ThemeManager.apply(this.primaryScene);
-        this.primaryStage.getIcons().add(AppResources.icon());
+        if (this.primaryStage.getIcons().isEmpty()) {
+            this.primaryStage.getIcons().add(AppResources.icon());
+        }
+
         trackWindowEvents(this.primaryStage);
     }
 

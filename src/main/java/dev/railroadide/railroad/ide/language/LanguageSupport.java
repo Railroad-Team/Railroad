@@ -7,7 +7,9 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Set;
 
-/** Host editor presentation for a language contribution; optional features live in its session. */
+/**
+ * Host editor presentation for a language contribution; optional features live in its session.
+ */
 public interface LanguageSupport extends LanguageContribution {
     /**
      * Host storage identity. Built-ins retain their existing persisted index names.

@@ -5,23 +5,35 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.debug.jdi.JdiDebugSession;
 import dev.railroadide.railroad.debug.model.DebugEndpoint;
 import dev.railroadide.railroad.debug.source.DebugSource;
+import dev.railroadide.railroad.debug.source.LibrarySourceIndex;
 import dev.railroadide.railroad.debug.source.ProjectSourceResolver;
+import dev.railroadide.railroad.debug.source.SourceResolver;
+import dev.railroadide.railroad.ide.diagnostics.BuildProblems;
+import dev.railroadide.railroad.gradle.service.impl.GradleBuildProblems;
+import dev.railroadide.railroad.ide.runconfig.session.RunOutput;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.GradleRunConfigurationData;
+import dev.railroadide.railroad.ide.runconfig.session.RunSession;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.utility.ProjectPathIdentityUtils;
 import dev.railroadide.railroad.utility.icon.RailroadBrandsIcon;
 import javafx.scene.paint.Color;
 import org.gradle.tooling.*;
 import org.jetbrains.annotations.UnknownNullability;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.ServerSocket;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -31,6 +43,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
+import dev.railroadide.railroad.ide.runconfig.session.RunSessionManager;
+import java.io.InputStream;
 
 /**
  * Executes Gradle tasks through the Tooling API and tracks cancellable build connections.
@@ -80,6 +94,12 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         if (executions.putIfAbsent(configuration.uuid(), execution) != null)
             return CompletableFuture
                 .failedFuture(new IllegalStateException("This Gradle configuration is already running"));
+
+        RunSessionManager sessions = project.getRunSessions();
+        execution.session = sessions.start(configuration, debug);
+        Path directory = configuration.data().getGradleProjectPath();
+        execution.problems = sessions.buildProblems().begin(configuration.uuid().toString(),
+            directory == null ? project.getPath() : directory);
         CompletableFuture.runAsync(() -> {
             try {
                 executeGradleBuild(project, configuration, execution, debug);
@@ -89,6 +109,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
                 execution.setupComplete.complete(null);
             }
         });
+
         return execution.completion;
     }
 
@@ -97,6 +118,8 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         GradleExecutionHandle execution = executions.get(configuration.uuid());
         if (execution == null)
             return CompletableFuture.completedFuture(null);
+
+        execution.session.requestStop();
         execution.cancel();
         finish(configuration, execution, new CancellationException("Gradle execution stopped"));
         return execution.cleaned;
@@ -132,6 +155,10 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         private final CompletableFuture<Void> setupComplete = new CompletableFuture<>();
         private volatile boolean ended;
         private boolean finishing;
+        private volatile RunSession session;
+        private BuildProblems.Report problems;
+        private OutputStream stdout;
+        private OutputStream stderr;
         private ProjectConnection connection;
         private volatile CancellationTokenSource cancellation;
         private Path script;
@@ -181,9 +208,11 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         synchronized (execution) {
             if (execution.finishing)
                 return;
+
             execution.finishing = true;
             execution.ended = true;
         }
+
         handleCloser.execute(() -> {
             Throwable outcome = failure;
             try {
@@ -191,6 +220,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
                 if (failure != null && execution.cancellation != null) {
                     execution.cancellation.cancel();
                 }
+
                 JdiDebugSession session = execution.attachment.handle((attached, _) -> attached).join();
                 if (session != null) {
                     if (failure == null) {
@@ -225,12 +255,18 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
                     }
                 }
             }
+
+            closeQuietly(execution.stdout);
+            closeQuietly(execution.stderr);
+            execution.problems.finish(outcome instanceof BuildCancelledException ? null : outcome);
+            execution.session.finish(null, outcome);
             executions.remove(configuration.uuid(), execution);
             if (outcome == null) {
                 execution.completion.complete(null);
             } else {
                 execution.completion.completeExceptionally(outcome);
             }
+
             execution.cleaned.complete(null);
         });
     }
@@ -242,52 +278,90 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         boolean debug
     ) throws IOException {
         GradleRunConfigurationData data = configuration.data();
-        String task = requireTask(data).trim();
+        boolean editorMain = data.getMainSource() != null;
+        String task = editorMain
+            ? ":railroadMain" + configuration.uuid().toString().replace("-", "")
+            : requireTask(data).trim();
         if (debug && !task.startsWith(":")) {
             task = ":" + task;
         }
+
         Path gradleProjectPath = requireGradleProjectPath(data);
         Map<String, String> environmentVariables = new HashMap<>(System.getenv());
         if (data.getEnvironmentVariables() != null) {
             environmentVariables.putAll(data.getEnvironmentVariables());
         }
+
         String[] vmOptions = data.getVmOptions() == null ? new String[0] : data.getVmOptions();
-        JDK javaHome = requireJavaHome(data);
+        JDK javaHome = editorMain ? data.getJavaHome() : requireJavaHome(data);
 
         if (execution.ended)
             return;
+
         execution.cancellation = GradleConnector.newCancellationTokenSource();
         if (execution.ended)
             return;
+
         int port = -1;
         if (debug) {
             try (var socket = new ServerSocket(0)) {
                 port = socket.getLocalPort();
             }
-            execution.script = Files.createTempFile("railroad-debug-", ".init.gradle");
-            Files.writeString(execution.script, debugInitScript(task, port));
         }
+
+        if (editorMain || debug) {
+            execution.script = Files.createTempFile("railroad-launch-", ".init.gradle");
+            String init = editorMain ? loadRunMainClassInitScript() : "";
+            Files.writeString(execution.script, init + (debug ? debugInitScript(task, port) : ""));
+        }
+
         if (execution.ended)
             return;
+
         execution.connection = connectors.get()
             .forProjectDirectory(gradleProjectPath.toFile()).connect();
         if (execution.ended)
             return;
+
+        RunSession runSession = execution.session;
+        Charset charset = Charset.defaultCharset();
+        execution.stdout = execution.problems.output(charset, text -> runSession.append(RunOutput.Kind.STDOUT, text));
+        execution.stderr = execution.problems.output(charset, text -> runSession.append(RunOutput.Kind.STDERR, text));
+        runSession.appendSystemLine("gradle " + task);
+        // Colour output switches Gradle to its rich console, whose progress bar redraws lines with cursor movement.
         BuildLauncher launcher = execution.connection.newBuild()
             .forTasks(task)
             .setJvmArguments(vmOptions)
             .setEnvironmentVariables(environmentVariables)
-            .setJavaHome(javaHome.path().toFile())
-            .setColorOutput(true)
+            .setColorOutput(false)
             .withCancellationToken(execution.cancellation.token())
-            .setStandardOutput(System.out) // TODO: Redirect to IDE console
-            .setStandardError(System.err)
-            .setStandardInput(System.in);
-        if (debug) {
-            launcher.withArguments("--init-script", execution.script.toString(), "--no-configuration-cache");
+            .setStandardOutput(execution.stdout)
+            .setStandardError(execution.stderr)
+            .setStandardInput(runSession.input(charset));
+        GradleBuildProblems.listen(launcher, execution.problems);
+        if (javaHome != null) {
+            launcher.setJavaHome(javaHome.path().toFile());
         }
+
+        if (execution.script != null) {
+            List<String> arguments = new ArrayList<>(
+                List.of("--init-script", execution.script.toString(), "--no-configuration-cache"));
+            if (editorMain) {
+                arguments.add("--no-configure-on-demand");
+                arguments.add("-PrailroadMainSource=" + data.getMainSource());
+                arguments.add("-PrailroadMainClass=" + data.getMainClass());
+                arguments.add("-PrailroadMainTask=" + task.substring(1));
+                if (project.getGradleManager().getGradleSettings().isOfflineMode()) {
+                    arguments.add("--offline");
+                }
+            }
+
+            launcher.withArguments(arguments);
+        }
+
         if (execution.ended)
             return;
+
         launcher.run(new ResultHandler<>() {
             @Override
             public void onComplete(Void result) {
@@ -299,23 +373,54 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
                 finish(configuration, execution, failure);
             }
         });
+
         if (debug && !execution.ended) {
-            Path root = project.getPath().toAbsolutePath().normalize();
-            var resolver = ProjectSourceResolver.create(root);
+            Path root = ProjectPathIdentityUtils.normalize(project.getPath());
+            int moduleSeparator = task.lastIndexOf(':');
+            String modulePath = !editorMain && moduleSeparator > 0 ? task.substring(0, moduleSeparator) : null;
+            var dependencies = LibrarySourceIndex.forProject(project, List.of(), modulePath,
+                editorMain || modulePath != null ? null : gradleProjectPath);
+            SourceResolver resolver = editorMain
+                ? ProjectSourceResolver.create(root, gradleProjectPath.resolve(data.getMainSource()),
+                    data.getMainClass(), dependencies)
+                : ProjectSourceResolver.create(root, dependencies);
             if (execution.ended)
                 return;
+
             execution.attachment = project.getDebuggingManager().startSession(
                 new DebugEndpoint("127.0.0.1", port), resolver,
                 Services.BREAKPOINT_SERVICE,
                 breakpoint -> breakpoint.source() instanceof DebugSource.FileSource(Path file)
-                    && file.toAbsolutePath().normalize().startsWith(root),
+                    && (ProjectPathIdentityUtils.normalize(file).startsWith(root)
+                        || resolver.isDependencySource(breakpoint.source())),
                 event -> Railroad.LOGGER.debug("Gradle debugger event: {}", event),
-                Duration.ofMinutes(1), () -> execution.ended);
+                Duration.ofMinutes(editorMain ? 10 : 1), () -> execution.ended);
             execution.attachment.whenComplete((session, failure) -> {
                 if (failure != null && !execution.ended) {
                     finish(configuration, execution, failure);
                 }
             });
+        }
+    }
+
+    private static String loadRunMainClassInitScript() throws IOException {
+        try (InputStream input = GradleRunConfigurationType.class
+            .getResourceAsStream("/assets/railroad/scripts/init-run-main-class.gradle")) {
+            if (input == null)
+                throw new IOException("Missing init-run-main-class.gradle");
+
+            return new String(input.readAllBytes(), StandardCharsets.UTF_8) + "\n";
+        }
+    }
+
+    private static void closeQuietly(OutputStream stream) {
+        if (stream == null)
+            return;
+
+        try {
+            stream.close();
+        } catch (IOException exception) {
+            Railroad.LOGGER.debug("Failed to flush Gradle run output", exception);
         }
     }
 
@@ -330,6 +435,7 @@ public class GradleRunConfigurationType extends RunConfigurationType<GradleRunCo
         String escaped = task.replace("\\", "\\\\").replace("'", "\\'")
             .replace("\r", "\\r").replace("\n", "\\n");
         return """
+            if (gradle.parent != null) return
             def railroadTaskPath = '%s'
             gradle.projectsEvaluated {
                 def target = gradle.rootProject.tasks.findByPath(railroadTaskPath)

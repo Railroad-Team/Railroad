@@ -3,21 +3,17 @@ import org.gradle.internal.os.OperatingSystem
 plugins {
     id 'java'
     id 'application'
-    id 'com.diffplug.spotless' version '8.10.0'
+    id 'dev.railroadide.quality' version '1.1.4'
     id 'org.openjfx.javafxplugin' version '0.1.0'
     id 'com.gradleup.shadow' version '9.4.3'
     id 'org.beryx.runtime' version '2.0.0'
 }
 
 sourceSets {
-    formatter {
-        java.srcDir 'src/formatter/java'
-    }
     cssValidation
     cssValidationTest
 }
 
-apply from: 'gradle/javadoc-coverage.gradle'
 apply from: 'gradle/css-validation.gradle'
 
 group 'dev.railroadide'
@@ -64,19 +60,25 @@ processResources {
     }
 }
 
+def railroadJvmArgs = [
+    '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
+    '-Dslf4j.internal.report.stream=stdout',
+    '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED',
+    // Symbol indexes hold many equal strings; G1 can share their backing arrays.
+    '-XX:+UseStringDeduplication',
+    // Lets G1 return unused heap to the OS while the IDE is idle.
+    '-XX:G1PeriodicGCInterval=60000',
+    '-XX:MinHeapFreeRatio=10',
+    '-XX:MaxHeapFreeRatio=30'
+]
+
 application {
     mainClass = 'dev.railroadide.railroad.RailroadLauncher'
-    applicationDefaultJvmArgs = [
-        '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
-        '-Dslf4j.internal.report.stream=stdout',
-        '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
-    ]
+    applicationDefaultJvmArgs = railroadJvmArgs
 }
 
 tasks.named("run") {
-    jvmArgs '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
-    '-Dslf4j.internal.report.stream=stdout',
-    '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
+    jvmArgs railroadJvmArgs
 }
 
 javafx {
@@ -145,7 +147,7 @@ dependencies {
         exclude group: 'net.java.dev.jna', module: 'jna'
     }
 
-    implementation 'dev.railroadide:RailroadGradlePlugin:1.0.2'
+    implementation 'dev.railroadide:RailroadGradlePlugin:1.0.4'
     implementation 'dev.railroadide:RailroadLogger:1.0.4'
 
     annotationProcessor 'org.projectlombok:lombok:1.18.42'
@@ -154,130 +156,24 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:6.0.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:6.0.0'
     testRuntimeOnly 'org.projectlombok:lombok:1.18.42'
-    testImplementation sourceSets.formatter.output
 }
 
 test {
     systemProperty 'railroad.test.gradleHome', gradle.gradleHomeDir.absolutePath
     useJUnitPlatform()
-    dependsOn tasks.named('formatterClasses')
 }
 
 apply from: 'gradle/sst-self-analysis.gradle'
+apply from: 'gradle/sst-javac.gradle'
+
+railroadQuality {
+    formatAll = false
+}
 
 spotless {
-    if (!providers.gradleProperty('formatAll').isPresent())
-        ratchetFrom providers.gradleProperty('formatRatchetFrom').getOrElse('HEAD')
-
     java {
-        target 'src/main/java/**/*.java', 'src/test/java/**/*.java', 'src/formatter/java/**/*.java',
-        'src/javadocCoverageTool/java/**/*.java', 'src/javadocCoverageTest/java/**/*.java',
-        'src/cssValidation/java/**/*.java', 'src/cssValidationTest/java/**/*.java'
-        eclipse().configFile('config/format/railroad-eclipse-formatter.xml')
-        lineEndings = 'UNIX'
-        trimTrailingWhitespace()
-        endWithNewline()
-    }
-
-    format 'css', {
-        target 'src/**/*.css'
         lineEndings 'UNIX'
-        // JavaFX rejects selectors wrapped before a child combinator.
-        prettier('3.6.2').config(['parser': 'css', 'tabWidth': 4, 'printWidth': 1000])
-        trimTrailingWhitespace()
-        endWithNewline()
     }
-
-    groovy {
-        target 'src/**/*.groovy'
-        greclipse().configFile('config/format/railroad-groovy.properties')
-        trimTrailingWhitespace()
-        endWithNewline()
-    }
-
-    groovyGradle {
-        // templates/**/*.gradle contain template directives, not standalone Groovy.
-        target '*.gradle', 'gradle/**/*.gradle', 'src/**/*.gradle'
-        greclipse().configFile('config/format/railroad-groovy.properties')
-        trimTrailingWhitespace()
-        endWithNewline()
-    }
-}
-
-def semanticStyleSources = files('src/main/java', 'src/test/java', 'src/formatter/java',
-        'src/javadocCoverageTool/java', 'src/javadocCoverageTest/java',
-        'src/cssValidation/java', 'src/cssValidationTest/java')
-def semanticStyleArguments = { String mode ->
-    def arguments = [mode]
-    if (providers.gradleProperty('formatAll').isPresent()) {
-        arguments.add('--all')
-    } else {
-        arguments.addAll([
-            '--ratchet-from',
-            providers.gradleProperty('formatRatchetFrom').getOrElse('HEAD'),
-            projectDir.absolutePath
-        ])
-    }
-    arguments.addAll([
-        '--source-path',
-        semanticStyleSources.asPath
-    ])
-    arguments.addAll(semanticStyleSources.files.collect { it.absolutePath })
-    arguments
-}
-
-tasks.register('semanticFormat', JavaExec) {
-    group = 'formatting'
-    description = 'Applies Railroad-specific syntax-aware Java style rules.'
-    dependsOn tasks.named('formatterClasses')
-    classpath = sourceSets.formatter.runtimeClasspath
-    mainClass = 'dev.railroadide.railroad.formatter.RailroadJavaStyle'
-    args semanticStyleArguments('--apply')
-}
-
-tasks.register('semanticFormatCheck', JavaExec) {
-    group = 'verification'
-    description = 'Checks Railroad-specific syntax-aware Java style rules.'
-    dependsOn tasks.named('formatterClasses')
-    classpath = sourceSets.formatter.runtimeClasspath
-    mainClass = 'dev.railroadide.railroad.formatter.RailroadJavaStyle'
-    args semanticStyleArguments('--check')
-}
-
-[
-    'semanticFormat',
-    'semanticFormatCheck'
-].each { taskName ->
-    tasks.named(taskName, JavaExec) {
-        doFirst {
-            // Passing the dependency classpath as an argument exceeds Windows' command-line limit.
-            def compilerClasspath = new File(temporaryDir, 'compiler-classpath.txt')
-            compilerClasspath.setText(files(configurations.testCompileClasspath,
-                    configurations.cssValidationTestCompileClasspath,
-                    configurations.javadocCoverageTestCompileClasspath).asPath, 'UTF-8')
-            environment 'RAILROAD_FORMAT_CLASSPATH_FILE', compilerClasspath.absolutePath
-        }
-    }
-}
-
-tasks.named('spotlessApply') {
-    mustRunAfter tasks.named('semanticFormat')
-}
-
-tasks.named('spotlessCheck') {
-    mustRunAfter tasks.named('semanticFormatCheck')
-}
-
-tasks.register('format') {
-    group = 'formatting'
-    description = 'Applies Railroad Java, CSS, Groovy, and Gradle formatting and style rules.'
-    dependsOn tasks.named('semanticFormat'), tasks.named('spotlessApply')
-}
-
-tasks.register('formatCheck') {
-    group = 'verification'
-    description = 'Checks Railroad Java, CSS, Groovy, and Gradle formatting and style rules.'
-    dependsOn tasks.named('semanticFormatCheck'), tasks.named('spotlessCheck')
 }
 
 jar {
@@ -308,11 +204,7 @@ runtime {
     modules = ['ALL-MODULE-PATH']
 
     launcher {
-        jvmArgs = [
-            '-Djavafx.preloader=dev.railroadide.railroad.RailroadPreloader',
-            '-Dslf4j.internal.report.stream=stdout',
-            '--enable-native-access=javafx.graphics,javafx.web,javafx.media,ALL-UNNAMED'
-        ]
+        jvmArgs = railroadJvmArgs
     }
 
     jpackage {

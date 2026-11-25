@@ -38,6 +38,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import dev.railroadide.railroad.plugin.spi.dto.Project;
 
 /**
  * Repository import view supporting account-based browsing and direct URL cloning.
@@ -198,7 +199,7 @@ public class WelcomeImportProjectsPane extends HBox {
         future.thenAcceptAsync(_ -> {
             Platform.runLater(stage::close);
 
-            var project = Railroad.PROJECT_MANAGER.newProject(new RailroadProject(projectDir));
+            Project project = Railroad.PROJECT_MANAGER.newProject(new RailroadProject(projectDir));
             if (SettingsHandler.getValue(Settings.SWITCH_TO_IDE_AFTER_IMPORT)) {
                 Platform.runLater(() -> IDESetup.switchToIDE(project, null));
             }
@@ -273,7 +274,7 @@ public class WelcomeImportProjectsPane extends HBox {
         isLoading = true;
         updateRightPane(profile);
 
-        var connection = profile.createConnection();
+        AbstractConnection connection = profile.createConnection();
         connection.fetchRepositories();
         connectionCache.put(profile, connection);
 

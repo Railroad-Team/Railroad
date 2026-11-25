@@ -48,8 +48,10 @@ public final class WorkspaceEditPreviewView extends TreeView<WorkspaceEditPrevie
                 file.getChildren().add(new TreeItem<>(new Item(describe(document, change), false)));
                 count++;
             }
+
             getRoot().getChildren().add(file);
         }
+
         for (WorkspaceEditPreview.ResourcePreview resource : preview.resources()) {
             String text = switch (resource.kind()) {
                 case RENAME -> L18n.localize("railroad.rename.preview.rename_file", fileName(resource.source()),
@@ -57,8 +59,10 @@ public final class WorkspaceEditPreviewView extends TreeView<WorkspaceEditPrevie
                 case CREATE -> L18n.localize("railroad.preview.create_file", fileName(resource.target()));
                 case DELETE -> L18n.localize("railroad.preview.delete_file", fileName(resource.source()));
             };
+
             getRoot().getChildren().add(new TreeItem<>(new Item(text, true)));
         }
+
         return count;
     }
 
@@ -80,6 +84,7 @@ public final class WorkspaceEditPreviewView extends TreeView<WorkspaceEditPrevie
             lines.add(file.getValue().text());
             file.getChildren().forEach(change -> lines.add("  " + change.getValue().text()));
         }
+
         return lines;
     }
 
@@ -116,6 +121,7 @@ public final class WorkspaceEditPreviewView extends TreeView<WorkspaceEditPrevie
                 line++;
             }
         }
+
         return line;
     }
 

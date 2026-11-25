@@ -24,7 +24,7 @@ import java.util.concurrent.Executors;
 public final class ProjectDataStore {
     private final Project project;
 
-    private final CopyOnWriteArrayList<FileChangeListener> fileChangeListeners = new CopyOnWriteArrayList<>();
+    private final List<FileChangeListener> fileChangeListeners = new CopyOnWriteArrayList<>();
     private final Object watcherLock = new Object();
     private volatile WatchService watchService;
     private volatile ExecutorService watchExecutor;
@@ -309,6 +309,7 @@ public final class ProjectDataStore {
                     thread.setDaemon(true);
                     return thread;
                 });
+
                 watchExecutor.submit(this::watchLoop);
             } catch (IOException exception) {
                 stopWatcher(true);
@@ -439,7 +440,9 @@ public final class ProjectDataStore {
         }
     }
 
-    /** Receives file and directory changes from the background data directory watcher. */
+    /**
+     * Receives file and directory changes from the background data directory watcher.
+     */
     @FunctionalInterface
     public interface FileChangeListener {
         /**

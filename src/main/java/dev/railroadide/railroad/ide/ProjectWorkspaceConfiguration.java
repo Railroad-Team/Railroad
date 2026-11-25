@@ -1,5 +1,9 @@
 package dev.railroadide.railroad.ide;
 
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
+import dev.railroadide.railroad.ide.language.index.ProjectIndexContext;
+import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexCoordinator;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService.Session;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
@@ -42,9 +46,17 @@ import dev.railroadide.railroad.ide.sst.request.api.RequestContext;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.function.BiFunction;
+import org.gradle.tooling.model.DomainObjectSet;
 
-/** Publishes immutable project configuration when facets, project settings, or imported modules change. */
+/**
+ * Publishes immutable project configuration when facets, project settings, or imported modules change.
+ */
 public final class ProjectWorkspaceConfiguration implements AutoCloseable {
+    private static final String DEPENDENCIES_UNAVAILABLE = "dependencies.unavailable";
+    private static final Duration CONFIGURATION_BUDGET = Duration.ofMinutes(2);
+    private static final Duration WARMUP_BUDGET = Duration.ofMinutes(5);
+    private static final List<String> BUILD_TOOL_FILES = List.of("pom.xml", "build.gradle", "build.gradle.kts",
+        "settings.gradle", "settings.gradle.kts");
     private final Session indexSession;
     private long binaryGeneration;
     private boolean forceBinaryRefresh;
@@ -65,6 +77,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
     private long resolutionGeneration;
     private GradleModelService modelService;
     private boolean closed;
+    private boolean indexesWarmed;
 
     /**
      * Subscribes to configuration changes for one project session.
@@ -130,6 +143,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
                 attachModelService();
             }
         };
+
         settingsListener = (_, _) -> refreshSettings();
         configurationListener = event -> {
             if (event.project() == project) {
@@ -140,6 +154,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
                 }
             }
         };
+
         modelListener = new GradleModelListener() {
             @Override
             public void modelReloadStarted() {
@@ -153,8 +168,10 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             @Override
             public void modelReloadFailed(Throwable error) {
                 // Retain the last successful immutable configuration on import failure.
+                markDependenciesUnavailable();
             }
         };
+
         Railroad.EVENT_BUS.subscribe(FacetDetectedEvent.class, facetListener);
         Railroad.EVENT_BUS.subscribe(ProjectConfigurationChangedEvent.class, configurationListener);
         try {
@@ -163,6 +180,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             project.getDataStore().removeFileChangeListener(settingsListener);
             Railroad.LOGGER.warn("Cannot watch project settings for {}", project.getPath(), exception);
         }
+
         attachModelService();
         if (isMavenProject()) {
             refreshSettings();
@@ -180,11 +198,41 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         return resolution.thenCompose(_ -> binaryResolution.copy());
     }
 
-    /** Explicitly refreshes binary inputs even when build settings and artifact metadata are unchanged. */
+    /**
+     * Explicitly refreshes binary inputs even when build settings and artifact metadata are unchanged.
+     */
     public synchronized void refresh() {
         forceBinaryRefresh = true;
         requestedSettings = null;
         refreshSettings();
+    }
+
+    /**
+     * Reports whether a configuration belongs to a Gradle or Maven project whose dependencies have not been imported
+     * yet, so references into libraries cannot be judged. An import that failed is not pending: its dependencies are
+     * unavailable rather than still loading.
+     *
+     * @param configuration captured workspace configuration
+     * @return {@code true} while build-tool dependencies are still being imported
+     */
+    public static boolean dependenciesPending(WorkspaceConfigurationSnapshot configuration) {
+        Map<String, String> settings = configuration.settings();
+        if (settings.containsKey(DEPENDENCIES_UNAVAILABLE))
+            return false;
+
+        boolean buildTool = BUILD_TOOL_FILES.stream().anyMatch(name -> settings.containsKey("project.build." + name));
+        return buildTool && settings.keySet().stream()
+            .noneMatch(key -> key.startsWith("module.") && key.endsWith(".classpath"));
+    }
+
+    private synchronized void markDependenciesUnavailable() {
+        WorkspaceConfigurationSnapshot current = store.capture().configuration();
+        if (closed || !dependenciesPending(current))
+            return;
+
+        Map<String, String> values = new TreeMap<>(current.settings());
+        values.put(DEPENDENCIES_UNAVAILABLE, "true");
+        publish(current.moduleIds(), values);
     }
 
     /**
@@ -196,6 +244,24 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
     public static WorkspaceConfigurationSnapshot initial(Project project) {
         Map<String, String> values = settings(project);
         return new WorkspaceConfigurationSnapshot(0, moduleIds(values), values);
+    }
+
+    /**
+     * Captures initial workspace settings for a scan that already resolved project indexing inputs.
+     *
+     * @param context captured project indexing context
+     * @return initial settings including the captured Gradle modules when available
+     */
+    public static WorkspaceConfigurationSnapshot initial(ProjectIndexContext context) {
+        JavaLanguageIndexContext java = context.language(JavaLanguageSupport.LANGUAGE_ID,
+            JavaLanguageIndexContext.class);
+        WorkspaceConfigurationSnapshot gradle = java == null ? null : java.gradleConfiguration();
+        if (gradle == null)
+            return initial(context.project());
+
+        Map<String, String> values = settings(context.project());
+        values.putAll(gradle.settings());
+        return new WorkspaceConfigurationSnapshot(0, gradle.moduleIds(), values);
     }
 
     private synchronized void attachModelService() {
@@ -217,6 +283,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             resolveMaven(settings);
             return;
         }
+
         cancelResolution();
         WorkspaceConfigurationSnapshot current = store.capture().configuration();
         Map<String, String> values = new TreeMap<>(current.settings());
@@ -224,6 +291,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         if (modelService == null) {
             values.keySet().removeIf(key -> key.startsWith("module.") || key.startsWith("gradle."));
         }
+
         values.putAll(settings);
         publish(modelService == null ? moduleIds(values) : current.moduleIds(), values);
     }
@@ -235,6 +303,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
     private void resolveMaven(Map<String, String> settings) {
         if (settings.equals(requestedSettings) && !resolution.isCompletedExceptionally())
             return;
+
         cancelResolution();
         // A new dependency request supersedes every stage of the preceding request.
         // Keep the published configuration until this request's binary inputs are ready.
@@ -243,6 +312,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             binaryTask.cancel(true);
             binaryTask = null;
         }
+
         binaryResolution.cancel(false);
         binaryResolution = CompletableFuture.completedFuture(null);
         requestedSettings = Map.copyOf(settings);
@@ -252,60 +322,78 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         Map<String, String> inputs = requestedSettings;
         CompletableFuture<Void> completed = new CompletableFuture<>();
         resolution = completed;
-        dependencyTask = submitBackground("dependencies", completed, request -> {
-            try {
-                JavaLanguageIndexContext context = dependencyResolver.apply(project);
-                request.checkActive();
-                Map<String, String> values = new TreeMap<>(inputs);
-                captureJavaConfiguration(root, context, values);
-                synchronized (this) {
+        dependencyTask = submitBackground("dependencies", "railroad.activity.resolving_dependencies",
+            CONFIGURATION_BUDGET, completed, request -> {
+                try {
+                    JavaLanguageIndexContext context = dependencyResolver.apply(project);
                     request.checkActive();
-                    if (closed || generation != resolutionGeneration || !root.equals(project.getPath())
-                        || store.capture().configuration() != expected || !isMavenProject()) {
-                        completed.cancel(false);
-                        return;
+                    Map<String, String> values = new TreeMap<>(inputs);
+                    captureJavaConfiguration(root, context, values);
+                    synchronized (this) {
+                        request.checkActive();
+                        if (closed || generation != resolutionGeneration || !root.equals(project.getPath())
+                            || store.capture().configuration() != expected || !isMavenProject()) {
+                            completed.cancel(false);
+                            return;
+                        }
+
+                        // A changed POM may reach the filesystem before its configuration event is delivered.
+
+                        if (!inputs.equals(settings(project))) {
+                            refreshSettings();
+                            completed.cancel(false);
+                            return;
+                        }
+
+                        publish(moduleIds(values), values);
                     }
-                    // A changed POM may reach the filesystem before its configuration event is delivered.
-                    if (!inputs.equals(settings(project))) {
-                        refreshSettings();
-                        completed.cancel(false);
-                        return;
+
+                    completed.complete(null);
+                } catch (CancellationException exception) {
+                    completed.cancel(false);
+                } catch (Exception exception) {
+                    synchronized (this) {
+                        if (!closed && generation == resolutionGeneration) {
+                            Railroad.LOGGER.warn("Cannot resolve workspace dependencies for {}", root, exception);
+                            markDependenciesUnavailable();
+                        }
                     }
-                    publish(moduleIds(values), values);
+
+                    completed.completeExceptionally(exception);
                 }
-                completed.complete(null);
-            } catch (CancellationException exception) {
-                completed.cancel(false);
-            } catch (Exception exception) {
-                synchronized (this) {
-                    if (!closed && generation == resolutionGeneration) {
-                        Railroad.LOGGER.warn("Cannot resolve workspace dependencies for {}", root, exception);
-                    }
-                }
-                completed.completeExceptionally(exception);
-            }
-        });
+            });
+    }
+
+    private void warmIndexes() {
+        submitBackground("index-warmup", "railroad.activity.indexing_project", WARMUP_BUDGET, new CompletableFuture<>(),
+            request -> new ProjectLanguageIndexCoordinator(project, indexSession).warmIndexes(request));
     }
 
     private CompletableFuture<Void> submitBackground(
         String key,
+        String activityKey,
+        Duration budget,
         CompletableFuture<Void> completed,
         Consumer<RequestContext> operation
     ) {
         var cancellation = new CancellationTokenSource();
-        Duration budget = Duration.ofMinutes(2);
         var context = new WorkspaceRequestContext(store.capture(), cancellation.token(), Deadline.after(budget));
         CompletableFuture<Void> task = backgroundRequests.submit(key, RequestPriority.BACKGROUND_INDEXING, context,
             cancellation, () -> ProviderExecutor.shared().executeWithContext("project-configuration:" + key,
                 context, budget, child -> {
-                    operation.accept(child);
+                    try (BackgroundActivities.Handle activity = BackgroundActivities.shared().start(activityKey)) {
+                        ScopedValue.where(ActivityProgress.CURRENT, activity).run(() -> operation.accept(child));
+                    }
+
                     return null;
                 }));
+
         task.whenComplete((_, failure) -> {
             if (failure != null) {
                 completed.completeExceptionally(failure);
             }
         });
+
         return task;
     }
 
@@ -315,6 +403,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             dependencyTask.cancel(true);
             dependencyTask = null;
         }
+
         resolution.cancel(false);
         resolution = CompletableFuture.completedFuture(null);
         requestedSettings = null;
@@ -328,6 +417,24 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         forceBinaryRefresh = true;
         Map<String, String> values = new TreeMap<>(store.capture().configuration().settings());
         values.keySet().removeIf(key -> key.startsWith("module.") || key.startsWith("gradle."));
+        values.remove(DEPENDENCIES_UNAVAILABLE);
+        WorkspaceConfigurationSnapshot gradle = captureGradleConfiguration(model);
+        values.putAll(gradle.settings());
+        publish(gradle.moduleIds(), values);
+        if (indexSession == null) {
+            Services.PROJECT_LANGUAGE_INDEX_SERVICE
+                .refreshProject(Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project));
+        }
+    }
+
+    /**
+     * Captures the imported module paths and ordered classpaths used by Java analysis.
+     *
+     * @param model imported Gradle build
+     * @return captured Gradle settings before publication into a workspace
+     */
+    public static WorkspaceConfigurationSnapshot captureGradleConfiguration(GradleBuildModel model) {
+        Map<String, String> values = new TreeMap<>();
         values.put("gradle.version", model.gradleVersion());
         RailroadJavaLanguageSettings language = model.project().javaLanguageSettings();
         languageSettings(values, "gradle.", language);
@@ -336,7 +443,13 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             String id = module.getPath();
             ids.add(id);
             String prefix = "module." + id + ".";
+            if (id.equals(":") && model.rootDir() != null && !module.getProjectDir().equals(model.rootDir())) {
+                values.put("gradle.importRoot", module.getProjectDir().toAbsolutePath().normalize().toString());
+                values.put("gradle.openRoot", model.rootDir().toAbsolutePath().normalize().toString());
+            }
+
             values.put(prefix + "classpath", paths(module.getClasspathRoots()));
+            captureMainCompileSelection(module, prefix, values);
             values.put(prefix + "modulePath", paths(module.getModulePathRoots()));
             values.put(prefix + "dependencies", paths(module.getDependencyRoots()));
             values.put(prefix + "directory", module.getProjectDir().toAbsolutePath().normalize().toString());
@@ -347,25 +460,108 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
                     values.put(prefix + "output",
                         output.getOutputDirectory().toPath().toAbsolutePath().normalize().toString());
                 }
+
                 if (output.getTestOutputDirectory() != null) {
                     values.put(prefix + "testOutput",
                         output.getTestOutputDirectory().toPath().toAbsolutePath().normalize().toString());
                 }
             }
+
             Set<String> sources = new TreeSet<>();
+            List<String> sourceSets = new ArrayList<>();
             for (RailroadContentRoot root : module.getContentRoots()) {
+                String name = root.getSourceSetName();
+                sourceSets.add(name);
+                String set = prefix + "set." + name + ".";
+                values.put(set + "sources", paths(Stream.concat(root.getSourceDirectories().stream(),
+                    root.getTestSourceDirectories().stream()).map(RailroadSourceDirectory::getDirectory).toList()));
+                values.put(set + "classpath", paths(root.getCompileClasspath()));
+                values.put(set + "outputs", paths(root.getClassOutputs()));
+                if (root.getCompilerHome() != null) {
+                    values.put(set + "jdkHome",
+                        root.getCompilerHome().toPath().toAbsolutePath().normalize().toString());
+                }
+
                 for (RailroadSourceDirectory source : root.getSourceDirectories()) {
                     sources.add(source.getDirectory().toPath().toAbsolutePath().normalize() + ":generated="
                         + source.isGenerated());
                 }
+
                 for (RailroadSourceDirectory source : root.getTestSourceDirectories()) {
                     sources.add(source.getDirectory().toPath().toAbsolutePath().normalize() + ":test:generated="
                         + source.isGenerated());
                 }
             }
+
+            values.put(prefix + "sourceSets", String.join("\n", sourceSets));
             values.put(prefix + "sources", String.join("\n", sources));
         }
-        publish(ids, values);
+
+        return new WorkspaceConfigurationSnapshot(0, ids, values);
+    }
+
+    /**
+     * The module root list combines source sets. Retain main's selected versions for source attached to its libraries.
+     */
+    private static void captureMainCompileSelection(RailroadModule module, String prefix, Map<String, String> values) {
+        DomainObjectSet<? extends RailroadConfiguration> configurations = module.getConfigurations();
+        if (configurations == null)
+            return;
+
+        Optional<? extends RailroadConfiguration> main = configurations.stream()
+            .filter(c -> "compileClasspath".equals(c.getName())).findFirst();
+        if (main.isEmpty() || !main.get().getResolutionFailures().isEmpty())
+            return;
+
+        Set<File> roots = new HashSet<>(module.getClasspathRoots());
+        Set<CompileArtifact> selected = compileArtifacts(main.get(), roots);
+        Map<String, Set<String>> versions = new HashMap<>();
+        Set<File> owners = new LinkedHashSet<>();
+        for (CompileArtifact artifact : selected) {
+            versions.computeIfAbsent(artifact.component(), _ -> new HashSet<>()).add(artifact.version());
+            owners.add(artifact.file());
+        }
+
+        Set<File> excluded = new LinkedHashSet<>();
+        for (RailroadConfiguration configuration : configurations) {
+            if (!configuration.getName().endsWith("CompileClasspath"))
+                continue;
+
+            for (CompileArtifact artifact : compileArtifacts(configuration, roots)) {
+                Set<String> selectedVersions = versions.get(artifact.component());
+                if (selectedVersions != null && !selectedVersions.contains(artifact.version())
+                    && !owners.contains(artifact.file())) {
+                    excluded.add(artifact.file());
+                }
+            }
+        }
+
+        if (!excluded.isEmpty()) {
+            values.put(prefix + "mainCompileArtifacts", paths(owners));
+            values.put(prefix + "otherCompileVersions", paths(excluded));
+        }
+    }
+
+    private static Set<CompileArtifact> compileArtifacts(RailroadConfiguration configuration, Set<File> roots) {
+        Set<CompileArtifact> artifacts = new LinkedHashSet<>();
+        Deque<RailroadDependency> pending = new ArrayDeque<RailroadDependency>(configuration.getDependencies());
+        Set<RailroadDependency> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+        while (!pending.isEmpty()) {
+            RailroadDependency dep = pending.removeFirst();
+            if (!seen.add(dep))
+                continue;
+
+            pending.addAll(dep.getChildren());
+            if (roots.contains(dep.getFile()) && !dep.getGroup().isBlank() && !dep.getVersion().isBlank()) {
+                artifacts
+                    .add(new CompileArtifact(dep.getGroup() + ":" + dep.getName(), dep.getVersion(), dep.getFile()));
+            }
+        }
+
+        return artifacts;
+    }
+
+    private record CompileArtifact(String component, String version, File file) {
     }
 
     private void publish(Set<String> ids, Map<String, String> values) {
@@ -382,46 +578,69 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
                 if (binaryTask != null) {
                     binaryTask.cancel(true);
                 }
+
                 binaryTask = null;
                 binaryResolution.cancel(false);
                 binaryResolution = CompletableFuture.completedFuture(null);
                 return;
             }
+
             forceBinaryRefresh = false;
             long generation = ++binaryGeneration;
             if (binaryTask != null) {
                 binaryTask.cancel(true);
             }
+
             binaryResolution.cancel(false);
             CompletableFuture<Void> completed = new CompletableFuture<>();
             binaryResolution = completed;
             var candidate = new WorkspaceConfigurationSnapshot(current.revision() + 1, ids, values);
-            binaryTask = submitBackground("binary-inputs", completed, request -> {
-                try {
-                    var provider = JavaLanguageSupport.analysisContextProvider();
-                    var prepared = binaryPreparer.apply(indexSession, candidate);
-                    synchronized (this) {
-                        request.checkActive();
-                        if (closed || indexSession.isClosed() || generation != binaryGeneration) {
-                            completed.cancel(false);
-                            return;
+            binaryTask = submitBackground("binary-inputs", "railroad.activity.preparing_libraries",
+                CONFIGURATION_BUDGET,
+                completed, request -> {
+                    try {
+                        var provider = JavaLanguageSupport.analysisContextProvider();
+                        WorkspaceConfigurationSnapshot prepared = binaryPreparer.apply(indexSession, candidate);
+                        synchronized (this) {
+                            request.checkActive();
+                            if (closed || indexSession.isClosed() || generation != binaryGeneration) {
+                                completed.cancel(false);
+                                return;
+                            }
+
+                            Services.PROJECT_LANGUAGE_INDEX_SERVICE.refreshProject(indexSession);
+                            provider.adoptConfiguration(indexSession, prepared);
+                            store.publishConfiguration(prepared);
+                            if (!indexesWarmed) {
+                                indexesWarmed = true;
+                                warmIndexes();
+                            }
                         }
-                        Services.PROJECT_LANGUAGE_INDEX_SERVICE.refreshProject(indexSession);
-                        provider.adoptConfiguration(indexSession, prepared);
-                        store.publishConfiguration(prepared);
+
+                        completed.complete(null);
+                    } catch (CancellationException exception) {
+                        completed.cancel(false);
+                    } catch (Exception exception) {
+                        if (!indexSession.isClosed()) {
+                            Railroad.LOGGER.warn("Cannot refresh Java binary inputs for {}", project.getPath(),
+                                exception);
+                        }
+
+                        synchronized (this) {
+                            if (!closed && !indexSession.isClosed() && generation == binaryGeneration
+                                && !indexesWarmed) {
+                                indexesWarmed = true;
+                                warmIndexes();
+                            }
+                        }
+
+                        completed.completeExceptionally(exception);
                     }
-                    completed.complete(null);
-                } catch (CancellationException exception) {
-                    completed.cancel(false);
-                } catch (Exception exception) {
-                    if (!indexSession.isClosed()) {
-                        Railroad.LOGGER.warn("Cannot refresh Java binary inputs for {}", project.getPath(), exception);
-                    }
-                    completed.completeExceptionally(exception);
-                }
-            });
+                });
+
             return;
         }
+
         if (!current.moduleIds().equals(ids) || !current.settings().equals(values)) {
             store.publishConfiguration(new WorkspaceConfigurationSnapshot(current.revision() + 1, ids, values));
         }
@@ -439,12 +658,15 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
     ) {
         if (language == null)
             return;
+
         if (language.getSourceCompatibility() != null) {
             values.put(prefix + "sourceLevel", language.getSourceCompatibility().toString());
         }
+
         if (language.getTargetCompatibility() != null) {
             values.put(prefix + "targetLevel", language.getTargetCompatibility().toString());
         }
+
         if (language.getJdk() != null && language.getJdk().getJavaHome() != null) {
             values.put(prefix + "jdkHome",
                 language.getJdk().getJavaHome().toPath().toAbsolutePath().normalize().toString());
@@ -462,6 +684,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
                 new JavaLanguageIndexContextContributor().resolveWorkspace(project),
                 values);
         }
+
         for (String name : List.of("pom.xml", "build.gradle", "build.gradle.kts", "settings.gradle",
             "settings.gradle.kts", "gradle.properties")) {
             Path file = project.getPath().resolve(name);
@@ -473,6 +696,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
                 }
             }
         }
+
         Path directory = project.getPath().resolve(".railroad");
         if (Files.isDirectory(directory)) {
             try (Stream<Path> files = Files.walk(directory, 3)) {
@@ -486,6 +710,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
                 throw new IllegalStateException("Cannot capture project configuration", exception);
             }
         }
+
         return values;
     }
 
@@ -521,9 +746,11 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         Path pom = module.resolve("pom.xml");
         if (!Files.isRegularFile(pom))
             return;
+
         try {
             if (!visited.add(pom.toRealPath()))
                 return;
+
             String relative = root.toAbsolutePath().normalize().relativize(module.toAbsolutePath().normalize())
                 .toString().replace('\\', ':').replace('/', ':');
             String prefix = "project.maven.module.:" + relative;
@@ -532,6 +759,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             try (Reader reader = Files.newBufferedReader(pom)) {
                 model = new MavenXpp3Reader().read(reader);
             }
+
             for (String child : model.getModules()) {
                 captureMavenModules(root, module.resolve(child).normalize(), values, visited);
             }
@@ -548,6 +776,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
         if (binaryTask != null) {
             binaryTask.cancel(true);
         }
+
         binaryResolution.cancel(false);
         cancelResolution();
         backgroundRequests.close();

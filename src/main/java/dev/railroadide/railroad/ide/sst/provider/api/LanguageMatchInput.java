@@ -5,7 +5,9 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;
 
-/** Immutable, bounded recognition input. Matchers never need to open arbitrary files. */
+/**
+ * Immutable, bounded recognition input. Matchers never need to open arbitrary files.
+ */
 public final class LanguageMatchInput {
     /**
      * Maximum number of leading content bytes retained for language recognition.

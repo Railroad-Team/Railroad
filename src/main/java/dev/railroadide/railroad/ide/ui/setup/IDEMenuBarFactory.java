@@ -111,13 +111,25 @@ public final class IDEMenuBarFactory {
         var pasteItem = CommandMenuItems.create(EditCommands.PASTE, () -> CommandContext.forProject(project, menuBar));
         pasteItem.setGraphic(new FontIcon(FontAwesomeSolid.PASTE));
 
-        var findItem = new LocalizedMenuItem("railroad.menu.edit.find");
+        var findItem = CommandMenuItems.create(EditCommands.FIND, () -> CommandContext.forProject(project, menuBar));
         findItem.setGraphic(new FontIcon(FontAwesomeSolid.SEARCH));
 
-        var replaceItem = new LocalizedMenuItem("railroad.menu.edit.replace");
+        var replaceItem = CommandMenuItems.create(EditCommands.REPLACE,
+            () -> CommandContext.forProject(project, menuBar));
         replaceItem.setGraphic(new FontIcon(FontAwesomeSolid.SEARCH_PLUS));
 
-        var toolWindowsMenu = createToolWindowsMenu(project, menuBar, workspaceActions);
+        var findInFilesItem = CommandMenuItems.create(EditCommands.FIND_IN_FILES,
+            () -> CommandContext.forProject(project, menuBar));
+        findInFilesItem.setGraphic(new FontIcon(FontAwesomeSolid.FOLDER_OPEN));
+        var replaceInFilesItem = CommandMenuItems.create(EditCommands.REPLACE_IN_FILES,
+            () -> CommandContext.forProject(project, menuBar));
+
+        var findNextItem = CommandMenuItems.create(EditCommands.FIND_NEXT,
+            () -> CommandContext.forProject(project, menuBar));
+        var findPreviousItem = CommandMenuItems.create(EditCommands.FIND_PREVIOUS,
+            () -> CommandContext.forProject(project, menuBar));
+
+        LocalizedMenu toolWindowsMenu = createToolWindowsMenu(project, menuBar, workspaceActions);
 
         var navigateBackItem = CommandMenuItems.create(Commands.NAVIGATE_BACK,
             () -> CommandContext.withArgument(project, menuBar, workspaceActions));
@@ -126,6 +138,14 @@ public final class IDEMenuBarFactory {
         var navigateForwardItem = CommandMenuItems.create(Commands.NAVIGATE_FORWARD,
             () -> CommandContext.withArgument(project, menuBar, workspaceActions));
         navigateForwardItem.setGraphic(new FontIcon(FontAwesomeSolid.ARROW_RIGHT));
+
+        var goToFileItem = CommandMenuItems.create(Commands.GO_TO_FILE,
+            () -> CommandContext.forProject(project, menuBar));
+        goToFileItem.setGraphic(new FontIcon(FontAwesomeSolid.FILE_ALT));
+
+        var goToClassItem = CommandMenuItems.create(Commands.GO_TO_CLASS,
+            () -> CommandContext.forProject(project, menuBar));
+        goToClassItem.setGraphic(new FontIcon(FontAwesomeSolid.CUBE));
 
         var goToDefinitionItem = CommandMenuItems.create(Commands.GO_TO_DEFINITION,
             () -> CommandContext.withArgument(project, menuBar, Commands.activeCodeEditor()));
@@ -163,6 +183,7 @@ public final class IDEMenuBarFactory {
             if (viewMode.getGraphic() != null) {
                 item.setGraphic(new FontIcon(viewMode.getGraphic()));
             }
+
             var command = Commands.viewMode(viewMode);
             if (command != null) {
                 CommandMenuItems.bind(item, command, () -> CommandContext.forProject(project, menuBar));
@@ -174,11 +195,13 @@ public final class IDEMenuBarFactory {
                 if (accelerator != null) {
                     bindConfiguredAccelerator(item, accelerator);
                 }
+
                 ObservableBooleanValue unavailable = viewMode.createUnavailableBinding(project);
                 if (unavailable != null) {
                     item.disableProperty().bind(unavailable);
                 }
             }
+
             viewModeItems.put(viewMode, item);
         }
 
@@ -243,13 +266,21 @@ public final class IDEMenuBarFactory {
             pasteItem,
             new SeparatorMenuItem(),
             findItem,
-            replaceItem);
+            replaceItem,
+            findNextItem,
+            findPreviousItem,
+            new SeparatorMenuItem(),
+            findInFilesItem,
+            replaceInFilesItem);
         editMenu.getStyleClass().add("rr-menu");
 
         var viewMenu = new LocalizedMenu("railroad.menu.view");
         viewMenu.getItems().addAll(
             navigateBackItem,
             navigateForwardItem,
+            new SeparatorMenuItem(),
+            goToFileItem,
+            goToClassItem,
             goToDefinitionItem,
             goToImplementationItem,
             findUsagesItem,
@@ -278,6 +309,7 @@ public final class IDEMenuBarFactory {
             RunCommands.STEP_OUT)) {
             runMenu.getItems().add(CommandMenuItems.create(command, () -> CommandContext.forProject(project, menuBar)));
         }
+
         runMenu.getStyleClass().add("rr-menu");
 
         var toolsMenu = new LocalizedMenu("railroad.menu.tools");
@@ -288,6 +320,7 @@ public final class IDEMenuBarFactory {
         if (OperatingSystem.isMac()) {
             menuBar.useSystemMenuBarProperty().set(true);
         }
+
         menuBar.getStyleClass().add("rr-menu-bar");
         return menuBar;
     }
@@ -318,6 +351,7 @@ public final class IDEMenuBarFactory {
         toolWindowsMenu.setOnShowing(_ -> menuItems.forEach((dockItem, menuItem) -> {
             menuItem.setSelected(workspaceActions.isDockItemActive(dockItem));
         }));
+
         return toolWindowsMenu;
     }
 
@@ -335,5 +369,4 @@ public final class IDEMenuBarFactory {
             .map(KeybindData::getKeyCodeCombination)
             .ifPresentOrElse(menuItem::setAccelerator, () -> menuItem.setAccelerator(null));
     }
-
 }

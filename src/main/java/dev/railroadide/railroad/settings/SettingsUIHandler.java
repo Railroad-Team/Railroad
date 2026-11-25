@@ -35,6 +35,7 @@ public class SettingsUIHandler {
         int index = order.indexOf(key);
         return index < 0 ? Integer.MAX_VALUE : index;
     }
+
     private static TreeItem<LocalizedLabel> createItem(@Nullable String key) {
         if (StringUtils.isBlank(key))
             return new TreeItem<>(null);
@@ -66,7 +67,7 @@ public class SettingsUIHandler {
                     .findFirst();
 
                 if (folder.isEmpty()) {
-                    var newFolder = createItem(key);
+                    TreeItem<LocalizedLabel> newFolder = createItem(key);
                     currNode.getChildren().add(newFolder);
                     currNode = newFolder;
                 } else {
@@ -184,6 +185,7 @@ public class SettingsUIHandler {
             if (titleNode != null) {
                 headerBox.getChildren().add(titleNode);
             }
+
             headerBox.getChildren().add(separator);
             boolean repeatsPageTitle = folderBoxes.size() == 1 && titleNode instanceof Label label &&
                 Objects.equals(label.getText(), L18n.localize("settings.tree." + parent));

@@ -5,7 +5,9 @@ import dev.railroadide.railroad.ide.sst.lexer.Token;
 import dev.railroadide.railroad.ide.sst.lexer.TokenChannel;
 import dev.railroadide.railroad.ide.sst.lexer.TokenFlag;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
+import org.jetbrains.annotations.Nullable;
 
+import java.math.BigInteger;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -22,11 +24,14 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
     private final CharSequence input;
     private final int length;
+    private final CharSequence rawInput;
+    private final int @Nullable [] rawOffsets;
     private final String sourceId;
 
     private int pos;
     private int line;
     private int column;
+    private JavaTokenType previousSignificantType;
 
     private final Deque<Integer> modes = new ArrayDeque<>();
 
@@ -61,8 +66,10 @@ public class JavaLexer implements Lexer<JavaTokenType> {
      * @throws NullPointerException if the input or activity check is {@code null}
      */
     public JavaLexer(CharSequence input, String sourceId, Runnable activityCheck) {
-        this.input = Objects.requireNonNull(input, "Input cannot be null");
-        this.length = input.length();
+        this.rawInput = Objects.requireNonNull(input, "Input cannot be null");
+        this.rawOffsets = translatedRawOffsets(input);
+        this.input = rawOffsets == null ? input : JavaUnicodeEscapes.translate(input);
+        this.length = this.input.length();
         this.sourceId = sourceId;
         this.pos = 0;
         this.line = 1;
@@ -112,7 +119,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
     @Override
     public int offset() {
-        return pos;
+        return rawOffset(pos);
     }
 
     @Override
@@ -127,7 +134,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
     @Override
     public Optional<Integer> totalLength() {
-        return Optional.of(length);
+        return Optional.of(rawInput.length());
     }
 
     @Override
@@ -237,6 +244,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
                 // The escaped codepoint has already been consumed; do not treat
                 // the next character as escaped as well.
+
                 escapeNext = false;
             } else {
                 escapeNext = false;
@@ -250,36 +258,32 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
     private Token<JavaTokenType> readTextBlock() {
         int startOffset = pos, startLine = line, startCol = column;
-        boolean escapeNext = false;
 
         consume(3);
         while (hasNext()) {
             char current = charAt(pos);
-            if (current == '"' && peek(1) == '"' && peek(2) == '"' && !escapeNext) {
+            if (current == '"' && peek(1) == '"' && peek(2) == '"') {
                 consume(3);
                 popMode();
                 return token(JavaTokenType.TEXT_BLOCK_LITERAL, startOffset, startLine, startCol);
             }
 
-            if (current == '\\' && !escapeNext) {
-                escapeNext = true;
+            if (current != '\\') {
                 consume();
-                if (!consumeEscapeCode()) {
-                    popMode();
-                    return unterminated(startOffset, startLine, startCol, "Invalid escape sequence in text block");
-                }
-
-                // Escape handling is complete for this iteration.
-                escapeNext = false;
-            } else {
-                escapeNext = false;
+                continue;
             }
 
-            if (current == '\n' || current == '\r') {
-                newline();
+            consume();
+            char escaped = hasNext() ? charAt(pos) : '\0';
+            if (escaped == '\r' || escaped == '\n') {
+                // A backslash before a line terminator joins the lines (JLS 3.10.7).
                 consume();
-            } else {
-                consume();
+                if (escaped == '\r' && hasNext() && charAt(pos) == '\n') {
+                    consume();
+                }
+            } else if (!consumeEscapeCode()) {
+                popMode();
+                return unterminated(startOffset, startLine, startCol, "Invalid escape sequence in text block");
             }
         }
 
@@ -350,11 +354,11 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         if (current == '\'')
             return readCharLiteral();
 
-        if (JavaTokenType.MULTI_CHAR_TOKENS.containsKey(current)) {
-            Optional<Token<JavaTokenType>> multiCharToken = readMulticharToken(current);
-            if (multiCharToken.isPresent())
-                return multiCharToken.get();
-        }
+        if (current == '.' && isDecimalDigit(peek(1)))
+            return readNumber();
+
+        if (JavaTokenType.MULTI_CHAR_TOKENS.containsKey(current))
+            return readOperator(current);
 
         if (JavaTokenType.SINGLE_CHAR_TOKENS.containsKey(current)) {
             if (current == '@') {
@@ -368,25 +372,18 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                     }
                 }
             }
+
             consume();
             return token(JavaTokenType.SINGLE_CHAR_TOKENS.get(current), startOffset, startLine, startCol);
         }
 
-        if (Character.isJavaIdentifierStart(translatedAt(pos))) {
-            StringBuilder translated = null;
+        if (Character.isJavaIdentifierStart(Character.codePointAt(input, pos))) {
             do {
-                int escape = JavaUnicodeEscapes.escapeEnd(input, pos);
-                if (escape > 0 && translated == null) {
-                    translated = new StringBuilder(slice(startOffset, pos));
-                }
-                if (translated != null) {
-                    translated.append(translatedAt(pos));
-                }
-                consume(escape > 0 ? escape - pos : 1);
-            } while (hasNext() && Character.isJavaIdentifierPart(translatedAt(pos)));
+                consume(Character.charCount(Character.codePointAt(input, pos)));
+            } while (hasNext() && Character.isJavaIdentifierPart(Character.codePointAt(input, pos)));
 
-            // Escaped identifiers keep their raw text; only their keyword status depends on the translation.
-            String lexeme = translated == null ? slice(startOffset, pos) : translated.toString();
+            // The translated spelling decides keyword status; the token keeps its raw text.
+            String lexeme = input.subSequence(startOffset, pos).toString();
             JavaTokenType type = JavaTokenType.listKeywords().getOrDefault(lexeme, JavaTokenType.IDENTIFIER);
             if ("true".equals(lexeme) || "false".equals(lexeme)) {
                 type = JavaTokenType.BOOLEAN_LITERAL;
@@ -397,11 +394,12 @@ public class JavaLexer implements Lexer<JavaTokenType> {
             return token(type, startOffset, startLine, startCol);
         }
 
-        if (Character.isDigit(current))
+        if (isDecimalDigit(current))
             return readNumber();
 
-        consume();
-        diagnostics.add(new LexError("Unexpected character: '" + current + "'", startOffset, startLine, startCol));
+        consume(Character.charCount(Character.codePointAt(input, pos)));
+        diagnostics.add(new LexError("Unexpected character: '" + current + "'", rawOffset(startOffset), startLine,
+            startCol));
         return token(JavaTokenType.UNKNOWN, startOffset, startLine, startCol, TokenChannel.DEFAULT,
             EnumSet.of(TokenFlag.ERROR));
     }
@@ -473,276 +471,220 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         return unterminated(startOffset, startLine, startOffset, "Unterminated char literal");
     }
 
-    private Optional<Token<JavaTokenType>> readMulticharToken(char current) {
+    private Token<JavaTokenType> readOperator(char current) {
         int startOffset = pos, line = this.line, column = this.column;
         List<Map.Entry<CharSequence, JavaTokenType>> possibleTokens = JavaTokenType.MULTI_CHAR_TOKENS.get(current)
             .stream()
             .sorted((a, b) -> Integer.compare(b.getKey().length(), a.getKey().length()))
             .toList();
 
-        CharSequence longestMatch = null;
-        JavaTokenType matchType = null;
+        int afterFirst = pos + 1;
         for (Map.Entry<CharSequence, JavaTokenType> possibleToken : possibleTokens) {
-            CharSequence possibleTokenKey = possibleToken.getKey();
-            if (pos + possibleTokenKey.length() <= length) {
-                for (int i = 0; i < possibleTokenKey.length(); i++) {
-                    if (peek(i) != possibleTokenKey.charAt(i))
-                        break;
-
-                    if (i == possibleTokenKey.length() - 1) {
-                        longestMatch = possibleTokenKey;
-                        matchType = possibleToken.getValue();
-                        break;
-                    }
-                }
+            CharSequence spelling = possibleToken.getKey();
+            int end = afterFirst;
+            int matched = 1;
+            while (matched < spelling.length() && end < length && charAt(end) == spelling.charAt(matched)) {
+                end++;
+                matched++;
             }
 
-            if (longestMatch != null) {
-                consume(longestMatch.length());
-
-                return Optional.of(token(matchType, startOffset, line, column, TokenChannel.DEFAULT));
+            if (matched == spelling.length()) {
+                consume(end - pos);
+                return token(possibleToken.getValue(), startOffset, line, column);
             }
         }
 
-        return Optional.empty();
+        consume(afterFirst - pos);
+        return token(JavaTokenType.SINGLE_CHAR_TOKENS.get(current), startOffset, line, column);
     }
 
+    /**
+     * Reads a numeric literal, including one that starts with a decimal point. A malformed literal still becomes a
+     * single token spanning all of its text, flagged as an error, so no source text is lost.
+     */
     private Token<JavaTokenType> readNumber() {
         int startOffset = pos, startLine = this.line, startColumn = this.column;
+        if (peek(0) == '0' && Character.toLowerCase(peek(1)) == 'x') {
+            consume(2);
+            return readHexadecimalNumber(startOffset, startLine, startColumn);
+        }
 
-        var number = new StringBuilder();
-        JavaTokenType type = JavaTokenType.NUMBER_INT_LITERAL;
+        if (peek(0) == '0' && Character.toLowerCase(peek(1)) == 'b') {
+            consume(2);
+            String problem = readDigits(JavaLexer::isBinaryDigit);
+            if (problem == null && Character.toLowerCase(peek(0)) == 'l') {
+                consume();
+            }
 
-        char current = consume();
-        number.append(current);
+            return finishNumber(JavaTokenType.NUMBER_BINARY_LITERAL, problem, startOffset, startLine, startColumn);
+        }
 
-        if (current == '0' && hasNext()) {
-            char next = peek(0);
-            switch (Character.toLowerCase(next)) {
-                case 'x' -> {
-                    consume();
-                    number.append(next);
-                    return readIntegerLiteral(number, JavaTokenType.NUMBER_HEXADECIMAL_LITERAL,
-                        JavaLexer::isHexadecimal, startOffset, startLine, startColumn);
-                }
-                case 'b' -> {
-                    consume();
-                    number.append(next);
-                    return readIntegerLiteral(number, JavaTokenType.NUMBER_BINARY_LITERAL, ch -> ch == '0' || ch == '1',
-                        startOffset, startLine, startColumn);
-                }
-                case '.' -> {
-                    consume();
-                    number.append(next);
-                    return readDecimalLiteral(number, startOffset, startLine, startColumn);
-                }
-                default -> {
-                    if (next >= '0' && next <= '7') {
-                        type = JavaTokenType.NUMBER_OCTAL_LITERAL;
-                        number.append(next);
-                        return readIntegerLiteral(number, type, ch -> ch >= '0' && ch <= '7', startOffset, startLine,
-                            startColumn);
-                    }
-                }
+        String problem = null;
+        boolean floating = false;
+        if (peek(0) == '.') {
+            consume();
+            floating = true;
+        } else {
+            problem = readDigits(JavaLexer::isDecimalDigit);
+            if (problem == null && peek(0) == '.') {
+                consume();
+                floating = true;
+                if (!isDecimalDigit(peek(0)))
+                    // A trailing point is valid, as in 1. or 1.e3; only the fraction is optional.
+                    return finishDecimal(true, null, startOffset, startLine, startColumn);
             }
         }
 
-        boolean lastWasUnderscore = false;
-        while (hasNext()) {
-            char nextChar = peek(0);
-            if (Character.isDigit(nextChar)) {
-                consume();
-                number.append(nextChar);
-                lastWasUnderscore = false;
-            } else if (nextChar == '_') {
-                if (lastWasUnderscore)
-                    return errorToken("Consecutive underscores in number literal: " + number);
-
-                if (pos + 1 >= length)
-                    return errorToken("Underscore at end of number literal: " + number);
-
-                char afterUnderscore = peek(1);
-                if (!Character.isDigit(afterUnderscore))
-                    return errorToken("Underscore not followed by digit in number literal: " + number);
-
-                consume();
-                number.append(nextChar);
-                lastWasUnderscore = true;
-            } else
-                break;
+        if (floating && problem == null) {
+            problem = readDigits(JavaLexer::isDecimalDigit);
         }
 
-        if (lastWasUnderscore)
-            return errorToken("Number literal ends with underscore: " + number);
-
-        if (hasNext() && peek(0) == '.') {
-            consume();
-            number.append('.');
-            return readDecimalLiteral(number, startOffset, startLine, startColumn);
-        }
-
-        if (hasNext() && (peek(0) == 'e' || peek(0) == 'E'))
-            return readDecimalExponent(number, startOffset, startLine, startColumn);
-
-        if (hasNext() && (peek(0) == 'l' || peek(0) == 'L')) {
-            consume();
-            number.append('L');
-        } else if (hasNext() && (peek(0) == 'f' || peek(0) == 'F') || (peek(0) == 'd' || peek(0) == 'D')) {
-            consume();
-            number.append('D');
-            type = JavaTokenType.NUMBER_FLOATING_POINT_LITERAL;
-        }
-
-        if (!doesCharacterTerminateNumber(peek(0)))
-            return errorToken("Unexpected character after number literal: " + number);
-
-        return token(type, startOffset, startLine, startColumn);
+        return finishDecimal(floating, problem, startOffset, startLine, startColumn);
     }
 
-    private Token<JavaTokenType> readIntegerLiteral(
-        StringBuilder text,
+    private Token<JavaTokenType> finishDecimal(
+        boolean floating,
+        String problem,
+        int startOffset,
+        int startLine,
+        int startColumn
+    ) {
+        if (problem == null && Character.toLowerCase(peek(0)) == 'e') {
+            floating = true;
+            problem = readExponent();
+        }
+
+        if (problem == null) {
+            char suffix = Character.toLowerCase(peek(0));
+            if (suffix == 'f' || suffix == 'd') {
+                consume();
+                floating = true;
+            } else if (suffix == 'l' && !floating) {
+                consume();
+            }
+        }
+
+        JavaTokenType type = JavaTokenType.NUMBER_FLOATING_POINT_LITERAL;
+        if (!floating) {
+            String digits = slice(startOffset, pos).replace("_", "").replaceAll("[lL]$", "");
+            type = digits.length() > 1 && digits.charAt(0) == '0'
+                ? JavaTokenType.NUMBER_OCTAL_LITERAL
+                : JavaTokenType.NUMBER_INT_LITERAL;
+            if (problem == null && type == JavaTokenType.NUMBER_OCTAL_LITERAL
+                && digits.chars().anyMatch(digit -> digit > '7')) {
+                problem = "Invalid digit in octal literal";
+            }
+        }
+
+        return finishNumber(type, problem, startOffset, startLine, startColumn);
+    }
+
+    private Token<JavaTokenType> readHexadecimalNumber(int startOffset, int startLine, int startColumn) {
+        boolean hasDigits = isHexadecimal(peek(0)) || peek(0) == '_';
+        String problem = hasDigits ? readDigits(JavaLexer::isHexadecimal) : null;
+        boolean floating = false;
+        if (problem == null && peek(0) == '.') {
+            consume();
+            floating = true;
+            if (isHexadecimal(peek(0)) || peek(0) == '_') {
+                hasDigits = true;
+                problem = readDigits(JavaLexer::isHexadecimal);
+            }
+        }
+
+        if (problem == null && !hasDigits) {
+            problem = "Missing digits in hexadecimal literal";
+        }
+
+        if (problem == null && Character.toLowerCase(peek(0)) == 'p') {
+            floating = true;
+            problem = readExponent();
+        } else if (problem == null && floating) {
+            problem = "Hexadecimal floating-point literal requires a binary exponent";
+        }
+
+        if (problem == null) {
+            char suffix = Character.toLowerCase(peek(0));
+            if (floating && (suffix == 'f' || suffix == 'd') || !floating && suffix == 'l') {
+                consume();
+            }
+        }
+
+        return finishNumber(floating
+            ? JavaTokenType.NUMBER_FLOATING_POINT_LITERAL
+            : JavaTokenType.NUMBER_HEXADECIMAL_LITERAL, problem, startOffset, startLine, startColumn);
+    }
+
+    /**
+     * Reads an exponent marker, an optional sign and the exponent digits.
+     */
+    private String readExponent() {
+        consume();
+        if (peek(0) == '+' || peek(0) == '-') {
+            consume();
+        }
+
+        return readDigits(JavaLexer::isDecimalDigit);
+    }
+
+    /**
+     * Reads digits that may be separated by underscores, which must sit between digits.
+     *
+     * @return a description of the problem, or {@code null} when the digits are well formed
+     */
+    private String readDigits(Predicate<Character> isDigit) {
+        boolean sawDigit = false;
+        boolean lastUnderscore = false;
+        while (hasNext()) {
+            char current = peek(0);
+            if (isDigit.test(current)) {
+                sawDigit = true;
+                lastUnderscore = false;
+            } else if (current == '_') {
+                if (!sawDigit)
+                    return "Underscore must follow a digit in number literal";
+
+                lastUnderscore = true;
+            } else
+                break;
+
+            consume();
+        }
+
+        if (!sawDigit)
+            return "Missing digits in number literal";
+
+        if (lastUnderscore)
+            return "Underscore must be followed by a digit in number literal";
+
+        return null;
+    }
+
+    private Token<JavaTokenType> finishNumber(
         JavaTokenType type,
-        Predicate<Character> isCharValid,
+        String problem,
         int startOffset,
         int startLine,
         int startColumn
     ) {
-        boolean seenDigit = false, lastUnderscore = false;
-        while (hasNext()) {
-            char current = peek(0);
-            if (isCharValid.test(current)) {
-                consume();
-                text.append(current);
-                seenDigit = true;
-                lastUnderscore = false;
-            } else if (current == '_') {
-                if (!seenDigit || lastUnderscore)
-                    return errorToken("Invalid underscore in numeric literal: " + text);
-
-                if (pos + 1 >= length || !isCharValid.test(peek(1)))
-                    return errorToken("Underscore must separate digits: " + text);
-
-                consume();
-                text.append(current);
-                lastUnderscore = true;
-            } else
-                break;
+        if (problem == null && hasNext() && !doesCharacterTerminateNumber(peek(0))) {
+            problem = "Unexpected character after number literal: '" + peek(0) + "'";
         }
 
-        if (!seenDigit)
-            return errorToken("Malformed literal (missing digits): " + text);
-        if (lastUnderscore)
-            return errorToken("Malformed literal (trailing underscore): " + text);
-
-        char current = peek(0);
-        if (hasNext() && Character.toLowerCase(current) == 'l') {
-            text.append(consume());
-        } else if (hasNext() && (current == 'f' || current == 'd'))
-            return errorToken("Floating suffix not allowed on non-decimal integer literal: " + text + current);
-
-        if (!doesCharacterTerminateNumber(current))
-            return errorToken("Invalid trailing characters after literal: " + text + current);
-
-        return token(type, startOffset, startLine, startColumn);
-    }
-
-    private Token<JavaTokenType> readDecimalLiteral(
-        StringBuilder text,
-        int startOffset,
-        int startLine,
-        int startColumn
-    ) {
-        boolean sawFracDigits = false, lastUnderscore = false;
-        while (hasNext()) {
-            char current = peek(0);
-            if (Character.isDigit(current)) {
-                consume();
-                text.append(current);
-                sawFracDigits = true;
-                lastUnderscore = false;
-            } else if (current == '_') {
-                if (lastUnderscore)
-                    return errorToken("Consecutive underscores in number literal: " + text);
-
-                if (pos + 1 >= length || !Character.isDigit(peek(1)))
-                    return errorToken("Underscore must separate digits: " + text);
-
-                consume();
-                text.append(current);
-                lastUnderscore = true;
-            } else
-                break;
+        if (problem == null && !fitsIntegerType(type, input.subSequence(startOffset, pos).toString())) {
+            problem = "Integer number too large";
         }
 
-        if (lastUnderscore)
-            return errorToken("Trailing underscore in number literal: " + text);
-        if (!sawFracDigits)
-            return errorToken("Malformed floating point literal (missing digits): " + text);
+        if (problem == null)
+            return token(type, startOffset, startLine, startColumn);
 
-        if (hasNext() && Character.toLowerCase(peek(0)) == 'e')
-            return readDecimalExponent(text, startOffset, startLine, startColumn);
-
-        char current = peek(0);
-        if (hasNext() && (Character.toLowerCase(current) == 'f' || Character.toLowerCase(current) == 'd')) {
-            text.append(consume());
+        while (hasNext() && (Character.isLetterOrDigit(peek(0)) || peek(0) == '_')) {
+            consume();
         }
 
-        if (!doesCharacterTerminateNumber(current))
-            return errorToken("Invalid trailing characters after floating literal: " + text + current);
-
-        return token(JavaTokenType.NUMBER_FLOATING_POINT_LITERAL, startOffset, startLine, startColumn);
-    }
-
-    private Token<JavaTokenType> readDecimalExponent(
-        StringBuilder text,
-        int startOffset,
-        int startLine,
-        int startColumn
-    ) {
-        char current = consume();
-        text.append(current);
-
-        if (hasNext() && (peek(0) == '+' || peek(0) == '-')) {
-            text.append(consume());
-        }
-
-        boolean sawExpDigits = false, lastUnderscore = false;
-        while (hasNext()) {
-            current = peek(0);
-            if (Character.isDigit(current)) {
-                consume();
-                text.append(current);
-                sawExpDigits = true;
-                lastUnderscore = false;
-            } else if (current == '_') {
-                if (lastUnderscore)
-                    return errorToken("Consecutive underscores in exponent: " + text);
-                if (!sawExpDigits)
-                    return errorToken("Underscore in exponent without preceding digits: " + text);
-
-                if (pos + 1 >= length || !Character.isDigit(peek(1)))
-                    return errorToken("Underscore must separate digits in exponent: " + text);
-
-                consume();
-                text.append(current);
-                lastUnderscore = true;
-            } else
-                break;
-        }
-
-        if (lastUnderscore)
-            return errorToken("Trailing underscore in exponent: " + text);
-        if (!sawExpDigits)
-            return errorToken("Malformed exponent (missing digits): " + text);
-
-        if (hasNext() && (peek(0) == 'f' || peek(0) == 'd')) {
-            text.append(consume());
-        }
-
-        if (!doesCharacterTerminateNumber(peek(0)))
-            return errorToken("Invalid trailing characters after exponent: " + text + peek(0));
-
-        return token(JavaTokenType.NUMBER_FLOATING_POINT_LITERAL, startOffset, startLine, startColumn);
+        diagnostics.add(new LexError(problem + ": " + slice(startOffset, pos), rawOffset(startOffset), startLine,
+            startColumn));
+        return token(type, startOffset, startLine, startColumn, TokenChannel.DEFAULT, TokenFlag.ERROR);
     }
 
     private boolean consumeEscapeCode() {
@@ -771,6 +713,7 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
                 yield true; // valid Unicode escape
             }
+
             default -> {
                 if (current >= '0' && current <= '7') {
                     int val = current - '0';
@@ -779,9 +722,11 @@ public class JavaLexer implements Lexer<JavaTokenType> {
                         char d = peek(0);
                         if (d < '0' || d > '7')
                             break;
+
                         int next = val * 8 + (d - '0');
                         if (next > 255)
                             break; // cap at 255; stop before overflow
+
                         consume();
                         val = next;
                         count++;
@@ -795,12 +740,57 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         };
     }
 
+    /**
+     * Checks an integer literal against the range of its type (JLS 3.10.1). A decimal literal may reach 2^31, or
+     * 2^63 with an {@code L} suffix, only as the operand of unary minus. The lexer cannot tell unary from binary minus,
+     * so it accepts that value after any minus sign.
+     */
+    private boolean fitsIntegerType(JavaTokenType type, String literal) {
+        int radix = switch (type) {
+            case NUMBER_INT_LITERAL -> 10;
+            case NUMBER_HEXADECIMAL_LITERAL -> 16;
+            case NUMBER_OCTAL_LITERAL -> 8;
+            case NUMBER_BINARY_LITERAL -> 2;
+            default -> 0;
+        };
+
+        if (radix == 0)
+            return true;
+
+        String digits = literal.replace("_", "");
+        boolean isLong = Character.toLowerCase(digits.charAt(digits.length() - 1)) == 'l';
+        if (isLong) {
+            digits = digits.substring(0, digits.length() - 1);
+        }
+
+        if (radix == 16 || radix == 2) {
+            digits = digits.substring(2);
+        }
+
+        int bits = isLong ? 64 : 32;
+        var value = new BigInteger(digits, radix);
+        if (radix != 10)
+            return value.bitLength() <= bits;
+
+        BigInteger limit = BigInteger.ONE.shiftLeft(bits - 1);
+        int comparison = value.compareTo(limit);
+        return comparison < 0 || comparison == 0 && previousSignificantType == JavaTokenType.MINUS;
+    }
+
     private static boolean doesCharacterTerminateNumber(char character) {
         return Character.isWhitespace(character) || JavaTokenType.SINGLE_CHAR_TOKENS.containsKey(character);
     }
 
+    private static boolean isDecimalDigit(char character) {
+        return character >= '0' && character <= '9';
+    }
+
+    private static boolean isBinaryDigit(char character) {
+        return character == '0' || character == '1';
+    }
+
     private static boolean isHexadecimal(char character) {
-        return Character.isDigit(character) || (character >= 'A' && character <= 'F')
+        return isDecimalDigit(character) || (character >= 'A' && character <= 'F')
             || (character >= 'a' && character <= 'f');
     }
 
@@ -810,11 +800,6 @@ public class JavaLexer implements Lexer<JavaTokenType> {
 
     private char charAt(int pos) {
         return this.input.charAt(pos);
-    }
-
-    private char translatedAt(int pos) {
-        int escape = JavaUnicodeEscapes.escapeEnd(input, pos);
-        return escape > 0 ? JavaUnicodeEscapes.decoded(input, escape) : charAt(pos);
     }
 
     private char peek(int offset) {
@@ -859,7 +844,45 @@ public class JavaLexer implements Lexer<JavaTokenType> {
     }
 
     private String slice(int start, int end) {
-        return input.subSequence(start, end).toString();
+        return rawInput.subSequence(rawOffset(start), rawOffset(end)).toString();
+    }
+
+    private int rawOffset(int position) {
+        return rawOffsets == null ? position : rawOffsets[position];
+    }
+
+    /**
+     * Maps each position of the translated source to its raw offset, or returns {@code null} when the source has no
+     * Unicode escape and the positions coincide.
+     */
+    private static int @Nullable [] translatedRawOffsets(CharSequence raw) {
+        List<Integer> offsets = null;
+        for (int index = 0; index < raw.length(); index++) {
+            int end = JavaUnicodeEscapes.escapeEnd(raw, index);
+            if (end < 0) {
+                if (offsets != null) {
+                    offsets.add(index);
+                }
+
+                continue;
+            }
+
+            if (offsets == null) {
+                offsets = new ArrayList<>(raw.length());
+                for (int previous = 0; previous < index; previous++) {
+                    offsets.add(previous);
+                }
+            }
+
+            offsets.add(index);
+            index = end - 1;
+        }
+
+        if (offsets == null)
+            return null;
+
+        offsets.add(raw.length());
+        return offsets.stream().mapToInt(Integer::intValue).toArray();
     }
 
     private Token<JavaTokenType> token(JavaTokenType type, int startOff, int startLine, int startCol) {
@@ -895,23 +918,29 @@ public class JavaLexer implements Lexer<JavaTokenType> {
         TokenChannel channel,
         Set<TokenFlag> flags
     ) {
-        return new Token.SimpleToken<>(type, slice(startOff, pos), startOff, pos, startLine, startCol, channel, flags);
+        if (channel == TokenChannel.DEFAULT) {
+            previousSignificantType = type;
+        }
+
+        return new Token.SimpleToken<>(type, slice(startOff, pos), rawOffset(startOff), rawOffset(pos), startLine,
+            startCol, channel, flags);
     }
 
     private Token<JavaTokenType> errorToken(String message) {
-        diagnostics.add(new LexError(message, pos, line, column));
-        return new Token.SimpleToken<>(JavaTokenType.IDENTIFIER, "", pos, pos, line, column, TokenChannel.DEFAULT,
-            EnumSet.of(TokenFlag.ERROR));
+        diagnostics.add(new LexError(message, rawOffset(pos), line, column));
+        return new Token.SimpleToken<>(JavaTokenType.IDENTIFIER, "", rawOffset(pos), rawOffset(pos), line, column,
+            TokenChannel.DEFAULT, EnumSet.of(TokenFlag.ERROR));
     }
 
     private Token<JavaTokenType> unterminated(int startOff, int startLine, int startCol, String message) {
-        diagnostics.add(new LexError(message, startOff, startLine, startCol));
-        return new Token.SimpleToken<>(JavaTokenType.STRING_LITERAL, slice(startOff, pos), startOff, pos, startLine,
-            startCol, TokenChannel.DEFAULT, EnumSet.of(TokenFlag.INCOMPLETE, TokenFlag.ERROR));
+        diagnostics.add(new LexError(message, rawOffset(startOff), startLine, startCol));
+        return new Token.SimpleToken<>(JavaTokenType.STRING_LITERAL, slice(startOff, pos), rawOffset(startOff),
+            rawOffset(pos), startLine, startCol, TokenChannel.DEFAULT,
+            EnumSet.of(TokenFlag.INCOMPLETE, TokenFlag.ERROR));
     }
 
     private Token<JavaTokenType> createEofToken() {
-        return new Token.SimpleToken<>(JavaTokenType.EOF, "", pos, pos, line, column, TokenChannel.DEFAULT,
-            EnumSet.of(TokenFlag.EOF));
+        return new Token.SimpleToken<>(JavaTokenType.EOF, "", rawOffset(pos), rawOffset(pos), line, column,
+            TokenChannel.DEFAULT, EnumSet.of(TokenFlag.EOF));
     }
 }

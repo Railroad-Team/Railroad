@@ -10,6 +10,7 @@ import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.gradle.project.GradleManager;
 import dev.railroadide.railroad.ide.IDESetup;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
+import dev.railroadide.railroad.ide.runconfig.session.RunSessionManager;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationManager;
 import dev.railroadide.railroad.ide.ui.IDEPane;
 import dev.railroadide.railroad.ide.ui.editor.EditorTabSessionState;
@@ -50,6 +51,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 /**
  * Represents a project managed by Railroad, including its path, metadata,
@@ -78,6 +80,8 @@ public class RailroadProject implements Project {
     private final GitManager gitManager;
     @Getter
     private final DebuggingManager debuggingManager;
+    @Getter
+    private final RunSessionManager runSessions = new RunSessionManager();
 
     /**
      * Creates a project using the final path component as its alias.
@@ -126,15 +130,15 @@ public class RailroadProject implements Project {
         abbreviation = abbreviation.length() > 4 ? abbreviation.substring(0, 4) : abbreviation;
 
         var image = new BufferedImage(128, 128, BufferedImage.TYPE_INT_ARGB);
-        var graphics = image.createGraphics();
+        Graphics2D graphics = image.createGraphics();
         graphics.setColor(color);
         graphics.fillRoundRect(0, 0, 128, 128, 32, 32);
 
         graphics.setColor(Color.WHITE);
         graphics.setFont(new Font("Arial", Font.BOLD, 64 - (abbreviation.length() * 6)));
-        var metrics = graphics.getFontMetrics();
-        var x = (128 - metrics.stringWidth(abbreviation)) / 2;
-        var y = ((128 - metrics.getHeight()) / 2) + metrics.getAscent();
+        FontMetrics metrics = graphics.getFontMetrics();
+        int x = (128 - metrics.stringWidth(abbreviation)) / 2;
+        int y = ((128 - metrics.getHeight()) / 2) + metrics.getAscent();
         graphics.drawString(abbreviation, x, y);
 
         graphics.dispose();
@@ -212,9 +216,11 @@ public class RailroadProject implements Project {
                         Railroad.LOGGER.warn("Discovered null facet for project: {}", getPathString());
                     }
                 }
+
                 for (Facet<?> facet : this.facets) {
                     Railroad.EVENT_BUS.publish(new FacetDetectedEvent(this, facet));
                 }
+
                 ready.complete(null);
             } catch (Throwable exception) {
                 ready.completeExceptionally(exception);
@@ -236,6 +242,7 @@ public class RailroadProject implements Project {
         CompletableFuture<Void> ready = facetDiscovery;
         if (!ready.isDone() && Platform.isFxApplicationThread())
             throw new IllegalStateException("Cannot wait for facet discovery on the application thread");
+
         ready.join();
     }
 
@@ -282,6 +289,7 @@ public class RailroadProject implements Project {
             // Start discovery before creating workers that resolve project index contexts.
             railroadProject.discoverFacets();
         }
+
         IDESetup.switchToIDE(project, stage);
         ProjectDataStore dataStore = project.getDataStore();
         ProjectConfig projectConfig = dataStore.readJson(PROJECT_CONFIG_LOCATION, ProjectConfig.class)
@@ -307,6 +315,7 @@ public class RailroadProject implements Project {
                     project.getPathString());
                 Services.EDITOR_TAB_MANAGER.restoreSession(editorTabs);
             }
+
             Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
                 .ifPresent(idePane -> idePane.restoreLayoutState(projectConfig.getIdeLayoutState()));
         });
@@ -325,6 +334,7 @@ public class RailroadProject implements Project {
             EditorWorkspaceSessionState editorWorkspace = Services.EDITOR_TAB_MANAGER.captureWorkspaceSession();
             if (!Services.EDITOR_TAB_MANAGER.prepareProjectClose())
                 return;
+
             List<EditorTabSessionState> editorTabs = editorWorkspace.tabs();
             Railroad.LOGGER.debug("Persisting {} editor tabs for project {}", editorTabs.size(), getPathString());
             projectConfig.setEditorWorkspace(editorWorkspace);
@@ -342,6 +352,7 @@ public class RailroadProject implements Project {
             dataStore.writeJson(PROJECT_CONFIG_LOCATION, projectConfig);
 
             Railroad.PROJECT_MANAGER.setCurrentProject(null);
+            gitManager.stop();
         }
     }
 
@@ -385,7 +396,7 @@ public class RailroadProject implements Project {
         json.addProperty("Id", getId());
         json.addProperty("Icon", this.icon.map(Image::getUrl).orElse("").getValue());
         if (!this.facets.isEmpty()) {
-            var facetsArray = new JsonArray();
+            JsonArray facetsArray = new JsonArray();
             for (Facet<?> facet : this.facets) {
                 var facetJson = new JsonObject();
                 facetJson.addProperty("Type", facet.getType().id());
@@ -395,6 +406,7 @@ public class RailroadProject implements Project {
 
             json.add("Facets", facetsArray);
         }
+
         json.addProperty("Description", description.get());
         json.addProperty("License", license.get() != null ? license.get().getSpdxId() : null);
 
@@ -502,7 +514,7 @@ public class RailroadProject implements Project {
         if (json.has("Facets")) {
             JsonElement facetsElement = json.get("Facets");
             if (facetsElement.isJsonArray()) {
-                JsonArray facetsArray = facetsElement.getAsJsonArray();
+                Iterable<JsonElement> facetsArray = facetsElement.getAsJsonArray();
                 for (JsonElement facetElement : facetsArray) {
                     if (facetElement.isJsonObject()) {
                         JsonObject facetJson = facetElement.getAsJsonObject();
@@ -692,13 +704,15 @@ public class RailroadProject implements Project {
      * </p>
      *
      * @param jdk the JDK to use for the build
+     * @param output receiver of the build's standard output as it is written
+     * @param error receiver of the build's standard error as it is written
      * @return a future completed with the build task, or exceptionally when the project cannot be built
      */
-    public CompletableFuture<Runnable> build(JDK jdk) {
+    public CompletableFuture<Runnable> build(JDK jdk, Consumer<String> output, Consumer<String> error) {
         CompletableFuture<Runnable> future = new CompletableFuture<>();
         CompletableFuture.runAsync(() -> {
             if (hasFacet(FacetManager.GRADLE)) {
-                gradleManager.runBuildTaskAsync("build", jdk, future);
+                gradleManager.runBuildTaskAsync("build", jdk, output, error, future);
             } else if (hasFacet(FacetManager.MAVEN)) {
                 // TODO: Implement Maven build support
                 future.completeExceptionally(

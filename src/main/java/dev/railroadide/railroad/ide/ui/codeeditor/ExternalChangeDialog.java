@@ -21,6 +21,8 @@ import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import org.eclipse.jgit.diff.Edit;
 
 /**
  * Presents conflicting editor and disk contents with reload and keep-local actions.
@@ -61,6 +63,7 @@ public final class ExternalChangeDialog implements AutoCloseable {
             compareButton.setVisible(false);
             compareButton.setManaged(false);
         });
+
         var buttons = new RRHBox(10, reloadButton, keepButton, compareButton);
         buttons.setAlignment(Pos.CENTER_RIGHT);
 
@@ -111,6 +114,7 @@ public final class ExternalChangeDialog implements AutoCloseable {
             stage.setWidth(1050);
             stage.setHeight(650);
         }
+
         updateComparison();
     }
 
@@ -131,10 +135,10 @@ public final class ExternalChangeDialog implements AutoCloseable {
     private void updateComparison() {
         mineArea.replaceText(mine);
         diskArea.replaceText(disk);
-        var edits = new HistogramDiff().diff(RawTextComparator.DEFAULT,
+        List<Edit> edits = new HistogramDiff().diff(RawTextComparator.DEFAULT,
             new RawText(mine.getBytes(StandardCharsets.UTF_8)),
             new RawText(disk.getBytes(StandardCharsets.UTF_8)));
-        for (var edit : edits) {
+        for (Edit edit : edits) {
             highlightLines(mineArea, edit.getBeginA(), edit.getEndA(), "git-diff-line-deletion");
             highlightLines(diskArea, edit.getBeginB(), edit.getEndB(), "git-diff-line-addition");
         }

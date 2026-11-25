@@ -32,6 +32,7 @@ public final class JavaSyntaxParser {
     private static final String MISSING_TOKEN_KIND_ID = SyntaxKind.MISSING_TOKEN.id();
     private static final String MISSING_TOKEN_PREFIX = "JAVA_MISSING_";
     private static final String ERROR_NODE_KIND_ID = JavaSyntaxKinds.ERROR.id();
+    private static final String LEXICAL_ERROR_KIND_ID = JavaSyntaxKinds.LEXICAL_ERROR.id();
 
     private JavaSyntaxParser() {
     }
@@ -514,6 +515,7 @@ public final class JavaSyntaxParser {
         TextDocumentSnapshot previousSnapshot = previousTree.documentSnapshot();
         if (!newSnapshot.id().equals(previousSnapshot.id()))
             throw new IllegalArgumentException("newSnapshot must have the same document identity as previousTree");
+
         if (!newSnapshot.version().isAfter(previousSnapshot.version()))
             throw new IllegalArgumentException(
                 "newSnapshot version must be later than previous tree version " + previousSnapshot.version());
@@ -791,6 +793,7 @@ public final class JavaSyntaxParser {
                 ActivityCheckpoint.checkInterrupted();
                 collectReuseCandidates(child, oldReparseStart, oldReparseEnd, delta, candidates);
             }
+
             return;
         }
 
@@ -829,7 +832,7 @@ public final class JavaSyntaxParser {
 
     private static List<SyntaxDiagnostic> collectSyntaxDiagnostics(SyntaxNode root, Runnable activityCheck) {
         List<SyntaxDiagnostic> diagnostics = new ArrayList<>();
-        ArrayDeque<SyntaxNode> stack = new ArrayDeque<>();
+        Deque<SyntaxNode> stack = new ArrayDeque<>();
         stack.push(root);
         while (!stack.isEmpty()) {
             activityCheck.run();
@@ -840,6 +843,13 @@ public final class JavaSyntaxParser {
                     SyntaxDiagnostic.Severity.ERROR,
                     "JAVA_ERROR_NODE",
                     "Recovered syntax error node",
+                    node.start(),
+                    node.end()));
+            } else if (LEXICAL_ERROR_KIND_ID.equals(kindId)) {
+                diagnostics.add(new SyntaxDiagnostic(
+                    SyntaxDiagnostic.Severity.ERROR,
+                    "JAVA_LEXICAL_ERROR",
+                    lexicalErrorMessage(node),
                     node.start(),
                     node.end()));
             } else if (node instanceof SyntaxToken && isMissingTokenKind(kindId)) {
@@ -858,6 +868,20 @@ public final class JavaSyntaxParser {
         }
 
         return List.copyOf(diagnostics);
+    }
+
+    private static String lexicalErrorMessage(SyntaxNode node) {
+        String tokenKind = node.children().isEmpty() ? "" : node.children().getFirst().kind().id();
+        if (tokenKind.contains("NUMBER"))
+            return "Malformed number literal";
+
+        if (tokenKind.contains("COMMENT"))
+            return "Unterminated comment";
+
+        if (tokenKind.contains("LITERAL"))
+            return "Malformed or unterminated literal";
+
+        return "Illegal character";
     }
 
     private static boolean isMissingTokenKind(String kindId) {
@@ -896,8 +920,10 @@ public final class JavaSyntaxParser {
         public TextEdit {
             if (startOffset < 0)
                 throw new IllegalArgumentException("startOffset cannot be negative");
+
             if (removedLength < 0)
                 throw new IllegalArgumentException("removedLength cannot be negative");
+
             insertedText = Objects.requireNonNull(insertedText, "insertedText");
         }
 

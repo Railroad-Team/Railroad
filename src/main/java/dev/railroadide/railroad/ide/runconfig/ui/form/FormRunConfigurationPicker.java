@@ -110,6 +110,7 @@ public class FormRunConfigurationPicker extends InformativeLabeledHBox<RRVBox> i
                 setText(empty ? null : formatDisplayName(item));
             }
         });
+
         selectedListView
             .setPlaceholder(new LocalizedLabel("railroad.runconfig.compound.configuration.configurations.empty"));
         RRVBox.setVgrow(selectedListView, Priority.ALWAYS);
@@ -172,6 +173,7 @@ public class FormRunConfigurationPicker extends InformativeLabeledHBox<RRVBox> i
         if (initialSelection != null && !initialSelection.isEmpty()) {
             selectedConfigurations.setAll(initialSelection);
         }
+
         refreshSelectablePredicate();
         updateValue();
 
@@ -228,6 +230,7 @@ public class FormRunConfigurationPicker extends InformativeLabeledHBox<RRVBox> i
                 selectedConfigurations.setAll(sanitized);
             } else
                 throw new IllegalArgumentException("Unsupported value type: " + value.getClass());
+
         });
     }
 

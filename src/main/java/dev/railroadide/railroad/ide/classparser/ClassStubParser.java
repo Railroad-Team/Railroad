@@ -37,7 +37,8 @@ public class ClassStubParser {
      */
     public static ClassStub parse(ClassReader reader) {
         var visitor = new ClassStubVisitor();
-        reader.accept(visitor, ClassReader.EXPAND_FRAMES);
+        // Stubs only describe declarations, so method bodies are never decoded.
+        reader.accept(visitor, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
 
         ClassStub stub = visitor.createClassStub();
         if (stub == null)

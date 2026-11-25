@@ -20,7 +20,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-/** Button control that displays and records one editable keybind combination. */
+/**
+ * Button control that displays and records one editable keybind combination.
+ */
 public class KeyComboNode extends RRButton {
     @Setter
     private Consumer<KeybindData> onComboModified;
@@ -113,15 +115,19 @@ public class KeyComboNode extends RRButton {
         if (shortcutDown) {
             modifiers.add(KeyCombination.SHORTCUT_DOWN);
         }
+
         if (controlDown) {
             modifiers.add(KeyCombination.CONTROL_DOWN);
         }
+
         if (altDown) {
             modifiers.add(KeyCombination.ALT_DOWN);
         }
+
         if (shiftDown) {
             modifiers.add(KeyCombination.SHIFT_DOWN);
         }
+
         if (metaDown) {
             modifiers.add(KeyCombination.META_DOWN);
         }
@@ -195,11 +201,13 @@ public class KeyComboNode extends RRButton {
                 label.append(localizeModifier(modifier)).append(" + ");
             }
         }
+
         if (keybindData.mouseButton() != null) {
             label.append(mouseButtonName(keybindData.mouseButton()));
         } else {
             label.append(keybindData.keyCode().getName());
         }
+
         setText(label.toString());
     }
 
@@ -212,6 +220,7 @@ public class KeyComboNode extends RRButton {
             case FORWARD -> "railroad.settings.keybinds.mouse_button.forward";
             case NONE -> "railroad.settings.keybinds.mouse_button.none";
         };
+
         return L18n.localize(localizationKey);
     }
 

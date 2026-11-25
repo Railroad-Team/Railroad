@@ -12,7 +12,9 @@ import java.util.function.Function;
  */
 public class LocalizedComboBox<T> extends ComboBox<T> {
 
-    /** CSS style classes installed when a localized combo box is initialized. */
+    /**
+     * CSS style classes installed when a localized combo box is initialized.
+     */
     public static final String[] DEFAULT_STYLE_CLASSES = {"combo-box-base", "rr-combo-box", "combo-box"};
 
     /**
@@ -48,7 +50,9 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
         return combo;
     }
 
-    /** Replaces the control's style classes with {@link #DEFAULT_STYLE_CLASSES}. */
+    /**
+     * Replaces the control's style classes with {@link #DEFAULT_STYLE_CLASSES}.
+     */
     protected void initialize() {
         getStyleClass().setAll(LocalizedComboBox.DEFAULT_STYLE_CLASSES);
     }
@@ -62,5 +66,4 @@ public class LocalizedComboBox<T> extends ComboBox<T> {
         setCellFactory(list -> new LocalizedListCell<T>(keyFunction));
         setButtonCell(new LocalizedListCell<T>(keyFunction));
     }
-
 }

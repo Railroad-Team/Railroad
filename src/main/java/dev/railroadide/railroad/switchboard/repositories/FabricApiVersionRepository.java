@@ -19,8 +19,7 @@ import java.util.concurrent.ExecutionException;
  * @param cache the cache used for version metadata
  */
 public record FabricApiVersionRepository(SwitchboardClient client, CacheManager cache)
-    implements
-        SwitchboardRepository {
+    implements SwitchboardRepository {
     private static final Duration VERSIONS_TTL = Duration.ofHours(12);
     private static final Duration LATEST_TTL = Duration.ofHours(1);
 

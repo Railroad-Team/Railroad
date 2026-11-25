@@ -2,7 +2,9 @@ package dev.railroadide.railroad.ide.diagnostics.inspections;
 
 import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticAnalyzer;
+import dev.railroadide.railroad.ide.sst.project.CompositeJavaSymbolIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaJdkSymbolIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndexer;
 import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
 import dev.railroadide.railroad.ide.sst.semantic.api.SemanticDiagnostic;
 import dev.railroadide.railroad.ide.sst.semantic.api.Type;
@@ -15,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,6 +25,131 @@ public class JavaInferenceRepairTest {
     private static final JavaSymbolIndex JDK = JavaJdkSymbolIndex.fromCurrentRuntime();
     @TempDir
     public Path directory;
+
+    @Test
+    public void inheritedGenericFieldsPreserveTheirReceiverType() {
+        String source = """
+            class Slot { int x; }
+            class Menu { Slot getSlot() { return null; } }
+            class Screen<M> { M menu; }
+            class Example extends Screen<Menu> {
+                int read(Screen<Menu> other) {
+                    var slot = this.menu.getSlot();
+                    return slot.x + other.menu.getSlot().x + menu.getSlot().x + slot.missing;
+                }
+            }
+            """;
+        assertOnlyMissingField(source, JDK);
+    }
+
+    @Test
+    public void typedLambdaDeterminesReceiverForChainedComparators() {
+        String source = """
+            import java.util.Comparator;
+            class Bounds { double x, y; }
+            record Row(Bounds bounds) {}
+            class Example {
+                void sort(java.util.List<Row> rows) {
+                    rows.sort(Comparator.comparingDouble((Row row) -> row.bounds().x)
+                        .thenComparingDouble(row -> row.bounds().y)
+                        .thenComparingDouble(row -> row.bounds().missing));
+                }
+            }
+            """;
+        assertOnlyMissingField(source, JDK);
+    }
+
+    @Test
+    public void indexedGenericCallbackParametersUseTheirInterfaceTypeArguments() throws Exception {
+        Path api = directory.resolve("api/Fields.java");
+        Files.createDirectories(api.getParent());
+        Files.writeString(api, """
+            package api;
+            public class Fields<B> {
+                public interface Getter<V, E> { V get(E entry); }
+                public interface Setter<V, E> { void set(E entry, V value); }
+                public <V> void register(V value, Getter<V, B> getter, Setter<V, B> setter) {}
+            }
+            """);
+        String source = """
+            import api.Fields;
+            class Base { boolean dirty; }
+            class Example<T extends Example<T>> extends Base {
+                Fields<T> fields;
+                void init() {
+                    fields.register(false, entry -> entry.dirty, (entry, value) -> entry.dirty = value);
+                    fields.register(false, entry -> entry.missing, (entry, value) -> {});
+                }
+            }
+            """;
+        var index = new CompositeJavaSymbolIndex(List.of(new JavaProjectSemanticIndexer().build(directory), JDK));
+        assertOnlyMissingField(source, index);
+    }
+
+    private void assertOnlyMissingField(String source, JavaSymbolIndex index) {
+        List<SemanticDiagnostic> issues = JavaInspectionTestSupport.runProviders(
+            List.of(new CoreMemberResolutionInspection()),
+            directory.resolve("Example.java"), source, index);
+        assertEquals(List.of("Cannot resolve member 'missing'"), issues.stream()
+            .map(SemanticDiagnostic::message).toList());
+    }
+
+    @Test
+    public void wildcardReadsUseBoundsFromTheDeclaringSourceFile() throws Exception {
+        Path api = directory.resolve("api/Storage.java");
+        Files.createDirectories(api.getParent());
+        Files.writeString(api, """
+            package api;
+            import java.util.ArrayList;
+            public record Storage<Element, T extends ArrayList<Element>>(java.util.function.Supplier<T> handle) {
+                public interface Alias<T extends Parent, Parent extends Number> { T get(); }
+                public T get(int index) { return handle.get(); }
+                public java.util.Set<T> entries() { return java.util.Set.of(); }
+            }
+            """);
+        var index = new CompositeJavaSymbolIndex(List.of(new JavaProjectSemanticIndexer().build(directory), JDK));
+        String caller = """
+            import api.Storage;
+            class Example {
+                Example(java.util.List<String> list) {}
+                void aliases(Storage.Alias<?, ?> number, Storage.Alias<?, Integer> integer) {
+                    number.get().intValue();
+                    integer.get().compareTo(2);
+                }
+                void read(Storage<String, ?> storage) {
+                    java.util.List<String> list = storage.get(0);
+                    storage.get(0).get(0).strip();
+                    new Example(storage.get(0));
+                    storage.handle().get().ensureCapacity(2);
+                    storage.entries().removeIf(entry -> entry.isEmpty());
+                    storage.entries().stream().filter(entry -> entry.isEmpty());
+                    Integer invalid = storage.get(0);
+                }
+            }
+            """;
+        List<SemanticDiagnostic> errors = JavaInspectionTestSupport.runProviders(
+            List.of(new CoreAssignmentInspection(), new CoreCallResolutionInspection()),
+            directory.resolve("Example.java"), caller, index).stream()
+            .filter(issue -> issue.severity() == SemanticDiagnostic.Severity.ERROR).toList();
+        assertEquals(1, errors.size(), errors::toString);
+        assertEquals("SEM_INCOMPATIBLE_ASSIGNMENT", errors.getFirst().code());
+        assertTrue(errors.getFirst().message().contains("Integer"), errors::toString);
+    }
+
+    @Test
+    public void explicitWildcardBoundsReferToTheCallersTypeParameters() throws Exception {
+        check("""
+            import java.util.Objects;
+            import java.util.function.*;
+            class Example<T> {
+                T value;
+                void copy(Supplier<? extends T> source, Function<? super T, ? extends T> snapshot) {
+                    T current = source.get();
+                    value = Objects.requireNonNull(snapshot.apply(current));
+                }
+            }
+            """, true);
+    }
 
     @Test
     public void diamondConstructorsInferValuesAndFunctionalResults() throws Exception {
@@ -131,7 +259,7 @@ public class JavaInferenceRepairTest {
         check(source, true);
         var model = JavaSemanticAnalyzer.analyzeFacts(source);
         var context = new JavaRuleContext(Path.of("Example.java"), source, model);
-        var literal = context.nodesOfKind("JAVA_LITERAL_EXPRESSION").getFirst();
+        SyntaxNode literal = context.nodesOfKind("JAVA_LITERAL_EXPRESSION").getFirst();
         assertEquals(new JavaTypes.DeclaredType("java.lang.String", List.of()),
             model.inferredType(literal).orElseThrow());
     }
@@ -153,7 +281,7 @@ public class JavaInferenceRepairTest {
         int exit = ToolProvider.getSystemJavaCompiler().run(null, output, output,
             "--release", "25", "-proc:none", "-d", directory.toString(), file.toString());
         assertEquals(valid, exit == 0, () -> "javac: " + output);
-        var diagnostics = JavaInspectionTestSupport.runProviders(
+        List<SemanticDiagnostic> diagnostics = JavaInspectionTestSupport.runProviders(
             List.of(new CoreAssignmentInspection(), new CoreCallResolutionInspection()),
             file, source, JDK);
         boolean errors = diagnostics.stream().anyMatch(d -> d.severity() == SemanticDiagnostic.Severity.ERROR);

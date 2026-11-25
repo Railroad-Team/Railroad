@@ -97,6 +97,7 @@ public final class WorkspaceTabNavigationHistory {
         if (cursor.index + 1 < cursor.entries.size()) {
             cursor.entries.subList(cursor.index + 1, cursor.entries.size()).clear();
         }
+
         cursor.entries.add(new Entry(normalizedTabId, position));
         cursor.index = cursor.entries.size() - 1;
         while (cursor.entries.size() > MAX_ENTRIES_PER_MODE) {
@@ -214,6 +215,7 @@ public final class WorkspaceTabNavigationHistory {
             cursors.remove(normalizedModeId);
             return IDELayoutState.TabNavigationState.empty();
         }
+
         return new IDELayoutState.TabNavigationState(
             cursor.entries.stream().map(entry -> entry.tabId).toList(),
             cursor.index);
@@ -237,6 +239,7 @@ public final class WorkspaceTabNavigationHistory {
             cursors.remove(normalizedModeId);
             return;
         }
+
         cursors.put(normalizedModeId, new Cursor(normalizedState.entries(), normalizedState.currentIndex()));
     }
 
@@ -260,8 +263,10 @@ public final class WorkspaceTabNavigationHistory {
                 cursor.index = candidateIndex;
                 return Optional.of(new Destination(candidate.tabId, candidate.position));
             }
+
             candidateIndex += direction;
         }
+
         return Optional.empty();
     }
 
@@ -275,8 +280,10 @@ public final class WorkspaceTabNavigationHistory {
         while (candidateIndex >= 0 && candidateIndex < cursor.entries.size()) {
             if (available.test(cursor.entries.get(candidateIndex).tabId))
                 return true;
+
             candidateIndex += direction;
         }
+
         return false;
     }
 
@@ -314,7 +321,7 @@ public final class WorkspaceTabNavigationHistory {
 
         private void retain(Predicate<String> available) {
             int retainedThroughCurrent = 0;
-            var retained = new ArrayList<Entry>();
+            List<Entry> retained = new ArrayList<Entry>();
             for (int entryIndex = 0; entryIndex < entries.size(); entryIndex++) {
                 Entry entry = entries.get(entryIndex);
                 if (!available.test(entry.tabId))
@@ -325,6 +332,7 @@ public final class WorkspaceTabNavigationHistory {
                     retainedThroughCurrent++;
                 }
             }
+
             entries.clear();
             entries.addAll(retained);
             index = entries.isEmpty() ? -1 : Math.clamp(retainedThroughCurrent - 1, 0, entries.size() - 1);

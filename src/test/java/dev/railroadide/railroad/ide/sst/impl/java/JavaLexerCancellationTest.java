@@ -57,6 +57,7 @@ public class JavaLexerCancellationTest {
             if (lexerReference.get().offset() >= 512) {
                 source.cancel();
             }
+
             source.token().throwIfCancellationRequested();
         }))) {
             lexerReference.set(lexer);
@@ -79,6 +80,7 @@ public class JavaLexerCancellationTest {
             if (lexerReference.get().offset() >= 512) {
                 clock.set(10);
             }
+
             if (deadline.isExpired())
                 throw new DeadlineExceededException();
         })) {
@@ -114,6 +116,7 @@ public class JavaLexerCancellationTest {
             if (lexerReference.get().offset() >= 512) {
                 source.cancel();
             }
+
             source.token().throwIfCancellationRequested();
         })) {
             lexerReference.set(lexer);

@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import dev.railroadide.railroad.debug.jdi.JdiDebugSession;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -24,10 +26,11 @@ public class JdiAttachmentCancellationTest {
         try (var socket = new ServerSocket(0)) {
             port = socket.getLocalPort();
         }
+
         var service = new DebugService();
         for (int attempt = 0; attempt < 2; attempt++) {
             var attaching = new CountDownLatch(1);
-            var pending = service.startSession(new DebugEndpoint("127.0.0.1", port),
+            CompletableFuture<JdiDebugSession> pending = service.startSession(new DebugEndpoint("127.0.0.1", port),
                 new SourceResolver(List.of(), DependencySourceIndex.EMPTY), new BreakpointService(), _ -> true,
                 event -> {
                     if (event instanceof DebugSessionEvent.StateChanged changed

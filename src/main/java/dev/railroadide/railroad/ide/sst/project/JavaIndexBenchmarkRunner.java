@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.stream.Stream;
 
-/** Repeatable command-line timings for the cold and persisted Java index paths. */
+/**
+ * Repeatable command-line timings for the cold and persisted Java index paths.
+ */
 public final class JavaIndexBenchmarkRunner {
     private JavaIndexBenchmarkRunner() {
     }
@@ -43,6 +45,7 @@ public final class JavaIndexBenchmarkRunner {
                 persistence.save(projectRoot, built.value());
                 return null;
             });
+
             print("project index cache save", saved.elapsedNanos(), built.value().files().size() + " files");
         }
 
@@ -68,6 +71,7 @@ public final class JavaIndexBenchmarkRunner {
         for (Path root : roots) {
             if (!Files.isDirectory(root))
                 continue;
+
             try (Stream<Path> paths = Files.walk(root)) {
                 paths.filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().endsWith(".java"))
@@ -75,6 +79,7 @@ public final class JavaIndexBenchmarkRunner {
                     .forEach(files::add);
             }
         }
+
         files.sort(Path::compareTo);
         return List.copyOf(files);
     }

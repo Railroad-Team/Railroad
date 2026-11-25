@@ -90,6 +90,7 @@ public class WorkspaceTabNavigationHistoryTest {
         for (int index = 0; index <= WorkspaceTabNavigationHistory.MAX_ENTRIES_PER_MODE; index++) {
             history.visit(MODE, "tab", position(first, index));
         }
+
         assertEquals(WorkspaceTabNavigationHistory.MAX_ENTRIES_PER_MODE,
             history.snapshot(MODE, _ -> true).entries().size());
         assertTrue(history.snapshot("git", _ -> true).entries().isEmpty());

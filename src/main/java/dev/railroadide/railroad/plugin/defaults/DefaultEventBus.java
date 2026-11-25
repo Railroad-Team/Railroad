@@ -8,6 +8,7 @@ import dev.railroadide.railroad.plugin.spi.event.EventListener;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.List;
 
 /**
  * Dispatches events synchronously to listeners subscribed to the event class or its supertypes.
@@ -22,7 +23,7 @@ public class DefaultEventBus implements EventBus {
         for (Map.Entry<Class<? extends Event>, CopyOnWriteArrayList<EventListener<? extends Event>>> entry : subscribers
             .entrySet()) {
             if (entry.getKey().isAssignableFrom(eventType)) {
-                CopyOnWriteArrayList<EventListener<? extends Event>> listeners = entry.getValue();
+                List<EventListener<? extends Event>> listeners = entry.getValue();
                 for (EventListener<? extends Event> listener : listeners) {
                     // Suppress unchecked cast warning, as we know the type is correct
                     @SuppressWarnings("unchecked")
@@ -45,7 +46,7 @@ public class DefaultEventBus implements EventBus {
 
     @Override
     public <T extends Event> void unsubscribe(Class<T> eventType, EventListener<T> listener) {
-        CopyOnWriteArrayList<EventListener<? extends Event>> listeners = subscribers.get(eventType);
+        List<EventListener<? extends Event>> listeners = subscribers.get(eventType);
         if (listeners != null) {
             listeners.remove(listener);
             if (listeners.isEmpty()) {

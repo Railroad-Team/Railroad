@@ -6,7 +6,9 @@ import javafx.scene.control.TabPane;
 
 import java.util.Objects;
 
-/** Shared close lifecycle for IDE-owned tabs, including detached-window tabs. */
+/**
+ * Shared close lifecycle for IDE-owned tabs, including detached-window tabs.
+ */
 public final class IDETabLifecycle {
     private IDETabLifecycle() {
     }

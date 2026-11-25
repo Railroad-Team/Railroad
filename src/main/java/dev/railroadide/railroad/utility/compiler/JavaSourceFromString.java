@@ -18,8 +18,8 @@ public class JavaSourceFromString extends SimpleJavaFileObject {
      * @param code The source code string
      */
     public JavaSourceFromString(String name, String code) {
-        super(URI.create("string:///" + name.replace('.', '/') + JavaFileObject.Kind.SOURCE.extension),
-            JavaFileObject.Kind.SOURCE);
+        super(URI.create("string:///" + name.replace('.', '/') + Kind.SOURCE.extension),
+            Kind.SOURCE);
         this.code = code;
     }
 
@@ -32,7 +32,7 @@ public class JavaSourceFromString extends SimpleJavaFileObject {
      * @param code The source code string
      */
     public JavaSourceFromString(Path path, String code) {
-        super(path.toUri(), JavaFileObject.Kind.SOURCE);
+        super(path.toUri(), Kind.SOURCE);
         this.code = code;
     }
 

@@ -338,5 +338,4 @@ public class CoreNumericConversionInspectionTest {
 
         assertFalse(diagnostics.stream().anyMatch(d -> "SEM_IMPLICIT_NUMERIC_CONVERSION".equals(d.code())));
     }
-
 }

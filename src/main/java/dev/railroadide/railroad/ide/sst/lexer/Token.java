@@ -132,7 +132,9 @@ public interface Token<T extends Enum<T>> {
      * @param <T> the token kind enum
      */
     record IgnoreToken<T extends Enum<T>>() implements Token<T> {
-        /** Creates an empty ignore marker. */
+        /**
+         * Creates an empty ignore marker.
+         */
         public IgnoreToken {
         }
 

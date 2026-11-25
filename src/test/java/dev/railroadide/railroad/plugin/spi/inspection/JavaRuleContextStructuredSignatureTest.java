@@ -11,14 +11,15 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaRuleContextStructuredSignatureTest {
     @Test
     public void indexedNestedGenericParameterRemainsOneArgument() {
-        var context = context("Api.accept(null); Api.accept(null, null);", false);
-        var calls = context.nodesOfKind("JAVA_METHOD_INVOCATION_EXPRESSION");
+        JavaRuleContext context = context("Api.accept(null); Api.accept(null, null);", false);
+        List<SyntaxNode> calls = context.nodesOfKind("JAVA_METHOD_INVOCATION_EXPRESSION");
         assertEquals(2, calls.size());
         assertTrue(context.resolvedSymbol(calls.getFirst()).isEmpty());
         assertTrue(context.canResolveMethodInvocation(calls.getFirst()));
@@ -27,8 +28,8 @@ public class JavaRuleContextStructuredSignatureTest {
 
     @Test
     public void indexedStructuredVarargsAcceptZeroAndMultipleArguments() {
-        var context = context("Api.accept(); Api.accept(null, null);", true);
-        for (var call : context.nodesOfKind("JAVA_METHOD_INVOCATION_EXPRESSION")) {
+        JavaRuleContext context = context("Api.accept(); Api.accept(null, null);", true);
+        for (SyntaxNode call : context.nodesOfKind("JAVA_METHOD_INVOCATION_EXPRESSION")) {
             assertTrue(context.resolvedSymbol(call).isEmpty());
             assertTrue(context.canResolveMethodInvocation(call));
         }
@@ -49,12 +50,13 @@ public class JavaRuleContextStructuredSignatureTest {
                 new TypeReference("void"), List.of()),
             null, new SymbolMetadata(Set.of("public", "static"), "public", false, List.of(), Map.of()), List.of());
         Path binary = Path.of("missing-api.class");
-        var index = JavaProjectSemanticIndex.builder().putFile(new JavaProjectSemanticIndex.SourceFileIndex(binary,
-            "sample", List.of(), List.of(
-                new JavaProjectSemanticIndex.SymbolDescriptor(JavaSymbolKind.CLASS, "Api", "sample.Api", null,
-                    null, binary, false, true),
-                new JavaProjectSemanticIndex.SymbolDescriptor(JavaSymbolKind.METHOD, "accept", "sample.Api#accept",
-                    "sample.Api", null, binary, true, false, method))))
+        JavaProjectSemanticIndex index = JavaProjectSemanticIndex
+            .builder().putFile(new JavaProjectSemanticIndex.SourceFileIndex(binary,
+                "sample", List.of(), List.of(
+                    new JavaProjectSemanticIndex.SymbolDescriptor(JavaSymbolKind.CLASS, "Api", "sample.Api", null,
+                        null, binary, false, true),
+                    new JavaProjectSemanticIndex.SymbolDescriptor(JavaSymbolKind.METHOD, "accept", "sample.Api#accept",
+                        "sample.Api", null, binary, true, false, method))))
             .build();
         String source = "import sample.Api; class Example { void run() { " + calls + " } }";
         return new JavaRuleContext(Path.of("Example.java"), source, JavaSemanticAnalyzer.analyzeFacts(source), index);

@@ -101,6 +101,7 @@ public class CoreBigDecimalEqualsInspection implements JavaInspectionRuleProvide
                 String componentType = qualifiedTypeName(context, componentType1);
                 yield componentType == null ? null : componentType + "[]";
             }
+
             case JavaTypes.Kind.DECLARED -> {
                 String typeName = type.displayName();
                 int genericStart = typeName.indexOf('<');

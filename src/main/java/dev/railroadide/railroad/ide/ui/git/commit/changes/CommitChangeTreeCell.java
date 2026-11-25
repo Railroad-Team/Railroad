@@ -106,6 +106,7 @@ public class CommitChangeTreeCell extends RRCheckBoxTreeCell<ChangeItem> {
             if (current instanceof CheckBox)
                 return true;
         }
+
         return false;
     }
 }

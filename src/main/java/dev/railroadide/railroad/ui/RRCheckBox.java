@@ -254,5 +254,4 @@ public class RRCheckBox extends CheckBox {
             setGraphic(null);
         }
     }
-
 }

@@ -84,7 +84,7 @@ public record JdtDiagnosticsProvider() implements DiagnosticsProvider<TextEditor
             String code = problem.getID() == 0 ? null : Integer.toString(problem.getID());
 
             diagnostics.add(
-                new EditorDiagnostic.TextEditorDiagnostic(
+                new TextEditorDiagnostic(
                     TextLocation.from((TextDocumentSnapshot) snapshot, start, end),
                     kind,
                     code,

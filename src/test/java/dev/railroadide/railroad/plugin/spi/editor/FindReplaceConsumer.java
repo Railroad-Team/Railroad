@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/** A deliberately small feature fixture that depends only on the public text editor API. */
+/**
+ * A deliberately small feature fixture that depends only on the public text editor API.
+ */
 public final class FindReplaceConsumer implements AutoCloseable {
     private final EditorSubscription activeSubscription;
     private EditorSubscription documentSubscription;
@@ -26,6 +28,7 @@ public final class FindReplaceConsumer implements AutoCloseable {
             documentSubscription.close();
             documentSubscription = null;
         }
+
         target = active.orElse(null);
         searched = null;
         matches = List.of();
@@ -34,16 +37,19 @@ public final class FindReplaceConsumer implements AutoCloseable {
     public List<TextRange> find(String needle) {
         if (target == null || needle.isEmpty())
             return List.of();
+
         target.reveal();
         if (documentSubscription == null) {
             documentSubscription = target.observe(_ -> notifications++);
         }
+
         searched = target.snapshot();
-        var found = new ArrayList<TextRange>();
+        List<TextRange> found = new ArrayList<TextRange>();
         for (int offset = searched.text().indexOf(needle); offset >= 0; offset = searched.text().indexOf(needle,
             offset + needle.length())) {
             found.add(new TextRange(offset, offset + needle.length()));
         }
+
         matches = List.copyOf(found);
         return matches;
     }
@@ -68,6 +74,7 @@ public final class FindReplaceConsumer implements AutoCloseable {
         if (documentSubscription != null) {
             documentSubscription.close();
         }
+
         target = null;
     }
 }

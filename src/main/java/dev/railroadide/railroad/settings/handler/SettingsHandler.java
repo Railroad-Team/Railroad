@@ -32,6 +32,7 @@ public class SettingsHandler {
     private static final Registry<Setting<?>> SETTINGS_REGISTRY_DELEGATE = RegistryManager
         .createOrderedRegistry("settings", new TypeToken<>() {
         });
+
     /**
      * Registry containing all settings available to the application.
      *
@@ -88,6 +89,7 @@ public class SettingsHandler {
             return SETTINGS_REGISTRY_DELEGATE.entries();
         }
     };
+
     private static final Path SETTINGS_PATH = ConfigHandler.getConfigDirectory().resolve("settings.json");
 
     /**

@@ -17,9 +17,7 @@ import java.util.concurrent.ExecutionException;
  * @param client the Switchboard HTTP client
  * @param cache the cache used for version metadata
  */
-public record YarnVersionRepository(SwitchboardClient client, CacheManager cache)
-    implements
-        SwitchboardRepository {
+public record YarnVersionRepository(SwitchboardClient client, CacheManager cache) implements SwitchboardRepository {
     private static final Duration VERSIONS_TTL = Duration.ofHours(12);
     private static final Duration LATEST_TTL = Duration.ofHours(1);
 

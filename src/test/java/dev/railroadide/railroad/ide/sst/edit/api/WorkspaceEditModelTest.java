@@ -56,7 +56,7 @@ public class WorkspaceEditModelTest {
     @Test
     public void changesAndEditsAreImmutableCopies() {
         TextDocumentSnapshot document = text("abc");
-        var replacements = new ArrayList<>(List.of(replacement(0, 1, "x")));
+        List<TextReplacement> replacements = new ArrayList<>(List.of(replacement(0, 1, "x")));
         var change = new WorkspaceChange.TextEdit(document, replacements);
         replacements.clear();
         assertEquals(1, change.replacements().size());
@@ -71,7 +71,7 @@ public class WorkspaceEditModelTest {
         assertEquals(create, new WorkspaceChange.CreateFile(create.uri(), "one".getBytes(StandardCharsets.UTF_8),
             null));
 
-        var changes = new ArrayList<WorkspaceChange>(List.of(change));
+        List<WorkspaceChange> changes = new ArrayList<WorkspaceChange>(List.of(change));
         var edit = new WorkspaceEdit("Edit", changes, Map.of(), null);
         changes.clear();
         assertEquals(1, edit.changes().size());

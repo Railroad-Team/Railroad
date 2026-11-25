@@ -96,9 +96,11 @@ public final class DebuggerPane extends BorderPane implements AutoCloseable {
         Runnable addWatch = () -> {
             if (expression.getText().isBlank())
                 return;
+
             debugging.addWatch(expression.getText());
             expression.clear();
         };
+
         add.setOnAction(_ -> addWatch.run());
         expression.setOnAction(_ -> addWatch.run());
         var remove = new RRButton("", FontAwesomeSolid.MINUS);
@@ -115,6 +117,7 @@ public final class DebuggerPane extends BorderPane implements AutoCloseable {
                 debugging.removeWatch(selected.watch());
             }
         });
+
         var expressionBar = new HBox(6, expression, add, remove);
         expressionBar.setAlignment(Pos.CENTER_LEFT);
         expressionBar.getStyleClass().add("debugger-expression-bar");
@@ -168,27 +171,32 @@ public final class DebuggerPane extends BorderPane implements AutoCloseable {
                     state.name().equalsIgnoreCase(name));
             }
         }));
+
         subscriptions.add(threads.getSelectionModel().selectedItemProperty().subscribe((_, thread) -> {
             if (!syncing && thread != null) {
                 debugging.selectThread(thread);
             }
         }));
+
         subscriptions.add(frames.getSelectionModel().selectedItemProperty().subscribe((_, frame) -> {
             if (!syncing && frame != null) {
                 debugging.selectFrame(frame);
             }
         }));
+
         subscriptions.add(debugging.selectedThreadProperty().subscribe(thread -> {
             syncing = true;
             threads.getSelectionModel().select(thread);
             syncing = false;
         }));
+
         subscriptions.add(debugging.selectedFrameProperty().subscribe(frame -> {
             treeRevision++;
             syncing = true;
             frames.getSelectionModel().select(frame);
             syncing = false;
         }));
+
         subscriptions.add(debugging.getVariables().subscribe(this::refreshVariables));
         subscriptions.add(debugging.getWatchResults().subscribe(this::refreshWatches));
         refreshVariables();
@@ -214,6 +222,7 @@ public final class DebuggerPane extends BorderPane implements AutoCloseable {
         while (item != null && item.getParent() != variables.getRoot()) {
             item = item.getParent();
         }
+
         return item == null || item.getValue() == null ? null : item.getValue().watch;
     }
 
@@ -226,7 +235,7 @@ public final class DebuggerPane extends BorderPane implements AutoCloseable {
     }
 
     private static StackPane treeContent(TreeView<VariableNode> tree, String emptyKey) {
-        var empty = emptyLabel(emptyKey);
+        LocalizedLabel empty = emptyLabel(emptyKey);
         empty.visibleProperty().bind(Bindings.isEmpty(tree.getRoot().getChildren()));
         empty.managedProperty().bind(empty.visibleProperty());
         empty.setMouseTransparent(true);
@@ -276,6 +285,7 @@ public final class DebuggerPane extends BorderPane implements AutoCloseable {
                             ? "debugger-variable-error"
                             : "debugger-variable-type"));
                     }
+
                     var row = new HBox(6);
                     row.setAlignment(Pos.CENTER_LEFT);
                     row.setMinWidth(Region.USE_PREF_SIZE);
@@ -284,9 +294,11 @@ public final class DebuggerPane extends BorderPane implements AutoCloseable {
                         icon.getStyleClass().add("debugger-watch-icon");
                         row.getChildren().add(icon);
                     }
+
                     row.getChildren().add(text);
                     setGraphic(row);
                 }
+
                 pseudoClassStateChanged(PseudoClass.getPseudoClass("evaluation-error"),
                     !empty && node != null && node.watch != null && node.watch.error() != null);
             }
@@ -316,11 +328,12 @@ public final class DebuggerPane extends BorderPane implements AutoCloseable {
                     .add(new TreeItem<>(new VariableNode(null, result, result.watch().expression() + " = " + value)));
             }
         }
+
         refreshInspection();
     }
 
     private void refreshInspection() {
-        var items = new ArrayList<>(watchItems);
+        List<TreeItem<VariableNode>> items = new ArrayList<>(watchItems);
         items.addAll(localItems);
         variables.getRoot().getChildren().setAll(items);
     }
@@ -338,6 +351,7 @@ public final class DebuggerPane extends BorderPane implements AutoCloseable {
                 }
             });
         }
+
         return item;
     }
 
@@ -347,16 +361,19 @@ public final class DebuggerPane extends BorderPane implements AutoCloseable {
             .whenComplete((children, failure) -> Platform.runLater(() -> {
                 if (closed || request != treeRevision)
                     return;
+
                 if (failure != null) {
                     Throwable cause = failure;
                     while (cause.getCause() != null) {
                         cause = cause.getCause();
                     }
+
                     item.getChildren()
                         .setAll(new TreeItem<>(new VariableNode(null, null, "<" + cause.getMessage() + ">")));
                     item.getValue().loaded = false;
                     return;
                 }
+
                 item.getChildren().setAll(children.stream().map(child -> variableItem(child, null)).toList());
                 int next = start + children.size();
                 if (next < value.indexedChildren() && !children.isEmpty()) {
@@ -368,6 +385,7 @@ public final class DebuggerPane extends BorderPane implements AutoCloseable {
                             loadChildren(more, value, next);
                         }
                     });
+
                     item.getChildren().add(more);
                 }
             }));

@@ -141,5 +141,4 @@ public class CoreSerializationInspectionTest {
         assertFalse(diagnostics.stream()
             .anyMatch(d -> "SEM_SERIALIZABLE_CLASS_WITH_UNCONSTRUCTABLE_ANCESTOR".equals(d.code())));
     }
-
 }

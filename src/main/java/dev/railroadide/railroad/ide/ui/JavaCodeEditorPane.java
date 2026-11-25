@@ -1,23 +1,44 @@
 package dev.railroadide.railroad.ide.ui;
 
-import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.command.CommandContext;
+import dev.railroadide.railroad.command.RunCommands;
+import dev.railroadide.railroad.ide.runconfig.EditorMain;
+import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.ui.codeeditor.BreakpointGutterBinding;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorConfig;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
+import dev.railroadide.railroad.ide.ui.codeeditor.GutterColumn;
+import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
+import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.Tooltip;
+import javafx.scene.input.MouseButton;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
+import org.reactfx.Subscription;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Set;
-import java.util.stream.Stream;
+import java.util.concurrent.CompletableFuture;
+import java.util.Deque;
 
 /**
  * Adds Java call-context detection for signature help to the configured code editor.
  */
 public class JavaCodeEditorPane extends CodeEditorPane {
+    private Subscription mainChanges = Subscription.EMPTY;
+    private List<EditorMain> mains = List.of();
+    private String parsedSource;
+    private long mainRequest;
     private final BreakpointGutterBinding breakpointBinding;
     private static final int SIGNATURE_SCAN_WINDOW = 2048;
     private static final Set<String> NON_CALLABLE_PREFIX_KEYWORDS = Set.of(
@@ -42,37 +63,77 @@ public class JavaCodeEditorPane extends CodeEditorPane {
         super(project, documentId, item, config);
         breakpointBinding = new BreakpointGutterBinding(getGutter(), this, this::getFilePath,
             Services.BREAKPOINT_SERVICE);
+        if (EditorMain.supports(project, item)) {
+            getGutter().addColumn(new GutterColumn("main", 15, this::mainMarker));
+            mainChanges = multiPlainChanges().successionEnds(Duration.ofMillis(250)).subscribe(_ -> refreshMains());
+            refreshMains();
+        }
+    }
+
+    private void refreshMains() {
+        long request = ++mainRequest;
+        String source = getText();
+        String filename = getFilePath().getFileName().toString();
+        CompletableFuture.supplyAsync(() -> EditorMain.find(source, filename))
+            .thenAccept(found -> Platform.runLater(() -> {
+                if (request == mainRequest && !isEditorClosed() && getText().equals(source)) {
+                    parsedSource = source;
+                    if (!mains.equals(found)) {
+                        mains = found;
+                        getGutter().refresh();
+                    }
+                }
+            }));
+    }
+
+    private Node mainMarker(int line) {
+        List<EditorMain> targets = mains.stream().filter(main -> main.line() == line).toList();
+        if (targets.isEmpty())
+            return null;
+
+        var marker = new FontIcon(FontAwesomeSolid.PLAY);
+        marker.getStyleClass().add("editor-main-marker");
+        var tooltip = new LocalizedTooltip("railroad.editor.main.tooltip");
+        marker.accessibleTextProperty().bind(tooltip.textProperty());
+        Tooltip.install(marker, tooltip);
+        marker.setOnMouseClicked(event -> {
+            if (event.getButton() != MouseButton.PRIMARY || !getText().equals(parsedSource))
+                return;
+
+            var menu = new ContextMenu();
+            for (EditorMain main : targets) {
+                menu.getItems().addAll(mainAction(main, false), mainAction(main, true));
+            }
+
+            menu.show(marker, event.getScreenX(), event.getScreenY());
+            event.consume();
+        });
+
+        return marker;
+    }
+
+    private MenuItem mainAction(EditorMain main, boolean debug) {
+        var item = new MenuItem(
+            L18n.localize(debug ? "railroad.editor.main.debug" : "railroad.editor.main.run", main.className()));
+        item.setOnAction(_ -> {
+            if (isEditorClosed() || !mains.contains(main) || !getText().equals(parsedSource))
+                return;
+
+            RunConfiguration<?> configuration = main.configuration(project, getFilePath());
+            (debug ? RunCommands.DEBUG : RunCommands.RUN)
+                .execute(CommandContext.withArgument(project, this, configuration));
+        });
+
+        return item;
     }
 
     @Override
     public void close() {
         super.close();
         if (isEditorClosed()) {
+            mainChanges.unsubscribe();
             breakpointBinding.close();
         }
-    }
-
-    /**
-     * Lists entries in the running JDK's jmods directory for Java analysis.
-     *
-     * @return module paths, or an empty array if the directory cannot be resolved
-     */
-    public static String[] resolveSystemModules() {
-        try {
-            Path javaHome = Path.of(System.getProperty("java.home"));
-            Path jmods = javaHome.resolve("jmods");
-            if (Files.isDirectory(jmods)) {
-                try (Stream<Path> stream = Files.list(jmods)) {
-                    return stream
-                        .map(Path::toString)
-                        .toArray(String[]::new);
-                }
-            }
-        } catch (Exception exception) {
-            Railroad.LOGGER.warn("Unable to resolve system modules for Java analysis", exception);
-        }
-
-        return new String[0];
     }
 
     @Override
@@ -87,7 +148,7 @@ public class JavaCodeEditorPane extends CodeEditorPane {
         if (textChanged)
             return true;
 
-        if (activeSignatureHelp.get() != null)
+        if (!activeSignatureHelp.get().isEmpty())
             return true;
 
         if (caret == 0)
@@ -99,7 +160,7 @@ public class JavaCodeEditorPane extends CodeEditorPane {
 
     private static int findRelevantCallOpenParen(String text, int caret) {
         int start = Math.max(0, caret - SIGNATURE_SCAN_WINDOW);
-        ArrayDeque<Integer> openParentheses = new ArrayDeque<>();
+        Deque<Integer> openParentheses = new ArrayDeque<>();
         boolean inLineComment = false;
         boolean inBlockComment = false;
         boolean inString = false;
@@ -114,6 +175,7 @@ public class JavaCodeEditorPane extends CodeEditorPane {
                 if (current == '\n' || current == '\r') {
                     inLineComment = false;
                 }
+
                 continue;
             }
 
@@ -122,6 +184,7 @@ public class JavaCodeEditorPane extends CodeEditorPane {
                     inBlockComment = false;
                     index++;
                 }
+
                 continue;
             }
 
@@ -133,6 +196,7 @@ public class JavaCodeEditorPane extends CodeEditorPane {
                 } else if (current == '"') {
                     inString = false;
                 }
+
                 continue;
             }
 
@@ -144,6 +208,7 @@ public class JavaCodeEditorPane extends CodeEditorPane {
                 } else if (current == '\'') {
                     inChar = false;
                 }
+
                 continue;
             }
 

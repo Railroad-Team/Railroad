@@ -87,11 +87,13 @@ public final class JavaImports {
         for (SyntaxNode child : root.children()) {
             if (!IMPORT_DECLARATION.equals(child.kind().id()))
                 continue;
+
             ImportDeclaration declaration = declaration(child);
             if (declaration != null) {
                 imports.add(declaration);
             }
         }
+
         return List.copyOf(imports);
     }
 
@@ -116,22 +118,27 @@ public final class JavaImports {
             if ((++visited & 255) == 0) {
                 check.run();
             }
+
             SyntaxNode node = pending.removeFirst();
             String kind = node.kind().id();
             if (IMPORT_DECLARATION.equals(kind))
                 continue;
+
             if (node instanceof SyntaxToken token) {
                 if (isDocumentation(token)) {
                     documentation.add(token.text());
                 } else if (!TRIVIA.contains(kind) && !NON_NAME_TOKENS.contains(kind)) {
                     names.add(JavaUnicodeEscapes.translate(token.text()));
                 }
+
                 backslash |= !IDENTIFIER_TOKEN.equals(kind) && !NON_NAME_TOKENS.contains(kind)
                     && token.text().indexOf('\\') >= 0;
                 continue;
             }
+
             node.children().reversed().forEach(pending::addFirst);
         }
+
         check.run();
         if (backslash) {
             // Escapes outside identifiers, such as an escaped line break in a comment, can reveal code.
@@ -140,6 +147,7 @@ public final class JavaImports {
             if (!translated.equals(code)) {
                 IDENTIFIER.matcher(translated).results().forEach(match -> names.add(match.group()));
             }
+
             check.run();
         }
 
@@ -147,15 +155,19 @@ public final class JavaImports {
         for (ImportDeclaration declaration : imports) {
             if (declaration.isWildcard())
                 continue;
+
             String name = declaration.importedName();
             if (names.contains(name))
                 continue;
+
             Pattern word = Pattern.compile("(?<![\\p{javaJavaIdentifierPart}])" + Pattern.quote(name)
                 + "(?![\\p{javaJavaIdentifierPart}])");
             if (documentation.stream().anyMatch(comment -> word.matcher(comment).find()))
                 continue;
+
             unused.add(declaration);
         }
+
         return List.copyOf(unused);
     }
 
@@ -173,6 +185,7 @@ public final class JavaImports {
                 duplicates.add(declaration);
             }
         }
+
         return List.copyOf(duplicates);
     }
 
@@ -193,9 +206,11 @@ public final class JavaImports {
                 semicolon = child.end();
             }
         }
+
         if (keyword < 0 || semicolon < 0 || target == null || target.isEmpty() || target.startsWith(".")
             || target.endsWith(".") || target.contains(".."))
             return null;
+
         return new ImportDeclaration(node, keyword, semicolon, target, isStatic);
     }
 
@@ -208,14 +223,17 @@ public final class JavaImports {
                 String kind = token.kind().id();
                 if (TRIVIA.contains(kind))
                     continue;
+
                 if (!kind.equals(IDENTIFIER_TOKEN) && !kind.equals("JAVA_TOKEN_DOT")
                     && !kind.equals("JAVA_TOKEN_STAR"))
                     return null;
+
                 text.append(JavaUnicodeEscapes.translate(token.text()));
             } else {
                 node.children().reversed().forEach(pending::addFirst);
             }
         }
+
         return text.toString();
     }
 
@@ -242,6 +260,7 @@ public final class JavaImports {
                 node.children().reversed().forEach(pending::addFirst);
             }
         }
+
         return code.toString();
     }
 }

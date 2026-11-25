@@ -96,17 +96,29 @@ public final class CodeActionController implements AutoCloseable {
         }
     }
 
-    /** Outcome of resolving an action. */
+    /**
+     * Outcome of resolving an action.
+     */
     public enum Status {
-        /** The action's edit is computed and its preview can be applied. */
+        /**
+         * The action's edit is computed and its preview can be applied.
+         */
         READY,
-        /** The provider reports that the action cannot be applied. */
+        /**
+         * The provider reports that the action cannot be applied.
+         */
         UNAVAILABLE,
-        /** The document changed since the action was discovered. */
+        /**
+         * The document changed since the action was discovered.
+         */
         STALE,
-        /** The provider cannot compute an edit for the action. */
+        /**
+         * The provider cannot compute an edit for the action.
+         */
         UNSUPPORTED,
-        /** Computing or previewing the edit failed. */
+        /**
+         * Computing or previewing the edit failed.
+         */
         FAILED
     }
 
@@ -164,6 +176,7 @@ public final class CodeActionController implements AutoCloseable {
             WorkspaceEdit edit = action.edit();
             if (edit == null)
                 return List.of();
+
             Set<String> labels = new LinkedHashSet<>();
             for (WorkspaceChange change : edit.changes()) {
                 ChangeAnnotation annotation = change.annotationId() == null
@@ -173,6 +186,7 @@ public final class CodeActionController implements AutoCloseable {
                     labels.add(annotation.label());
                 }
             }
+
             return List.copyOf(labels);
         }
 
@@ -240,6 +254,7 @@ public final class CodeActionController implements AutoCloseable {
                 if (discovery != cancellation || cancellation.token().isCancellationRequested()
                     || !result.belongsTo(context))
                     throw new CancellationException("Code action discovery was superseded");
+
                 discovery = null;
                 return new Discovery(workspace, document, filtered, validated(result.value(), workspace, document));
             });
@@ -259,11 +274,14 @@ public final class CodeActionController implements AutoCloseable {
         cancelResolution();
         if (closed || lifetime.isCancellationRequested())
             return CompletableFuture.failedFuture(new CancellationException("Code actions are closed"));
+
         if (!action.available())
             return CompletableFuture.completedFuture(new Resolution(Status.UNAVAILABLE, discovered, action, null,
                 Objects.requireNonNull(action.unavailableReason())));
+
         if (!isCurrent(discovered.document()))
             return CompletableFuture.completedFuture(stale(discovered, action));
+
         if (action.isResolved())
             return CompletableFuture.completedFuture(preview(discovered, action));
 
@@ -281,6 +299,7 @@ public final class CodeActionController implements AutoCloseable {
                 resolved.completeExceptionally(new CancellationException("Code action resolution was superseded"));
                 return;
             }
+
             resolution = null;
             Throwable cause = unwrap(failure);
             if (cause instanceof CancellationException) {
@@ -295,6 +314,7 @@ public final class CodeActionController implements AutoCloseable {
                 }
             }
         }));
+
         return resolved;
     }
 
@@ -311,16 +331,20 @@ public final class CodeActionController implements AutoCloseable {
         Objects.requireNonNull(resolved, "resolved");
         if (resolved.status() != Status.READY)
             throw new IllegalArgumentException("Only ready resolutions can be applied");
+
         TextDocumentSnapshot document = resolved.discovery().document();
         if (lifetime.isCancellationRequested())
             return rejected(WorkspaceEditProblem.Kind.INVALID, document,
                 "The language support that offered the action is no longer loaded");
+
         if (closed || !isCurrent(document))
             return rejected(WorkspaceEditProblem.Kind.STALE, document,
                 "The document changed after the action was computed");
+
         Optional<WorkspaceEditService> service = edits.get();
         if (service.isEmpty())
             return rejected(WorkspaceEditProblem.Kind.INVALID, document, "No project is open to apply the action to");
+
         return service.get().apply(Objects.requireNonNull(resolved.action().edit()));
     }
 
@@ -345,6 +369,7 @@ public final class CodeActionController implements AutoCloseable {
     public void close() {
         if (closed)
             return;
+
         closed = true;
         cancel();
         requests.close();
@@ -358,18 +383,23 @@ public final class CodeActionController implements AutoCloseable {
     ) {
         if (result == null || !result.belongsTo(context) || result.value() == null)
             return new Resolution(Status.FAILED, discovered, selected, null, "The action could not be computed");
+
         CodeAction action = result.value();
         if (!action.available())
             return new Resolution(Status.UNAVAILABLE, discovered, action, null,
                 Objects.requireNonNull(action.unavailableReason()));
+
         if (action.edit() == null)
             return new Resolution(Status.UNSUPPORTED, discovered, action, null, "This action cannot be applied");
+
         if (!boundTo(action.edit(), discovered.workspace())) {
             Railroad.LOGGER.warn("Code action '{}' resolved to changes of another document revision", action.title());
             return new Resolution(Status.FAILED, discovered, action, null, "The action could not be computed");
         }
+
         if (!isCurrent(discovered.document()))
             return stale(discovered, action);
+
         return preview(discovered, action);
     }
 
@@ -377,15 +407,18 @@ public final class CodeActionController implements AutoCloseable {
         Optional<WorkspaceEditService> service = edits.get();
         if (service.isEmpty())
             return new Resolution(Status.FAILED, discovered, action, null, "No project is open to apply the action to");
+
         WorkspaceEditPreview preview;
         try {
             preview = service.get().preview(Objects.requireNonNull(action.edit()));
         } catch (IllegalStateException exception) {
             return failed(discovered, action, exception);
         }
+
         if (!preview.applicable())
             return new Resolution(Status.FAILED, discovered, action, preview, preview.problems().stream()
                 .map(WorkspaceEditProblem::message).collect(Collectors.joining("\n")));
+
         return new Resolution(Status.READY, discovered, action, preview, "");
     }
 
@@ -397,8 +430,10 @@ public final class CodeActionController implements AutoCloseable {
     private static Resolution failed(Discovery discovered, CodeAction action, Throwable cause) {
         if (cause instanceof UnsupportedOperationException)
             return new Resolution(Status.UNSUPPORTED, discovered, action, null, "This action cannot be applied");
+
         if (cause instanceof DeadlineExceededException)
             return new Resolution(Status.FAILED, discovered, action, null, "Computing the action timed out");
+
         Railroad.LOGGER.error("Failed to resolve code action '{}'", action.title(), cause);
         return new Resolution(Status.FAILED, discovered, action, null, "The action could not be computed");
     }
@@ -410,10 +445,12 @@ public final class CodeActionController implements AutoCloseable {
     ) {
         if (actions == null)
             return List.of();
+
         List<CodeAction> valid = new ArrayList<>();
         for (CodeAction action : actions) {
             if (action == null)
                 continue;
+
             if (action.diagnostics().stream().allMatch(diagnostic -> belongsTo(diagnostic, document))
                 && (action.edit() == null || boundTo(action.edit(), workspace))) {
                 valid.add(action);
@@ -422,6 +459,7 @@ public final class CodeActionController implements AutoCloseable {
                     action.title());
             }
         }
+
         valid.sort(Comparator.comparing(action -> !action.preferred()));
         return valid;
     }
@@ -443,9 +481,11 @@ public final class CodeActionController implements AutoCloseable {
                 case WorkspaceChange.RenameFile rename -> rename.expected();
                 case WorkspaceChange.CreateFile _ -> null;
             };
+
             if (expected != null && !workspace.document(expected.id()).map(expected::equals).orElse(false))
                 return false;
         }
+
         return true;
     }
 
@@ -494,6 +534,7 @@ public final class CodeActionController implements AutoCloseable {
                 result.complete(value);
             }
         }));
+
         return result;
     }
 
@@ -503,6 +544,7 @@ public final class CodeActionController implements AutoCloseable {
             && cause.getCause() != null) {
             cause = cause.getCause();
         }
+
         return cause;
     }
 }

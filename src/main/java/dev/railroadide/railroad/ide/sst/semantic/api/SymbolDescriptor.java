@@ -51,10 +51,13 @@ public record SymbolDescriptor(
         Objects.requireNonNull(simpleName, "simpleName");
         if (simpleName.isBlank())
             throw new IllegalArgumentException("Simple name cannot be blank");
+
         if (qualifiedName != null && qualifiedName.isBlank())
             throw new IllegalArgumentException("Qualified name cannot be blank");
+
         if (id.equals(ownerId))
             throw new IllegalArgumentException("A symbol cannot own itself");
+
         Objects.requireNonNull(metadata, "metadata");
         locations = List.copyOf(locations);
     }

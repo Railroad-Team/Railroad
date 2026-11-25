@@ -1,42 +1,58 @@
 package dev.railroadide.railroad.ide.sst.project;
 
-import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
+import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolKind;
+import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.LinkedHashSet;
-import java.util.Objects;
-import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
+import java.nio.file.Path;
+import java.util.*;
 
 /**
  * Lookup contract for Java types, packages, members, and available binary class stubs.
  */
 public interface JavaSymbolIndex {
     /**
-     * Returns immutable declaration and reference shards in this index's lookup order.
+     * Returns the symbols visible when inspecting source attached to the given classpath archive.
      *
-     * @return node-free source and binary facts
+     * @param archive binary owning the source attachment
+     * @param check cancellation check
+     * @return immutable symbol index for this attachment
      */
-    default List<SemanticIndexShard> semanticShards() {
-        return List.of();
+    default JavaSymbolIndex forAttachedSource(Path archive, Runnable check) {
+        return this;
     }
 
     /**
-     * Returns immutable facts while honoring request cancellation during lazy materialization.
-     * Implementations doing substantial work must propagate the callback through that work.
-     * The callback belongs only to this invocation and must not be retained by published facts.
+     * Returns captured library sources that have declarations but no matching class file in the attached view.
      *
-     * @param activityCheck current request's activity check
-     * @return complete available source and binary facts
+     * @return source texts by file, empty for indexes without attached sources
      */
-    default List<SemanticIndexShard> semanticShards(Runnable activityCheck) {
-        Objects.requireNonNull(activityCheck, "activityCheck").run();
-        List<SemanticIndexShard> result = semanticShards();
+    default Map<Path, String> attachedSourceTexts() {
+        return Map.of();
+    }
+
+    /**
+     * Looks up one type's declaring document with thread-interruption checks.
+     *
+     * @param binaryName physical name of the type, with dollars for nested types
+     * @return the visible declaration shard, or null when unavailable
+     */
+    default @Nullable SemanticIndexShard declarationShard(String binaryName) {
+        return declarationShard(binaryName, ActivityCheckpoint::checkInterrupted);
+    }
+
+    /**
+     * Returns the declaring document for one JVM binary type name, including member and parameter declarations.
+     *
+     * @param binaryName physical name of the type, with dollars for nested types
+     * @param activityCheck cancellation check for this lookup
+     * @return the visible declaration shard, or null when unavailable
+     */
+    default @Nullable SemanticIndexShard declarationShard(String binaryName, Runnable activityCheck) {
         activityCheck.run();
-        return result;
+        return null;
     }
 
     /**
@@ -53,12 +69,13 @@ public interface JavaSymbolIndex {
      * @return the indexed type names in qualified and simple forms
      */
     default Set<String> typeNames() {
-        LinkedHashSet<String> names = new LinkedHashSet<>();
+        Set<String> names = new LinkedHashSet<>();
         for (String qualifiedName : declaredQualifiedNames()) {
             names.add(qualifiedName);
             int separator = Math.max(qualifiedName.lastIndexOf('.'), qualifiedName.lastIndexOf('$'));
             names.add(separator < 0 ? qualifiedName : qualifiedName.substring(separator + 1));
         }
+
         return Set.copyOf(names);
     }
 
@@ -88,12 +105,37 @@ public interface JavaSymbolIndex {
     }
 
     /**
+     * Resolves a source spelling to the physical binary name, preserving names without a binary declaration.
+     *
+     * @param name qualified type name in source
+     * @return the name recorded in the class file, or the supplied name
+     */
+    default String binaryTypeName(String name) {
+        ClassStub stub = lookupClassStub(name);
+        return stub == null ? name : stub.getFullName();
+    }
+
+    /**
      * Finds indexed symbols sharing an unqualified name.
      *
      * @param simpleName the unqualified symbol name
      * @return the matching symbol descriptors, or an empty list
      */
     List<JavaProjectSemanticIndex.SymbolDescriptor> lookupSimpleName(String simpleName);
+
+    /**
+     * Looks up type names without requiring member declarations from classes with a same-named member.
+     *
+     * @param simpleName unqualified type name
+     * @return distinct qualified names of matching type declarations
+     */
+    default List<String> qualifiedTypeNames(String simpleName) {
+        return lookupSimpleName(simpleName).stream().filter(symbol -> switch (symbol.kind()) {
+            case JavaSymbolKind.CLASS, JavaSymbolKind.INTERFACE, JavaSymbolKind.ENUM, JavaSymbolKind.RECORD,
+                JavaSymbolKind.ANNOTATION -> true;
+            default -> false;
+        }).map(JavaProjectSemanticIndex.SymbolDescriptor::qualifiedName).filter(Objects::nonNull).distinct().toList();
+    }
 
     /**
      * Finds indexed symbols sharing a qualified name.

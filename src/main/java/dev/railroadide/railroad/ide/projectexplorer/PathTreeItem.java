@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import javax.lang.model.SourceVersion;
+import java.util.Iterator;
 
 /**
  * A filesystem tree item that loads directory children on first access.
@@ -21,6 +22,7 @@ public class PathTreeItem extends TreeItem<PathItem> {
     private boolean isLeaf = false;
     private boolean isFirstTimeChildren = true;
     private boolean isFirstTimeLeft = true;
+    private boolean restoringExpansion;
 
     /**
      * Creates a tree item whose children will be loaded lazily.
@@ -41,6 +43,30 @@ public class PathTreeItem extends TreeItem<PathItem> {
         super(pathItem);
         firstPath = pathItem.getPath();
         this.compactMiddlePackages = compactMiddlePackages;
+        expandedProperty().addListener((_, _, expanded) -> {
+            if (expanded && !restoringExpansion) {
+                expandSingleChildDirectory();
+            }
+        });
+    }
+
+    /**
+     * Expands this row without cascading into a single child directory, so restored state keeps collapsed rows.
+     */
+    public void restoreExpanded() {
+        restoringExpansion = true;
+        try {
+            setExpanded(true);
+        } finally {
+            restoringExpansion = false;
+        }
+    }
+
+    private void expandSingleChildDirectory() {
+        ObservableList<TreeItem<PathItem>> children = getChildren();
+        if (children.size() == 1 && !children.getFirst().isLeaf()) {
+            children.getFirst().setExpanded(true);
+        }
     }
 
     /**
@@ -76,6 +102,7 @@ public class PathTreeItem extends TreeItem<PathItem> {
     public boolean represents(Path path) {
         if (path == null)
             return false;
+
         Path target = path.toAbsolutePath().normalize();
         return target.startsWith(firstPath.toAbsolutePath().normalize()) &&
             getValue().getPath().toAbsolutePath().normalize().startsWith(target);
@@ -89,13 +116,14 @@ public class PathTreeItem extends TreeItem<PathItem> {
     public void refresh(Path changedPath) {
         if (!areChildrenLoaded())
             return;
+
         Path directory = changedPath.getParent();
         boolean reload = getValue().getPath().equals(directory) || getLoadedChildren().stream()
             .anyMatch(child -> child instanceof PathTreeItem item && item.represents(directory));
         if (reload) {
-            var replacement = buildChildren(this);
+            ObservableList<TreeItem<PathItem>> replacement = buildChildren(this);
             for (int index = 0; index < replacement.size(); index++) {
-                var candidate = (PathTreeItem) replacement.get(index);
+                PathTreeItem candidate = (PathTreeItem) replacement.get(index);
                 for (TreeItem<PathItem> child : getLoadedChildren()) {
                     if (child instanceof PathTreeItem existing && existing.firstPath.equals(candidate.firstPath)
                         && existing.getValue().getPath().equals(candidate.getValue().getPath())) {
@@ -105,9 +133,11 @@ public class PathTreeItem extends TreeItem<PathItem> {
                     }
                 }
             }
+
             super.getChildren().setAll(replacement);
             return;
         }
+
         for (TreeItem<PathItem> child : getLoadedChildren()) {
             if (child instanceof PathTreeItem item && changedPath.startsWith(item.getValue().getPath())) {
                 item.refresh(changedPath);
@@ -125,17 +155,21 @@ public class PathTreeItem extends TreeItem<PathItem> {
     public static TreeItem<PathItem> find(TreeItem<PathItem> root, Path path) {
         if (root == null || path == null)
             return null;
+
         Path target = path.toAbsolutePath().normalize();
         Path current = root.getValue().getPath().toAbsolutePath().normalize();
         if (current.equals(target) || root instanceof PathTreeItem item && item.represents(path))
             return root;
+
         if (!target.startsWith(current))
             return null;
+
         for (TreeItem<PathItem> child : root.getChildren()) {
             TreeItem<PathItem> found = find(child, path);
             if (found != null)
                 return found;
         }
+
         return null;
     }
 
@@ -149,26 +183,31 @@ public class PathTreeItem extends TreeItem<PathItem> {
             if (name.equals("java") && parent != null &&
                 (parent.endsWith("src") || parent.getParent() != null && parent.getParent().endsWith("src")))
                 return !current.equals(path);
+
             if (!SourceVersion.isIdentifier(name) || SourceVersion.isKeyword(name))
                 return false;
         }
+
         return false;
     }
 
     private static Path compactPackagePath(Path path) {
         while (isPackageDirectory(path)) {
             try (DirectoryStream<Path> entries = Files.newDirectoryStream(path)) {
-                var iterator = entries.iterator();
+                Iterator<Path> iterator = entries.iterator();
                 if (!iterator.hasNext())
                     break;
+
                 Path child = iterator.next();
                 if (iterator.hasNext() || !isPackageDirectory(child))
                     break;
+
                 path = child;
             } catch (IOException exception) {
                 break;
             }
         }
+
         return path;
     }
 
@@ -181,15 +220,18 @@ public class PathTreeItem extends TreeItem<PathItem> {
     public static void compactFilteredPackages(TreeItem<PathItem> parent, boolean compactMiddlePackages) {
         if (!compactMiddlePackages)
             return;
+
         for (TreeItem<PathItem> child : parent.getChildren()) {
             Path compactPath = compactPackagePath(child.getValue().getPath());
             while (!child.getValue().getPath().equals(compactPath) && child.getChildren().size() == 1) {
                 TreeItem<PathItem> descendant = child.getChildren().getFirst();
                 child.setValue(descendant.getValue());
-                var grandchildren = FXCollections.observableArrayList(descendant.getChildren());
+                ObservableList<TreeItem<PathItem>> grandchildren = FXCollections
+                    .observableArrayList(descendant.getChildren());
                 descendant.getChildren().clear();
                 child.getChildren().setAll(grandchildren);
             }
+
             compactFilteredPackages(child, true);
         }
     }
@@ -243,8 +285,10 @@ public class PathTreeItem extends TreeItem<PathItem> {
                     if (compactMiddlePackages) {
                         child.setValue(new PathItem(compactPackagePath(directory)));
                     }
+
                     children.add(child);
                 }
+
                 children.sort(new PathTreeItemComparator());
             } catch (IOException exception) {
                 Railroad.LOGGER.error("Failed to build children for tree item: {}", treeItem, exception);

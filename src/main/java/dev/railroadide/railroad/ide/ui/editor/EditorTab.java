@@ -9,6 +9,7 @@ import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentIdentity;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
+import dev.railroadide.railroad.ide.ui.codeeditor.find.EditorFindHost;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.defaults.FileSystemDocument;
 import dev.railroadide.railroad.plugin.spi.dto.Document;
@@ -48,6 +49,7 @@ public final class EditorTab {
     private final Document document;
     private final Tab tab;
     private final EditorOpenView view;
+    private final EditorFindHost findHost;
 
     private final ObjectProperty<Path> path;
     private final StringProperty editorGroupId;
@@ -101,10 +103,14 @@ public final class EditorTab {
         this.saveFailed = new ReadOnlyBooleanWrapper(this, "saveFailed");
 
         TextEditorPane editor = view.activeEditor();
+        this.findHost = new EditorFindHost(view.content());
+        findHost.setEditor(editor);
         if (editor != null) {
             this.saveState.bind(editor.saveStateProperty());
         }
+
         view.observeSourceEditor(current -> {
+            findHost.setEditor(current);
             this.saveState.unbind();
             if (current != null) {
                 this.saveState.bind(current.saveStateProperty());
@@ -112,6 +118,7 @@ public final class EditorTab {
                 this.saveState.set(EditorSaveState.CLEAN);
             }
         });
+
         this.dirty.bind(this.saveState.isNotEqualTo(EditorSaveState.CLEAN));
         this.saving.bind(this.saveState.isEqualTo(EditorSaveState.SAVING));
         this.saved.bind(this.saveState.isEqualTo(EditorSaveState.CLEAN));
@@ -121,7 +128,7 @@ public final class EditorTab {
             this.dirty.addListener((_, _, isDirty) -> fileSystemDocument.setDirty(isDirty));
         }
 
-        this.tab = new Tab(path.getFileName().toString(), view.content());
+        this.tab = new Tab(path.getFileName().toString(), findHost);
         this.tab.setId("editor:" + identity.id());
         this.tab.getStyleClass().add("editor-tab");
         this.tab.setGraphic(createTabGraphic());
@@ -134,10 +141,12 @@ public final class EditorTab {
             updateTabStateStyle("pinned", isPinned);
             updateMetadataTooltip();
         });
+
         this.preview.addListener((_, _, isPreview) -> {
             updateTabStateStyle("preview", isPreview);
             updateMetadataTooltip();
         });
+
         this.saveFailed.addListener((_, _, needsAttention) -> updateTabStateStyle("attention", needsAttention));
         L18n.currentLanguageProperty().addListener(weakLocalizationListener);
         updateTabStateStyle("pinned", pinned());
@@ -216,6 +225,15 @@ public final class EditorTab {
      */
     public EditorOpenView view() {
         return view;
+    }
+
+    /**
+     * Returns the tab content, which hosts the view below its find and replace bar.
+     *
+     * @return find host shown as the tab content
+     */
+    public EditorFindHost findHost() {
+        return findHost;
     }
 
     /**
@@ -416,7 +434,9 @@ public final class EditorTab {
         this.tab.setId(normalizedPath.toString());
     }
 
-    /** Releases bindings and wrapper resources after the source has accepted closure. */
+    /**
+     * Releases bindings and wrapper resources after the source has accepted closure.
+     */
     public void dispose() {
         saveState.unbind();
         dirty.unbind();
@@ -499,7 +519,7 @@ public final class EditorTab {
             (_, _, state) -> updateSaveStatusIcon(statusIcon, statusTooltip, savingAnimation, state));
         updateSaveStatusIcon(statusIcon, statusTooltip, savingAnimation, saveState());
 
-        var actionSlot = createIconSlot(closeIcon, "editor-tab-action-slot");
+        RRStackPane actionSlot = createIconSlot(closeIcon, "editor-tab-action-slot");
         actionSlot.getChildren().addAll(pinIcon, statusIcon);
         actionSlot.setCursor(Cursor.HAND);
         closeIcon.visibleProperty().bind(
@@ -517,9 +537,11 @@ public final class EditorTab {
                 } else {
                     Services.EDITOR_TAB_MANAGER.close(this);
                 }
+
                 event.consume();
             }
         });
+
         var actionTooltip = new LocalizedTooltip(pinned()
             ? "editor.tab.contextmenu.unpin"
             : "editor.tab.contextmenu.close");
@@ -545,6 +567,7 @@ public final class EditorTab {
         if (titleLabel.getText() == null || titleLabel.getText().isBlank()) {
             setDisplayTitle(EditorTabPresentation.fileName(editorPath));
         }
+
         updateMetadataTooltip();
     }
 
@@ -564,18 +587,22 @@ public final class EditorTab {
             } catch (IOException _) {
                 // The file can disappear while its tab is still open.
             }
+
             if (!Files.isWritable(editorPath)) {
                 text.append('\n').append(L18n.localize("editor.tab.tooltip.read_only"));
             }
         } else {
             text.append('\n').append(L18n.localize("editor.tab.tooltip.missing"));
         }
+
         if (pinned()) {
             text.append('\n').append(L18n.localize("editor.tab.tooltip.pinned"));
         }
+
         if (preview()) {
             text.append('\n').append(L18n.localize("editor.tab.tooltip.preview"));
         }
+
         metadataTooltip.setText(text.toString());
         updateAccessibleText();
     }
@@ -798,5 +825,4 @@ public final class EditorTab {
             view.content(),
             this);
     }
-
 }

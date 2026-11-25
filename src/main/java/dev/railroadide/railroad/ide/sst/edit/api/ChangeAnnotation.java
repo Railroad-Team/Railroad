@@ -23,6 +23,7 @@ public record ChangeAnnotation(String label, String description, boolean needsCo
         Objects.requireNonNull(label, "label");
         if (label.isBlank())
             throw new IllegalArgumentException("Annotation label must not be blank");
+
         description = description == null ? "" : description;
     }
 }

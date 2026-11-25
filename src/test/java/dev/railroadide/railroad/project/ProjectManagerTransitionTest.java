@@ -21,6 +21,7 @@ public class ProjectManagerTransitionTest {
             events.add(event);
             assertSame(event.isClosed() ? null : event.project(), owner.get().getOpenProject());
         });
+
         owner.set(manager);
         Project first = project();
         Project second = project();

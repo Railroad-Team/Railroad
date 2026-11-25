@@ -14,6 +14,7 @@ public class DocumentRenamedEventTest {
             {"jar:file:///archive.jar!/folder/new.md", "jar:file:///archive.jar!/folder/old%20name.md"},
             {"untitled:document", "untitled:document"}
         };
+
         for (String[] sample : cases) {
             assertPreviousLocation(sample[0], sample[1]);
         }
@@ -25,27 +26,33 @@ public class DocumentRenamedEventTest {
             public DocumentUri getUri() {
                 return DocumentUri.parse(location);
             }
+
             @Override
             public String getName() {
                 return "new.md";
             }
+
             @Override
             public byte[] getContent() {
                 return new byte[0];
             }
+
             @Override
             public long getLineCount() {
                 return 0;
             }
+
             @Override
             public String getLanguageId() {
                 return "markdown";
             }
+
             @Override
             public boolean isDirty() {
                 return false;
             }
         };
+
         var event = new DocumentRenamedEvent(document, "old name.md", "new.md");
         assertEquals(DocumentUri.parse(expected), event.previousUri());
     }

@@ -183,6 +183,7 @@ public class GitProcessRunner {
                     processRef.destroyForcibly();
                 }
             }
+
             ioPool.shutdownNow();
         }
     }
@@ -212,7 +213,7 @@ public class GitProcessRunner {
             }
 
             if (outputBuffer.size() > 0) {
-                var output = outputBuffer.toString(StandardCharsets.UTF_8);
+                String output = outputBuffer.toString(StandardCharsets.UTF_8);
                 onLine.accept(output);
             }
         } catch (IOException _) {
@@ -286,7 +287,7 @@ public class GitProcessRunner {
     }
 
     private static void emitRecord(ByteArrayOutputStream recordBuffer, Consumer<String> onRecord) {
-        var record = recordBuffer.toString(StandardCharsets.UTF_8);
+        String record = recordBuffer.toString(StandardCharsets.UTF_8);
         recordBuffer.reset();
         if (!record.isEmpty()) {
             onRecord.accept(record);

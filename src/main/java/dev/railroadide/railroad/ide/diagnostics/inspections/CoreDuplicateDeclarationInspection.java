@@ -55,6 +55,7 @@ public final class CoreDuplicateDeclarationInspection implements JavaInspectionR
     public List<JavaInspectionRule> rules() {
         return RULES;
     }
+
     private static void visitScopes(
         JavaRuleContext context,
         SyntaxNode node,
@@ -67,6 +68,7 @@ public final class CoreDuplicateDeclarationInspection implements JavaInspectionR
             if (JAVA_PATTERN.equals(node.kind().id())) {
                 symbol = null;
             }
+
             if (symbol != null) {
                 String declarationKey = declarationKey(context, symbol, node);
                 if (!scope.firstDeclarationByName.containsKey(declarationKey)) {
@@ -95,6 +97,7 @@ public final class CoreDuplicateDeclarationInspection implements JavaInspectionR
         for (SyntaxNode child : parameterList.children()) {
             if (!"JAVA_PARAMETER".equals(child.kind().id()) && !"JAVA_RECORD_COMPONENT".equals(child.kind().id()))
                 continue;
+
             SyntaxNode typeReference = context.directChild(child, "JAVA_TYPE_REFERENCE");
             String typeText = typeReference == null ? null : context.canonicalTypeText(typeReference);
             if (typeText == null) {
@@ -106,6 +109,7 @@ public final class CoreDuplicateDeclarationInspection implements JavaInspectionR
                         : typeText);
             }
         }
+
         return symbol.simpleName() + "(" + String.join(",", parameterTypes) + ")";
     }
 

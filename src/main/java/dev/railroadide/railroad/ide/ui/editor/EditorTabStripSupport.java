@@ -58,11 +58,13 @@ public final class EditorTabStripSupport implements AutoCloseable {
         scheduleSelectedTabVisibilityUpdate();
         scheduleAllTabsButtonInstall();
     };
+
     private final ChangeListener<Skin<?>> skinListener = (_, _, _) -> {
         uninstallAllTabsButton();
         scheduleSelectedTabVisibilityUpdate();
         scheduleAllTabsButtonInstall();
     };
+
     private final ChangeListener<Scene> sceneListener = (_, _, _) -> scheduleAllTabsButtonInstall();
     private final ListChangeListener<Tab> tabListListener = this::handleTabsChanged;
     private final AnimationTimer autoScrollTimer = new AnimationTimer() {
@@ -165,6 +167,7 @@ public final class EditorTabStripSupport implements AutoCloseable {
             } else if (allTabsButton != null) {
                 allTabsMenu.show(allTabsButton);
             }
+
             event.consume();
         } else if (event.getEventType() == MouseEvent.MOUSE_RELEASED
             || event.getEventType() == MouseEvent.MOUSE_CLICKED) {
@@ -223,6 +226,7 @@ public final class EditorTabStripSupport implements AutoCloseable {
                     tabHeader.removeEventFilter(DragEvent.DRAG_DONE, completion[0]);
                     handleDragDone();
                 };
+
                 tabHeader.addEventFilter(DragEvent.DRAG_DONE, completion[0]);
             }
         }
@@ -396,6 +400,7 @@ public final class EditorTabStripSupport implements AutoCloseable {
                 return;
             }
         }
+
         scheduleSelectedTabVisibilityUpdate();
     }
 
@@ -504,6 +509,7 @@ public final class EditorTabStripSupport implements AutoCloseable {
         } else if (selectedBounds.getMaxX() > visibleMaxX) {
             delta = visibleMaxX - selectedBounds.getMaxX();
         }
+
         if (Math.abs(delta) < 0.5)
             return;
 
@@ -574,6 +580,7 @@ public final class EditorTabStripSupport implements AutoCloseable {
             if (current.getStyleClass().contains(styleClass))
                 return current;
         }
+
         return null;
     }
 

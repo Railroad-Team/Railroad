@@ -47,6 +47,7 @@ public record ProjectIndexContext(
     ) {
         this(project, projectRoot, languages, session, configurationGeneration, CancellationToken.none());
     }
+
     /**
      * Creates a project context, normalizing its root and copying the language context map.
      *

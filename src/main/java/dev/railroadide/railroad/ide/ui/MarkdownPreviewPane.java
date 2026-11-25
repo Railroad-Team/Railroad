@@ -126,20 +126,24 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     public void close() {
         if (closed)
             return;
+
         TextEditorPane textEditorPane = getMarkdownEditorPane();
         if (textEditorPane != null) {
             textEditorPane.close();
             if (!textEditorPane.isEditorClosed())
                 return;
+
             textEditorPane.removeEventFilter(KeyEvent.KEY_PRESSED, sourceKeyHandler);
             textEditorPane.removeEventFilter(ScrollEvent.SCROLL, sourceScrollHandler);
             editor.setValue(null);
         }
+
         closed = true;
         if (storeSubscription != null) {
             storeSubscription.close();
             storeSubscription = null;
         }
+
         List.copyOf(snapshotObservers).forEach(SnapshotObserver::close);
         List.copyOf(selectionObservers).forEach(SelectionObserver::close);
         Settings.THEME.removeListener(themeListener);
@@ -173,6 +177,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         requireEditorThread();
         if (closed || documentStore != null)
             throw new IllegalStateException("Markdown view is closed or already initialized");
+
         documentStore = Objects.requireNonNull(store);
         if (getMarkdownEditorPane() == null && initialContent != null && store.current(documentId).isEmpty()) {
             DocumentUri uri = DocumentUri.fromPath(markdownFile);
@@ -186,11 +191,13 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
                     throw competingPublication;
             }
         }
+
         if (getMarkdownEditorPane() == null
             && (store.state(documentId).map(state -> state.overlay() != null).orElse(false)
                 || !Services.IDE_STATE.isDocumentWatched(markdownFile))) {
             codeView();
         }
+
         storeSubscription = store.onChange(this::queuePublishedRefresh);
         refreshPublishedContent();
     }
@@ -212,10 +219,12 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     private TextDocumentSnapshot publishedSnapshot() {
         if (closed || documentStore == null)
             return null;
-        var current = documentStore.current(documentId).orElse(null);
+
+        DocumentSnapshot current = documentStore.current(documentId).orElse(null);
         if (!(current instanceof TextDocumentSnapshot snapshot)
             || !snapshot.uri().equals(DocumentUri.fromPath(markdownFile)))
             return null;
+
         TextEditorPane source = getMarkdownEditorPane();
         return source == null || !source.isEditorClosed() && source.getText().equals(snapshot.text()) ? snapshot : null;
     }
@@ -240,19 +249,23 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         TextDocumentSnapshot snapshot = publishedSnapshot();
         if (snapshot == null)
             return;
+
         if (!snapshot.text().equals(renderedText)) {
             renderedText = snapshot.text();
             preview.setContent(renderedText);
         }
+
         List.copyOf(snapshotObservers).forEach(observer -> observer.deliver(snapshot));
     }
 
     private TextEditorAccess revealSource() {
         if (closed)
             throw new IllegalStateException("Markdown view is closed");
+
         if (currentLayout == MarkdownLayoutType.PREVIEW) {
             switchLayout(MarkdownLayoutType.SPLIT);
         }
+
         return codeView().textEditorAccess();
     }
 
@@ -269,6 +282,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
             TextDocumentSnapshot snapshot = publishedSnapshot();
             if (snapshot == null)
                 throw new IllegalStateException("No reconciled published Markdown source is available");
+
             return snapshot;
         }
 
@@ -277,6 +291,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
             requireEditorThread();
             if (closed)
                 throw new IllegalStateException("Markdown view is closed");
+
             TextEditorPane source = getMarkdownEditorPane();
             return source == null ? new TextSelection(0, 0) : source.textEditorAccess().selection();
         }
@@ -284,11 +299,14 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         private EditResult validateExpected(TextDocumentSnapshot expected) {
             if (closed)
                 return EditResult.CLOSED;
+
             if (expected == null)
                 return EditResult.INVALID;
+
             TextDocumentSnapshot current = publishedSnapshot();
             if (current == null)
                 return EditResult.UNAVAILABLE;
+
             return sameSnapshot(expected, current) ? EditResult.APPLIED : EditResult.STALE;
         }
 
@@ -298,9 +316,11 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
             EditResult validation = validateExpected(expected);
             if (validation != EditResult.APPLIED)
                 return validation;
+
             if (selection == null || selection.anchor() > expected.text().length()
                 || selection.caret() > expected.text().length())
                 return EditResult.INVALID;
+
             return revealSource().selectAndReveal(expected, selection);
         }
 
@@ -319,8 +339,10 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
             EditResult validation = validateExpected(expected);
             if (validation != EditResult.APPLIED)
                 return validation;
+
             if (!isEditable())
                 return EditResult.READ_ONLY;
+
             return revealSource().replace(expected, replacements);
         }
 
@@ -329,6 +351,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
             requireEditorThread();
             if (closed || documentStore == null)
                 throw new IllegalStateException("Markdown view is closed or not initialized");
+
             var observer = new SnapshotObserver(Objects.requireNonNull(listener));
             snapshotObservers.add(observer);
             queuePublishedRefresh();
@@ -340,6 +363,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
             requireEditorThread();
             if (closed)
                 throw new IllegalStateException("Markdown view is closed");
+
             var observer = new SelectionObserver(Objects.requireNonNull(listener));
             selectionObservers.add(observer);
             observer.bindSource();
@@ -387,6 +411,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         private void bindSource() {
             if (disposed || closed)
                 return;
+
             TextEditorPane source = getMarkdownEditorPane();
             if (source == null) {
                 Platform.runLater(() -> {
@@ -418,6 +443,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
                     sourceSubscription.close();
                     sourceSubscription = null;
                 }
+
                 selectionObservers.remove(this);
             });
         }
@@ -441,6 +467,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         } catch (IOException exception) {
             Railroad.LOGGER.error("Unable to read markdown file when previewing.", exception);
         }
+
         initialContent = loaded;
         renderedText = loaded == null ? "" : loaded;
         preview = new MarkdownWebView(renderedText, Railroad.getHostServicess());
@@ -485,6 +512,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     private TextEditorPane codeView() {
         if (closed)
             throw new IllegalStateException("Markdown view is closed");
+
         TextEditorPane textEditorPane = getMarkdownEditorPane();
         if (textEditorPane != null) {
             restoreEditorScroll();
@@ -529,6 +557,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
                 }
             }
         };
+
         newTextEditorPane.addEventFilter(KeyEvent.KEY_PRESSED, sourceKeyHandler);
         sourceScrollHandler = _ -> scrollAmount = (int) newTextEditorPane.getEstimatedScrollY();
         newTextEditorPane.addEventFilter(ScrollEvent.SCROLL, sourceScrollHandler);
@@ -546,9 +575,11 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         Platform.runLater(() -> {
             if (closed)
                 return;
+
             splitPane.setDividerPosition(0, 0.5);
             restoreEditorScroll();
         });
+
         return splitPane;
     }
 
@@ -563,6 +594,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
     private void switchLayout(MarkdownLayoutType layoutType) {
         if (closed)
             throw new IllegalStateException("Markdown view is closed");
+
         currentLayout = layoutType;
         getChildren().clear();
 
@@ -733,6 +765,7 @@ public class MarkdownPreviewPane extends RRVBox implements AutoCloseable {
         if (postfix != null) {
             editor.moveTo(caret + prefix.length());
         }
+
         editor.requestFocus();
     }
 

@@ -1,9 +1,10 @@
 package dev.railroadide.railroad.ide.sst.graph.api;
 
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
+import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolDescriptor;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
-import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
+
 import java.util.*;
 import java.util.function.Function;
 
@@ -67,11 +68,12 @@ public final class WorkspaceSymbolGraph {
     public static WorkspaceSymbolGraph of(Collection<SemanticIndexShard> shards, Runnable activityCheck) {
         Objects.requireNonNull(activityCheck).run();
         Map<DocumentId, SemanticIndexShard> documents = new LinkedHashMap<>();
-        for (var shard : shards) {
+        for (SemanticIndexShard shard : shards) {
             activityCheck.run();
             if (documents.put(shard.documentId(), shard) != null)
                 throw new IllegalArgumentException("Duplicate shard document: " + shard.documentId());
         }
+
         return new WorkspaceSymbolGraph(documents, Map.of(),
             collect(shards, SemanticIndexShard::declarations, SymbolDescriptor::id, activityCheck),
             collect(shards, SemanticIndexShard::references, ReferenceOccurrence::target, activityCheck),
@@ -86,17 +88,19 @@ public final class WorkspaceSymbolGraph {
         Runnable activityCheck
     ) {
         Map<SymbolId, List<T>> result = new HashMap<>();
-        for (var shard : shards) {
+        for (SemanticIndexShard shard : shards) {
             activityCheck.run();
             for (T value : values.apply(shard)) {
                 activityCheck.run();
                 result.computeIfAbsent(key.apply(value), _ -> new ArrayList<>()).add(value);
             }
         }
+
         result.replaceAll((_, entries) -> {
             activityCheck.run();
             return List.copyOf(entries);
         });
+
         return result;
     }
 
@@ -106,9 +110,19 @@ public final class WorkspaceSymbolGraph {
      * @return immutable visible shards, with overlays taking precedence over disk facts
      */
     public Map<DocumentId, SemanticIndexShard> shards() {
-        var result = new HashMap<>(disk);
+        Map<DocumentId, SemanticIndexShard> result = new HashMap<>(disk);
         result.putAll(overlays);
         return Map.copyOf(result);
+    }
+
+    /**
+     * Returns the visible facts for one document, including its overlay when present.
+     *
+     * @param id document identity
+     * @return the document's facts, or an empty optional when the graph has none
+     */
+    public Optional<SemanticIndexShard> shard(DocumentId id) {
+        return Optional.ofNullable(overlays.getOrDefault(id, disk.get(id)));
     }
 
     /**
@@ -160,7 +174,7 @@ public final class WorkspaceSymbolGraph {
     public WorkspaceSymbolGraph replaceShard(SemanticIndexShard shard) {
         Objects.requireNonNull(shard);
         rejectOlder(disk.get(shard.documentId()), shard);
-        var updated = new HashMap<>(disk);
+        Map<DocumentId, SemanticIndexShard> updated = new HashMap<>(disk);
         updated.put(shard.documentId(), shard);
         return change(updated, overlays, shard.documentId());
     }
@@ -172,8 +186,8 @@ public final class WorkspaceSymbolGraph {
      * @return new graph with both layers and postings for the document removed
      */
     public WorkspaceSymbolGraph removeShard(DocumentId id) {
-        var updated = new HashMap<>(disk);
-        var updatedOverlays = new HashMap<>(overlays);
+        Map<DocumentId, SemanticIndexShard> updated = new HashMap<>(disk);
+        Map<DocumentId, SemanticIndexShard> updatedOverlays = new HashMap<>(overlays);
         updated.remove(Objects.requireNonNull(id));
         updatedOverlays.remove(id);
         return change(updated, updatedOverlays, id);
@@ -189,7 +203,7 @@ public final class WorkspaceSymbolGraph {
         Objects.requireNonNull(shard);
         rejectOlder(disk.get(shard.documentId()), shard);
         rejectOlder(overlays.get(shard.documentId()), shard);
-        var updated = new HashMap<>(overlays);
+        Map<DocumentId, SemanticIndexShard> updated = new HashMap<>(overlays);
         updated.put(shard.documentId(), shard);
         return change(disk, updated, shard.documentId());
     }
@@ -201,7 +215,7 @@ public final class WorkspaceSymbolGraph {
      * @return new graph exposing disk facts for the document, if present
      */
     public WorkspaceSymbolGraph withoutOverlay(DocumentId id) {
-        var updated = new HashMap<>(overlays);
+        Map<DocumentId, SemanticIndexShard> updated = new HashMap<>(overlays);
         updated.remove(Objects.requireNonNull(id));
         return change(disk, updated, id);
     }
@@ -216,10 +230,11 @@ public final class WorkspaceSymbolGraph {
         Map<DocumentId, SemanticIndexShard> newOverlays,
         DocumentId id
     ) {
-        var old = overlays.getOrDefault(id, disk.get(id));
-        var replacement = newOverlays.getOrDefault(id, newDisk.get(id));
+        SemanticIndexShard old = overlays.getOrDefault(id, disk.get(id));
+        SemanticIndexShard replacement = newOverlays.getOrDefault(id, newDisk.get(id));
         if (old == replacement)
             return new WorkspaceSymbolGraph(newDisk, newOverlays, symbols, reverse, outgoing, incoming);
+
         return new WorkspaceSymbolGraph(newDisk, newOverlays,
             update(symbols, old == null ? List.of() : old.declarations(),
                 replacement == null ? List.of() : replacement.declarations(), SymbolDescriptor::id),
@@ -237,16 +252,18 @@ public final class WorkspaceSymbolGraph {
         List<T> added,
         Function<T, SymbolId> key
     ) {
-        var result = new HashMap<>(index);
+        Map<SymbolId, List<T>> result = new HashMap<>(index);
         Map<SymbolId, List<T>> changed = new HashMap<>();
         for (T value : removed) {
             SymbolId id = key.apply(value);
             changed.computeIfAbsent(id, _ -> new ArrayList<>(index.getOrDefault(id, List.of()))).remove(value);
         }
+
         for (T value : added) {
             SymbolId id = key.apply(value);
             changed.computeIfAbsent(id, _ -> new ArrayList<>(index.getOrDefault(id, List.of()))).add(value);
         }
+
         changed.forEach((id, values) -> {
             if (values.isEmpty()) {
                 result.remove(id);
@@ -254,6 +271,7 @@ public final class WorkspaceSymbolGraph {
                 result.put(id, List.copyOf(values));
             }
         });
+
         return result;
     }
 }

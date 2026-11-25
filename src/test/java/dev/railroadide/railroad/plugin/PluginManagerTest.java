@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -110,9 +112,11 @@ public class PluginManagerTest {
                     closeCalls.incrementAndGet();
                     throw new IOException("Provider disposal failed");
                 };
+
                 return new LanguageSession(CapabilityRegistry.builder().add(disposeKey, service).build());
             }
         };
+
         Project project = (Project) Proxy.newProxyInstance(Project.class.getClassLoader(),
             new Class<?>[]{Project.class},
             (_, method, _) -> method.getName().equals("getPath") ? Path.of(".") : null);
@@ -125,15 +129,16 @@ public class PluginManagerTest {
                 super.close();
             }
         };
+
         loadResult.setPlugin(null, loader);
         loadResult.setShutdownRegistration(ShutdownHooks.registerHook(() -> fail("Unloaded plugin hook retained")));
         LanguageSupportRegistry.runtime().register(descriptor.getId(), contribution);
-        var session = LanguageSupportRegistry.runtime().session(project, languageId, "");
+        LanguageSession session = LanguageSupportRegistry.runtime().session(project, languageId, "");
         loadResult.setJavaInspectionRuleProviderRegistrationIds(
             PluginManager.registerJavaInspectionRuleProviders(descriptor, List.of(provider)));
         String inspectionId = PluginManager.javaInspectionRuleProviderRegistrationId(descriptor, provider);
         try {
-            var unload = PluginManager.class.getDeclaredMethod("unloadPluginRuntime", PluginLoadResult.class);
+            Method unload = PluginManager.class.getDeclaredMethod("unloadPluginRuntime", PluginLoadResult.class);
             unload.setAccessible(true);
             InvocationTargetException failure = assertThrows(InvocationTargetException.class,
                 () -> unload.invoke(null, loadResult));
@@ -144,7 +149,7 @@ public class PluginManagerTest {
             assertTrue(loadResult.javaInspectionRuleProviderRegistrationIds().isEmpty());
             assertNull(loadResult.classLoader());
             assertNull(loadResult.pluginInstance());
-            var shutdownRegistration = PluginLoadResult.class.getDeclaredField("shutdownRegistration");
+            Field shutdownRegistration = PluginLoadResult.class.getDeclaredField("shutdownRegistration");
             shutdownRegistration.setAccessible(true);
             assertNull(shutdownRegistration.get(loadResult));
             assertEquals(1, closeCalls.get());
@@ -183,6 +188,7 @@ public class PluginManagerTest {
                 super.close();
             }
         };
+
         var contribution = new LanguageContribution() {
             @Override
             public LanguageId id() {
@@ -204,6 +210,7 @@ public class PluginManagerTest {
                 return new LanguageSession(CapabilityRegistry.empty());
             }
         };
+
         Project project = (Project) Proxy.newProxyInstance(Project.class.getClassLoader(),
             new Class<?>[]{Project.class},
             (_, method, _) -> method.getName().equals("getPath") ? Path.of(".") : null);
@@ -217,13 +224,16 @@ public class PluginManagerTest {
                 throw new NoClassDefFoundError("removed.PluginApi");
             }
         };
+
         loadResult.setPlugin(plugin, loader);
         LanguageSupportRegistry.runtime().register(descriptor.getId(), contribution);
-        var session = LanguageSupportRegistry.runtime().session(project, languageId, "");
+        LanguageSession session = LanguageSupportRegistry.runtime().session(project, languageId, "");
         try {
-            var disableRuntime = PluginManager.class.getDeclaredMethod("disablePluginRuntime", PluginLoadResult.class);
+            Method disableRuntime = PluginManager.class.getDeclaredMethod("disablePluginRuntime",
+                PluginLoadResult.class);
             disableRuntime.setAccessible(true);
-            var failure = assertInstanceOf(RuntimeException.class, disableRuntime.invoke(null, loadResult));
+            RuntimeException failure = assertInstanceOf(RuntimeException.class,
+                disableRuntime.invoke(null, loadResult));
             assertInstanceOf(NoClassDefFoundError.class, failure.getCause());
             assertTrue(session.isClosed());
             assertTrue(LanguageSupportRegistry.runtime().get(languageId).isEmpty());

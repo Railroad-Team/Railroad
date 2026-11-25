@@ -98,7 +98,7 @@ public class RunConfigurationEditorPane extends RRVBox {
         VBox.setVgrow(centerContentContainer, Priority.ALWAYS);
         getChildren().add(centerContentContainer);
 
-        var bottomButtonBar = createBottomButtonBar(project);
+        HBox bottomButtonBar = createBottomButtonBar(project);
         getChildren().add(bottomButtonBar);
     }
 
@@ -109,6 +109,7 @@ public class RunConfigurationEditorPane extends RRVBox {
                     change.getRemoved().forEach(config -> configurationFormContexts.remove(config.uuid()));
                 }
             }
+
             updateEditorContent();
         });
 
@@ -151,6 +152,7 @@ public class RunConfigurationEditorPane extends RRVBox {
         if (noConfigurations) {
             container.getChildren().add(createAddButton());
         }
+
         return container;
     }
 
@@ -174,12 +176,12 @@ public class RunConfigurationEditorPane extends RRVBox {
         topButtonBar.setAlignment(Pos.CENTER_LEFT);
         topButtonBar.getStyleClass().add("run-configuration-editor-top-bar");
 
-        var addButton = createAddButton();
+        RRButton addButton = createAddButton();
         addButton.setVariant(ButtonVariant.SECONDARY);
         HBox.setHgrow(addButton, Priority.ALWAYS);
         addButton.setMaxWidth(Double.MAX_VALUE);
 
-        var removeButton = createTopBarButton(FontAwesomeSolid.TRASH_ALT);
+        RRButton removeButton = createTopBarButton(FontAwesomeSolid.TRASH_ALT);
         var removeTooltip = new LocalizedTooltip("railroad.run_configuration.delete");
         removeButton.setTooltip(removeTooltip);
         removeButton.accessibleTextProperty().bind(removeTooltip.textProperty());
@@ -190,6 +192,7 @@ public class RunConfigurationEditorPane extends RRVBox {
                 selectedConfiguration.set(configurations.isEmpty() ? null : configurations.getFirst());
             }
         });
+
         removeButton.disableProperty().bind(selectedConfiguration.isNull());
 
         topButtonBar.getChildren().addAll(addButton, removeButton);
@@ -292,6 +295,7 @@ public class RunConfigurationEditorPane extends RRVBox {
                     comboBox.getStyleClass().add("run-configuration-runtime-picker");
                 }
             }
+
             var scrollPane = new ScrollPane(formNode);
             scrollPane.setFitToWidth(true);
             scrollPane.getStyleClass().add("run-configuration-form-scroll");

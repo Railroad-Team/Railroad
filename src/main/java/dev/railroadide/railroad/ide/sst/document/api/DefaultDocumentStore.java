@@ -28,7 +28,7 @@ public final class DefaultDocumentStore implements DocumentStore {
     private final Map<DocumentId, Map<DocumentVersion, byte[]>> revisionContents = new HashMap<>();
     private WorkspaceConfigurationSnapshot configuration;
     private long workspaceRevision;
-    private final CopyOnWriteArrayList<Runnable> changeListeners = new CopyOnWriteArrayList<>();
+    private final List<Runnable> changeListeners = new CopyOnWriteArrayList<>();
 
     @Override
     public ChangeSubscription onChange(Runnable listener) {
@@ -62,15 +62,19 @@ public final class DefaultDocumentStore implements DocumentStore {
                             digest.update(buffer.flip());
                             buffer.clear();
                         }
+
                         buffer.putChar(text.text().charAt(index));
                     }
+
                     digest.update(buffer.flip());
                 }
+
                 case BinaryDocumentSnapshot binary -> {
                     digest.update((byte) 2);
                     digest.update(binary.bytes());
                 }
             }
+
             return digest.digest();
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("Required SHA-256 implementation is unavailable", exception);
@@ -123,15 +127,19 @@ public final class DefaultDocumentStore implements DocumentStore {
         if (!relocatingBacking && latest != null && (savedSnapshot.version().isBefore(latest)
             || expectedState == null && savedSnapshot.version().equals(latest)))
             throw new IllegalArgumentException("Save As cannot reuse an abandoned document revision.");
+
         if (overlay != null && !hasSameContent(overlay, savedSnapshot))
             throw new IllegalArgumentException("Saved content must match the editor overlay.");
+
         if (backing != null && savedSnapshot.version().equals(backing.version())
             && !hasSameContent(backing, savedSnapshot))
             throw new IllegalArgumentException("Content cannot change at the same backing version.");
+
         if (expectedState != null && expectedState.isStale()
             && (!savedSnapshot.version().isAfter(overlay.version())
                 || backing != null && !savedSnapshot.version().isAfter(backing.version())))
             throw new IllegalArgumentException("Saving a stale overlay requires a newer version.");
+
         DocumentVersion lastBacking = lastBackingVersions.get(id);
         if (backing == null && lastBacking != null && !savedSnapshot.version().isAfter(lastBacking))
             throw new IllegalArgumentException("Reappearing backing requires a newer version.");
@@ -169,6 +177,7 @@ public final class DefaultDocumentStore implements DocumentStore {
         } else {
             entries.put(id, new Entry(entry.backing(), null));
         }
+
         workspaceChanged();
     }
 
@@ -209,6 +218,7 @@ public final class DefaultDocumentStore implements DocumentStore {
         Objects.requireNonNull(snapshot, "snapshot");
         if (!Objects.equals(state(snapshot.id()).orElse(null), expectedState))
             throw new IllegalStateException("Document changed while disk content was being read.");
+
         publishBacking(snapshot);
     }
 

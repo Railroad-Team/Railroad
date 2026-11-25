@@ -11,7 +11,7 @@ public class DocumentOriginTest {
     @Test
     public void copiesSourcesAndExposesAnImmutableList() {
         var reference = new OriginReference(DocumentUri.parse("jar:file:///library.jar!/A.class"));
-        var sources = new ArrayList<>(List.of(reference));
+        List<OriginReference> sources = new ArrayList<>(List.of(reference));
         var origin = new DocumentOrigin(BackingKind.VIRTUAL, ProvenanceKind.DECOMPILED, sources);
         sources.clear();
 
@@ -26,7 +26,7 @@ public class DocumentOriginTest {
         assertThrows(NullPointerException.class, () -> new DocumentOrigin(BackingKind.FILE, null));
         assertThrows(NullPointerException.class,
             () -> new DocumentOrigin(BackingKind.FILE, ProvenanceKind.ORIGINAL, null));
-        var sources = new ArrayList<OriginReference>();
+        List<OriginReference> sources = new ArrayList<OriginReference>();
         sources.add(null);
         assertThrows(NullPointerException.class,
             () -> new DocumentOrigin(BackingKind.FILE, ProvenanceKind.ORIGINAL, sources));

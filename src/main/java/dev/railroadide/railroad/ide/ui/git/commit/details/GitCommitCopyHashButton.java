@@ -33,7 +33,7 @@ public class GitCommitCopyHashButton extends RRButton {
      */
     public static void execute(GitCommit commit) {
         Clipboard clipboard = Clipboard.getSystemClipboard();
-        var content = new ClipboardContent();
+        ClipboardContent content = new ClipboardContent();
         content.putString(commit.hash());
         clipboard.setContent(content);
     }

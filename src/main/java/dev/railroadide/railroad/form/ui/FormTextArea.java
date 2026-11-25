@@ -63,9 +63,11 @@ public class FormTextArea extends InformativeLabeledHBox<TextArea> implements Ha
         if (text != null) {
             params.put("text", text);
         }
+
         if (promptText != null) {
             params.put("promptText", promptText);
         }
+
         params.put("editable", editable);
         params.put("resizable", resizable);
         params.put("wrapText", wrapText);
@@ -96,10 +98,12 @@ public class FormTextArea extends InformativeLabeledHBox<TextArea> implements Ha
             textArea.textProperty().addListener(
                 (observable, oldValue, newValue) -> textArea.setMinHeight(newValue.lines().count() * 20 + 40));
         }
+
         textArea.setWrapText(wrapText);
         if (!translate) {
             textArea.setPromptText(promptText);
         }
+
         return textArea;
     }
 

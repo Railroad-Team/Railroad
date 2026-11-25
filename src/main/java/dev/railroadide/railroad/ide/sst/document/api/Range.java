@@ -11,8 +11,7 @@ package dev.railroadide.railroad.ide.sst.document.api;
  *
  * @param <S> the type of document snapshot supported by this range
  */
-public abstract sealed class Range<S extends DocumentSnapshot>
-    permits TextRange, BinaryRange {
+public abstract sealed class Range<S extends DocumentSnapshot> permits TextRange, BinaryRange {
     /**
      * The inclusive, non-negative start offset of the range.
      */
@@ -36,6 +35,7 @@ public abstract sealed class Range<S extends DocumentSnapshot>
 
         if (start < 0)
             throw new IllegalArgumentException("start must be non-negative");
+
         if (end < start)
             throw new IllegalArgumentException("end must be >= start");
     }

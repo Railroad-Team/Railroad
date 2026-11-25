@@ -64,9 +64,11 @@ public final class ProviderExecutor implements AutoCloseable {
     public ProviderExecutor(int maximumActive, int maximumPerProvider, int maximumProviders, Duration slowThreshold) {
         if (maximumActive <= 0 || maximumPerProvider <= 0 || maximumProviders <= 0)
             throw new IllegalArgumentException("Provider limits must be positive");
+
         Objects.requireNonNull(slowThreshold, "slowThreshold");
         if (slowThreshold.isNegative())
             throw new IllegalArgumentException("Slow threshold must not be negative");
+
         this.maximumActive = maximumActive;
         this.maximumPerProvider = maximumPerProvider;
         this.maximumProviders = maximumProviders;
@@ -119,8 +121,10 @@ public final class ProviderExecutor implements AutoCloseable {
         Objects.requireNonNull(budget, "budget");
         if (providerId.isBlank())
             throw new IllegalArgumentException("Provider identity must not be blank");
+
         if (budget.isNegative())
             throw new IllegalArgumentException("Provider budget must not be negative");
+
         parent.checkActive();
         long queuedAt = System.nanoTime();
         Deadline deadline = Deadline.after(budget);
@@ -137,6 +141,7 @@ public final class ProviderExecutor implements AutoCloseable {
                 CancellationToken.super.throwIfCancellationRequested();
             }
         };
+
         RequestContext child = parent instanceof FeatureRequestContext feature
             ? new FeatureRequestContext(parent.workspaceSnapshot(), feature.documentSnapshot(), token, deadline)
             : new WorkspaceRequestContext(parent.workspaceSnapshot(), token, deadline);
@@ -146,11 +151,13 @@ public final class ProviderExecutor implements AutoCloseable {
         synchronized (this) {
             if (closed)
                 throw new RejectedExecutionException("Provider executor is closed");
+
             measurements = measurements(providerId);
             if (active >= maximumActive || measurements.active >= maximumPerProvider) {
                 measurements.rejected++;
                 throw new RejectedExecutionException("Provider execution limit reached: " + providerId);
             }
+
             active++;
             measurements.active++;
             measurements.awaiting++;
@@ -161,6 +168,7 @@ public final class ProviderExecutor implements AutoCloseable {
                 synchronized (this) {
                     measurements.totalQueueNanos += started - queuedAt;
                 }
+
                 T value = null;
                 Throwable failure = null;
                 try {
@@ -179,17 +187,20 @@ public final class ProviderExecutor implements AutoCloseable {
                         if (elapsed >= slowNanos) {
                             measurements.slow++;
                         }
+
                         measurements.active--;
                         active--;
                         running.remove(Thread.currentThread());
                     }
                 }
+
                 if (failure == null) {
                     result.complete(value);
                 } else {
                     result.completeExceptionally(failure);
                 }
             });
+
             running.put(worker, result);
             try {
                 worker.start();
@@ -202,6 +213,7 @@ public final class ProviderExecutor implements AutoCloseable {
                 throw failure;
             }
         }
+
         boolean completedNormally = false;
         try {
             while (true) {
@@ -215,8 +227,10 @@ public final class ProviderExecutor implements AutoCloseable {
                     synchronized (this) {
                         if (closed)
                             throw new CancellationException("Provider executor closed");
+
                         measurements.succeeded++;
                     }
+
                     completedNormally = true;
                     return value;
                 } catch (TimeoutException _) {
@@ -228,15 +242,18 @@ public final class ProviderExecutor implements AutoCloseable {
             synchronized (this) {
                 measurements.cancelled++;
             }
+
             throw new CancellationException("Interrupted while awaiting provider " + providerId);
         } catch (ExecutionException exception) {
             Throwable cause = exception.getCause();
             if (cause instanceof CancellationException cancellation) {
                 cause = cancellationOutcome(parent, child, cancellation);
             }
+
             recordFailure(measurements, cause);
             if (cause instanceof RuntimeException runtime)
                 throw runtime;
+
             throw new CompletionException(cause);
         } catch (CancellationException exception) {
             CancellationException cause = cancellationOutcome(parent, child, exception);
@@ -247,6 +264,7 @@ public final class ProviderExecutor implements AutoCloseable {
                 cancelled.set(true);
                 worker.interrupt();
             }
+
             synchronized (this) {
                 measurements.awaiting--;
             }
@@ -264,10 +282,12 @@ public final class ProviderExecutor implements AutoCloseable {
         } catch (CancellationException activity) {
             return activity;
         }
+
         CancellationException cause = failure;
         while (cause.getCause() instanceof CancellationException nested) {
             cause = nested;
         }
+
         return cause;
     }
 
@@ -275,8 +295,9 @@ public final class ProviderExecutor implements AutoCloseable {
         Measurements existing = providers.get(providerId);
         if (existing != null)
             return existing;
+
         if (providers.size() == maximumProviders) {
-            var iterator = providers.values().iterator();
+            Iterator<Measurements> iterator = providers.values().iterator();
             while (iterator.hasNext()) {
                 Measurements candidate = iterator.next();
                 if (candidate.active == 0 && candidate.awaiting == 0) {
@@ -284,9 +305,11 @@ public final class ProviderExecutor implements AutoCloseable {
                     break;
                 }
             }
+
             if (providers.size() == maximumProviders)
                 throw new RejectedExecutionException("Provider identity limit reached");
         }
+
         var created = new Measurements(providerId);
         providers.put(providerId, created);
         return created;
@@ -316,8 +339,10 @@ public final class ProviderExecutor implements AutoCloseable {
         Objects.requireNonNull(failure, "failure");
         if (providerId.isBlank())
             throw new IllegalArgumentException("Provider identity must not be blank");
+
         if (closed)
             return;
+
         try {
             recordFailure(measurements(providerId), failure);
         } catch (RejectedExecutionException _) {
@@ -344,16 +369,20 @@ public final class ProviderExecutor implements AutoCloseable {
         return health().stream().filter(ProviderHealth::hasWarnings).toList();
     }
 
-    /** Cancels active calls and releases retained aggregates without waiting for arbitrary plugin code. */
+    /**
+     * Cancels active calls and releases retained aggregates without waiting for arbitrary plugin code.
+     */
     @Override
     public synchronized void close() {
         if (closed)
             return;
+
         closed = true;
         running.forEach((worker, result) -> {
             result.completeExceptionally(new CancellationException("Provider executor closed"));
             worker.interrupt();
         });
+
         providers.clear();
     }
 

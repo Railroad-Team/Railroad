@@ -44,7 +44,9 @@ public class PersonListTypeAdapter extends TypeAdapter<List<Person>> {
                 in.nextNull(); // Skip null entries
             } else
                 throw new IOException("Expected string, object, or null for person but got " + token);
+
         }
+
         in.endArray();
 
         return people;
@@ -75,6 +77,7 @@ public class PersonListTypeAdapter extends TypeAdapter<List<Person>> {
                 this.gson.toJson(person, Person.class, out);
             }
         }
+
         out.endArray();
     }
 }

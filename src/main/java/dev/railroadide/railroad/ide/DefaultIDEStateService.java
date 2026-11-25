@@ -20,6 +20,8 @@ import lombok.Getter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
+import lombok.AccessLevel;
+import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService;
 
 /**
  * Tracks the current project and open documents and publishes their lifecycle events.
@@ -34,9 +36,9 @@ public class DefaultIDEStateService implements IDEStateService {
     private volatile DocumentStore documentStore;
     private volatile Project currentProject;
     private ProjectWorkspaceConfiguration workspaceConfiguration;
-    @Getter(lombok.AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
     private ProjectDocumentSynchronizer documentSynchronizer;
-    @Getter(lombok.AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
     private WorkspaceEditService workspaceEdits;
     private long openedProjectAtMillis = -1L;
     private Document activeDocument;
@@ -76,7 +78,8 @@ public class DefaultIDEStateService implements IDEStateService {
 
     private void setCurrentProject_internal(Project project) {
         if (project != currentProject) {
-            var previousSession = Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(currentProject);
+            ProjectLanguageIndexService.Session previousSession = Services.PROJECT_LANGUAGE_INDEX_SERVICE
+                .session(currentProject);
             Services.PROJECT_LANGUAGE_INDEX_SERVICE.closeProject(previousSession);
             JavaLanguageSupport.analysisContextProvider()
                 .closeSession(previousSession);
@@ -88,30 +91,36 @@ public class DefaultIDEStateService implements IDEStateService {
                         exception);
                 }
             }
+
             if (project != null) {
                 Services.PROJECT_LANGUAGE_INDEX_SERVICE.openProject(project);
             }
+
             if (workspaceEdits != null) {
                 workspaceEdits.close();
                 workspaceEdits = null;
             }
+
             if (documentSynchronizer != null) {
                 documentSynchronizer.close();
                 documentSynchronizer = null;
             }
+
             WorkspaceConfigurationSnapshot initialConfiguration = project == null
                 ? null
                 : ProjectWorkspaceConfiguration.initial(project);
             if (initialConfiguration != null) {
-                var values = new HashMap<>(initialConfiguration.settings());
+                Map<String, String> values = new HashMap<>(initialConfiguration.settings());
                 values.put("index.session", Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project).id());
                 values.put("index.binary.epoch", "pending");
                 initialConfiguration = new WorkspaceConfigurationSnapshot(0, initialConfiguration.moduleIds(), values);
             }
+
             if (workspaceConfiguration != null) {
                 workspaceConfiguration.close();
                 workspaceConfiguration = null;
             }
+
             documentStore = project == null
                 ? null
                 : new DefaultDocumentStore(project.getId(), initialConfiguration);
@@ -134,6 +143,7 @@ public class DefaultIDEStateService implements IDEStateService {
                             Services.EDITOR_TAB_MANAGER.relocateDocument(identity, newPath);
                         }
                     });
+
                 try {
                     documentSynchronizer = new ProjectDocumentSynchronizer(project.getPath(), documentStore,
                         documentIdentities,
@@ -144,6 +154,7 @@ public class DefaultIDEStateService implements IDEStateService {
                 }
             }
         }
+
         this.currentProject = project;
         this.openedProjectAtMillis = project != null ? System.currentTimeMillis() : -1L;
         if (project == null) {
@@ -191,6 +202,7 @@ public class DefaultIDEStateService implements IDEStateService {
         if (previousDocument != null) {
             Railroad.EVENT_BUS.publish(new DocumentEvent(previousDocument, DocumentEvent.EventType.DEACTIVATED));
         }
+
         if (nextDocument != null) {
             Railroad.EVENT_BUS.publish(new DocumentEvent(nextDocument, DocumentEvent.EventType.ACTIVATED));
         }
@@ -325,5 +337,4 @@ public class DefaultIDEStateService implements IDEStateService {
     public void closeDocument(Document document) {
         closeDocument_internal(document);
     }
-
 }

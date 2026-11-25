@@ -208,6 +208,7 @@ public class GitOverviewHeaderPane extends RRVBox {
             conflictedChip.setCount(0);
             return;
         }
+
         List<GitFileChange> changes = status.changes();
         boolean dirty = !changes.isEmpty();
 
@@ -248,13 +249,14 @@ public class GitOverviewHeaderPane extends RRVBox {
     }
 
     private void updateUpstreamRow(GitManager gitManager) {
-        var status = gitManager.getRepoStatus();
+        GitRepoStatus status = gitManager.getRepoStatus();
         if (status == null) {
             upstreamBehindText.setText("0");
             upstreamAheadText.setText("0");
             upstreamFetchText.setText("Never");
             return;
         }
+
         upstreamBehindText.setText(Long.toString(status.behind()));
         upstreamAheadText.setText(Long.toString(status.ahead()));
         upstreamFetchText.setText(TimeFormatingUtils.formatElapsed(gitManager.getLastFetchTimestamp()));

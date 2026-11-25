@@ -44,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.lang.reflect.Method;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -63,6 +64,7 @@ public class TextEditorAccessConformanceTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
         Field hostServices = Railroad.class.getDeclaredField("hostServices");
         hostServices.setAccessible(true);
@@ -78,10 +80,12 @@ public class TextEditorAccessConformanceTest {
             if (ThemeManager.getTheme() == null) {
                 ThemeManager.setTheme("");
             }
+
             project = new RailroadProject(tempDirectory, "Shared editor conformance", new WritableImage(1, 1));
             Services.IDE_STATE.setCurrentProject(project);
             return null;
         });
+
         Services.IDE_STATE.getWorkspaceConfiguration().ready().get(10, TimeUnit.SECONDS);
     }
 
@@ -93,6 +97,7 @@ public class TextEditorAccessConformanceTest {
                 editor.close();
                 editor.dispose();
             }
+
             Services.EDITOR_TAB_MANAGER.discardUnsavedChangesOnClose();
             Services.EDITOR_TAB_MANAGER.prepareProjectClose();
             Railroad.EVENT_BUS.publish(new ProjectEvent(project, ProjectEvent.EventType.CLOSED));
@@ -166,10 +171,11 @@ public class TextEditorAccessConformanceTest {
                 tabs.getSelectionModel().select(first.tab());
                 return List.of(first, second);
             });
+
             onFxThread(() -> {
                 EditorTab first = opened.getFirst();
                 EditorTab second = opened.getLast();
-                var tabs = (DetachableTabPane) first.tab().getTabPane();
+                DetachableTabPane tabs = (DetachableTabPane) first.tab().getTabPane();
                 TextEditorAccess oldAccess = first.view().textEditor().orElseThrow();
                 TextDocumentSnapshot original = oldAccess.snapshot();
                 FindReplaceConsumer consumer = consumerReference.get();
@@ -196,6 +202,7 @@ public class TextEditorAccessConformanceTest {
                 assertEquals(0, consumer.notifications(), "Source changes are delivered only after this turn settles");
                 return null;
             });
+
             onFxThread(() -> {
                 assertEquals(1, consumerReference.get().notifications(),
                     "Queued callbacks from previous targets and the closed editor must be cancelled");
@@ -206,6 +213,7 @@ public class TextEditorAccessConformanceTest {
                 if (consumerReference.get() != null) {
                     consumerReference.get().close();
                 }
+
                 return null;
             });
         }
@@ -223,6 +231,7 @@ public class TextEditorAccessConformanceTest {
                 if (layout != null) {
                     project.getDataStore().writeJson("markdown.json", new MarkdownPreviewPane.MarkdownLayout(layout));
                 }
+
                 EditorTab tab = openInTabPane(file);
                 TextEditorAccess access = tab.view().textEditor().orElseThrow();
                 assertSame(access, Services.DOCUMENT_EDITOR_STATE.getActiveTextEditor().orElseThrow());
@@ -233,6 +242,7 @@ public class TextEditorAccessConformanceTest {
                     assertEquals(diskText, previewSnapshot.text());
                     assertEquals(9, previewSnapshot.lineMap().offsetAt(new TextPosition(1, 0)));
                 }
+
                 var consumer = new FindReplaceConsumer(Services.DOCUMENT_EDITOR_STATE);
                 consumerReference.set(consumer);
                 List<TextRange> matches = consumer.find("find");
@@ -248,6 +258,7 @@ public class TextEditorAccessConformanceTest {
                         access.selectAndReveal(previewSnapshot, new TextSelection(9, 13)));
                     assertEquals(EditResult.STALE, access.replace(previewSnapshot, List.of(edit(9, 13, "stale"))));
                 }
+
                 assertEquals(2, matches.size());
                 assertEquals(original.indexOf("find", 1), matches.get(1).start);
                 assertEquals(EditResult.APPLIED, consumer.select(1));
@@ -269,6 +280,7 @@ public class TextEditorAccessConformanceTest {
                 editor.setEditable(true);
                 return null;
             });
+
             onFxThread(() -> {
                 assertTrue(consumerReference.get().notifications() > 0);
                 assertEquals(new TextSelection(0, "replacement".length()),
@@ -277,11 +289,13 @@ public class TextEditorAccessConformanceTest {
                 consumerReference.get().close();
                 return null;
             });
+
             int notifications = consumerReference.get().notifications();
             onFxThread(() -> {
                 editorReference.get().appendText("!");
                 return null;
             });
+
             onFxThread(() -> {
                 assertEquals(notifications, consumerReference.get().notifications());
                 return null;
@@ -291,6 +305,7 @@ public class TextEditorAccessConformanceTest {
                 if (consumerReference.get() != null) {
                     consumerReference.get().close();
                 }
+
                 return null;
             });
         }
@@ -337,7 +352,7 @@ public class TextEditorAccessConformanceTest {
     @Test
     public void selectionObservationPreservesDirectionAndStopsAfterDisposal() throws Exception {
         TextEditorPane editor = createStandalone("a\uD83D\uDE80\nb");
-        var selections = new ArrayList<TextSelection>();
+        List<TextSelection> selections = new ArrayList<TextSelection>();
         EditorSubscription subscription = onFxThread(() -> editor.textEditorAccess().observeSelection(selections::add));
         onFxThread(() -> {
             assertEquals(List.of(new TextSelection(0, 0)), selections);
@@ -347,12 +362,14 @@ public class TextEditorAccessConformanceTest {
             assertEquals(EditResult.APPLIED, access.selectAndReveal(access.snapshot(), new TextSelection(5, 1)));
             return null;
         });
+
         onFxThread(() -> {
             assertEquals(List.of(new TextSelection(5, 1)), selections);
             editor.selectRange(0, 0);
             subscription.close();
             return null;
         });
+
         onFxThread(() -> {
             assertEquals(List.of(new TextSelection(5, 1)), selections);
             subscription.close();
@@ -386,6 +403,7 @@ public class TextEditorAccessConformanceTest {
                 assertEquals(EditResult.STALE, access.selectAndReveal(wrong, new TextSelection(0, 1)));
                 assertSame(before, access.snapshot());
             }
+
             var equivalent = new TextDocumentSnapshot(before.id(), before.uri(), before.version(),
                 before.languageId(), before.origin(), before.text(), before.encoding());
             assertEquals(EditResult.APPLIED, access.replace(equivalent, List.of(edit(0, 1, "x"))));
@@ -398,7 +416,7 @@ public class TextEditorAccessConformanceTest {
     @Test
     public void observesOnlySettledCurrentSnapshotsAndDisposesQueuedCallbacks() throws Exception {
         TextEditorPane editor = createStandalone("original");
-        var received = new ArrayList<TextDocumentSnapshot>();
+        List<TextDocumentSnapshot> received = new ArrayList<TextDocumentSnapshot>();
         var subscription = new AtomicReference<EditorSubscription>();
         onFxThread(() -> {
             subscription.set(editor.textEditorAccess().observe(snapshot -> {
@@ -407,14 +425,17 @@ public class TextEditorAccessConformanceTest {
                 assertEquals(editor.getText(), snapshot.text());
                 received.add(snapshot);
             }));
+
             return null;
         });
+
         onFxThread(() -> {
             received.clear();
             editor.replaceText("first");
             editor.replaceText("final");
             return null;
         });
+
         onFxThread(() -> {
             assertEquals(1, received.size());
             assertEquals("final", received.getFirst().text());
@@ -425,12 +446,14 @@ public class TextEditorAccessConformanceTest {
             assertTrue(editor.saveNow());
             return null;
         });
+
         onFxThread(() -> {
             assertEquals(1, received.size(), "Unrelated changes and same-revision save must be deduplicated");
             editor.appendText("cancelled callback");
             subscription.get().close();
             return null;
         });
+
         onFxThread(() -> {
             assertEquals(1, received.size());
             subscription.get().close();
@@ -442,7 +465,7 @@ public class TextEditorAccessConformanceTest {
     public void observesExternalReloadAfterItsRevisionSettles() throws Exception {
         TextEditorPane editor = createStandalone("original");
         TextDocumentSnapshot original = onFxThread(() -> editor.textEditorAccess().snapshot());
-        var received = new ArrayList<TextDocumentSnapshot>();
+        List<TextDocumentSnapshot> received = new ArrayList<TextDocumentSnapshot>();
         EditorSubscription subscription = onFxThread(() -> editor.textEditorAccess().observe(received::add));
         try {
             onFxThread(() -> {
@@ -451,6 +474,7 @@ public class TextEditorAccessConformanceTest {
                 invokeExternalChange(editor);
                 return null;
             });
+
             onFxThread(() -> null);
             onFxThread(() -> {
                 assertEquals(1, received.size());
@@ -499,28 +523,30 @@ public class TextEditorAccessConformanceTest {
                 disableDebouncedAutosave(opened.view().activeEditor());
                 return opened;
             });
+
             editor = tab.view().activeEditor();
             access = tab.view().textEditor().orElseThrow();
         } else {
             editor = createStandalone("initial");
             access = editor.textEditorAccess();
         }
-        var received = new ArrayList<TextDocumentSnapshot>();
+
+        List<TextDocumentSnapshot> received = new ArrayList<TextDocumentSnapshot>();
         EditorSubscription subscription = onFxThread(() -> access.observe(received::add));
         try {
             TextDocumentSnapshot draft = onFxThread(() -> {
                 editor.replaceText("draft");
-                var snapshot = access.snapshot();
+                TextDocumentSnapshot snapshot = access.snapshot();
                 Files.writeString(editor.getFilePath(), disk);
                 invokeExternalChange(editor);
-                var process = TextEditorPane.class.getDeclaredMethod("processExternalChange", Path.class);
+                Method process = TextEditorPane.class.getDeclaredMethod("processExternalChange", Path.class);
                 process.setAccessible(true);
                 process.invoke(editor, editor.getFilePath());
                 assertTrue(editor.hasPendingExternalChange());
                 assertTrue(store().state(snapshot.id()).orElseThrow().isStale());
                 received.clear();
                 editor.resolveExternalChange(true);
-                var current = access.snapshot();
+                TextDocumentSnapshot current = access.snapshot();
                 assertEquals(visible, current.text());
                 assertSame(store().current(current.id()).orElseThrow(), current);
                 assertTrue(current.version().isAfter(snapshot.version()));
@@ -534,16 +560,18 @@ public class TextEditorAccessConformanceTest {
                 assertEquals(disk, Files.readString(editor.getFilePath()));
                 return snapshot;
             });
+
             onFxThread(() -> null);
             onFxThread(() -> {
                 assertEquals(1, received.size());
                 assertSame(access.snapshot(), received.getFirst());
                 assertEquals(visible, received.getFirst().text());
                 if (markdown) {
-                    var rendered = MarkdownPreviewPane.class.getDeclaredField("renderedText");
+                    Field rendered = MarkdownPreviewPane.class.getDeclaredField("renderedText");
                     rendered.setAccessible(true);
                     assertEquals(visible, rendered.get(wrapper.get()));
                 }
+
                 assertEquals(EditResult.STALE, access.replace(draft, List.of(edit(0, 1, "stale"))));
                 assertEquals(EditResult.APPLIED,
                     access.replace(access.snapshot(), List.of(edit(0, 8, "changed"))));
@@ -572,6 +600,7 @@ public class TextEditorAccessConformanceTest {
             invokeExternalChange(editor);
             return snapshot;
         });
+
         onFxThread(() -> {
             TextEditorAccess access = editor.textEditorAccess();
             DocumentState before = store().state(overlay.id()).orElseThrow();
@@ -619,6 +648,7 @@ public class TextEditorAccessConformanceTest {
             callsAtClose.set(calls.get());
             return null;
         });
+
         onFxThread(() -> {
             assertEquals(callsAtClose.get(), calls.get());
             return null;
@@ -638,6 +668,7 @@ public class TextEditorAccessConformanceTest {
                 invokeExternalChange(editor);
                 return null;
             });
+
             onFxThread(() -> {
                 editor.close();
                 assertFalse(editor.isEditorClosed());
@@ -645,6 +676,7 @@ public class TextEditorAccessConformanceTest {
                 assertEquals(EditResult.APPLIED, access.replace(access.snapshot(), List.of(edit(0, 5, "retained"))));
                 return null;
             });
+
             onFxThread(() -> {
                 assertEquals("retained", observedText.get());
                 assertEquals("retained", editor.textEditorAccess().snapshot().text());
@@ -677,22 +709,26 @@ public class TextEditorAccessConformanceTest {
                             saveInProgress.countDown();
                             assertTrue(continueSave.await(10, TimeUnit.SECONDS));
                         }
+
                         try {
                             return method.invoke(actualStore, args);
                         } catch (InvocationTargetException exception) {
                             throw exception.getCause();
                         }
                     }));
-                var schedule = TextEditorPane.class.getDeclaredMethod("scheduleSave", TextDocumentSnapshot.class);
+
+                Method schedule = TextEditorPane.class.getDeclaredMethod("scheduleSave", TextDocumentSnapshot.class);
                 schedule.setAccessible(true);
                 schedule.invoke(editor, snapshot);
                 return snapshot;
             });
+
             assertTrue(saveInProgress.await(10, TimeUnit.SECONDS));
             var apply = new FutureTask<>(() -> {
                 applyStarted.countDown();
                 return editor.textEditorAccess().replace(expected, List.of(edit(0, 5, "new overlay")));
             });
+
             Platform.runLater(apply);
             assertTrue(applyStarted.await(10, TimeUnit.SECONDS));
             assertFalse(apply.isDone());
@@ -717,7 +753,7 @@ public class TextEditorAccessConformanceTest {
     public void rechecksClosureAfterWaitingForTheOwnershipLock() throws Exception {
         TextEditorPane editor = createStandalone("original");
         TextDocumentSnapshot expected = onFxThread(() -> editor.textEditorAccess().snapshot());
-        var field = TextEditorPane.class.getDeclaredField("saveLock");
+        Field field = TextEditorPane.class.getDeclaredField("saveLock");
         field.setAccessible(true);
         Object saveLock = field.get(editor);
         var lockHeld = new CountDownLatch(1);
@@ -729,8 +765,10 @@ public class TextEditorAccessConformanceTest {
                 assertTrue(closeNow.await(10, TimeUnit.SECONDS));
                 editor.closeRetainingDraft();
             }
+
             return null;
         });
+
         Thread.ofPlatform().daemon().start(close);
         try {
             assertTrue(lockHeld.await(10, TimeUnit.SECONDS));
@@ -738,6 +776,7 @@ public class TextEditorAccessConformanceTest {
                 applyStarted.countDown();
                 return editor.textEditorAccess().replace(expected, List.of(edit(0, 1, "x")));
             });
+
             Platform.runLater(apply);
             assertTrue(applyStarted.await(10, TimeUnit.SECONDS));
             assertFalse(apply.isDone());
@@ -779,6 +818,7 @@ public class TextEditorAccessConformanceTest {
                 protected void showExternalChangeDialog(String disk) {
                 }
             };
+
             standaloneEditors.add(editor);
             disableDebouncedAutosave(editor);
             store().publishBacking(editor.captureSnapshot());
@@ -793,9 +833,9 @@ public class TextEditorAccessConformanceTest {
 
     private EditorTab openInTabPane(Path file, DetachableTabPane tabs) throws ReflectiveOperationException {
         Class<?> requestType = Class.forName(EditorTabManager.class.getName() + "$TabOpenRequest");
-        var normalRequest = requestType.getDeclaredMethod("normal");
+        Method normalRequest = requestType.getDeclaredMethod("normal");
         normalRequest.setAccessible(true);
-        var open = EditorTabManager.class.getDeclaredMethod("openInTabPane", Project.class, Path.class,
+        Method open = EditorTabManager.class.getDeclaredMethod("openInTabPane", Project.class, Path.class,
             DetachableTabPane.class, requestType);
         open.setAccessible(true);
         return (EditorTab) open.invoke(Services.EDITOR_TAB_MANAGER, project, file, tabs,
@@ -803,19 +843,19 @@ public class TextEditorAccessConformanceTest {
     }
 
     private static void invokeExternalChange(TextEditorPane editor) throws ReflectiveOperationException {
-        var method = TextEditorPane.class.getDeclaredMethod("handleExternalChange", Path.class);
+        Method method = TextEditorPane.class.getDeclaredMethod("handleExternalChange", Path.class);
         method.setAccessible(true);
         method.invoke(editor, editor.getFilePath());
     }
 
     private static void disableDebouncedAutosave(TextEditorPane editor) throws ReflectiveOperationException {
-        var field = TextEditorPane.class.getDeclaredField("changeSubscription");
+        Field field = TextEditorPane.class.getDeclaredField("changeSubscription");
         field.setAccessible(true);
         ((Subscription) field.get(editor)).unsubscribe();
     }
 
     private int storeListenerCount() throws ReflectiveOperationException {
-        var field = DefaultDocumentStore.class.getDeclaredField("changeListeners");
+        Field field = DefaultDocumentStore.class.getDeclaredField("changeListeners");
         field.setAccessible(true);
         return ((List<?>) field.get(store())).size();
     }

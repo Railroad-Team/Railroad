@@ -110,6 +110,7 @@ public class GradleToolsPane extends RRVBox {
                 setButtonsDisabled(false);
             }
         };
+
         var modelListenerRegistered = new AtomicBoolean(true);
         modelService.addListener(modelListener);
         sceneProperty().addListener((_, _, newScene) -> {

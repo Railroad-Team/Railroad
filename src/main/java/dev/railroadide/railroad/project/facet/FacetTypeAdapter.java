@@ -55,9 +55,11 @@ public class FacetTypeAdapter extends TypeAdapter<Facet<?>> {
                 case FIELD_ID :
                     id = in.nextString();
                     break;
+
                 case FIELD_DATA :
                     dataElem = JsonParser.parseReader(in);
                     break;
+
                 default :
                     in.skipValue();
             }

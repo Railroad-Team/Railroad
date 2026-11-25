@@ -16,7 +16,9 @@ public final class GitSettings {
      */
     private Long autoRefreshIntervalMillis;
 
-    /** Creates settings with no automatic refresh interval configured. */
+    /**
+     * Creates settings with no automatic refresh interval configured.
+     */
     public GitSettings() {
     }
 

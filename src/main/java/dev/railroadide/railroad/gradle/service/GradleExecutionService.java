@@ -3,6 +3,8 @@ package dev.railroadide.railroad.gradle.service;
 import dev.railroadide.railroad.gradle.service.task.GradleTaskExecutionHandle;
 import dev.railroadide.railroad.gradle.service.task.GradleTaskExecutionRequest;
 
+import dev.railroadide.railroad.ide.diagnostics.BuildProblems;
+import org.jspecify.annotations.Nullable;
 import java.util.List;
 
 /**
@@ -15,7 +17,18 @@ public interface GradleExecutionService {
      * @param request the Gradle task request to execute
      * @return a handle that can be used to observe and control the running task
      */
-    GradleTaskExecutionHandle runTask(GradleTaskExecutionRequest request);
+    default GradleTaskExecutionHandle runTask(GradleTaskExecutionRequest request) {
+        return runTask(request, null);
+    }
+
+    /**
+     * Begins execution of the provided request and reports its compiler problems.
+     *
+     * @param request the Gradle task request to execute
+     * @param problems report that receives the build's compiler problems, or {@code null} to skip reporting
+     * @return a handle that can be used to observe and control the running task
+     */
+    GradleTaskExecutionHandle runTask(GradleTaskExecutionRequest request, BuildProblems.@Nullable Report problems);
 
     /**
      * Returns handles for all tasks that are currently running through this service.

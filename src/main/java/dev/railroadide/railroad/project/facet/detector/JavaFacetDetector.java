@@ -123,10 +123,11 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
                 for (Plugin plugin : build.getPlugins()) {
                     if ("org.apache.maven.plugins:maven-compiler-plugin"
                         .equals(plugin.getGroupId() + ":" + plugin.getArtifactId())) {
-                        var cfg = (XmlPlexusConfiguration) plugin.getConfiguration();
+                        XmlPlexusConfiguration cfg = (XmlPlexusConfiguration) plugin.getConfiguration();
                         if (src == null && cfg.getChild("source") != null) {
                             src = cfg.getChild("source").getValue();
                         }
+
                         if (tgt == null && cfg.getChild("target") != null) {
                             tgt = cfg.getChild("target").getValue();
                         }
@@ -137,9 +138,11 @@ public class JavaFacetDetector implements FacetDetector<JavaFacetData> {
             }
 
             // fall back defaults
+
             if (src == null) {
                 src = "1.8";
             }
+
             if (tgt == null) {
                 tgt = src;
             }

@@ -13,8 +13,13 @@ import dev.railroadide.railroad.ide.ui.IDEWorkspaceActions;
 import dev.railroadide.railroad.ide.ui.codeeditor.CodeEditorPane;
 import dev.railroadide.railroad.ide.ui.editor.EditorTab;
 import dev.railroadide.railroad.ide.ui.editor.EditorTabManager;
+import dev.railroadide.railroad.ide.ui.navigation.quickopen.GoToClassContributor;
+import dev.railroadide.railroad.ide.ui.navigation.quickopen.GoToContributor;
+import dev.railroadide.railroad.ide.ui.navigation.quickopen.GoToFileContributor;
+import dev.railroadide.railroad.ide.ui.navigation.quickopen.GoToPopup;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.project.OpenProjectDialog;
 import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.settings.keybinds.KeybindData;
 import dev.railroadide.railroad.settings.ui.SettingsPane;
@@ -27,6 +32,7 @@ import dev.railroadide.railroad.window.WindowBuilder;
 import dev.railroadide.railroad.window.WindowManager;
 import javafx.application.Platform;
 import javafx.event.Event;
+import javafx.scene.Node;
 import javafx.scene.input.*;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
@@ -95,7 +101,7 @@ public final class Commands {
         "railroad:open_recent_project",
         "railroad.menu.file.recent_projects",
         context -> context.argument() != null,
-        context -> showOpenProjectDialog(context.argument()),
+        context -> OpenProjectDialog.show(context.argument()),
         List.of(),
         Project.class));
 
@@ -292,7 +298,7 @@ public final class Commands {
         "railroad:save_all",
         "railroad.menu.file.save_all",
         _ -> Services.EDITOR_TAB_MANAGER.hasUnsavedChanges(),
-        _ -> showSaveFailures(Services.EDITOR_TAB_MANAGER.saveAll()),
+        _ -> saveAll(),
         List.of(new KeybindData(
             KeyCode.S,
             new KeyCombination.Modifier[]{
@@ -339,6 +345,31 @@ public final class Commands {
                 MouseButton.FORWARD,
                 new KeyCombination.Modifier[0])),
         IDEWorkspaceActions.class));
+
+    /**
+     * Shows a popup that searches the project's files by name and opens the chosen one.
+     */
+    public static final Command<Void> GO_TO_FILE = registerBasicCommand(
+        "railroad:go_to_file",
+        "railroad.menu.navigate.go_to_file",
+        context -> context.project() != null,
+        context -> showGoTo(context, new GoToFileContributor()),
+        List.of(new KeybindData(
+            KeyCode.N,
+            new KeyCombination.Modifier[]{
+                KeyCombination.SHORTCUT_DOWN,
+                KeyCombination.SHIFT_DOWN
+            })));
+
+    /**
+     * Shows a popup that searches the types declared in the project's sources and opens the chosen declaration.
+     */
+    public static final Command<Void> GO_TO_CLASS = registerBasicCommand(
+        "railroad:go_to_class",
+        "railroad.menu.navigate.go_to_class",
+        context -> context.project() != null,
+        context -> showGoTo(context, new GoToClassContributor()),
+        List.of(new KeybindData(KeyCode.T, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN})));
 
     /**
      * Navigates from the caret of the supplied code editor to its symbol's declaration.
@@ -388,6 +419,16 @@ public final class Commands {
         new KeybindData(KeyCode.ENTER, new KeyCombination.Modifier[]{KeyCombination.ALT_DOWN}));
 
     /**
+     * Shows the parameters of the call at the caret.
+     */
+    public static final Command<CodeEditorPane> PARAMETER_INFO = registerCodeEditorCommand(
+        "railroad:parameter_info",
+        "railroad.menu.code.parameter_info",
+        CodeEditorPane::supportsSignatureHelp,
+        CodeEditorPane::showParameterInfo,
+        new KeybindData(KeyCode.P, new KeyCombination.Modifier[]{KeyCombination.CONTROL_DOWN}));
+
+    /**
      * Resolves the code editor shown by the active editor tab.
      *
      * @return active code editor, or {@code null} when the active tab is not a code editor
@@ -398,6 +439,13 @@ public final class Commands {
             .filter(CodeEditorPane.class::isInstance)
             .map(CodeEditorPane.class::cast)
             .orElse(null);
+    }
+
+    private static <T> void showGoTo(CommandContext<Void> context, GoToContributor<T> contributor) {
+        Node source = context.source() != null && context.source().getScene() != null
+            ? context.source()
+            : Railroad.WINDOW_MANAGER.getPrimaryStage().getScene().getRoot();
+        GoToPopup.show(source, context.project(), contributor);
     }
 
     private static Command<CodeEditorPane> registerCodeEditorCommand(
@@ -875,6 +923,7 @@ public final class Commands {
                 shortcuts,
                 IDEWorkspaceActions.class)));
         }
+
         return Map.copyOf(commands);
     }
 
@@ -901,6 +950,7 @@ public final class Commands {
                 List.of(),
                 IDEWorkspaceActions.class)));
         }
+
         return Map.copyOf(commands);
     }
 
@@ -915,6 +965,7 @@ public final class Commands {
                 List.of(),
                 IDEWorkspaceActions.class)));
         }
+
         return Map.copyOf(commands);
     }
 
@@ -963,8 +1014,10 @@ public final class Commands {
     public static Command<Void> viewMode(WorkspaceMode mode) {
         if (mode == WorkspaceModes.CODE)
             return VIEW_MODE_CODE;
+
         if (mode == WorkspaceModes.GIT)
             return VIEW_MODE_GIT;
+
         return null;
     }
 
@@ -1005,32 +1058,7 @@ public final class Commands {
             return;
 
         Project createdProject = Railroad.PROJECT_MANAGER.newProject(new RailroadProject(directory.toPath()));
-        showOpenProjectDialog(createdProject);
-    }
-
-    private static void showOpenProjectDialog(Project project) {
-        var thisWindowButton = new RRButton("railroad.recent_projects.dialog.this_window_button");
-        var newWindowButton = new RRButton("railroad.recent_projects.dialog.new_window_button");
-        var cancelButton = new RRButton("railroad.recent_projects.dialog.cancel_button");
-
-        Stage dialog = WindowBuilder.createDialog("railroad.recent_projects.dialog.title", new DialogBuilder()
-            .title("railroad.recent_projects.dialog.title")
-            .content(L18n.localize("railroad.recent_projects.dialog.description", project.getAlias()), false)
-            .buttons(thisWindowButton, newWindowButton, cancelButton));
-
-        thisWindowButton.setOnAction(_ -> {
-            dialog.close();
-            project.open(Railroad.WINDOW_MANAGER.getPrimaryStage());
-        });
-        newWindowButton.setOnAction(_ -> {
-            try {
-                RailroadProcessLauncher.openProject(project.getPath());
-                dialog.close();
-            } catch (IOException exception) {
-                Railroad.LOGGER.error("An error occurred trying to start a new Railroad process", exception);
-            }
-        });
-        cancelButton.setOnAction(_ -> dialog.close());
+        OpenProjectDialog.show(createdProject);
     }
 
     private static void exitApplication() {
@@ -1043,7 +1071,7 @@ public final class Commands {
     }
 
     private static void saveActiveAs() {
-        var activeTab = Services.EDITOR_TAB_MANAGER.activeTab().orElse(null);
+        EditorTab activeTab = Services.EDITOR_TAB_MANAGER.activeTab().orElse(null);
         if (activeTab == null || activeTab.view().activeEditor() == null)
             return;
 
@@ -1053,6 +1081,7 @@ public final class Commands {
         if (parent != null && parent.toFile().isDirectory()) {
             fileChooser.setInitialDirectory(parent.toFile());
         }
+
         fileChooser.setInitialFileName(activeTab.path().getFileName().toString());
         File targetFile = fileChooser.showSaveDialog(Railroad.WINDOW_MANAGER.getPrimaryStage());
         if (targetFile == null)
@@ -1061,6 +1090,17 @@ public final class Commands {
         if (!Services.EDITOR_TAB_MANAGER.saveAsActive(targetFile.toPath())) {
             showSaveFailures(new EditorTabManager.SaveResult(List.of(activeTab)));
         }
+    }
+
+    /**
+     * Saves dirty editors and reports any files that prevented an operation from continuing.
+     *
+     * @return whether every dirty editor was saved
+     */
+    public static boolean saveAll() {
+        EditorTabManager.SaveResult result = Services.EDITOR_TAB_MANAGER.saveAll();
+        showSaveFailures(result);
+        return result.successful();
     }
 
     private static void showSaveFailures(EditorTabManager.SaveResult result) {
@@ -1089,7 +1129,7 @@ public final class Commands {
     }
 
     private static void copyToClipboard(String text) {
-        var content = new ClipboardContent();
+        ClipboardContent content = new ClipboardContent();
         content.putString(text);
         Clipboard.getSystemClipboard().setContent(content);
     }

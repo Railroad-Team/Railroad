@@ -194,6 +194,7 @@ public final class JdiDebugSession {
             };
 
             // STEP_LINE means next different source line
+
             StepRequest request = requests.createStepRequest(thread, StepRequest.STEP_LINE, depth);
             addStepFilters(request);
             request.addCountFilter(1);
@@ -330,6 +331,7 @@ public final class JdiDebugSession {
         return submitTerminal(() -> {
             if (state == DebugSessionState.TERMINATED)
                 return null;
+
             eventReaderRunning = false;
 
             if (eventReaderThread != null) {
@@ -481,6 +483,7 @@ public final class JdiDebugSession {
         if (context.eventSet() != null) {
             context.eventSet().resume();
         }
+
         if (context.explicitVmSuspend()) {
             vm.resume();
         }
@@ -489,6 +492,7 @@ public final class JdiDebugSession {
     }
 
     // TODO: configurable
+
     private void addStepFilters(StepRequest request) {
         request.addClassExclusionFilter("java.*");
         request.addClassExclusionFilter("javax.*");
@@ -538,6 +542,7 @@ public final class JdiDebugSession {
                     handleDisconnect();
                     return null;
                 });
+
                 return;
             } catch (RejectedExecutionException _) {
                 return;
@@ -548,6 +553,7 @@ public final class JdiDebugSession {
     private void handleEventSet(EventSet eventSet) {
         if (state == DebugSessionState.TERMINATED)
             return;
+
         boolean terminate = false;
         ThreadReference stopThread = null;
         DebugStopReason stopReason = null;
@@ -560,6 +566,7 @@ public final class JdiDebugSession {
                         stopThread = breakpointEvent.thread();
                         stopReason = DebugStopReason.BREAKPOINT;
                     }
+
                     case StepEvent stepEvent -> {
                         cleanupStepEvent(stepEvent);
 
@@ -568,11 +575,13 @@ public final class JdiDebugSession {
                             stopReason = DebugStopReason.STEP;
                         }
                     }
+
                     case VMStartEvent _ -> {
                         if (state == DebugSessionState.CONFIGURING) {
                             changeState(DebugSessionState.RUNNING);
                         }
                     }
+
                     case VMDeathEvent _,VMDisconnectEvent _ -> terminate = true;
                     case null, default -> {
                     }
@@ -678,15 +687,18 @@ public final class JdiDebugSession {
         } catch (RejectedExecutionException failure) {
             future.completeExceptionally(failure);
         }
+
         return future;
     }
 
     private CompletableFuture<Void> submitTerminal(Callable<Void> task) {
         if (state == DebugSessionState.TERMINATED)
             return CompletableFuture.completedFuture(null);
+
         return submit(task).exceptionallyCompose(failure -> {
             if (failure instanceof RejectedExecutionException && state == DebugSessionState.TERMINATED)
                 return CompletableFuture.completedFuture(null);
+
             return CompletableFuture.failedFuture(failure);
         });
     }

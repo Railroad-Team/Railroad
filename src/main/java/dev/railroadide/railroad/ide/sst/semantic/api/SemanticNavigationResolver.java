@@ -1,12 +1,7 @@
 package dev.railroadide.railroad.ide.sst.semantic.api;
 
 import dev.railroadide.railroad.ide.sst.document.api.*;
-import dev.railroadide.railroad.ide.sst.graph.api.EdgeKindId;
-import dev.railroadide.railroad.ide.sst.graph.api.ReferenceKindId;
-import dev.railroadide.railroad.ide.sst.graph.api.ReferenceOccurrence;
-import dev.railroadide.railroad.ide.sst.graph.api.SemanticIndexShard;
-import dev.railroadide.railroad.ide.sst.graph.api.SymbolEdge;
-import dev.railroadide.railroad.ide.sst.graph.api.WorkspaceSymbolGraph;
+import dev.railroadide.railroad.ide.sst.graph.api.*;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 
 import java.util.*;
@@ -168,8 +163,31 @@ public final class SemanticNavigationResolver {
         WorkspaceSnapshot workspace,
         SymbolId symbolId
     ) {
+        return usagesOf(graph.referencesTo(symbolId), workspace);
+    }
+
+    /**
+     * Collects usages from a single resolved file using the same range and revision checks as a graph query.
+     *
+     * @param shard captured facts of one file
+     * @param workspace workspace capture the facts were built from
+     * @param symbolId symbol whose usages are queried
+     * @return usages ordered by document address and offset
+     */
+    public static List<Location.TextLocation> usagesOf(
+        SemanticIndexShard shard,
+        WorkspaceSnapshot workspace,
+        SymbolId symbolId
+    ) {
+        return usagesOf(shard.references().stream().filter(ref -> ref.target().equals(symbolId)).toList(), workspace);
+    }
+
+    private static List<Location.TextLocation> usagesOf(
+        List<ReferenceOccurrence> references,
+        WorkspaceSnapshot workspace
+    ) {
         Map<Location.TextLocation, TextDocumentSnapshot> usages = new LinkedHashMap<>();
-        for (ReferenceOccurrence reference : graph.referencesTo(symbolId)) {
+        for (ReferenceOccurrence reference : references) {
             if (reference.kind().equals(ReferenceKindId.DECLARATION)
                 || !(reference.location() instanceof Location.TextLocation location))
                 continue;
@@ -250,8 +268,19 @@ public final class SemanticNavigationResolver {
         TextDocumentSnapshot snapshot,
         int offset
     ) {
-        SemanticIndexShard shard = graph.shards().get(snapshot.id());
-        if (shard == null
+        return graph.shard(snapshot.id()).flatMap(shard -> symbolAt(shard, snapshot, offset));
+    }
+
+    /**
+     * Resolves the symbol at an offset using only the source file's captured facts.
+     *
+     * @param shard captured facts of the file
+     * @param snapshot captured revision containing the offset
+     * @param offset zero-based UTF-16 offset
+     * @return resolved symbol, or an empty optional when the facts belong to another revision or are ambiguous
+     */
+    public static Optional<SymbolId> symbolAt(SemanticIndexShard shard, TextDocumentSnapshot snapshot, int offset) {
+        if (!shard.documentId().equals(snapshot.id())
             || !shard.documentVersion().equals(snapshot.version())
             || !shard.uri().equals(snapshot.uri()))
             return Optional.empty();

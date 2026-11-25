@@ -106,6 +106,7 @@ public class RmiregistryCLIBuilder implements CLIBuilder<Process, RmiregistryCLI
     public RmiregistryCLIBuilder port(int port) {
         if (port <= 0 || port > 65535)
             throw new IllegalArgumentException("Port must be between 1 and 65535");
+
         this.port = port;
         return this;
     }

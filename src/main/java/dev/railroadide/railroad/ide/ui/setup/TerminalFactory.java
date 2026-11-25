@@ -26,6 +26,8 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import com.google.gson.JsonElement;
+import javafx.scene.layout.Background;
 
 /**
  * Creates configured TerminalFX instances pointing at a specific project path.
@@ -59,7 +61,7 @@ public final class TerminalFactory {
      * @return registered terminal control
      */
     public static Terminal create(Path path) {
-        var terminalConfig = createTerminalConfig();
+        TerminalConfig terminalConfig = createTerminalConfig();
         var terminalBuilder = new TerminalBuilder(terminalConfig);
         terminalBuilder.setTerminalPath(path);
         Terminal terminal = terminalBuilder.newTerminal().getTerminal();
@@ -113,11 +115,12 @@ public final class TerminalFactory {
 
     private static TerminalConfig createTerminalConfig(Terminal terminal) {
         TerminalConfig config = createTerminalConfig();
-        var background = terminal.getBackground();
+        Background background = terminal.getBackground();
         if (background != null && !background.getFills().isEmpty()
             && background.getFills().getFirst().getFill() instanceof Color color) {
             config.setBackgroundColor(color);
         }
+
         return config;
     }
 
@@ -131,6 +134,7 @@ public final class TerminalFactory {
                 }
             }
         });
+
         terminal.getChildren().forEach(child -> insetTerminalViewport(terminal, child));
         var ready = new AtomicBoolean();
         // CSS is the source of truth for both the surrounding pane and the WebView terminal.
@@ -140,6 +144,7 @@ public final class TerminalFactory {
                 terminal.updatePrefs(config);
             }
         });
+
         terminal.onTerminalFxReady(() -> Platform.runLater(() -> {
             if (!OPEN_TERMINALS.contains(terminal))
                 return;
@@ -367,7 +372,7 @@ public final class TerminalFactory {
         if (defaultProfileId == null || !profiles.has("list") || !profiles.get("list").isJsonArray())
             return Optional.empty();
 
-        for (var element : profiles.getAsJsonArray("list")) {
+        for (JsonElement element : profiles.getAsJsonArray("list")) {
             if (!element.isJsonObject())
                 continue;
 

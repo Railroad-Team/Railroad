@@ -17,6 +17,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.Objects;
+import dev.railroadide.railroad.ide.sst.provider.api.LanguageSession;
 
 /**
  * Collects a language identifier and optional language services for a code editor.
@@ -147,7 +148,7 @@ public record CodeEditorConfig(
         Objects.requireNonNull(documentUri, "documentUri");
         Objects.requireNonNull(languageSupport, "languageSupport");
 
-        var session = LanguageSupportRegistry.runtime().session(project, languageSupport.id(), "");
+        LanguageSession session = LanguageSupportRegistry.runtime().session(project, languageSupport.id(), "");
         CompletionProvider completionProvider = session.capability(SstCapabilities.COMPLETION).orElse(null);
         DiagnosticsProvider<?> diagnosticsProvider = session.capability(SstCapabilities.DIAGNOSTICS).orElse(null);
         SignatureHelpProvider signatureHelpProvider = session.capability(SstCapabilities.SIGNATURE_HELP).orElse(null);

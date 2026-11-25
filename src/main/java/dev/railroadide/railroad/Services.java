@@ -62,7 +62,7 @@ public class Services {
     };
 
     private static String loadApplicationVersion() {
-        var properties = new Properties();
+        Properties properties = new Properties();
         try (InputStream input = Services.class.getResourceAsStream("/railroad-version.properties")) {
             if (input != null) {
                 properties.load(input);

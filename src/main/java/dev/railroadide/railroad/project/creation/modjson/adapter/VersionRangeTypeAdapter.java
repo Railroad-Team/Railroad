@@ -42,7 +42,6 @@ public class VersionRangeTypeAdapter extends TypeAdapter<VersionRange> {
 
             in.endArray();
             return new VersionRange(list);
-
         } else if (token == JsonToken.NULL) {
             in.nextNull();
             return null;

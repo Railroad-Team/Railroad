@@ -131,6 +131,7 @@ public class RRTextField extends TextField implements TextFieldControl {
         } else {
             prefixIcon = null;
         }
+
         updateIcons();
     }
 

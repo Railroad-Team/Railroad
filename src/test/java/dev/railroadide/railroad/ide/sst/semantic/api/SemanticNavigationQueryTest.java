@@ -30,8 +30,10 @@ public class SemanticNavigationQueryTest {
                 List.of(new SymbolEdge(LEAF, MIDDLE, EdgeKindId.OVERRIDE),
                     new SymbolEdge(BASE, LEAF, EdgeKindId.SUBTYPE),
                     new SymbolEdge(CALLER, BASE, EdgeKindId.CALL)))));
-        var targets = SemanticNavigationResolver.implementationsOf(graph, workspace(first, second), BASE, () -> {
-        });
+        List<DefinitionTarget> targets = SemanticNavigationResolver.implementationsOf(graph, workspace(first, second),
+            BASE, () -> {
+            });
+
         assertEquals(List.of(first.id(), second.id()),
             targets.stream().map(target -> target.location().documentId()).toList());
         assertEquals(List.of("Middle", "Leaf"), targets.stream()
@@ -68,7 +70,8 @@ public class SemanticNavigationQueryTest {
             shard(first, List.of(declaration(FIELD, first, "field")), List.of(
                 reference(FIELD, ReferenceKindId.DECLARATION, first, declaration, declaration + 5),
                 reference(FIELD, ReferenceKindId.DOCUMENTATION, first, 0, 5)), List.of())));
-        var usages = SemanticNavigationResolver.usagesOf(graph, workspace(first, second), FIELD);
+        List<Location.TextLocation> usages = SemanticNavigationResolver.usagesOf(graph, workspace(first, second),
+            FIELD);
         assertEquals(List.of(first.id(), second.id()), usages.stream().map(Location::documentId).toList());
         assertEquals(List.of(0, write), usages.stream().map(usage -> usage.range().start).toList());
     }
@@ -89,12 +92,13 @@ public class SemanticNavigationQueryTest {
         var decompiled = new TextDocumentSnapshot(DocumentId.create(), DocumentUri.fromPath(Path.of("A.class.java")),
             DocumentVersion.initial(), "java", new DocumentOrigin(BackingKind.FILE, ProvenanceKind.DECOMPILED),
             "class Leaf {}", StandardCharsets.UTF_8);
-        var original = document("Z.java", "class Leaf {}");
+        TextDocumentSnapshot original = document("Z.java", "class Leaf {}");
         var descriptor = new SymbolDescriptor(LEAF, new SymbolKindId("test:type"), "Leaf", null, null, null, null,
             SymbolMetadata.EMPTY, List.of(view(decompiled, "Leaf"), view(original, "Leaf")));
-        var index = document("Index.java", "");
+        TextDocumentSnapshot index = document("Index.java", "");
         var graph = WorkspaceSymbolGraph.of(List.of(shard(index, List.of(descriptor), List.of(), List.of())));
-        var targets = SemanticNavigationResolver.definitionsOf(graph, workspace(decompiled, original, index), LEAF);
+        List<DefinitionTarget> targets = SemanticNavigationResolver.definitionsOf(graph,
+            workspace(decompiled, original, index), LEAF);
         assertEquals(List.of(original.id(), decompiled.id()),
             targets.stream().map(target -> target.snapshot().id()).toList());
     }
@@ -154,9 +158,10 @@ public class SemanticNavigationQueryTest {
 
     private static WorkspaceSnapshot workspace(TextDocumentSnapshot... documents) {
         var store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()));
-        for (var document : documents) {
+        for (TextDocumentSnapshot document : documents) {
             store.publishBacking(document);
         }
+
         return store.capture();
     }
 }

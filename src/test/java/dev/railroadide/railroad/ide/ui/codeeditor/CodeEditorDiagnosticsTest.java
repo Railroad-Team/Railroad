@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Collection;
 import org.fxmisc.richtext.model.StyleSpans;
 import org.fxmisc.richtext.model.StyleSpansBuilder;
+import java.lang.reflect.Method;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,19 +23,25 @@ public class CodeEditorDiagnosticsTest {
         var version = new DocumentVersion(3);
         var snapshot = new TextDocumentSnapshot(id, DocumentUri.inMemory(id), version,
             "java", "Hello\nWorld", StandardCharsets.UTF_8);
-        var firstLine = diagnostic(Location.TextLocation.from(snapshot, 0, 5));
-        var eof = diagnostic(Location.TextLocation.from(snapshot, 11, 11));
-        var otherDocument = diagnostic(new Location.TextLocation(DocumentId.create(), version,
+        TextEditorDiagnostic firstLine = diagnostic(Location.TextLocation.from(snapshot, 0, 5));
+        TextEditorDiagnostic eof = diagnostic(Location.TextLocation.from(snapshot, 11, 11));
+        TextEditorDiagnostic otherDocument = diagnostic(new Location.TextLocation(DocumentId.create(), version,
             new TextRange(0, 5), 0, 0));
-        var stale = diagnostic(new Location.TextLocation(id, new DocumentVersion(2), new TextRange(0, 5), 0, 0));
-        var future = diagnostic(new Location.TextLocation(id, version.next(), new TextRange(0, 5), 0, 0));
-        var wrongLine = diagnostic(new Location.TextLocation(id, version, new TextRange(0, 5), 1, 0));
-        var wrongColumn = diagnostic(new Location.TextLocation(id, version, new TextRange(0, 5), 0, 1));
-        var invalidEnd = diagnostic(new Location.TextLocation(id, version, new TextRange(0, 12), 0, 0));
-        var invalidStart = diagnostic(new Location.TextLocation(id, version, new TextRange(12, 12), 1, 6));
+        TextEditorDiagnostic stale = diagnostic(
+            new Location.TextLocation(id, new DocumentVersion(2), new TextRange(0, 5), 0, 0));
+        TextEditorDiagnostic future = diagnostic(
+            new Location.TextLocation(id, version.next(), new TextRange(0, 5), 0, 0));
+        TextEditorDiagnostic wrongLine = diagnostic(new Location.TextLocation(id, version, new TextRange(0, 5), 1, 0));
+        TextEditorDiagnostic wrongColumn = diagnostic(
+            new Location.TextLocation(id, version, new TextRange(0, 5), 0, 1));
+        TextEditorDiagnostic invalidEnd = diagnostic(
+            new Location.TextLocation(id, version, new TextRange(0, 12), 0, 0));
+        TextEditorDiagnostic invalidStart = diagnostic(
+            new Location.TextLocation(id, version, new TextRange(12, 12), 1, 6));
 
-        var input = new ArrayList<>(Arrays.asList(otherDocument, stale, firstLine, future, wrongLine,
-            wrongColumn, invalidEnd, invalidStart, null, eof));
+        List<TextEditorDiagnostic> input = new ArrayList<>(
+            Arrays.asList(otherDocument, stale, firstLine, future, wrongLine,
+                wrongColumn, invalidEnd, invalidStart, null, eof));
         List<TextEditorDiagnostic> accepted = CodeEditorPane.validatedDiagnostics(input, snapshot);
 
         assertEquals(List.of(firstLine, eof), accepted);
@@ -47,7 +54,7 @@ public class CodeEditorDiagnosticsTest {
         var id = DocumentId.create();
         var version = DocumentVersion.initial();
         var snapshot = new BinaryDocumentSnapshot(id, DocumentUri.inMemory(id), version, "binary", new byte[5]);
-        var diagnostic = diagnostic(new Location.TextLocation(id, version, new TextRange(0, 5), 0, 0));
+        TextEditorDiagnostic diagnostic = diagnostic(new Location.TextLocation(id, version, new TextRange(0, 5), 0, 0));
 
         assertEquals(List.of(), CodeEditorPane.validatedDiagnostics(List.of(diagnostic), snapshot));
     }
@@ -66,13 +73,14 @@ public class CodeEditorDiagnosticsTest {
         var id = DocumentId.create();
         var snapshot = new TextDocumentSnapshot(id, DocumentUri.inMemory(id), DocumentVersion.initial(),
             "sample:text", "value", StandardCharsets.UTF_8);
-        var base = new StyleSpansBuilder<Collection<String>>().add(List.of("identifier"), 5).create();
-        var merge = CodeEditorPane.class.getDeclaredMethod("mergeDiagnosticStyles", StyleSpans.class, List.class);
+        StyleSpans<Collection<String>> base = new StyleSpansBuilder<Collection<String>>().add(List.of("identifier"), 5)
+            .create();
+        Method merge = CodeEditorPane.class.getDeclaredMethod("mergeDiagnosticStyles", StyleSpans.class, List.class);
         merge.setAccessible(true);
-        for (var severity : List.of(DiagnosticSeverity.INFORMATION, DiagnosticSeverity.HINT)) {
+        for (DiagnosticSeverity severity : List.of(DiagnosticSeverity.INFORMATION, DiagnosticSeverity.HINT)) {
             var diagnostic = new TextEditorDiagnostic(Location.TextLocation.from(snapshot, 0, 5), severity,
                 "INFO", "Information");
-            var styled = (StyleSpans<?>) merge.invoke(null, base, List.of(diagnostic));
+            StyleSpans<?> styled = (StyleSpans<?>) merge.invoke(null, base, List.of(diagnostic));
             assertEquals(List.of("identifier"), styled.getStyleSpan(0).getStyle());
         }
     }

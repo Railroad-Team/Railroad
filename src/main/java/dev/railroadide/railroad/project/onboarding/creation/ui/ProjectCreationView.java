@@ -76,7 +76,7 @@ public class ProjectCreationView extends RRBorderPane {
         card.setMinHeight(Region.USE_PREF_SIZE);
         card.getStyleClass().add("project-creation-card");
 
-        var title = titleLabel;
+        LocalizedLabel title = titleLabel;
         title.getStyleClass().add("project-creation-title");
 
         var subtitle = new LocalizedLabel(
@@ -175,9 +175,10 @@ public class ProjectCreationView extends RRBorderPane {
 
         // Task message → task chip
         taskChip.textProperty().bind(Bindings.createStringBinding(() -> {
-            var key = service.getMessage();
+            String key = service.getMessage();
             if (key == null || key.isBlank())
                 return L18n.localize("railroad.project.creation.status.task");
+
             return key.startsWith("railroad.") ? L18n.localize(key) : key;
         }, service.messageProperty()));
 
@@ -189,10 +190,12 @@ public class ProjectCreationView extends RRBorderPane {
                 onSuccess.run();
             }
         });
+
         service.setOnCancelled(_ -> {
             stopTicker();
             ProjectCreationPane.returnToWelcome();
         });
+
         service.setOnFailed(_ -> {
             stopTicker();
             titleLabel.setKey("railroad.project.creation.error.title");
@@ -212,6 +215,7 @@ public class ProjectCreationView extends RRBorderPane {
         });
 
         // Cancel
+
         cancelBtn.disableProperty().bind(service.runningProperty().not());
         cancelBtn.setOnAction(_ -> {
             if (onCancel != null) {
@@ -225,10 +229,12 @@ public class ProjectCreationView extends RRBorderPane {
         if (elapsedTicker != null) {
             elapsedTicker.stop();
         }
+
         elapsedTicker = new Timeline(new KeyFrame(Duration.seconds(1), _ -> {
-            var start = startInstant.get();
+            Instant start = startInstant.get();
             if (start == null)
                 return;
+
             long secs = java.time.Duration.between(start, Instant.now()).getSeconds();
             long h = secs / 3600;
             secs %= 3600;
@@ -239,6 +245,7 @@ public class ProjectCreationView extends RRBorderPane {
                 : String.format("%02d:%02d", m, secs);
             timeChip.setText(txt);
         }));
+
         elapsedTicker.setCycleCount(Timeline.INDEFINITE);
         if (getScene() != null) {
             elapsedTicker.playFromStart();
@@ -256,5 +263,4 @@ public class ProjectCreationView extends RRBorderPane {
         l.getStyleClass().add("rr-chip");
         return l;
     }
-
 }

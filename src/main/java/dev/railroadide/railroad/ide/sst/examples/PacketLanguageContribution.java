@@ -8,8 +8,11 @@ import dev.railroadide.railroad.ide.sst.request.api.FeatureResult;
 import dev.railroadide.railroad.ide.sst.semantic.api.SimpleSymbol;
 import java.util.List;
 import java.util.Set;
+import java.nio.ByteBuffer;
 
-/** Minimal binary provider: a packet begins with the two ASCII bytes "RR". */
+/**
+ * Minimal binary provider: a packet begins with the two ASCII bytes "RR".
+ */
 public final class PacketLanguageContribution implements LanguageContribution {
     /**
      * Namespaced identity of the example binary packet language.
@@ -45,18 +48,20 @@ public final class PacketLanguageContribution implements LanguageContribution {
     public LanguageSession openSession(LanguageSessionContext context) {
         DiagnosticsProvider<BinaryEditorDiagnostic> diagnostics = snapshot -> {
             BinaryDocumentSnapshot binary = requireBinary(snapshot);
-            var bytes = binary.bytes();
+            ByteBuffer bytes = binary.bytes();
             if (bytes.remaining() >= 2 && bytes.get(0) == 'R' && bytes.get(1) == 'R')
                 return List.of();
+
             return List.of(new BinaryEditorDiagnostic(Location.BinaryLocation.from(binary, 0,
                 Math.min(2, bytes.remaining())), DiagnosticSeverity.ERROR, "packet.header",
                 "Expected RR packet header", ID.value(), DiagnosticOrigin.SYNTAX, Set.of(), List.of(), null));
         };
+
         return new LanguageSession(CapabilityRegistry.builder()
             .add(SstCapabilities.DIAGNOSTICS, diagnostics)
             .add(SstCapabilities.INDEX_EXTRACTION, request -> {
                 request.checkActive();
-                var binary = requireBinary(request.documentSnapshot());
+                BinaryDocumentSnapshot binary = requireBinary(request.documentSnapshot());
                 var symbol = new SimpleSymbol(() -> "example:packet.header", "header", null, null);
                 var location = Location.BinaryLocation.from(binary, 0, Math.min(2, binary.bytes().remaining()));
                 request.checkActive();
@@ -67,6 +72,7 @@ public final class PacketLanguageContribution implements LanguageContribution {
     private static BinaryDocumentSnapshot requireBinary(DocumentSnapshot snapshot) {
         if (!(snapshot instanceof BinaryDocumentSnapshot binary) || !snapshot.languageId().equals(ID.value()))
             throw new IllegalArgumentException("Packet requires a packet binary snapshot");
+
         return binary;
     }
 }

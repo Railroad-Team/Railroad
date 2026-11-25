@@ -9,17 +9,43 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.List;
+import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import dev.railroadide.railroad.ide.classparser.stub.ClassStub;
+import dev.railroadide.railroad.ide.sst.project.BinaryStubPublication;
+import com.google.gson.Gson;
+import dev.railroadide.railroad.ide.classparser.stub.MethodStub;
+import java.util.zip.ZipEntry;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ClassStubParserTest {
     @Test
-    public void parsesStandaloneGenericMethodParameterTypes() throws Exception {
-        var listStub = parseRuntimeClass("java/util/List.class");
+    public void skippingMethodBodiesKeepsEveryDeclaration() throws Exception {
+        for (Class<?> type : List.of(ClassReader.class, Gson.class)) {
+            Path archive = Path.of(type.getProtectionDomain().getCodeSource().getLocation().toURI());
+            try (var jar = new JarFile(archive.toFile())) {
+                for (JarEntry entry : Collections.list(jar.entries())) {
+                    if (!entry.getName().endsWith(".class") || entry.getName().endsWith("module-info.class"))
+                        continue;
 
-        var addElement = listStub.methods().stream()
+                    byte[] bytes = jar.getInputStream(entry).readAllBytes();
+                    var withBodies = new ClassStubVisitor();
+                    new ClassReader(bytes).accept(withBodies, ClassReader.EXPAND_FRAMES);
+
+                    assertEquals(BinaryStubPublication.copy(withBodies.createClassStub()),
+                        BinaryStubPublication.copy(ClassStubParser.parse(new ClassReader(bytes))), entry.getName());
+                }
+            }
+        }
+    }
+
+    @Test
+    public void parsesStandaloneGenericMethodParameterTypes() throws Exception {
+        ClassStub listStub = parseRuntimeClass("java/util/List.class");
+
+        MethodStub addElement = listStub.methods().stream()
             .filter(method -> method.name().equals("add"))
             .filter(method -> method.parameters().size() == 1)
             .findFirst()
@@ -32,7 +58,7 @@ public class ClassStubParserTest {
 
     @Test
     public void parsesGenericInterfaceTypeArguments() throws Exception {
-        var listStub = parseRuntimeClass("java/util/List.class");
+        ClassStub listStub = parseRuntimeClass("java/util/List.class");
 
         assertTrue(listStub.interfaces().stream()
             .anyMatch(type -> type instanceof Type.ClassType classType
@@ -44,8 +70,8 @@ public class ClassStubParserTest {
 
     @Test
     public void preservesUnboundedWildcardTypeArguments() throws Exception {
-        var collectorsStub = parseRuntimeClass("java/util/stream/Collectors.class");
-        var toList = collectorsStub.methods().stream()
+        ClassStub collectorsStub = parseRuntimeClass("java/util/stream/Collectors.class");
+        MethodStub toList = collectorsStub.methods().stream()
             .filter(method -> method.name().equals("toList"))
             .filter(method -> method.parameters().isEmpty())
             .findFirst()
@@ -61,8 +87,8 @@ public class ClassStubParserTest {
 
     @Test
     public void preservesGenericThrownTypeVariables() throws Exception {
-        var optionalStub = parseRuntimeClass("java/util/Optional.class");
-        var orElseThrow = optionalStub.methods().stream()
+        ClassStub optionalStub = parseRuntimeClass("java/util/Optional.class");
+        MethodStub orElseThrow = optionalStub.methods().stream()
             .filter(method -> method.name().equals("orElseThrow"))
             .filter(method -> method.parameters().size() == 1)
             .findFirst()
@@ -74,13 +100,12 @@ public class ClassStubParserTest {
         assertEquals("X", thrown.name());
     }
 
-    private static ClassStub parseRuntimeClass(String classFile)
-        throws Exception {
+    private static ClassStub parseRuntimeClass(String classFile) throws Exception {
         Path javaHome = Path.of(System.getProperty("java.home")).toAbsolutePath().normalize();
         Path jmod = javaHome.resolve("jmods").resolve("java.base.jmod");
         if (Files.isRegularFile(jmod)) {
             try (var jar = new JarFile(jmod.toFile())) {
-                var entry = jar.getEntry("classes/" + classFile);
+                ZipEntry entry = jar.getEntry("classes/" + classFile);
                 return ClassStubParser.parse(new ClassReader(jar.getInputStream(entry)));
             }
         }

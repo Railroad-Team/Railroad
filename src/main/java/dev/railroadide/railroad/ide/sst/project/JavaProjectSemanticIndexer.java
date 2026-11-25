@@ -1,5 +1,6 @@
 package dev.railroadide.railroad.ide.sst.project;
 
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -106,7 +107,10 @@ public class JavaProjectSemanticIndexer {
                 files.add(sourceFile);
             }
         }
-        var indexed = new JavaProjectSemanticIndex.SourceFileIndex[files.size()];
+
+        JavaProjectSemanticIndex.SourceFileIndex[] indexed = new JavaProjectSemanticIndex.SourceFileIndex[files.size()];
+        Runnable processed = ActivityProgress.current().count("railroad.activity.files", ActivityProgress.Unit.COUNT,
+            files.size());
         var next = new AtomicInteger();
         var stopped = new AtomicBoolean();
         var failure = new AtomicReference<Throwable>();
@@ -115,11 +119,13 @@ public class JavaProjectSemanticIndexer {
             if (stopped.get())
                 throw new CancellationException("Java source indexing stopped");
         };
+
         Runnable ownerCheck = () -> {
             activityCheck.run();
             ActivityCheckpoint.checkInterrupted();
             rethrowFailure(failure.get());
         };
+
         List<Thread> helpers = new ArrayList<>(MAXIMUM_HELPERS);
         try {
             int helperCount = Math.min(MAXIMUM_HELPERS, files.size() - 1);
@@ -127,7 +133,7 @@ public class JavaProjectSemanticIndexer {
                 try {
                     Thread helper = Thread.ofVirtual().name("railroad-java-source-index").unstarted(() -> {
                         try {
-                            extractFiles(files, indexed, next, helperCheck);
+                            extractFiles(files, indexed, next, helperCheck, processed);
                         } catch (Throwable exception) {
                             failure.compareAndSet(null, exception);
                             stopped.set(true);
@@ -135,6 +141,7 @@ public class JavaProjectSemanticIndexer {
                             HELPER_PERMITS.release();
                         }
                     });
+
                     helpers.add(helper);
                     helper.start();
                 } catch (RuntimeException | Error exception) {
@@ -142,19 +149,23 @@ public class JavaProjectSemanticIndexer {
                     throw exception;
                 }
             }
-            extractFiles(files, indexed, next, ownerCheck);
+
+            extractFiles(files, indexed, next, ownerCheck, processed);
             for (Thread helper : helpers) {
                 while (helper.isAlive()) {
                     ownerCheck.run();
                     helper.join(10);
                 }
             }
+
             ownerCheck.run();
+            ActivityProgress.current().indeterminate("railroad.activity.finalizing");
             JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
             for (JavaProjectSemanticIndex.SourceFileIndex file : indexed) {
                 ownerCheck.run();
                 builder.putFile(file);
             }
+
             JavaProjectSemanticIndex result = builder.build();
             ownerCheck.run();
             return result;
@@ -171,14 +182,17 @@ public class JavaProjectSemanticIndexer {
         List<Path> files,
         JavaProjectSemanticIndex.SourceFileIndex[] indexed,
         AtomicInteger next,
-        Runnable activityCheck
+        Runnable activityCheck,
+        Runnable processed
     ) {
         while (true) {
             activityCheck.run();
             int index = next.getAndIncrement();
             if (index >= files.size())
                 return;
+
             indexed[index] = indexFile(files.get(index), activityCheck);
+            processed.run();
             activityCheck.run();
         }
     }
@@ -186,8 +200,10 @@ public class JavaProjectSemanticIndexer {
     private static void rethrowFailure(Throwable failure) {
         if (failure instanceof RuntimeException runtime)
             throw runtime;
+
         if (failure instanceof Error error)
             throw error;
+
         if (failure != null)
             throw new IllegalStateException("Failed to index Java project", failure);
     }

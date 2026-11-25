@@ -130,6 +130,7 @@ public class ImageViewerPane extends BorderPane {
                     offsetX = centerX - (newCanvasW / 2) / zoomLevel;
                     clampOffsets();
                 }
+
                 redrawCanvas();
             }
         });
@@ -143,6 +144,7 @@ public class ImageViewerPane extends BorderPane {
                     offsetY = centerY - (newCanvasH / 2) / zoomLevel;
                     clampOffsets();
                 }
+
                 redrawCanvas();
             }
         });
@@ -478,6 +480,7 @@ public class ImageViewerPane extends BorderPane {
             destW = scaledImgW;
             destX = (canvasW - destW) / 2;
         }
+
         if (scaledImgH < canvasH) {
             srcY = 0;
             srcH = imgH;
@@ -486,6 +489,7 @@ public class ImageViewerPane extends BorderPane {
         }
 
         // Final clamping/validation of source rectangle
+
         srcX = Math.max(0, srcX);
         srcY = Math.max(0, srcY);
         srcW = Math.min(srcW, imgW - srcX);

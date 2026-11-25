@@ -55,6 +55,7 @@ public class GitSyncControlsPane extends RRVBox {
                     .orElse(null);
             }
         });
+
         remoteComboBox.setOnAction(_ -> {
             GitRemote selectedRemote = remoteComboBox.getSelectionModel().getSelectedItem();
             if (selectedRemote != null) {
@@ -105,6 +106,7 @@ public class GitSyncControlsPane extends RRVBox {
             remotes.setAll(gitManager.getRemotes());
             remoteComboBox.getSelectionModel().select(gitManager.getCurrentRemote());
         };
+
         refreshRemotes.run();
         gitManager.repoStatusProperty().addListener((_, _, _) -> refreshRemotes.run());
     }

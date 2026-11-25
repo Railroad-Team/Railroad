@@ -121,6 +121,7 @@ public class CLIArguments {
                     }
                 } else
                     throw new IllegalArgumentException("Argument must start with a '-' or '--'! " + key);
+
             } else {
                 notPrimitiveHandler.accept(arguments, element);
             }
@@ -144,7 +145,7 @@ public class CLIArguments {
                 if (!object.has("rules"))
                     throw new IllegalArgumentException("Argument must have rules! " + object);
 
-                JsonArray rulesJson = object.getAsJsonArray("rules");
+                Iterable<JsonElement> rulesJson = object.getAsJsonArray("rules");
                 List<Argument.Rule> rules = new ArrayList<>();
                 for (JsonElement ruleElement : rulesJson) {
                     if (!ruleElement.isJsonObject())
@@ -211,7 +212,7 @@ public class CLIArguments {
                         arguments.add(new Argument(argument.name(), argument.value(), rules));
                     }
                 } else if (valueElement.isJsonPrimitive()) {
-                    var valueArray = new JsonArray();
+                    JsonArray valueArray = new JsonArray();
                     valueArray.add(valueElement);
 
                     List<Argument> valueArguments = readKeyValues(valueArray, (arguments1, jsonElement1) -> {
@@ -223,6 +224,7 @@ public class CLIArguments {
                     }
                 } else
                     throw new IllegalArgumentException("Argument value must be a string! " + valueElement);
+
             }
         });
 

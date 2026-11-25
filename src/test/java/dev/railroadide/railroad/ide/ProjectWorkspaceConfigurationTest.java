@@ -12,6 +12,10 @@ import dev.railroadide.railroad.project.facet.Facet;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.project.facet.FacetType;
 import dev.railroadide.railroadplugin.dto.RailroadModule;
+import dev.railroadide.railroadplugin.dto.RailroadConfiguration;
+import dev.railroadide.railroadplugin.dto.impl.BasicRailroadConfiguration;
+import dev.railroadide.railroadplugin.dto.impl.BasicRailroadDependency;
+import dev.railroadide.railroad.ide.sst.project.JavaLibrarySymbolIndex;
 import javafx.scene.image.WritableImage;
 import javafx.application.Platform;
 import org.gradle.tooling.model.DomainObjectSet;
@@ -21,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.lang.reflect.Field;
+import java.time.Duration;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -28,6 +33,8 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.*;
 import dev.railroadide.railroad.ide.language.impl.index.JavaLanguageIndexContext;
+import dev.railroadide.railroad.ide.language.impl.index.JavaLanguageIndexContextContributor;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import org.objectweb.asm.ClassWriter;
@@ -43,6 +50,7 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.project.FacetDetectedEvent;
 import java.util.ArrayList;
+import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -53,14 +61,14 @@ public class ProjectWorkspaceConfigurationTest {
     @Test
     public void newerMavenRequestSupersedesOlderBinaryPreparationAcrossBothStages() throws Exception {
         Files.writeString(directory.resolve("pom.xml"), "<project/>");
-        var project = mavenProject();
+        RailroadProject project = mavenProject();
         var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
-        var session = service.openProject(project);
+        ProjectLanguageIndexService.Session session = service.openProject(project);
         var provider = JavaLanguageSupport.analysisContextProvider();
         var store = new DefaultDocumentStore(project.getId(), ProjectWorkspaceConfiguration.initial(project));
-        var dependencies = new LinkedBlockingQueue<PendingResolution>();
-        var binaries = new LinkedBlockingQueue<PendingBinary>();
-        var releases = new ArrayList<CompletableFuture<?>>();
+        BlockingQueue<PendingResolution> dependencies = new LinkedBlockingQueue<PendingResolution>();
+        BlockingQueue<PendingBinary> binaries = new LinkedBlockingQueue<PendingBinary>();
+        List<CompletableFuture<?>> releases = new ArrayList<CompletableFuture<?>>();
         try (var tracker = new ProjectWorkspaceConfiguration(project, store, _ -> {
             var pending = new PendingResolution(Thread.currentThread(), new CompletableFuture<>());
             dependencies.add(pending);
@@ -72,35 +80,35 @@ public class ProjectWorkspaceConfigurationTest {
             pending.release().join();
             return provider.prepareConfiguration(owner, candidate);
         })) {
-            var a = awaitRequest(dependencies);
+            PendingResolution a = awaitRequest(dependencies);
             a.result().complete(dependencyContext("A.jar"));
-            var binaryA = binaries.poll(10, TimeUnit.SECONDS);
+            PendingBinary binaryA = binaries.poll(10, TimeUnit.SECONDS);
             assertNotNull(binaryA);
             binaryA.release().complete(null);
             tracker.ready().get(10, TimeUnit.SECONDS);
-            var publishedA = store.capture().configuration();
+            WorkspaceConfigurationSnapshot publishedA = store.capture().configuration();
 
             Files.writeString(directory.resolve("pom.xml"), "<project><name>B</name></project>");
             Railroad.EVENT_BUS.publish(new ProjectConfigurationChangedEvent(project));
-            var b = awaitRequest(dependencies);
+            PendingResolution b = awaitRequest(dependencies);
             b.result().complete(dependencyContext("B.jar"));
-            var binaryB = binaries.poll(10, TimeUnit.SECONDS);
+            PendingBinary binaryB = binaries.poll(10, TimeUnit.SECONDS);
             assertNotNull(binaryB);
             releases.add(binaryB.release());
             assertSame(publishedA, store.capture().configuration());
 
             Files.writeString(directory.resolve("pom.xml"), "<project><name>C</name></project>");
             Railroad.EVENT_BUS.publish(new ProjectConfigurationChangedEvent(project));
-            var c = awaitRequest(dependencies);
+            PendingResolution c = awaitRequest(dependencies);
             releases.add(c.result());
-            var readyC = tracker.ready();
+            CompletableFuture<Void> readyC = tracker.ready();
             binaryB.release().complete(null);
             binaryB.worker().join(10_000);
             assertFalse(binaryB.worker().isAlive(), "Wait through B's actual publication attempt");
             assertSame(publishedA, store.capture().configuration(), "B cannot publish after C is requested");
 
             c.result().complete(dependencyContext("C.jar"));
-            var binaryC = binaries.poll(10, TimeUnit.SECONDS);
+            PendingBinary binaryC = binaries.poll(10, TimeUnit.SECONDS);
             assertNotNull(binaryC);
             releases.add(binaryC.release());
             assertSame(publishedA, store.capture().configuration(), "Retain A through C's binary stage");
@@ -130,7 +138,7 @@ public class ProjectWorkspaceConfigurationTest {
         Files.writeString(settings, "A");
         var project = new RailroadProject(directory, "Revert", new WritableImage(1, 1));
         var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
-        var session = service.openProject(project);
+        ProjectLanguageIndexService.Session session = service.openProject(project);
         var store = new DefaultDocumentStore(project.getId(), ProjectWorkspaceConfiguration.initial(project));
         var entered = new CountDownLatch(1);
         var release = new CountDownLatch(1);
@@ -149,19 +157,22 @@ public class ProjectWorkspaceConfigurationTest {
                             interrupted = true;
                         }
                     }
+
                     if (interrupted) {
                         Thread.currentThread().interrupt();
                     }
+
                     finished.countDown();
                 }
+
                 return indexes.prepareConfiguration(owner, configuration);
             })) {
             tracker.ready().get(10, TimeUnit.SECONDS);
-            var original = store.capture();
+            WorkspaceSnapshot original = store.capture();
             Files.writeString(settings, "B");
             Railroad.EVENT_BUS.publish(new FacetDetectedEvent(project, null));
             assertTrue(entered.await(5, TimeUnit.SECONDS));
-            var pending = tracker.ready();
+            CompletableFuture<Void> pending = tracker.ready();
             try {
                 Files.writeString(settings, "A");
                 Railroad.EVENT_BUS.publish(new FacetDetectedEvent(project, null));
@@ -184,17 +195,17 @@ public class ProjectWorkspaceConfigurationTest {
     public void liveSessionRefreshPublishesANewEpochWithUnchangedSettings() throws Exception {
         var project = new RailroadProject(directory, "Refresh", new WritableImage(1, 1));
         var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
-        var session = service.openProject(project);
+        ProjectLanguageIndexService.Session session = service.openProject(project);
         var store = new DefaultDocumentStore(project.getId(), ProjectWorkspaceConfiguration.initial(project));
         try (var tracker = new ProjectWorkspaceConfiguration(project, store)) {
             tracker.ready().get(10, TimeUnit.SECONDS);
-            var first = store.capture().configuration();
+            WorkspaceConfigurationSnapshot first = store.capture().configuration();
             assertEquals(session.id(), first.settings().get("index.session"));
             assertNotNull(first.settings().get("index.binary.fingerprint"));
             long generation = session.configurationGeneration();
             tracker.refresh();
             tracker.ready().get(10, TimeUnit.SECONDS);
-            var refreshed = store.capture().configuration();
+            WorkspaceConfigurationSnapshot refreshed = store.capture().configuration();
             assertNotEquals(first.settings().get("index.binary.epoch"), refreshed.settings().get("index.binary.epoch"));
             assertEquals(first.settings().get("index.binary.fingerprint"),
                 refreshed.settings().get("index.binary.fingerprint"));
@@ -246,6 +257,7 @@ public class ProjectWorkspaceConfigurationTest {
             Railroad.EVENT_BUS.publish(new ProjectConfigurationChangedEvent(project));
             assertEquals(imported, store.capture());
         }
+
         WorkspaceSnapshot closed = store.capture();
         project.getDataStore().writeString("gradle/settings.json", "{\"offline\":false}");
         Railroad.EVENT_BUS.publish(new ProjectConfigurationChangedEvent(project));
@@ -288,6 +300,7 @@ public class ProjectWorkspaceConfigurationTest {
                 return List.of(new Facet<>(FacetManager.GRADLE));
             }
         };
+
         var models = new FakeModels();
         Field service = GradleManager.class.getDeclaredField("modelService");
         service.setAccessible(true);
@@ -313,7 +326,147 @@ public class ProjectWorkspaceConfigurationTest {
                 .forEach(listener -> listener.modelReloadFailed(new IllegalStateException("import failed")));
             assertEquals(second, store.capture());
         }
+
         assertTrue(models.listeners.isEmpty());
+    }
+
+    @Test
+    public void indexContextStartsAnImportWithoutWaitingForIt() throws Exception {
+        Files.writeString(directory.resolve("build.gradle"), "plugins { id 'java' }");
+        RailroadProject project = new RailroadProject(directory, "Unavailable", new WritableImage(1, 1)) {
+            @Override
+            public boolean hasFacet(FacetType<?> type) {
+                return type.equals(FacetManager.GRADLE);
+            }
+
+            @Override
+            public List<Facet<?>> getFacets() {
+                return List.of(new Facet<>(FacetManager.GRADLE));
+            }
+        };
+
+        var requests = new AtomicInteger();
+        var models = new FakeModels() {
+            @Override
+            public CompletableFuture<GradleBuildModel> refreshModel(boolean force) {
+                requests.incrementAndGet();
+                return new CompletableFuture<>();
+            }
+        };
+
+        Field service = GradleManager.class.getDeclaredField("modelService");
+        service.setAccessible(true);
+        service.set(project.getGradleManager(), models);
+
+        JavaLanguageIndexContext context = assertTimeoutPreemptively(Duration.ofSeconds(5),
+            () -> (JavaLanguageIndexContext) new JavaLanguageIndexContextContributor().resolve(project));
+
+        assertEquals(1, requests.get());
+        assertTrue(context.sourceRoots().isEmpty());
+        assertTrue(context.classpathRoots().isEmpty());
+    }
+
+    @Test
+    public void firstBinaryAdoptionWarmsProjectIndexes() throws Exception {
+        Files.createDirectories(directory.resolve("src/main/java/demo"));
+        Files.writeString(directory.resolve("src/main/java/demo/Example.java"), "package demo; class Example {}");
+        var project = new RailroadProject(directory, "Warmup", new WritableImage(1, 1));
+        var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
+        ProjectLanguageIndexService.Session session = service.openProject(project);
+        var store = new DefaultDocumentStore(project.getId(), ProjectWorkspaceConfiguration.initial(project));
+        var indexes = JavaLanguageSupport.analysisContextProvider();
+        try (var tracker = new ProjectWorkspaceConfiguration(project, store, _ -> null, session,
+            indexes::prepareConfiguration)) {
+            tracker.ready().get(10, TimeUnit.SECONDS);
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+            while (service.current(project, JavaLanguageSupport.LANGUAGE_ID) == null && System.nanoTime() < deadline) {
+                Thread.sleep(25);
+            }
+
+            assertNotNull(service.current(project, JavaLanguageSupport.LANGUAGE_ID));
+        } finally {
+            service.closeProject(session);
+            indexes.closeSession(session);
+        }
+    }
+
+    @Test
+    public void failedBinaryPreparationStillWarmsProjectIndexes() throws Exception {
+        Files.createDirectories(directory.resolve("src/main/java/demo"));
+        Files.writeString(directory.resolve("src/main/java/demo/Example.java"), "package demo; class Example {}");
+        var project = new RailroadProject(directory, "Warmup failure", new WritableImage(1, 1));
+        var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
+        ProjectLanguageIndexService.Session session = service.openProject(project);
+        var store = new DefaultDocumentStore(project.getId(), ProjectWorkspaceConfiguration.initial(project));
+        var indexes = JavaLanguageSupport.analysisContextProvider();
+        try (var _ = new ProjectWorkspaceConfiguration(project, store, _ -> null, session, (_, _) -> {
+            throw new IllegalStateException("Libraries are unavailable");
+        })) {
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+            while (service.current(project, JavaLanguageSupport.LANGUAGE_ID) == null && System.nanoTime() < deadline) {
+                Thread.sleep(25);
+            }
+
+            assertNotNull(service.current(project, JavaLanguageSupport.LANGUAGE_ID));
+        } finally {
+            service.closeProject(session);
+            indexes.closeSession(session);
+        }
+    }
+
+    @Test
+    public void gradleDependenciesArePendingUntilTheModelIsPublishedOrFails() throws Exception {
+        Files.writeString(directory.resolve("build.gradle"), "plugins { id 'java' }");
+        RailroadProject project = new RailroadProject(directory, "Pending", new WritableImage(1, 1)) {
+            @Override
+            public boolean hasFacet(FacetType<?> type) {
+                return type.equals(FacetManager.GRADLE);
+            }
+
+            @Override
+            public List<Facet<?>> getFacets() {
+                return List.of(new Facet<>(FacetManager.GRADLE));
+            }
+        };
+
+        var models = new FakeModels();
+        Field service = GradleManager.class.getDeclaredField("modelService");
+        service.setAccessible(true);
+        service.set(project.getGradleManager(), models);
+        var store = new DefaultDocumentStore(project.getId(), ProjectWorkspaceConfiguration.initial(project));
+        assertTrue(ProjectWorkspaceConfiguration.dependenciesPending(store.capture().configuration()));
+        try (ProjectWorkspaceConfiguration tracker = new ProjectWorkspaceConfiguration(project, store)) {
+            assertTrue(ProjectWorkspaceConfiguration.dependenciesPending(store.capture().configuration()));
+            models.listeners
+                .forEach(listener -> listener.modelReloadFailed(new IllegalStateException("import failed")));
+            assertFalse(ProjectWorkspaceConfiguration.dependenciesPending(store.capture().configuration()));
+            models.publish(model(":main", directory.resolve("a.jar")));
+            WorkspaceConfigurationSnapshot imported = store.capture().configuration();
+            assertFalse(ProjectWorkspaceConfiguration.dependenciesPending(imported));
+            assertFalse(imported.settings().containsKey("dependencies.unavailable"));
+        }
+
+        Files.delete(directory.resolve("build.gradle"));
+        assertFalse(ProjectWorkspaceConfiguration.dependenciesPending(ProjectWorkspaceConfiguration.initial(
+            new RailroadProject(directory, "Plain", new WritableImage(1, 1)))));
+    }
+
+    @Test
+    public void resolutionDiagnosticsWaitForPendingDependencies() {
+        String text = "class Example { Missing value; void run() { Missing.call(); } }";
+        DocumentId id = DocumentId.create();
+        var pending = new DefaultDocumentStore("pending",
+            new WorkspaceConfigurationSnapshot(0, Set.of(":"), Map.of("project.build.build.gradle", "")));
+        var plain = new DefaultDocumentStore("plain", new WorkspaceConfigurationSnapshot(0, Set.of(":")));
+        for (DocumentStore store : List.of(pending, plain)) {
+            store.publishBacking(new TextDocumentSnapshot(id, DocumentUri.inMemory(id), DocumentVersion.initial(),
+                "java", text, StandardCharsets.UTF_8));
+        }
+
+        assertTrue(new JavaDiagnosticsProvider().compute(pending.capture(), id).stream()
+            .noneMatch(diagnostic -> diagnostic.code().startsWith("SEM_UNRESOLVED_")));
+        assertTrue(new JavaDiagnosticsProvider().compute(plain.capture(), id).stream()
+            .anyMatch(diagnostic -> diagnostic.code().startsWith("SEM_UNRESOLVED_")));
     }
 
     @Test
@@ -330,6 +483,7 @@ public class ProjectWorkspaceConfigurationTest {
                 return List.of(new Facet<>(FacetManager.GRADLE));
             }
         };
+
         var models = new FakeModels();
         Field service = GradleManager.class.getDeclaredField("modelService");
         service.setAccessible(true);
@@ -351,6 +505,40 @@ public class ProjectWorkspaceConfigurationTest {
     }
 
     private GradleBuildModel model(String id, Path... classpath) {
+        return model(id, new ModelSet<>(), classpath);
+    }
+
+    @Test
+    public void mainLibrarySourceUsesGradlesSelectedTransitiveVersion() throws Exception {
+        Path sourceOwner = directory.resolve("lib.jar");
+        Path generated = directory.resolve("generated.jar");
+        Path client = libraryJar("client/api.jar", "clientVersion");
+        Path main = libraryJar("main/api.jar", "mainVersion");
+        var mainDep = new BasicRailroadDependency(null, "example", "api", "1", main.toFile(), null, List.of());
+        var clientDep = new BasicRailroadDependency(null, "example", "api", "2", client.toFile(), null, List.of());
+        var library = new BasicRailroadDependency(null, "example", "lib", "1", sourceOwner.toFile(), null,
+            List.of(mainDep));
+        var clientLibrary = new BasicRailroadDependency(null, "example", "lib", "1", sourceOwner.toFile(), null,
+            List.of(clientDep));
+        ModelSet<RailroadConfiguration> configurations = new ModelSet<RailroadConfiguration>();
+        configurations.add(new BasicRailroadConfiguration("clientCompileClasspath", null, true, false, true, true,
+            List.of(), Map.of(), null, List.of(clientLibrary), List.of()));
+        configurations.add(new BasicRailroadConfiguration("compileClasspath", null, true, false, true, true,
+            List.of(), Map.of(), null, List.of(library), List.of()));
+        var cfg = ProjectWorkspaceConfiguration.captureGradleConfiguration(
+            model(":common", configurations, client, generated, main, sourceOwner));
+        var uri = JavaLibrarySymbolIndex.archiveEntry(directory.resolve("lib-sources.jar"), "Use.java");
+        var source = new TextDocumentSnapshot(DocumentId.create(), uri, DocumentVersion.initial(), "java",
+            DocumentOrigin.original(uri), "class Use {}", StandardCharsets.UTF_8);
+        List<Path> roots = JavaWorkspaceAnalysisProvider.sourceContext(cfg, null, source).classpath(cfg);
+        assertEquals(List.of(generated, main, sourceOwner), roots);
+        assertEquals("mainVersion", JavaLibrarySymbolIndex.build(roots)
+            .lookupClassStub("deps.Library").fields().getFirst().name());
+        assertEquals(List.of(client, generated, main, sourceOwner),
+            new JavaWorkspaceAnalysisProvider.SourceContext(":common", client).classpath(cfg));
+    }
+
+    private GradleBuildModel model(String id, ModelSet<RailroadConfiguration> configurations, Path... classpath) {
         RailroadModule module = (RailroadModule) Proxy.newProxyInstance(RailroadModule.class.getClassLoader(),
             new Class<?>[]{RailroadModule.class}, (proxy, method, args) -> switch (method.getName()) {
                 case "getPath" -> id;
@@ -358,11 +546,13 @@ public class ProjectWorkspaceConfigurationTest {
                 case "getClasspathRoots" -> Arrays.stream(classpath).map(Path::toFile).toList();
                 case "getDependencyRoots", "getModulePathRoots" -> List.of();
                 case "getContentRoots" -> new ModelSet<>();
+                case "getConfigurations" -> configurations;
                 case "hashCode" -> System.identityHashCode(proxy);
                 case "equals" -> proxy == args[0];
                 default -> null;
             });
-        ModelSet<RailroadModule> modules = new ModelSet<>();
+
+        Set<RailroadModule> modules = new ModelSet<>();
         modules.add(module);
         dev.railroadide.railroadplugin.dto.RailroadProject root = (dev.railroadide.railroadplugin.dto.RailroadProject) Proxy
             .newProxyInstance(RailroadModule.class.getClassLoader(),
@@ -427,6 +617,7 @@ public class ProjectWorkspaceConfigurationTest {
         } catch (IllegalStateException _) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
         Files.writeString(directory.resolve("pom.xml"),
             "<project><modelVersion>4.0.0</modelVersion><groupId>test</groupId>"
@@ -434,7 +625,7 @@ public class ProjectWorkspaceConfigurationTest {
         RailroadProject project = mavenProject();
         DefaultDocumentStore store = onFx(() -> new DefaultDocumentStore(project.getId(),
             ProjectWorkspaceConfiguration.initial(project)));
-        var requests = new LinkedBlockingQueue<PendingResolution>();
+        BlockingQueue<PendingResolution> requests = new LinkedBlockingQueue<PendingResolution>();
         try (ProjectWorkspaceConfiguration tracker = onFx(() -> new ProjectWorkspaceConfiguration(project, store,
             _ -> {
                 assertFalse(Platform.isFxApplicationThread());
@@ -448,6 +639,7 @@ public class ProjectWorkspaceConfigurationTest {
                 project.getDataStore().writeString("maven/settings.json", "{\"revision\":2}");
                 return null;
             });
+
             PendingResolution second = awaitRequest(requests);
             assertEquals(initial, store.capture());
             second.result().complete(dependencyContext("new.jar"));
@@ -548,6 +740,7 @@ public class ProjectWorkspaceConfigurationTest {
             store.publishOverlay(new TextDocumentSnapshot(DocumentId.create(), DocumentUri.fromPath(path),
                 DocumentVersion.initial(), "java", "class " + name + " {}", StandardCharsets.UTF_8));
         }
+
         JavaWorkspaceAnalysis analysis = new JavaWorkspaceAnalysisProvider().capture(store.capture());
         assertEquals(Set.of(source, testSource), analysis.sourceTexts().keySet());
     }
@@ -599,6 +792,7 @@ public class ProjectWorkspaceConfigurationTest {
             jar.write(writer.toByteArray());
             jar.closeEntry();
         }
+
         return archive;
     }
 
@@ -614,7 +808,7 @@ public class ProjectWorkspaceConfigurationTest {
         }
     }
 
-    private static final class FakeModels implements GradleModelService {
+    private static class FakeModels implements GradleModelService {
         private final List<GradleModelListener> listeners = new CopyOnWriteArrayList<>();
         private GradleBuildModel cached;
 

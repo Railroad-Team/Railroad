@@ -14,6 +14,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.io.InputStream;
+import okhttp3.Response;
 
 /**
  * Downloads project resources with OkHttp and checks for missing resources with HEAD requests.
@@ -28,13 +30,13 @@ public record OkHttpService(OkHttpClient client) implements HttpService {
         int attempt = 0;
         while (true) {
             attempt++;
-            var request = new Request.Builder().url(uri.toString()).get().build();
-            try (var response = client.newCall(request).execute()) {
+            Request request = new Request.Builder().url(uri.toString()).get().build();
+            try (Response response = client.newCall(request).execute()) {
                 if (!response.isSuccessful() || response.body() == null)
                     throw new IOException("HTTP " + response.code() + " for " + uri);
 
-                var tmpFile = Files.createTempFile(dest.getParent(), ".dl", ".tmp");
-                try (var in = response.body().byteStream(); var out = Files.newOutputStream(tmpFile)) {
+                Path tmpFile = Files.createTempFile(dest.getParent(), ".dl", ".tmp");
+                try (InputStream in = response.body().byteStream(); var out = Files.newOutputStream(tmpFile)) {
                     in.transferTo(out);
                 }
 
@@ -54,8 +56,8 @@ public record OkHttpService(OkHttpClient client) implements HttpService {
 
     @Override
     public boolean isNotFound(URI uri) throws IOException {
-        var request = new Request.Builder().url(uri.toString()).head().build();
-        try (var response = client.newCall(request).execute()) {
+        Request request = new Request.Builder().url(uri.toString()).head().build();
+        try (Response response = client.newCall(request).execute()) {
             return response.code() == 404;
         }
     }
@@ -65,16 +67,19 @@ public record OkHttpService(OkHttpClient client) implements HttpService {
         while (current != null) {
             if (current instanceof SocketException || current instanceof SocketTimeoutException)
                 return true;
+
             if (current instanceof UncheckedIOException uio && uio.getCause() != null) {
                 current = uio.getCause();
                 continue;
             }
+
             String message = current.getMessage();
             if (message != null && message.contains("Software caused connection abort"))
                 return true;
 
             current = current.getCause();
         }
+
         return false;
     }
 

@@ -240,5 +240,4 @@ public class RRRadioButton extends RadioButton {
             setGraphic(null);
         }
     }
-
 }

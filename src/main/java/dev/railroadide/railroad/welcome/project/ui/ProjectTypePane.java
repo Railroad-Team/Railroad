@@ -9,7 +9,9 @@ import javafx.scene.layout.Priority;
 import lombok.Getter;
 import javafx.scene.layout.VBox;
 
-/** Scrollable selector populated from the project types registered when this pane is created. */
+/**
+ * Scrollable selector populated from the project types registered when this pane is created.
+ */
 public class ProjectTypePane extends VBox {
     /**
      * List exposing the project-type selection used by the onboarding pane.
@@ -21,7 +23,9 @@ public class ProjectTypePane extends VBox {
     private final ObservableList<ProjectType> allProjectTypes = FXCollections
         .observableArrayList(ProjectType.REGISTRY.values());
 
-    /** Builds the type list with icon cells and selects its first entry, if any. */
+    /**
+     * Builds the type list with icon cells and selects its first entry, if any.
+     */
     public ProjectTypePane() {
         super();
         getStyleClass().add("project-type-pane");

@@ -13,15 +13,25 @@ public record GitRemote(String name, String fetchUrl, String pushUrl, Protocol p
      * Supported remote URL protocol classifications.
      */
     public enum Protocol {
-        /** An HTTP or HTTPS remote URL. */
+        /**
+         * An HTTP or HTTPS remote URL.
+         */
         HTTPS,
-        /** An SSH URL or an address containing an {@code @} user/host separator. */
+        /**
+         * An SSH URL or an address containing an {@code @} user/host separator.
+         */
         SSH,
-        /** A remote URL using the {@code git://} transport. */
+        /**
+         * A remote URL using the {@code git://} transport.
+         */
         GIT,
-        /** A {@code file://} URL or a path beginning with {@code /}. */
+        /**
+         * A {@code file://} URL or a path beginning with {@code /}.
+         */
         FILE,
-        /** A remote address that does not match the recognized URL or path patterns. */
+        /**
+         * A remote address that does not match the recognized URL or path patterns.
+         */
         UNKNOWN;
 
         /**

@@ -30,6 +30,7 @@ public class CompletionProviderTest {
     public void closeIndexSessions() {
         sessions.forEach(Services.PROJECT_LANGUAGE_INDEX_SERVICE::closeProject);
     }
+
     private static final String SOURCE = "/* 😀 */ class Example { int marker; void run() { this.marker = 1; } }";
 
     @TempDir
@@ -49,7 +50,7 @@ public class CompletionProviderTest {
                 DocumentUri.parse("jar:file:///libs/example.jar!/demo/Example.java"),
                 DocumentUri.inMemory(DocumentId.create()),
                 DocumentUri.virtual("generated", "/"))) {
-                var snapshot = snapshot(uri, SOURCE);
+                TextDocumentSnapshot snapshot = snapshot(uri, SOURCE);
                 int triggerAt = SOURCE.indexOf("this.") + "this".length();
 
                 CompletionResult result = assertDoesNotThrow(() -> provider.compute(snapshot, triggerAt));
@@ -66,7 +67,7 @@ public class CompletionProviderTest {
     public void usesUnsavedSnapshotTextInsteadOfPhysicalFileContents() throws Exception {
         Path file = projectRoot.resolve("Example.java");
         Files.writeString(file, "class Example { int diskOnly; }");
-        var snapshot = snapshot(DocumentUri.fromPath(file), SOURCE);
+        TextDocumentSnapshot snapshot = snapshot(DocumentUri.fromPath(file), SOURCE);
         int triggerAt = SOURCE.indexOf("this.") + "this".length();
 
         for (CompletionProvider provider : providers()) {
@@ -81,7 +82,7 @@ public class CompletionProviderTest {
     @Test
     public void retainedSnapshotKeepsItsCompletionsAfterContentChanges() {
         var mutableSource = new StringBuilder(SOURCE);
-        var original = snapshot(DocumentUri.virtual("generated", "/demo/Example.java"), mutableSource);
+        TextDocumentSnapshot original = snapshot(DocumentUri.virtual("generated", "/demo/Example.java"), mutableSource);
         String updatedSource = SOURCE.replace("marker", "updated");
         mutableSource.replace(0, mutableSource.length(), updatedSource);
         var updated = new TextDocumentSnapshot(original.id(), original.uri(), original.version().next(),
@@ -121,7 +122,7 @@ public class CompletionProviderTest {
     @Test
     public void rejectsEmptyTextAndInvalidTriggers() {
         DocumentUri uri = DocumentUri.virtual("generated", "/demo/Example.java");
-        var snapshot = snapshot(uri, SOURCE);
+        TextDocumentSnapshot snapshot = snapshot(uri, SOURCE);
 
         for (CompletionProvider provider : providers()) {
             assertNull(provider.compute(snapshot(uri, ""), 0));
@@ -142,6 +143,7 @@ public class CompletionProviderTest {
                 case "toString" -> "CompletionTestProject[" + projectRoot + "]";
                 default -> throw new UnsupportedOperationException(method.getName());
             });
+
         sessions.add(Services.PROJECT_LANGUAGE_INDEX_SERVICE.openProject(project));
         return List.of(new JavaCompletionProvider(project), new JdtCompletionProvider(new String[0]));
     }

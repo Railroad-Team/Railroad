@@ -266,8 +266,10 @@ public class JstatCLIBuilder implements CLIBuilder<Process, JstatCLIBuilder> {
         } else {
             if (statOption == null)
                 throw new IllegalStateException("A stat option must be specified when not using a general option.");
+
             if (vmId == null)
                 throw new IllegalStateException("A VM identifier must be specified when using jstat output options.");
+
             if (sampleCount != null && intervalExpression == null)
                 throw new IllegalStateException("A sampling interval must be specified before setting a sample count.");
 

@@ -44,8 +44,8 @@ public class JavaSyntaxParserRequestTest {
     }
 
     private static void assertEquivalentParse(String input) {
-        var document = text(input, "java");
-        var context = context(document, CancellationToken.none(), Deadline.none());
+        TextDocumentSnapshot document = text(input, "java");
+        FeatureRequestContext context = context(document, CancellationToken.none(), Deadline.none());
 
         SyntaxTree actual = JavaSyntaxParser.parse(context);
         SyntaxTree legacy = JavaSyntaxParser.parse(document);
@@ -65,8 +65,9 @@ public class JavaSyntaxParserRequestTest {
         DocumentId id = DocumentId.create();
         var binary = new BinaryDocumentSnapshot(id, DocumentUri.inMemory(id), DocumentVersion.initial(),
             "java", new byte[]{1, 2, 3});
-        var binaryRequest = context(binary, CancellationToken.none(), Deadline.none());
-        var otherLanguageRequest = context(text("class A {}", "other-language"),
+
+        FeatureRequestContext binaryRequest = context(binary, CancellationToken.none(), Deadline.none());
+        FeatureRequestContext otherLanguageRequest = context(text("class A {}", "other-language"),
             CancellationToken.none(), Deadline.none());
 
         assertThrows(IllegalArgumentException.class, () -> JavaSyntaxParser.parse(binaryRequest));
@@ -87,14 +88,16 @@ public class JavaSyntaxParserRequestTest {
                 throw failure;
             }
         };
-        var context = context(text("", "other-language"), token, Deadline.after(Duration.ZERO, () -> 0L));
+
+        FeatureRequestContext context = context(text("", "other-language"), token,
+            Deadline.after(Duration.ZERO, () -> 0L));
 
         assertSame(failure, assertThrows(CancellationException.class, () -> JavaSyntaxParser.parse(context)));
     }
 
     @Test
     public void preExpiredRequestDoesNotReturnATree() {
-        var context = context(text("class A {}", "java"), CancellationToken.none(),
+        FeatureRequestContext context = context(text("class A {}", "java"), CancellationToken.none(),
             Deadline.after(Duration.ZERO, () -> 0L));
 
         assertThrows(DeadlineExceededException.class, () -> JavaSyntaxParser.parse(context));
@@ -104,7 +107,7 @@ public class JavaSyntaxParserRequestTest {
     public void requestCancellationIsObservedDuringParsingRatherThanOnlyAtTheBoundary() {
         var observations = new AtomicInteger();
         CancellationToken token = () -> observations.incrementAndGet() >= 64;
-        var context = context(text("class A { " + "int field; ".repeat(1000) + "}", "java"),
+        FeatureRequestContext context = context(text("class A { " + "int field; ".repeat(1000) + "}", "java"),
             token, Deadline.none());
 
         assertThrows(CancellationException.class, () -> JavaSyntaxParser.parse(context));
@@ -115,7 +118,7 @@ public class JavaSyntaxParserRequestTest {
     public void originalDeadlineIsObservedDuringParsingWithoutResettingTheBudget() {
         var clock = new AtomicLong();
         Deadline deadline = Deadline.after(Duration.ofNanos(64), clock::getAndIncrement);
-        var context = context(text("class A { " + "int field; ".repeat(1000) + "}", "java"),
+        FeatureRequestContext context = context(text("class A { " + "int field; ".repeat(1000) + "}", "java"),
             CancellationToken.none(), deadline);
 
         assertThrows(DeadlineExceededException.class, () -> JavaSyntaxParser.parse(context));

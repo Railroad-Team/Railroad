@@ -93,6 +93,7 @@ public record SettingCodec<T, N extends Node>(
             this.nodeToValue = node -> null; // Default to returning null
             this.valueToNode = (value, node) -> {
             }; // Default to doing nothing
+
             this.jsonDecoder = json -> null; // Default to returning null
             this.jsonEncoder = value -> null; // Default to returning null
             this.createNode = value -> null; // Default to returning null

@@ -5,6 +5,7 @@ import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.language.index.ProjectIndexContext;
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService;
 import dev.railroadide.railroad.ide.sst.document.api.*;
+import dev.railroadide.railroad.ide.sst.request.api.CancellationToken;
 import dev.railroadide.railroad.ide.sst.request.api.CancellationTokenSource;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import org.junit.jupiter.api.BeforeAll;
@@ -18,7 +19,13 @@ import java.util.*;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.*;
 import java.util.jar.*;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaSstServices;
+import dev.railroadide.railroad.ide.sst.project.JavaLibrarySources;
 import dev.railroadide.railroad.ide.sst.project.JavaStubSymbolIndex;
+import dev.railroadide.railroad.ide.sst.request.api.Deadline;
+import dev.railroadide.railroad.ide.sst.request.api.WorkspaceRequestContext;
+import dev.railroadide.railroad.ide.language.LanguageSupports;
+import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -39,7 +46,7 @@ public class JavaCacheLifecycleTest {
         archive(jdk.resolve("lib/rt.jar"), "demo/Runtime", "runtime");
         Project project = project();
         var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
-        var session = service.openProject(project);
+        ProjectLanguageIndexService.Session session = service.openProject(project);
         try (var provider = new JavaAnalysisContextProvider()) {
             provider.adoptConfiguration(session, provider.prepareConfiguration(session, configuration(jar, jdk)));
             var cancellation = new CancellationTokenSource();
@@ -56,6 +63,7 @@ public class JavaCacheLifecycleTest {
                     return 1;
                 }
             };
+
             var language = new JavaLanguageIndexContext(List.of(), List.of(), cancellingRoots, List.of(), List.of(),
                 jdk);
             var request = new ProjectIndexContext(project, root, Map.of("java", language), session,
@@ -67,11 +75,172 @@ public class JavaCacheLifecycleTest {
             var retryLanguage = new JavaLanguageIndexContext(List.of(), List.of(), List.of(jar), List.of(), List.of(),
                 jdk);
             var retry = new ProjectIndexContext(project, root, Map.of("java", retryLanguage), session);
-            var result = provider.index(retry);
+            JavaSymbolIndex result = provider.index(retry);
             assertNotNull(result);
             assertEquals("newValue", result.classStubsByQualifiedName().get("demo.Library").fields().getFirst().name());
         } finally {
             service.closeProject(session);
+        }
+    }
+
+    @Test
+    public void concurrentWarmupsShareOneLibraryBuild() throws Exception {
+        Path jar = root.resolve("library.jar");
+        Path jdk = root.resolve("jdk");
+        archive(jar, "demo/Library", "value");
+        archive(jdk.resolve("lib/rt.jar"), "demo/Runtime", "runtime");
+        Project project = project();
+        var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
+        ProjectLanguageIndexService.Session session = service.openProject(project);
+        var building = new CountDownLatch(1);
+        var waiting = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        CancellationToken pausesWhileBuilding = () -> {
+            if (inFrame("dev.railroadide.railroad.ide.sst.project.JavaLibrarySymbolIndex", null)) {
+                building.countDown();
+                awaitQuietly(release);
+            }
+
+            return false;
+        };
+
+        CancellationToken reportsWaiting = () -> {
+            if (inFrame(JavaAnalysisContextProvider.class.getName() + "$Cache", "acquire")) {
+                waiting.countDown();
+            }
+
+            return false;
+        };
+
+        try (var provider = new JavaAnalysisContextProvider(); var workers = Executors.newFixedThreadPool(2)) {
+            provider.adoptConfiguration(session, provider.prepareConfiguration(session, configuration(jar, jdk)));
+            var language = new JavaLanguageIndexContext(List.of(), List.of(), List.of(jar), List.of(), List.of(),
+                jdk);
+            Future<JavaSymbolIndex> first = workers.submit(() -> provider.index(new ProjectIndexContext(project, root,
+                Map.of("java", language), session, session.configurationGeneration(), pausesWhileBuilding)));
+            assertTrue(building.await(5, TimeUnit.SECONDS));
+            Future<JavaSymbolIndex> second = workers.submit(() -> provider.index(new ProjectIndexContext(project, root,
+                Map.of("java", language), session, session.configurationGeneration(), reportsWaiting)));
+            assertTrue(waiting.await(5, TimeUnit.SECONDS), "A second warm-up must wait for the running build");
+            release.countDown();
+
+            assertSame(first.get(5, TimeUnit.SECONDS).classStubsByQualifiedName().get("demo.Library"),
+                second.get(5, TimeUnit.SECONDS).classStubsByQualifiedName().get("demo.Library"));
+        } finally {
+            release.countDown();
+            service.closeProject(session);
+        }
+    }
+
+    @Test
+    public void liveLookupsKeepConflictingModuleClasspathsSeparate() throws Exception {
+        Path common = root.resolve("common/library.jar");
+        Path loader = root.resolve("loader/library.jar");
+        Path jdk = root.resolve("jdk");
+        archive(common, "demo/Library", "vanilla");
+        archive(loader, "demo/Library", "patched");
+        archive(jdk.resolve("lib/rt.jar"), "demo/Runtime", "runtime");
+        var configuration = new WorkspaceConfigurationSnapshot(0, Set.of(":common", ":loader"), Map.of(
+            "module.:common.directory", common.getParent().toString(),
+            "module.:common.classpath", common.toString(),
+            "module.:loader.directory", loader.getParent().toString(),
+            "module.:loader.classpath", String.join("\n", loader.toString(), common.toString()),
+            "module.:loader.jdkHome", jdk.toString()));
+        var language = new JavaLanguageIndexContext(List.of(), List.of(), List.of(), List.of(), List.of(), null,
+            configuration);
+        Project project = project();
+        var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
+        ProjectLanguageIndexService.Session session = service.openProject(project);
+        try (var provider = new JavaAnalysisContextProvider()) {
+            provider.adoptConfiguration(session, provider.prepareConfiguration(session, configuration));
+            var context = new ProjectIndexContext(project, root, Map.of("java", language), session);
+            assertEquals("patched", provider.index(context, loader.resolveSibling("Use.java"))
+                .lookupClassStub("demo.Library").fields().getFirst().name());
+            assertEquals("vanilla", provider.index(context, common.resolveSibling("Use.java"))
+                .lookupClassStub("demo.Library").fields().getFirst().name());
+        } finally {
+            service.closeProject(session);
+        }
+    }
+
+    @Test
+    public void liveLookupsFollowSourceSetVisibilityAndSelectItsToolchain() throws Exception {
+        LanguageSupports.initialize();
+        Path main = Files.createDirectories(root.resolve("production"));
+        Path test = Files.createDirectories(root.resolve("checks"));
+        Path mainFile = Files.writeString(main.resolve("Main.java"), "class Main {}");
+        Path testFile = Files.writeString(test.resolve("Fixture.java"), "class Fixture {}");
+        Path mainJdk = root.resolve("main-jdk");
+        Path testJdk = root.resolve("test-jdk");
+        Path output = root.resolve("out/classes");
+        archive(mainJdk.resolve("lib/rt.jar"), "demo/Runtime", "production");
+        archive(testJdk.resolve("lib/rt.jar"), "demo/Runtime", "testing");
+        var raw = new WorkspaceConfigurationSnapshot(0, Set.of(":"), Map.of(
+            "module.:.sourceSets", "main\ntest", "module.:.set.main.sources", main.toString(),
+            "module.:.set.test.sources", test.toString(), "module.:.set.test.classpath", output.toString(),
+            "module.:.set.main.outputs", output.toString(), "module.:.set.main.jdkHome", mainJdk.toString(),
+            "module.:.set.test.jdkHome", testJdk.toString()));
+        var language = new JavaLanguageIndexContext(List.of(main, test), List.of(), List.of(), List.of(), List.of(),
+            null, raw);
+        Project project = project();
+        var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
+        ProjectLanguageIndexService.Session session = service.openProject(project);
+        try (var provider = new JavaAnalysisContextProvider()) {
+            provider.adoptConfiguration(session, provider.prepareConfiguration(session, raw));
+            var context = new ProjectIndexContext(project, root, Map.of("java", language), session);
+            JavaSymbolIndex fromTest = provider.index(context, testFile);
+            assertTrue(fromTest.typeNames().containsAll(Set.of("Main", "Fixture")));
+            assertEquals("testing", fromTest.lookupClassStub("demo.Runtime").fields().getFirst().name());
+            JavaSymbolIndex fromMain = provider.index(context, mainFile);
+            assertTrue(fromMain.typeNames().contains("Main"));
+            assertFalse(fromMain.typeNames().contains("Fixture"));
+            assertEquals("production", fromMain.lookupClassStub("demo.Runtime").fields().getFirst().name());
+        } finally {
+            service.closeProject(session);
+        }
+    }
+
+    @Test
+    public void languageServicesAndLiveLookupsShareBinaryIndexes() throws Exception {
+        Path jar = root.resolve("library.jar");
+        Path jdk = root.resolve("jdk");
+        archive(jar, "demo/Library", "value");
+        archive(jdk.resolve("lib/rt.jar"), "demo/Runtime", "runtime");
+        WorkspaceConfigurationSnapshot raw = configuration(jar, jdk);
+        Project project = project();
+        var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
+        ProjectLanguageIndexService.Session session = service.openProject(project);
+        try (var provider = new JavaAnalysisContextProvider()) {
+            WorkspaceConfigurationSnapshot prepared = provider.prepareConfiguration(session, raw);
+            provider.adoptConfiguration(session, prepared);
+            var services = new JavaSstServices(new JavaLibrarySources(root.resolve("views")), provider::index);
+            JavaSymbolIndex captured = services.capture(new WorkspaceRequestContext(
+                new DefaultDocumentStore("test", prepared).capture(), CancellationToken.none(), Deadline.none()))
+                .symbols();
+            services.close();
+            var language = new JavaLanguageIndexContext(List.of(), List.of(), List.of(), List.of(), List.of(), null,
+                raw);
+            JavaSymbolIndex live = provider
+                .index(new ProjectIndexContext(project, root, Map.of("java", language), session));
+
+            assertNotNull(captured.lookupClassStub("demo.Library"));
+            assertSame(captured.lookupClassStub("demo.Library"), live.lookupClassStub("demo.Library"));
+            assertSame(captured.lookupClassStub("demo.Runtime"), live.lookupClassStub("demo.Runtime"));
+        } finally {
+            service.closeProject(session);
+        }
+    }
+
+    private static boolean inFrame(String className, String methodName) {
+        return StackWalker.getInstance().walk(frames -> frames.anyMatch(frame -> frame.getClassName().equals(className)
+            && (methodName == null || frame.getMethodName().equals(methodName))));
+    }
+
+    private static void awaitQuietly(CountDownLatch latch) {
+        try {
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -81,11 +250,11 @@ public class JavaCacheLifecycleTest {
         archive(jar, "demo/Library", "library");
         archive(jdk.resolve("lib/rt.jar"), "demo/Runtime", "oldRuntime");
         var provider = new JavaWorkspaceAnalysisProvider();
-        var first = configuration(jar, jdk);
-        var retained = provider.capture(new DefaultDocumentStore("test", first).capture());
+        WorkspaceConfigurationSnapshot first = configuration(jar, jdk);
+        JavaWorkspaceAnalysis retained = provider.capture(new DefaultDocumentStore("test", first).capture());
         archive(jdk.resolve("lib/rt.jar"), "demo/Runtime", "newRuntime");
         var refreshed = new WorkspaceConfigurationSnapshot(2, first.moduleIds(), first.settings());
-        var current = provider.capture(new DefaultDocumentStore("test", refreshed).capture());
+        JavaWorkspaceAnalysis current = provider.capture(new DefaultDocumentStore("test", refreshed).capture());
         assertEquals("newRuntime", current.classStubsByQualifiedName().get("demo.Runtime").fields().getFirst().name());
         assertEquals("oldRuntime", retained.classStubsByQualifiedName().get("demo.Runtime").fields().getFirst().name());
     }
@@ -93,7 +262,7 @@ public class JavaCacheLifecycleTest {
     @Test
     public void blockedBinaryConstructionCannotReturnAfterSessionClosure() throws Exception {
         var service = new ProjectLanguageIndexService();
-        var session = service.openProject(project());
+        ProjectLanguageIndexService.Session session = service.openProject(project());
         var entered = new CountDownLatch(1);
         var release = new CountDownLatch(1);
         var provider = new JavaWorkspaceAnalysisProvider(() -> !session.isClosed(), (paths, jdk) -> {
@@ -103,17 +272,21 @@ public class JavaCacheLifecycleTest {
             } catch (InterruptedException exception) {
                 throw new AssertionError(exception);
             }
+
             return new JavaStubSymbolIndex(Map.of(), Map.of());
         });
-        var capture = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of())).capture();
+
+        WorkspaceSnapshot capture = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()))
+            .capture();
         try (var workers = Executors.newFixedThreadPool(2)) {
-            var result = workers.submit(() -> provider.capture(capture));
+            Future<JavaWorkspaceAnalysis> result = workers.submit(() -> provider.capture(capture));
             assertTrue(entered.await(5, TimeUnit.SECONDS));
             try {
                 workers.submit(() -> service.closeProject(session)).get(5, TimeUnit.SECONDS);
             } finally {
                 release.countDown();
             }
+
             assertInstanceOf(CancellationException.class, assertThrows(ExecutionException.class,
                 () -> result.get(5, TimeUnit.SECONDS)).getCause());
         }
@@ -127,13 +300,13 @@ public class JavaCacheLifecycleTest {
         archive(jar, "demo/Library", "oldValue");
         archive(runtime, "demo/Runtime", "oldRuntime");
         var service = new ProjectLanguageIndexService();
-        var session = service.openProject(project());
+        ProjectLanguageIndexService.Session session = service.openProject(project());
         var provider = new JavaAnalysisContextProvider();
-        var raw = configuration(jar, jdk);
-        var firstConfiguration = provider.prepareConfiguration(session, raw);
+        WorkspaceConfigurationSnapshot raw = configuration(jar, jdk);
+        WorkspaceConfigurationSnapshot firstConfiguration = provider.prepareConfiguration(session, raw);
         provider.adoptConfiguration(session, firstConfiguration);
         var firstStore = new DefaultDocumentStore("test", firstConfiguration);
-        var retained = provider.index(firstStore.capture());
+        JavaWorkspaceAnalysis retained = provider.index(firstStore.capture());
         assertEquals("oldValue", retained.classStubsByQualifiedName().get("demo.Library").fields().getFirst().name());
         var jarTime = Files.getLastModifiedTime(jar);
         var runtimeTime = Files.getLastModifiedTime(runtime);
@@ -143,11 +316,11 @@ public class JavaCacheLifecycleTest {
         Files.setLastModifiedTime(runtime, runtimeTime);
         // The immutable configuration, not interactive filesystem inspection, controls reuse.
         assertSame(retained, provider.index(firstStore.capture()));
-        var refreshed = provider.prepareConfiguration(session, raw);
+        WorkspaceConfigurationSnapshot refreshed = provider.prepareConfiguration(session, raw);
         assertNotEquals(firstConfiguration.settings().get("index.binary.epoch"),
             refreshed.settings().get("index.binary.epoch"));
         provider.adoptConfiguration(session, refreshed);
-        var current = provider.index(new DefaultDocumentStore("test", refreshed).capture());
+        JavaWorkspaceAnalysis current = provider.index(new DefaultDocumentStore("test", refreshed).capture());
         assertEquals("newValue", current.classStubsByQualifiedName().get("demo.Library").fields().getFirst().name());
         assertEquals("newRuntime", current.classStubsByQualifiedName().get("demo.Runtime").fields().getFirst().name());
         assertEquals("oldValue", retained.classStubsByQualifiedName().get("demo.Library").fields().getFirst().name());
@@ -166,13 +339,13 @@ public class JavaCacheLifecycleTest {
         archive(jar, "demo/Library", "oldValue");
         archive(jdk.resolve("lib/rt.jar"), "demo/Runtime", "runtime");
         var service = new ProjectLanguageIndexService();
-        var session = service.openProject(project());
+        ProjectLanguageIndexService.Session session = service.openProject(project());
         var provider = new JavaAnalysisContextProvider();
-        var first = provider.prepareConfiguration(session, configuration(jar, jdk));
+        WorkspaceConfigurationSnapshot first = provider.prepareConfiguration(session, configuration(jar, jdk));
         provider.adoptConfiguration(session, first);
-        var oldCapture = new DefaultDocumentStore("test", first).capture();
+        WorkspaceSnapshot oldCapture = new DefaultDocumentStore("test", first).capture();
         archive(jar, "demo/Library", "newValue");
-        var second = provider.prepareConfiguration(session, configuration(jar, jdk));
+        WorkspaceConfigurationSnapshot second = provider.prepareConfiguration(session, configuration(jar, jdk));
         provider.adoptConfiguration(session, second);
         assertThrows(CancellationException.class, () -> provider.index(oldCapture));
         service.closeProject(session);

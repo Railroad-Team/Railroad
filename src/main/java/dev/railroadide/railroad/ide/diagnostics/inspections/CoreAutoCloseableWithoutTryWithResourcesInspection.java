@@ -132,6 +132,7 @@ public class CoreAutoCloseableWithoutTryWithResourcesInspection implements JavaI
                 SyntaxNode returnTypeRef = context.directChild(declaration, JavaSyntaxKinds.TYPE_REFERENCE.id());
                 yield returnTypeRef == null ? null : context.resolveQualifiedTypeName(returnTypeRef);
             }
+
             default -> null;
         };
     }

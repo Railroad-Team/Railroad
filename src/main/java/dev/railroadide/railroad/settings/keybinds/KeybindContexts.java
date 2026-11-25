@@ -5,11 +5,15 @@ import dev.railroadide.railroad.Railroad;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Registry and factory for logical contexts in which keybinds may be active. */
+/**
+ * Registry and factory for logical contexts in which keybinds may be active.
+ */
 public class KeybindContexts {
     private static final Map<String, KeybindContext> contexts = new HashMap<>();
 
-    /** Context marker that makes a keybind active in every context. */
+    /**
+     * Context marker that makes a keybind active in every context.
+     */
     public static final KeybindContext ALL = registerContext(new KeybindContext("all"));
 
     /**
@@ -23,6 +27,7 @@ public class KeybindContexts {
             Railroad.LOGGER.warn("Attempted to register a duplicate keybind context: {}", context);
             return getContext(context.id());
         }
+
         contexts.put(context.id(), context);
 
         return context;

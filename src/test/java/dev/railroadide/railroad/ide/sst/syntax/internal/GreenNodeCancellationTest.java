@@ -76,7 +76,7 @@ public class GreenNodeCancellationTest {
 
     @Test
     public void activeAssemblyPreservesWidthsCopiesChildrenAndLeavesControlsBehind() {
-        var children = new ArrayList<GreenElement>(List.of(
+        List<GreenElement> children = new ArrayList<GreenElement>(List.of(
             new GreenToken(SyntaxKind.TOKEN, "ab"),
             new GreenToken(SyntaxKind.TOKEN, "cde")));
         var checks = new AtomicInteger();
@@ -101,6 +101,7 @@ public class GreenNodeCancellationTest {
             public GreenElement get(int index) {
                 if (index < 0 || index >= size())
                     throw new IndexOutOfBoundsException(index);
+
                 reads.incrementAndGet();
                 return child;
             }

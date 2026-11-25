@@ -72,6 +72,7 @@ public interface DiagnosticsProvider<D extends EditorDiagnostic<?>> {
             diagnostic.relatedInformation().forEach(related -> context.workspaceSnapshot()
                 .document(related.location().documentId()).ifPresent(related.location()::validateAgainst));
         }
+
         context.checkActive();
         return copy;
     }

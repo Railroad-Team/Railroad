@@ -170,7 +170,7 @@ public class JdbCLIBuilder implements CLIBuilder<Process, JdbCLIBuilder> {
     public JdbCLIBuilder connect(String connectorName, Map<String, String> arguments) {
         Objects.requireNonNull(connectorName, "Connector name cannot be null");
         Objects.requireNonNull(arguments, "Connector arguments cannot be null");
-        var builder = new StringBuilder("-connect ").append(connectorName);
+        StringBuilder builder = new StringBuilder("-connect ").append(connectorName);
         arguments.forEach((key, value) -> builder.append(":").append(key).append("=").append(value));
         this.arguments.add(builder.toString());
         return this;
@@ -334,6 +334,7 @@ public class JdbCLIBuilder implements CLIBuilder<Process, JdbCLIBuilder> {
         if (mainClass != null) {
             command.add(mainClass);
         }
+
         command.addAll(targetArguments);
 
         var processBuilder = new ProcessBuilder();

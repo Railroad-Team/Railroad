@@ -55,5 +55,4 @@ public final class IDEContentRouter {
             Services.UI_MANAGER.lookup(target.getDockId()).ifPresent(action);
         }
     }
-
 }

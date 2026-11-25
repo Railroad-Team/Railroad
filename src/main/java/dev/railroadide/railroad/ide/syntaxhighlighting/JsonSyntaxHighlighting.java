@@ -50,6 +50,7 @@ public class JsonSyntaxHighlighting {
             spansBuilder.add(Collections.singleton(styleClass), matcher.end() - matcher.start());
             lastKwEnd = matcher.end();
         }
+
         spansBuilder.add(Collections.emptyList(), text.length() - lastKwEnd);
         StyleSpans<Collection<String>> spans = spansBuilder.create();
         Railroad.LOGGER.debug("Computed JSON highlighting in {} ms", System.currentTimeMillis() - start);

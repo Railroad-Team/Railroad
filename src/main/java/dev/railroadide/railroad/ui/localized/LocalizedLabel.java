@@ -10,7 +10,9 @@ import org.jetbrains.annotations.NotNull;
 @Getter
 public class LocalizedLabel extends Label {
 
-    /** The localization property bidirectionally bound to the label text. */
+    /**
+     * The localization property bidirectionally bound to the label text.
+     */
     private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
     /**
      * Creates a new LocalizedLabel and sets the key and args

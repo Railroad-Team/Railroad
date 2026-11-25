@@ -29,6 +29,7 @@ import org.json.JSONTokener;
 
 import java.nio.file.Path;
 import java.util.*;
+import org.fxmisc.richtext.model.StyleSpan;
 
 /**
  * Adds JSON syntax highlighting, formatting, and schema validation to the code editor.
@@ -144,6 +145,7 @@ public class JsonCodeEditorPane extends CodeEditorPane {
                     lineStart++;
                 } else
                     break;
+
             }
 
             char prev = pos > 0 ? before.charAt(pos - 1) : '\0';
@@ -182,7 +184,7 @@ public class JsonCodeEditorPane extends CodeEditorPane {
     private void addStyleClass(int start, int end, String style) {
         StyleSpans<Collection<String>> spans = getStyleSpans(start, end);
         StyleSpansBuilder<Collection<String>> builder = new StyleSpansBuilder<>(spans.getSpanCount());
-        for (var span : spans) {
+        for (StyleSpan<Collection<String>> span : spans) {
             List<String> styles = new ArrayList<>(span.getStyle());
             if (!styles.contains(style)) {
                 styles.add(style);
@@ -201,7 +203,7 @@ public class JsonCodeEditorPane extends CodeEditorPane {
     }
 
     private void highlightValidationErrors(ValidationException rootEx) {
-        var exceptions = rootEx.getCausingExceptions();
+        List<ValidationException> exceptions = rootEx.getCausingExceptions();
         if (exceptions.isEmpty()) {
             exceptions = List.of(rootEx);
         }
@@ -281,6 +283,7 @@ public class JsonCodeEditorPane extends CodeEditorPane {
                         valueEnd++;
                         break;
                     }
+
                     valueEnd++;
                 }
             } else if (ch == '{' || ch == '[') {

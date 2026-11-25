@@ -395,5 +395,4 @@ public class CoreInitializationSafetyInspectionsTest {
 
         assertFalse(diagnostics.stream().anyMatch(d -> "SEM_FIELD_CAN_BE_LOCAL_VARIABLE".equals(d.code())));
     }
-
 }

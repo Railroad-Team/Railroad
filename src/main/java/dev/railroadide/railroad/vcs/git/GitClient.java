@@ -38,7 +38,9 @@ import java.util.regex.Pattern;
 public class GitClient {
     private static final Pattern STASH_SUBJECT_PATTERN = Pattern.compile("^(?:WIP on|On)\\s+(.+?):\\s*(.*)$");
 
-    /** Process runner used by this client and subclasses to execute Git commands. */
+    /**
+     * Process runner used by this client and subclasses to execute Git commands.
+     */
     protected final GitProcessRunner runner;
 
     /**
@@ -130,6 +132,24 @@ public class GitClient {
      * @throws GitExecutionException when command execution fails
      */
     public void commitChanges(GitRepository repo, GitCommitData commit, boolean pushAfterCommit) {
+        commitChanges(repo, commit, pushAfterCommit, event -> GitLog.LOGGER.debug("Git push: {}", event));
+    }
+
+    /**
+     * Commits selected changes and optionally pushes after commit, reporting push progress.
+     *
+     * @param repo repository to commit in
+     * @param commit commit details
+     * @param pushAfterCommit whether to run push after successful commit
+     * @param progress receives push progress events
+     * @throws GitExecutionException when command execution fails
+     */
+    public void commitChanges(
+        GitRepository repo,
+        GitCommitData commit,
+        boolean pushAfterCommit,
+        Consumer<GitProgressEvent> progress
+    ) {
         GitCommand commitCmd = GitCommands.commit(repo, commit);
         GitResult commitResult = runner.run(commitCmd, null, null, GitResultCaptureMode.TEXT_LINES);
 
@@ -143,14 +163,7 @@ public class GitClient {
             throw new GitExecutionException("git commit failed: " + String.join("\n", commitResult.stderr()));
 
         if (pushAfterCommit) {
-            // TODO: Allow passing listeners from higher up
-            push(repo, GitOutputListener.NO_OP, event -> {
-                if (event instanceof GitProgressEvent.Percentage(String phase, int percent)) {
-                    GitLog.LOGGER.debug("Git Push Progress - {}: {}%", phase, percent);
-                } else if (event instanceof GitProgressEvent.Message(String message)) {
-                    GitLog.LOGGER.debug("Git Push Message - {}", message);
-                }
-            });
+            push(repo, GitOutputListener.NO_OP, progress);
         }
     }
 
@@ -1011,6 +1024,7 @@ public class GitClient {
                 branch = matcher.group(1).trim();
                 message = matcher.group(2).trim();
             }
+
             if (message.isBlank()) {
                 message = parts[3];
             }
@@ -1677,6 +1691,7 @@ public class GitClient {
         if (authorName != null && authorName.isBlank()) {
             authorName = null;
         }
+
         if (authorEmail != null && authorEmail.isBlank()) {
             authorEmail = null;
         }

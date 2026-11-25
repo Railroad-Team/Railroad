@@ -4,6 +4,7 @@ import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.debug.model.*;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ide.debug.DebuggingManager;
+import dev.railroadide.railroad.ide.runconfig.session.RunSessionManager;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.JavaApplicationRunConfigurationData;
 import dev.railroadide.railroad.java.JDK;
@@ -38,15 +39,16 @@ public class JavaApplicationDebugIntegrationTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
     }
 
     @Test
     public void breakpointLocalsStepContinueAndNaturalExitCanBeRepeated() throws Exception {
-        try (var fixture = fixture(false, false)) {
+        try (Fixture fixture = fixture(false, false)) {
             Services.BREAKPOINT_SERVICE.add(fixture.source, 7);
             for (int iteration = 0; iteration < 2; iteration++) {
-                var completion = fixture.type.debug(fixture.project, fixture.configuration);
+                CompletableFuture<Void> completion = fixture.type.debug(fixture.project, fixture.configuration);
                 await(() -> fixture.manager().getVariables().stream().anyMatch(value -> value.name().equals("y")));
                 assertTrue(fx(() -> fixture.manager().getVariables().stream()
                     .anyMatch(value -> value.name().equals("x") && value.value().equals("5"))));
@@ -56,12 +58,14 @@ public class JavaApplicationDebugIntegrationTest {
                     fixture.manager().step(DebugStepKind.OVER);
                     return null;
                 });
+
                 await(() -> fixture.manager().selectedFrameProperty().get() != null
                     && fixture.manager().selectedFrameProperty().get().line() == 8);
                 fx(() -> {
                     fixture.manager().resume();
                     return null;
                 });
+
                 completion.get(10, TimeUnit.SECONDS);
                 fixture.assertStopped();
             }
@@ -70,7 +74,7 @@ public class JavaApplicationDebugIntegrationTest {
 
     @Test
     public void stopWhileSuspendedClearsStateAndImmediatelyAllowsAnotherDebug() throws Exception {
-        try (var fixture = fixture(false, false)) {
+        try (Fixture fixture = fixture(false, false)) {
             Services.BREAKPOINT_SERVICE.add(fixture.source, 7);
             for (int iteration = 0; iteration < 2; iteration++) {
                 fixture.type.debug(fixture.project, fixture.configuration);
@@ -83,8 +87,8 @@ public class JavaApplicationDebugIntegrationTest {
 
     @Test
     public void stopWhileAttachingCancelsBeforeTheFiveSecondDeadline() throws Exception {
-        try (var fixture = fixture(true, true)) {
-            var completion = fixture.type.debug(fixture.project, fixture.configuration);
+        try (Fixture fixture = fixture(true, true)) {
+            CompletableFuture<Void> completion = fixture.type.debug(fixture.project, fixture.configuration);
             await(() -> fixture.manager().getState().get() == DebugSessionState.ATTACHING);
             fixture.type.stop(fixture.project, fixture.configuration).get(3, TimeUnit.SECONDS);
             assertThrows(ExecutionException.class, () -> completion.get(3, TimeUnit.SECONDS));
@@ -98,8 +102,8 @@ public class JavaApplicationDebugIntegrationTest {
 
     @Test
     public void targetExitBeforeAttachmentCancelsRetriesAndClearsState() throws Exception {
-        try (var fixture = fixture(true, false)) {
-            var completion = fixture.type.debug(fixture.project, fixture.configuration);
+        try (Fixture fixture = fixture(true, false)) {
+            CompletableFuture<Void> completion = fixture.type.debug(fixture.project, fixture.configuration);
             assertThrows(ExecutionException.class, () -> completion.get(3, TimeUnit.SECONDS));
             fixture.assertStopped();
         }
@@ -107,8 +111,8 @@ public class JavaApplicationDebugIntegrationTest {
 
     @Test
     public void failedAttachmentStopsChildAndAllowsASecondSession() throws Exception {
-        try (var fixture = fixture(true, true)) {
-            var completion = fixture.type.debug(fixture.project, fixture.configuration);
+        try (Fixture fixture = fixture(true, true)) {
+            CompletableFuture<Void> completion = fixture.type.debug(fixture.project, fixture.configuration);
             assertThrows(ExecutionException.class, () -> completion.get(10, TimeUnit.SECONDS));
             fixture.assertStopped();
             fixture.type.omitJdwp.set(false);
@@ -142,17 +146,22 @@ public class JavaApplicationDebugIntegrationTest {
         data.setMainClass("demo.Main");
         data.setWorkingDirectory(directory);
         data.setClasspathEntries(new String[]{output.toString()});
+
         data.setProgramArguments(linger ? new String[]{"linger"} : new String[0]);
         data.setJdk(new JDK(Path.of(System.getProperty("java.home")), "Test JDK",
             JavaVersion.fromMajor(Runtime.version().feature())));
-        var manager = new DebuggingManager[1];
+        DebuggingManager[] manager = new DebuggingManager[1];
+        var sessions = new RunSessionManager();
         Project project = (Project) Proxy.newProxyInstance(Project.class.getClassLoader(),
             new Class<?>[]{Project.class},
             (_, method, _) -> switch (method.getName()) {
                 case "getPath" -> directory;
                 case "getDebuggingManager" -> manager[0];
+                case "hasFacet" -> false;
+                case "getRunSessions" -> sessions;
                 default -> throw new UnsupportedOperationException(method.getName());
             });
+
         manager[0] = new DebuggingManager(project);
         return new Fixture(type, new RunConfiguration<>(type, data), project, source);
     }
@@ -200,6 +209,7 @@ public class JavaApplicationDebugIntegrationTest {
                 List<String> command = builder.command();
                 command.removeIf((String argument) -> argument.startsWith("-agentlib:jdwp="));
             }
+
             child = super.startProcess(builder);
             return child;
         }
@@ -211,6 +221,7 @@ public class JavaApplicationDebugIntegrationTest {
             if (System.nanoTime() >= deadline) {
                 fail("Timed out waiting for debugger state");
             }
+
             Thread.sleep(20);
         }
     }

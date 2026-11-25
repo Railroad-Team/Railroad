@@ -132,12 +132,14 @@ public class GitStashPane extends RRVBox {
             updateActionState();
             onStashSelectionChanged(newValue);
         });
+
         stashChangesTree.getSelectionModel().selectedItemProperty().addListener((_, _, newValue) -> {
             if (newValue == null || !(newValue.getValue() instanceof FileItem fileItem) || selectedStashRef == null)
                 return;
 
             openDiffForStashFile(selectedStashRef, fileItem.change());
         });
+
         CommandButtons.bind(createButton, GitCommands.STASH_CREATE,
             () -> CommandContext.withArgument(project, this, this));
         CommandButtons.bind(refreshButton, GitCommands.STASH_REFRESH,
@@ -349,7 +351,7 @@ public class GitStashPane extends RRVBox {
                 });
 
             tabPane.getSelectionModel().select(diffTab);
-            var diffPane = (GitDiffPane) diffTab.getContent();
+            GitDiffPane diffPane = (GitDiffPane) diffTab.getContent();
             String title = "Git Diff: " + change.path().getFileName();
             diffPane.setExternalDiff(title, "");
 

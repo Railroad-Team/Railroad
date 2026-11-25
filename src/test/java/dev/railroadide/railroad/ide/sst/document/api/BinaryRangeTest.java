@@ -13,7 +13,8 @@ public class BinaryRangeTest {
     @Test
     public void binaryRangesUseByteOffsets() {
         byte[] bytes = {10, 20, 30, 40};
-        var snapshot = snapshot(bytes);
+
+        BinaryDocumentSnapshot snapshot = snapshot(bytes);
         var range = new BinaryRange(1, 3);
 
         assertEquals(2, range.length());
@@ -31,7 +32,8 @@ public class BinaryRangeTest {
 
     @Test
     public void emptyBinaryRangesReturnEmptyContent() {
-        var snapshot = snapshot(new byte[]{10, 20});
+        BinaryDocumentSnapshot snapshot = snapshot(new byte[]{10, 20});
+
         var range = new BinaryRange(1, 1);
 
         assertEquals(0, range.length());
@@ -40,7 +42,7 @@ public class BinaryRangeTest {
 
     @Test
     public void binaryRangeContentRejectsOutOfBoundsRanges() {
-        var snapshot = snapshot(new byte[]{10, 20});
+        BinaryDocumentSnapshot snapshot = snapshot(new byte[]{10, 20});
 
         assertThrows(IndexOutOfBoundsException.class, () -> new BinaryRange(1, 3).content(snapshot));
     }

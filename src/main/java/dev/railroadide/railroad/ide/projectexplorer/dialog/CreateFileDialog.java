@@ -78,8 +78,11 @@ public class CreateFileDialog {
             case JAVA_CLASS ->
                 new TypeSelection[]{TypeSelection.JAVA_CLASS, TypeSelection.JAVA_INTERFACE, TypeSelection.JAVA_ENUM,
                     TypeSelection.JAVA_ANNOTATION};
+
             case JSON -> new TypeSelection[]{TypeSelection.JSON};
+
             case TXT -> new TypeSelection[]{TypeSelection.TXT};
+
             default -> new TypeSelection[0];
         });
 
@@ -91,10 +94,10 @@ public class CreateFileDialog {
 
             TypeSelection selectedItem = listView.getSelectionModel().getSelectedItem();
             if (type != FileCreateType.FOLDER && selectedItem != null) {
-                var template = selectedItem.getTemplate();
-                var fileName = textField.getText();
-                var extension = selectedItem.getExtension();
-                var content = template
+                String template = selectedItem.getTemplate();
+                String fileName = textField.getText();
+                String extension = selectedItem.getExtension();
+                String content = template
                     .replace("<package_loc>", path.toString().replace("\\", ".").replace("/", "."))
                     .replace("<class_name>", fileName);
 
@@ -137,6 +140,7 @@ public class CreateFileDialog {
         if (stylesheet != null) {
             scene.getStylesheets().add(stylesheet.toExternalForm());
         }
+
         dialog.setScene(scene);
         dialog.showAndWait();
     }

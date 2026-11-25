@@ -3,7 +3,10 @@ package dev.railroadide.railroad.command;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.projectexplorer.ProjectExplorerPane;
 import dev.railroadide.railroad.ide.ui.codeeditor.TextEditorPane;
+import dev.railroadide.railroad.ide.ui.codeeditor.find.EditorFindHost;
+import dev.railroadide.railroad.ide.ui.editor.EditorTab;
 import dev.railroadide.railroad.settings.keybinds.KeybindData;
+import dev.railroadide.railroad.ui.id.UIIds;
 import javafx.scene.Node;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.input.Clipboard;
@@ -11,6 +14,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Editing commands resolve the focused input at invocation, including search and dialog fields.
@@ -39,6 +43,78 @@ public final class EditCommands {
      * Pastes into the focused input.
      */
     public static final Command<Void> PASTE = register("paste", KeyCode.V);
+    /**
+     * Opens the find bar of the focused or active editor.
+     */
+    public static final Command<Void> FIND = registerFind("find", host -> host.bar().open(false),
+        new KeybindData(KeyCode.F, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN}));
+
+    /**
+     * Opens the find bar of the focused or active editor with its replace row shown.
+     */
+    public static final Command<Void> REPLACE = registerFind("replace", host -> host.bar().open(true),
+        new KeybindData(KeyCode.R, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN}));
+
+    /**
+     * Selects the next match of the current find query.
+     */
+    public static final Command<Void> FIND_NEXT = registerFind("find_next", host -> host.bar().findNext(),
+        new KeybindData(KeyCode.F3, new KeyCombination.Modifier[0]));
+    /**
+     * Selects the previous match of the current find query.
+     */
+    public static final Command<Void> FIND_PREVIOUS = registerFind("find_previous",
+        host -> host.bar().findPrevious(),
+        new KeybindData(KeyCode.F3, new KeyCombination.Modifier[]{KeyCombination.SHIFT_DOWN}));
+
+    /**
+     * Shows the Find in Files tool, seeded with the selection of the focused or active editor.
+     */
+    public static final Command<Void> FIND_IN_FILES = registerProjectSearch("find_in_files", false,
+        new KeybindData(KeyCode.F, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN,
+            KeyCombination.SHIFT_DOWN}));
+
+    /**
+     * Shows the Find in Files tool with its replace row, seeded with the selection of the focused or active editor.
+     */
+    public static final Command<Void> REPLACE_IN_FILES = registerProjectSearch("replace_in_files", true,
+        new KeybindData(KeyCode.R, new KeyCombination.Modifier[]{KeyCombination.SHORTCUT_DOWN,
+            KeyCombination.SHIFT_DOWN}));
+
+    private static Command<Void> registerProjectSearch(String action, boolean withReplace, KeybindData key) {
+        return CommandRegistry.register(new Command<>("railroad:edit_" + action,
+            "railroad.menu.edit." + action,
+            c -> c.project() != null && Services.UI_MANAGER.lookup(UIIds.IDE.IDE).isPresent(),
+            c -> Services.UI_MANAGER.lookup(UIIds.IDE.IDE)
+                .ifPresent(ide -> ide.showProjectSearch(selectedText(c), withReplace)),
+            List.of(key), Void.class));
+    }
+
+    private static String selectedText(CommandContext<?> context) {
+        return switch (target(context)) {
+            case TextEditorPane editor -> editor.getSelectedText();
+            case TextInputControl text -> text.getSelectedText();
+            case null, default -> null;
+        };
+    }
+
+    private static Command<Void> registerFind(String action, Consumer<EditorFindHost> handler, KeybindData key) {
+        return CommandRegistry.register(new Command<>("railroad:edit_" + action,
+            "railroad.menu.edit." + action, c -> findHost(c) != null,
+            c -> handler.accept(findHost(c)), List.of(key), Void.class));
+    }
+
+    private static EditorFindHost findHost(CommandContext<?> context) {
+        Node focus = context.source() == null || context.source().getScene() == null
+            ? context.source()
+            : context.source().getScene().getFocusOwner();
+        EditorFindHost host = EditorFindHost.enclosing(focus);
+        if (host == null) {
+            host = Services.EDITOR_TAB_MANAGER.activeTab().map(EditorTab::findHost).orElse(null);
+        }
+
+        return host != null && host.canFind() ? host : null;
+    }
 
     private static Node target(CommandContext<?> context) {
         Node focus = context.source() == null || context.source().getScene() == null
@@ -49,6 +125,7 @@ public final class EditCommands {
                 || node instanceof ProjectExplorerPane)
                 return node;
         }
+
         return Services.EDITOR_TAB_MANAGER.activeTab().map(t -> (Node) t.view().activeEditor()).orElse(null);
     }
 
@@ -61,9 +138,10 @@ public final class EditCommands {
 
     private static boolean enabled(String action, Node target) {
         if (target instanceof ProjectExplorerPane pane) {
-            var command = explorerCommand(action);
+            Command<ExplorerTarget> command = explorerCommand(action);
             return command != null && command.canExecute(CommandContext.withArgument(null, pane, pane.commandTarget()));
         }
+
         if (target instanceof TextInputControl text)
             return switch (action) {
                 case "undo" -> text.isEditable() && text.isUndoable();
@@ -73,6 +151,7 @@ public final class EditCommands {
                 case "paste" -> text.isEditable() && Clipboard.getSystemClipboard().hasString();
                 default -> false;
             };
+
         if (target instanceof TextEditorPane text)
             return switch (action) {
                 case "undo" -> text.isEditable() && text.isUndoAvailable();
@@ -82,6 +161,7 @@ public final class EditCommands {
                 case "paste" -> text.isEditable() && Clipboard.getSystemClipboard().hasString();
                 default -> false;
             };
+
         return false;
     }
 
@@ -98,7 +178,6 @@ public final class EditCommands {
         if (target instanceof ProjectExplorerPane pane) {
             CommandDispatcher.execute(explorerCommand(action),
                 CommandContext.withArgument(context.project(), pane, pane.commandTarget()));
-
         } else if (target instanceof TextInputControl text) {
             switch (action) {
                 case "undo" -> text.undo();

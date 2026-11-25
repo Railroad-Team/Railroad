@@ -39,6 +39,7 @@ public class JavaArtifactFingerprintTest {
                 if (checks.incrementAndGet() == 4)
                     throw new CancellationException();
             }));
+
         assertEquals(4, checks.get());
         assertNotNull(JavaArtifactFingerprint.capture(List.of(root.resolve("classes")), jdk));
     }

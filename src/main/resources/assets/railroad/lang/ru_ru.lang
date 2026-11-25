@@ -149,7 +149,6 @@ railroad.runconfig.shell_script.configuration.envVariables.invalid=Переме�
 railroad.runconfig.shell_script.configuration.interpreterPath.label=Путь к интерпретатору
 railroad.runconfig.shell_script.configuration.interpreterArgs.label=Аргументы интерпретатора
 railroad.runconfig.shell_script.configuration.interpreterArgs.prompt=Аргументы через пробел
-railroad.runconfig.shell_script.configuration.executeInTerminal.label=Запустить в терминале
 
 
 # =============================================================================
@@ -659,7 +658,19 @@ railroad.project.creation.sources.error.invalid_url=Недействительн
 railroad.project.creation.error.title=Ошибка создания проекта
 railroad.project.creation.error.header=Произошла ошибка при создании проекта.
 
+railroad.menu.code.parameter_info=Информация о параметрах
+
 railroad.mapping_channel.mcp=MCP
 railroad.mapping_channel.yarn=Yarn
 railroad.mapping_channel.official=Официальные (Mojmaps)
 railroad.mapping_channel.parchment=Parchment
+
+railroad.open_project.title=Открыть проект
+railroad.open_project.prompt=Где открыть проект?
+railroad.open_project.this_window.title=В этом окне
+railroad.open_project.this_window.description=Открывает проект в этом окне.
+railroad.open_project.this_window.replaces=Закрывает %s и открывает этот проект вместо него.
+railroad.open_project.new_window.title=В новом окне
+railroad.open_project.new_window.description=Открывает проект в отдельном окне Railroad.
+railroad.open_project.new_window.keeps=Оставляет %s открытым и открывает этот проект в отдельном окне.
+railroad.open_project.new_window.failed=Railroad не удалось открыть новое окно: %s

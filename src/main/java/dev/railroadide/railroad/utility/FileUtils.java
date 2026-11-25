@@ -93,6 +93,7 @@ public final class FileUtils {
         if (!found) {
             stringBuilder.append(key).append("=").append(value).append("\n");
         }
+
         Files.writeString(file, stringBuilder.toString());
     }
 
@@ -137,7 +138,7 @@ public final class FileUtils {
      * @throws IOException if the resolved path is outside the destination directory
      */
     public static Path resolveZipEntryPath(Path destinationDir, ZipEntry zipEntry) throws IOException {
-        var destFile = Path.of(destinationDir.toString(), zipEntry.getName());
+        Path destFile = Path.of(destinationDir.toString(), zipEntry.getName());
 
         if (!destFile.normalize().startsWith(destinationDir))
             throw new IOException("Bad zip entry: " + zipEntry.getName());
@@ -224,6 +225,7 @@ public final class FileUtils {
                 onNotEmpty.run();
                 return false;
             }
+
             try (Stream<Path> paths = Files.list(directory)) {
                 List<Path> pathList = paths.toList();
                 if (pathList.isEmpty()) {
@@ -287,6 +289,7 @@ public final class FileUtils {
         String extension = getExtension(path.toString());
         if (extension == null)
             return new FontIcon(FontAwesomeRegular.FILE);
+
         extension = extension.toLowerCase(Locale.ROOT);
 
         return switch (extension) {

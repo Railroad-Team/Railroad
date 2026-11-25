@@ -14,6 +14,8 @@ import java.util.Collections;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -21,7 +23,7 @@ public class SyntaxValidationCancellationTest {
     @Test
     public void cancelledValidationOfWarmChildrenCanBeRetried() {
         RedNode root = RedFactory.root(greenRoot());
-        var cached = root.children();
+        List<SyntaxNode> cached = root.children();
         var failure = new CancellationException("cancel validation");
         var checks = new AtomicInteger();
 

@@ -38,31 +38,49 @@ public final class SwitchboardRepositories {
         CACHE_MANAGER = cacheManager;
     }
 
-    /** Repository for Minecraft versions. */
+    /**
+     * Repository for Minecraft versions.
+     */
     public static final MinecraftVersionRepository MINECRAFT = register("railroad:switchboard/minecraft",
         new MinecraftVersionRepository(CLIENT, CACHE_MANAGER));
-    /** Repository for Forge versions. */
+    /**
+     * Repository for Forge versions.
+     */
     public static final ForgeVersionRepository FORGE = register("railroad:switchboard/forge",
         new ForgeVersionRepository(CLIENT, CACHE_MANAGER));
-    /** Repository for NeoForge versions. */
+    /**
+     * Repository for NeoForge versions.
+     */
     public static final NeoforgeVersionRepository NEOFORGE = register("railroad:switchboard/neoforge",
         new NeoforgeVersionRepository(CLIENT, CACHE_MANAGER));
-    /** Repository for Fabric API versions. */
+    /**
+     * Repository for Fabric API versions.
+     */
     public static final FabricApiVersionRepository FABRIC_API = register("railroad:switchboard/fabric_api",
         new FabricApiVersionRepository(CLIENT, CACHE_MANAGER));
-    /** Repository for Fabric Loader versions. */
+    /**
+     * Repository for Fabric Loader versions.
+     */
     public static final FabricLoaderVersionRepository FABRIC_LOADER = register("railroad:switchboard/fabric_loader",
         new FabricLoaderVersionRepository(CLIENT, CACHE_MANAGER));
-    /** Repository for Yarn versions. */
+    /**
+     * Repository for Yarn versions.
+     */
     public static final YarnVersionRepository YARN = register("railroad:switchboard/yarn",
         new YarnVersionRepository(CLIENT, CACHE_MANAGER));
-    /** Repository for Mojmap versions. */
+    /**
+     * Repository for Mojmap versions.
+     */
     public static final MojmapVersionRepository MOJMAP = register("railroad:switchboard/mojmap",
         new MojmapVersionRepository(CLIENT, CACHE_MANAGER));
-    /** Repository for MCP versions. */
+    /**
+     * Repository for MCP versions.
+     */
     public static final McpVersionRepository MCP = register("railroad:switchboard/mcp",
         new McpVersionRepository(CLIENT, CACHE_MANAGER));
-    /** Repository for Parchment versions. */
+    /**
+     * Repository for Parchment versions.
+     */
     public static final ParchmentVersionRepository PARCHMENT = register("railroad:switchboard/parchment",
         new ParchmentVersionRepository(CLIENT, CACHE_MANAGER));
 

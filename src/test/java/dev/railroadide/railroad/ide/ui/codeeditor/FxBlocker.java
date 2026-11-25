@@ -28,6 +28,7 @@ public final class FxBlocker implements AutoCloseable {
                 blocker.finished.completeExceptionally(failure);
             }
         });
+
         assertTrue(blocker.entered.await(10, TimeUnit.SECONDS));
         return blocker;
     }

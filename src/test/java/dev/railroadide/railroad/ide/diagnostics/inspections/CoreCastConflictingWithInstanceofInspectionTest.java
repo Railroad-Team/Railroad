@@ -373,5 +373,4 @@ public class CoreCastConflictingWithInstanceofInspectionTest {
             && d.message().contains("Integer")
             && d.message().contains("String")));
     }
-
 }

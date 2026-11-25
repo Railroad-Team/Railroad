@@ -526,6 +526,7 @@ public class JavaRenameServiceTest {
             RenameProposal proposal = proposal("p/Names.java", "value;", 0, name);
             assertFalse(proposal.applicable(), name);
         }
+
         assertConflict(proposal("p/Names.java", "Names {", 0, "var"), "cannot be used as a type name");
         assertConflict(proposal("p/Names.java", "Names {", 0, "New\0Name"), "cannot be used as a file name");
         assertTrue(proposal("p/Names.java", "value;", 0, "élève").applicable());
@@ -552,7 +553,7 @@ public class JavaRenameServiceTest {
         assertRejected("p/Prepare.java", "T> {", "not supported");
 
         RenamePreparation prepared = prepare("p/Prepare.java", "name =", 2);
-        var renameable = assertInstanceOf(RenamePreparation.Renameable.class, prepared);
+        RenamePreparation.Renameable renameable = assertInstanceOf(RenamePreparation.Renameable.class, prepared);
         assertEquals("name", renameable.name());
         assertEquals("field", renameable.kind());
         assertEquals(text("p/Prepare.java").indexOf("name ="), renameable.range().range().start);
@@ -643,7 +644,8 @@ public class JavaRenameServiceTest {
     }
 
     private void assertRejected(String file, String marker, String reason) {
-        var rejected = assertInstanceOf(RenamePreparation.Rejected.class, prepare(file, marker, 0), marker);
+        RenamePreparation.Rejected rejected = assertInstanceOf(RenamePreparation.Rejected.class,
+            prepare(file, marker, 0), marker);
         assertTrue(rejected.reason().contains(reason), rejected.reason());
         RenameProposal proposal = proposal(file, marker, 0, "renamed");
         assertFalse(proposal.applicable());
@@ -673,7 +675,9 @@ public class JavaRenameServiceTest {
         return rename(file, offset + delta, newName);
     }
 
-    /** Prepares the rename first and passes the prepared symbol, as the rename dialog does. */
+    /**
+     * Prepares the rename first and passes the prepared symbol, as the rename dialog does.
+     */
     private RenameProposal rename(String file, int offset, String newName) {
         SymbolId symbol = services.prepareRename(context(file), offset)
             .value() instanceof RenamePreparation.Renameable renameable
@@ -694,6 +698,7 @@ public class JavaRenameServiceTest {
         for (WorkspaceChange change : edit.changes()) {
             if (!(change instanceof WorkspaceChange.TextEdit text))
                 continue;
+
             String name = documents.entrySet().stream()
                 .filter(entry -> entry.getValue().id().equals(text.expected().id())).findFirst().orElseThrow()
                 .getKey();
@@ -706,6 +711,7 @@ public class JavaRenameServiceTest {
                     replacement.text()));
             result.put(name, builder.toString());
         }
+
         return result;
     }
 
@@ -745,6 +751,7 @@ public class JavaRenameServiceTest {
                 Map.of("module.main.sources", directory.toString()));
             store = new DefaultDocumentStore("rename", configuration);
         }
+
         return store;
     }
 }

@@ -388,6 +388,7 @@ public class JavaRuleContextTest {
         for (SyntaxNode child : node.children()) {
             builder.append(syntaxText(child));
         }
+
         return builder.toString();
     }
 }

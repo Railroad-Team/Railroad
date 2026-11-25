@@ -61,7 +61,9 @@ public class PluginsPane extends SplitPane {
     private PluginDescriptor activeDescriptor;
     private boolean updatingDetailToggle;
 
-    /** Creates the pane with the plugin manager's current enabled states. */
+    /**
+     * Creates the pane with the plugin manager's current enabled states.
+     */
     public PluginsPane() {
         this(PluginManager.getEnabledPlugins());
     }
@@ -126,6 +128,7 @@ public class PluginsPane extends SplitPane {
             updateLocalizedStaticTexts();
             updateDetails(activeDescriptor);
         });
+
         updateLocalizedStaticTexts();
 
         Services.UI_MANAGER.assignWhileAttached(UIIds.Settings.PLUGINS, this);
@@ -212,6 +215,7 @@ public class PluginsPane extends SplitPane {
         detailToggle.selectedProperty().addListener((_, _, enabled) -> {
             if (updatingDetailToggle)
                 return;
+
             setPluginEnabled(activeDescriptor, enabled);
         });
 
@@ -233,6 +237,7 @@ public class PluginsPane extends SplitPane {
             String url = websiteLink.getText();
             if (url == null || url.isBlank())
                 return;
+
             if (hostServices != null) {
                 hostServices.showDocument(url);
             } else {
@@ -317,7 +322,7 @@ public class PluginsPane extends SplitPane {
     private void refreshList() {
         PluginDescriptor selected = pluginListView.getSelectionModel().getSelectedItem();
 
-        var ordered = enabledPlugins.keySet().stream()
+        List<PluginDescriptor> ordered = enabledPlugins.keySet().stream()
             .sorted(Comparator.comparing(this::sortKey, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(PluginDescriptor::getId, Comparator.nullsLast(String::compareToIgnoreCase)))
             .toList();

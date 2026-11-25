@@ -9,7 +9,9 @@ import java.util.*;
 import java.util.concurrent.CancellationException;
 import org.slf4j.LoggerFactory;
 
-/** Owns language registrations and per-project/dialect sessions, including plugin unload. */
+/**
+ * Owns language registrations and per-project/dialect sessions, including plugin unload.
+ */
 public final class LanguageRuntime implements AutoCloseable {
     private final Map<LanguageId, Registration> registrations = new HashMap<>();
     private final Map<Project, Map<SessionKey, LanguageSession>> sessions = new IdentityHashMap<>();
@@ -42,8 +44,10 @@ public final class LanguageRuntime implements AutoCloseable {
         Objects.requireNonNull(contribution, "contribution");
         if (closed)
             throw new IllegalStateException("Language runtime is closed");
+
         if (owner.isBlank())
             throw new IllegalArgumentException("Language owner cannot be blank");
+
         Objects.requireNonNull(contribution.id(), "contribution.id");
         Objects.requireNonNull(contribution.matcher(), "contribution.matcher");
         Objects.requireNonNull(contribution.displayName(), "contribution.displayName");
@@ -54,12 +58,15 @@ public final class LanguageRuntime implements AutoCloseable {
             if (!key.type().isInterface() || !capabilityIds.add(key.id()))
                 throw new IllegalArgumentException("Invalid or conflicting capability contract: " + key.id());
         }
+
         if (contribution.displayName().isBlank())
             throw new IllegalArgumentException("Language display name cannot be blank");
+
         var registration = new Registration(owner, contribution, contribution.id(), contribution.matcher(),
             contribution.priority(), capabilities);
         if (registrations.putIfAbsent(registration.id, registration) != null)
             throw new IllegalArgumentException("Language already registered: " + registration.id);
+
         registrationRevision++;
         return registration;
     }
@@ -90,6 +97,7 @@ public final class LanguageRuntime implements AutoCloseable {
                     loadFailure.addSuppressed(cleanup);
                 }
             }
+
             throw loadFailure;
         }
     }
@@ -126,6 +134,7 @@ public final class LanguageRuntime implements AutoCloseable {
         synchronized (this) {
             candidates = List.copyOf(registrations.values());
         }
+
         List<Match> matches = new ArrayList<>();
         for (Registration registration : candidates) {
             try {
@@ -138,6 +147,7 @@ public final class LanguageRuntime implements AutoCloseable {
                     registration.contribution.id(), exception);
             }
         }
+
         return matches.stream().sorted(Comparator
             .comparingInt((Match match) -> match.registration.priority).reversed()
             .thenComparing(Comparator.comparingInt(Match::specificity).reversed())
@@ -161,6 +171,7 @@ public final class LanguageRuntime implements AutoCloseable {
                 // Filename matching remains available when content cannot be read.
             }
         }
+
         return find(new LanguageMatchInput(path, prefix));
     }
 
@@ -185,14 +196,17 @@ public final class LanguageRuntime implements AutoCloseable {
         synchronized (this) {
             if (closed)
                 throw new CancellationException("Language runtime is closed");
+
             registration = registrations.get(id);
             if (registration == null)
                 throw new IllegalArgumentException("Language is not registered: " + id);
+
             projectSessions = sessions.computeIfAbsent(project, _ -> new HashMap<>());
             LanguageSession existing = projectSessions.get(key);
             if (existing != null && !existing.isClosed())
                 return existing;
         }
+
         var context = new LanguageSessionContext(project.getPath(), dialect,
             CapabilityRegistry.builder().add(LanguageCapabilities.PROJECT, project).build());
         LanguageSession created = Objects.requireNonNull(registration.contribution.openSession(context),
@@ -204,6 +218,7 @@ public final class LanguageRuntime implements AutoCloseable {
                 throw new IllegalStateException("Language session capabilities differ from their declaration: " + id);
             }
         }
+
         LanguageSession result = null;
         synchronized (this) {
             if (!closed && registrations.get(id) == registration && sessions.get(project) == projectSessions) {
@@ -214,9 +229,11 @@ public final class LanguageRuntime implements AutoCloseable {
                 }
             }
         }
+
         created.close();
         if (result != null)
             return result;
+
         throw new CancellationException("Language or project was unloaded while opening " + id);
     }
 
@@ -232,6 +249,7 @@ public final class LanguageRuntime implements AutoCloseable {
         synchronized (this) {
             removed = sessions.remove(project);
         }
+
         closeSessions(removed == null ? List.of() : removed.values());
     }
 
@@ -245,6 +263,7 @@ public final class LanguageRuntime implements AutoCloseable {
         synchronized (this) {
             removed = registrations.values().stream().filter(registration -> registration.owner.equals(owner)).toList();
         }
+
         RuntimeException failure = null;
         for (Registration registration : removed) {
             try {
@@ -257,6 +276,7 @@ public final class LanguageRuntime implements AutoCloseable {
                 }
             }
         }
+
         if (failure != null)
             throw failure;
     }
@@ -271,6 +291,7 @@ public final class LanguageRuntime implements AutoCloseable {
         synchronized (this) {
             registration = registrations.get(id);
         }
+
         if (registration != null) {
             removeRegistration(registration);
         }
@@ -281,16 +302,19 @@ public final class LanguageRuntime implements AutoCloseable {
         synchronized (this) {
             if (!registrations.remove(registration.id, registration))
                 return;
+
             registrationRevision++;
             for (Map<SessionKey, LanguageSession> projectSessions : sessions.values()) {
                 projectSessions.entrySet().removeIf(entry -> {
                     if (!entry.getKey().id.equals(registration.id))
                         return false;
+
                     removed.add(entry.getValue());
                     return true;
                 });
             }
         }
+
         closeSessions(removed);
     }
 
@@ -306,8 +330,10 @@ public final class LanguageRuntime implements AutoCloseable {
             if (!registrations.isEmpty()) {
                 registrationRevision++;
             }
+
             registrations.clear();
         }
+
         closeSessions(removed);
     }
 
@@ -316,6 +342,7 @@ public final class LanguageRuntime implements AutoCloseable {
         synchronized (this) {
             closed = true;
         }
+
         clear();
     }
 
@@ -332,6 +359,7 @@ public final class LanguageRuntime implements AutoCloseable {
                 }
             }
         }
+
         if (failure != null)
             throw failure;
     }

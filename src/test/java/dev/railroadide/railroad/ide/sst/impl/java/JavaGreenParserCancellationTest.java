@@ -29,6 +29,7 @@ public class JavaGreenParserCancellationTest {
                 if (lexer.offset() >= 512) {
                     source.cancel();
                 }
+
                 source.token().throwIfCancellationRequested();
             });
 
@@ -47,9 +48,11 @@ public class JavaGreenParserCancellationTest {
                 int count = produced.incrementAndGet();
                 if (count > 100)
                     throw new AssertionError("Parser failed to observe cancellation while collecting ignored tokens");
+
                 if (count >= 8) {
                     source.cancel();
                 }
+
                 return new Token.IgnoreToken<>();
             }
         }) {
@@ -88,6 +91,7 @@ public class JavaGreenParserCancellationTest {
                 }
             }
         };
+
         try (var lexer = new JavaLexer("class A { " + "int field; ".repeat(1000) + "}") {
             @Override
             public Token<JavaTokenType> nextToken() {
@@ -95,6 +99,7 @@ public class JavaGreenParserCancellationTest {
                 if (token.type() == JavaTokenType.EOF) {
                     reachedEof.set(true);
                 }
+
                 return new ObservedToken(token, onLexeme, () -> {
                 });
             }
@@ -137,6 +142,7 @@ public class JavaGreenParserCancellationTest {
                 }
             }
         };
+
         try (var lexer = new JavaLexer("/* comment */ ".repeat(1000) + "class A {}") {
             @Override
             public Token<JavaTokenType> nextToken() {
@@ -155,8 +161,7 @@ public class JavaGreenParserCancellationTest {
     }
 
     private record ObservedToken(Token<JavaTokenType> original, Runnable onLexeme, Runnable onChannel)
-        implements
-            Token<JavaTokenType> {
+        implements Token<JavaTokenType> {
         @Override
         public JavaTokenType type() {
             return original.type();

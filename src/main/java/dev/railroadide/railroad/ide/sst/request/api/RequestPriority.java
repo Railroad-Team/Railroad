@@ -10,14 +10,28 @@ public enum RequestPriority {
      * Highest priority for completion suggestions requested while editing.
      */
     COMPLETION,
-    /** Priority for displaying callable signatures at the current argument position. */
+    /**
+     * Priority for displaying callable signatures at the current argument position.
+     */
     SIGNATURE_HELP,
-    /** Priority for explicitly requested navigation to a symbol's definition. */
+    /**
+     * Priority for syntax highlighting of open editors, which must not wait for semantic analysis.
+     */
+    SYNTAX_HIGHLIGHTING,
+    /**
+     * Priority for explicitly requested navigation to a symbol's definition.
+     */
     NAVIGATION,
-    /** Priority for diagnostics presented in the visible editor. */
+    /**
+     * Priority for diagnostics presented in the visible editor.
+     */
     VISIBLE_DIAGNOSTICS,
-    /** Priority for analysis of open documents below immediately visible feedback. */
+    /**
+     * Priority for analysis of open documents below immediately visible feedback.
+     */
     OPEN_DOCUMENT_ANALYSIS,
-    /** Lowest priority for indexing workspace content in the background. */
+    /**
+     * Lowest priority for indexing workspace content in the background.
+     */
     BACKGROUND_INDEXING
 }

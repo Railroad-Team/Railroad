@@ -72,10 +72,11 @@ public class JavaJavaProjectSemanticIndexerTest {
         var helperEntered = new CountDownLatch(1);
         var ownerEntered = new CountDownLatch(1);
         var checks = new AtomicInteger();
-        var files = new ArrayList<Path>();
+        List<Path> files = new ArrayList<Path>();
         for (int index = 0; index < 12; index++) {
             files.add(tempDir.resolve("Type" + index + ".java"));
         }
+
         var indexer = new JavaProjectSemanticIndexer() {
             @Override
             public JavaProjectSemanticIndex.SourceFileIndex indexFile(Path sourceFile, Runnable activityCheck) {
@@ -86,14 +87,17 @@ public class JavaJavaProjectSemanticIndexerTest {
                     helperEntered.countDown();
                     await(ownerEntered);
                 }
+
                 activityCheck.run();
                 return entry(sourceFile);
             }
         };
+
         JavaProjectSemanticIndex index = indexer.build(files, new ActivityCheckpoint(() -> {
             assertSame(owner, Thread.currentThread());
             checks.incrementAndGet();
         }));
+
         assertEquals(Set.copyOf(files), index.files().keySet());
         assertTrue(checks.get() > files.size());
     }
@@ -113,6 +117,7 @@ public class JavaJavaProjectSemanticIndexerTest {
             public JavaProjectSemanticIndex.SourceFileIndex indexFile(Path sourceFile, Runnable activityCheck) {
                 if (!cancelBuild.get())
                     return entry(sourceFile);
+
                 if (Thread.currentThread() == owner) {
                     await(helperEntered);
                     activityCheck.run();
@@ -128,9 +133,11 @@ public class JavaJavaProjectSemanticIndexerTest {
                         helperExited.countDown();
                     }
                 }
+
                 return entry(sourceFile);
             }
         };
+
         try {
             assertSame(cancellation, assertThrows(CancellationException.class,
                 () -> published.set(indexer.build(files, () -> {
@@ -138,6 +145,7 @@ public class JavaJavaProjectSemanticIndexerTest {
                     if (helperEntered.getCount() == 0)
                         throw cancellation;
                 }))));
+
             assertNull(published.get());
             assertTrue(helperExited.await(10, TimeUnit.SECONDS));
             helperThread.get().join(10_000);
@@ -145,6 +153,7 @@ public class JavaJavaProjectSemanticIndexerTest {
         } finally {
             cancelBuild.set(false);
         }
+
         assertEquals(2, indexer.build(files).files().size());
     }
 
@@ -162,6 +171,7 @@ public class JavaJavaProjectSemanticIndexerTest {
                     helperEntered.countDown();
                     throw failure;
                 }
+
                 await(helperEntered);
                 while (true) {
                     activityCheck.run();
@@ -169,6 +179,7 @@ public class JavaJavaProjectSemanticIndexerTest {
                 }
             }
         };
+
         assertSame(failure, assertThrows(IllegalStateException.class,
             () -> indexer.build(List.of(tempDir.resolve("A.java"), tempDir.resolve("B.java")))));
         helperThread.get().join(10_000);

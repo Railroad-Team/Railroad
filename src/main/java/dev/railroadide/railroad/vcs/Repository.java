@@ -57,7 +57,9 @@ public class Repository {
      */
     private AbstractConnection connection;
 
-    /** Creates a repository with no configured URLs, name, or connection and an empty icon. */
+    /**
+     * Creates a repository with no configured URLs, name, or connection and an empty icon.
+     */
     public Repository() {
     }
 

@@ -394,12 +394,16 @@ public final class OnboardingFormStep implements OnboardingStep {
         private ReadOnlyBooleanProperty validProperty = new SimpleBooleanProperty(false);
         private Consumer<OnboardingContext> onEnter = ctx -> {
         };
+
         private Consumer<OnboardingContext> onEnterAfterUI = ctx -> {
         };
+
         private Consumer<OnboardingContext> onExit = ctx -> {
         };
+
         private Consumer<OnboardingContext> onDispose = ctx -> {
         };
+
         private Function<OnboardingContext, CompletableFuture<Void>> beforeNext = ctx -> CompletableFuture
             .completedFuture(null);
         private final List<FormSection> formSections = new ArrayList<>();
@@ -826,6 +830,7 @@ public final class OnboardingFormStep implements OnboardingStep {
                         if (spacing != null) {
                             builder.spacing(spacing);
                         }
+
                         if (padding != null) {
                             builder.padding(padding);
                         }
@@ -833,6 +838,7 @@ public final class OnboardingFormStep implements OnboardingStep {
                         if (disableSubmitButton) {
                             builder.disableSubmitButton();
                         }
+
                         if (disableResetButton) {
                             builder.disableResetButton();
                         }
@@ -963,12 +969,16 @@ public final class OnboardingFormStep implements OnboardingStep {
             Object node = component.getValidationNode().getValue();
             if (node instanceof TextInputControl textInput)
                 return textInput.getText();
+
             if (node instanceof ComboBox<?> comboBox)
                 return comboBox.getValue();
+
             if (node instanceof CheckBox checkBox)
                 return checkBox.isSelected();
+
             if (node instanceof Node)
                 return node;
+
             return null;
         }
 

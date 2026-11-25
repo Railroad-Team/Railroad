@@ -84,17 +84,29 @@ public record DocumentEvent(Document file, EventType eventType) implements Gener
      * Enum representing the different types of file events.
      */
     public enum EventType {
-        /** The document was opened. */
+        /**
+         * The document was opened.
+         */
         OPENED,
-        /** The document was closed. */
+        /**
+         * The document was closed.
+         */
         CLOSED,
-        /** The document was saved. */
+        /**
+         * The document was saved.
+         */
         SAVED,
-        /** The document was deleted. */
+        /**
+         * The document was deleted.
+         */
         DELETED,
-        /** The document became active. */
+        /**
+         * The document became active.
+         */
         ACTIVATED,
-        /** The document became inactive. */
+        /**
+         * The document became inactive.
+         */
         DEACTIVATED
     }
 }

@@ -2,30 +2,28 @@ package dev.railroadide.railroad.ide.ui.navigation;
 
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.Services;
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.ide.sst.document.api.*;
-import dev.railroadide.railroad.ide.sst.provider.api.NavigationProvider;
-import dev.railroadide.railroad.ide.sst.provider.api.ProviderExecutor;
-import dev.railroadide.railroad.ide.sst.provider.api.UsageQuery;
-import dev.railroadide.railroad.ide.sst.provider.api.UsageSearch;
-import dev.railroadide.railroad.ide.sst.provider.api.UsageSink;
+import dev.railroadide.railroad.ide.sst.provider.api.*;
 import dev.railroadide.railroad.ide.sst.request.api.*;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolId;
 import dev.railroadide.railroad.localization.L18n;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
+import dev.railroadide.railroad.ui.RRButton;
+import dev.railroadide.railroad.ui.localized.LocalizedTooltip;
+import dev.railroadide.railroad.ui.styling.ButtonVariant;
+import dev.railroadide.railroad.utility.FileUtils;
 import javafx.application.Platform;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TreeCell;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeView;
+import javafx.beans.binding.Bindings;
+import javafx.css.PseudoClass;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
+import javafx.scene.layout.*;
 import org.jspecify.annotations.Nullable;
+import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -35,6 +33,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.LongConsumer;
 
 /**
  * Shows the streamed results of one Find Usages search, grouped by document.
@@ -46,11 +45,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public final class UsagesPane extends BorderPane implements AutoCloseable {
     private static final Duration SEARCH_BUDGET = Duration.ofSeconds(60);
+    private static final PseudoClass WARNING = PseudoClass.getPseudoClass("warning");
+    private static final PseudoClass FAILED = PseudoClass.getPseudoClass("failed");
 
     private final SstScheduler.Scope requests = SstScheduler.shared().newScope();
+    private final @Nullable Path projectRoot;
+    private final Label heading = new Label();
     private final Label status = new Label();
-    private final Button refresh = new Button();
-    private final Button cancel = new Button();
+    private final ProgressBar progress = new ProgressBar();
+    private final RRButton refresh = toolButton("railroad.ide.usages.refresh", FontAwesomeSolid.SYNC_ALT);
+    private final RRButton cancel = toolButton("railroad.ide.usages.cancel", FontAwesomeSolid.STOP);
+    private final HBox groupActions = new HBox();
+    private final VBox header = new VBox();
+    private final FontIcon emptyIcon = new FontIcon();
+    private final Label emptyTitle = new Label();
+    private final Label emptyDetail = new Label();
+    private final VBox empty = new VBox(emptyIcon, emptyTitle, emptyDetail);
     private final TreeItem<Row> root = new TreeItem<>();
     private final TreeView<Row> tree = new TreeView<>(root);
     private final Map<DocumentId, TreeItem<Row>> groups = new LinkedHashMap<>();
@@ -60,9 +70,11 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
     private @Nullable Request request;
     private @Nullable FeatureRequestContext activeContext;
     private @Nullable CancellationTokenSource activeCancellation;
+    private BackgroundActivities.@Nullable Handle activeActivity;
     private DocumentStore.@Nullable ChangeSubscription storeSubscription;
     private @Nullable SymbolId symbol;
     private @Nullable String symbolName;
+    private String failureMessage = "";
     private State state = State.IDLE;
     private int searchedDocuments;
     private int totalDocuments;
@@ -107,50 +119,53 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
     }
 
     /**
-     * Search state presented by the pane.
-     */
-    public enum State {
-        /** No search has been started. */
-        IDLE,
-        /** A search is running; results may be partial. */
-        SEARCHING,
-        /** The search completed against an unchanged workspace. */
-        COMPLETE,
-        /** The search was cancelled; results may be partial. */
-        CANCELLED,
-        /** The workspace changed after the results were captured. */
-        OUTDATED,
-        /** The query resolved to no symbol or the language cannot search for usages. */
-        UNRESOLVED,
-        /** The provider failed or exceeded its budget. */
-        FAILED
-    }
-
-    /**
-     * Creates the pane used as the content of the Find Usages dock tool.
-     *
-     * @param project project whose workspace is searched
-     */
-    public UsagesPane(Project project) {
-        this();
-    }
-
-    /**
      * Creates an empty results pane.
      */
     public UsagesPane() {
+        this(null);
+    }
+
+    /**
+     * Creates a results pane with paths relative to the project when available.
+     *
+     * @param project project whose workspace is searched
+     */
+    public UsagesPane(@Nullable Project project) {
+        projectRoot = project == null ? null : project.getPath().toAbsolutePath().normalize();
         getStyleClass().add("usages-pane");
-        refresh.setText(L18n.localize("railroad.ide.usages.refresh"));
         refresh.setOnAction(_ -> refresh());
-        cancel.setText(L18n.localize("railroad.ide.usages.cancel"));
         cancel.setOnAction(_ -> cancelSearch());
-        HBox.setHgrow(status, Priority.ALWAYS);
-        status.setMaxWidth(Double.MAX_VALUE);
-        var header = new HBox(8, status, cancel, refresh);
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.setPadding(new Insets(4, 8, 4, 8));
+        RRButton collapse = toolButton("railroad.generic.collapse_all", FontAwesomeSolid.COMPRESS_ALT);
+        collapse.setOnAction(_ -> groups.values().forEach(item -> item.setExpanded(false)));
+        RRButton expand = toolButton("railroad.generic.expand_all", FontAwesomeSolid.EXPAND_ALT);
+        expand.setOnAction(_ -> groups.values().forEach(item -> item.setExpanded(true)));
+        groupActions.getChildren().addAll(collapse, expand);
+        groupActions.getStyleClass().add("usages-group-actions");
+        heading.getStyleClass().add("usages-heading");
+        heading.setTextOverrun(OverrunStyle.LEADING_ELLIPSIS);
+        status.getStyleClass().add("usages-summary");
+        for (Label label : List.of(heading, status)) {
+            var tooltip = new Tooltip();
+            tooltip.textProperty().bind(label.textProperty());
+            label.setTooltip(tooltip);
+            label.setMinWidth(0);
+        }
+
+        var caption = new VBox(heading, status);
+        caption.setMinWidth(0);
+        HBox.setHgrow(caption, Priority.ALWAYS);
+        var searchIcon = new FontIcon(FontAwesomeSolid.SEARCH);
+        searchIcon.getStyleClass().add("usages-search-icon");
+        var iconTile = new StackPane(searchIcon);
+        iconTile.getStyleClass().add("usages-search-tile");
+        var toolbar = new HBox(iconTile, caption, groupActions, cancel, refresh);
+        toolbar.getStyleClass().add("usages-toolbar");
+        progress.getStyleClass().add("usages-progress");
+        progress.setMaxWidth(Double.MAX_VALUE);
+        header.getChildren().addAll(toolbar, progress);
         setTop(header);
 
+        tree.getStyleClass().addAll("rr-tree-view", "usages-tree");
         tree.setShowRoot(false);
         tree.setCellFactory(_ -> new RowCell());
         tree.setOnMouseClicked(event -> {
@@ -158,91 +173,44 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
                 openSelected();
             }
         });
+
         tree.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) {
                 openSelected();
                 event.consume();
             }
         });
-        setCenter(tree);
+
+        empty.getStyleClass().add("usages-empty");
+        empty.setMaxSize(460, USE_PREF_SIZE);
+        emptyTitle.getStyleClass().add("usages-empty-title");
+        emptyDetail.getStyleClass().add("usages-empty-detail");
+        emptyTitle.setWrapText(true);
+        emptyDetail.setWrapText(true);
+        setCenter(new StackPane(tree, empty));
+        for (Region node : List.of(header, status, progress, groupActions, cancel, refresh, tree, empty)) {
+            node.managedProperty().bind(node.visibleProperty());
+        }
+
         updateStatus();
     }
 
-    /**
-     * Starts a search, cancelling the previous one and clearing its results. Call on the JavaFX thread.
-     *
-     * @param request captured search inputs
-     */
-    public void search(Request request) {
-        Objects.requireNonNull(request, "request");
-        if (!Platform.isFxApplicationThread())
-            throw new IllegalStateException("Usage searches must start on the FX thread");
-        if (closed)
-            return;
+    private static RRButton toolButton(String key, FontAwesomeSolid icon) {
+        var button = new RRButton("", icon);
+        button.setVariant(ButtonVariant.GHOST);
+        button.getStyleClass().add("toolbar-button");
+        var tooltip = new LocalizedTooltip(key);
+        button.setTooltip(tooltip);
+        button.accessibleTextProperty().bind(tooltip.textProperty());
+        return button;
+    }
 
-        invalidateRequest();
-        clearResults();
-        observe(request.store());
-        this.request = request;
-        if (request.query() instanceof UsageQuery.OfSymbol(SymbolId id)) {
-            symbol = id;
-        } else {
-            symbol = null;
-            symbolName = null;
-        }
-        state = State.SEARCHING;
+    private static String usageCount(int count) {
+        return L18n.localize(count == 1 ? "railroad.ide.usages.one_usage" : "railroad.ide.usages.usage_count", count);
+    }
 
-        var cancellation = new CancellationTokenSource(request.providerLifetime());
-        var context = new FeatureRequestContext(request.workspace(), request.source(), cancellation.token(),
-            Deadline.after(SEARCH_BUDGET));
-        activeCancellation = cancellation;
-        activeContext = context;
-        updateStatus();
-
-        UsageSink sink = (batch, searched, total) -> {
-            List<Location<?>> copy = List.copyOf(batch);
-            Platform.runLater(() -> {
-                if (activeContext != context || state != State.SEARCHING)
-                    return;
-
-                searchedDocuments = searched;
-                totalDocuments = total;
-                append(request.workspace(), copy);
-                updateStatus();
-            });
-        };
-
-        CompletableFuture<FeatureResult<UsageSearch>> future;
-        try {
-            future = requests.submit("usages", RequestPriority.NAVIGATION, context, cancellation,
-                () -> ProviderExecutor.shared().execute(request.source().languageId() + ":usages", context,
-                    SEARCH_BUDGET, () -> request.provider().usages(context, request.query(), sink)));
-        } catch (RuntimeException exception) {
-            future = CompletableFuture.failedFuture(exception);
-        }
-
-        future.thenAccept(result -> Platform.runLater(() -> {
-            if (activeContext != context || result == null || !result.belongsTo(context))
-                return;
-
-            complete(request, result.value());
-        })).exceptionally(throwable -> {
-            Throwable cause = unwrap(throwable);
-            Platform.runLater(() -> {
-                if (activeContext != context)
-                    return;
-
-                releaseRequest();
-                state = cause instanceof CancellationException && !(cause instanceof DeadlineExceededException)
-                    ? State.CANCELLED
-                    : State.FAILED;
-                updateStatus();
-            });
-            if (!(cause instanceof CancellationException)) {
-                Railroad.LOGGER.error("Failed to find usages", cause);
-            }
-            return null;
-        });
+    private static String fileCount(int count) {
+        return L18n.localize(count == 1 ? "railroad.ide.usages.one_file" : "railroad.ide.usages.file_count", count);
     }
 
     /**
@@ -331,6 +299,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
         if (!opened) {
             status.setText(L18n.localize("railroad.ide.usages.outdated_target"));
         }
+
         return opened;
     }
 
@@ -355,8 +324,106 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
             storeSubscription.close();
             storeSubscription = null;
         }
+
         request = null;
         clearResults();
+    }
+
+    /**
+     * Starts a search, cancelling the previous one and clearing its results. Call on the JavaFX thread.
+     *
+     * @param request captured search inputs
+     */
+    public void search(Request request) {
+        Objects.requireNonNull(request, "request");
+        if (!Platform.isFxApplicationThread())
+            throw new IllegalStateException("Usage searches must start on the FX thread");
+
+        if (closed)
+            return;
+
+        invalidateRequest();
+        clearResults();
+        observe(request.store());
+        this.request = request;
+        if (request.query() instanceof UsageQuery.OfSymbol(SymbolId id)) {
+            symbol = id;
+        } else {
+            symbol = null;
+            symbolName = null;
+        }
+
+        state = State.SEARCHING;
+
+        var cancellation = new CancellationTokenSource(request.providerLifetime());
+        var context = new FeatureRequestContext(request.workspace(), request.source(), cancellation.token(),
+            Deadline.after(SEARCH_BUDGET));
+        activeCancellation = cancellation;
+        activeContext = context;
+        BackgroundActivities.Handle activity = BackgroundActivities.shared().start("railroad.activity.finding_usages");
+        activeActivity = activity;
+        updateStatus();
+
+        var searchedFiles = new FileProgress(activity);
+        UsageSink sink = (batch, searched, total) -> {
+            searchedFiles.report(searched, total);
+            List<Location<?>> copy = List.copyOf(batch);
+            Platform.runLater(() -> {
+                if (activeContext != context || state != State.SEARCHING)
+                    return;
+
+                searchedDocuments = searched;
+                totalDocuments = total;
+                append(request.workspace(), copy);
+                updateStatus();
+            });
+        };
+
+        CompletableFuture<FeatureResult<UsageSearch>> future;
+        try {
+            future = requests.submit("usages", RequestPriority.NAVIGATION, context, cancellation,
+                () -> ProviderExecutor.shared().execute(request.source().languageId() + ":usages", context,
+                    SEARCH_BUDGET, () -> request.provider().usages(context, request.query(), sink)));
+        } catch (RuntimeException exception) {
+            future = CompletableFuture.failedFuture(exception);
+        }
+
+        future.whenComplete((_, _) -> activity.close());
+        future.thenAccept(result -> Platform.runLater(() -> {
+            if (activeContext != context || result == null || !result.belongsTo(context))
+                return;
+
+            complete(request, result.value());
+        })).exceptionally(throwable -> {
+            Throwable cause = unwrap(throwable);
+            if (cause instanceof DeadlineExceededException) {
+                Railroad.LOGGER.warn("Find Usages timed out for {} in {}", request.query(), request.source().uri());
+            } else if (!(cause instanceof CancellationException)) {
+                Railroad.LOGGER.error("Find Usages failed for {} in {}", request.query(), request.source().uri(),
+                    cause);
+            }
+
+            Platform.runLater(() -> {
+                if (activeContext != context)
+                    return;
+
+                releaseRequest();
+                if (cause instanceof DeadlineExceededException) {
+                    state = State.TIMED_OUT;
+                } else if (cause instanceof CancellationException) {
+                    state = State.CANCELLED;
+                } else {
+                    state = State.FAILED;
+                    failureMessage = cause.getMessage() == null || cause.getMessage().isBlank()
+                        ? cause.getClass().getSimpleName()
+                        : cause.getMessage();
+                }
+
+                updateStatus();
+            });
+
+            return null;
+        });
     }
 
     private void complete(Request request, @Nullable UsageSearch search) {
@@ -370,8 +437,11 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
 
         symbol = search.symbol();
         symbolName = search.displayName();
-        clearResults();
-        append(request.workspace(), search.usages());
+        if (!usages().equals(search.usages())) {
+            clearResults();
+            append(request.workspace(), search.usages());
+        }
+
         state = isCurrent(request) ? State.COMPLETE : State.OUTDATED;
         updateStatus();
     }
@@ -393,20 +463,14 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
                 continue;
 
             TreeItem<Row> group = groups.computeIfAbsent(location.documentId(), _ -> {
-                var item = new TreeItem<Row>(new FileRow(snapshot));
+                var item = new TreeItem<Row>(new FileRow(snapshot, directoryLabel(snapshot)));
                 item.setExpanded(true);
                 root.getChildren().add(item);
                 return item;
             });
-            group.getChildren().add(new TreeItem<>(new UsageRow(snapshot, location, preview(snapshot, location))));
-        }
-    }
 
-    private static String preview(TextDocumentSnapshot snapshot, Location.TextLocation location) {
-        LineMap lines = snapshot.lineMap();
-        int line = location.line();
-        return (line + 1) + ":" + (location.column() + 1) + "  "
-            + snapshot.text().substring(lines.lineStart(line), lines.lineEnd(line)).strip();
+            group.getChildren().add(new TreeItem<>(UsageRow.from(snapshot, location)));
+        }
     }
 
     private void openSelected() {
@@ -420,6 +484,7 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
         if (storeSubscription != null) {
             storeSubscription.close();
         }
+
         storeSubscription = store.onChange(() -> {
             if (outdatedCheckQueued.compareAndSet(false, true)) {
                 Platform.runLater(this::markOutdatedIfChanged);
@@ -427,15 +492,12 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
         });
     }
 
-    private void markOutdatedIfChanged() {
-        outdatedCheckQueued.set(false);
-        Request current = request;
-        if (closed || current == null || state == State.SEARCHING || state == State.IDLE || state == State.OUTDATED
-            || isCurrent(current))
-            return;
-
-        state = State.OUTDATED;
-        updateStatus();
+    private String directoryLabel(TextDocumentSnapshot snapshot) {
+        return snapshot.uri().filePath().map(Path::getParent)
+            .map(parent -> projectRoot != null && parent.startsWith(projectRoot)
+                ? projectRoot.relativize(parent)
+                : parent)
+            .map(Path::toString).orElse("");
     }
 
     private static boolean isCurrent(Request request) {
@@ -449,12 +511,17 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
         if (activeCancellation != null) {
             activeCancellation.cancel();
         }
+
         releaseRequest();
     }
 
     private void releaseRequest() {
         activeCancellation = null;
         activeContext = null;
+        if (activeActivity != null) {
+            activeActivity.close();
+            activeActivity = null;
+        }
     }
 
     private void clearResults() {
@@ -465,21 +532,125 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
         totalDocuments = 0;
     }
 
+    private void markOutdatedIfChanged() {
+        outdatedCheckQueued.set(false);
+        Request current = request;
+        if (closed || current == null || (state != State.COMPLETE && shown.isEmpty())
+            || state == State.SEARCHING || state == State.OUTDATED
+            || isCurrent(current))
+            return;
+
+        state = State.OUTDATED;
+        updateStatus();
+    }
+
     private void updateStatus() {
         int count = shown.size();
         String name = symbolName == null ? "" : symbolName;
+        boolean searching = state == State.SEARCHING;
+        boolean hasResults = count > 0;
+        header.setVisible(request != null);
+        tree.setVisible(hasResults);
+        empty.setVisible(!hasResults);
+        status.setVisible(hasResults);
+        groupActions.setVisible(hasResults);
+        cancel.setVisible(searching);
+        refresh.setVisible(!searching);
+        progress.setVisible(searching);
+        pseudoClassStateChanged(WARNING, state == State.OUTDATED || state == State.TIMED_OUT);
+        pseudoClassStateChanged(FAILED, state == State.FAILED);
+        if (request != null) {
+            String title = name.isBlank()
+                ? request.source().uri().fileName().orElse(request.source().uri().toString())
+                : name;
+            heading.setText(title);
+        }
+
+        progress.setProgress(
+            totalDocuments > 0 ? (double) searchedDocuments / totalDocuments : ProgressBar.INDETERMINATE_PROGRESS);
         status.setText(switch (state) {
             case IDLE -> L18n.localize("railroad.ide.usages.idle");
-            case SEARCHING -> L18n.localize("railroad.ide.usages.searching", count, searchedDocuments,
-                totalDocuments);
-            case COMPLETE -> L18n.localize("railroad.ide.usages.complete", count, groups.size(), name);
-            case CANCELLED -> L18n.localize("railroad.ide.usages.cancelled", count);
-            case OUTDATED -> L18n.localize("railroad.ide.usages.outdated", count, name);
+            case SEARCHING -> totalDocuments == 0
+                ? L18n.localize("railroad.ide.usages.preparing")
+                : L18n.localize("railroad.ide.usages.searching", searchedDocuments, fileCount(totalDocuments),
+                    usageCount(count));
+            case COMPLETE -> L18n.localize("railroad.ide.usages.complete", usageCount(count), fileCount(groups.size()));
+            case CANCELLED -> L18n.localize("railroad.ide.usages.cancelled", usageCount(count));
+            case OUTDATED -> L18n.localize("railroad.ide.usages.outdated");
             case UNRESOLVED -> L18n.localize("railroad.ide.usages.unresolved");
-            case FAILED -> L18n.localize("railroad.ide.usages.failed");
+            case TIMED_OUT -> L18n.localize("railroad.ide.usages.timed_out", usageCount(count));
+            case FAILED -> L18n.localize("railroad.ide.usages.failed", failureMessage);
         });
-        cancel.setDisable(state != State.SEARCHING);
-        refresh.setDisable(request == null || state == State.SEARCHING);
+
+        if (!hasResults) {
+            updateEmptyState();
+        }
+    }
+
+    private void updateEmptyState() {
+        emptyIcon.setIconCode(switch (state) {
+            case FAILED, TIMED_OUT, OUTDATED -> FontAwesomeSolid.EXCLAMATION_CIRCLE;
+            case CANCELLED -> FontAwesomeSolid.STOP_CIRCLE;
+            default -> FontAwesomeSolid.SEARCH;
+        });
+
+        String titleKey = switch (state) {
+            case IDLE -> "idle_title";
+            case SEARCHING -> "search_title";
+            case COMPLETE -> "no_results";
+            case UNRESOLVED -> "unresolved";
+            case CANCELLED -> "cancelled_title";
+            case TIMED_OUT -> "timeout_title";
+            case OUTDATED -> "outdated_title";
+            case FAILED -> "failed_title";
+        };
+
+        emptyTitle.setText(L18n.localize("railroad.ide.usages." + titleKey));
+        emptyDetail.setText(switch (state) {
+            case IDLE, UNRESOLVED -> L18n.localize("railroad.ide.usages.idle");
+            case COMPLETE -> L18n.localize("railroad.ide.usages.no_results_detail");
+            case TIMED_OUT, CANCELLED, OUTDATED -> L18n.localize("railroad.ide.usages.retry");
+            case SEARCHING -> status.getText();
+            case FAILED -> failureMessage;
+        });
+    }
+
+    /**
+     * Search state presented by the pane.
+     */
+    public enum State {
+        /**
+         * No search has been started.
+         */
+        IDLE,
+        /**
+         * A search is running; results may be partial.
+         */
+        SEARCHING,
+        /**
+         * The search completed against an unchanged workspace.
+         */
+        COMPLETE,
+        /**
+         * The search was cancelled; results may be partial.
+         */
+        CANCELLED,
+        /**
+         * The workspace changed after the results were captured.
+         */
+        OUTDATED,
+        /**
+         * The query resolved to no symbol or the language cannot search for usages.
+         */
+        UNRESOLVED,
+        /**
+         * The search exceeded its deadline; results may be partial.
+         */
+        TIMED_OUT,
+        /**
+         * The provider failed.
+         */
+        FAILED
     }
 
     private static Throwable unwrap(Throwable throwable) {
@@ -488,38 +659,132 @@ public final class UsagesPane extends BorderPane implements AutoCloseable {
             && cause.getCause() != null) {
             cause = cause.getCause();
         }
+
         return cause;
     }
 
-    private sealed interface Row permits FileRow, UsageRow {
-        String text();
-    }
+    /**
+     * Reports the searched document count of a running search to its status bar activity, starting a new phase
+     * whenever the provider reports a different total.
+     */
+    private static final class FileProgress {
+        private final ActivityProgress activity;
+        private long total = -1;
+        private LongConsumer files = _ -> {
+        };
 
-    private record FileRow(TextDocumentSnapshot snapshot) implements Row {
-        @Override
-        public String text() {
-            String name = snapshot.uri().fileName().orElse(snapshot.uri().toString());
-            return snapshot.uri().filePath()
-                .map(Path::getParent)
-                .map(parent -> name + "  " + parent)
-                .orElse(name);
+        private FileProgress(ActivityProgress activity) {
+            this.activity = activity;
+        }
+
+        private synchronized void report(int searched, int total) {
+            if (total <= 0)
+                return;
+
+            if (total != this.total) {
+                this.total = total;
+                files = activity.begin("railroad.activity.files", ActivityProgress.Unit.COUNT, 0, total);
+            }
+
+            files.accept(searched);
         }
     }
 
-    private record UsageRow(TextDocumentSnapshot snapshot, Location.TextLocation location, String preview)
-        implements
-            Row {
-        @Override
-        public String text() {
-            return preview;
+    private sealed interface Row permits FileRow, UsageRow {
+    }
+
+    private record FileRow(TextDocumentSnapshot snapshot, String directory) implements Row {
+    }
+
+    private record UsageRow(Location.TextLocation location, String before, String match, String after) implements Row {
+        private static UsageRow from(TextDocumentSnapshot snapshot, Location.TextLocation location) {
+            String text = snapshot.text();
+            int line = location.line();
+            int lineEnd = snapshot.lineMap().lineEnd(line);
+            int start = Math.min(location.range().start, lineEnd);
+            int end = Math.min(location.range().end, lineEnd);
+            String before = text.substring(snapshot.lineMap().lineStart(line), start).stripLeading();
+            String match = text.substring(start, end);
+            String after = text.substring(end, lineEnd).stripTrailing();
+            return new UsageRow(location, before, match, after);
         }
     }
 
     private static final class RowCell extends TreeCell<Row> {
+        private static final PseudoClass FILE_GROUP = PseudoClass.getPseudoClass("file-group");
+        private final Label fileName = styledLabel("usages-file-name");
+        private final Label directory = styledLabel("usages-directory");
+        private final Label count = styledLabel("usages-file-count");
+        private final HBox fileLine = new HBox(fileName, count, directory);
+        private final Label position = styledLabel("usages-position");
+        private final Label before = styledLabel("usages-code");
+        private final Label match = styledLabel("usages-match");
+        private final Label after = styledLabel("usages-code");
+        private final HBox snippet = new HBox(before, match, after);
+        private final HBox usageLine = new HBox(position, snippet);
+        private final Tooltip tip = new Tooltip();
+
+        private RowCell() {
+            setPrefWidth(0);
+            fileLine.getStyleClass().add("usages-file-line");
+            fileLine.setPrefWidth(Double.MAX_VALUE);
+            usageLine.getStyleClass().add("usages-usage-line");
+            snippet.getStyleClass().add("usages-snippet");
+            directory.setTextOverrun(OverrunStyle.LEADING_ELLIPSIS);
+            directory.setPrefWidth(0);
+            directory.setMinWidth(0);
+            HBox.setHgrow(directory, Priority.ALWAYS);
+            before.setTextOverrun(OverrunStyle.LEADING_ELLIPSIS);
+            before.setMinWidth(0);
+            after.setMinWidth(0);
+            match.setMinWidth(USE_PREF_SIZE);
+            count.setMinWidth(USE_PREF_SIZE);
+            treeItemProperty().addListener((_, _, item) -> {
+                count.textProperty().unbind();
+                if (item != null && item.getValue() instanceof FileRow) {
+                    count.textProperty().bind(Bindings.size(item.getChildren()).asString());
+                }
+            });
+        }
+
+        private static Label styledLabel(String style) {
+            var label = new Label();
+            label.getStyleClass().add(style);
+            return label;
+        }
+
         @Override
         protected void updateItem(Row item, boolean empty) {
             super.updateItem(item, empty);
-            setText(empty || item == null ? null : item.text());
+            pseudoClassStateChanged(FILE_GROUP, !empty && item instanceof FileRow);
+            if (empty || item == null) {
+                setGraphic(null);
+                setTooltip(null);
+                setAccessibleText(null);
+                return;
+            }
+
+            if (item instanceof FileRow file) {
+                DocumentUri uri = file.snapshot().uri();
+                fileName.setText(uri.fileName().orElse(uri.toString()));
+                fileName.setGraphic(
+                    uri.filePath().map(FileUtils::getIcon).orElseGet(() -> new FontIcon(FontAwesomeSolid.FILE)));
+                directory.setText(file.directory());
+                tip.setText(uri.filePath().map(Path::toString).orElse(uri.toString()));
+                setAccessibleText(fileName.getText() + " " + file.directory());
+                setGraphic(fileLine);
+            } else if (item instanceof UsageRow usage) {
+                position.setText((usage.location().line() + 1) + ":" + (usage.location().column() + 1));
+                before.setText(usage.before());
+                match.setText(usage.match());
+                after.setText(usage.after());
+                String description = position.getText() + "  " + usage.before() + usage.match() + usage.after();
+                setAccessibleText(description);
+                tip.setText(description);
+                setGraphic(usageLine);
+            }
+
+            setTooltip(tip);
         }
     }
 }

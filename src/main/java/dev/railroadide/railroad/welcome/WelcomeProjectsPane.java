@@ -128,6 +128,7 @@ public class WelcomeProjectsPane extends ScrollPane {
                     projectsList.getItems().removeAll(change.getRemoved());
                 }
             }
+
             updateEmptyState();
         });
 

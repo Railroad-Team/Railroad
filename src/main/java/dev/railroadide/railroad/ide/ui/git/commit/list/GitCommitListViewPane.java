@@ -56,6 +56,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> implements Auto
         thread.setDaemon(true);
         return thread;
     });
+
     private final ObservableList<GitCommit> allCommits = FXCollections.observableArrayList();
     private final LocalizedText placeholderText = new LocalizedText(PLACEHOLDER_EMPTY_KEY);
     private final MFXProgressSpinner loadingSpinner = new MFXProgressSpinner();
@@ -99,6 +100,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> implements Auto
                 openDetailsForCommit(project, commit);
             }
         }));
+
         reloadCommitMetadata(project);
         gitManager.commitMetadataRevisionProperty().addListener(metadataRevisionListener);
         gitManager.getAllCommits(this::handleCommitsPage, () -> Platform.runLater(this::handleCommitsDone), 200);
@@ -118,6 +120,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> implements Auto
                 pendingFilterTask = null;
             }
         }
+
         shutdownRegistration.close();
         executorService.shutdownNow();
     }
@@ -238,6 +241,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> implements Auto
             if (!detailsTab.textProperty().isBound()) {
                 detailsTab.textProperty().bind(detailsPane.titleProperty());
             }
+
             detailsPane.setCommit(commit);
         });
     }
@@ -421,7 +425,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> implements Auto
                 tags.add("HEAD");
             }
 
-            var subheading = (RRHBox) getChildren().get(1);
+            RRHBox subheading = (RRHBox) getChildren().get(1);
             if (!tags.isEmpty()) {
                 if (!subheading.getChildren().contains(separator)) {
                     subheading.getChildren().addAll(separator, tagsFlow);
@@ -473,6 +477,7 @@ public class GitCommitListViewPane extends RRListView<GitCommit> implements Auto
                 timestampText.setText(TimeFormatingUtils.formatElapsed(timestampMillis));
                 tooltip.setText(TimeFormatingUtils.formatDateTime(timestampMillis));
             }));
+
             updateTimeline.setCycleCount(Timeline.INDEFINITE);
             if (getScene() != null) {
                 updateTimeline.play();

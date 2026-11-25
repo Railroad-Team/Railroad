@@ -97,12 +97,33 @@ public final class SourceResolver {
     }
 
     /**
-     * Derives a runtime class-name filter using this resolver's project source roots.
+     * Derives a runtime class-name filter using this resolver's project source roots, then the dependency roots.
      *
      * @param source source identity used by the breakpoint
      * @return the source class pattern, or empty when unsupported or outside the source roots
      */
     public Optional<String> classPatternFor(DebugSource source) {
-        return source.classPattern(sourceRoots);
+        return source.classPattern(sourceRoots).or(() -> source.classPattern(dependencyRoots()));
+    }
+
+    /**
+     * Tests whether a source is a dependency source file this resolver can map to runtime classes.
+     *
+     * @param source source identity used by a breakpoint
+     * @return whether the source lies under one of the dependency index's source roots
+     */
+    public boolean isDependencySource(DebugSource source) {
+        if (!(source instanceof DebugSource.FileSource(Path file)))
+            return false;
+
+        Path normalized = file.toAbsolutePath().normalize();
+        return dependencyRoots().stream().anyMatch(normalized::startsWith);
+    }
+
+    private List<Path> dependencyRoots() {
+        return dependencySources.sourceRoots().stream()
+            .map(Path::toAbsolutePath)
+            .map(Path::normalize)
+            .toList();
     }
 }

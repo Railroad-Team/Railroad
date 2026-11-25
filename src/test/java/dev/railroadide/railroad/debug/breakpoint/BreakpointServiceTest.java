@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collection;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -14,9 +15,9 @@ public class BreakpointServiceTest {
         var service = new BreakpointService();
         Path file = Path.of("Example.java");
         String original = "first\nsecond\nthird\nlast";
-        var second = service.add(file, 2);
-        var third = service.add(file, 3);
-        try (var tracking = service.trackDocument(file, original)) {
+        SourceBreakpoint second = service.add(file, 2);
+        SourceBreakpoint third = service.add(file, 3);
+        try (BreakpointService.DocumentTracking tracking = service.trackDocument(file, original)) {
             tracking.update(original, "new\nfirst\nsecond\nlast", List.of(
                 new BreakpointService.TextChange(0, "", "new\n"),
                 new BreakpointService.TextChange(17, "third\n", "")));
@@ -32,16 +33,17 @@ public class BreakpointServiceTest {
         var service = new BreakpointService();
         Path file = Path.of("Example.java");
         String original = "first\nsecond\nthird\nfourth";
-        var first = service.add(file, 2);
-        var second = service.add(file, 3);
-        var events = new ArrayList<BreakpointEvent>();
-        try (var firstView = service.trackDocument(file, original);
-            var secondView = service.trackDocument(file, original)) {
+        SourceBreakpoint first = service.add(file, 2);
+        SourceBreakpoint second = service.add(file, 3);
+        List<BreakpointEvent> events = new ArrayList<BreakpointEvent>();
+        try (BreakpointService.DocumentTracking firstView = service.trackDocument(file, original);
+            BreakpointService.DocumentTracking secondView = service.trackDocument(file, original)) {
             service.addListener(event -> {
                 assertEquals(first.id(), service.get(file, 4).orElseThrow().id());
                 assertEquals(second.id(), service.get(file, 5).orElseThrow().id());
                 events.add(event);
             });
+
             String edited = "inserted\nabove\n" + original;
             firstView.update(edited);
             assertEquals(2, events.size());
@@ -57,8 +59,8 @@ public class BreakpointServiceTest {
         var service = new BreakpointService();
         Path file = Path.of("Example.java");
         String original = "first\nsecond\ntarget\nlast\n";
-        var breakpoint = service.add(file, 3);
-        try (var tracking = service.trackDocument(file, original)) {
+        SourceBreakpoint breakpoint = service.add(file, 3);
+        try (BreakpointService.DocumentTracking tracking = service.trackDocument(file, original)) {
             tracking.update("first\ninserted\nsecond\ntarget\nlast\nappended\n");
             assertEquals(breakpoint.id(), service.get(file, 4).orElseThrow().id());
             tracking.update(original);
@@ -70,11 +72,11 @@ public class BreakpointServiceTest {
     public void deletingMarkedLinesRemovesThemAndMovesSurvivorsUp() {
         var service = new BreakpointService();
         Path file = Path.of("Example.java");
-        var deleted = service.add(file, 2);
-        var survivor = service.add(file, 3);
-        var events = new ArrayList<BreakpointEvent>();
+        SourceBreakpoint deleted = service.add(file, 2);
+        SourceBreakpoint survivor = service.add(file, 3);
+        List<BreakpointEvent> events = new ArrayList<BreakpointEvent>();
         service.addListener(events::add);
-        try (var tracking = service.trackDocument(file, "first\ndeleted\nsurvivor")) {
+        try (BreakpointService.DocumentTracking tracking = service.trackDocument(file, "first\ndeleted\nsurvivor")) {
             tracking.update("first\nsurvivor");
             assertEquals(1, service.getForFile(file).size());
             assertEquals(survivor.id(), service.get(file, 2).orElseThrow().id());
@@ -87,9 +89,9 @@ public class BreakpointServiceTest {
         var service = new BreakpointService();
         Path file = Path.of("Example.java");
         String original = "first\r\n😀target\r\nlast";
-        var first = service.add(file, 1);
-        var second = service.add(file, 2);
-        try (var tracking = service.trackDocument(file, original)) {
+        SourceBreakpoint first = service.add(file, 1);
+        SourceBreakpoint second = service.add(file, 2);
+        try (BreakpointService.DocumentTracking tracking = service.trackDocument(file, original)) {
             String inserted = "new\r\n" + original;
             tracking.update(original, inserted, List.of(new BreakpointService.TextChange(0, "", "new\r\n")));
             assertEquals(first.id(), service.get(file, 2).orElseThrow().id());
@@ -104,14 +106,14 @@ public class BreakpointServiceTest {
     @Test
     public void duplicateAddsKeepIdentityAndSnapshotsCannotMutateService() {
         var service = new BreakpointService();
-        var events = new ArrayList<BreakpointEvent>();
+        List<BreakpointEvent> events = new ArrayList<BreakpointEvent>();
         service.addListener(events::add);
         Path file = Path.of("Example.java");
         SourceBreakpoint breakpoint = service.add(file, 2);
         assertSame(breakpoint, service.add(file.toAbsolutePath(), 2));
         assertEquals(1, events.size());
 
-        var snapshot = service.getForFile(file);
+        Collection<SourceBreakpoint> snapshot = service.getForFile(file);
         assertThrows(UnsupportedOperationException.class, snapshot::clear);
         service.toggle(file, 2);
         assertFalse(service.has(file, 2));

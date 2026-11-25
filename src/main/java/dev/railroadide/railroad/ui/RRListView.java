@@ -68,6 +68,7 @@ public class RRListView<T> extends ListView<T> {
         }
 
         // Add selection animation
+
         getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (enableAnimations && newVal != null) {
                 animateSelection();
@@ -248,11 +249,17 @@ public class RRListView<T> extends ListView<T> {
      * CSS size variants for list row presentation.
      */
     public enum ListViewSize {
-        /** Compact list sizing. */
+        /**
+         * Compact list sizing.
+         */
         SMALL,
-        /** Default list sizing. */
+        /**
+         * Default list sizing.
+         */
         MEDIUM,
-        /** Large list sizing. */
+        /**
+         * Large list sizing.
+         */
         LARGE
     }
 

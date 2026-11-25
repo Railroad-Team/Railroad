@@ -18,7 +18,9 @@ import lombok.ToString;
 @EqualsAndHashCode
 @AllArgsConstructor
 public class License {
-    /** Registry containing the licenses available to projects. */
+    /**
+     * Registry containing the licenses available to projects.
+     */
     public static final Registry<License> REGISTRY = RegistryManager.createOrderedRegistry("railroad:license",
         License.class);
 
@@ -68,7 +70,9 @@ public class License {
         return null;
     }
 
-    /** Builder for constructing {@link License} instances. */
+    /**
+     * Builder for constructing {@link License} instances.
+     */
     public static class Builder {
         private String name;
         private String url;

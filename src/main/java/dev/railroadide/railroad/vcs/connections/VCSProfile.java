@@ -15,7 +15,9 @@ public abstract class VCSProfile {
      */
     private final StringProperty alias = new SimpleStringProperty();
 
-    /** Creates a profile whose alias is initially null. */
+    /**
+     * Creates a profile whose alias is initially null.
+     */
     public VCSProfile() {
     }
 

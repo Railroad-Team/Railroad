@@ -11,9 +11,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Person {
-    /** The person's required display name. */
+    /**
+     * The person's required display name.
+     */
     private String name; // Mandatory
-    /** The person's contact information, or {@code null} if omitted. */
+    /**
+     * The person's contact information, or {@code null} if omitted.
+     */
     private ContactInformation contact; // Optional
 
     /**

@@ -33,6 +33,7 @@ public final class ResponsiveDesign {
             removeCompactStyle(oldRoot);
             update(scene);
         });
+
         update(scene);
     }
 

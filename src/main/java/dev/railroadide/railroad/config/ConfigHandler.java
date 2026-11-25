@@ -40,6 +40,7 @@ public final class ConfigHandler {
 
                 yield Path.of(userHome, "AppData", "Roaming", "Railroad");
             }
+
             case MAC -> Path.of(userHome, "Library", "Application Support", "Railroad");
             case LINUX -> {
                 String xdgConfigHome = System.getenv("XDG_CONFIG_HOME");
@@ -48,6 +49,7 @@ public final class ConfigHandler {
 
                 yield Path.of(userHome, ".config", "Railroad");
             }
+
             case UNKNOWN -> {
                 Railroad.LOGGER.warn("Unknown operating system, using default config directory");
                 yield Path.of(userHome, "Railroad");

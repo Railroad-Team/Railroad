@@ -3,8 +3,12 @@ package dev.railroadide.railroad.gradle.project;
 import dev.railroadide.railroad.AppResources;
 import dev.railroadide.railroad.DefaultGradleEnvironment;
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.config.ConfigHandler;
 import dev.railroadide.railroad.gradle.GradleEnvironment;
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.gradle.GradleSettings;
+import dev.railroadide.railroad.gradle.model.PersistedGradleModelStore;
 import dev.railroadide.railroad.gradle.service.GradleConsoleMode;
 import dev.railroadide.railroad.gradle.service.GradleExecutionService;
 import dev.railroadide.railroad.gradle.service.GradleModelService;
@@ -29,8 +33,10 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import dev.railroadide.railroad.ide.diagnostics.BuildProblems;
 
 /**
  * Encapsulates all Gradle-related state for a {@link Project}, including cached environments and models.
@@ -38,6 +44,7 @@ import java.util.regex.Pattern;
 public final class GradleManager {
     private static final String DOWNLOAD_SOURCES_TASK = "railroadDownloadAllSources";
     private static final String DOWNLOAD_SOURCES_INIT_RESOURCE = "scripts/init-download-sources.gradle";
+    private static final String PERSISTED_MODELS_DIRECTORY = "gradle-models";
 
     private final Project project;
     private final Object lock = new Object();
@@ -80,7 +87,10 @@ public final class GradleManager {
                 modelService = new ToolingGradleModelService(
                     project,
                     getGradleEnvironment(),
-                    modelExecutor);
+                    modelExecutor,
+                    new PersistedGradleModelStore(
+                        ConfigHandler.getConfigDirectory().resolve(PERSISTED_MODELS_DIRECTORY),
+                        ToolingGradleModelService.importerVersion()));
             }
 
             return modelService;
@@ -134,11 +144,21 @@ public final class GradleManager {
      *
      * @param taskName the name of the task to run
      * @param jdk the JDK to use for execution
+     * @param output receiver of the task's standard output as it is written
+     * @param error receiver of the task's standard error as it is written
      * @param future the future to complete when done
      */
-    public void runBuildTaskAsync(String taskName, JDK jdk, CompletableFuture<Runnable> future) {
+    public void runBuildTaskAsync(
+        String taskName,
+        JDK jdk,
+        Consumer<String> output,
+        Consumer<String> error,
+        CompletableFuture<Runnable> future
+    ) {
         Objects.requireNonNull(taskName, "taskName");
         Objects.requireNonNull(jdk, "jdk");
+        Objects.requireNonNull(output, "output");
+        Objects.requireNonNull(error, "error");
 
         try {
             ensureIsGradleProject();
@@ -158,9 +178,12 @@ public final class GradleManager {
             prefs.offlineMode(),
             false,
             false,
-            GradleConsoleMode.RICH);
+            GradleConsoleMode.PLAIN);
 
-        GradleTaskExecutionHandle handle = execService.runTask(request);
+        BuildProblems.Report problems = project.getRunSessions().buildProblems().begin(taskName, project.getPath());
+        GradleTaskExecutionHandle handle = execService.runTask(request, problems);
+        handle.onOutputReceived(event -> output.accept(event.output()));
+        handle.onErrorReceived(event -> error.accept(event.errorMessage()));
         handle.completionFuture().whenComplete((result, throwable) -> {
             if (throwable != null) {
                 future.completeExceptionally(throwable);
@@ -209,16 +232,20 @@ public final class GradleManager {
             false,
             GradleConsoleMode.RICH);
 
+        BackgroundActivities.Handle activity = BackgroundActivities.shared()
+            .start("railroad.activity.downloading_sources");
         GradleTaskExecutionHandle handle;
         try {
-            handle = execService.runTask(request);
+            handle = ScopedValue.where(ActivityProgress.CURRENT, activity).call(() -> execService.runTask(request));
         } catch (Exception exception) {
+            activity.close();
             deleteIfExists(initScriptPath);
             completion.completeExceptionally(exception);
             return completion;
         }
 
         handle.completionFuture().whenComplete((result, throwable) -> {
+            activity.close();
             deleteIfExists(initScriptPath);
             if (throwable != null) {
                 completion.completeExceptionally(throwable);
@@ -244,11 +271,9 @@ public final class GradleManager {
      */
     public boolean isGradleProject() {
         Path path = project.getPath();
-        Path groovyBuildFile = path.resolve("build.gradle");
-        Path kotlinBuildFile = path.resolve("build.gradle.kts");
-        boolean hasGroovyBuild = Files.isRegularFile(groovyBuildFile) && Files.isReadable(groovyBuildFile);
-        boolean hasKotlinBuild = Files.isRegularFile(kotlinBuildFile) && Files.isReadable(kotlinBuildFile);
-        return hasGradleWrapper() || hasGroovyBuild || hasKotlinBuild;
+        return hasGradleWrapper()
+            || List.of("build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts")
+                .stream().map(path::resolve).anyMatch(file -> Files.isRegularFile(file) && Files.isReadable(file));
     }
 
     private GradleSettings buildGradleSettings() {
@@ -394,6 +419,7 @@ public final class GradleManager {
     }
 
     // TODO: Support changing JDK at runtime (this would require recreating the execution service)
+
     private GradleExecutionService getExecutionService(JDK jdkOverride) {
         synchronized (lock) {
             if (executionService == null) {

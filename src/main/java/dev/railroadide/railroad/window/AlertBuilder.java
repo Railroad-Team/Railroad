@@ -33,6 +33,7 @@ import javafx.scene.text.TextAlignment;
 import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import javafx.stage.Window;
 
 // TODO: Add a way to make the content translatable with arguments
 /**
@@ -43,20 +44,35 @@ import javafx.util.Duration;
  */
 @SuppressWarnings("unchecked")
 public class AlertBuilder<T extends AlertBuilder<?>> {
-    /** The alert heading text or translation key. */
+    /**
+     * The alert heading text or translation key.
+     */
     protected String title = "";
-    /** Whether the heading is interpreted as a translation key. */
+    /**
+     * Whether the heading is interpreted as a translation key.
+     */
     protected boolean translateTitle = true;
-    /** The message text or translation key. */
+    /**
+     * The message text or translation key.
+     */
     protected String content = "";
-    /** Whether the message is interpreted as a translation key. */
+    /**
+     * Whether the message is interpreted as a translation key.
+     */
     protected boolean translateContent = true;
-    /** The callback invoked when the alert is dismissed. */
+    /**
+     * The callback invoked when the alert is dismissed.
+     */
     protected Runnable onClose = () -> {
     };
-    /** The severity controlling the icon, styling, and button labels. */
+
+    /**
+     * The severity controlling the icon, styling, and button labels.
+     */
     protected AlertType alertType = AlertType.INFO;
-    /** Whether Enter activates the primary button. */
+    /**
+     * Whether Enter activates the primary button.
+     */
     protected boolean submitOnEnter = true;
 
     /**
@@ -199,11 +215,12 @@ public class AlertBuilder<T extends AlertBuilder<?>> {
             case WARNING -> FontAwesomeSolid.TRIANGLE_EXCLAMATION;
             case ERROR -> FontAwesomeSolid.CIRCLE_XMARK;
         });
+
         fontIcon.setSize(16);
         fontIcon.getStyleClass().add("alert-icon");
         iconWrap.getChildren().setAll(iconBg, fontIcon);
 
-        var titleLbl = translateTitle ? new LocalizedLabel(title) : new Label(title);
+        Label titleLbl = translateTitle ? new LocalizedLabel(title) : new Label(title);
         titleLbl.getStyleClass().add("alert-title");
 
         var spacer = new Region();
@@ -222,12 +239,14 @@ public class AlertBuilder<T extends AlertBuilder<?>> {
             case WARNING, ERROR -> "railroad.generic.dismiss";
             default -> "railroad.generic.cancel";
         });
+
         secondary.setVariant(ButtonVariant.SECONDARY);
 
         var primary = new RRButton(switch (alertType) {
             case INFO, SUCCESS, ERROR -> "railroad.generic.ok";
             case WARNING -> "railroad.generic.proceed";
         });
+
         primary.setVariant(ButtonVariant.PRIMARY);
         primary.setDefaultButton(submitOnEnter);
 
@@ -244,7 +263,7 @@ public class AlertBuilder<T extends AlertBuilder<?>> {
             } catch (Exception _) {
             }
 
-            var window = overlay.getScene() != null ? overlay.getScene().getWindow() : null;
+            Window window = overlay.getScene() != null ? overlay.getScene().getWindow() : null;
             if (window instanceof Stage stage) {
                 stage.close();
             } else if (window != null) {

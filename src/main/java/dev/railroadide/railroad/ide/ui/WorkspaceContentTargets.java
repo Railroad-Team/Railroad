@@ -3,7 +3,9 @@ package dev.railroadide.railroad.ide.ui;
 import dev.railroadide.railroad.ide.WorkspaceModes;
 import dev.railroadide.railroad.ui.id.UIIds;
 
-/** Registers Railroad's built-in workspace content targets. */
+/**
+ * Registers Railroad's built-in workspace content targets.
+ */
 public final class WorkspaceContentTargets {
     /**
      * Destination for documents opened in the code workspace.

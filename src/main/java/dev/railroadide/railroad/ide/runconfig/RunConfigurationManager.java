@@ -156,7 +156,7 @@ public class RunConfigurationManager {
      * Writes the current run configurations to the project's data store.
      */
     private void writeRunConfigurations() {
-        var jsonArray = new JsonArray();
+        JsonArray jsonArray = new JsonArray();
         for (RunConfiguration<?> config : this.configurations) {
             jsonArray.add(RunConfiguration.toJson(config));
         }

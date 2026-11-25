@@ -117,6 +117,7 @@ public class GitOverviewRecentCommitsPane extends RRListView<GitCommit> implemen
         if (future != null) {
             future.cancel(false);
         }
+
         shutdownRegistration.close();
         executor.shutdownNow();
     }

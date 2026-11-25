@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -28,7 +29,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import dev.railroadide.railroad.debug.breakpoint.BreakpointService;
+import dev.railroadide.railroad.ide.language.EditorOpenView;
+import java.lang.reflect.Method;
+import java.util.Collection;
+import org.fxmisc.richtext.model.Paragraph;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -48,6 +54,7 @@ public class TextEditorPaneSnapshotTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
         LanguageSupports.initialize();
     }
@@ -58,15 +65,15 @@ public class TextEditorPaneSnapshotTest {
         String originalText = "class Example {}";
         String editedText = "class Example { int value; }";
         Files.writeString(file, originalText);
-        var documentId = Services.IDE_STATE.identifyDocument(new FileSystemDocument(file, "java")).id();
+        DocumentId documentId = Services.IDE_STATE.identifyDocument(new FileSystemDocument(file, "java")).id();
         var openEditor = new FutureTask<>(() -> new TextEditorPane(documentId, file, "java"));
         Platform.runLater(openEditor);
         TextEditorPane editor = openEditor.get(10, TimeUnit.SECONDS);
 
         try {
             onFxThread(() -> {
-                var original = editor.captureSnapshot();
-                var unchanged = editor.captureSnapshot();
+                TextDocumentSnapshot original = editor.captureSnapshot();
+                TextDocumentSnapshot unchanged = editor.captureSnapshot();
 
                 assertEquals(originalText, original.text());
                 assertSame(documentId, original.id());
@@ -74,7 +81,7 @@ public class TextEditorPaneSnapshotTest {
                 assertEquals(original.version(), unchanged.version());
 
                 editor.replaceText(editedText);
-                var edited = editor.captureSnapshot();
+                TextDocumentSnapshot edited = editor.captureSnapshot();
 
                 assertEquals(original.id(), edited.id());
                 assertTrue(edited.version().compareTo(original.version()) > 0);
@@ -82,7 +89,7 @@ public class TextEditorPaneSnapshotTest {
                 assertEquals(originalText, original.text());
                 assertEquals(originalText, unchanged.text());
 
-                var editedUnchanged = editor.captureSnapshot();
+                TextDocumentSnapshot editedUnchanged = editor.captureSnapshot();
                 assertEquals(edited.id(), editedUnchanged.id());
                 assertEquals(edited.version(), editedUnchanged.version());
             });
@@ -101,23 +108,23 @@ public class TextEditorPaneSnapshotTest {
         String originalText = "class Example {}";
         String editedText = "class Example { int value; }";
         Files.writeString(file, originalText);
-        var documentId = Services.IDE_STATE.identifyDocument(new FileSystemDocument(file, "java")).id();
+        DocumentId documentId = Services.IDE_STATE.identifyDocument(new FileSystemDocument(file, "java")).id();
         var openEditor = new FutureTask<>(() -> new TextEditorPane(documentId, file, "java"));
         Platform.runLater(openEditor);
         TextEditorPane editor = openEditor.get(10, TimeUnit.SECONDS);
 
         try {
             onFxThread(() -> {
-                var original = editor.captureSnapshot();
+                TextDocumentSnapshot original = editor.captureSnapshot();
                 assertEquals(originalText, original.text());
 
                 editor.replaceText(editedText);
-                var edited = editor.captureSnapshot();
+                TextDocumentSnapshot edited = editor.captureSnapshot();
                 assertEquals(original.id(), edited.id());
                 assertTrue(edited.version().compareTo(original.version()) > 0);
 
                 assertTrue(editor.saveNow());
-                var saved = editor.captureSnapshot();
+                TextDocumentSnapshot saved = editor.captureSnapshot();
 
                 assertEquals(edited.id(), saved.id());
                 assertEquals(edited.version(), saved.version());
@@ -140,7 +147,7 @@ public class TextEditorPaneSnapshotTest {
         String originalText = "class Example {}";
         String updatedText = "class Example { int externalValue; }";
         Files.writeString(file, originalText);
-        var documentId = Services.IDE_STATE.identifyDocument(new FileSystemDocument(file, "java")).id();
+        DocumentId documentId = Services.IDE_STATE.identifyDocument(new FileSystemDocument(file, "java")).id();
         var openEditor = new FutureTask<>(() -> new TextEditorPane(documentId, file, "java"));
         Platform.runLater(openEditor);
         TextEditorPane editor = openEditor.get(10, TimeUnit.SECONDS);
@@ -156,8 +163,9 @@ public class TextEditorPaneSnapshotTest {
                 editor.textProperty().addListener(reloadListener);
                 return editor.captureSnapshot();
             });
+
             Platform.runLater(captureOriginal);
-            var original = captureOriginal.get(10, TimeUnit.SECONDS);
+            TextDocumentSnapshot original = captureOriginal.get(10, TimeUnit.SECONDS);
             assertEquals(originalText, original.text());
 
             // A clean editor accepts watcher-detected disk changes without a conflict dialog.
@@ -165,7 +173,7 @@ public class TextEditorPaneSnapshotTest {
             reloaded.get(10, TimeUnit.SECONDS);
 
             onFxThread(() -> {
-                var updated = editor.captureSnapshot();
+                TextDocumentSnapshot updated = editor.captureSnapshot();
 
                 assertEquals(original.id(), updated.id());
                 assertTrue(updated.version().compareTo(original.version()) > 0);
@@ -191,26 +199,27 @@ public class TextEditorPaneSnapshotTest {
         Path file = tempDirectory.resolve("Identity.java");
         Files.writeString(file, "class Identity {}");
         var document = new FileSystemDocument(file, "java");
-        var identity = Services.IDE_STATE.identifyDocument(document);
+        DocumentIdentity identity = Services.IDE_STATE.identifyDocument(document);
         var openEditor = new FutureTask<>(() -> {
             var project = new RailroadProject(tempDirectory, "Identity test", new WritableImage(1, 1));
             return new JavaLanguageSupport().open(project, identity.id(), file);
         });
+
         Platform.runLater(openEditor);
-        var view = openEditor.get(10, TimeUnit.SECONDS);
+        EditorOpenView view = openEditor.get(10, TimeUnit.SECONDS);
         TextEditorPane editor = view.activeEditor();
 
         try {
             onFxThread(() -> {
                 var tab = new EditorTab(identity, document, view, DEFAULT_EDITOR_GROUP_ID, false, false);
-                var original = editor.captureSnapshot();
+                TextDocumentSnapshot original = editor.captureSnapshot();
                 assertEquals(tab.documentId(), original.id());
                 assertSame(identity.id(), original.id());
                 assertEquals(Services.IDE_STATE.identifyDocument(new FileSystemDocument(file, "java")).id(),
                     original.id());
 
                 editor.replaceText("class Identity { int value; }");
-                var edited = editor.captureSnapshot();
+                TextDocumentSnapshot edited = editor.captureSnapshot();
 
                 assertEquals(tab.documentId(), edited.id());
                 assertSame(original.id(), edited.id());
@@ -256,14 +265,74 @@ public class TextEditorPaneSnapshotTest {
                 editor.dispose();
             }
         });
+
         assertEquals("loaded content", Files.readString(file));
     }
 
     @Test
+    public void savingAndClosingAnUnchangedCrlfFileLeavesItByteIdentical() throws Exception {
+        Path file = tempDirectory.resolve("Crlf.java");
+        byte[] original = "class Crlf {\r\n    int value;\r\n}\r\n".getBytes(StandardCharsets.UTF_8);
+        Files.write(file, original);
+        onFxThread(() -> {
+            var editor = new TextEditorPane(DocumentId.create(), file, "java");
+            try {
+                assertEquals("class Crlf {\n    int value;\n}\n", editor.getText());
+                assertFalse(editor.dirty());
+                assertTrue(editor.saveNow());
+                assertFalse(editor.dirty());
+            } finally {
+                editor.close();
+                editor.dispose();
+            }
+        });
+
+        assertArrayEquals(original, Files.readAllBytes(file));
+    }
+
+    @Test
+    public void savingAnEditedCrlfFileKeepsItsCrlfLineSeparators() throws Exception {
+        Path file = tempDirectory.resolve("CrlfEdited.java");
+        Files.writeString(file, "class CrlfEdited {\r\n}\r\n");
+        onFxThread(() -> {
+            var editor = new TextEditorPane(DocumentId.create(), file, "java");
+            try {
+                editor.insertText(editor.getText().indexOf('}'), "    int added;\n");
+                assertTrue(editor.dirty());
+                assertTrue(editor.saveNow());
+                assertFalse(editor.dirty());
+            } finally {
+                editor.close();
+                editor.dispose();
+            }
+        });
+
+        assertEquals("class CrlfEdited {\r\n    int added;\r\n}\r\n", Files.readString(file));
+    }
+
+    @Test
+    public void savingAnEditedLfFileKeepsItsLfLineSeparators() throws Exception {
+        Path file = tempDirectory.resolve("LfEdited.java");
+        Files.writeString(file, "class LfEdited {\n}\n");
+        onFxThread(() -> {
+            var editor = new TextEditorPane(DocumentId.create(), file, "java");
+            try {
+                editor.insertText(editor.getText().indexOf('}'), "    int added;\n");
+                assertTrue(editor.saveNow());
+            } finally {
+                editor.close();
+                editor.dispose();
+            }
+        });
+
+        assertEquals("class LfEdited {\n    int added;\n}\n", Files.readString(file));
+    }
+
+    @Test
     public void legacyChangeRangeKeepsLinesAndColumnsInTheirDeclaredOrder() throws Exception {
-        var buildChange = TextEditorPane.class.getDeclaredMethod("buildChange", String.class, PlainTextChange.class);
+        Method buildChange = TextEditorPane.class.getDeclaredMethod("buildChange", String.class, PlainTextChange.class);
         buildChange.setAccessible(true);
-        var change = (DocumentModifiedEvent.Change) buildChange.invoke(null, "abc\nxy",
+        DocumentModifiedEvent.Change change = (DocumentModifiedEvent.Change) buildChange.invoke(null, "abc\nxy",
             new PlainTextChange(4, "", "xy"));
         assertEquals(new DocumentModifiedEvent.Range(1, 1, 0, 2), change.range());
     }
@@ -274,11 +343,12 @@ public class TextEditorPaneSnapshotTest {
         Files.writeString(file, "class Veto {\n int field;\n}\n");
         var open = new FutureTask<>(() -> {
             var project = new RailroadProject(tempDirectory, "Veto test", new WritableImage(1, 1));
-            var editor = new JavaLanguageSupport().open(project, DocumentId.create(), file).activeEditor();
+            TextEditorPane editor = new JavaLanguageSupport().open(project, DocumentId.create(), file).activeEditor();
             Services.BREAKPOINT_SERVICE.add(file, 2);
             editor.appendText("// draft");
             return editor;
         });
+
         Platform.runLater(open);
         TextEditorPane editor = open.get(10, TimeUnit.SECONDS);
         try {
@@ -310,7 +380,8 @@ public class TextEditorPaneSnapshotTest {
         onFxThread(() -> {
             var editor = new TextEditorPane(DocumentId.create(), file, "plaintext");
             var service = new BreakpointService();
-            var binding = new BreakpointGutterBinding(editor.getGutter(), editor, editor::getFilePath, service);
+            BreakpointGutterBinding binding = new BreakpointGutterBinding(editor.getGutter(), editor,
+                editor::getFilePath, service);
             try {
                 var store = new DefaultDocumentStore("granular-test",
                     new WorkspaceConfigurationSnapshot(0, Set.of()));
@@ -320,10 +391,10 @@ public class TextEditorPaneSnapshotTest {
                 editor.setParagraphStyle(2, List.of("debug-execution-line"));
                 editor.setStyle(10, 19, List.of("custom-style"));
                 editor.foldParagraphs(1, 2);
-                var untouched = editor.getParagraph(2);
+                Paragraph<Collection<String>, String, Collection<String>> untouched = editor.getParagraph(2);
                 editor.getUndoManager().forgetHistory();
                 editor.appendText("!");
-                var access = editor.textEditorAccess();
+                TextEditorAccess access = editor.textEditorAccess();
                 assertEquals(EditResult.APPLIED, access.replace(access.snapshot(), List.of(
                     new TextReplacement(new TextRange(20, 24), "found"),
                     new TextReplacement(new TextRange(5, 9), "find\nextra"))));
@@ -375,7 +446,7 @@ public class TextEditorPaneSnapshotTest {
                 TextEditorAccess access = editor.textEditorAccess();
                 editor.getUndoManager().forgetHistory();
                 editor.appendText("!");
-                var before = access.snapshot();
+                TextDocumentSnapshot before = access.snapshot();
                 assertSame(store.current(before.id()).orElseThrow(), before);
                 assertEquals(EditResult.APPLIED, access.replace(before, List.of(
                     new TextReplacement(new TextRange(8, 11), "three"),

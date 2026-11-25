@@ -2,13 +2,18 @@ package dev.railroadide.railroad.ide.language.impl.index;
 
 import dev.railroadide.railroad.ide.language.index.ProjectLanguageIndexService.Session;
 import dev.railroadide.railroad.ide.sst.document.api.WorkspaceConfigurationSnapshot;
+import dev.railroadide.railroad.ide.sst.document.api.DocumentSnapshot;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import java.util.HashMap;
 import java.util.UUID;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.Services;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.language.index.DefaultProjectIndexContextResolver;
@@ -16,6 +21,7 @@ import dev.railroadide.railroad.ide.language.index.ProjectIndexContext;
 import dev.railroadide.railroad.ide.sst.project.CompositeJavaSymbolIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaJdkSymbolIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaLibrarySymbolIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaLibrarySources;
 import dev.railroadide.railroad.ide.sst.project.JavaProjectSemanticIndex;
 import dev.railroadide.railroad.ide.sst.project.JavaSymbolIndex;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
@@ -35,6 +41,8 @@ import dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.request.api.RequestContext;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.MapMaker;
+import java.util.Map;
 
 /**
  * Combines Java project, library, and JDK symbol indexes, caching library and JDK scans.
@@ -46,16 +54,22 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
     private static final String EPOCH = "index.binary.epoch";
     private volatile boolean closed;
 
+    private record SourceIndexKey(JavaProjectSemanticIndex index, JavaSourceSets.Scope scope) {
+    }
+
     private static final class Cache {
+        private final com.google.common.cache.Cache<SourceIndexKey, JavaProjectSemanticIndex> sources = CacheBuilder
+            .newBuilder().maximumSize(4).build();
         private final Session session;
         private final String epoch;
         private final long generation;
-        private final com.google.common.cache.Cache<LibraryIndexKey, JavaLibrarySymbolIndex> libraries = CacheBuilder
+        private final com.google.common.cache.Cache<LibraryIndexKey, JavaSymbolIndex> libraries = CacheBuilder
             .newBuilder().concurrencyLevel(1).maximumSize(4).build();
         private final com.google.common.cache.Cache<Path, JavaJdkSymbolIndex> jdks = CacheBuilder.newBuilder()
             .concurrencyLevel(1).maximumSize(2).build();
         private final JavaWorkspaceAnalysisProvider workspace;
         private final BooleanSupplier active;
+        private final ConcurrentMap<Object, ReentrantLock> loading = new MapMaker().weakValues().makeMap();
         private volatile boolean disposed;
         private Cache(
             Session session,
@@ -66,7 +80,16 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
             this.epoch = epoch;
             this.generation = session.configurationGeneration();
             this.active = active;
-            workspace = new JavaWorkspaceAnalysisProvider(active);
+            workspace = new JavaWorkspaceAnalysisProvider(active, this::binaries);
+        }
+
+        /**
+         * Lets workspace captures reuse this session's binary indexes instead of scanning and holding their own.
+         */
+        private JavaSymbolIndex binaries(List<Path> classpath, Path jdk) {
+            Runnable check = this::checkActive;
+            return new CompositeJavaSymbolIndex(List.of(libraryIndex(classpath, null, this, check),
+                jdkIndex(jdk, this, check)));
         }
 
         private void checkActive() {
@@ -77,6 +100,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         private <K, V> V load(
             com.google.common.cache.Cache<K, V> cache,
             K key,
+            String activityKey,
             Runnable activityCheck,
             Supplier<V> loader
         ) {
@@ -84,20 +108,46 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
             checkActive();
             V value = cache.getIfPresent(key);
             if (value == null) {
-                value = loader.get();
-                synchronized (this) {
-                    activityCheck.run();
-                    checkActive();
-                    cache.put(key, value);
+                ReentrantLock lock = loading.computeIfAbsent(key, _ -> new ReentrantLock());
+                acquire(lock, activityCheck);
+                try {
+                    value = cache.getIfPresent(key);
+                    if (value == null) {
+                        try (BackgroundActivities.Handle activity = BackgroundActivities.shared().start(activityKey)) {
+                            value = ScopedValue.where(ActivityProgress.CURRENT, activity).call(loader::get);
+                        }
+
+                        synchronized (this) {
+                            activityCheck.run();
+                            checkActive();
+                            cache.put(key, value);
+                        }
+                    }
+                } finally {
+                    lock.unlock();
                 }
             }
+
             activityCheck.run();
             checkActive();
             return value;
         }
 
+        private void acquire(ReentrantLock lock, Runnable activityCheck) {
+            try {
+                while (!lock.tryLock(10, TimeUnit.MILLISECONDS)) {
+                    activityCheck.run();
+                    checkActive();
+                }
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new CancellationException("Interrupted waiting for a Java index load");
+            }
+        }
+
         private synchronized void dispose() {
             disposed = true;
+            sources.invalidateAll();
             libraries.invalidateAll();
             jdks.invalidateAll();
             workspace.close();
@@ -118,7 +168,8 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
     ) {
         if (closed || session.isClosed())
             throw new CancellationException("Project closed");
-        var values = new HashMap<>(configuration.settings());
+
+        Map<String, String> values = new HashMap<>(configuration.settings());
         values.put(SESSION, session.id());
         values.put(EPOCH, UUID.randomUUID().toString());
         values.put("index.binary.fingerprint", JavaArtifactFingerprint.capture(
@@ -127,8 +178,10 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
                 if (closed || session.isClosed() || Thread.currentThread().isInterrupted())
                     throw new CancellationException("Java configuration preparation cancelled");
             }));
+
         if (closed || session.isClosed())
             throw new CancellationException("Project closed");
+
         return new WorkspaceConfigurationSnapshot(
             configuration.revision(), configuration.moduleIds(), values);
     }
@@ -146,15 +199,19 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
     ) {
         if (closed || session.isClosed())
             throw new CancellationException("Project closed");
+
         String epoch = configuration.settings().get(EPOCH);
         var cache = new Cache(session, epoch, () -> {
             Cache current = sessions.get(session.id());
             return !closed && !session.isClosed() && current != null && current.epoch.equals(epoch);
         });
+
         Cache previous = sessions.put(session.id(), cache);
         if (previous != null) {
             previous.dispose();
         }
+
+        workspaceAnalysis.clearCaches();
         if (closed || session.isClosed()) {
             sessions.remove(session.id(), cache);
             cache.dispose();
@@ -175,7 +232,9 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         }
     }
 
-    /** Releases standalone and session caches, rejecting future work without waiting for scans. */
+    /**
+     * Releases standalone and session caches, rejecting future work without waiting for scans.
+     */
     @Override
     public void close() {
         closed = true;
@@ -184,6 +243,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
                 cache.dispose();
             }
         });
+
         workspaceAnalysis.close();
     }
 
@@ -200,19 +260,23 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         Cache cache = session == null ? null : sessions.get(session.id());
         if (closed || cache == null || session.isClosed())
             throw new CancellationException("Java configuration not active");
+
         return cache;
     }
 
     private JavaWorkspaceAnalysisProvider workspace(WorkspaceSnapshot workspace) {
         if (closed)
             throw new CancellationException("Java analysis provider closed");
+
         String id = workspace.configuration().settings().get(SESSION);
         if (id == null)
             return workspaceAnalysis; // Standalone/headless captures have no live project ownership.
+
         Cache cache = sessions.get(id);
         if (cache == null || cache.session.isClosed()
             || !cache.epoch.equals(workspace.configuration().settings().get(EPOCH)))
             throw new CancellationException("Captured Java configuration was superseded");
+
         return cache.workspace;
     }
 
@@ -248,6 +312,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         context.checkActive();
         return workspace(context.workspaceSnapshot()).capture(context);
     }
+
     private final DefaultProjectIndexContextResolver resolver = new DefaultProjectIndexContextResolver(
         project -> Services.PROJECT_LANGUAGE_INDEX_SERVICE.session(project));
 
@@ -255,10 +320,33 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
      * Combines the available project, library, and JDK symbol indexes for Java analysis.
      *
      * @param project the project whose files and configuration are used
+     * @param file requesting source file, or {@code null} for a project-wide lookup
      * @return the combined index, a single available index, or {@code null} if none exists
      */
-    public @Nullable JavaSymbolIndex index(Project project) {
-        return index(resolver.resolve(project));
+    public @Nullable JavaSymbolIndex index(Project project, @Nullable Path file) {
+        return index(resolver.resolve(project), file);
+    }
+
+    /**
+     * Resolves live diagnostics using the document's source attachment when present.
+     *
+     * @param project the project whose files and configuration are used
+     * @param document document being analyzed
+     * @return the combined index for the document, or {@code null} if none exists
+     */
+    public @Nullable JavaSymbolIndex indexForDocument(Project project, DocumentSnapshot document) {
+        return indexForDocument(resolver.resolve(project), document);
+    }
+
+    /**
+     * Resolves a captured diagnostics document in a live indexing session.
+     *
+     * @param context the project indexing context
+     * @param document captured document being analyzed
+     * @return the combined index for the document, or {@code null} if none exists
+     */
+    public @Nullable JavaSymbolIndex indexForDocument(ProjectIndexContext context, DocumentSnapshot document) {
+        return index(context, document.uri().filePath().orElse(null), document);
     }
 
     /**
@@ -268,6 +356,25 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
      * @return the combined index, a single available index, or {@code null} if none exists
      */
     public @Nullable JavaSymbolIndex index(ProjectIndexContext context) {
+        return index(context, null);
+    }
+
+    /**
+     * Combines the project's source index with the binaries visible to a requesting file.
+     *
+     * @param context the project indexing context
+     * @param file requesting source file, or {@code null} for a project-wide lookup
+     * @return the combined index, a single available index, or {@code null} if none exists
+     */
+    public @Nullable JavaSymbolIndex index(ProjectIndexContext context, @Nullable Path file) {
+        return index(context, file, null);
+    }
+
+    private @Nullable JavaSymbolIndex index(
+        ProjectIndexContext context,
+        @Nullable Path file,
+        @Nullable DocumentSnapshot document
+    ) {
         Objects.requireNonNull(context, "context");
         context.checkActive();
 
@@ -281,53 +388,103 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
             context.checkActive();
             cache.checkActive();
         };
+
         if (context.configurationGeneration() != cache.generation)
             throw new CancellationException("Live Java configuration was superseded");
+
         List<JavaSymbolIndex> delegates = new ArrayList<>();
-        if (projectIndex != null) {
-            delegates.add(projectIndex);
-        }
 
         if (javaContext != null) {
-            JavaLibrarySymbolIndex libraryIndex = libraryIndex(javaContext, cache, activityCheck);
+            WorkspaceConfigurationSnapshot gradle = javaContext.gradleConfiguration();
+            List<Path> roots;
+            Path archive;
+            Path jdk;
+            if (gradle != null) {
+                var scope = JavaWorkspaceAnalysisProvider.sourceContext(gradle, file, document);
+                if (projectIndex != null && scope.sourceSet() != null) {
+                    var key = new SourceIndexKey(projectIndex, scope.sourceSet());
+                    projectIndex = cache.load(cache.sources, key, "railroad.activity.indexing_project", activityCheck,
+                        () -> {
+                            var visible = JavaProjectSemanticIndex.builder();
+                            var sets = JavaSourceSets.of(gradle);
+                            for (JavaProjectSemanticIndex.SourceFileIndex entry : key.index().files().values()) {
+                                activityCheck.run();
+                                if (sets.visible(key.scope(), entry.path())) {
+                                    visible.putFile(entry);
+                                }
+                            }
+
+                            return visible.build();
+                        });
+                }
+
+                jdk = scope.jdkHome(gradle);
+                roots = scope.classpath(gradle);
+                archive = scope.archive();
+            } else {
+                jdk = javaContext.jdkHome();
+                roots = libraryRoots(javaContext);
+                var sources = JavaLibrarySources.shared();
+                archive = (document == null ? sources.ownerArchive(file, roots) : sources.ownerArchive(document, roots))
+                    .orElse(null);
+            }
+
+            JavaSymbolIndex libraryIndex = libraryIndex(roots, archive, cache, activityCheck);
             if (!libraryIndex.declaredQualifiedNames().isEmpty()) {
                 delegates.add(libraryIndex);
             }
 
-            JavaJdkSymbolIndex jdkIndex = jdkIndex(javaContext, cache, activityCheck);
+            JavaJdkSymbolIndex jdkIndex = jdkIndex(jdk, cache, activityCheck);
             if (!jdkIndex.declaredQualifiedNames().isEmpty()) {
                 delegates.add(jdkIndex);
             }
 
-            logIndexSummary(javaContext, projectIndex, libraryIndex, jdkIndex);
+            logIndexSummary(javaContext, roots.size(), jdk, projectIndex, libraryIndex, jdkIndex);
         }
 
         activityCheck.run();
         if (cache != cache(context.session()))
             throw new CancellationException("Java configuration changed during scan");
+
+        if (projectIndex != null) {
+            delegates.addFirst(projectIndex);
+        }
+
         if (delegates.isEmpty())
             return null;
+
         if (delegates.size() == 1)
             return delegates.getFirst();
+
         return new CompositeJavaSymbolIndex(delegates);
     }
 
-    private JavaLibrarySymbolIndex libraryIndex(JavaLanguageIndexContext context, Cache cache, Runnable activityCheck) {
+    private static List<Path> libraryRoots(JavaLanguageIndexContext context) {
         Set<Path> roots = new LinkedHashSet<>();
-        roots.addAll(context.dependencyRoots());
         roots.addAll(context.classpathRoots());
         roots.addAll(context.modulePathRoots());
+        roots.addAll(context.dependencyRoots());
+        return FileUtils.normalizePaths(List.copyOf(roots));
+    }
 
-        List<Path> normalizedRoots = FileUtils.normalizePaths(List.copyOf(roots));
-        var key = new LibraryIndexKey(normalizedRoots);
-        return cache.load(cache.libraries, key, activityCheck, () -> {
+    private static JavaSymbolIndex libraryIndex(
+        List<Path> roots,
+        @Nullable Path archive,
+        Cache cache,
+        Runnable activityCheck
+    ) {
+        var key = new LibraryIndexKey(roots, archive);
+        return cache.load(cache.libraries, key, "railroad.activity.indexing_libraries", activityCheck, () -> {
+            if (archive != null)
+                return libraryIndex(roots, null, cache, activityCheck).forAttachedSource(archive, activityCheck);
+
             Railroad.LOGGER.warn(
                 "Building Java library index: roots={}, javafxBaseRoots={}, javafxGraphicsRoots={}, sampleRoots={}",
-                normalizedRoots.size(),
-                countRootsContaining(normalizedRoots, "javafx-base"),
-                countRootsContaining(normalizedRoots, "javafx-graphics"),
-                sampleRoots(normalizedRoots));
-            JavaLibrarySymbolIndex index = JavaLibrarySymbolIndex.build(normalizedRoots, activityCheck);
+                roots.size(),
+                countRootsContaining(roots, "javafx-base"),
+                countRootsContaining(roots, "javafx-graphics"),
+                sampleRoots(roots));
+            JavaLibrarySymbolIndex index = JavaLibrarySymbolIndex.build(roots, activityCheck);
             Railroad.LOGGER.warn(
                 "Built Java library index: classes={}, hasObservableList={}, hasReadOnlyDoubleProperty={}, hasNode={}, hasScene={}",
                 index.declaredQualifiedNames().size(),
@@ -339,12 +496,11 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         });
     }
 
-    private JavaJdkSymbolIndex jdkIndex(JavaLanguageIndexContext context, Cache cache, Runnable activityCheck) {
-        Path jdkHome = context.jdkHome();
+    private static JavaJdkSymbolIndex jdkIndex(Path jdkHome, Cache cache, Runnable activityCheck) {
         Path cacheKey = jdkHome == null
             ? Path.of(System.getProperty("java.home")).toAbsolutePath().normalize()
             : FileUtils.normalizePath(jdkHome);
-        return cache.load(cache.jdks, cacheKey, activityCheck, () -> {
+        return cache.load(cache.jdks, cacheKey, "railroad.activity.indexing_jdk", activityCheck, () -> {
             Railroad.LOGGER.warn("Building Java JDK index: jdkHome={}, cacheKey={}", jdkHome, cacheKey);
             JavaJdkSymbolIndex index = JavaJdkSymbolIndex.build(jdkHome, activityCheck);
             Railroad.LOGGER.warn(
@@ -359,18 +515,18 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
 
     private static void logIndexSummary(
         JavaLanguageIndexContext context,
+        int binaryRoots,
+        Path jdkHome,
         @Nullable JavaProjectSemanticIndex projectIndex,
-        JavaLibrarySymbolIndex libraryIndex,
+        JavaSymbolIndex libraryIndex,
         JavaJdkSymbolIndex jdkIndex
     ) {
         Railroad.LOGGER.warn(
-            "Java analysis index context: sourceRoots={}, generatedRoots={}, dependencyRoots={}, classpathRoots={}, modulePathRoots={}, jdkHome={}",
+            "Java analysis index context: sourceRoots={}, generatedRoots={}, binaryRoots={}, jdkHome={}",
             context.sourceRoots().size(),
             context.generatedRoots().size(),
-            context.dependencyRoots().size(),
-            context.classpathRoots().size(),
-            context.modulePathRoots().size(),
-            context.jdkHome());
+            binaryRoots,
+            jdkHome);
         Railroad.LOGGER.warn(
             "Java analysis index availability: projectClasses={}, libraryClasses={}, jdkClasses={}, hasObservableList={}, hasList={}, hasNode={}, hasReadOnlyDoubleProperty={}",
             projectIndex == null ? 0 : projectIndex.declaredQualifiedNames().size(),
@@ -399,9 +555,9 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
             .toList();
     }
 
-    private record LibraryIndexKey(List<Path> roots) {
-        private LibraryIndexKey(List<Path> roots) {
-            this.roots = List.copyOf(roots);
+    private record LibraryIndexKey(List<Path> roots, Path archive) {
+        private LibraryIndexKey {
+            roots = List.copyOf(roots);
         }
     }
 }

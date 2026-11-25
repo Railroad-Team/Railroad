@@ -1,12 +1,16 @@
 package dev.railroadide.railroad.ide.language.impl.index;
 
+import coursierapi.CacheLogger;
 import coursierapi.Fetch;
 import coursierapi.MavenRepository;
 import coursierapi.Repository;
 import coursierapi.error.CoursierError;
 import dev.railroadide.railroad.Railroad;
 import dev.railroadide.railroad.gradle.model.GradleBuildModel;
-import dev.railroadide.railroad.gradle.project.GradleManager;
+import dev.railroadide.railroad.gradle.service.GradleModelService;
+import dev.railroadide.railroad.ide.ProjectWorkspaceConfiguration;
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
+import dev.railroadide.railroad.ide.activity.DownloadProgress;
 import dev.railroadide.railroad.ide.language.impl.JavaLanguageSupport;
 import dev.railroadide.railroad.ide.language.index.LanguageIndexContext;
 import dev.railroadide.railroad.ide.language.index.LanguageIndexContextContributor;
@@ -15,11 +19,7 @@ import dev.railroadide.railroad.maven.MavenModelService;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import dev.railroadide.railroad.utility.FileUtils;
-import dev.railroadide.railroadplugin.dto.RailroadConfiguration;
 import dev.railroadide.railroadplugin.dto.RailroadContentRoot;
-import dev.railroadide.railroadplugin.dto.RailroadCompilerOutput;
-import dev.railroadide.railroadplugin.dto.RailroadDependency;
-import dev.railroadide.railroadplugin.dto.RailroadJavaLanguageSettings;
 import dev.railroadide.railroadplugin.dto.RailroadModule;
 import dev.railroadide.railroadplugin.dto.RailroadSourceDirectory;
 import org.apache.maven.model.Build;
@@ -31,7 +31,6 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -47,13 +46,19 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
 
     @Override
     public LanguageIndexContext resolve(Project project) {
+        Optional<GradleBuildModel> gradleModel = loadGradleModel(project);
+        if (project.hasFacet(FacetManager.GRADLE))
+            return new JavaLanguageIndexContext(resolveSourceRoots(project, gradleModel),
+                resolveGeneratedRoots(project, gradleModel), List.of(), List.of(), List.of(), null,
+                gradleModel.map(ProjectWorkspaceConfiguration::captureGradleConfiguration).orElse(null));
+
         return new JavaLanguageIndexContext(
-            resolveSourceRoots(project),
-            resolveGeneratedRoots(project),
+            resolveSourceRoots(project, gradleModel),
+            resolveGeneratedRoots(project, gradleModel),
             resolveDependencyRoots(project),
             resolveClasspathRoots(project),
             resolveModuleRoots(project),
-            resolveJdkHome(project));
+            resolveJdkHome());
     }
 
     /**
@@ -68,6 +73,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
     public JavaLanguageIndexContext resolveWorkspace(Project project) {
         if (project.hasFacet(FacetManager.GRADLE) || !project.hasFacet(FacetManager.MAVEN))
             return (JavaLanguageIndexContext) resolve(project);
+
         Model model = MAVEN_MODELS.loadEffectiveModel(project.getPath())
             .orElseThrow(() -> new IllegalStateException("Cannot resolve Maven model for " + project.getPath()));
         List<Path> dependencies = new ArrayList<>();
@@ -80,13 +86,13 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
             resolveProjectPath(project, build != null ? build.getTestSourceDirectory() : null, "src/test/java"))),
             normalizePaths(List.of(buildDirectory.resolve("generated-sources"),
                 buildDirectory.resolve("generated-test-sources"))),
-            roots, roots, List.of(), resolveJdkHome(project));
+            roots, roots, List.of(), resolveJdkHome());
     }
 
-    private static List<Path> resolveSourceRoots(Project project) {
+    private static List<Path> resolveSourceRoots(Project project, Optional<GradleBuildModel> gradleModel) {
         List<Path> sourceRoots = new ArrayList<>();
         if (project.hasFacet(FacetManager.GRADLE)) {
-            consumeGradleModel(project, model -> {
+            gradleModel.ifPresent(model -> {
                 for (RailroadModule module : model.project().getModules()) {
                     for (RailroadContentRoot sourceSet : module.getContentRoots()) {
                         for (RailroadSourceDirectory sourceDir : sourceSet.getSourceDirectories()) {
@@ -119,10 +125,10 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         return normalizePaths(sourceRoots);
     }
 
-    private static List<Path> resolveGeneratedRoots(Project project) {
+    private static List<Path> resolveGeneratedRoots(Project project, Optional<GradleBuildModel> gradleModel) {
         List<Path> generatedRoots = new ArrayList<>();
         if (project.hasFacet(FacetManager.GRADLE)) {
-            consumeGradleModel(project, model -> {
+            gradleModel.ifPresent(model -> {
                 for (RailroadModule module : model.project().getModules()) {
                     for (RailroadContentRoot sourceSet : module.getContentRoots()) {
                         for (RailroadSourceDirectory sourceDir : sourceSet.getSourceDirectories()) {
@@ -152,21 +158,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
 
     private static List<Path> resolveDependencyRoots(Project project) {
         List<Path> dependencyRoots = new ArrayList<>();
-        if (project.hasFacet(FacetManager.GRADLE)) {
-            consumeGradleModel(project, model -> {
-                for (RailroadModule module : model.project().getModules()) {
-                    module.getDependencyRoots().stream()
-                        .map(File::toPath)
-                        .forEach(path -> addReadableRoot(dependencyRoots, path));
-
-                    for (RailroadConfiguration configuration : module.getConfigurations()) {
-                        for (RailroadDependency dependency : configuration.getDependencies()) {
-                            addDependencyRoot(dependencyRoots, dependency);
-                        }
-                    }
-                }
-            });
-        } else if (project.hasFacet(FacetManager.MAVEN)) {
+        if (project.hasFacet(FacetManager.MAVEN)) {
             consumeMavenModel(project, model -> addMavenDependencyRoots(project, model, dependencyRoots));
         } else {
             addLocalJarRoots(project, dependencyRoots);
@@ -177,30 +169,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
 
     private static List<Path> resolveClasspathRoots(Project project) {
         List<Path> classpathRoots = new ArrayList<>();
-        if (project.hasFacet(FacetManager.GRADLE)) {
-            consumeGradleModel(project, model -> {
-                for (RailroadModule module : model.project().getModules()) {
-                    module.getClasspathRoots().stream()
-                        .map(File::toPath)
-                        .forEach(path -> addReadableRoot(classpathRoots, path));
-
-                    RailroadCompilerOutput compilerOutput = module.getCompilerOutput();
-                    if (compilerOutput != null) {
-                        addReadableDirectory(classpathRoots, toPath(compilerOutput.getOutputDirectory()));
-                        addReadableDirectory(classpathRoots, toPath(compilerOutput.getTestOutputDirectory()));
-                    }
-
-                    for (RailroadConfiguration configuration : module.getConfigurations()) {
-                        if (!isClasspathConfiguration(configuration.getName()))
-                            continue;
-
-                        for (RailroadDependency dependency : configuration.getDependencies()) {
-                            addDependencyRoot(classpathRoots, dependency);
-                        }
-                    }
-                }
-            });
-        } else if (project.hasFacet(FacetManager.MAVEN)) {
+        if (project.hasFacet(FacetManager.MAVEN)) {
             consumeMavenModel(project, model -> {
                 addMavenDependencyRoots(project, model, classpathRoots);
 
@@ -215,54 +184,16 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         return normalizePaths(classpathRoots);
     }
 
-    private static boolean isClasspathConfiguration(String configurationName) {
-        if (configurationName == null || configurationName.isBlank())
-            return false;
-
-        String normalizedName = configurationName.toLowerCase(Locale.ROOT);
-        return normalizedName.endsWith("compileclasspath")
-            || normalizedName.endsWith("runtimeclasspath")
-            || normalizedName.equals("classpath");
-    }
-
-    private static void addDependencyRoot(List<Path> roots, RailroadDependency dependency) {
-        if (dependency == null)
-            return;
-
-        File file = dependency.getFile();
-        if (file != null) {
-            addReadableRoot(roots, file.toPath());
-        }
-
-        for (RailroadDependency child : dependency.getChildren()) {
-            addDependencyRoot(roots, child);
-        }
-    }
-
     private static List<Path> resolveModuleRoots(Project project) {
         List<Path> moduleRoots = new ArrayList<>();
-        if (project.hasFacet(FacetManager.GRADLE)) {
-            consumeGradleModel(project, model -> {
-                model.project().getModules().stream()
-                    .map(RailroadModule::getModulePathRoots)
-                    .flatMap(List::stream)
-                    .map(File::toPath)
-                    .forEach(path -> addReadableRoot(moduleRoots, path));
-            });
-        } else if (project.hasFacet(FacetManager.MAVEN)) {
+        if (project.hasFacet(FacetManager.MAVEN)) {
             addMavenModuleRoots(project.getPath(), moduleRoots);
         }
 
         return normalizePaths(moduleRoots);
     }
 
-    private static Path resolveJdkHome(Project project) {
-        if (project.hasFacet(FacetManager.GRADLE)) {
-            Optional<Path> gradleJdkHome = resolveGradleJdkHome(project);
-            if (gradleJdkHome.isPresent())
-                return gradleJdkHome.get();
-        }
-
+    private static Path resolveJdkHome() {
         String javaHome = System.getProperty("java.home");
         if (javaHome == null || javaHome.isBlank())
             return null;
@@ -272,29 +203,6 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
             return FileUtils.normalizePath(path);
 
         return null;
-    }
-
-    private static Optional<Path> resolveGradleJdkHome(Project project) {
-        List<Path> paths = new ArrayList<>();
-        consumeGradleModel(project, model -> {
-            try {
-                if (model.project() == null || model.project().javaLanguageSettings() == null)
-                    return;
-
-                RailroadJavaLanguageSettings settings = model.project().javaLanguageSettings();
-                if (settings.getJdk() == null)
-                    return;
-
-                File javaHome = settings.getJdk().getJavaHome();
-                if (javaHome != null) {
-                    addReadableDirectory(paths, javaHome.toPath());
-                }
-            } catch (Exception exception) {
-                Railroad.LOGGER.warn("Unable to resolve Gradle JDK home for project {}", project.getAlias(), exception);
-            }
-        });
-
-        return normalizePaths(paths).stream().findFirst();
     }
 
     private static void addMavenDependencyRoots(Project project, Model model, List<Path> roots) {
@@ -333,6 +241,27 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
             .addRepositories(Repository.central())
             .addDependencies(coursierDependencies);
 
+        var progress = ActivityProgress.current();
+        if (progress != ActivityProgress.NONE) {
+            var downloads = new DownloadProgress(progress);
+            fetch.getCache().withLogger(new CacheLogger() {
+                @Override
+                public void downloadLength(String url, long totalLength, long alreadyDownloaded, boolean watching) {
+                    downloads.update(url, alreadyDownloaded, totalLength);
+                }
+
+                @Override
+                public void downloadProgress(String url, long downloaded) {
+                    downloads.update(url, downloaded, -1);
+                }
+
+                @Override
+                public void downloadedArtifact(String url, boolean success) {
+                    downloads.finish(url);
+                }
+            });
+        }
+
         try {
             for (File jar : fetch.fetch()) {
                 addReadableFile(roots, jar.toPath());
@@ -340,6 +269,7 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         } catch (CoursierError error) {
             if (failOnError)
                 throw new IllegalStateException("Cannot resolve Maven dependencies for " + project.getPath(), error);
+
             Railroad.LOGGER.error("Error resolving Maven dependencies for {}", project.getPath(), error);
         }
     }
@@ -428,17 +358,6 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         }
     }
 
-    private static void addReadableRoot(List<Path> paths, Path path) {
-        if (path != null && Files.exists(path) && Files.isReadable(path)
-            && (Files.isRegularFile(path) || Files.isDirectory(path))) {
-            paths.add(path);
-        }
-    }
-
-    private static Path toPath(File file) {
-        return file == null ? null : file.toPath();
-    }
-
     private static List<Path> normalizePaths(List<Path> paths) {
         if (paths.isEmpty())
             return List.of();
@@ -454,25 +373,20 @@ public class JavaLanguageIndexContextContributor implements LanguageIndexContext
         return MAVEN_MODELS.loadEffectiveModel(projectRoot);
     }
 
-    private static void consumeGradleModel(Project project, Consumer<GradleBuildModel> modelConsumer) {
-        if (project.hasFacet(FacetManager.GRADLE)) {
-            GradleManager gradleManager = project.getGradleManager();
-            Optional<GradleBuildModel> cachedModel = gradleManager.getGradleModelService().getCachedModel();
-            if (cachedModel.isPresent()) {
-                modelConsumer.accept(cachedModel.get());
-                return;
-            }
+    /**
+     * Returns the imported Gradle model without waiting for one. When none is cached an import is started, and the
+     * workspace configuration refreshes project indexes once it publishes the model.
+     */
+    private static Optional<GradleBuildModel> loadGradleModel(Project project) {
+        if (!project.hasFacet(FacetManager.GRADLE))
+            return Optional.empty();
 
-            try {
-                GradleBuildModel model = gradleManager.getGradleModelService()
-                    .refreshModel(false)
-                    .get(30, TimeUnit.SECONDS);
-                if (model != null) {
-                    modelConsumer.accept(model);
-                }
-            } catch (Exception exception) {
-                Railroad.LOGGER.warn("Unable to load Gradle model for project {}", project.getAlias(), exception);
-            }
+        GradleModelService models = project.getGradleManager().getGradleModelService();
+        Optional<GradleBuildModel> cachedModel = models.getCachedModel();
+        if (cachedModel.isEmpty()) {
+            models.refreshModel(false);
         }
+
+        return cachedModel;
     }
 }

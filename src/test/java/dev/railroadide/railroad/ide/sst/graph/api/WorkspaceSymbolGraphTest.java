@@ -20,16 +20,16 @@ public class WorkspaceSymbolGraphTest {
 
     @Test
     public void movingOwnedDocumentRemovesOldPathAndRetainsItsGraphIdentity() {
-        var original = shard(DocumentId.create(), 0, TARGET);
-        var oldPath = Path.of("old", "A.java").toAbsolutePath().normalize();
-        var newPath = Path.of("new", "A.java").toAbsolutePath().normalize();
+        SemanticIndexShard original = shard(DocumentId.create(), 0, TARGET);
+        Path oldPath = Path.of("old", "A.java").toAbsolutePath().normalize();
+        Path newPath = Path.of("new", "A.java").toAbsolutePath().normalize();
         var first = new JavaProjectSemanticIndex.SourceFileIndex(oldPath, null, List.of(), List.of(), null, original);
         var moved = new SemanticIndexShard(original.documentId(), original.documentVersion(),
             DocumentUri.fromPath(newPath),
             original.declarations(), original.references(), original.edges());
         var next = new JavaProjectSemanticIndex.SourceFileIndex(newPath, null, List.of(), List.of(), null, moved);
-        var captured = JavaProjectSemanticIndex.builder().putFile(first).build();
-        var result = captured.withFile(next);
+        JavaProjectSemanticIndex captured = JavaProjectSemanticIndex.builder().putFile(first).build();
+        JavaProjectSemanticIndex result = captured.withFile(next);
         assertEquals(Set.of(newPath), result.files().keySet());
         assertEquals(List.of(original.references().getFirst()), result.graph().referencesTo(TARGET));
         assertEquals(moved.uri(), result.graph().shards().get(original.documentId()).uri());
@@ -38,15 +38,15 @@ public class WorkspaceSymbolGraphTest {
 
     @Test
     public void replacesAndDeletesOnlyOwnedPostingsAndPreservesCapturedAnswers() {
-        var first = shard(DocumentId.create(), 0, TARGET);
-        var unrelated = shard(DocumentId.create(), 0, OVERLOAD);
+        SemanticIndexShard first = shard(DocumentId.create(), 0, TARGET);
+        SemanticIndexShard unrelated = shard(DocumentId.create(), 0, OVERLOAD);
         var captured = WorkspaceSymbolGraph.of(List.of(first, unrelated));
-        var updated = captured.replaceShard(shard(first.documentId(), 1, OVERLOAD));
+        WorkspaceSymbolGraph updated = captured.replaceShard(shard(first.documentId(), 1, OVERLOAD));
         assertEquals(1, captured.referencesTo(TARGET).size());
         assertTrue(updated.referencesTo(TARGET).isEmpty());
         assertEquals(2, updated.referencesTo(OVERLOAD).size());
         assertSame(unrelated, updated.shards().get(unrelated.documentId()));
-        var deleted = updated.removeShard(first.documentId());
+        WorkspaceSymbolGraph deleted = updated.removeShard(first.documentId());
         assertEquals(List.of(unrelated.references().getFirst()), deleted.referencesTo(OVERLOAD));
         assertEquals(1, deleted.incomingEdges(OVERLOAD).size());
         assertEquals(1, deleted.outgoingEdges(CALLER).size());
@@ -55,14 +55,14 @@ public class WorkspaceSymbolGraphTest {
 
     @Test
     public void overlayShadowsDiskAndClosingRevealsLatestDiskRevision() {
-        var disk = shard(DocumentId.create(), 0, TARGET);
-        var graph = WorkspaceSymbolGraph.of(List.of(disk))
+        SemanticIndexShard disk = shard(DocumentId.create(), 0, TARGET);
+        WorkspaceSymbolGraph graph = WorkspaceSymbolGraph.of(List.of(disk))
             .withOverlay(shard(disk.documentId(), 2, OVERLOAD));
-        var diskUpdate = shard(disk.documentId(), 1, CALLER);
+        SemanticIndexShard diskUpdate = shard(disk.documentId(), 1, CALLER);
         graph = graph.replaceShard(diskUpdate);
         assertEquals(1, graph.referencesTo(OVERLOAD).size());
         assertTrue(graph.referencesTo(CALLER).isEmpty());
-        var closed = graph.withoutOverlay(disk.documentId());
+        WorkspaceSymbolGraph closed = graph.withoutOverlay(disk.documentId());
         assertTrue(closed.referencesTo(OVERLOAD).isEmpty());
         assertEquals(1, closed.referencesTo(CALLER).size());
         assertTrue(graph.removeShard(disk.documentId()).shards().isEmpty());
@@ -70,7 +70,7 @@ public class WorkspaceSymbolGraphTest {
 
     @Test
     public void rejectsStaleUpdatesAndMismatchedReferenceVersions() {
-        var first = shard(DocumentId.create(), 2, TARGET);
+        SemanticIndexShard first = shard(DocumentId.create(), 2, TARGET);
         var graph = WorkspaceSymbolGraph.of(List.of(first));
         assertThrows(IllegalArgumentException.class,
             () -> graph.replaceShard(shard(first.documentId(), 1, TARGET)));
@@ -89,7 +89,7 @@ public class WorkspaceSymbolGraphTest {
 
     @Test
     public void validatesFactsAgainstExactWorkspaceRevisionAndLocation() {
-        var first = shard(DocumentId.create(), 2, TARGET);
+        SemanticIndexShard first = shard(DocumentId.create(), 2, TARGET);
         var text = new TextDocumentSnapshot(first.documentId(), first.uri(), first.documentVersion(),
             "test", "abc", StandardCharsets.UTF_8);
         var workspace = new WorkspaceSnapshot("test", Map.of(text.id(), text),
@@ -104,13 +104,13 @@ public class WorkspaceSymbolGraphTest {
     @Test
     public void concurrentUnrelatedReplacementsComposeWithoutLosingChanges() throws Exception {
         AtomicReference<WorkspaceSymbolGraph> graph = new AtomicReference<>(WorkspaceSymbolGraph.empty());
-        var first = shard(DocumentId.create(), 0, TARGET);
-        var second = shard(DocumentId.create(), 0, OVERLOAD);
+        SemanticIndexShard first = shard(DocumentId.create(), 0, TARGET);
+        SemanticIndexShard second = shard(DocumentId.create(), 0, OVERLOAD);
         var ready = new CountDownLatch(2);
         var go = new CountDownLatch(1);
         try (var executor = Executors.newFixedThreadPool(2)) {
             List<Future<?>> tasks = new ArrayList<>();
-            for (var shard : List.of(first, second)) {
+            for (SemanticIndexShard shard : List.of(first, second)) {
                 tasks.add(executor.submit(() -> {
                     ready.countDown();
                     try {
@@ -118,15 +118,18 @@ public class WorkspaceSymbolGraphTest {
                     } catch (InterruptedException exception) {
                         throw new RuntimeException(exception);
                     }
+
                     graph.updateAndGet(previous -> previous.replaceShard(shard));
                 }));
             }
+
             assertTrue(ready.await(10, TimeUnit.SECONDS));
             go.countDown();
-            for (var task : tasks) {
+            for (Future<?> task : tasks) {
                 task.get(10, TimeUnit.SECONDS);
             }
         }
+
         assertEquals(2, graph.get().shards().size());
         assertEquals(1, graph.get().referencesTo(TARGET).size());
         assertEquals(1, graph.get().referencesTo(OVERLOAD).size());
@@ -134,7 +137,7 @@ public class WorkspaceSymbolGraphTest {
 
     @Test
     public void persistsVersionedSymbolsReferencesEdgesAndAlternateLocations() throws Exception {
-        var shard = shard(DocumentId.create(), 0, TARGET);
+        SemanticIndexShard shard = shard(DocumentId.create(), 0, TARGET);
         var location = new SymbolLocation(shard.uri(), DocumentOrigin.original(shard.uri()),
             shard.references().getFirst().location(), null, true);
         var declaration = new SymbolDescriptor(CALLER, new SymbolKindId("test:function"), "caller", null,
@@ -155,7 +158,7 @@ public class WorkspaceSymbolGraphTest {
         assertEquals(declaration.signature(), loaded.declarations().getFirst().signature());
         assertEquals(declaration.metadata(), loaded.declarations().getFirst().metadata());
         assertEquals(declaration.locations().getLast(), loaded.declarations().getFirst().locations().getLast());
-        var reference = WorkspaceSymbolGraph.of(List.of(loaded)).referencesTo(TARGET).getFirst();
+        ReferenceOccurrence reference = WorkspaceSymbolGraph.of(List.of(loaded)).referencesTo(TARGET).getFirst();
         assertEquals(CALLER, reference.enclosingSymbol());
         assertEquals(ReferenceKindId.CALL, reference.kind());
         assertEquals(0, reference.location().range().start);

@@ -11,7 +11,9 @@ import javafx.scene.control.SeparatorMenuItem;
 
 import java.util.Objects;
 
-/** A localized tab backed by a stable {@link IDEDockItem} descriptor. */
+/**
+ * A localized tab backed by a stable {@link IDEDockItem} descriptor.
+ */
 public final class IDEDockTab extends LocalizedTab {
     private final IDEDockItem dockItem;
     private final Project project;
@@ -84,6 +86,7 @@ public final class IDEDockTab extends LocalizedTab {
                 ? "tool.tab.contextmenu.hide"
                 : "tool.tab.contextmenu.show");
         });
+
         return contextMenu;
     }
 }

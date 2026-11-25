@@ -109,12 +109,12 @@ public class GradleTaskContextMenu extends ContextMenu {
         if (configuration.type() != RunConfigurationTypes.GRADLE)
             return false;
 
-        var data = (GradleRunConfigurationData) configuration.data();
+        GradleRunConfigurationData data = (GradleRunConfigurationData) configuration.data();
         RailroadModule module = task.module();
         if (module == null || module.getGradleProject() == null)
             return false;
 
         return data.getGradleProjectPath().equals(module.getGradleProject().getProjectDirectory().toPath())
-            && data.getTask().equals(task.getName());
+            && task.getName().equals(data.getTask());
     }
 }

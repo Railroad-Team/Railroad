@@ -171,7 +171,7 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
      */
     public JcmdCLIBuilder addDiagnosticCommand(String command, String... args) {
         Objects.requireNonNull(command, "Command name cannot be null");
-        var commandTokens = new ArrayList<String>();
+        List<String> commandTokens = new ArrayList<String>();
         commandTokens.add(command);
         if (args != null) {
             commandTokens.addAll(Arrays.asList(args));
@@ -206,6 +206,7 @@ public class JcmdCLIBuilder implements CLIBuilder<Process, JcmdCLIBuilder> {
                 if (target.value() != null) {
                     command.add(target.value());
                 }
+
                 if (commandFile != null) {
                     command.add("-f");
                     command.add(commandFile.toString());

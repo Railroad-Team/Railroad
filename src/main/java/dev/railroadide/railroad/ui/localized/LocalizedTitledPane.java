@@ -4,7 +4,9 @@ import javafx.scene.Node;
 import javafx.scene.control.TitledPane;
 import org.jetbrains.annotations.NotNull;
 
-/** A titled pane with a localization property for translating its header. */
+/**
+ * A titled pane with a localization property for translating its header.
+ */
 public class LocalizedTitledPane extends TitledPane {
     private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
 

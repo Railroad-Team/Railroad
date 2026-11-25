@@ -10,7 +10,9 @@ import org.jetbrains.annotations.NotNull;
 @Getter
 public class LocalizedTooltip extends Tooltip {
 
-    /** The localization property bidirectionally bound to the tooltip text. */
+    /**
+     * The localization property bidirectionally bound to the tooltip text.
+     */
     private final LocalizedTextProperty localizedText = new LocalizedTextProperty(this, "localizedText", null);
 
     /**

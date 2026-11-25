@@ -14,8 +14,67 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class CoreDefiniteAssignmentInspectionTest {
     @Test
+    public void yieldsInNestedSwitchesAndLoopsReturnToTheEnclosingSwitchExpression() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
+            class Example {
+                enum Mode { FIRST, SECOND }
+                int run(Mode mode, int input) {
+                    final int value;
+                    int result = 1 + switch (mode) {
+                        case FIRST -> {
+                            if (input < 0) {
+                                value = -1;
+                                yield 0;
+                            }
+                            int inner = switch (input) { default -> { yield input; } };
+                            while (true) {
+                                value = inner;
+                                yield inner;
+                            }
+                        }
+                        case SECOND -> throw new IllegalArgumentException();
+                    };
+                    return value + result;
+                }
+            }
+            """);
+
+        assertEquals(List.of(), diagnostics);
+    }
+
+    @Test
+    public void switchExpressionTracksAssignmentsBeforeYieldAndAtTheJoin() {
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
+            class Example {
+                int run(int mode) {
+                    final int assigned;
+                    int sometimes;
+                    boolean increment = switch (mode) {
+                        case 0 -> {
+                            int comparison = mode + 1;
+                            assigned = comparison;
+                            sometimes = 1;
+                            yield comparison > 0 || comparison == 0;
+                        }
+                        default -> {
+                            assigned = 2;
+                            int missing;
+                            yield missing > 0;
+                        }
+                    };
+                    return increment ? assigned : sometimes;
+                }
+            }
+            """);
+
+        assertEquals(List.of("Variable 'missing' might not have been initialized",
+            "Variable 'sometimes' might not have been initialized"),
+            diagnostics.stream().map(SemanticDiagnostic::message).toList());
+    }
+
+    @Test
     public void localClassMethodsReceiveAssignedCapturedParametersAndLocals() {
-        var diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 Object create(int parameter) {
                     final int local = parameter;
@@ -33,7 +92,7 @@ public class CoreDefiniteAssignmentInspectionTest {
 
     @Test
     public void localClassCaptureIsCheckedAtDeclarationAndOwnUnassignedLocalsRemainChecked() {
-        var diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 Object create() {
                     int missingCapture;
@@ -56,7 +115,7 @@ public class CoreDefiniteAssignmentInspectionTest {
 
     @Test
     public void anonymousMethodsReceiveAssignedCapturedParametersAndLocals() {
-        var diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 Object create(int parameter) {
                     final int local = parameter;
@@ -72,7 +131,7 @@ public class CoreDefiniteAssignmentInspectionTest {
 
     @Test
     public void anonymousCaptureIsCheckedAtCreationAndOwnUnassignedLocalsRemainChecked() {
-        var diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreDefiniteAssignmentInspection(), """
             class Example {
                 Object create() {
                     int missingCapture;
@@ -422,5 +481,4 @@ public class CoreDefiniteAssignmentInspectionTest {
         assertFalse(diagnostics.stream()
             .anyMatch(d -> "SEM_UNINITIALIZED_FINAL_FIELD".equals(d.code()) && d.message().contains("value")));
     }
-
 }

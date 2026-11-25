@@ -11,6 +11,7 @@ import dev.railroadide.railroad.ide.sst.syntax.api.*;
 import dev.railroadide.railroad.plugin.spi.editor.TextReplacement;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 /**
  * Independent sample language: "let name = value" declares a symbol and "use name" refers to it.
@@ -50,7 +51,7 @@ public final class TinyLanguageContribution implements LanguageContribution {
 
     @Override
     public LanguageSession openSession(LanguageSessionContext context) {
-        var capabilities = CapabilityRegistry.builder()
+        CapabilityRegistry capabilities = CapabilityRegistry.builder()
             .add(SstCapabilities.PARSING, request -> new FeatureResult<>(request, analyze(request).tree()))
             .add(SstCapabilities.SEMANTICS, request -> new FeatureResult<>(request, analyze(request).semantics()))
             .add(SstCapabilities.INDEX_EXTRACTION,
@@ -80,37 +81,48 @@ public final class TinyLanguageContribution implements LanguageContribution {
     }
 
     private FeatureResult<List<SymbolOccurrence>> query(WorkspaceRequestContext context, String name) {
-        var found = new ArrayList<SymbolOccurrence>();
+        List<SymbolOccurrence> found = new ArrayList<SymbolOccurrence>();
         for (DocumentSnapshot snapshot : context.workspaceSnapshot().documents().values()) {
             context.checkActive();
             if (!(snapshot instanceof TextDocumentSnapshot) || !snapshot.languageId().equals(ID.value()))
                 continue;
+
             var request = new FeatureRequestContext(context.workspaceSnapshot(), snapshot,
                 context.cancellationToken(), context.deadline());
             analyze(request).symbols().stream().filter(symbol -> symbol.symbol().simpleName().equals(name))
                 .forEach(found::add);
         }
+
         context.checkActive();
         return new FeatureResult<>(context, List.copyOf(found));
     }
 
-    private FeatureResult<List<Location<?>>> definitions(FeatureRequestContext context, int offset) {
+    private FeatureResult<List<DefinitionTarget>> definitions(FeatureRequestContext context, int offset) {
         Analysis analysis = analyze(context);
         if (offset < 0 || offset > analysis.tree().documentSnapshot().text().length())
             throw new IndexOutOfBoundsException(offset);
+
         for (SyntaxNode node : analysis.tree().root().children()) {
             if (offset < node.start() || offset >= node.end())
                 continue;
+
             Optional<Symbol> symbol = analysis.semantics().resolvedSymbol(node);
             if (symbol.isEmpty()) {
                 symbol = analysis.semantics().declaredSymbol(node);
             }
+
             if (symbol.isPresent()) {
                 Symbol target = symbol.get();
+                TextDocumentSnapshot snapshot = analysis.tree().documentSnapshot();
                 return new FeatureResult<>(context, analysis.symbols().stream()
-                    .filter(entry -> entry.symbol() == target).map(SymbolOccurrence::location).toList());
+                    .filter(entry -> entry.symbol() == target)
+                    .map(SymbolOccurrence::location)
+                    .filter(Location.TextLocation.class::isInstance)
+                    .map(location -> new DefinitionTarget(snapshot, (Location.TextLocation) location))
+                    .toList());
             }
         }
+
         return new FeatureResult<>(context, List.of());
     }
 
@@ -118,24 +130,27 @@ public final class TinyLanguageContribution implements LanguageContribution {
         context.checkActive();
         if (!(context.documentSnapshot() instanceof TextDocumentSnapshot snapshot))
             throw new IllegalArgumentException("Tiny requires a text snapshot");
+
         if (!snapshot.languageId().equals(ID.value()))
             throw new IllegalArgumentException("Not a Tiny document");
+
         String text = snapshot.text().toString();
         var root = new Root(text, context);
         var tree = new SyntaxTree(snapshot, root);
         Scope scope = Scope.root();
         var semantic = SemanticModel.builder(tree, scope);
-        var symbols = new ArrayList<SymbolOccurrence>();
-        var diagnostics = new ArrayList<TextEditorDiagnostic>();
-        var actions = new ArrayList<LineAction>();
-        var names = new LinkedHashMap<String, Symbol>();
+        List<SymbolOccurrence> symbols = new ArrayList<SymbolOccurrence>();
+        List<TextEditorDiagnostic> diagnostics = new ArrayList<TextEditorDiagnostic>();
+        List<LineAction> actions = new ArrayList<LineAction>();
+        Map<String, Symbol> names = new LinkedHashMap<String, Symbol>();
         for (SyntaxNode child : root.children()) {
             context.checkActive();
             Line line = (Line) child;
             String statement = line.text().strip();
-            var declaration = DECLARATION.matcher(statement);
+            Matcher declaration = DECLARATION.matcher(statement);
             if (!declaration.matches())
                 continue;
+
             String name = declaration.group(1);
             var symbol = new SimpleSymbol(VARIABLE, name, null, line);
             semantic.declare(line, symbol);
@@ -145,6 +160,7 @@ public final class TinyLanguageContribution implements LanguageContribution {
                 diagnostics.add(diagnostic(snapshot, line, "duplicate", "Duplicate declaration: " + name,
                     DiagnosticOrigin.SEMANTIC));
             }
+
             if (!declaration.group(2).stripLeading().startsWith("=")) {
                 diagnostics.add(diagnostic(snapshot, line, "missing-equals", "Expected '=' after " + name,
                     DiagnosticOrigin.SYNTAX));
@@ -157,11 +173,12 @@ public final class TinyLanguageContribution implements LanguageContribution {
                         .build())));
             }
         }
+
         for (SyntaxNode child : root.children()) {
             context.checkActive();
             Line line = (Line) child;
             String statement = line.text().strip();
-            var reference = REFERENCE.matcher(statement);
+            Matcher reference = REFERENCE.matcher(statement);
             if (reference.matches()) {
                 String name = reference.group(1);
                 Symbol target = names.get(name);
@@ -177,6 +194,7 @@ public final class TinyLanguageContribution implements LanguageContribution {
                     DiagnosticOrigin.SYNTAX));
             }
         }
+
         context.checkActive();
         return new Analysis(tree, semantic.build(), List.copyOf(symbols), List.copyOf(diagnostics),
             List.copyOf(actions));
@@ -211,20 +229,23 @@ public final class TinyLanguageContribution implements LanguageContribution {
 
         private Root(String text, FeatureRequestContext context) {
             end = text.length();
-            var lines = new ArrayList<SyntaxNode>();
+            List<SyntaxNode> lines = new ArrayList<SyntaxNode>();
             int start = 0;
             for (int offset = 0; offset < text.length(); offset++) {
                 if ((offset & 1023) == 0) {
                     context.checkActive();
                 }
+
                 if (text.charAt(offset) == '\n') {
                     lines.add(new Line(this, start, text.substring(start, offset + 1)));
                     start = offset + 1;
                 }
             }
+
             if (start < text.length()) {
                 lines.add(new Line(this, start, text.substring(start)));
             }
+
             children = List.copyOf(lines);
         }
 

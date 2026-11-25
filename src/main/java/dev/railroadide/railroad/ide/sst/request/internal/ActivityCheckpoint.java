@@ -55,6 +55,7 @@ public final class ActivityCheckpoint implements Runnable {
         this.activityCheck = Objects.requireNonNull(activityCheck, "activityCheck");
         if (interval <= 0)
             throw new IllegalArgumentException("interval must be positive");
+
         this.interval = interval;
     }
 

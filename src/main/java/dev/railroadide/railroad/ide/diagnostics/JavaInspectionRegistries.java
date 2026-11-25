@@ -24,6 +24,7 @@ public final class JavaInspectionRegistries {
 
     // TODO: Plugins need to be able to register their own inspections, so we need to load inspections from plugin class
     // loaders as well.
+
     private static void loadInspections(ClassLoader classLoader, String packageName) {
         var reflections = new Reflections(
             new ConfigurationBuilder()
@@ -167,6 +168,7 @@ public final class JavaInspectionRegistries {
     private static JavaInspectionRuleProvider asJavaProvider(LanguageInspectionProvider provider) {
         if (provider == null)
             return null;
+
         if (provider instanceof JavaInspectionRuleProvider javaProvider)
             return javaProvider;
 

@@ -160,6 +160,7 @@ public class RmidCLIBuilder implements CLIBuilder<Process, RmidCLIBuilder> {
     public RmidCLIBuilder port(int port) {
         if (port <= 0 || port > 65535)
             throw new IllegalArgumentException("Port must be between 1 and 65535");
+
         this.arguments.add("-port");
         this.arguments.add(Integer.toString(port));
         return this;

@@ -10,7 +10,9 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.List;
 
-/** Implements project file operations using NIO and Railroad's directory and properties utilities. */
+/**
+ * Implements project file operations using NIO and Railroad's directory and properties utilities.
+ */
 public class NioFilesService implements FilesService {
     @Override
     public void createDirectories(Path path) throws IOException {

@@ -114,5 +114,4 @@ public class CoreInfiniteRecursionInspectionTest {
 
         assertFalse(diagnostics.stream().anyMatch(d -> "SEM_INFINITE_RECURSION".equals(d.code())));
     }
-
 }

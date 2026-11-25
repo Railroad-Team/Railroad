@@ -11,9 +11,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MixinEnvironment {
-    /** The required mixin configuration resource path. */
+    /**
+     * The required mixin configuration resource path.
+     */
     private String config; // Filename, mandatory
-    /** The target environment, or {@code null} for an unrestricted configuration. */
+    /**
+     * The target environment, or {@code null} for an unrestricted configuration.
+     */
     private String environment; // Optional, e.g., "client" or "server"
 
     /**

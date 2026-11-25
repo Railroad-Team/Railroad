@@ -11,9 +11,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Entrypoint {
-    /** The entrypoint reference interpreted by the language adapter. */
+    /**
+     * The entrypoint reference interpreted by the language adapter.
+     */
     private String value;
-    /** The language adapter identifier. */
+    /**
+     * The language adapter identifier.
+     */
     private String adapter;
 
     /**

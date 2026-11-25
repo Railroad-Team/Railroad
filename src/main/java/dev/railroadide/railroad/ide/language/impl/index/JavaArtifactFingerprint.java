@@ -13,9 +13,12 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
 import dev.railroadide.railroad.ide.sst.request.internal.ActivityCheckpoint;
 
-/** Metadata change detection for explicit Java configuration refreshes. */
+/**
+ * Metadata change detection for explicit Java configuration refreshes.
+ */
 public final class JavaArtifactFingerprint {
     private JavaArtifactFingerprint() {
     }
@@ -48,6 +51,9 @@ public final class JavaArtifactFingerprint {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             try (var output = new DataOutputStream(new DigestOutputStream(OutputStream.nullOutputStream(), digest))) {
                 output.writeInt(orderedRoots.size());
+                var progress = ActivityProgress.current();
+                Runnable checked = progress.count("railroad.activity.libraries", ActivityProgress.Unit.STEPS,
+                    orderedRoots.size());
                 for (Path root : orderedRoots) {
                     activityCheck.run();
                     Path normalized = normalize(root);
@@ -64,7 +70,11 @@ public final class JavaArtifactFingerprint {
                             }
                         }
                     }
+
+                    checked.run();
                 }
+
+                progress.indeterminate("railroad.activity.jdk_runtime");
                 Path selected = normalize(jdkHome == null ? runningHome() : jdkHome);
                 metadata(output, selected);
                 metadata(output, selected.resolve("release"));
@@ -76,12 +86,17 @@ public final class JavaArtifactFingerprint {
                     metadata(output, running.resolve("release"));
                     archives = List.of(running.resolve("lib/modules"));
                 }
+
                 output.writeInt(archives.size());
+                Runnable archiveChecked = progress.count("railroad.activity.jdk_runtime", ActivityProgress.Unit.STEPS,
+                    archives.size());
                 for (Path archive : archives) {
                     activityCheck.run();
                     metadata(output, archive);
+                    archiveChecked.run();
                 }
             }
+
             activityCheck.run();
             return HexFormat.of().formatHex(digest.digest());
         } catch (IOException exception) {
@@ -97,6 +112,7 @@ public final class JavaArtifactFingerprint {
             if (Files.isRegularFile(archive))
                 return List.of(archive);
         }
+
         Path jmods = home.resolve("jmods");
         if (Files.isDirectory(jmods)) {
             try (var paths = Files.list(jmods)) {
@@ -105,6 +121,7 @@ public final class JavaArtifactFingerprint {
                     .sorted().toList();
             }
         }
+
         return List.of();
     }
 
@@ -114,6 +131,7 @@ public final class JavaArtifactFingerprint {
             output.writeUTF("missing");
             return;
         }
+
         BasicFileAttributes attributes = Files.readAttributes(path, BasicFileAttributes.class);
         output.writeUTF(attributes.isRegularFile() ? "file" : attributes.isDirectory() ? "directory" : "other");
         output.writeLong(attributes.size());

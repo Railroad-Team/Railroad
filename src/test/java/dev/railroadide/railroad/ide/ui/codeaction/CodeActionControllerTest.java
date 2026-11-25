@@ -61,6 +61,7 @@ public class CodeActionControllerTest {
         } catch (IllegalStateException alreadyStarted) {
             Platform.runLater(started::countDown);
         }
+
         assertTrue(started.await(10, TimeUnit.SECONDS));
         onFx(() -> {
             LanguageSupports.initialize();
@@ -121,8 +122,8 @@ public class CodeActionControllerTest {
     public void staleDiagnosticsAreNotPassedAndActionsForOtherRevisionsAreDropped() throws Exception {
         TextDocumentSnapshot old = disk("A.txt", "alpha beta");
         TextDocumentSnapshot current = republish(old, "alpha gamma");
-        var staleDiagnostic = diagnostic(old, 0, 5);
-        var currentDiagnostic = diagnostic(current, 0, 5);
+        TextEditorDiagnostic staleDiagnostic = diagnostic(old, 0, 5);
+        TextEditorDiagnostic currentDiagnostic = diagnostic(current, 0, 5);
         var seen = new AtomicReference<List<TextEditorDiagnostic>>();
         provider.actions = (context, request) -> {
             seen.set(request.diagnostics());
@@ -177,11 +178,14 @@ public class CodeActionControllerTest {
         provider.resolver = (context, action) -> switch (Objects.requireNonNull(action.data())) {
             case "none" -> action;
             case "unsupported" -> throw new UnsupportedOperationException();
+
             case "gone" -> action.asUnavailable("Already fixed");
             case "broken" -> throw new IllegalStateException("Injected provider failure");
+
             default -> action.withEdit(WorkspaceEdit.builder("Overlapping")
                 .replace(document, replacement(0, 3, "x"), replacement(2, 4, "y")).build());
         };
+
         Discovery discovery = discover(document, CodeActionRequest.at(0));
 
         Resolution ambiguous = resolve(discovery, discovery.actions().get(0));
@@ -248,8 +252,10 @@ public class CodeActionControllerTest {
                 observedCancellation.countDown();
                 context.checkActive();
             }
+
             return action.withEdit(WorkspaceEdit.builder("Edit").replace(document, replacement(0, 1, "A")).build());
         };
+
         Discovery discovery = discover(document, CodeActionRequest.at(0));
 
         CompletableFuture<Resolution> slow = onFx(() -> controller.resolve(discovery, discovery.actions().get(0)));
@@ -266,6 +272,7 @@ public class CodeActionControllerTest {
             context.checkActive();
             return List.of();
         };
+
         CompletableFuture<Discovery> pending = onFx(() -> controller.discover(store.capture(), document,
             CodeActionRequest.at(0), RequestPriority.NAVIGATION));
         assertTrue(blocking.await(10, TimeUnit.SECONDS));
@@ -278,6 +285,7 @@ public class CodeActionControllerTest {
             controller.close();
             return null;
         });
+
         assertTrue(controller.isClosed());
         assertCancelled(onFx(() -> controller.resolve(discovery, discovery.actions().get(1))));
     }
@@ -293,9 +301,11 @@ public class CodeActionControllerTest {
             } catch (InterruptedException exception) {
                 throw new CancellationException();
             }
+
             return action.withEdit(WorkspaceEdit.builder("Edit").replace(document, replacement(0, 5, "ALPHA"))
                 .build());
         };
+
         Discovery discovery = discover(document, CodeActionRequest.at(0));
         var applied = new CountDownLatch(1);
         CodeActionMenu menu = onFx(() -> {
@@ -303,6 +313,7 @@ public class CodeActionControllerTest {
             opened.choose();
             return opened;
         });
+
         assertEquals("alpha", Files.readString(root.resolve("A.txt")));
         release.countDown();
         assertTrue(applied.await(10, TimeUnit.SECONDS));
@@ -327,6 +338,7 @@ public class CodeActionControllerTest {
             menu.choose();
             return null;
         });
+
         assertFalse(onFx(menu::isClosed));
         assertEquals(L18n.localize("railroad.code_actions.confirm", 2), onFx(menu::statusText));
         assertEquals("beta", Files.readString(root.resolve("B.txt")));
@@ -334,6 +346,7 @@ public class CodeActionControllerTest {
             menu.choose();
             return null;
         });
+
         assertTrue(onFx(menu::isClosed));
         assertEquals(1, applied.get());
         assertEquals("Alpha", Files.readString(root.resolve("A.txt")));
@@ -350,10 +363,12 @@ public class CodeActionControllerTest {
                 stale.choose();
                 return null;
             });
+
             assertFalse(onFx(stale::isClosed));
             assertTrue(onFx(stale::statusText).startsWith(
                 L18n.localize("railroad.code_actions.apply_failed", "").strip()), onFx(stale::statusText));
         }
+
         assertEquals(1, applied.get());
         assertEquals("changed", Files.readString(root.resolve("A.txt")));
         onFx(() -> {
@@ -385,6 +400,7 @@ public class CodeActionControllerTest {
             menu.choose();
             return null;
         });
+
         assertFalse(onFx(menu::isClosed));
         assertTrue(onFx(menu::statusText).startsWith(
             L18n.localize("railroad.code_actions.apply_failed", "").strip()), onFx(menu::statusText));
@@ -427,6 +443,7 @@ public class CodeActionControllerTest {
             menu.choose();
             return null;
         });
+
         assertFalse(onFx(menu::isClosed));
         assertEquals(L18n.localize("railroad.code_actions.confirm_annotated", "Changes behaviour"),
             onFx(menu::statusText));
@@ -435,6 +452,7 @@ public class CodeActionControllerTest {
             menu.choose();
             return null;
         });
+
         assertTrue(onFx(menu::isClosed));
         assertEquals(1, applied.get());
         assertEquals("Alpha beta", Files.readString(root.resolve("A.txt")));
@@ -451,6 +469,7 @@ public class CodeActionControllerTest {
             safe.choose();
             return null;
         });
+
         assertTrue(onFx(safe::isClosed), "Unconfirmed annotations apply on the first choice");
         assertEquals("Alpha Beta", Files.readString(root.resolve("A.txt")));
 
@@ -468,6 +487,7 @@ public class CodeActionControllerTest {
             wide.choose();
             return null;
         });
+
         assertEquals(L18n.localize("railroad.code_actions.confirm_annotated", "Changes behaviour") + "\n"
             + L18n.localize("railroad.code_actions.confirm", 2), onFx(wide::statusText));
         onFx(() -> {
@@ -492,6 +512,7 @@ public class CodeActionControllerTest {
         Discovery discovery = discover(document, CodeActionRequest.at(0));
         CodeActionMenu menu = onFx(() -> new CodeActionMenu(controller, discovery, () -> {
         }));
+
         List<String> expected = List.of(
             "  1:  package p;  →  package p; ⏎ import a.A;",
             "  3:  import a.B;  →  ",
@@ -503,6 +524,7 @@ public class CodeActionControllerTest {
                 menu.select(selected);
                 return null;
             });
+
             awaitFx(() -> menu.statusText().equals(L18n.localize("railroad.code_actions.ready")));
             assertEquals(2, onFx(menu::previewLines).size(), "One file and one change");
             assertEquals(expected.get(index), onFx(menu::previewLines).get(1),
@@ -533,6 +555,7 @@ public class CodeActionControllerTest {
         while (!context.cancellationToken().isCancellationRequested()) {
             if (System.nanoTime() > deadline)
                 throw new IllegalStateException("The request was never cancelled");
+
             Thread.onSpinWait();
         }
     }
@@ -547,11 +570,12 @@ public class CodeActionControllerTest {
     }
 
     private static void assertCancelled(CompletableFuture<?> future) {
-        var failure = assertThrows(Exception.class, () -> future.get(10, TimeUnit.SECONDS));
+        Exception failure = assertThrows(Exception.class, () -> future.get(10, TimeUnit.SECONDS));
         Throwable cause = failure instanceof ExecutionException ? failure.getCause() : failure;
         while (cause instanceof CompletionException && cause.getCause() != null) {
             cause = cause.getCause();
         }
+
         assertInstanceOf(CancellationException.class, cause);
     }
 
@@ -585,6 +609,7 @@ public class CodeActionControllerTest {
     private static <T> T onFx(Callable<T> action) throws Exception {
         if (Platform.isFxApplicationThread())
             return action.call();
+
         var task = new FutureTask<>(action);
         Platform.runLater(task);
         return task.get(10, TimeUnit.SECONDS);

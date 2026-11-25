@@ -32,5 +32,4 @@ public class GradleDependencyElement extends GradleTreeElement {
     public String getStyleClass() {
         return "gradle-dependency-element";
     }
-
 }

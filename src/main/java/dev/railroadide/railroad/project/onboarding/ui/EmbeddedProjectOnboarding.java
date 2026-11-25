@@ -5,7 +5,9 @@ import javafx.scene.layout.BorderPane;
 import java.util.function.Consumer;
 import dev.railroadide.railroad.project.onboarding.creation.ui.ProjectCreationPane;
 
-/** Hosts a project wizard directly beside the project-type selector. */
+/**
+ * Hosts a project wizard directly beside the project-type selector.
+ */
 public final class EmbeddedProjectOnboarding extends BorderPane {
     private boolean started;
 

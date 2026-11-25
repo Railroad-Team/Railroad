@@ -6,23 +6,26 @@ import dev.railroadide.railroad.debug.breakpoint.SourceBreakpoint;
 import dev.railroadide.railroad.debug.jdi.JdiDebugSession;
 import dev.railroadide.railroad.debug.model.DebugEndpoint;
 import dev.railroadide.railroad.debug.source.DebugSource;
+import dev.railroadide.railroad.debug.source.LibrarySourceIndex;
 import dev.railroadide.railroad.debug.source.ProjectSourceResolver;
 import dev.railroadide.railroad.debug.source.SourceResolver;
+import dev.railroadide.railroad.ide.diagnostics.BuildProblems;
 import dev.railroadide.railroad.ide.runconfig.RunConfiguration;
 import dev.railroadide.railroad.ide.runconfig.RunConfigurationType;
 import dev.railroadide.railroad.ide.runconfig.defaults.data.JavaApplicationRunConfigurationData;
+import dev.railroadide.railroad.ide.runconfig.session.RunOutput;
+import dev.railroadide.railroad.ide.runconfig.session.RunSession;
 import dev.railroadide.railroad.java.JDK;
 import dev.railroadide.railroad.java.JDKManager;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.facet.FacetManager;
 import javafx.scene.paint.Color;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnknownNullability;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,6 +34,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * Launches Java main classes for run or debug sessions and tracks their processes.
@@ -40,10 +45,20 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
 
     private static final class Execution {
         private final CompletableFuture<Void> completion = new CompletableFuture<>();
+        private final RunSession session;
         private Process process;
         private volatile boolean stopped;
 
+        private Execution(RunSession session) {
+            this.session = session;
+        }
+
         private synchronized void stop() {
+            session.requestStop();
+            terminate();
+        }
+
+        private synchronized void terminate() {
             stopped = true;
             if (process != null) {
                 process.destroy();
@@ -97,7 +112,7 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
         Project project,
         RunConfiguration<JavaApplicationRunConfigurationData> configuration
     ) {
-        var running = List.copyOf(executions.getOrDefault(configuration.uuid(), List.of()));
+        List<Execution> running = List.copyOf(executions.getOrDefault(configuration.uuid(), List.of()));
         running.forEach(Execution::stop);
         return CompletableFuture.allOf(running.stream()
             .map(execution -> execution.completion.handle((_, _) -> null))
@@ -140,49 +155,42 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
             ? Map.of()
             : data.getEnvironmentVariables();
 
-        if (jdk == null)
-            return CompletableFuture.failedFuture(new IllegalStateException("JDK is not specified"));
-
-        if (mainClass == null || mainClass.isBlank())
-            return CompletableFuture.failedFuture(new IllegalStateException("Main class is not specified"));
-
-        if (classpathEntries.length == 0)
-            return CompletableFuture.failedFuture(new IllegalStateException(
-                "Classpath is empty. Add compiled output directories to the Java application run configuration."));
-
-        if (workingDirectory == null)
-            return CompletableFuture.failedFuture(new IllegalStateException("Working directory is not specified"));
-
-        if (Files.notExists(workingDirectory) || !Files.isDirectory(workingDirectory))
-            return CompletableFuture.failedFuture(new IllegalStateException(
-                "Working directory does not exist or is not a directory: " + workingDirectory));
-
-        var execution = new Execution();
+        RunSession session = project.getRunSessions().start(configuration, debug);
+        var execution = new Execution(session);
         executions.compute(configuration.uuid(), (_, running) -> {
             if (running == null) {
                 running = new CopyOnWriteArrayList<>();
             }
+
             running.add(execution);
             return running;
         });
-        CompletableFuture<Void> buildFuture = CompletableFuture.completedFuture(null);
+
         try {
+            validateLaunch(jdk, mainClass, classpathEntries, workingDirectory);
+            CompletableFuture<Void> buildFuture = CompletableFuture.completedFuture(null);
             if (buildBeforeRun) {
                 if (project.hasFacet(FacetManager.GRADLE) || project.hasFacet(FacetManager.MAVEN)) {
-                    buildFuture = project.build(jdk).thenCompose(closeBuildConnection -> {
-                        closeBuildConnection.run();
-                        return CompletableFuture.completedFuture(null);
-                    });
+                    buildFuture = project.build(jdk,
+                        text -> session.append(RunOutput.Kind.STDOUT, text),
+                        text -> session.append(RunOutput.Kind.STDERR, text)).thenCompose(closeBuildConnection -> {
+                            closeBuildConnection.run();
+                            return CompletableFuture.completedFuture(null);
+                        });
                 } else {
+                    BuildProblems.Report problems = project.getRunSessions().buildProblems().begin(
+                        configuration.uuid().toString(),
+                        workingDirectory);
                     buildFuture = CompletableFuture.runAsync(() -> compilePlainJavaProject(
                         project,
                         jdk,
                         workingDirectory,
-                        classpathEntries));
+                        classpathEntries,
+                        session, problems))
+                        .whenComplete((_, failure) -> problems.finish(execution.stopped ? null : failure));
                 }
 
                 buildFuture = buildFuture.exceptionally(throwable -> {
-                    System.err.println("Build failed: " + throwable.getMessage());
                     throw new IllegalStateException("Build failed before running application", throwable);
                 });
             }
@@ -197,9 +205,7 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
                         configuration.data().getName(),
                         debug);
                     ProcessBuilder builder = new ProcessBuilder(command)
-                        .directory(workingDirectory.toFile())
-                        .redirectOutput(ProcessBuilder.Redirect.PIPE)
-                        .redirectError(ProcessBuilder.Redirect.PIPE);
+                        .directory(workingDirectory.toFile());
                     if (!environmentVariables.isEmpty()) {
                         builder.environment().putAll(environmentVariables);
                     }
@@ -207,23 +213,29 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
                     Process process;
                     synchronized (execution) {
                         if (execution.stopped)
-                            return CompletableFuture.<Void>completedFuture(null);
+                            return CompletableFuture.<Integer>completedFuture(null);
+
+                        session.appendSystemLine(String.join(" ", command));
                         process = startProcess(builder);
                         execution.process = process;
                     }
 
-                    // Start consuming output (must be done asynchronously)
-                    new ProcessOutputHandler(process, configuration.data().getName()).run();
+                    CompletableFuture<Void> drained = session.connect(process, RunSession.processCharset());
 
                     CompletableFuture<JdiDebugSession> attachment = CompletableFuture.completedFuture(null);
                     if (debug && debugPort > 0) {
-                        SourceResolver sourceResolver = ProjectSourceResolver.create(project.getPath());
+                        List<Path> launchClasspath = Arrays.stream(classpathEntries)
+                            .map(entry -> resolveClasspathPath(entry, workingDirectory))
+                            .toList();
+                        SourceResolver sourceResolver = ProjectSourceResolver.create(project.getPath(),
+                            LibrarySourceIndex.forProject(project, launchClasspath, null, null));
 
                         attachment = project.getDebuggingManager().startSession(
                             new DebugEndpoint("127.0.0.1", debugPort),
                             sourceResolver,
                             Services.BREAKPOINT_SERVICE,
-                            breakpoint -> belongsToProject(project, breakpoint),
+                            breakpoint -> belongsToProject(project, breakpoint)
+                                || sourceResolver.isDependencySource(breakpoint.source()),
                             _ -> {
                             },
                             Duration.ofSeconds(5),
@@ -237,36 +249,67 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
 
                     CompletableFuture<JdiDebugSession> connection = attachment;
                     return process.onExit()
-                        .thenCompose(p -> connection.thenCompose(
-                            session -> session == null ? CompletableFuture.completedFuture(null) : session.detach()))
-                        .thenRun(() -> {
+                        .thenCompose(_ -> drained)
+                        .thenCompose(_ -> connection.thenCompose(
+                            debugSession -> debugSession == null
+                                ? CompletableFuture.completedFuture(null)
+                                : debugSession.detach()))
+                        .thenApply(_ -> {
                             if (process.exitValue() != 0 && !execution.stopped) {
                                 Railroad.LOGGER.error("Application process exited with code: {}", process.exitValue());
                             } else {
                                 Railroad.LOGGER.debug("Application process finished successfully.");
                             }
-                        });
 
+                            return process.exitValue();
+                        });
                 } catch (IOException exception) {
                     throw new IllegalStateException("Failed to start Java Application process", exception);
                 }
             })).thenCompose(future -> future)
-                .whenComplete((_, failure) -> finishExecution(configuration, execution, failure));
+                .whenComplete((exitCode, failure) -> finishExecution(configuration, execution, exitCode, failure));
         } catch (Throwable failure) {
-            finishExecution(configuration, execution, failure);
+            finishExecution(configuration, execution, null, failure);
         }
+
         return execution.completion;
     }
 
-    private void finishExecution(RunConfiguration<?> configuration, Execution execution, Throwable failure) {
+    private static void validateLaunch(JDK jdk, String mainClass, String[] classpathEntries, Path workingDirectory) {
+        if (jdk == null)
+            throw new IllegalStateException("JDK is not specified");
+
+        if (mainClass == null || mainClass.isBlank())
+            throw new IllegalStateException("Main class is not specified");
+
+        if (classpathEntries.length == 0)
+            throw new IllegalStateException(
+                "Classpath is empty. Add compiled output directories to the Java application run configuration.");
+
+        if (workingDirectory == null)
+            throw new IllegalStateException("Working directory is not specified");
+
+        if (Files.notExists(workingDirectory) || !Files.isDirectory(workingDirectory))
+            throw new IllegalStateException(
+                "Working directory does not exist or is not a directory: " + workingDirectory);
+    }
+
+    private void finishExecution(
+        RunConfiguration<?> configuration,
+        Execution execution,
+        @Nullable Integer exitCode,
+        @Nullable Throwable failure
+    ) {
         executions.computeIfPresent(configuration.uuid(), (_, running) -> {
             running.remove(execution);
             return running.isEmpty() ? null : running;
         });
+
+        execution.session.finish(exitCode, failure);
         if (failure == null) {
             execution.completion.complete(null);
         } else {
-            execution.stop();
+            execution.terminate();
             execution.completion.completeExceptionally(failure);
         }
     }
@@ -284,7 +327,9 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
         Project project,
         JDK jdk,
         Path workingDirectory,
-        String[] classpathEntries
+        String[] classpathEntries,
+        RunSession session,
+        BuildProblems.Report problems
     ) {
         Path sourceRoot = project.getPath().resolve("src/main/java").toAbsolutePath().normalize();
         if (!Files.isDirectory(sourceRoot))
@@ -334,28 +379,23 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
         sources.forEach(source -> command.add(source.toString()));
 
         Railroad.LOGGER.debug("Compiling plain Java project with command: {}", String.join(" ", command));
+        session.appendSystemLine(String.join(" ", command));
 
         try {
             Process process = new ProcessBuilder(command)
                 .directory(workingDirectory.toFile())
                 .redirectErrorStream(true)
                 .start();
-
-            var compilerOutput = new StringBuilder();
-            try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (!compilerOutput.isEmpty()) {
-                        compilerOutput.append(System.lineSeparator());
-                    }
-                    compilerOutput.append(line);
-                }
+            process.getOutputStream().close();
+            try (InputStream input = process.getInputStream();
+                OutputStream output = problems.output(RunSession.processCharset(),
+                    text -> session.append(RunOutput.Kind.STDOUT, text))) {
+                input.transferTo(output);
             }
 
             int exitCode = process.waitFor();
             if (exitCode != 0)
-                throw new IllegalStateException("javac exited with code " + exitCode +
-                    (compilerOutput.isEmpty() ? "" : System.lineSeparator() + compilerOutput));
+                throw new IllegalStateException("javac exited with code " + exitCode);
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Java compilation was interrupted", exception);
@@ -445,40 +485,11 @@ public class JavaApplicationRunConfigurationType extends RunConfigurationType<Ja
         if (normalized.toLowerCase().startsWith("src.main.java.")) {
             normalized = normalized.substring("src.main.java.".length());
         }
+
         if (normalized.toLowerCase().endsWith(".java")) {
             normalized = normalized.substring(0, normalized.length() - ".java".length());
         }
 
         return normalized;
-    }
-
-    private record ProcessOutputHandler(Process process, String name) implements Runnable {
-        @Override
-        public void run() {
-            // In the future IDE, we will read from process.getInputStream() and process.getErrorStream()
-            // and display it in the IDE console.
-            // For now, we just print to System.out/err.
-            new Thread(() -> {
-                try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        System.out.println("[" + name + " OUT] " + line);
-                    }
-                } catch (IOException exception) {
-                    System.err.println("[" + name + " ERR] Error reading stdout: " + exception.getMessage());
-                }
-            }).start();
-
-            new Thread(() -> {
-                try (var reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        System.err.println("[" + name + " ERR] " + line);
-                    }
-                } catch (IOException exception) {
-                    System.err.println("[" + name + " ERR] Error reading stderr: " + exception.getMessage());
-                }
-            }).start();
-        }
     }
 }

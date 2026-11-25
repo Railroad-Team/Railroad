@@ -3,7 +3,9 @@ package dev.railroadide.railroad.plugin.spi.events.input;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 
-/** Provides access to the JavaFX keyboard event wrapped by a plugin event. */
+/**
+ * Provides access to the JavaFX keyboard event wrapped by a plugin event.
+ */
 public interface GenericKeyEvent extends GenericInputEvent {
     /**
      * Returns the underlying keyboard event.

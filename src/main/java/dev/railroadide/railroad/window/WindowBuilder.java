@@ -514,23 +514,29 @@ public class WindowBuilder {
         if (minWidth >= 0) {
             stage.setMinWidth(minWidth);
         }
+
         if (minHeight >= 0) {
             stage.setMinHeight(minHeight);
         }
+
         if (width >= 0) {
             stage.setWidth(width);
         }
+
         if (height >= 0) {
             stage.setHeight(height);
         }
+
         if (maxWidth >= 0) {
             stage.setMaxWidth(maxWidth);
         }
+
         if (maxHeight >= 0) {
             stage.setMaxHeight(maxHeight);
         }
 
         // If caller did not specify an explicit size, use the scene's preferred size.
+
         if (scene != null && width < 0 && height < 0) {
             stage.sizeToScene();
         }
@@ -540,6 +546,7 @@ public class WindowBuilder {
         }
 
         // Create a MacOS specific Menu Bar and Application Menu
+
         MacUtils.initialize();
 
         stage.show();

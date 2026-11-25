@@ -136,6 +136,30 @@ public class Keybinds {
      * Configurable shortcut for the edit paste command.
      */
     public static final Keybind EDIT_PASTE = registerIDECommand(EditCommands.PASTE);
+    /**
+     * Configurable shortcut for opening the editor find bar.
+     */
+    public static final Keybind FIND = registerIDECommand(EditCommands.FIND);
+    /**
+     * Configurable shortcut for opening the editor find bar with replacement.
+     */
+    public static final Keybind REPLACE = registerIDECommand(EditCommands.REPLACE);
+    /**
+     * Configurable shortcut for selecting the next find match.
+     */
+    public static final Keybind FIND_NEXT = registerIDECommand(EditCommands.FIND_NEXT);
+    /**
+     * Configurable shortcut for selecting the previous find match.
+     */
+    public static final Keybind FIND_PREVIOUS = registerIDECommand(EditCommands.FIND_PREVIOUS);
+    /**
+     * Configurable shortcut for searching text across the project.
+     */
+    public static final Keybind FIND_IN_FILES = registerIDECommand(EditCommands.FIND_IN_FILES);
+    /**
+     * Configurable shortcut for replacing text across the project.
+     */
+    public static final Keybind REPLACE_IN_FILES = registerIDECommand(EditCommands.REPLACE_IN_FILES);
 
     /**
      * Configurable shortcut for the new file command.
@@ -209,6 +233,16 @@ public class Keybinds {
             Services.UI_MANAGER.lookupOrThrow(UIIds.IDE.IDE)));
 
     /**
+     * Searches the project's files by name.
+     */
+    public static final Keybind GO_TO_FILE = registerIDECommand(Commands.GO_TO_FILE);
+
+    /**
+     * Searches the types declared in the project's sources.
+     */
+    public static final Keybind GO_TO_CLASS = registerIDECommand(Commands.GO_TO_CLASS);
+
+    /**
      * Context used while a code editor owns keyboard focus.
      */
     public static final KeybindContexts.KeybindContext CODE_EDITOR = KeybindContexts.of(CodeEditorPane.KEYBIND_CONTEXT);
@@ -237,6 +271,11 @@ public class Keybinds {
      * Shows the code actions available at the caret.
      */
     public static final Keybind SHOW_CODE_ACTIONS = registerCodeEditorCommand(Commands.SHOW_CODE_ACTIONS);
+
+    /**
+     * Shows the parameters of the call at the caret.
+     */
+    public static final Keybind PARAMETER_INFO = registerCodeEditorCommand(Commands.PARAMETER_INFO);
 
     /**
      * Closes the active or targeted editor tab.
@@ -314,6 +353,7 @@ public class Keybinds {
         FIND_USAGES.resetKeys();
         RENAME.resetKeys();
         SHOW_CODE_ACTIONS.resetKeys();
+        PARAMETER_INFO.resetKeys();
         CLOSE_EDITOR_TAB.resetKeys();
         REOPEN_CLOSED_EDITOR_TAB.resetKeys();
         SELECT_EDITOR_TAB_BY_NUMBER.resetKeys();
@@ -400,6 +440,7 @@ public class Keybinds {
             if (node instanceof CodeEditorPane editor)
                 return editor;
         }
+
         return Commands.activeCodeEditor();
     }
 

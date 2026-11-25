@@ -60,9 +60,56 @@
     -fx-alignment: center-left;
 }
 
+.code-area .paragraph-box > .lineno,
+.code-area .ide-code-editor-grid {
+    -fx-border-color: transparent -color-border-subtle transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+}
+
 .code-area .editor-line-number {
     -fx-text-fill: -color-fg-subtle;
     -fx-font-weight: normal;
+}
+
+.code-area .editor-fold-marker {
+    -fx-background-radius: 3px;
+}
+
+.code-area .editor-fold-chevron {
+    -fx-icon-color: -color-fg-subtle;
+}
+
+.code-area .editor-fold-marker:hover {
+    -fx-background-color: -color-neutral-subtle;
+}
+
+.code-area .editor-fold-marker:hover .editor-fold-chevron {
+    -fx-icon-color: -color-fg-default;
+}
+
+.code-area .editor-fold-placeholder {
+    -fx-background-color: -color-surface-editor;
+    -fx-background-insets: 2px 0 1px;
+    -fx-font-family: "JetBrains Mono";
+}
+
+.code-area .editor-fold-placeholder:has-caret {
+    -fx-background-color: -color-neutral-subtle;
+}
+
+.code-area .editor-fold-placeholder .label {
+    -fx-padding: 0;
+    -fx-text-fill: -color-fg-default;
+}
+
+.code-area .editor-fold-placeholder-action {
+    -fx-background-color: -color-neutral-subtle;
+    -fx-background-radius: 3px;
+    -fx-underline: true;
+}
+
+.code-area .editor-fold-placeholder-action:hover {
+    -fx-background-color: -color-neutral-muted;
 }
 
 .code-area .paragraph-box:has-caret .editor-line-number {
@@ -196,11 +243,11 @@
 }
 
 .signature-help-container {
-    -fx-background-color: rgba(40, 40, 40, 0.95);
+    -fx-background-color: -color-surface-panel;
     -fx-padding: 6px 8px;
     -fx-background-radius: 6px;
     -fx-border-radius: 6px;
-    -fx-border-color: rgba(255, 255, 255, 0.25);
+    -fx-border-color: -color-border-default;
 }
 
 .navigation-message {
@@ -213,15 +260,21 @@
 }
 
 .signature-help-text {
-    -fx-text-fill: white;
+    -fx-font-family: "JetBrains Mono";
 }
 
-.signature-param {
-    -fx-text-fill: #d0d0d0;
+.signature-help-scroll,
+.signature-help-scroll > .viewport {
+    -fx-background-color: -color-surface-panel;
+    -fx-padding: 0;
 }
 
-.signature-param-active {
-    -fx-text-fill: #ffffff;
+.signature-help-text > Text {
+    -fx-fill: -color-fg-muted;
+}
+
+.signature-help-text > .signature-param-active {
+    -fx-fill: -color-accent-fg;
     -fx-font-weight: bold;
 }
 

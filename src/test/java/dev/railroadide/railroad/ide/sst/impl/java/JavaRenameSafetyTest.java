@@ -204,8 +204,20 @@ public class JavaRenameSafetyTest {
         main("\"\" + ((HasX) new Point(3)).x()");
         assertEquals("3", run());
 
-        assertConflict(rename("p/HasX.java", "x()", "getX"), "would no longer implement it");
-        assertConflict(rename("p/Main.java", "x()", "getX"), "would no longer implement it");
+        assertConflict(rename("p/HasX.java", "x()", "getX"), "would change its accessor");
+        assertConflict(rename("p/Main.java", "x()", "getX"), "would change its accessor");
+    }
+
+    @Test
+    public void rejectsRenamingAnImplicitRecordAccessorAtItsCallSite() {
+        source("p/Point.java", """
+            package p;
+            public record Point(int x) {}
+            """);
+        main("\"\" + new Point(3).x()");
+        assertEquals("3", run());
+
+        assertConflict(rename("p/Main.java", "x()", "getX"), "would change its accessor");
     }
 
     @Test
@@ -304,7 +316,7 @@ public class JavaRenameSafetyTest {
         main("\"\"");
         run();
 
-        var rejected = assertInstanceOf(RenamePreparation.Rejected.class,
+        RenamePreparation.Rejected rejected = assertInstanceOf(RenamePreparation.Rejected.class,
             services.prepareRename(context("p/Base.java"), offset("p/Base.java", "run()")).value());
         assertTrue(rejected.reason().contains("declared in a library"), rejected.reason());
     }
@@ -754,7 +766,9 @@ public class JavaRenameSafetyTest {
         return texts;
     }
 
-    /** Applies a textual replacement of one occurrence, as a rename without semantic checks would. */
+    /**
+     * Applies a textual replacement of one occurrence, as a rename without semantic checks would.
+     */
     private Map<String, String> naive(String file, String from, String to) {
         Map<String, String> texts = texts();
         texts.put(file, texts.get(file).replaceFirst(Pattern.quote(from),
@@ -812,6 +826,7 @@ public class JavaRenameSafetyTest {
         for (WorkspaceChange change : edit.changes()) {
             if (!(change instanceof WorkspaceChange.TextEdit text))
                 continue;
+
             String name = documents.entrySet().stream()
                 .filter(entry -> entry.getValue().id().equals(text.expected().id())).findFirst().orElseThrow()
                 .getKey();
@@ -824,6 +839,7 @@ public class JavaRenameSafetyTest {
                     replacement.text()));
             result.put(name, builder.toString());
         }
+
         return result;
     }
 
@@ -840,13 +856,16 @@ public class JavaRenameSafetyTest {
         store().publishBacking(document);
     }
 
-    /** Publishes a new saved revision, as a change made outside the editor does. */
+    /**
+     * Publishes a new saved revision, as a change made outside the editor does.
+     */
     private void external(String file, String text) {
         TextDocumentSnapshot saved = documents.get(file);
         if (saved == null) {
             source(file, text);
             return;
         }
+
         var document = new TextDocumentSnapshot(saved.id(), saved.uri(), saved.version().next(), "java",
             saved.origin(), text, StandardCharsets.UTF_8);
         documents.put(file, document);
@@ -867,6 +886,7 @@ public class JavaRenameSafetyTest {
                 Map.of("module.main.sources", directory.resolve(root).toString()));
             store = new DefaultDocumentStore("rename-safety", configuration);
         }
+
         return store;
     }
 

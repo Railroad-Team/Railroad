@@ -160,6 +160,7 @@ public class JmapCLIBuilder implements CLIBuilder<Process, JmapCLIBuilder> {
         if (liveOnly) {
             options.add("live");
         }
+
         options.add("format=" + format);
         options.add("file=" + file);
         this.arguments.add("-dump:" + options);

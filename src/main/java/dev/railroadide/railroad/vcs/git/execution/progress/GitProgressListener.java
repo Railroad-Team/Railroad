@@ -8,7 +8,9 @@ import java.util.function.Consumer;
  * Decorates raw git output callbacks with parsed progress events.
  */
 public final class GitProgressListener implements GitOutputListener {
-    /** Listener that discards raw output and parsed progress events. */
+    /**
+     * Listener that discards raw output and parsed progress events.
+     */
     public static final GitProgressListener NO_OP = new GitProgressListener(GitOutputListener.NO_OP, _ -> {
     }, null);
 
@@ -76,8 +78,8 @@ public final class GitProgressListener implements GitOutputListener {
                 currentPhase = name;
             }
 
-            if (event instanceof GitProgressEvent.Percentage(String phase, int _)) {
-                currentPhase = phase;
+            if (event instanceof GitProgressEvent.Percentage percentage) {
+                currentPhase = percentage.phase();
             }
 
             if (sink != null) {

@@ -63,6 +63,13 @@ public final class JavaSemanticRules {
         SemanticDiagnostic.Severity.ERROR,
         "Cannot resolve type '%s'");
     /**
+     * Diagnostic rule for a {@code var} initializer referring to its own variable.
+     */
+    public static final JavaSemanticRule SELF_REFERENCING_VAR = new JavaSemanticRule(
+        "SEM_SELF_REFERENCING_VAR",
+        SemanticDiagnostic.Severity.ERROR,
+        "Cannot infer the type of '%s' from a self-referencing initializer");
+    /**
      * Diagnostic rule with message template: {@code Cannot resolve member '%s'}.
      */
     public static final JavaSemanticRule UNRESOLVED_MEMBER = new JavaSemanticRule(
@@ -76,6 +83,13 @@ public final class JavaSemanticRules {
         "SEM_UNRESOLVED_CALL",
         SemanticDiagnostic.Severity.ERROR,
         "Cannot resolve call '%s'");
+    /**
+     * Diagnostic rule with message template: {@code Call to '%s' is ambiguous between '%s' and '%s'}.
+     */
+    public static final JavaSemanticRule AMBIGUOUS_CALL = new JavaSemanticRule(
+        "SEM_AMBIGUOUS_CALL",
+        SemanticDiagnostic.Severity.ERROR,
+        "Call to '%s' is ambiguous between '%s' and '%s'");
     /**
      * Diagnostic rule with message template: {@code Type '%s' is not accessible from here}.
      */

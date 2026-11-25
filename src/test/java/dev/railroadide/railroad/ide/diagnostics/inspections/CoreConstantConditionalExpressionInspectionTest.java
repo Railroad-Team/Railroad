@@ -355,5 +355,4 @@ public class CoreConstantConditionalExpressionInspectionTest {
 
         assertTrue(diagnostics.isEmpty(), "Dynamic conditions should not be flagged as constant");
     }
-
 }

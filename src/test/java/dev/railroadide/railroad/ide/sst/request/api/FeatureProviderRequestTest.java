@@ -58,6 +58,7 @@ public class FeatureProviderRequestTest {
                 return DIAGNOSTICS;
             }
         };
+
         FeatureRequestContext context = context(CancellationToken.none(), Deadline.none());
 
         FeatureResult<List<EditorDiagnostic<?>>> result = provider.compute(context);
@@ -82,6 +83,7 @@ public class FeatureProviderRequestTest {
                 return COMPLETION;
             }
         };
+
         FeatureRequestContext context = context(CancellationToken.none(), Deadline.none());
 
         FeatureResult<CompletionResult> result = provider.compute(context, OFFSET);
@@ -106,6 +108,7 @@ public class FeatureProviderRequestTest {
                 return SIGNATURE;
             }
         };
+
         FeatureRequestContext context = context(CancellationToken.none(), Deadline.none());
 
         FeatureResult<SignatureHelp> result = provider.compute(context, OFFSET);
@@ -207,10 +210,11 @@ public class FeatureProviderRequestTest {
             FeatureRequestContext context = context(source.token(), Deadline.none());
             var failure = new IllegalStateException("Provider failed");
 
-            var actual = assertThrows(IllegalStateException.class, () -> compute(feature, context, () -> {
-                source.cancel();
-                throw failure;
-            }, false));
+            IllegalStateException actual = assertThrows(IllegalStateException.class,
+                () -> compute(feature, context, () -> {
+                    source.cancel();
+                    throw failure;
+                }, false));
 
             assertSame(failure, actual);
         });
@@ -222,9 +226,10 @@ public class FeatureProviderRequestTest {
             FeatureRequestContext context = context(CancellationToken.none(), Deadline.none());
             var failure = new CancellationException("Provider cancelled");
 
-            var actual = assertThrows(CancellationException.class, () -> compute(feature, context, () -> {
-                throw failure;
-            }, false));
+            CancellationException actual = assertThrows(CancellationException.class,
+                () -> compute(feature, context, () -> {
+                    throw failure;
+                }, false));
 
             assertSame(failure, actual);
         });
@@ -297,8 +302,10 @@ public class FeatureProviderRequestTest {
                     duringCompute.run();
                     return DIAGNOSTICS;
                 };
+
                 yield provider.compute(context);
             }
+
             case COMPLETION -> {
                 CompletionProvider provider = (snapshot, triggerAt) -> {
                     assertSame(document, snapshot);
@@ -306,8 +313,10 @@ public class FeatureProviderRequestTest {
                     duringCompute.run();
                     return unsupported ? null : COMPLETION;
                 };
+
                 yield provider.compute(context, OFFSET);
             }
+
             case SIGNATURE -> {
                 SignatureHelpProvider provider = (snapshot, caretPosition) -> {
                     assertSame(document, snapshot);
@@ -315,6 +324,7 @@ public class FeatureProviderRequestTest {
                     duringCompute.run();
                     return unsupported ? null : SIGNATURE;
                 };
+
                 yield provider.compute(context, OFFSET);
             }
         };

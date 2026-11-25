@@ -14,9 +14,8 @@ import java.util.Objects;
  * One step of a {@link WorkspaceEdit}. Every step that targets an existing document is bound to the exact
  * snapshot it was computed against; application rejects the whole edit if any bound document has changed.
  */
-public sealed interface WorkspaceChange
-    permits WorkspaceChange.TextEdit, WorkspaceChange.CreateFile, WorkspaceChange.DeleteFile,
-    WorkspaceChange.RenameFile {
+public sealed interface WorkspaceChange permits WorkspaceChange.TextEdit, WorkspaceChange.CreateFile,
+    WorkspaceChange.DeleteFile, WorkspaceChange.RenameFile {
     /**
      * Returns the annotation explaining why this change is required.
      *
@@ -33,8 +32,7 @@ public sealed interface WorkspaceChange
      * @param annotationId annotation key, or {@code null}
      */
     record TextEdit(TextDocumentSnapshot expected, List<TextReplacement> replacements, String annotationId)
-        implements
-            WorkspaceChange {
+        implements WorkspaceChange {
         /**
          * Creates a text edit with an immutable copy of its replacements.
          *
@@ -80,6 +78,7 @@ public sealed interface WorkspaceChange
             Objects.requireNonNull(uri, "uri");
             if (!uri.isFile())
                 throw new IllegalArgumentException("Only file documents can be created: " + uri);
+
             content = Arrays.copyOf(Objects.requireNonNull(content, "content"), content.length);
         }
 

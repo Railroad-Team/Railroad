@@ -61,12 +61,16 @@ public final class CoreNameResolutionInspection implements JavaInspectionRulePro
             String qualifiedName = context.canonicalQualifiedName(node);
             if (qualifiedName == null || qualifiedName.isBlank())
                 return;
+
             if (context.isSelectorNameExpression(node))
                 return;
+
             if (isSwitchCaseLabel(node))
                 return;
+
             if (context.resolvedSymbol(node).isPresent())
                 return;
+
             if (isQualifiedTypePrefix(context, node))
                 return;
 
@@ -80,10 +84,13 @@ public final class CoreNameResolutionInspection implements JavaInspectionRulePro
             String kindId = current.kind().id();
             if ("JAVA_SWITCH_CASE_ITEM".equals(kindId))
                 return true;
+
             if ("JAVA_SWITCH_RULE".equals(kindId))
                 return false;
+
             current = current.parent().orElse(null);
         }
+
         return false;
     }
 
@@ -94,8 +101,10 @@ public final class CoreNameResolutionInspection implements JavaInspectionRulePro
                 .map(symbol -> isTypeSymbol(symbol.kind()))
                 .orElse(false))
                 return true;
+
             current = current.parent().orElse(null);
         }
+
         return false;
     }
 
@@ -107,6 +116,17 @@ public final class CoreNameResolutionInspection implements JavaInspectionRulePro
             || kind == JavaSymbolKind.RECORD;
     }
 
+    /**
+     * A name selected through an explicit qualifier never refers to a statically imported member.
+     */
+    private static boolean isQualifiedSelector(JavaRuleContext context, SyntaxNode node) {
+        if (!context.isSelectorNameExpression(node))
+            return false;
+
+        SyntaxNode parent = node.parent().orElseThrow();
+        return "JAVA_FIELD_ACCESS_EXPRESSION".equals(parent.kind().id()) || context.invocationReceiver(parent) != null;
+    }
+
     private static void reportAmbiguousNames(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
         context.traverse(node -> {
             if (!JAVA_NAME_EXPRESSION.equals(node.kind().id()))
@@ -114,6 +134,9 @@ public final class CoreNameResolutionInspection implements JavaInspectionRulePro
 
             String qualifiedName = context.canonicalQualifiedName(node);
             if (qualifiedName == null || qualifiedName.isBlank())
+                return;
+
+            if (isQualifiedSelector(context, node))
                 return;
 
             String simpleName = context.lastSegment(qualifiedName);

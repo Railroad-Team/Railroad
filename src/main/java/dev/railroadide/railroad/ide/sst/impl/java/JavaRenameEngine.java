@@ -97,15 +97,17 @@ public final class JavaRenameEngine {
      *
      * @param context captured requesting document and workspace
      * @param capture analysis capture for a request context, used again to verify the renamed workspace
+     * @param target symbol to rename
      */
     public JavaRenameEngine(
         FeatureRequestContext context,
-        Function<FeatureRequestContext, JavaWorkspaceAnalysis> capture
+        Function<FeatureRequestContext, JavaWorkspaceAnalysis> capture,
+        SymbolId target
     ) {
         this.context = Objects.requireNonNull(context, "context");
         this.workspace = context.workspaceSnapshot();
         this.capture = Objects.requireNonNull(capture, "capture");
-        this.graph = capture.apply(context).resolvedGraph(context::checkActive);
+        this.graph = new JavaSourceSetQueries(context, capture).graph(target, true);
         for (SemanticIndexShard shard : graph.shards().values()) {
             if (workspace.document(shard.documentId()).orElse(null) instanceof TextDocumentSnapshot snapshot
                 && snapshot.version().equals(shard.documentVersion()) && snapshot.uri().equals(shard.uri())
@@ -148,6 +150,7 @@ public final class JavaRenameEngine {
         } catch (Rejection rejection) {
             return blocked("", newName, List.of(error(rejection.getMessage(), null)));
         }
+
         if (!target.id().equals(symbol))
             return blocked(target.name(), newName, List.of(error("The workspace changed since the rename was "
                 + "started, and the name at the caret now refers to a different symbol", null)));
@@ -162,6 +165,7 @@ public final class JavaRenameEngine {
         if (!conflicts.blocking()) {
             verify(target, newName, plan, conflicts);
         }
+
         if (conflicts.blocking())
             return blocked(target.name(), newName, conflicts.list());
 
@@ -170,6 +174,7 @@ public final class JavaRenameEngine {
     }
 
     // region Target resolution
+
     private Target resolve(int offset) {
         context.checkActive();
         if (!(context.documentSnapshot() instanceof TextDocumentSnapshot source) || !sources.containsKey(source.id()))
@@ -183,10 +188,12 @@ public final class JavaRenameEngine {
                 Range<?> range = reference.location().range();
                 if (candidate < range.start || candidate >= range.end)
                     continue;
+
                 SymbolId target = renameTarget(reference.target());
                 String targetName = simpleName(target);
                 if (targetName == null)
                     continue;
+
                 for (TextRange name : directRanges(source.text(), reference, targetName, isType(target))) {
                     if (candidate >= name.start && candidate < name.end) {
                         targets.add(target);
@@ -194,6 +201,7 @@ public final class JavaRenameEngine {
                     }
                 }
             }
+
             if (!targets.isEmpty())
                 break;
         }
@@ -207,10 +215,12 @@ public final class JavaRenameEngine {
                         throw new Rejection("Renaming " + kindLabel(symbol.kind().id()) + "s is not supported");
                 }
             }
+
             throw new Rejection(identifierAt(source.text(), offset)
                 .map(name -> "Cannot resolve the symbol '" + name + "'")
                 .orElse("Place the caret on the name of a symbol to rename it"));
         }
+
         if (targets.size() > 1)
             throw new Rejection("The name at the caret refers to several symbols");
 
@@ -218,14 +228,18 @@ public final class JavaRenameEngine {
         List<SymbolDescriptor> descriptors = graph.symbols(id);
         if (descriptors.isEmpty())
             throw new Rejection("The declaration of '" + simpleName(id) + "' is not available");
+
         SymbolDescriptor descriptor = descriptors.getFirst();
         String kind = descriptor.kind().id();
         if (descriptors.stream().anyMatch(symbol -> !symbol.kind().id().equals(kind)))
             throw new Rejection("'" + descriptor.simpleName() + "' has conflicting declarations");
+
         if (!TYPE_KINDS.contains(kind) && !Set.of(FIELD, METHOD, PARAMETER, LOCAL).contains(kind))
             throw new Rejection("Renaming " + kindLabel(kind) + "s is not supported");
+
         if (descriptor.simpleName().startsWith("<"))
             throw new Rejection("Anonymous classes have no name to rename");
+
         if (isRecordComponent(id))
             throw new Rejection("Renaming record components is not supported yet");
 
@@ -244,6 +258,7 @@ public final class JavaRenameEngine {
                 Location<?> selection = location.selection();
                 if (!(selection instanceof Location.TextLocation text))
                     continue;
+
                 TextDocumentSnapshot snapshot = sources.get(text.documentId());
                 if (snapshot != null && snapshot.uri().equals(location.uri()) && valid(text, snapshot)
                     && symbol.simpleName().equals(slice(snapshot, text.range()))) {
@@ -251,8 +266,10 @@ public final class JavaRenameEngine {
                 }
             }
         }
+
         if (found.size() > 1)
             throw new Rejection("'" + simpleName(id) + "' is declared more than once");
+
         Optional<Declaration> declaration = found.stream().findFirst();
         declaration.ifPresent(value -> {
             ProvenanceKind provenance = value.document().origin().provenance();
@@ -260,6 +277,7 @@ public final class JavaRenameEngine {
                 || provenance == ProvenanceKind.ATTACHED_SOURCE)
                 throw new Rejection("'" + simpleName(id) + "' is declared in a read-only source");
         });
+
         return declaration;
     }
 
@@ -273,8 +291,10 @@ public final class JavaRenameEngine {
                     }
                 }
             }
+
             return List.copyOf(new LinkedHashSet<>(family));
         }
+
         if (!kind.equals(METHOD))
             return List.of(id);
 
@@ -288,15 +308,18 @@ public final class JavaRenameEngine {
                     pending.add(edge.target());
                 }
             }
+
             for (SymbolEdge edge : graph.incomingEdges(next)) {
                 if (edge.kind().equals(EdgeKindId.OVERRIDE) && family.add(edge.source())) {
                     pending.add(edge.source());
                 }
             }
+
             for (InheritedImplementation pair : implementations()) {
                 if (pair.implementation().equals(next) && family.add(pair.method())) {
                     pending.add(pair.method());
                 }
+
                 if (pair.method().equals(next) && family.add(pair.implementation())) {
                     pending.add(pair.implementation());
                 }
@@ -308,6 +331,7 @@ public final class JavaRenameEngine {
             if (declaration(member).isEmpty())
                 throw new Rejection("'" + simpleName(id) + "' overrides, implements or is overridden by a method of "
                     + owner + ", which is declared in a library and cannot be renamed");
+
             SymbolDescriptor descriptor = graph.symbols(member).getFirst();
             boolean overrides = graph.outgoingEdges(member).stream()
                 .anyMatch(edge -> edge.kind().equals(EdgeKindId.OVERRIDE));
@@ -317,14 +341,16 @@ public final class JavaRenameEngine {
                 throw new Rejection("'" + simpleName(id) + "' in " + owner
                     + " overrides a method whose declaration is not available, such as a method of java.lang.Object");
         }
+
         return List.copyOf(family);
     }
 
     private List<InheritedImplementation> implementations() {
         if (implementations == null) {
             implementations = JavaOverrideGraphExtractor.inheritedImplementations(graph.shards().values(),
-                sources.keySet(), context::checkActive);
+                sources.keySet(), analysis(), context::checkActive);
         }
+
         return implementations;
     }
 
@@ -339,11 +365,13 @@ public final class JavaRenameEngine {
         List<JavaSymbolIds.Component> parts = components(id);
         if (parts.size() > 2 && parts.get(parts.size() - 2).kind().equals("constructor"))
             return JavaSymbolIds.fromComponents(parts.subList(0, parts.size() - 2));
+
         return id;
     }
     // endregion
 
     // region Planning
+
     private Plan plan(Target target, String newName, Conflicts conflicts) {
         var plan = new Plan();
         boolean type = TYPE_KINDS.contains(target.kind());
@@ -353,6 +381,7 @@ public final class JavaRenameEngine {
                 TextDocumentSnapshot document = documentOf(reference);
                 if (document == null)
                     continue;
+
                 List<TextRange> ranges = directRanges(document.text(), reference, target.name(), type);
                 if (ranges.isEmpty()) {
                     if (!reference.kind().equals(ReferenceKindId.CALL) || !isConstructor(reference.target())) {
@@ -360,8 +389,10 @@ public final class JavaRenameEngine {
                             + describe(document, reference.location().range().start) + " cannot be updated",
                             location(document, reference.location().range())));
                     }
+
                     continue;
                 }
+
                 ranges.forEach(range -> plan.replace(document, range, newName));
             }
         }
@@ -374,6 +405,7 @@ public final class JavaRenameEngine {
                         && !reference.kind().equals(ReferenceKindId.DOCUMENTATION)
                         || target.family().contains(reference.target()) || !within(reference.target(), target.id()))
                         continue;
+
                     qualifierRange(document, reference, target).ifPresent(range -> plan.replace(document, range,
                         newName));
                 }
@@ -384,6 +416,7 @@ public final class JavaRenameEngine {
             parameterDocumentation(target).ifPresent(range -> plan.replace(target.declaration().document(), range,
                 newName));
         }
+
         if (annotationElement(target.descriptor())) {
             annotationArguments(target, newName, plan, conflicts);
         }
@@ -421,8 +454,10 @@ public final class JavaRenameEngine {
             }
         } else
             return List.of();
+
         if (segments.isEmpty() || !segments.getLast().text().equals(name))
             return List.of();
+
         return List.of(new TextRange(segments.getLast().start(), segments.getLast().end()));
     }
 
@@ -439,6 +474,7 @@ public final class JavaRenameEngine {
         String renamedType = typeName(target.id());
         if (targetType == null || renamedType == null)
             return Optional.empty();
+
         int start = reference.location().range().start;
         int end = reference.location().range().end;
         String region = document.text().substring(start, end);
@@ -453,12 +489,15 @@ public final class JavaRenameEngine {
             int hash = region.indexOf('#');
             if (member && hash < 0)
                 return Optional.empty();
+
             segments = segments(document.text(), start, hash < 0 ? end : start + hash);
         }
+
         int depth = typeSegments(targetType).size() - typeSegments(renamedType).size();
         int index = segments.size() - 1 - depth;
         if (depth < 0 || index < 0 || !segments.get(index).text().equals(target.name()))
             return Optional.empty();
+
         return Optional.of(new TextRange(segments.get(index).start(), segments.get(index).end()));
     }
 
@@ -466,17 +505,20 @@ public final class JavaRenameEngine {
         SymbolId owner = target.descriptor().ownerId();
         if (owner == null || !isParameter(target.id()))
             return Optional.empty();
+
         TextDocumentSnapshot document = target.declaration().document();
         for (SymbolDescriptor symbol : graph.symbols(owner)) {
             for (SymbolLocation location : symbol.locations()) {
                 if (!(location.declaration() instanceof Location.TextLocation declaration)
                     || !declaration.documentId().equals(document.id()) || !valid(declaration, document))
                     continue;
+
                 String text = document.text();
                 int start = declaration.range().start;
                 while (start < declaration.range().end && Character.isWhitespace(text.charAt(start))) {
                     start++;
                 }
+
                 int open;
                 int close;
                 if (text.startsWith("/**", start)) {
@@ -487,25 +529,30 @@ public final class JavaRenameEngine {
                     while (before > 0 && Character.isWhitespace(text.charAt(before - 1))) {
                         before--;
                     }
+
                     close = before >= 2 && text.startsWith("*/", before - 2) ? before - 2 : -1;
                     open = close < 0 ? -1 : text.lastIndexOf("/*", close);
                     if (open < 0 || !text.startsWith("/**", open))
                         continue;
                 }
+
                 if (close < 0 || close > declaration.range().end && open >= declaration.range().start)
                     continue;
+
                 Matcher matcher = Pattern.compile("(?m)^\\h*\\**\\h*@param\\h+(" + Pattern.quote(target.name())
                     + ")(?!\\p{javaJavaIdentifierPart})").matcher(text).region(open + 3, close);
                 if (matcher.find())
                     return Optional.of(new TextRange(matcher.start(1), matcher.end(1)));
             }
         }
+
         return Optional.empty();
     }
 
     private boolean annotationElement(SymbolDescriptor symbol) {
         if (!symbol.kind().id().equals(METHOD) || symbol.ownerId() == null)
             return false;
+
         List<SymbolDescriptor> owners = graph.symbols(symbol.ownerId());
         return !owners.isEmpty() && owners.getFirst().kind().id().equals("java:annotation");
     }
@@ -524,30 +571,36 @@ public final class JavaRenameEngine {
             TextDocumentSnapshot document = sources.get(shard.documentId());
             if (annotationName == null || !document.text().contains(annotationName))
                 continue;
+
             SyntaxNode root = tree(document);
             Set<Integer> resolved = new HashSet<>();
             for (ReferenceOccurrence reference : shard.references()) {
                 if (!reference.kind().equals(ReferenceKindId.ANNOTATION) || documentOf(reference) == null)
                     continue;
+
                 resolved.add(reference.location().range().start);
                 if (!reference.target().equals(annotation))
                     continue;
+
                 SyntaxNode usage = ancestor(tokenAt(root, reference.location().range().start),
                     JavaSyntaxKinds.ANNOTATION.id());
                 if (usage != null) {
                     elementNames(usage, target.name(), newName, document, plan);
                 }
             }
+
             List<SyntaxToken> tokens = tokens(root);
             for (int index = 0; index < tokens.size(); index++) {
                 if (!tokens.get(index).kind().id().equals("JAVA_TOKEN_AT"))
                     continue;
+
                 SyntaxToken name = null;
                 boolean segment = true;
                 for (int next = index + 1; next < tokens.size(); next++) {
                     String kind = tokens.get(next).kind().id();
                     if (trivia(kind))
                         continue;
+
                     if (segment && kind.equals("JAVA_TOKEN_IDENTIFIER")) {
                         name = tokens.get(next);
                         segment = false;
@@ -555,7 +608,9 @@ public final class JavaRenameEngine {
                         segment = true;
                     } else
                         break;
+
                 }
+
                 if (name != null && JavaUnicodeEscapes.translate(name.text()).equals(annotationName)
                     && !resolved.contains(name.start())) {
                     conflicts.add(error("The annotation at " + describe(document, name.start()) + " could not be "
@@ -577,6 +632,7 @@ public final class JavaRenameEngine {
                 node.children().reversed().forEach(pending::addFirst);
             }
         }
+
         return tokens;
     }
 
@@ -593,10 +649,12 @@ public final class JavaRenameEngine {
             String kind = child.kind().id();
             if (trivia(kind))
                 continue;
+
             if (Set.of("JAVA_TOKEN_OPEN_PAREN", "JAVA_TOKEN_OPEN_BRACE", "JAVA_TOKEN_OPEN_BRACKET").contains(kind)) {
                 if (depth == 1) {
                     arguments.add(child);
                 }
+
                 depth++;
             } else if (Set.of("JAVA_TOKEN_CLOSE_PAREN", "JAVA_TOKEN_CLOSE_BRACE", "JAVA_TOKEN_CLOSE_BRACKET")
                 .contains(kind)) {
@@ -606,6 +664,7 @@ public final class JavaRenameEngine {
                 arguments.add(child);
             }
         }
+
         if (arguments.isEmpty())
             return;
 
@@ -616,12 +675,14 @@ public final class JavaRenameEngine {
                 || !arguments.get(index).kind().id().equals("JAVA_TOKEN_IDENTIFIER")
                 || !arguments.get(index + 1).kind().id().equals("JAVA_TOKEN_EQUALS"))
                 continue;
+
             pairs = true;
             SyntaxNode name = arguments.get(index);
             if (name instanceof SyntaxToken token && JavaUnicodeEscapes.translate(token.text()).equals(oldName)) {
                 plan.replace(document, new TextRange(token.start(), token.end()), newName);
             }
         }
+
         if (!pairs && oldName.equals("value")) {
             int start = arguments.getFirst().start();
             plan.replace(document, new TextRange(start, start), newName + " = ");
@@ -637,12 +698,14 @@ public final class JavaRenameEngine {
             if (current.kind().id().equals(kind))
                 return current;
         }
+
         return null;
     }
 
     private void fileRename(Target target, String newName, Plan plan, Conflicts conflicts) {
         if (!TYPE_KINDS.contains(target.kind()) || !topLevel(target.descriptor()))
             return;
+
         TextDocumentSnapshot document = target.declaration().document();
         Optional<Path> path = document.uri().filePath();
         if (path.isEmpty() || !path.get().getFileName().toString().equals(target.name() + ".java"))
@@ -655,6 +718,7 @@ public final class JavaRenameEngine {
             conflicts.add(error("The new name cannot be used as a file name", null));
             return;
         }
+
         DocumentUri uri = DocumentUri.fromPath(renamed);
         boolean caseOnly = path.get().equals(renamed) || sameExistingFile(path.get(), renamed);
         boolean occupied = workspace.documents().values().stream()
@@ -663,6 +727,7 @@ public final class JavaRenameEngine {
             conflicts.add(error("The file " + renamed.getFileName() + " already exists", null));
             return;
         }
+
         plan.renameFile(document, uri);
     }
 
@@ -687,6 +752,7 @@ public final class JavaRenameEngine {
     // endregion
 
     // region Explicit checks
+
     private void validateName(Target target, String newName, Conflicts conflicts) {
         if (newName.equals(target.name())) {
             conflicts.add(error("The new name is the same as the current name", null));
@@ -703,9 +769,11 @@ public final class JavaRenameEngine {
         if (TYPE_KINDS.contains(target.kind())) {
             checkNestedTypeNames(target, newName, conflicts);
         }
+
         if (Set.of(PARAMETER, LOCAL).contains(target.kind()) || isLocalType(target.id())) {
             checkScope(target, newName, conflicts);
         }
+
         if (target.kind().equals(METHOD)) {
             checkHierarchy(target, newName, conflicts);
             checkImplicitImplementations(target, conflicts);
@@ -713,6 +781,7 @@ public final class JavaRenameEngine {
             if (annotationElement(target.descriptor())) {
                 checkAnnotationElement(target, newName, conflicts);
             }
+
             List<CallSite> sites = callSites(target, newName);
             checkOverloads(target, newName, sites, conflicts);
             checkUnqualifiedCalls(target, newName, sites, conflicts);
@@ -721,8 +790,8 @@ public final class JavaRenameEngine {
 
     /**
      * Rejects renaming an interface method that a concrete source type implements through a member the analysis
-     * does not model, such as an implicit record accessor or a method inherited from {@link Enum}. Such a type
-     * would no longer implement the renamed method.
+     * does not model, such as a method inherited from {@link Enum}. Such a type would no longer implement the renamed
+     * method. Implicit record accessors are modelled and handled by {@link #checkRecordAccessors}.
      */
     private void checkImplicitImplementations(Target target, Conflicts conflicts) {
         for (SymbolId member : target.family()) {
@@ -730,6 +799,7 @@ public final class JavaRenameEngine {
             List<SymbolDescriptor> owners = owner == null ? List.of() : graph.symbols(owner);
             if (owners.isEmpty() || !owners.getFirst().kind().id().equals("java:interface"))
                 continue;
+
             for (SymbolId type : related(owner, false)) {
                 List<SymbolDescriptor> types = graph.symbols(type);
                 if (types.isEmpty() || !Set.of("java:class", "java:enum", "java:record")
@@ -737,6 +807,7 @@ public final class JavaRenameEngine {
                     || types.getFirst().metadata().modifiers().contains("abstract")
                     || declarationLocation(types.getFirst()) == null)
                     continue;
+
                 Set<SymbolId> inherited = related(type, true);
                 inherited.add(type);
                 boolean implemented = target.family().stream().anyMatch(candidate -> {
@@ -744,9 +815,10 @@ public final class JavaRenameEngine {
                     return inherited.contains(method.ownerId()) && !method.metadata().modifiers().contains("abstract")
                         && (method.ownerId().equals(type) || !isPrivate(method));
                 });
+
                 if (!implemented) {
                     conflicts.add(error(describeSymbol(graph, type) + " implements '" + target.name() + "' through "
-                        + "a member that is not declared in source, such as a record accessor or an enum method, and "
+                        + "a member that is not declared in source, such as an enum method, and "
                         + "would no longer implement it", declarationLocation(types.getFirst())));
                     return;
                 }
@@ -766,6 +838,7 @@ public final class JavaRenameEngine {
             if (owners.isEmpty() || !owners.getFirst().kind().id().equals("java:record")
                 || !Objects.equals(parameterSignature(member), ""))
                 continue;
+
             List<JavaSymbolIds.Component> record = components(owner);
             for (SemanticIndexShard shard : sourceShards()) {
                 for (SymbolDescriptor symbol : shard.declarations()) {
@@ -775,6 +848,7 @@ public final class JavaRenameEngine {
                             .anyMatch(part -> Set.of("type", "localType", "anonymous").contains(part.kind()))
                         || !Set.of(newName, target.name()).contains(symbol.simpleName()))
                         continue;
+
                     conflicts.add(error("'" + symbol.simpleName() + "' is a component of record " + ownerName(member)
                         + ", so renaming '" + target.name() + "' to '" + newName + "' would change its accessor",
                         declarationLocation(symbol)));
@@ -797,8 +871,10 @@ public final class JavaRenameEngine {
                 + "annotation interface extends", null));
             return;
         }
+
         if (!target.name().equals("value"))
             return;
+
         SymbolId container = target.descriptor().ownerId();
         for (SemanticIndexShard shard : sourceShards()) {
             TextDocumentSnapshot document = sources.get(shard.documentId());
@@ -807,10 +883,12 @@ public final class JavaRenameEngine {
                     || !"java.lang.annotation.Repeatable".equals(typeName(repeatable.target()))
                     || documentOf(repeatable) == null)
                     continue;
+
                 SyntaxNode usage = ancestor(tokenAt(tree(document), repeatable.location().range().start),
                     JavaSyntaxKinds.ANNOTATION.id());
                 if (usage == null)
                     continue;
+
                 String containerName = simpleName(container);
                 boolean names = shard.references().stream()
                     .anyMatch(reference -> reference.target().equals(container)
@@ -840,6 +918,7 @@ public final class JavaRenameEngine {
             context.checkActive();
             if (!document.text().contains(target.name()) && !document.text().contains(newName))
                 continue;
+
             Map<Integer, Set<SymbolId>> resolved = new HashMap<>();
             for (ReferenceOccurrence reference : graph.shards().get(document.id()).references()) {
                 if (reference.kind().equals(ReferenceKindId.CALL)
@@ -848,13 +927,16 @@ public final class JavaRenameEngine {
                         .add(reference.target());
                 }
             }
+
             for (SyntaxToken token : tokens(tree(document))) {
                 if (!token.kind().id().equals("JAVA_TOKEN_IDENTIFIER")
                     || !names.contains(JavaUnicodeEscapes.translate(token.text())))
                     continue;
+
                 Boolean unqualified = callShape(token);
                 if (unqualified == null)
                     continue;
+
                 Set<SymbolId> targets = resolved.getOrDefault(token.start(), Set.of());
                 boolean reference = token.parent()
                     .filter(parent -> parent.kind().id().equals(JavaSyntaxKinds.METHOD_REFERENCE_EXPRESSION.id()))
@@ -864,6 +946,7 @@ public final class JavaRenameEngine {
                     targets.size() == 1 ? targets.iterator().next() : null));
             }
         }
+
         return sites;
     }
 
@@ -876,17 +959,21 @@ public final class JavaRenameEngine {
         SyntaxNode parent = token.parent().orElse(null);
         if (parent == null)
             return null;
+
         if (parent.kind().id().equals(JavaSyntaxKinds.METHOD_REFERENCE_EXPRESSION.id()))
             return meaningful(parent.children()).getLast().start() == token.start() ? false : null;
+
         SyntaxNode invocation = parent.parent().orElse(null);
         if (!parent.kind().id().equals(JavaSyntaxKinds.NAME_EXPRESSION.id()) || invocation == null
             || !invocation.kind().id().equals(JavaSyntaxKinds.METHOD_INVOCATION_EXPRESSION.id()))
             return null;
+
         List<SyntaxNode> children = meaningful(invocation.children());
         int index = children.indexOf(parent);
         if (index < 0 || index + 1 >= children.size()
             || !children.get(index + 1).kind().id().equals(JavaSyntaxKinds.ARGUMENT_LIST.id()))
             return null;
+
         return index == 0;
     }
 
@@ -909,16 +996,19 @@ public final class JavaRenameEngine {
             SymbolId owner = method.ownerId();
             if (owner == null)
                 continue;
+
             Set<SymbolId> types = new LinkedHashSet<>(List.of(owner));
             if (!isPrivate(method)) {
                 types.addAll(related(owner, false));
             }
+
             String parameters = parameterSignature(member);
             for (SymbolId type : types) {
                 for (Member existing : methodsNamed(type, newName, target)) {
                     context.checkActive();
                     if (existing.renamed() || parameters != null && parameters.equals(existing.parameters()))
                         continue;
+
                     List<CallSite> affected = sites.stream().filter(site -> site.target() == null
                         ? site.name().equals(newName)
                         : target.family().contains(site.target())
@@ -927,6 +1017,7 @@ public final class JavaRenameEngine {
                     if (affected.isEmpty() || !compete(parameters, existing.parameters())
                         && affected.stream().noneMatch(CallSite::reference))
                         continue;
+
                     conflicts.add(error("Renaming '" + target.name() + "' in " + ownerName(member) + " to '"
                         + newName + "' would overload " + newName + "(" + Objects.requireNonNullElse(
                             existing.parameters(), "...")
@@ -950,6 +1041,7 @@ public final class JavaRenameEngine {
             boolean renamed = site.target() != null && target.family().contains(site.target());
             if (!site.unqualified() || !renamed && !site.name().equals(newName))
                 continue;
+
             String where = describe(site.document(), site.start());
             Location.TextLocation location = location(site.document(),
                 new TextRange(site.start(), site.start() + site.name().length()));
@@ -958,10 +1050,12 @@ public final class JavaRenameEngine {
                     + "Java does not allow", location));
                 continue;
             }
+
             for (SymbolId type : enclosingTypes(site.document(), site.start())) {
                 List<Member> members = methodsNamed(type, newName, target);
                 if (members.isEmpty())
                     continue;
+
                 boolean resolves = site.target() != null
                     && members.stream().anyMatch(member -> methodKey(site.target()).equals(member.key()));
                 if (!resolves && (renamed || members.stream().anyMatch(Member::renamed))) {
@@ -969,6 +1063,7 @@ public final class JavaRenameEngine {
                         + "among the '" + newName + "' methods of " + describeSymbol(graph, type)
                         + (site.target() == null ? ", and it could not be verified" : " instead"), location));
                 }
+
                 break;
             }
         }
@@ -985,10 +1080,12 @@ public final class JavaRenameEngine {
                 bodies.add(node);
             }
         }
+
         Map<SymbolId, Integer> types = new HashMap<>();
         for (SymbolDescriptor symbol : graph.shards().get(document.id()).declarations()) {
             if (!TYPE_KINDS.contains(symbol.kind().id()))
                 continue;
+
             for (SymbolLocation location : symbol.locations()) {
                 if (location.declaration() instanceof Location.TextLocation declaration
                     && declaration.documentId().equals(document.id()) && declaration.range().start <= offset
@@ -999,6 +1096,7 @@ public final class JavaRenameEngine {
                 }
             }
         }
+
         return types.entrySet().stream().sorted(Map.Entry.comparingByValue()).map(Map.Entry::getKey).toList();
     }
 
@@ -1022,6 +1120,7 @@ public final class JavaRenameEngine {
                     members.add(member);
                 }
             }
+
             for (SymbolId renamed : target.family()) {
                 SymbolDescriptor method = graph.symbols(renamed).getFirst();
                 if (owner.equals(method.ownerId()) && (own || !isPrivate(method))) {
@@ -1030,6 +1129,7 @@ public final class JavaRenameEngine {
                 }
             }
         }
+
         return members;
     }
 
@@ -1041,13 +1141,17 @@ public final class JavaRenameEngine {
                 .map(symbol -> new Member(methodKey(symbol.id()), ownerName(symbol.id()),
                     parameterSignature(symbol.id()), isPrivate(symbol), false))
                 .toList();
+
         String owner = typeName(type);
         if (owner == null)
             return List.of();
+
         List<Member> members = new ArrayList<>();
-        for (var candidate : analysis().lookupMember(owner.replace('$', '.'), name)) {
+        for (JavaProjectSemanticIndex.SymbolDescriptor candidate : analysis().lookupMember(owner.replace('$', '.'),
+            name)) {
             if (candidate.kind() != JavaSymbolKind.METHOD)
                 continue;
+
             String parameters = candidateParameters(candidate);
             SymbolId key = candidate.descriptor() != null
                 ? methodKey(candidate.descriptor().id())
@@ -1060,10 +1164,13 @@ public final class JavaRenameEngine {
             members.add(new Member(key, owner.replace('$', '.'), parameters,
                 candidate.descriptor() != null && isPrivate(candidate.descriptor()), false));
         }
+
         return members;
     }
 
-    /** Indexes the declarations of analysed sources by their owner; every source type has an entry. */
+    /**
+     * Indexes the declarations of analysed sources by their owner; every source type has an entry.
+     */
     private Map<SymbolId, List<SymbolDescriptor>> sourceMembers() {
         if (sourceMembers == null) {
             Map<SymbolId, List<SymbolDescriptor>> members = new HashMap<>();
@@ -1072,13 +1179,16 @@ public final class JavaRenameEngine {
                     if (TYPE_KINDS.contains(symbol.kind().id())) {
                         members.computeIfAbsent(symbol.id(), _ -> new ArrayList<>());
                     }
+
                     if (symbol.ownerId() != null) {
                         members.computeIfAbsent(symbol.ownerId(), _ -> new ArrayList<>()).add(symbol);
                     }
                 }
             }
+
             sourceMembers = members;
         }
+
         return sourceMembers;
     }
 
@@ -1090,10 +1200,12 @@ public final class JavaRenameEngine {
     private static boolean compete(@Nullable String first, @Nullable String second) {
         if (first == null || second == null)
             return true;
+
         List<String> left = first.isEmpty() ? List.of() : List.of(first.split(",", -1));
         List<String> right = second.isEmpty() ? List.of() : List.of(second.split(",", -1));
         if (left.size() != right.size())
             return variableArity(left) || variableArity(right);
+
         for (int index = 0; index < left.size(); index++) {
             String one = left.get(index);
             String two = right.get(index);
@@ -1102,6 +1214,7 @@ public final class JavaRenameEngine {
                 && (!two.endsWith("[]") || disjoint(one, element(two)))))
                 return false;
         }
+
         return true;
     }
 
@@ -1120,11 +1233,14 @@ public final class JavaRenameEngine {
     private static boolean disjoint(String first, String second) {
         if (first.equals(second))
             return false;
+
         boolean primitive = PRIMITIVES.contains(first);
         if (primitive && PRIMITIVES.contains(second))
             return first.equals("boolean") != second.equals("boolean");
+
         if (primitive == PRIMITIVES.contains(second))
             return false;
+
         String reference = primitive ? second : first;
         return !BOXING_TYPES.contains(reference) && (reference.contains(".") || reference.endsWith("[]"));
     }
@@ -1138,6 +1254,7 @@ public final class JavaRenameEngine {
         List<JavaSymbolIds.Component> parts = components(id);
         if (parts.isEmpty() || !parts.getLast().kind().equals("return"))
             return id;
+
         return JavaSymbolIds.fromComponents(parts.subList(0, parts.size() - 1));
     }
 
@@ -1149,6 +1266,7 @@ public final class JavaRenameEngine {
         if (analysis == null) {
             analysis = capture.apply(context);
         }
+
         return analysis;
     }
 
@@ -1157,13 +1275,16 @@ public final class JavaRenameEngine {
             List<SymbolDescriptor> symbols = graph.symbols(owner);
             if (symbols.isEmpty() || !TYPE_KINDS.contains(symbols.getFirst().kind().id()))
                 break;
+
             if (symbols.getFirst().simpleName().equals(newName)) {
                 conflicts.add(error("A nested type cannot have the same name as its enclosing type '" + newName
                     + "'", null));
                 return;
             }
+
             owner = symbols.getFirst().ownerId();
         }
+
         for (SemanticIndexShard shard : sourceShards()) {
             for (SymbolDescriptor symbol : shard.declarations()) {
                 if (TYPE_KINDS.contains(symbol.kind().id()) && symbol.simpleName().equals(newName)
@@ -1181,9 +1302,11 @@ public final class JavaRenameEngine {
         for (SymbolId owner = symbol.ownerId(); owner != null && visited.add(owner);) {
             if (owner.equals(type))
                 return true;
+
             List<SymbolDescriptor> owners = graph.symbols(owner);
             owner = owners.isEmpty() ? null : owners.getFirst().ownerId();
         }
+
         return false;
     }
 
@@ -1193,17 +1316,21 @@ public final class JavaRenameEngine {
         SyntaxNode renamed = tokenAt(root, target.declaration().location().range().start);
         if (renamed == null)
             return;
+
         SemanticIndexShard shard = graph.shards().get(document.id());
         for (ReferenceOccurrence reference : shard.references()) {
             if (!reference.kind().equals(ReferenceKindId.DECLARATION)
                 || !newName.equals(slice(document, reference.location().range())))
                 continue;
+
             List<SymbolDescriptor> symbols = graph.symbols(reference.target());
             if (symbols.isEmpty())
                 continue;
+
             String kind = symbols.getFirst().kind().id();
             if (!Set.of(PARAMETER, LOCAL).contains(kind) && !isLocalType(reference.target()))
                 continue;
+
             SyntaxNode other = tokenAt(root, reference.location().range().start);
             if (other != null && sameTypeBody(renamed, other)
                 && scopesOverlap(renamed, target.kind().equals(PARAMETER), other, kind.equals(PARAMETER))) {
@@ -1233,6 +1360,7 @@ public final class JavaRenameEngine {
         SyntaxNode scope = scope(declaration);
         if (scope == null)
             return false;
+
         int start = parameter ? scope.start() : declaration.start();
         return offset >= start && offset < scope.end();
     }
@@ -1243,6 +1371,7 @@ public final class JavaRenameEngine {
             if (SCOPE_KINDS.contains(current.kind().id()))
                 return current;
         }
+
         return null;
     }
 
@@ -1256,6 +1385,7 @@ public final class JavaRenameEngine {
             if (TYPE_BODY_KINDS.contains(current.kind().id()))
                 return current;
         }
+
         return null;
     }
 
@@ -1265,6 +1395,7 @@ public final class JavaRenameEngine {
             SymbolDescriptor method = graph.symbols(member).getFirst();
             if (method.ownerId() == null)
                 continue;
+
             String parameters = parameterSignature(member);
             Set<SymbolId> supertypes = related(method.ownerId(), true);
             supertypes.add(OBJECT);
@@ -1276,14 +1407,18 @@ public final class JavaRenameEngine {
                 String owner = typeName(type);
                 if (owner == null)
                     continue;
-                for (var candidate : analysis.lookupMember(owner.replace('$', '.'), newName)) {
+
+                for (JavaProjectSemanticIndex.SymbolDescriptor candidate : analysis
+                    .lookupMember(owner.replace('$', '.'), newName)) {
                     if (candidate.kind() != JavaSymbolKind.METHOD
                         || !Objects.equals(parameters, candidateParameters(candidate)))
                         continue;
+
                     SymbolDescriptor descriptor = candidate.descriptor();
                     if (supertypes.contains(type) && descriptor != null
                         && descriptor.metadata().modifiers().contains("private"))
                         continue;
+
                     conflicts.add(error("Renaming '" + target.name() + "' in " + ownerName(member) + " to '"
                         + newName + "' would clash with or override " + newName + "(" + parameters + ") in "
                         + owner.replace('$', '.'), descriptor == null ? null : declarationLocation(descriptor)));
@@ -1296,12 +1431,15 @@ public final class JavaRenameEngine {
     private static @Nullable String candidateParameters(JavaProjectSemanticIndex.SymbolDescriptor candidate) {
         if (candidate.descriptor() != null)
             return parameterSignature(candidate.descriptor().id());
+
         String signature = candidate.signature();
         if (signature == null || !signature.startsWith("(") || !signature.endsWith(")"))
             return null;
+
         String content = signature.substring(1, signature.length() - 1);
         if (content.isBlank())
             return "";
+
         List<String> types = new ArrayList<>();
         for (String type : content.split(",")) {
             try {
@@ -1310,6 +1448,7 @@ public final class JavaRenameEngine {
                 return null;
             }
         }
+
         return String.join(",", types);
     }
 
@@ -1326,11 +1465,13 @@ public final class JavaRenameEngine {
                 }
             }
         }
+
         return found;
     }
     // endregion
 
     // region Verification
+
     private void verify(Target target, String newName, Plan plan, Conflicts conflicts) {
         Function<SymbolId, SymbolId> rename = identityMapping(target, newName);
         Map<DocumentId, TextDocumentSnapshot> renamedDocuments = new LinkedHashMap<>();
@@ -1342,17 +1483,19 @@ public final class JavaRenameEngine {
             renamedDocuments.put(document.id(), renamed);
             documents.put(document.id(), renamed);
         }
+
         var renamedWorkspace = new WorkspaceSnapshot(workspace.projectId(), documents, workspace.configuration(),
             workspace.revision());
         DocumentSnapshot requester = documents.get(context.documentSnapshot().id());
         var request = new FeatureRequestContext(renamedWorkspace, requester, context.cancellationToken(),
             context.deadline());
-        WorkspaceSymbolGraph after = capture.apply(request).resolvedGraph(context::checkActive);
+        JavaWorkspaceAnalysis renamedAnalysis = capture.apply(request);
+        WorkspaceSymbolGraph after = new JavaSourceSetQueries(request, capture).graph(rename.apply(target.id()), true);
 
         compareReferences(after, rename, plan, renamedDocuments, conflicts);
         compareEdges(after, rename, conflicts);
         if (target.kind().equals(METHOD) || TYPE_KINDS.contains(target.kind())) {
-            compareImplementations(after, rename, conflicts);
+            compareImplementations(after, renamedAnalysis, rename, conflicts);
         }
     }
 
@@ -1375,9 +1518,11 @@ public final class JavaRenameEngine {
             } catch (IllegalArgumentException exception) {
                 return id;
             }
+
             for (List<JavaSymbolIds.Component> member : renamedMembers) {
                 if (!startsWith(parts, member))
                     continue;
+
                 for (int index = member.size() - 1; index >= 0; index--) {
                     JavaSymbolIds.Component component = member.get(index);
                     if (NAMED_COMPONENTS.contains(component.kind()) && component.value().equals(target.name())) {
@@ -1386,8 +1531,10 @@ public final class JavaRenameEngine {
                     }
                 }
             }
+
             if (newType == null && !localType)
                 return JavaSymbolIds.fromComponents(parts);
+
             for (int index = 0; index < parts.size(); index++) {
                 JavaSymbolIds.Component component = parts.get(index);
                 if (component.kind().equals("type") && newType != null) {
@@ -1398,9 +1545,11 @@ public final class JavaRenameEngine {
                     for (String parameter : component.value().split(",", -1)) {
                         types.add(renameParameterType(parameter, oldTypeName, newType, target.name(), newName));
                     }
+
                     parts.set(index, new JavaSymbolIds.Component("parameters", String.join(",", types)));
                 }
             }
+
             return JavaSymbolIds.fromComponents(parts);
         };
     }
@@ -1415,6 +1564,7 @@ public final class JavaRenameEngine {
         if (!normalized.startsWith(old)
             || normalized.length() > old.length() && normalized.charAt(old.length()) != '.')
             return type;
+
         int nameStart = Math.max(oldType.lastIndexOf('.'), oldType.lastIndexOf('$')) + 1;
         String newName = newType.substring(Math.max(newType.lastIndexOf('.'), newType.lastIndexOf('$')) + 1);
         return type.substring(0, nameStart) + newName + type.substring(oldType.length());
@@ -1434,6 +1584,7 @@ public final class JavaRenameEngine {
         if (renamed.equals(base) && base.equals(oldName)) {
             renamed = newName;
         }
+
         return renamed + suffix;
     }
 
@@ -1444,11 +1595,13 @@ public final class JavaRenameEngine {
                 renamed.computeIfAbsent(rename.apply(symbol.id()), _ -> new ArrayList<>()).add(symbol);
             }
         }
+
         for (List<SymbolDescriptor> symbols : renamed.values()) {
             Set<SymbolId> distinct = new LinkedHashSet<>();
             symbols.forEach(symbol -> distinct.add(symbol.id()));
             if (distinct.size() < 2 || distinct.stream().allMatch(id -> rename.apply(id).equals(id)))
                 continue;
+
             SymbolDescriptor existing = symbols.stream().filter(symbol -> rename.apply(symbol.id()).equals(symbol.id()))
                 .findFirst().orElse(symbols.getFirst());
             conflicts.add(error("'" + existing.simpleName() + "' is already declared"
@@ -1477,6 +1630,7 @@ public final class JavaRenameEngine {
                 originals.putIfAbsent(key, reference);
             }
         }
+
         Map<ReferenceKey, Integer> actual = new LinkedHashMap<>();
         for (DocumentId document : sources.keySet()) {
             SemanticIndexShard shard = after.shards().get(document);
@@ -1484,6 +1638,7 @@ public final class JavaRenameEngine {
                 conflicts.add(error(fileName(sources.get(document)) + " could not be analysed after renaming", null));
                 continue;
             }
+
             for (ReferenceOccurrence reference : shard.references()) {
                 actual.merge(new ReferenceKey(document, reference.location().range().start,
                     reference.location().range().end, reference.kind(), reference.target()), 1, Integer::sum);
@@ -1497,6 +1652,7 @@ public final class JavaRenameEngine {
                 lost.putIfAbsent(key.position(), key);
             }
         });
+
         actual.forEach((key, count) -> {
             if (expected.getOrDefault(key, 0) < count) {
                 gained.putIfAbsent(key.position(), key);
@@ -1504,7 +1660,7 @@ public final class JavaRenameEngine {
         });
 
         Set<String> reported = new HashSet<>();
-        for (var entry : lost.entrySet()) {
+        for (Map.Entry<Position, ReferenceKey> entry : lost.entrySet()) {
             ReferenceKey key = entry.getValue();
             ReferenceOccurrence original = originals.get(key);
             TextDocumentSnapshot document = sources.get(key.document());
@@ -1520,6 +1676,7 @@ public final class JavaRenameEngine {
                 conflicts.add(conflict(key.kind(), message, location));
             }
         }
+
         for (ReferenceKey key : gained.values()) {
             TextDocumentSnapshot document = sources.get(key.document());
             TextDocumentSnapshot renamed = renamedDocuments.getOrDefault(key.document(), document);
@@ -1541,17 +1698,20 @@ public final class JavaRenameEngine {
                 }
             }
         }
+
         Set<EdgeKey> actual = new LinkedHashSet<>();
         for (DocumentId document : sources.keySet()) {
             SemanticIndexShard shard = after.shards().get(document);
             if (shard == null)
                 continue;
+
             for (SymbolEdge edge : shard.edges()) {
                 if (edge.kind().equals(EdgeKindId.OVERRIDE) || edge.kind().equals(EdgeKindId.SUBTYPE)) {
                     actual.add(new EdgeKey(edge.source(), edge.target(), edge.kind()));
                 }
             }
         }
+
         for (EdgeKey edge : expected) {
             if (!actual.contains(edge)) {
                 conflicts.add(error(describeSymbol(after, edge.source()) + " would no longer "
@@ -1559,6 +1719,7 @@ public final class JavaRenameEngine {
                     + describeSymbol(after, edge.target()), null));
             }
         }
+
         for (EdgeKey edge : actual) {
             if (!expected.contains(edge)) {
                 conflicts.add(error(describeSymbol(after, edge.source()) + " would start "
@@ -1567,8 +1728,10 @@ public final class JavaRenameEngine {
             }
         }
     }
+
     private void compareImplementations(
         WorkspaceSymbolGraph after,
+        JavaWorkspaceAnalysis renamedAnalysis,
         Function<SymbolId, SymbolId> rename,
         Conflicts conflicts
     ) {
@@ -1577,14 +1740,17 @@ public final class JavaRenameEngine {
             expected.add(new InheritedImplementation(rename.apply(pair.implementation()),
                 rename.apply(pair.method()), rename.apply(pair.type())));
         }
+
         Set<InheritedImplementation> actual = new LinkedHashSet<>(JavaOverrideGraphExtractor
-            .inheritedImplementations(after.shards().values(), sources.keySet(), context::checkActive));
+            .inheritedImplementations(after.shards().values(), sources.keySet(), renamedAnalysis,
+                context::checkActive));
         for (InheritedImplementation pair : expected) {
             if (!actual.contains(pair)) {
                 conflicts.add(error(describeSymbol(after, pair.implementation()) + " would no longer implement "
                     + describeSymbol(after, pair.method()) + " in " + describeSymbol(after, pair.type()), null));
             }
         }
+
         for (InheritedImplementation pair : actual) {
             if (!expected.contains(pair)) {
                 conflicts.add(error(describeSymbol(after, pair.implementation()) + " would start implementing "
@@ -1595,6 +1761,7 @@ public final class JavaRenameEngine {
     // endregion
 
     // region Unresolved occurrences
+
     /**
      * Warns about identifiers spelling the old name that no resolved reference explains. They might refer to the
      * symbol, so they are reported rather than renamed or silently ignored.
@@ -1609,6 +1776,7 @@ public final class JavaRenameEngine {
             context.checkActive();
             if (!document.text().contains(target.name()))
                 continue;
+
             List<Range<?>> resolved = graph.shards().get(document.id()).references().stream()
                 .<Range<?>>map(reference -> reference.location().range()).toList();
             Deque<SyntaxNode> pending = new ArrayDeque<>(
@@ -1619,11 +1787,13 @@ public final class JavaRenameEngine {
                     pending.addAll(node.children());
                     continue;
                 }
+
                 if (!token.kind().id().endsWith("IDENTIFIER")
                     || !JavaUnicodeEscapes.translate(token.text()).equals(target.name())
                     || plan.replaces(document.id(), token.start())
                     || resolved.stream().anyMatch(range -> range.start <= token.start() && token.end() <= range.end))
                     continue;
+
                 if (++found <= REPORTED_UNRESOLVED_LIMIT) {
                     conflicts.add(new RenameConflict(RenameConflict.Severity.WARNING,
                         "'" + target.name() + "' at " + describe(document, token.start())
@@ -1632,6 +1802,7 @@ public final class JavaRenameEngine {
                 }
             }
         }
+
         if (found > REPORTED_UNRESOLVED_LIMIT) {
             conflicts.add(new RenameConflict(RenameConflict.Severity.WARNING, (found - REPORTED_UNRESOLVED_LIMIT)
                 + " more unresolved occurrences of '" + target.name() + "' will not be renamed", null));
@@ -1640,6 +1811,7 @@ public final class JavaRenameEngine {
     // endregion
 
     // region Edit
+
     private WorkspaceEdit edit(Target target, String newName, Plan plan) {
         var builder = WorkspaceEdit.builder("Rename " + kindLabel(target.kind()) + " '" + target.name() + "' to '"
             + newName + "'");
@@ -1652,6 +1824,7 @@ public final class JavaRenameEngine {
                 .toList();
             builder.change(new WorkspaceChange.TextEdit(document, replacements, OCCURRENCES));
         }
+
         plan.fileRenames().forEach((document, uri) -> {
             builder.annotation(FILE, new ChangeAnnotation("Rename file",
                 "The file of a top-level type is named after it", false));
@@ -1666,11 +1839,13 @@ public final class JavaRenameEngine {
     // endregion
 
     // region Helpers
+
     private Collection<SemanticIndexShard> sourceShards() {
         List<SemanticIndexShard> shards = new ArrayList<>();
         for (DocumentId document : sources.keySet()) {
             shards.add(graph.shards().get(document));
         }
+
         return shards;
     }
 
@@ -1685,6 +1860,7 @@ public final class JavaRenameEngine {
         List<SymbolDescriptor> symbols = graph.symbols(id);
         if (!symbols.isEmpty())
             return symbols.getFirst().simpleName();
+
         return null;
     }
 
@@ -1692,6 +1868,7 @@ public final class JavaRenameEngine {
         List<SymbolDescriptor> symbols = graph.symbols(id);
         if (!symbols.isEmpty())
             return TYPE_KINDS.contains(symbols.getFirst().kind().id());
+
         List<JavaSymbolIds.Component> parts = components(id);
         return !parts.isEmpty() && Set.of("type", "localType").contains(parts.getLast().kind())
             || parts.size() > 1 && parts.get(parts.size() - 2).kind().equals("localType");
@@ -1725,6 +1902,7 @@ public final class JavaRenameEngine {
     private boolean topLevel(SymbolDescriptor type) {
         if (type.ownerId() == null)
             return true;
+
         List<JavaSymbolIds.Component> owner = components(type.ownerId());
         return !owner.isEmpty() && owner.getLast().kind().equals("package");
     }
@@ -1733,10 +1911,12 @@ public final class JavaRenameEngine {
         List<JavaSymbolIds.Component> parts = components(id);
         if (startsWith(parts, components(type)))
             return true;
+
         String name = typeName(type);
         String inner = typeName(id);
         if (name == null || inner == null)
             return false;
+
         String normalizedName = name.replace('$', '.');
         String normalizedInner = inner.replace('$', '.');
         return normalizedInner.equals(normalizedName) || normalizedInner.startsWith(normalizedName + ".");
@@ -1747,6 +1927,7 @@ public final class JavaRenameEngine {
             if (component.kind().equals("type"))
                 return component.value();
         }
+
         return null;
     }
 
@@ -1759,6 +1940,7 @@ public final class JavaRenameEngine {
             if (component.kind().equals("parameters"))
                 return component.value();
         }
+
         return null;
     }
 
@@ -1771,6 +1953,7 @@ public final class JavaRenameEngine {
                     ? owners.getFirst().qualifiedName()
                     : owners.getFirst().simpleName();
         }
+
         String type = typeName(member);
         return type == null ? "its type" : type.replace('$', '.');
     }
@@ -1787,7 +1970,9 @@ public final class JavaRenameEngine {
         return !prefix.isEmpty() && parts.size() >= prefix.size() && parts.subList(0, prefix.size()).equals(prefix);
     }
 
-    /** Splits a dotted name into its identifiers, whose text has Unicode escapes translated. */
+    /**
+     * Splits a dotted name into its identifiers, whose text has Unicode escapes translated.
+     */
     private static List<Segment> segments(String text, int start, int end) {
         List<Segment> segments = new ArrayList<>();
         int index = start;
@@ -1800,12 +1985,15 @@ public final class JavaRenameEngine {
                     int escape = JavaUnicodeEscapes.escapeEnd(text, index);
                     index = escape > 0 ? escape : index + 1;
                 }
+
                 segments.add(new Segment(name.toString(), from, index));
             } else if (Character.isWhitespace(text.charAt(index)) || text.charAt(index) == '.') {
                 index++;
             } else
                 return List.of();
+
         }
+
         return segments;
     }
 
@@ -1818,16 +2006,20 @@ public final class JavaRenameEngine {
         for (int candidate : List.of(offset, offset - 1)) {
             if (candidate < 0 || candidate >= text.length() || !Character.isJavaIdentifierPart(text.charAt(candidate)))
                 continue;
+
             int start = candidate;
             while (start > 0 && Character.isJavaIdentifierPart(text.charAt(start - 1))) {
                 start--;
             }
+
             int end = candidate;
             while (end < text.length() && Character.isJavaIdentifierPart(text.charAt(end))) {
                 end++;
             }
+
             return Optional.of(text.substring(start, end));
         }
+
         return Optional.empty();
     }
 
@@ -1836,6 +2028,7 @@ public final class JavaRenameEngine {
             if (offset >= child.start() && offset < child.end())
                 return child instanceof SyntaxToken ? child : tokenAt(child, offset);
         }
+
         return null;
     }
 
@@ -1847,6 +2040,7 @@ public final class JavaRenameEngine {
                     return text;
             }
         }
+
         return null;
     }
 
@@ -1856,9 +2050,11 @@ public final class JavaRenameEngine {
             String type = typeName(id);
             return type == null ? "another symbol" : "a member of " + type.replace('$', '.');
         }
+
         SymbolDescriptor symbol = symbols.getFirst();
         if (symbol.simpleName().startsWith("<"))
             return "an anonymous " + kindLabel(symbol.kind().id());
+
         String qualified = symbol.qualifiedName();
         boolean readable = qualified != null && TYPE_KINDS.contains(symbol.kind().id())
             && !qualified.contains("$local$") && !qualified.contains("$anonymous$");
@@ -1988,7 +2184,9 @@ public final class JavaRenameEngine {
     ) {
     }
 
-    /** Planned replacements and file renames, with offset mapping between the old and new texts. */
+    /**
+     * Planned replacements and file renames, with offset mapping between the old and new texts.
+     */
     private static final class Plan {
         private final Map<DocumentId, TextDocumentSnapshot> documents = new LinkedHashMap<>();
         private final Map<DocumentId, TreeMap<Integer, Replacement>> replacements = new HashMap<>();
@@ -1997,17 +2195,20 @@ public final class JavaRenameEngine {
 
         private void replace(TextDocumentSnapshot document, TextRange range, String text) {
             documents.putIfAbsent(document.id(), document);
-            TreeMap<Integer, Replacement> planned = replacements.computeIfAbsent(document.id(), _ -> new TreeMap<>());
+            NavigableMap<Integer, Replacement> planned = replacements.computeIfAbsent(document.id(),
+                _ -> new TreeMap<>());
             var replacement = new Replacement(range.start, range.end, text);
             Replacement existing = planned.get(range.start);
             if (replacement.equals(existing))
                 return;
-            var before = planned.floorEntry(range.start);
-            var after = planned.ceilingEntry(range.start);
+
+            Map.Entry<Integer, Replacement> before = planned.floorEntry(range.start);
+            Map.Entry<Integer, Replacement> after = planned.ceilingEntry(range.start);
             if (existing != null || before != null && before.getValue().end() > range.start
                 || after != null && after.getKey() < range.end) {
                 overlapping.add(document.id());
             }
+
             planned.put(range.start, replacement);
         }
 
@@ -2049,6 +2250,7 @@ public final class JavaRenameEngine {
             for (Replacement replacement : replacements(document.id()).reversed()) {
                 text.replace(replacement.start(), replacement.end(), replacement.text());
             }
+
             return text.toString();
         }
 
@@ -2063,6 +2265,7 @@ public final class JavaRenameEngine {
                     shift += replacement.text().length() - (replacement.end() - replacement.start());
                 }
             }
+
             return offset + shift;
         }
 
@@ -2072,8 +2275,10 @@ public final class JavaRenameEngine {
                 int end = replacement.start() + shift + replacement.text().length();
                 if (end > offset)
                     break;
+
                 shift += replacement.text().length() - (replacement.end() - replacement.start());
             }
+
             return offset - shift;
         }
     }
@@ -2100,7 +2305,9 @@ public final class JavaRenameEngine {
         }
     }
 
-    /** Raised while resolving the target to reject the rename with a user-facing reason. */
+    /**
+     * Raised while resolving the target to reject the rename with a user-facing reason.
+     */
     private static final class Rejection extends RuntimeException {
         private Rejection(String message) {
             super(message, null, false, false);

@@ -4,6 +4,7 @@ import dev.railroadide.railroad.ide.sst.document.api.*;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSstServices;
 import dev.railroadide.railroad.ide.sst.provider.api.NavigationProvider;
 import dev.railroadide.railroad.ide.sst.request.api.*;
+import dev.railroadide.railroad.ide.sst.semantic.api.DefinitionTarget;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import dev.railroadide.railroad.project.RailroadProject;
 import dev.railroadide.railroad.settings.keybinds.Keybinds;
@@ -70,6 +71,7 @@ public class CodeEditorNavigationRequestTest {
                     false, true, null));
                 return null;
             });
+
             fixture.nextRequest();
             awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
@@ -87,6 +89,7 @@ public class CodeEditorNavigationRequestTest {
                     false, false, false, false, false, false, false, false, false, true, null));
                 return null;
             });
+
             awaitRequests(fixture.editor.featureRequests);
             assertTrue(fixture.requests.isEmpty());
         }
@@ -96,9 +99,9 @@ public class CodeEditorNavigationRequestTest {
     public void f12NavigatesAJavaReferenceToItsDeclaration() throws Exception {
         try (var services = new JavaSstServices(); Fixture fixture = open(services)) {
             WorkspaceSnapshot workspace = fixture.store.capture();
-            var snapshot = (TextDocumentSnapshot) workspace.documents().values().iterator().next();
+            TextDocumentSnapshot snapshot = (TextDocumentSnapshot) workspace.documents().values().iterator().next();
             var warmup = new FeatureRequestContext(workspace, snapshot, CancellationToken.none(), Deadline.none());
-            var expected = (Location.TextLocation) services.definitions(warmup, REFERENCE).value().getFirst();
+            Location.TextLocation expected = services.definitions(warmup, REFERENCE).value().getFirst().location();
             assertEquals("value", SOURCE.substring(expected.range().start, expected.range().end).trim());
             assertTrue(expected.range().end < REFERENCE);
             fixture.request();
@@ -118,8 +121,10 @@ public class CodeEditorNavigationRequestTest {
                     fixture.editor.fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.F12,
                         modifier == 0, modifier == 1, modifier == 2, modifier == 3));
                 }
+
                 return null;
             });
+
             awaitRequests(fixture.editor.featureRequests);
             assertTrue(fixture.requests.isEmpty());
         }
@@ -127,14 +132,14 @@ public class CodeEditorNavigationRequestTest {
 
     @TestFactory
     public Stream<DynamicTest> unusableResultsLeaveTheCaretUnchanged() {
-        return Stream.of("empty", "unsupported", "foreign", "stale", "bounds", "coordinates", "binary", "context")
+        return Stream.of("empty", "unsupported", "foreign", "stale", "bounds", "coordinates", "context")
             .map(kind -> DynamicTest.dynamicTest(kind, () -> assertUnusableResult(kind)));
     }
 
     private void assertUnusableResult(String kind) throws Exception {
         try (Fixture fixture = open((context, offset) -> {
-            var snapshot = (TextDocumentSnapshot) context.documentSnapshot();
-            Location<?> location = switch (kind) {
+            TextDocumentSnapshot snapshot = (TextDocumentSnapshot) context.documentSnapshot();
+            Location.TextLocation location = switch (kind) {
                 case "foreign" -> new Location.TextLocation(DocumentId.create(), snapshot.version(),
                     new TextRange(0, 1), 0, 0);
                 case "stale" -> new Location.TextLocation(snapshot.id(), snapshot.version().next(),
@@ -143,21 +148,23 @@ public class CodeEditorNavigationRequestTest {
                     new TextRange(0, SOURCE.length() + 1), 0, 0);
                 case "coordinates" -> new Location.TextLocation(snapshot.id(), snapshot.version(),
                     new TextRange(0, 1), 99, 0);
-                case "binary" -> new Location.BinaryLocation(snapshot.id(), snapshot.version(), new BinaryRange(0, 1));
                 default -> Location.TextLocation.from(snapshot, 0, 1);
             };
+
             if (kind.equals("context")) {
                 var other = new FeatureRequestContext(context.workspaceSnapshot(), snapshot,
                     context.cancellationToken(), context.deadline());
                 assertEquals(context, other);
                 assertNotSame(context, other);
-                return new FeatureResult<>(other, List.of(location));
+                return new FeatureResult<>(other, List.of(new DefinitionTarget(snapshot, location)));
             }
-            List<Location<?>> locations = switch (kind) {
+
+            List<DefinitionTarget> locations = switch (kind) {
                 case "empty" -> List.of();
                 case "unsupported" -> null;
-                default -> List.of(location);
+                default -> List.of(new DefinitionTarget(snapshot, location));
             };
+
             return new FeatureResult<>(context, locations);
         })) {
             fixture.request();
@@ -186,6 +193,7 @@ public class CodeEditorNavigationRequestTest {
                     awaitRequests(fixture.editor.featureRequests);
                     blocker.releaseAndAwait();
                 }
+
                 onFx(() -> {
                     assertTrue(request.context.cancellationToken().isCancellationRequested());
                     assertEquals(REFERENCE, fixture.editor.getCaretPosition());
@@ -218,6 +226,7 @@ public class CodeEditorNavigationRequestTest {
                             fixture.editor.replaceText(0, 1, "C");
                             fixture.editor.moveTo(REFERENCE);
                         }
+
                         case "configuration" -> fixture.store.publishConfiguration(
                             new WorkspaceConfigurationSnapshot(1, Set.of("changed")));
                         case "store" -> {
@@ -226,11 +235,13 @@ public class CodeEditorNavigationRequestTest {
                             captured.documents().values().forEach(replacement::publishBacking);
                             fixture.editor.setDocumentStore(replacement);
                         }
+
                         case "close" -> {
                             fixture.editor.discardChangesOnClose();
                             fixture.editor.close();
                             assertTrue(fixture.editor.isEditorClosed());
                         }
+
                         case "unload" -> lifetime.cancel();
                         default -> throw new AssertionError(change);
                     }
@@ -239,6 +250,7 @@ public class CodeEditorNavigationRequestTest {
                     awaitRequests(fixture.editor.featureRequests);
                     blocker.releaseAndAwait();
                 }
+
                 onFx(() -> {
                     assertTrue(request.context.cancellationToken().isCancellationRequested());
                     assertEquals(REFERENCE, fixture.editor.getCaretPosition());
@@ -267,12 +279,14 @@ public class CodeEditorNavigationRequestTest {
                     awaitRequests(fixture.editor.featureRequests);
                     blocker.releaseAndAwait();
                 }
+
                 fixture.nextRequest();
                 onFx(() -> {
                     assertTrue(old.context.cancellationToken().isCancellationRequested());
                     assertEquals(REFERENCE, fixture.editor.getCaretPosition());
                     return null;
                 });
+
                 releaseNew.countDown();
                 awaitRequests(fixture.editor.featureRequests);
                 onFx(() -> {
@@ -292,6 +306,7 @@ public class CodeEditorNavigationRequestTest {
         try (Fixture fixture = open((context, offset) -> {
             if (calls.incrementAndGet() == 1)
                 throw new IllegalStateException("Provider failed");
+
             return target(context, 0);
         })) {
             fixture.request();
@@ -338,6 +353,7 @@ public class CodeEditorNavigationRequestTest {
                 definition.fire();
                 return null;
             });
+
             fixture.nextRequest();
             awaitRequests(fixture.editor.featureRequests);
             onFx(() -> {
@@ -385,9 +401,9 @@ public class CodeEditorNavigationRequestTest {
         Files.writeString(file, SOURCE);
         DocumentId id = DocumentId.create();
         var store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of()));
-        var requests = new LinkedBlockingQueue<Invocation>();
+        BlockingQueue<Invocation> requests = new LinkedBlockingQueue<Invocation>();
         Fixture fixture = onFx(() -> {
-            var failures = new LinkedBlockingQueue<Throwable>();
+            BlockingQueue<Throwable> failures = new LinkedBlockingQueue<Throwable>();
             Thread.UncaughtExceptionHandler previous = Thread.currentThread().getUncaughtExceptionHandler();
             Thread.currentThread().setUncaughtExceptionHandler((_, failure) -> failures.add(failure));
             Project project = new RailroadProject(directory, "Navigation request", new WritableImage(1, 1));
@@ -397,6 +413,7 @@ public class CodeEditorNavigationRequestTest {
                 requests.add(new Invocation(context));
                 return provider.definitions(context, offset);
             };
+
             var pane = new TestEditor(project, id, file,
                 new CodeEditorConfig("java", null, null, null, controlled, null, lifetime));
             store.publishBacking(pane.captureSnapshot());
@@ -409,13 +426,15 @@ public class CodeEditorNavigationRequestTest {
             pane.requestFocus();
             return new Fixture(pane, stage, store, requests, failures, previous);
         });
+
         onFx(() -> null);
         return fixture;
     }
 
-    private static FeatureResult<List<Location<?>>> target(FeatureRequestContext context, int start) {
-        var snapshot = (TextDocumentSnapshot) context.documentSnapshot();
-        return new FeatureResult<>(context, List.of(Location.TextLocation.from(snapshot, start, start + 1)));
+    private static FeatureResult<List<DefinitionTarget>> target(FeatureRequestContext context, int start) {
+        TextDocumentSnapshot snapshot = (TextDocumentSnapshot) context.documentSnapshot();
+        return new FeatureResult<>(context,
+            List.of(new DefinitionTarget(snapshot, Location.TextLocation.from(snapshot, start, start + 1))));
     }
 
     private static void fireF12(CodeEditorPane editor) {
@@ -438,6 +457,7 @@ public class CodeEditorNavigationRequestTest {
                 fireF12(editor);
                 return null;
             });
+
             return nextRequest();
         }
 
@@ -458,8 +478,10 @@ public class CodeEditorNavigationRequestTest {
                 } finally {
                     Thread.currentThread().setUncaughtExceptionHandler(previousHandler);
                 }
+
                 return null;
             });
+
             awaitRequests(editor.featureRequests);
             if (!fxFailures.isEmpty())
                 throw new AssertionError("Uncaught JavaFX navigation failure", fxFailures.peek());

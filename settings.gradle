@@ -1,1 +1,14 @@
+pluginManagement {
+    repositories {
+        maven {
+            url = uri('https://maven.railroadide.dev/releases')
+            content {
+                includeGroup('dev.railroadide.quality')
+                includeGroup('dev.railroadide')
+            }
+        }
+        gradlePluginPortal()
+    }
+}
+
 rootProject.name = "railroad"

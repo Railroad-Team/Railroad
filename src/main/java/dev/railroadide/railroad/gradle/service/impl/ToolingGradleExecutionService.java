@@ -1,20 +1,29 @@
 package dev.railroadide.railroad.gradle.service.impl;
 
 import dev.railroadide.railroad.gradle.GradleEnvironment;
-import dev.railroadide.railroad.gradle.GradleOutputStream;
+import dev.railroadide.railroad.utility.DecodingOutputStream;
 import dev.railroadide.railroad.gradle.service.GradleExecutionService;
 import dev.railroadide.railroad.gradle.service.task.GradleTaskExecutionHandle;
 import dev.railroadide.railroad.gradle.service.task.GradleTaskExecutionRequest;
 import dev.railroadide.railroad.gradle.service.task.GradleTaskExecutionResult;
 import dev.railroadide.railroad.gradle.service.task.GradleTaskState;
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
+import dev.railroadide.railroad.ide.activity.DownloadProgress;
 import dev.railroadide.railroad.plugin.spi.dto.Project;
 import org.gradle.tooling.*;
 import org.gradle.tooling.events.ProgressListener;
+import org.gradle.tooling.events.StatusEvent;
+import org.gradle.tooling.events.download.FileDownloadOperationDescriptor;
+import org.gradle.tooling.events.download.FileDownloadFinishEvent;
 
+import dev.railroadide.railroad.ide.diagnostics.BuildProblems;
+import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.*;
+import java.io.OutputStream;
 
 /**
  * Implementation of {@link GradleExecutionService} using the Gradle Tooling API.
@@ -58,14 +67,18 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
     }
 
     @Override
-    public GradleTaskExecutionHandle runTask(GradleTaskExecutionRequest request) {
+    public GradleTaskExecutionHandle runTask(
+        GradleTaskExecutionRequest request,
+        BuildProblems.@Nullable Report problems
+    ) {
         var handle = new ToolingGradleTaskExecutionHandle(request);
         runningTasks.put(handle.id(), handle);
 
+        var progress = ActivityProgress.current();
         CompletableFuture<GradleTaskExecutionResult> future = CompletableFuture.supplyAsync(() -> {
             handle.updateState(GradleTaskState.STARTING, "railroad.gradle.execution.starting");
             try {
-                GradleTaskExecutionResult result = execute(request, handle);
+                GradleTaskExecutionResult result = execute(request, handle, progress, problems);
                 handle.updateState(GradleTaskState.COMPLETED, "railroad.gradle.execution.completed");
                 return result;
             } catch (BuildCancelledException | CancellationException exception) {
@@ -73,8 +86,16 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
                 throw exception;
             } catch (Exception exception) {
                 handle.updateState(GradleTaskState.FAILED, "railroad.gradle.execution.failed");
+                if (problems != null) {
+                    problems.finish(exception);
+                }
+
                 throw new CompletionException(exception);
             } finally {
+                if (problems != null) {
+                    problems.finish(null);
+                }
+
                 runningTasks.remove(handle.id());
 
                 recentRequests.addFirst(request);
@@ -107,8 +128,10 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
 
     private GradleTaskExecutionResult execute(
         GradleTaskExecutionRequest request,
-        ToolingGradleTaskExecutionHandle handle
-    ) {
+        ToolingGradleTaskExecutionHandle handle,
+        ActivityProgress progress,
+        BuildProblems.@Nullable Report problems
+    ) throws IOException {
         GradleConnector connector = GradleConnector.newConnector()
             .forProjectDirectory(project.getPath().toFile());
         ToolingGradleModelService.configureConnector(connector, environment);
@@ -142,18 +165,46 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
 
             build.withCancellationToken(tokenSource.token());
 
-            build.setStandardOutput(new GradleOutputStream(handle::emitOutput));
-            build.setStandardError(new GradleOutputStream(handle::emitError));
+            var charset = Charset.defaultCharset();
+            OutputStream stdout = problems == null
+                ? new DecodingOutputStream(charset, handle::emitOutput)
+                : problems.output(charset, handle::emitOutput);
+            OutputStream stderr = problems == null
+                ? new DecodingOutputStream(charset, handle::emitError)
+                : problems.output(charset, handle::emitError);
+            build.setStandardOutput(stdout);
+            build.setStandardError(stderr);
+            if (problems != null) {
+                GradleBuildProblems.listen(build, problems);
+            }
+
+            var downloads = new DownloadProgress(progress);
             build.addProgressListener((ProgressListener) event -> {
                 String msg = event.getDescriptor() != null
                     ? event.getDescriptor().getName()
                     : event.getDisplayName();
-                handle.updateState(GradleTaskState.RUNNING, msg);
+                double fraction = -1;
+                if (event instanceof StatusEvent status && status.getTotal() > 0) {
+                    fraction = Math.clamp((double) status.getProgress() / status.getTotal(), 0, 1);
+                }
+
+                handle.updateProgress(GradleTaskState.RUNNING, fraction, msg);
+                if (progress != ActivityProgress.NONE
+                    && event.getDescriptor() instanceof FileDownloadOperationDescriptor file) {
+                    String url = file.getUri().toString();
+                    if (event instanceof StatusEvent status && "bytes".equalsIgnoreCase(status.getUnit())) {
+                        downloads.update(url, status.getProgress(), status.getTotal());
+                    } else if (event instanceof FileDownloadFinishEvent) {
+                        downloads.finish(url);
+                    }
+                }
             });
 
             applyDebugConfiguration(request, build, handle);
 
-            build.run();
+            try (stdout; stderr) {
+                build.run();
+            }
 
             return new GradleTaskExecutionResult(handle.currentState(), 0, bufferToString(handle.getOutputBuffer()),
                 bufferToString(handle.getErrorBuffer()));
@@ -178,6 +229,7 @@ public class ToolingGradleExecutionService implements GradleExecutionService {
         }
 
         // system properties as -Dkey=value
+
         request.systemProperties().forEach((key, value) -> args.add("-D" + key + "=" + value));
 
         return args;

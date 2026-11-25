@@ -1,6 +1,8 @@
 package dev.railroadide.railroad.ide;
 
 import dev.railroadide.railroad.Railroad;
+import dev.railroadide.railroad.ide.activity.ActivityProgress;
+import dev.railroadide.railroad.ide.activity.BackgroundActivities;
 import dev.railroadide.railroad.ide.language.LanguageSupport;
 import dev.railroadide.railroad.ide.language.LanguageSupportRegistry;
 import dev.railroadide.railroad.ide.sst.document.api.*;
@@ -23,6 +25,9 @@ import dev.railroadide.railroad.ide.sst.document.api.ContentKind;
  */
 public final class ProjectDocumentSynchronizer implements AutoCloseable {
     private static final Set<String> IGNORED_DIRECTORIES = Set.of(".git", ".gradle", ".railroad");
+    private static final Set<String> OUTPUT_DIRECTORIES = Set.of("build", "out", "target");
+    private static final Set<String> GENERATED_DIRECTORIES = Set.of("generated", "generated-sources",
+        "generated-test-sources");
     private final Path root;
     private final DocumentStore store;
     private final DocumentIdentityRegistry identities;
@@ -33,6 +38,7 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
         thread.setDaemon(true);
         return thread;
     });
+
     private final Map<WatchKey, Path> directories = new ConcurrentHashMap<>();
     private final Set<CompletableFuture<Void>> pending = ConcurrentHashMap.newKeySet();
     private final WatchService watcher;
@@ -63,7 +69,9 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
         this.openTextDocument = openTextDocument;
         this.dispatch = dispatch;
         watcher = root.getFileSystem().newWatchService();
-        initialScan = refresh(this.root);
+        BackgroundActivities.Handle scanning = BackgroundActivities.shared().start("railroad.activity.scanning_files");
+        initialScan = refresh(this.root, scanning);
+        initialScan.whenComplete((_, _) -> scanning.close());
         var thread = new Thread(this::watch, "Railroad workspace document watcher");
         thread.setDaemon(true);
         thread.start();
@@ -86,23 +94,28 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
      * @return completion after publication, or cancellation after project closure
      */
     public CompletableFuture<Void> refresh(Path changed) {
+        return refresh(changed, ActivityProgress.NONE);
+    }
+
+    private CompletableFuture<Void> refresh(Path changed, ActivityProgress progress) {
         CompletableFuture<Void> result = new CompletableFuture<>();
         pending.add(result);
         result.whenComplete((_, _) -> pending.remove(result));
-        submit(changed.toAbsolutePath().normalize(), result);
+        submit(changed.toAbsolutePath().normalize(), result, progress);
         return result;
     }
 
-    private void submit(Path path, CompletableFuture<Void> result) {
+    private void submit(Path path, CompletableFuture<Void> result, ActivityProgress progress) {
         if (closed) {
             result.cancel(false);
             return;
         }
+
         try {
             reads.execute(() -> {
                 try {
                     if (Files.isDirectory(path)) {
-                        scan(path, result);
+                        scan(path, result, progress);
                     } else {
                         read(path, result);
                     }
@@ -118,13 +131,14 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
         }
     }
 
-    private void scan(Path directory, CompletableFuture<Void> result) throws IOException {
+    private void scan(Path directory, CompletableFuture<Void> result, ActivityProgress progress) throws IOException {
         List<CompletableFuture<Void>> files = new ArrayList<>();
         Files.walkFileTree(directory, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes attributes) throws IOException {
                 if (closed || ignored(path))
                     return FileVisitResult.SKIP_SUBTREE;
+
                 WatchKey key = path.register(watcher, StandardWatchEventKinds.ENTRY_CREATE,
                     StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE);
                 directories.put(key, path);
@@ -136,6 +150,7 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
                 if (attributes.isRegularFile() && !ignored(path)) {
                     files.add(refresh(path));
                 }
+
                 return FileVisitResult.CONTINUE;
             }
 
@@ -145,10 +160,17 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
                 return FileVisitResult.CONTINUE;
             }
         });
+
         for (DocumentSnapshot snapshot : store.capture().documents().values()) {
             snapshot.uri().filePath().filter(path -> path.startsWith(directory) && Files.notExists(path))
                 .ifPresent(path -> files.add(refresh(path)));
         }
+
+        if (progress != ActivityProgress.NONE) {
+            Runnable processed = progress.count("railroad.activity.files", ActivityProgress.Unit.COUNT, files.size());
+            files.replaceAll(file -> file.whenComplete((_, _) -> processed.run()));
+        }
+
         CompletableFuture.allOf(files.toArray(CompletableFuture[]::new))
             .whenComplete((_, error) -> {
                 if (error == null) {
@@ -226,13 +248,29 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
             : new BinaryDocumentSnapshot(id, uri, version, language, bytes);
     }
 
+    /**
+     * Build output directories are skipped unless they sit inside a source tree, except for their generated
+     * source subtrees, which build models report as source roots.
+     */
     private static boolean ignored(Path path, Path root) {
         if (!path.startsWith(root))
             return true;
-        for (Path segment : root.relativize(path)) {
-            if (IGNORED_DIRECTORIES.contains(segment.toString()))
+
+        boolean insideSources = false;
+        Path relative = root.relativize(path);
+        for (int index = 0; index < relative.getNameCount(); index++) {
+            String segment = relative.getName(index).toString();
+            if (IGNORED_DIRECTORIES.contains(segment))
                 return true;
+
+            if (segment.equals("src")) {
+                insideSources = true;
+            } else if (!insideSources && OUTPUT_DIRECTORIES.contains(segment))
+                return index + 1 < relative.getNameCount()
+                    && !GENERATED_DIRECTORIES.contains(relative.getName(index + 1).toString());
+
         }
+
         return false;
     }
 
@@ -241,6 +279,7 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
             result.complete(null);
             return;
         }
+
         DocumentUri uri = DocumentUri.fromPath(path);
         DocumentIdentity observedIdentity = identities.findIdentity(uri).orElse(null);
         DocumentState expected = observedIdentity == null ? null : store.state(observedIdentity.id()).orElse(null);
@@ -251,6 +290,7 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
             dispatch.accept(() -> completeDeletion(path, result));
             return;
         }
+
         byte[] bytes = Files.readAllBytes(path);
         String language = LanguageSupportRegistry.resolveLanguageId(path, bytes);
         String text = decodeText(language, bytes);
@@ -259,22 +299,26 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
                 result.cancel(false);
                 return;
             }
+
             try {
                 if (Files.notExists(path)) {
-                    submit(path, result);
+                    submit(path, result, ActivityProgress.NONE);
                     return;
                 }
+
                 DocumentIdentity identity = identities.identify(uri);
                 if (openTextDocument.test(identity.id())) {
                     result.complete(null);
                     return;
                 }
+
                 if ((observedIdentity != null && !identity.id().equals(observedIdentity.id()))
                     || !Objects.equals(expected, store.state(identity.id()).orElse(null))
                     || !Objects.equals(highest, store.latestVersion(identity.id()).orElse(null))) {
-                    submit(path, result);
+                    submit(path, result, ActivityProgress.NONE);
                     return;
                 }
+
                 DocumentSnapshot backing = expected == null ? null : expected.backing();
                 if (backing != null && backing.languageId().equals(language)
                     && (text != null && backing instanceof TextDocumentSnapshot previous && previous.text().equals(text)
@@ -283,6 +327,7 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
                     result.complete(null);
                     return;
                 }
+
                 DocumentVersion version = highest == null ? DocumentVersion.initial() : highest.next();
                 DocumentUri location = backing == null ? uri : backing.uri();
                 DocumentSnapshot snapshot = snapshot(identity.id(), location, version, language, text, bytes);
@@ -290,7 +335,7 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
                     store.publishBacking(snapshot, expected);
                     result.complete(null);
                 } catch (IllegalStateException exception) {
-                    submit(path, result);
+                    submit(path, result, ActivityProgress.NONE);
                 }
             } catch (RuntimeException exception) {
                 result.completeExceptionally(exception);
@@ -303,10 +348,12 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
             result.cancel(false);
             return;
         }
+
         if (!Files.notExists(path)) {
-            submit(path, result);
+            submit(path, result, ActivityProgress.NONE);
             return;
         }
+
         try {
             DocumentId deletedId = identities.findIdentity(DocumentUri.fromPath(path))
                 .map(DocumentIdentity::id).orElse(null);
@@ -316,8 +363,10 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
                     || !current.id().equals(deletedId)
                         && !state.backing().uri().filePath().map(location -> location.startsWith(path)).orElse(false))
                     continue;
+
                 if (openTextDocument.test(current.id()))
                     continue;
+
                 Path location = state.backing().uri().filePath().orElse(path);
                 Optional<Path> surviving = identities.forgetDeletedAlias(current.id(),
                     current.id().equals(deletedId) ? path : location);
@@ -325,13 +374,16 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
                     if (Files.notExists(location)) {
                         store.relocate(current.id(), DocumentUri.fromPath(surviving.get()));
                     }
+
                     continue;
                 }
+
                 store.removeBacking(current.id(), state.backing().version());
             }
+
             result.complete(null);
         } catch (IllegalStateException exception) {
-            submit(path, result);
+            submit(path, result, ActivityProgress.NONE);
         } catch (RuntimeException exception) {
             result.completeExceptionally(exception);
         }
@@ -349,6 +401,7 @@ public final class ProjectDocumentSynchronizer implements AutoCloseable {
                         refresh(directory.resolve(child));
                     }
                 }
+
                 if (!key.reset()) {
                     directories.remove(key);
                 }

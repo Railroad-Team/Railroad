@@ -30,6 +30,7 @@ public record WorkspaceConfigurationSnapshot(
     public WorkspaceConfigurationSnapshot(long revision, Set<String> moduleIds) {
         this(revision, moduleIds, Map.of());
     }
+
     /**
      * Creates a configuration revision with an immutable copy of its module identities.
      *

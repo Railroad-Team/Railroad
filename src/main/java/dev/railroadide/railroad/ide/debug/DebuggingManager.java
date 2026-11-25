@@ -101,6 +101,7 @@ public final class DebuggingManager {
     ) {
         if (connection != null)
             return CompletableFuture.failedFuture(new IllegalStateException("This project is already debugging"));
+
         var pending = new CompletableFuture<JdiDebugSession>();
         connection = pending;
         Services.DEBUG_SERVICE.startSession(endpoint, resolver, breakpoints, filter, event -> {
@@ -114,6 +115,7 @@ public final class DebuggingManager {
                 Platform.runLater(() -> acceptEvent(pending, new DebugSessionEvent.Terminated()));
             }
         });
+
         return pending;
     }
 
@@ -171,6 +173,7 @@ public final class DebuggingManager {
     public void addWatch(String expression) {
         if (expression == null || expression.isBlank())
             return;
+
         watches.add(new DebugWatch(UUID.randomUUID(), expression.trim()));
         refreshWatches();
     }
@@ -191,13 +194,15 @@ public final class DebuggingManager {
         DebugFrame frame = selectedFrame.get();
         if (!isPaused() || frame == null)
             return;
-        var pending = connection;
+
+        CompletableFuture<JdiDebugSession> pending = connection;
         long currentRevision = revision;
         for (DebugWatch watch : List.copyOf(watches)) {
             pending.thenCompose(session -> session.evaluate(frame.id(), watch.expression()))
                 .whenComplete((value, failure) -> Platform.runLater(() -> {
                     if (!isCurrent(pending, currentRevision) || request != watchRevision)
                         return;
+
                     int index = watches.indexOf(watch);
                     if (index >= 0) {
                         watchResults.set(index, new WatchResult(watch, value,
@@ -219,6 +224,7 @@ public final class DebuggingManager {
     public CompletableFuture<List<DebugVariable>> expandVariable(long reference, int start, int count) {
         if (!isPaused() || selectedFrame.get() == null)
             return CompletableFuture.failedFuture(new IllegalStateException("No suspended frame selected"));
+
         CompletableFuture<JdiDebugSession> pending = connection;
         long currentRevision = revision;
         long selection = selectionRevision;
@@ -233,6 +239,7 @@ public final class DebuggingManager {
                     result.complete(children);
                 }
             }));
+
         return result;
     }
 
@@ -240,6 +247,7 @@ public final class DebuggingManager {
         while (failure.getCause() != null) {
             failure = failure.getCause();
         }
+
         return failure.getMessage() == null ? failure.getClass().getSimpleName() : failure.getMessage();
     }
 
@@ -308,10 +316,12 @@ public final class DebuggingManager {
         pending.thenCompose(JdiDebugSession::threads).whenComplete((result, failure) -> Platform.runLater(() -> {
             if (!isCurrent(pending, currentRevision))
                 return;
+
             if (failure != null) {
                 inspectionError.set(failureMessage(failure));
                 return;
             }
+
             threads.setAll(result);
             selectThread(result.stream().filter(thread -> thread.id() == suspended.threadId())
                 .findFirst().orElseGet(() -> result.stream().filter(DebugThread::suspended).findFirst().orElse(null)));
@@ -328,6 +338,7 @@ public final class DebuggingManager {
     public void selectThread(DebugThread thread) {
         if (!isPaused() || selectedThread.get() == thread || (thread != null && !threads.contains(thread)))
             return;
+
         long selection = ++selectionRevision;
         selectedThread.set(thread);
         selectedFrame.set(null);
@@ -339,16 +350,19 @@ public final class DebuggingManager {
         refreshWatches();
         if (thread == null || !thread.suspended())
             return;
+
         CompletableFuture<JdiDebugSession> pending = connection;
         long currentRevision = revision;
         pending.thenCompose(session -> session.stackFrames(thread.id()))
             .whenComplete((result, failure) -> Platform.runLater(() -> {
                 if (!isCurrent(pending, currentRevision) || selection != selectionRevision)
                     return;
+
                 if (failure != null) {
                     inspectionError.set(failureMessage(failure));
                     return;
                 }
+
                 frames.setAll(result);
                 if (!result.isEmpty()) {
                     selectFrame(result.getFirst());
@@ -366,6 +380,7 @@ public final class DebuggingManager {
     public void selectFrame(DebugFrame frame) {
         if (!isPaused() || selectedFrame.get() == frame || (frame != null && !frames.contains(frame)))
             return;
+
         long selection = ++selectionRevision;
         selectedFrame.set(frame);
         variables.clear();
@@ -375,6 +390,7 @@ public final class DebuggingManager {
         refreshWatches();
         if (frame == null)
             return;
+
         CompletableFuture<JdiDebugSession> pending = connection;
         long currentRevision = revision;
         showExecutionLine(frame, pending, currentRevision);
@@ -382,6 +398,7 @@ public final class DebuggingManager {
             .whenComplete((result, failure) -> Platform.runLater(() -> {
                 if (!isCurrent(pending, currentRevision) || selection != selectionRevision)
                     return;
+
                 if (failure != null) {
                     inspectionError.set(failureMessage(failure));
                 } else {
@@ -406,6 +423,7 @@ public final class DebuggingManager {
             if (!isCurrent(pending, currentRevision) || selectedFrame.get() != frame
                 || Services.IDE_STATE.getCurrentProject() != project)
                 return;
+
             Services.EDITOR_TAB_MANAGER.activeTab()
                 .filter(
                     tab -> tab.path().toAbsolutePath().normalize().equals(file.toAbsolutePath().normalize()))
@@ -484,12 +502,13 @@ public final class DebuggingManager {
     }
 
     private void submit(Function<JdiDebugSession, CompletableFuture<Void>> action) {
-        var pending = connection;
+        CompletableFuture<JdiDebugSession> pending = connection;
         commandPending.set(true);
         pending.thenCompose(action).whenComplete((_, failure) -> Platform.runLater(() -> {
             if (connection == pending) {
                 commandPending.set(false);
             }
+
             if (failure != null) {
                 Railroad.LOGGER.error("Debugger command failed", failure);
             }

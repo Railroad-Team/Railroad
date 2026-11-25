@@ -113,10 +113,12 @@ public class ProjectDiagnosticsScannerTest {
                     Files.writeString(first, "changed");
                     Files.writeString(second, "changed");
                 });
+
                 calls.incrementAndGet();
                 return new FeatureResult<>(context, List.of());
             }
         };
+
         var support = new BaseLanguageSupport("captured-scan-test", "Captured scan", Set.of("capturedscan")) {
             @Override
             public EditorOpenView open(Project project, DocumentId documentId, Path file) {
@@ -134,6 +136,7 @@ public class ProjectDiagnosticsScannerTest {
                     CapabilityRegistry.builder().add(SstCapabilities.DIAGNOSTICS, provider).build());
             }
         };
+
         LanguageSupportRegistry.register(support);
         Project project = project();
         try {
@@ -166,9 +169,10 @@ public class ProjectDiagnosticsScannerTest {
                     calls.incrementAndGet();
                     context.checkActive();
                     assertTrue(context.deadline().remaining().isPresent());
-                    var snapshot = (TextDocumentSnapshot) context.documentSnapshot();
+                    TextDocumentSnapshot snapshot = (TextDocumentSnapshot) context.documentSnapshot();
                     if (snapshot.text().equals("broken"))
                         throw new DeadlineExceededException();
+
                     return new FeatureResult<>(context, List.of(new TextEditorDiagnostic(
                         TextLocation.from(snapshot, 0, 1), DiagnosticSeverity.WARNING, "HEALTHY",
                         "healthy diagnostic")));
@@ -177,6 +181,7 @@ public class ProjectDiagnosticsScannerTest {
                 }
             }
         };
+
         var support = new BaseLanguageSupport("scheduler-scan-test", "Scheduler scan", Set.of("scheduling")) {
             @Override
             public EditorOpenView open(Project project, DocumentId documentId, Path file) {
@@ -194,6 +199,7 @@ public class ProjectDiagnosticsScannerTest {
                     CapabilityRegistry.builder().add(SstCapabilities.DIAGNOSTICS, provider).build());
             }
         };
+
         LanguageSupportRegistry.register(support);
         try {
             Project project = project();
@@ -228,13 +234,15 @@ public class ProjectDiagnosticsScannerTest {
     @Test
     public void independentBinaryContributionUsesTheSameDiagnosticsScan() throws Exception {
         Files.write(directory.resolve("Header.bytesample"), new byte[]{(byte) 0xff, 0, 1});
+
         var id = new LanguageId("sample:binary-scan");
         DiagnosticsProvider<EditorDiagnostic.BinaryEditorDiagnostic> provider = snapshot -> {
-            var binary = assertInstanceOf(BinaryDocumentSnapshot.class, snapshot);
+            BinaryDocumentSnapshot binary = assertInstanceOf(BinaryDocumentSnapshot.class, snapshot);
             return List.of(new EditorDiagnostic.BinaryEditorDiagnostic(BinaryLocation.from(binary, 0, 1),
                 DiagnosticSeverity.WARNING, "HEADER", "Unknown header", id.value(), DiagnosticOrigin.SEMANTIC,
                 Set.of(), List.of(), null));
         };
+
         var contribution = new LanguageContribution() {
             @Override
             public LanguageId id() {
@@ -267,6 +275,7 @@ public class ProjectDiagnosticsScannerTest {
                     CapabilityRegistry.builder().add(SstCapabilities.DIAGNOSTICS, provider).build());
             }
         };
+
         Project project = project();
         LanguageSupportRegistry.runtime().register("binary-scan-test", contribution);
         try {
@@ -342,6 +351,7 @@ public class ProjectDiagnosticsScannerTest {
                 }
             }
         };
+
         var support = new BaseLanguageSupport("scheduler-cancel-scan-test", "Cancelled scan", Set.of("scheduling")) {
             @Override
             public EditorOpenView open(Project project, DocumentId documentId, Path file) {
@@ -359,12 +369,15 @@ public class ProjectDiagnosticsScannerTest {
                     CapabilityRegistry.builder().add(SstCapabilities.DIAGNOSTICS, provider).build());
             }
         };
+
         LanguageSupportRegistry.register(support);
         var outcome = new CompletableFuture<Throwable>();
         var cancellation = new CancellationTokenSource();
         Project project = project();
         var service = new ProjectLanguageIndexService();
-        var session = invalidation == ScanInvalidation.CANCELLATION ? null : service.openProject(project);
+        ProjectLanguageIndexService.Session session = invalidation == ScanInvalidation.CANCELLATION
+            ? null
+            : service.openProject(project);
         var context = new ProjectDiagnosticsContext(project,
             new ProjectIndexContext(project, directory, Map.of(), session,
                 session == null ? 0 : session.configurationGeneration(), cancellation.token()));
@@ -378,8 +391,9 @@ public class ProjectDiagnosticsScannerTest {
                 outcome.complete(failure);
             }
         };
+
         Thread caller = inline ? null : Thread.ofVirtual().unstarted(scan);
-        try (var scope = SstScheduler.shared().newScope()) {
+        try (SstScheduler.Scope scope = SstScheduler.shared().newScope()) {
             if (inline) {
                 var scheduledCancellation = new CancellationTokenSource();
                 var workspace = new WorkspaceSnapshot(project.getId(), Map.of(),
@@ -392,6 +406,7 @@ public class ProjectDiagnosticsScannerTest {
             } else {
                 caller.start();
             }
+
             try {
                 assertTrue(entered.await(5, TimeUnit.SECONDS));
                 switch (invalidation) {
@@ -399,6 +414,7 @@ public class ProjectDiagnosticsScannerTest {
                     case PROJECT_CLOSURE -> service.closeProject(session);
                     case CONFIGURATION_CHANGE -> service.refreshProject(session);
                 }
+
                 assertInstanceOf(CancellationException.class, outcome.get(5, TimeUnit.SECONDS));
                 assertEquals(1, release.getCount());
                 assertTrue(observed.get().cancellationToken().isCancellationRequested());
@@ -411,6 +427,7 @@ public class ProjectDiagnosticsScannerTest {
                 if (caller != null) {
                     caller.join(5000);
                 }
+
                 scope.completion().get(5, TimeUnit.SECONDS);
             }
         } finally {
@@ -434,7 +451,7 @@ public class ProjectDiagnosticsScannerTest {
             @Override
             public FeatureResult<List<TextEditorDiagnostic>> compute(FeatureRequestContext context) {
                 calls.incrementAndGet();
-                var snapshot = (TextDocumentSnapshot) context.documentSnapshot();
+                TextDocumentSnapshot snapshot = (TextDocumentSnapshot) context.documentSnapshot();
                 if (cached.get() == null) {
                     assertEquals("broken", snapshot.text());
                     cached.set(new FeatureResult<>(context, List.of(new TextEditorDiagnostic(
@@ -444,9 +461,11 @@ public class ProjectDiagnosticsScannerTest {
                     assertEquals("healthy", snapshot.text());
                     assertFalse(cached.get().belongsTo(context));
                 }
+
                 return cached.get();
             }
         };
+
         var support = new BaseLanguageSupport("scheduler-stale-scan-test", "Stale scan", Set.of("scheduling")) {
             @Override
             public EditorOpenView open(Project project, DocumentId documentId, Path file) {
@@ -464,6 +483,7 @@ public class ProjectDiagnosticsScannerTest {
                     CapabilityRegistry.builder().add(SstCapabilities.DIAGNOSTICS, provider).build());
             }
         };
+
         LanguageSupportRegistry.register(support);
         try {
             Project project = project();

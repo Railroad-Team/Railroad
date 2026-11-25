@@ -16,11 +16,151 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import dev.railroadide.railroad.ide.sst.semantic.api.Type;
 import javafx.beans.property.StringProperty;
+import java.lang.reflect.Modifier;
+import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 
 import static dev.railroadide.railroad.ide.diagnostics.inspections.JavaInspectionTestSupport.runProvider;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaAssignmentAndCallResolutionInspectionTest {
+    @Test
+    public void compoundOperatorsAndNarrowingLiteralsRespectTheirOperandTypes() {
+        String source = """
+            class Example {
+                void run(int offset, boolean flag, Object obj) {
+                    char digit = 0;
+                    byte mask = -128;
+                    digit <<= offset;
+                    digit += offset;
+                    mask |= 1;
+                    String text = "";
+                    text += digit;
+                    obj += text;
+                    byte outside = 128;
+                    digit = offset;
+                    digit |= 1.5;
+                    text -= offset;
+                    flag += flag;
+                    Byte boxed = 1;
+                    boxed += offset;
+                }
+            }
+            """;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
+        assertEquals(List.of("outside = 128", "digit = offset", "digit |= 1.5", "text -= offset",
+            "flag += flag", "boxed += offset"),
+            diagnostics.stream()
+                .map(d -> source.substring(d.startOffset(), d.endOffset()).strip()).toList());
+    }
+
+    @Test
+    public void conditionalMethodReferenceUsesTheAssignmentTarget() {
+        String source = """
+            import java.util.function.Supplier;
+            class Example {
+                Supplier<String> value;
+                void update(boolean flag, String text) {
+                    value = flag ? null : text::trim;
+                    value = flag ? text::trim : 42;
+                    Object invalid = this::hashCode;
+                }
+            }
+            """;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
+        assertEquals(2, diagnostics.size(), diagnostics::toString);
+        SemanticDiagnostic problem = diagnostics.getFirst();
+        assertEquals("42", source.substring(problem.startOffset(), problem.endOffset()).strip());
+        assertTrue(diagnostics.getLast().message().contains("java.lang.Object"));
+    }
+
+    @Test
+    public void inheritedMemberTypeKeepsItsIdentityAcrossAnAssignment() {
+        String source = """
+            import java.lang.Thread.State;
+            interface Parent { enum State { OPEN } }
+            class Example implements Parent {
+                State state = Parent.State.OPEN;
+                void update() {
+                    state = Parent.State.OPEN;
+                    state = Thread.State.NEW;
+                }
+            }
+            """;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
+        assertEquals(1, diagnostics.size(), diagnostics::toString);
+        assertTrue(diagnostics.getFirst().message().contains("Thread"));
+    }
+
+    @Test
+    public void arrayCloneResolvesToAPublicMethodReturningItsReceiverTypeWithoutCheckedExceptions() {
+        String source = """
+            class Example {
+                interface Container { int[] slots(); }
+                <T> void copy(Container container, T[][] rows, Object object) {
+                    int[] slots = java.util.Objects.requireNonNull(container.slots(), "slots").clone();
+                    T[][] copiedRows = rows.clone();
+                    Object copy = object.clone();
+                }
+            }
+            """;
+        var context = new JavaRuleContext(Path.of("Example.java"), source, JavaSemanticAnalyzer.analyzeFacts(source));
+        List<String> cloneTypes = new ArrayList<>();
+        context.traverse(node -> {
+            if (!"JAVA_METHOD_INVOCATION_EXPRESSION".equals(node.kind().id())
+                || !source.substring(node.start(), node.end()).strip().endsWith(".clone()"))
+                return;
+
+            Symbol symbol = context.resolvedSymbol(node).orElseThrow();
+            Type returnType = context.inferredType(node).orElseThrow();
+            cloneTypes.add(returnType.displayName());
+            if (returnType instanceof JavaTypes.ArrayType) {
+                assertTrue(Modifier.isPublic(context.symbolModifiers(symbol)));
+                assertEquals(List.of(), context.thrownTypeNames(symbol));
+            } else {
+                assertEquals("java.lang.Object#clone()", symbol.qualifiedName().orElseThrow());
+                assertEquals(List.of("java.lang.CloneNotSupportedException"), context.thrownTypeNames(symbol));
+            }
+        });
+
+        assertEquals(List.of("int[]", "T[][]", "java.lang.Object"), cloneTypes);
+    }
+
+    @Test
+    public void instanceofProducesBooleanForAssignmentsAndOverloadSelection() {
+        String source = """
+            class Example {
+                int select(boolean flag) { return 1; }
+                String select(Object value) { return ""; }
+                void run(Object value) {
+                    boolean plain = value instanceof String;
+                    int selected = select(value instanceof String text);
+                    int invalid = value instanceof String;
+                }
+            }
+            """;
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
+        assertEquals(List.of("Cannot assign 'boolean' to 'int'"),
+            diagnostics.stream().map(SemanticDiagnostic::message).toList());
+    }
+
+    @Test
+    public void assignmentRuleAcceptsTypesThatCannotBeResolved() {
+        String source = """
+            import missing.Noise;
+            import missing.SimplexNoise;
+
+            class Example {
+                private static final Noise NOISE = new SimplexNoise(1234L);
+            }
+            """;
+
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
+
+        assertFalse(
+            diagnostics.stream().anyMatch(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
+            () -> diagnostics.toString());
+    }
+
     @Test
     public void assignmentRuleInfersGenericMethodReturnsFromArgumentsAndClassLiterals() {
         String source = """
@@ -65,6 +205,7 @@ public class JavaAssignmentAndCallResolutionInspectionTest {
                     + context.inferredType(node).map(type -> type.displayName() + type).orElse("<none>"));
             }
         });
+
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
 
         assertFalse(
@@ -128,6 +269,7 @@ public class JavaAssignmentAndCallResolutionInspectionTest {
                     + context.inferredType(node).map(Object::toString).orElse("<none>"));
             }
         });
+
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
 
         assertFalse(
@@ -175,6 +317,60 @@ public class JavaAssignmentAndCallResolutionInspectionTest {
 
         assertFalse(
             diagnostics.stream().anyMatch(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
+            () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
+    }
+
+    @Test
+    public void callResolutionChecksSourceConstructorPrimitiveAndVarargsParameters() {
+        String source = """
+            class Example {
+                static class Box {
+                    Box(int value) {}
+                }
+
+                static class Names {
+                    Names(String first, String... rest) {}
+                }
+
+                void run() {
+                    new Box(1);
+                    new Box("bad");
+                    new Names("a");
+                    new Names("a", "b", "c");
+                    new Names("a", 1);
+                }
+            }
+            """;
+
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreCallResolutionInspection(), source);
+        List<String> unresolvedLines = diagnostics.stream()
+            .filter(diagnostic -> "SEM_UNRESOLVED_CALL".equals(diagnostic.code()))
+            .map(diagnostic -> {
+                int lineStart = source.lastIndexOf('\n', diagnostic.startOffset()) + 1;
+                return source.substring(lineStart, source.indexOf('\n', lineStart)).trim();
+            })
+            .toList();
+
+        assertEquals(List.of("new Box(\"bad\");", "new Names(\"a\", 1);"), unresolvedLines, diagnostics::toString);
+    }
+
+    @Test
+    public void callsOnAMemberTypeOfAnUnindexedTypeAreNotResolvedAgainstASameNamedType() {
+        String source = """
+            import net.minecraft.world.level.block.state.BlockBehaviour;
+
+            class Example {
+                void configure(BlockBehaviour.Properties settings) {
+                    settings.noOcclusion();
+                    BlockBehaviour.Properties.of().setId(null);
+                }
+            }
+            """;
+
+        List<SemanticDiagnostic> diagnostics = runProvider(new CoreCallResolutionInspection(),
+            Path.of("Example.java"), source, JavaJdkSymbolIndex.fromCurrentRuntime());
+
+        assertTrue(diagnostics.isEmpty(),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
 
@@ -263,6 +459,7 @@ public class JavaAssignmentAndCallResolutionInspectionTest {
                     + context.inferredType(node).map(Object::toString).orElse("<none>"));
             }
         });
+
         List<SemanticDiagnostic> diagnostics = runProvider(new CoreAssignmentInspection(), source);
 
         assertFalse(
@@ -705,5 +902,4 @@ public class JavaAssignmentAndCallResolutionInspectionTest {
             diagnostics.stream().anyMatch(diagnostic -> "SEM_INCOMPATIBLE_ASSIGNMENT".equals(diagnostic.code())),
             () -> diagnostics.stream().map(SemanticDiagnostic::message).collect(Collectors.joining("\n")));
     }
-
 }

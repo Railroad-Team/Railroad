@@ -126,6 +126,18 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
      * @param messageArgs optional arguments for the message
      */
     public void updateState(GradleTaskState newState, String messageKey, Object... messageArgs) {
+        updateProgress(newState, -1, messageKey, messageArgs);
+    }
+
+    /**
+     * Updates the current state and progress of the task and notifies listeners.
+     *
+     * @param newState the new state of the task
+     * @param fraction completed fraction between 0 and 1, or a negative value when progress is unknown
+     * @param messageKey the message key for status updates
+     * @param messageArgs optional arguments for the message
+     */
+    public void updateProgress(GradleTaskState newState, double fraction, String messageKey, Object... messageArgs) {
         this.state = newState;
 
         var progressEvent = new GradleTaskProgressEvent(
@@ -133,14 +145,14 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
             newState,
             messageKey,
             messageArgs,
-            -1.0, // unknown progress for now
+            fraction,
             Instant.now());
         for (Consumer<GradleTaskProgressEvent> listener : progressListeners) {
             listener.accept(progressEvent);
         }
 
         var statusEvent = new GradleTaskStatusEvent(id, newState, messageKey, messageArgs);
-        for (var listener : statusListeners) {
+        for (Consumer<GradleTaskStatusEvent> listener : statusListeners) {
             listener.accept(statusEvent);
         }
     }
@@ -154,7 +166,7 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
         outputBuffer.add(output);
 
         var outputEvent = new GradleTaskOutputEvent(id, state, output);
-        for (var listener : outputListeners) {
+        for (Consumer<GradleTaskOutputEvent> listener : outputListeners) {
             listener.accept(outputEvent);
         }
     }
@@ -168,7 +180,7 @@ public class ToolingGradleTaskExecutionHandle implements GradleTaskExecutionHand
         errorBuffer.add(error);
 
         var errorEvent = new GradleTaskErrorEvent(id, state, error);
-        for (var listener : errorListeners) {
+        for (Consumer<GradleTaskErrorEvent> listener : errorListeners) {
             listener.accept(errorEvent);
         }
     }

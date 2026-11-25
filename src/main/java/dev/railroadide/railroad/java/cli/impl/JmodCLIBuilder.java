@@ -441,6 +441,7 @@ public class JmodCLIBuilder implements CLIBuilder<Process, JmodCLIBuilder> {
     public Process run() {
         if (operationMode == null)
             throw new IllegalStateException("An operation mode must be specified.");
+
         if (jmodFile == null)
             throw new IllegalStateException("A JMOD file must be provided.");
 

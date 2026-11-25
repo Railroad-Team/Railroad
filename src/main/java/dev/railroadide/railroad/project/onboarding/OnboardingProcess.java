@@ -191,6 +191,7 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
                     Supplier<OnboardingStep> sup = flow.lookup(id);
                     if (sup == null)
                         throw new IllegalArgumentException("Unknown step id: " + id);
+
                     return sup.get();
                 });
         }
@@ -306,6 +307,7 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
                     handleBack();
                 }
             };
+
             this.ui.addEventHandler(KeyEvent.KEY_PRESSED, keyHandler);
         }
 
@@ -313,15 +315,15 @@ public class OnboardingProcess<N extends Parent & OnboardingUI> {
             if (currentStep == null)
                 return;
 
-            var nextButton = this.ui.getNextButton();
+            Button nextButton = this.ui.getNextButton();
             nextButton.setOnAction(null);
             nextButton.disableProperty().unbind();
 
-            var backButton = this.ui.getBackButton();
+            Button backButton = this.ui.getBackButton();
             backButton.setOnAction(null);
             backButton.disableProperty().unbind();
 
-            var finishButton = this.ui.getFinishButton();
+            Button finishButton = this.ui.getFinishButton();
             finishButton.setOnAction(null);
             finishButton.disableProperty().unbind();
 

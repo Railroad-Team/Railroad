@@ -101,7 +101,7 @@ public final class DebugService {
         BooleanSupplier cancelled
     ) {
         synchronized (breakpointService) {
-            var snapshot = breakpointService.getAll().stream().filter(breakpointFilter).toList();
+            List<SourceBreakpoint> snapshot = breakpointService.getAll().stream().filter(breakpointFilter).toList();
             return startSession(endpoint, sourceResolver, snapshot, listener, breakpointService, breakpointFilter,
                 timeout, cancelled);
         }
@@ -165,6 +165,7 @@ public final class DebugService {
             case BreakpointEvent.Removed removed -> removed.breakpoint();
             case BreakpointEvent.Changed changed -> changed.breakpoint();
         };
+
         if (activeSession.get() != session || !breakpointFilter.test(breakpoint))
             return;
 
@@ -173,10 +174,12 @@ public final class DebugService {
             case BreakpointEvent.Removed _ -> session.removeBreakpoint(breakpoint.id());
             case BreakpointEvent.Changed _ -> session.updateBreakpoint(breakpoint);
         };
+
         update.exceptionally(throwable -> {
             if (activeSession.get() == session) {
                 Railroad.LOGGER.error("Failed to synchronize debugger breakpoint", throwable);
             }
+
             return null;
         });
     }

@@ -35,7 +35,7 @@ public class ASTJavaSyntaxHighlighting {
     public static StyleSpans<Collection<String>> computeHighlighting(String text) {
         long start = System.currentTimeMillis();
         try {
-            var styles = SyntaxTreeJavaSyntaxHighlighting.computeHighlighting(text);
+            StyleSpans<Collection<String>> styles = SyntaxTreeJavaSyntaxHighlighting.computeHighlighting(text);
             Railroad.LOGGER.debug("Computed highlighting in {} ms", System.currentTimeMillis() - start);
             return styles;
         } catch (RuntimeException bridgeFailure) {
@@ -47,7 +47,7 @@ public class ASTJavaSyntaxHighlighting {
         var highlighter = new SyntaxHighlighter(text);
         highlighter.visit(compilationUnit, null);
 
-        var styles = highlighter.computeStyleSpans();
+        StyleSpans<Collection<String>> styles = highlighter.computeStyleSpans();
         Railroad.LOGGER.debug("Computed highlighting in {} ms", System.currentTimeMillis() - start);
         return styles;
     }

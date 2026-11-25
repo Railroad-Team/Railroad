@@ -31,7 +31,9 @@ public interface DocumentStore {
      */
     ChangeSubscription onChange(Runnable listener);
 
-    /** A workspace observer registration whose removal cannot throw a checked exception. */
+    /**
+     * A workspace observer registration whose removal cannot throw a checked exception.
+     */
     interface ChangeSubscription extends AutoCloseable {
         @Override
         void close();

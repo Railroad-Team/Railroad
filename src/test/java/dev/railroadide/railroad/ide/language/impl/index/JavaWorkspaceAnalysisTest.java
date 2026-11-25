@@ -18,13 +18,32 @@ import java.util.*;
 import java.util.concurrent.*;
 import dev.railroadide.railroad.ide.sst.impl.java.JavaSemanticCompletionEngine;
 import dev.railroadide.railroad.ide.sst.project.JavaSourceSnapshotIndex;
+import dev.railroadide.railroad.ide.sst.project.JavaLibrarySymbolIndex;
 import dev.railroadide.railroad.ide.diagnostics.DiagnosticSeverity;
 import java.util.function.Consumer;
+import dev.railroadide.railroad.ide.diagnostics.EditorDiagnostic;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaWorkspaceAnalysisTest {
     @TempDir
     public Path directory;
+
+    @Test
+    public void binaryCompletionShowsAccessibleOverloadsOnceWithTheirReturnTypes() {
+        DefaultDocumentStore store = store();
+        TextDocumentSnapshot use = source("Use.java", "package demo; class Use { void run(String value) { value. } }");
+        store.publishBacking(use);
+        try (var provider = new JavaWorkspaceAnalysisProvider()) {
+            JavaWorkspaceAnalysis context = provider.capture(store.capture(), use.id());
+            var result = JavaSemanticCompletionEngine.compute(use.text(), use.text().indexOf("value.") + 5, context);
+            assertNotNull(result);
+            List<CompletionItem> items = result.items();
+            assertEquals(List.of("length() : int"), items.stream().filter(item -> item.insertText().equals("length"))
+                .map(CompletionItem::displayText).toList());
+            assertEquals(2, items.stream().filter(item -> item.insertText().equals("substring")).count());
+            assertFalse(items.stream().anyMatch(item -> item.insertText().equals("coder")));
+        }
+    }
 
     @Test
     public void capturedSourceShadowsAnOlderBinaryOfTheSameType() throws Exception {
@@ -41,6 +60,7 @@ public class JavaWorkspaceAnalysisTest {
             (_, method, _) -> {
                 throw new AssertionError("Live project access: " + method.getName());
             });
+
         CompletionResult result = new JavaCompletionProvider(project).compute(store.capture(), use.id(),
             use.text().indexOf("l.") + 1);
         assertNotNull(result);
@@ -59,11 +79,12 @@ public class JavaWorkspaceAnalysisTest {
             "package demo; class Use { void run(Library l) { l.captured(1); } }");
         store.publishBacking(dependency);
         store.publishBacking(use);
-        SignatureHelp help = new JdtJavaSignatureHelpProvider(new String[0]).compute(store.capture(), use.id(),
+        SignatureHelp help = new JavaSignatureHelpProvider().compute(store.capture(), use.id(),
             use.text().indexOf("1)") + 1);
         assertNotNull(help);
         assertEquals("captured", help.methodName());
         assertEquals("int", help.parameters().getFirst().type());
+        assertEquals("count", help.parameters().getFirst().name());
     }
 
     @BeforeAll
@@ -94,6 +115,7 @@ public class JavaWorkspaceAnalysisTest {
             (_, method, _) -> {
                 throw new AssertionError("Live project access: " + method.getName());
             });
+
         CompletionProvider provider = new JavaCompletionProvider(project);
         int trigger = use.text().indexOf("d.") + 1;
         try (ExecutorService worker = Executors.newSingleThreadExecutor()) {
@@ -126,7 +148,7 @@ public class JavaWorkspaceAnalysisTest {
             .noneMatch(diagnostic -> diagnostic.code().equals("SEM_UNRESOLVED_CALL")));
         assertTrue(diagnostics.compute(store.capture(), use.id()).stream()
             .anyMatch(diagnostic -> diagnostic.code().equals("SEM_UNRESOLVED_CALL")));
-        SignatureHelpProvider signatures = new JdtJavaSignatureHelpProvider(new String[0]);
+        SignatureHelpProvider signatures = new JavaSignatureHelpProvider();
         SignatureHelp help = signatures.compute(captured, use.id(), use.text().indexOf("true") + 1);
         assertNotNull(help);
         assertEquals("demo.Dep", help.ownerQualified());
@@ -151,6 +173,48 @@ public class JavaWorkspaceAnalysisTest {
         assertEquals("fromFirst", old.lookupClassStub("demo.Library").fields().getFirst().name());
         assertEquals("fromSecond", current.lookupClassStub("demo.Library").fields().getFirst().name());
         assertSame(old, provider.capture(original));
+    }
+
+    @Test
+    public void diagnosticsUseTheRequestingModulesClasspath() throws Exception {
+        Path common = library("vanilla-classes", "vanillaOnly");
+        Path fabric = library("fabric-classes", "fabricOnly");
+        Path neoForge = library("neoforge-classes", "neoForgeOnly");
+        Path output = library("old-workspace-output", "stale");
+        var configuration = new WorkspaceConfigurationSnapshot(1, Set.of(":common", ":fabric", ":neoforge"),
+            Map.of(
+                "module.:common.classpath", common.toString(),
+                "module.:common.directory", directory.resolve("common").toString(),
+                "module.:common.sources", directory.resolve("common/src") + ":generated=false",
+                "module.:common.output", output.toString(),
+                "module.:fabric.classpath", String.join("\n", output.toString(), fabric.toString(), common.toString()),
+                "module.:fabric.dependencies", neoForge.toString(),
+                "module.:fabric.sources", directory.resolve("generated/fabric") + ":generated=true",
+                "module.:neoforge.classpath", neoForge.toString(),
+                "module.:neoforge.sources", directory.resolve("neoforge/src") + ":generated=false"));
+        var store = new DefaultDocumentStore("test", configuration);
+        TextDocumentSnapshot commonUse = source("common/src/Common.java",
+            "package demo; class Common { int value(Library lib) { return lib.vanillaOnly; } }");
+        TextDocumentSnapshot fabricUse = source("generated/fabric/Fabric.java",
+            "package demo; class Fabric { int value(Library lib) { return lib.fabricOnly; } }");
+        TextDocumentSnapshot neoForgeUse = source("neoforge/src/NeoForge.java",
+            "package demo; class NeoForge { int value(Library lib) { return lib.neoForgeOnly; } }");
+        List.of(commonUse, fabricUse, neoForgeUse).forEach(store::publishBacking);
+        WorkspaceSnapshot captured = store.capture();
+        try (var provider = new JavaWorkspaceAnalysisProvider(() -> true,
+            (roots, _) -> JavaLibrarySymbolIndex.build(roots))) {
+            var diagnostics = new JavaDiagnosticsProvider(null, null, provider::capture);
+            for (TextDocumentSnapshot use : List.of(commonUse, fabricUse, neoForgeUse, fabricUse)) {
+                List<EditorDiagnostic.TextEditorDiagnostic> errors = diagnostics.compute(captured, use.id()).stream()
+                    .filter(diagnostic -> diagnostic.kind() == DiagnosticSeverity.ERROR).toList();
+                assertTrue(errors.isEmpty(), () -> errors.stream().map(error -> error.message(Locale.ROOT)).toList()
+                    .toString());
+            }
+
+            assertEquals(List.of(fabric, common), provider.capture(captured, fabricUse.id()).classpath());
+            assertEquals(List.of(neoForge), provider.capture(captured, neoForgeUse.id()).classpath());
+            assertEquals(List.of(common), provider.capture(captured, commonUse.id()).classpath());
+        }
     }
 
     private Path library(String folder, String field) throws Exception {
@@ -186,6 +250,7 @@ public class JavaWorkspaceAnalysisTest {
             assertTrue(analysis.lookupMembers(name).isEmpty());
             assertTrue(analysis.lookupMember(name, "binaryOnly").isEmpty());
         }
+
         assertFalse(analysis.typeNames().contains("Removed"));
         assertFalse(analysis.typeNames().contains("Deep"));
         assertEquals(List.of("demo.Outer$Dollar"), analysis.lookupSimpleName("binaryOnly").stream()
@@ -249,7 +314,8 @@ public class JavaWorkspaceAnalysisTest {
             }
             """);
         store.publishBacking(use);
-        var diagnostics = new JavaDiagnosticsProvider().compute(store.capture(), use.id());
+        List<EditorDiagnostic.TextEditorDiagnostic> diagnostics = new JavaDiagnosticsProvider().compute(store.capture(),
+            use.id());
         assertTrue(diagnostics.stream().noneMatch(diagnostic -> diagnostic.kind() == DiagnosticSeverity.ERROR),
             diagnostics::toString);
         JavaWorkspaceAnalysis analysis = new JavaWorkspaceAnalysisProvider().capture(store.capture());
@@ -278,12 +344,15 @@ public class JavaWorkspaceAnalysisTest {
             writer.visitInnerClass(name, enclosing, name.substring(enclosing.length() + 1),
                 Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
         }
+
         if (name.startsWith("demo/Outer")) {
             writer.visitField(Opcodes.ACC_PUBLIC, "binaryOnly", "I", null, null).visitEnd();
         }
+
         if (members != null) {
             members.accept(writer);
         }
+
         writer.visitEnd();
         Path file = root.resolve(name + ".class");
         Files.createDirectories(file.getParent());
@@ -314,9 +383,11 @@ public class JavaWorkspaceAnalysisTest {
                 "package demo; public class Dep { public DiskResult convert(String count) { return null; } } "
                     + "class DiskResult { public int diskField; }");
         }
+
         WorkspaceSnapshot captured = store.capture();
         store.publishOverlay(next(dependency, "package demo; public class Dep {}"));
-        var diagnostics = new JavaDiagnosticsProvider().compute(captured, use.id());
+        List<EditorDiagnostic.TextEditorDiagnostic> diagnostics = new JavaDiagnosticsProvider().compute(captured,
+            use.id());
         assertTrue(diagnostics.stream().noneMatch(diagnostic -> diagnostic.kind() == DiagnosticSeverity.ERROR),
             diagnostics::toString);
 
@@ -330,6 +401,7 @@ public class JavaWorkspaceAnalysisTest {
             new Class<?>[]{Project.class}, (_, method, _) -> {
                 throw new AssertionError("Live project access: " + method.getName());
             });
+
         CompletionResult result = new JavaCompletionProvider(project).compute(request, completion.id(),
             completion.text().indexOf(").") + 1);
         assertNotNull(result);
@@ -356,6 +428,7 @@ public class JavaWorkspaceAnalysisTest {
         for (TextDocumentSnapshot document : List.of(dependency, fixture, generatedType, use)) {
             store.publishBacking(document);
         }
+
         WorkspaceSnapshot workspace = store.capture();
         var provider = new JavaWorkspaceAnalysisProvider();
         JavaWorkspaceAnalysis analysis = provider.capture(workspace, use.id());
@@ -363,7 +436,7 @@ public class JavaWorkspaceAnalysisTest {
             use.uri().filePath().orElseThrow()), analysis.sourceTexts().keySet());
         assertFalse(provider.capture(workspace).sourceTexts().containsKey(use.uri().filePath().orElseThrow()));
         assertSame(analysis, provider.capture(workspace, use.id()));
-        SignatureHelp signature = new JdtJavaSignatureHelpProvider(new String[0]).compute(workspace, use.id(),
+        SignatureHelp signature = new JavaSignatureHelpProvider().compute(workspace, use.id(),
             use.text().indexOf("1)") + 1);
         assertNotNull(signature);
         assertEquals("int", signature.parameters().getFirst().type());
@@ -376,7 +449,7 @@ public class JavaWorkspaceAnalysisTest {
             DocumentUri.virtual("generated", "/demo/Virtual.java"), DocumentVersion.initial(), "java",
             "package demo; class Virtual { void run(Dep d) { d.call(1); } }", StandardCharsets.UTF_8);
         store.publishBacking(virtual);
-        assertNotNull(new JdtJavaSignatureHelpProvider(new String[0]).compute(store.capture(), virtual.id(),
+        assertNotNull(new JavaSignatureHelpProvider().compute(store.capture(), virtual.id(),
             virtual.text().indexOf("1)") + 1));
     }
 

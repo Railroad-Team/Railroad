@@ -5,6 +5,7 @@ import dev.railroadide.railroad.ui.RRHBox;
 import dev.railroadide.railroad.ui.id.UIIds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 
@@ -13,16 +14,17 @@ import javafx.scene.layout.Priority;
  */
 public class IDEStatusBarPane extends RRHBox {
     /**
-     * Creates a status bar that displays the IDECaretPositionPane
-     * Registers the pane with the UI manager while attached to a scene.
+     * Places workspace tools on the left and the task toggle and caret position on the right.
+     *
+     * @param toolButtons workspace tool buttons at the left edge
+     * @param activityPane task progress toggle
      */
-    public IDEStatusBarPane() {
+    public IDEStatusBarPane(Node toolButtons, IDEActivityPane activityPane) {
         Services.UI_MANAGER.assignWhileAttached(UIIds.IDE.IDE_STATUS_BAR, this);
-        var ideCaretPositionPane = new IDECaretPositionPane();
-
-        setAlignment(Pos.CENTER_RIGHT);
-        HBox.setHgrow(this, Priority.ALWAYS);
-        setMargin(this, new Insets(8));
-        this.getChildren().add(ideCaretPositionPane);
+        var indicators = new RRHBox(8, activityPane, new IDECaretPositionPane());
+        indicators.setAlignment(Pos.CENTER_RIGHT);
+        HBox.setHgrow(indicators, Priority.ALWAYS);
+        HBox.setMargin(indicators, new Insets(8));
+        getChildren().addAll(toolButtons, indicators);
     }
 }

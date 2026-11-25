@@ -48,7 +48,7 @@ public class BrowseButton extends RRButton {
 
             switch (browseType.getValue()) {
                 case FILE -> {
-                    var fileChooser = fileBrowser(defaultLocation.toFile(), "Select File", null);
+                    FileChooser fileChooser = fileBrowser(defaultLocation.toFile(), "Select File", null);
                     if (selectionMode == BrowseSelectionMode.SINGLE) {
                         File file = fileChooser.showOpenDialog(parentWindow.get());
                         if (file == null)
@@ -66,16 +66,18 @@ public class BrowseButton extends RRButton {
                             .orElse(""));
                     }
                 }
+
                 case DIRECTORY -> {
-                    var folderBrowser = folderBrowser(defaultLocation.toFile(), "Select Directory");
+                    DirectoryChooser folderBrowser = folderBrowser(defaultLocation.toFile(), "Select Directory");
                     File file = folderBrowser.showDialog(parentWindow.get());
                     if (file == null)
                         return;
 
                     textField.setText(file.getAbsolutePath());
                 }
+
                 case IMAGE -> {
-                    var imageChooser = imageBrowser(defaultLocation.toFile(), "Select Image");
+                    FileChooser imageChooser = imageBrowser(defaultLocation.toFile(), "Select Image");
                     if (selectionMode == BrowseSelectionMode.SINGLE) {
                         File file = imageChooser.showOpenDialog(parentWindow.get());
                         if (file == null)
@@ -202,11 +204,17 @@ public class BrowseButton extends RRButton {
      * Enum representing the type of browsing operation.
      */
     public enum BrowseType {
-        /** Browse for files without an image-specific filter. */
+        /**
+         * Browse for files without an image-specific filter.
+         */
         FILE,
-        /** Browse for a single directory. */
+        /**
+         * Browse for a single directory.
+         */
         DIRECTORY,
-        /** Browse using the configured PNG, JPEG, and GIF image filter. */
+        /**
+         * Browse using the configured PNG, JPEG, and GIF image filter.
+         */
         IMAGE
     }
 
@@ -215,9 +223,13 @@ public class BrowseButton extends RRButton {
      * SINGLE allows selecting one item, MULTIPLE allows selecting multiple items.
      */
     public enum BrowseSelectionMode {
-        /** Select one file or directory. */
+        /**
+         * Select one file or directory.
+         */
         SINGLE,
-        /** Select multiple files or images; directory browsing still selects one directory. */
+        /**
+         * Select multiple files or images; directory browsing still selects one directory.
+         */
         MULTIPLE
     }
 }

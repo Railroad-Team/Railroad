@@ -16,7 +16,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Regression checks for the shared command adapters and built-in metadata. */
+/**
+ * Regression checks for the shared command adapters and built-in metadata.
+ */
 public class CommandMigrationTest {
     @Test
     public void menuResolvesTargetAtInvocationAndRechecksEnablement() {

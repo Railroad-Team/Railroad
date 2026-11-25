@@ -3,6 +3,8 @@ package dev.railroadide.railroad.ide.diagnostics.inspections;
 import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
+import dev.railroadide.railroad.ide.sst.impl.java.JavaDeclarationAnalysis;
+import dev.railroadide.railroad.ide.sst.java.api.JavaSymbolIds;
 import dev.railroadide.railroad.ide.sst.semantic.api.Symbol;
 import dev.railroadide.railroad.ide.sst.semantic.api.Type;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
@@ -35,6 +37,8 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
     private static final String JAVA_TYPE_REFERENCE = "JAVA_TYPE_REFERENCE";
     private static final String JAVA_EXTENDS_CLAUSE = "JAVA_EXTENDS_CLAUSE";
     private static final String JAVA_IMPLEMENTS_CLAUSE = "JAVA_IMPLEMENTS_CLAUSE";
+    private static final String JAVA_ANONYMOUS_CLASS_BODY = "JAVA_ANONYMOUS_CLASS_BODY";
+    private static final String OBJECT = "java.lang.Object";
 
     private static final List<JavaInspectionRule> RULES = List.of(
         new SimpleJavaInspectionRule(
@@ -79,16 +83,30 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
     }
 
     private static void reportInvalidInheritance(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
+        Set<String> cyclic = new HashSet<>();
         for (SyntaxNode declarationNode : localTypeDeclarationNodes(context)) {
             Symbol declared = context.declaredSymbol(declarationNode).orElse(null);
             if (declared == null)
                 continue;
 
+            String qualifiedName = declared.qualifiedName().orElse(null);
+            if (qualifiedName != null && cyclic.contains(qualifiedName))
+                continue;
+
+            Set<String> cycle = qualifiedName == null ? Set.of() : dependencyCycle(context, qualifiedName);
+            if (!cycle.isEmpty()) {
+                // javac reports a cycle once, on the first of its types that it checks.
+                cyclic.addAll(cycle);
+                reporter.report(declarationNode,
+                    "cyclic inheritance involving '%s'".formatted(context.simpleTypeName(qualifiedName)));
+                continue;
+            }
+
             SyntaxNode extendsClause = context.directChild(declarationNode, JAVA_EXTENDS_CLAUSE);
             if (extendsClause != null) {
                 for (SyntaxNode typeRef : directTypeReferences(extendsClause)) {
                     String inheritedType = context.resolveQualifiedTypeName(typeRef);
-                    if (inheritedType == null || inheritedType.isBlank())
+                    if (!hasKnownSupertype(context, typeRef, inheritedType))
                         continue;
 
                     if (JAVA_CLASS_DECLARATION.equals(declarationNode.kind().id())
@@ -113,8 +131,9 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
 
             for (SyntaxNode typeRef : directTypeReferences(implementsClause)) {
                 String implementedType = context.resolveQualifiedTypeName(typeRef);
-                if (implementedType == null || implementedType.isBlank())
+                if (!hasKnownSupertype(context, typeRef, implementedType))
                     continue;
+
                 if (!context.isInterfaceType(implementedType)) {
                     reporter.report(typeRef,
                         "type cannot implement non-interface '%s'".formatted(context.simpleTypeName(implementedType)));
@@ -123,10 +142,150 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
         }
     }
 
+    /**
+     * Finds the types that depend on {@code start} while {@code start} depends on them (JLS 8.1.4, 9.1.3). A type
+     * depends on each direct supertype and on every type that qualifies a supertype's name, so a class that extends
+     * one of its own member classes depends on itself.
+     *
+     * @return the types of the cycle through {@code start}, or an empty set when there is none
+     */
+    private static Set<String> dependencyCycle(JavaRuleContext context, String start) {
+        Map<String, Set<String>> dependencies = new HashMap<>();
+        Deque<String> pending = new ArrayDeque<>(List.of(start));
+        while (!pending.isEmpty()) {
+            String type = pending.pop();
+            if (dependencies.containsKey(type))
+                continue;
+
+            Set<String> direct = directDependencies(context, type);
+            dependencies.put(type, direct);
+            pending.addAll(direct);
+        }
+
+        Set<String> cycle = new HashSet<>();
+        for (String type : dependencies.keySet()) {
+            if (reaches(dependencies, type, start) && (!type.equals(start) || dependsOn(dependencies, start, start))) {
+                cycle.add(type);
+            }
+        }
+
+        return cycle.contains(start) ? cycle : Set.of();
+    }
+
+    private static Set<String> directDependencies(JavaRuleContext context, String type) {
+        // Compiled classes cannot depend on source types, so no cycle passes through them.
+        if (context.jdkClassStubsByQualifiedName().containsKey(type))
+            return Set.of();
+
+        Set<String> direct = new LinkedHashSet<>();
+        for (String superType : context.directSuperTypeNames(type)) {
+            int typeArguments = superType.indexOf('<');
+            String erased = typeArguments < 0 ? superType : superType.substring(0, typeArguments);
+            if (!context.isResolvableType(erased))
+                continue;
+
+            direct.add(erased);
+            for (int separator = lastSeparator(erased); separator > 0; separator = lastSeparator(erased)) {
+                erased = erased.substring(0, separator);
+                if (!context.isResolvableType(erased))
+                    break;
+
+                direct.add(erased);
+            }
+        }
+
+        SyntaxNode declaration = context.localTypeDeclarations().get(type);
+        if (declaration != null) {
+            direct.addAll(writtenQualifiers(context, declaration));
+        }
+
+        return direct;
+    }
+
+    /**
+     * A supertype may be a member inherited by the type that qualifies it, so qualifiers are read as written.
+     */
+    private static Set<String> writtenQualifiers(JavaRuleContext context, SyntaxNode declaration) {
+        Set<String> qualifiers = new LinkedHashSet<>();
+        for (String clause : List.of(JAVA_EXTENDS_CLAUSE, JAVA_IMPLEMENTS_CLAUSE)) {
+            SyntaxNode clauseNode = context.directChild(declaration, clause);
+            if (clauseNode == null)
+                continue;
+
+            for (SyntaxNode typeRef : directTypeReferences(clauseNode)) {
+                String text = context.canonicalTypeText(typeRef);
+                if (text == null)
+                    continue;
+
+                int typeArguments = text.indexOf('<');
+                String qualifier = typeArguments < 0 ? text : text.substring(0, typeArguments);
+                for (int dot = qualifier.lastIndexOf('.'); dot > 0; dot = qualifier.lastIndexOf('.')) {
+                    qualifier = qualifier.substring(0, dot);
+                    String resolved = context.resolveQualifiedTypeName(qualifier, typeRef);
+                    if (resolved != null && context.isResolvableType(resolved)) {
+                        qualifiers.add(resolved);
+                    }
+                }
+            }
+        }
+
+        return qualifiers;
+    }
+
+    private static int lastSeparator(String name) {
+        return Math.max(name.lastIndexOf('.'), name.lastIndexOf('$'));
+    }
+
+    private static boolean dependsOn(Map<String, Set<String>> dependencies, String from, String target) {
+        for (String next : dependencies.getOrDefault(from, Set.of())) {
+            if (reaches(dependencies, next, target))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static boolean reaches(Map<String, Set<String>> dependencies, String from, String target) {
+        Set<String> visited = new HashSet<>();
+        Deque<String> pending = new ArrayDeque<>(List.of(from));
+        while (!pending.isEmpty()) {
+            String type = pending.pop();
+            if (type.equals(target))
+                return true;
+
+            if (visited.add(type)) {
+                pending.addAll(dependencies.getOrDefault(type, Set.of()));
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean hasKnownSupertype(JavaRuleContext context, SyntaxNode reference, String name) {
+        if (name == null || name.isBlank())
+            return false;
+
+        return context.isResolvableType(name) || context.inferredType(reference).map(type -> switch (type.kind()) {
+            case JavaTypes.Kind.PRIMITIVE, JavaTypes.Kind.ARRAY, JavaTypes.Kind.TYPE_VARIABLE -> true;
+            default -> false;
+        }).orElse(false);
+    }
+
     private static void reportMissingImplementation(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
-        for (SyntaxNode declarationNode : localTypeDeclarationNodes(context)) {
+        List<SyntaxNode> declarations = new ArrayList<>(localTypeDeclarationNodes(context));
+        declarations.addAll(anonymousClassBodies(context));
+        for (SyntaxNode declarationNode : declarations) {
             Symbol declared = context.declaredSymbol(declarationNode).orElse(null);
-            if (declared == null || !isConcreteImplementingType(declared, declarationNode, context))
+            if (declared == null)
+                continue;
+
+            if (JAVA_ENUM_DECLARATION.equals(declarationNode.kind().id())) {
+                declared.qualifiedName()
+                    .ifPresent(owner -> reportMissingEnumImplementations(context, reporter, declarationNode, owner));
+                continue;
+            }
+
+            if (!isConcreteImplementingType(declared, declarationNode, context))
                 continue;
 
             String ownerQualifiedName = declared.qualifiedName().orElse(null);
@@ -152,6 +311,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                     implemented.add(declaredMethod.signatureKey());
                 }
             }
+
             for (JavaRuleContext.MethodDescriptor inheritedMethod : context
                 .inheritedMethodDescriptors(ownerQualifiedName)) {
                 if (!inheritedMethod.isAbstract() && !Modifier.isStatic(inheritedMethod.modifiers())) {
@@ -159,12 +319,74 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                 }
             }
 
+            boolean anonymous = JAVA_ANONYMOUS_CLASS_BODY.equals(declarationNode.kind().id());
+            // An anonymous supertype never has wildcard arguments, so one here is an inference approximation.
+            if (anonymous && required.keySet().stream().anyMatch(signature -> signature.contains("?")))
+                continue;
+
+            if (anonymous) {
+                for (JavaRuleContext.MethodDescriptor objectMethod : context.methodDescriptorsForType(OBJECT)) {
+                    implemented.add(objectMethod.signatureKey());
+                }
+            }
+
+            SyntaxNode reportedNode = anonymous ? declarationNode.parent().orElse(declarationNode) : declarationNode;
             for (JavaRuleContext.MethodDescriptor missing : required.values()) {
                 if (!implemented.contains(missing.signatureKey())) {
-                    reporter.report(declarationNode, missing.signatureKey());
+                    reporter.report(reportedNode, missing.signatureKey());
                 }
             }
         }
+    }
+
+    private static void reportMissingEnumImplementations(
+        JavaRuleContext context,
+        JavaInspectionRuleReporter reporter,
+        SyntaxNode declaration,
+        String owner
+    ) {
+        List<JavaRuleContext.MethodDescriptor> required = context.declaredMethodDescriptors(owner).stream()
+            .filter(JavaRuleContext.MethodDescriptor::isAbstract).toList();
+        SyntaxNode body = context.directChild(declaration, "JAVA_ENUM_BODY");
+        if (required.isEmpty() || body == null)
+            return;
+
+        List<SyntaxNode> constants = body.children().stream()
+            .filter(child -> "JAVA_ENUM_CONSTANT".equals(child.kind().id())).toList();
+        if (constants.isEmpty()) {
+            required.forEach(method -> reporter.report(nodeFor(method, declaration), method.signatureKey()));
+            return;
+        }
+
+        for (SyntaxNode constant : constants) {
+            SyntaxNode classBody = context.directChild(constant, "JAVA_ANONYMOUS_CLASS_BODY");
+            List<JavaRuleContext.MethodDescriptor> methods = classBody == null
+                ? List.of()
+                : context.declaredSymbol(classBody).flatMap(Symbol::qualifiedName)
+                    .map(context::declaredMethodDescriptors).orElse(List.of());
+            Set<String> implemented = new HashSet<>();
+            for (JavaRuleContext.MethodDescriptor method : methods) {
+                if (!method.isAbstract() && !Modifier.isStatic(method.modifiers())) {
+                    implemented.add(erasedMethodSignature(method));
+                }
+            }
+
+            for (JavaRuleContext.MethodDescriptor method : required) {
+                if (!implemented.contains(erasedMethodSignature(method))) {
+                    reporter.report(constant, method.signatureKey());
+                }
+            }
+        }
+    }
+
+    private static String erasedMethodSignature(JavaRuleContext.MethodDescriptor method) {
+        if (method.symbol() == null)
+            return method.signatureKey();
+
+        return method.symbol().id().map(JavaSymbolIds::components).map(List::getLast)
+            .filter(component -> component.kind().equals("parameters"))
+            .map(parameters -> method.name() + "(" + parameters.value() + ")")
+            .orElseGet(method::signatureKey);
     }
 
     private static void reportInvalidOverrides(JavaRuleContext context, JavaInspectionRuleReporter reporter) {
@@ -181,17 +403,14 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
             for (JavaRuleContext.MethodDescriptor inherited : context.inheritedMethodDescriptors(ownerQualifiedName)) {
                 if (Modifier.isPrivate(inherited.modifiers()))
                     continue;
+
                 inheritedBySignature.computeIfAbsent(inherited.signatureKey(), _ -> new ArrayList<>()).add(inherited);
             }
 
-            for (List<JavaRuleContext.MethodDescriptor> inheritedGroup : inheritedBySignature.values()) {
-                if (hasConflictingInheritedMethods(context, inheritedGroup)) {
-                    reporter.report(declarationNode, inheritedGroup.getFirst().name());
-                }
-            }
-
+            Set<String> declaredSignatures = new HashSet<>();
             for (JavaRuleContext.MethodDescriptor declaredMethod : context
                 .declaredMethodDescriptors(ownerQualifiedName)) {
+                declaredSignatures.add(declaredMethod.signatureKey());
                 List<JavaRuleContext.MethodDescriptor> overridden = inheritedBySignature
                     .get(declaredMethod.signatureKey());
                 if (overridden == null || overridden.isEmpty())
@@ -213,7 +432,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                         break;
                     }
 
-                    if (!isReturnTypeCompatible(context, inherited.returnType(), declaredMethod.returnType())) {
+                    if (!isReturnTypeCompatible(context, declarationNode, inherited, declaredMethod)) {
                         reporter.report(nodeFor(declaredMethod, declarationNode), declaredMethod.name());
                         break;
                     }
@@ -222,6 +441,13 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                         reporter.report(nodeFor(declaredMethod, declarationNode), declaredMethod.name());
                         break;
                     }
+                }
+            }
+
+            for (Map.Entry<String, List<JavaRuleContext.MethodDescriptor>> entry : inheritedBySignature.entrySet()) {
+                if (!declaredSignatures.contains(entry.getKey())
+                    && hasConflictingInheritedMethods(context, declarationNode, entry.getValue())) {
+                    reporter.report(declarationNode, entry.getValue().getFirst().name());
                 }
             }
         }
@@ -310,8 +536,12 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
         JavaRuleContext context
     ) {
         String kindId = declarationNode.kind().id();
+        if (JAVA_ANONYMOUS_CLASS_BODY.equals(kindId))
+            return !JavaDeclarationAnalysis.isEnumConstantBody(declarationNode);
+
         if (!JAVA_CLASS_DECLARATION.equals(kindId) && !JAVA_RECORD_DECLARATION.equals(kindId))
             return false;
+
         String qualifiedName = symbol.qualifiedName().orElse(null);
         return qualifiedName != null && !context.isAbstractType(qualifiedName);
     }
@@ -324,13 +554,30 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                 && !JAVA_INTERFACE_DECLARATION.equals(kindId)
                 && !JAVA_ENUM_DECLARATION.equals(kindId)
                 && !JAVA_ANNOTATION_TYPE_DECLARATION.equals(kindId)
-                && !JAVA_RECORD_DECLARATION.equals(kindId))
+                && !JAVA_RECORD_DECLARATION.equals(kindId) && !JavaDeclarationAnalysis.isEnumConstantBody(node))
                 return;
+
             if (context.declaredSymbol(node).isPresent()) {
                 nodes.add(node);
             }
         });
+
         return List.copyOf(nodes);
+    }
+
+    /**
+     * Anonymous class bodies other than enum constant bodies, which are checked with their enum.
+     */
+    private static List<SyntaxNode> anonymousClassBodies(JavaRuleContext context) {
+        List<SyntaxNode> bodies = new ArrayList<>();
+        context.traverse(node -> {
+            if (JAVA_ANONYMOUS_CLASS_BODY.equals(node.kind().id()) && !JavaDeclarationAnalysis.isEnumConstantBody(node)
+                && context.declaredSymbol(node).isPresent()) {
+                bodies.add(node);
+            }
+        });
+
+        return bodies;
     }
 
     private static List<SyntaxNode> directTypeReferences(SyntaxNode clauseNode) {
@@ -340,25 +587,50 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
                 refs.add(child);
             }
         }
+
         return List.copyOf(refs);
     }
 
     private static int accessRank(int modifiers) {
         if (Modifier.isPublic(modifiers))
             return 3;
+
         if (Modifier.isProtected(modifiers))
             return 2;
+
         if (Modifier.isPrivate(modifiers))
             return 0;
+
         return 1;
     }
 
-    private static boolean isReturnTypeCompatible(JavaRuleContext context, Type inherited, Type declared) {
+    private static boolean isReturnTypeCompatible(
+        JavaRuleContext context,
+        SyntaxNode ownerDeclaration,
+        JavaRuleContext.MethodDescriptor base,
+        JavaRuleContext.MethodDescriptor candidate
+    ) {
+        if (!candidate.typeParameters().isEmpty() && !candidate.hasEquivalentTypeParameters(base))
+            return false;
+
+        Type inherited = base.overrideReturnType();
+        Type declared = candidate.overrideReturnType();
+        while (inherited instanceof JavaTypes.ArrayType baseArray
+            && declared instanceof JavaTypes.ArrayType candidateArray) {
+            inherited = baseArray.componentType();
+            declared = candidateArray.componentType();
+        }
+
         if (Objects.equals(inherited.displayName(), declared.displayName()))
             return true;
+
+        if (inherited.kind() == JavaTypes.Kind.PRIMITIVE || declared.kind() == JavaTypes.Kind.PRIMITIVE)
+            return false;
+
         if (inherited.kind() == JavaTypes.Kind.DECLARED && declared.kind() == JavaTypes.Kind.DECLARED)
             return context.isSubtype(declared.displayName(), inherited.displayName());
-        return context.isAssignable(inherited, declared);
+
+        return context.isAssignable(inherited, declared, ownerDeclaration);
     }
 
     private static boolean areThrownTypesCompatible(
@@ -374,6 +646,7 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
             for (String inheritedThrownType : inherited.thrownTypes()) {
                 if (!context.isCheckedExceptionType(inheritedThrownType))
                     continue;
+
                 if (declaredThrownType.equals(inheritedThrownType)
                     || context.isSubtype(declaredThrownType, inheritedThrownType)) {
                     compatible = true;
@@ -384,30 +657,22 @@ public final class CoreInheritanceInspection implements JavaInspectionRuleProvid
             if (!compatible)
                 return false;
         }
+
         return true;
     }
 
     private static boolean hasConflictingInheritedMethods(
         JavaRuleContext context,
+        SyntaxNode ownerDeclaration,
         List<JavaRuleContext.MethodDescriptor> inheritedGroup
     ) {
-        for (int i = 0; i < inheritedGroup.size(); i++) {
-            JavaRuleContext.MethodDescriptor left = inheritedGroup.get(i);
-            if (Modifier.isStatic(left.modifiers()))
-                continue;
-            for (int j = i + 1; j < inheritedGroup.size(); j++) {
-                JavaRuleContext.MethodDescriptor right = inheritedGroup.get(j);
-                if (Modifier.isStatic(right.modifiers()))
-                    continue;
-                if (!areReturnTypesMutuallyCompatible(context, left.returnType(), right.returnType()))
-                    return true;
-            }
-        }
-        return false;
-    }
+        if (inheritedGroup.size() < 2)
+            return false;
 
-    private static boolean areReturnTypesMutuallyCompatible(JavaRuleContext context, Type left, Type right) {
-        return isReturnTypeCompatible(context, left, right) || isReturnTypeCompatible(context, right, left);
+        List<JavaRuleContext.MethodDescriptor> methods = inheritedGroup.stream()
+            .filter(method -> !Modifier.isStatic(method.modifiers())).toList();
+        return methods.size() > 1 && methods.stream().noneMatch(candidate -> methods.stream()
+            .allMatch(base -> base == candidate || isReturnTypeCompatible(context, ownerDeclaration, base, candidate)));
     }
 
     private static SyntaxNode nodeFor(JavaRuleContext.MethodDescriptor descriptor, SyntaxNode fallback) {

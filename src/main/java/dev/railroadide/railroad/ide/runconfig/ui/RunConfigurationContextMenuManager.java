@@ -3,6 +3,8 @@ package dev.railroadide.railroad.ide.runconfig.ui;
 import javafx.geometry.Side;
 import javafx.scene.Node;
 import javafx.scene.control.ContextMenu;
+import javafx.event.EventHandler;
+import javafx.stage.WindowEvent;
 
 /**
  * Ensures run configuration context menus do not stack on top of each other by
@@ -27,7 +29,7 @@ public final class RunConfigurationContextMenuManager {
         }
 
         currentlyShown = menu;
-        var previousHiddenHandler = menu.getOnHidden();
+        EventHandler<WindowEvent> previousHiddenHandler = menu.getOnHidden();
         menu.setOnHidden(event -> {
             if (previousHiddenHandler != null) {
                 previousHiddenHandler.handle(event);

@@ -32,6 +32,7 @@ public class OnboardingFlowBuilder {
         if (firstStepId == null) {
             firstStepId = id;
         }
+
         return this;
     }
 

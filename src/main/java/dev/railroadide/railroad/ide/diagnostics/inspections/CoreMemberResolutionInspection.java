@@ -5,7 +5,6 @@ import dev.railroadide.railroad.ide.sst.java.api.JavaTypes;
 import dev.railroadide.railroad.ide.diagnostics.RegisteredInspection;
 import dev.railroadide.railroad.ide.diagnostics.rules.java.JavaSemanticRules;
 import dev.railroadide.railroad.ide.sst.semantic.api.SymbolKind;
-import dev.railroadide.railroad.ide.sst.semantic.api.Type;
 import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRule;
 import dev.railroadide.railroad.plugin.spi.inspection.JavaInspectionRuleProvider;
@@ -47,8 +46,10 @@ public final class CoreMemberResolutionInspection implements JavaInspectionRuleP
         context.traverse(node -> {
             if (!"JAVA_FIELD_ACCESS_EXPRESSION".equals(node.kind().id()))
                 return;
+
             if (context.resolvedSymbol(node).isPresent())
                 return;
+
             if (isQualifiedTypePrefix(context, node))
                 return;
 
@@ -59,7 +60,8 @@ public final class CoreMemberResolutionInspection implements JavaInspectionRuleP
             String memberName = context.canonicalQualifiedName(memberNode);
             if (memberName == null || memberName.isBlank())
                 return;
-            if (isArrayLengthAccess(context, node, memberName))
+
+            if (isArrayLengthAccess(context, node, memberName) || !context.hasKnownFieldOwner(node))
                 return;
 
             reporter.report(memberNode, memberName);
@@ -73,8 +75,10 @@ public final class CoreMemberResolutionInspection implements JavaInspectionRuleP
                 .map(symbol -> isTypeSymbol(symbol.kind()))
                 .orElse(false))
                 return true;
+
             current = current.parent().orElse(null);
         }
+
         return false;
     }
 

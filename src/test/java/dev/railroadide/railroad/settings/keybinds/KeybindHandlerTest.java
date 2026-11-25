@@ -17,10 +17,10 @@ public class KeybindHandlerTest {
         var parentContext = KeybindContexts.of("test:parent-" + System.nanoTime());
         var childContext = KeybindContexts.of("test:child-" + System.nanoTime());
         var received = new AtomicReference<String>();
-        var parentBinding = Keybind.builder().id("test:parent-" + System.nanoTime())
+        Keybind parentBinding = Keybind.builder().id("test:parent-" + System.nanoTime())
             .category(new KeybindCategory("test", "test")).addDefaultKey(KeyCode.F8)
             .addAction(parentContext, _ -> received.set("parent")).build();
-        var childBinding = Keybind.builder().id("test:child-" + System.nanoTime())
+        Keybind childBinding = Keybind.builder().id("test:child-" + System.nanoTime())
             .category(new KeybindCategory("test", "test")).addDefaultKey(KeyCode.F8)
             .addAction(childContext, _ -> received.set("child")).build();
         parentBinding.resetKeys();
