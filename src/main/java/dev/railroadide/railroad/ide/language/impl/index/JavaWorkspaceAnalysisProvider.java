@@ -160,15 +160,21 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
         }
         try {
             check.run();
-            Set<Path> roots = sourceRoots(workspace.configuration());
+
             DocumentSnapshot document = request == null ? null : workspace.document(request).orElseThrow();
-            DocumentId extra = document != null && !includedSource(document, roots) ? request : null;
+
             Path file = document == null ? null : document.uri().filePath().orElse(null);
             var scope = sourceContext(workspace.configuration(), file, document);
+            Set<Path> roots = scope.sourceSet() == null
+                ? sourceRoots(workspace.configuration())
+                : scope.sourceSet().visibleRoots();
+            DocumentId extra = document != null && !includedSource(document, roots, scope, workspace.configuration())
+                ? request
+                : null;
             if (scope.archive() != null) {
                 extra = request;
             }
-            var key = new WorkspaceKey(workspace, extra, scope.module());
+            var key = new WorkspaceKey(workspace, extra, scope);
             WorkspaceBuild result = workspaces.getIfPresent(key);
             if (result == null) {
                 WorkspaceBuild previous = workspaces.asMap().entrySet().stream()
@@ -195,9 +201,9 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     ) {
         WorkspaceConfigurationSnapshot configuration = workspace.configuration();
         List<Path> classpath = scope.classpath(configuration);
-        Path jdk = jdkHome(configuration);
+        Path jdk = scope.jdkHome(configuration);
         CompletableFuture<JavaSymbolIndex> binaryLoad = loadBinaries(
-            new BinaryKey(configuration, classpath, scope.archive()), jdk,
+            new BinaryKey(configuration, classpath, scope.archive(), jdk), jdk,
             check);
         JavaProjectSemanticIndex.Builder builder = JavaProjectSemanticIndex.builder();
         Map<Path, String> texts = new HashMap<>();
@@ -207,7 +213,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
             check.run();
             if (!(document instanceof TextDocumentSnapshot text) || !"java".equals(text.languageId()))
                 continue;
-            if (!text.id().equals(request) && !includedSource(text, roots))
+            if (!text.id().equals(request) && !includedSource(text, roots, scope, configuration))
                 continue;
             Path path = text.uri().filePath().orElseGet(() -> Path.of(".railroad", "virtual", text.id().toString(),
                 text.uri().fileName().orElse("Snapshot.java")).toAbsolutePath().normalize());
@@ -317,7 +323,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
                 }
             }, BINARY_LOADS);
         } else {
-            var base = loadBinaries(new BinaryKey(key.configuration(), key.classpath(), null), jdk, loadCheck);
+            var base = loadBinaries(new BinaryKey(key.configuration(), key.classpath(), null, jdk), jdk, loadCheck);
             load = base.thenApplyAsync(index -> index.forAttachedSource(key.archive(), loadCheck), BINARY_LOADS);
         }
         binaryLoads.put(key, load);
@@ -383,11 +389,11 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
     public record CacheUsage(long workspaces, long sourceFiles, long binaries, long hits, long misses, long evictions) {
     }
 
-    private record WorkspaceKey(WorkspaceSnapshot workspace, DocumentId extraDocument, String module) {
+    private record WorkspaceKey(WorkspaceSnapshot workspace, DocumentId extraDocument, SourceContext scope) {
         private boolean sameScope(WorkspaceKey other) {
             return workspace.projectId().equals(other.workspace.projectId())
                 && workspace.configuration().equals(other.workspace.configuration())
-                && Objects.equals(extraDocument, other.extraDocument) && Objects.equals(module, other.module);
+                && Objects.equals(extraDocument, other.extraDocument) && Objects.equals(scope, other.scope);
         }
     }
 
@@ -406,13 +412,26 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
         }
     }
 
-    private record BinaryKey(WorkspaceConfigurationSnapshot configuration, List<Path> classpath, Path archive) {
+    private record BinaryKey(
+        WorkspaceConfigurationSnapshot configuration,
+        List<Path> classpath,
+        Path archive,
+        Path jdk
+    ) {
     }
 
-    private static boolean includedSource(DocumentSnapshot document, Set<Path> roots) {
+    private static boolean includedSource(
+        DocumentSnapshot document,
+        Set<Path> roots,
+        SourceContext scope,
+        WorkspaceConfigurationSnapshot configuration
+    ) {
         if (document.origin().backing() == BackingKind.ARCHIVE_ENTRY
             || document.origin().provenance() == ProvenanceKind.ATTACHED_SOURCE)
             return false;
+        if (scope.sourceSet() != null)
+            return document.uri().filePath()
+                .filter(path -> JavaSourceSets.of(configuration).visible(scope.sourceSet(), path)).isPresent();
         return document.uri().filePath().map(path -> roots.stream()
             .anyMatch(path.toAbsolutePath().normalize()::startsWith)).orElse(true);
     }
@@ -492,22 +511,37 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
         Path file,
         DocumentSnapshot document
     ) {
-        String module = moduleForPath(configuration, file);
+        var sets = JavaSourceSets.of(configuration);
+        var owner = sets.owner(file);
+        String module = owner == null ? moduleForPath(configuration, file) : owner.module();
         if (module != null && (document == null || document.origin().provenance() != ProvenanceKind.ATTACHED_SOURCE))
-            return new SourceContext(module, null);
+            return new SourceContext(module, null, owner);
         if (document == null && file == null)
             return new SourceContext(null, null);
         var roots = classpath(configuration);
         var sources = JavaLibrarySources.shared();
         var archive = (document == null ? sources.ownerArchive(file, roots) : sources.ownerArchive(document, roots))
             .orElse(null);
-        return new SourceContext(archive == null ? module : moduleForArchive(configuration, archive), archive);
+        String importer = archive == null ? module : moduleForArchive(configuration, archive);
+        return new SourceContext(importer, archive, sets.importing(importer, archive));
     }
 
     /** Classpath ownership for a project source or an attached dependency source. */
-    public record SourceContext(String module, Path archive) {
+    public record SourceContext(String module, Path archive, JavaSourceSets.Scope sourceSet) {
+        public SourceContext(String module, Path archive) {
+            this(module, archive, null);
+        }
+
+        public Path jdkHome(WorkspaceConfigurationSnapshot configuration) {
+            return sourceSet != null && sourceSet.jdkHome() != null
+                ? sourceSet.jdkHome()
+                : JavaWorkspaceAnalysisProvider.jdkHome(configuration);
+        }
+
         /** Returns the ordered binary roots for this source. */
         public List<Path> classpath(WorkspaceConfigurationSnapshot configuration) {
+            if (sourceSet != null)
+                return sourceSet.classpath();
             var roots = JavaWorkspaceAnalysisProvider.classpath(configuration, module);
             if (module == null || archive == null)
                 return roots;
@@ -530,7 +564,7 @@ public final class JavaWorkspaceAnalysisProvider implements AutoCloseable {
 
     private static List<Path> classpath(WorkspaceConfigurationSnapshot configuration, String selectedModule) {
         LinkedHashSet<Path> roots = new LinkedHashSet<>();
-        Set<Path> outputs = new HashSet<>();
+        Set<Path> outputs = new HashSet<>(JavaSourceSets.of(configuration).outputs());
         for (String module : configuration.moduleIds()) {
             for (String kind : List.of("output", "testOutput")) {
                 String output = configuration.settings().get("module." + module + "." + kind);

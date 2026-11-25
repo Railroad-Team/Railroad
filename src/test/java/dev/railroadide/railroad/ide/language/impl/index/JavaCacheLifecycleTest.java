@@ -24,6 +24,7 @@ import dev.railroadide.railroad.ide.sst.project.JavaLibrarySources;
 import dev.railroadide.railroad.ide.sst.project.JavaStubSymbolIndex;
 import dev.railroadide.railroad.ide.sst.request.api.Deadline;
 import dev.railroadide.railroad.ide.sst.request.api.WorkspaceRequestContext;
+import dev.railroadide.railroad.ide.language.LanguageSupports;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -151,6 +152,43 @@ public class JavaCacheLifecycleTest {
                 .lookupClassStub("demo.Library").fields().getFirst().name());
             assertEquals("vanilla", provider.index(context, common.resolveSibling("Use.java"))
                 .lookupClassStub("demo.Library").fields().getFirst().name());
+        } finally {
+            service.closeProject(session);
+        }
+    }
+
+    @Test
+    public void liveLookupsFollowSourceSetVisibilityAndSelectItsToolchain() throws Exception {
+        LanguageSupports.initialize();
+        Path main = Files.createDirectories(root.resolve("production"));
+        Path test = Files.createDirectories(root.resolve("checks"));
+        Path mainFile = Files.writeString(main.resolve("Main.java"), "class Main {}");
+        Path testFile = Files.writeString(test.resolve("Fixture.java"), "class Fixture {}");
+        Path mainJdk = root.resolve("main-jdk");
+        Path testJdk = root.resolve("test-jdk");
+        Path output = root.resolve("out/classes");
+        archive(mainJdk.resolve("lib/rt.jar"), "demo/Runtime", "production");
+        archive(testJdk.resolve("lib/rt.jar"), "demo/Runtime", "testing");
+        var raw = new WorkspaceConfigurationSnapshot(0, Set.of(":"), Map.of(
+            "module.:.sourceSets", "main\ntest", "module.:.set.main.sources", main.toString(),
+            "module.:.set.test.sources", test.toString(), "module.:.set.test.classpath", output.toString(),
+            "module.:.set.main.outputs", output.toString(), "module.:.set.main.jdkHome", mainJdk.toString(),
+            "module.:.set.test.jdkHome", testJdk.toString()));
+        var language = new JavaLanguageIndexContext(List.of(main, test), List.of(), List.of(), List.of(), List.of(),
+            null, raw);
+        Project project = project();
+        var service = Services.PROJECT_LANGUAGE_INDEX_SERVICE;
+        var session = service.openProject(project);
+        try (var provider = new JavaAnalysisContextProvider()) {
+            provider.adoptConfiguration(session, provider.prepareConfiguration(session, raw));
+            var context = new ProjectIndexContext(project, root, Map.of("java", language), session);
+            var fromTest = provider.index(context, testFile);
+            assertTrue(fromTest.typeNames().containsAll(Set.of("Main", "Fixture")));
+            assertEquals("testing", fromTest.lookupClassStub("demo.Runtime").fields().getFirst().name());
+            var fromMain = provider.index(context, mainFile);
+            assertTrue(fromMain.typeNames().contains("Main"));
+            assertFalse(fromMain.typeNames().contains("Fixture"));
+            assertEquals("production", fromMain.lookupClassStub("demo.Runtime").fields().getFirst().name());
         } finally {
             service.closeProject(session);
         }

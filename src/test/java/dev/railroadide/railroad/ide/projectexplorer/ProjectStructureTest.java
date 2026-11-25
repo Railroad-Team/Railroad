@@ -78,15 +78,15 @@ public class ProjectStructureTest {
         Path module = root.resolve("common");
         File mainJava = module.resolve("src/main/java").toFile();
         File mainResources = module.resolve("src/main/resources").toFile();
-        File testJava = module.resolve("src/test/java").toFile();
-        File testResources = module.resolve("src/test/resources").toFile();
+        File testJava = module.resolve("qa/custom/java").toFile();
+        File testResources = module.resolve("qa/custom/resources").toFile();
         File generated = module.resolve("build/generated/sources/annotationProcessor/java/main").toFile();
         ProjectStructure structure = new ProjectStructure.Builder()
             .gradleModule(root, List.of())
             .gradleModule(module, List.of(
-                contentRoot(module, List.of(mainJava, mainResources, generated), List.of(mainJava, generated),
+                contentRoot(module, "main", List.of(mainJava, generated),
                     List.of(mainResources)),
-                contentRoot(module, List.of(testJava, testResources), List.of(testJava), List.of(testResources))))
+                contentRoot(module, "test", List.of(testJava), List.of(testResources))))
             .build();
 
         assertEquals(Role.MODULE, structure.roleOf(module));
@@ -95,7 +95,7 @@ public class ProjectStructureTest {
         assertEquals(Role.TEST_SOURCES, structure.roleOf(testJava.toPath()));
         assertEquals(Role.TEST_RESOURCES, structure.roleOf(testResources.toPath()));
         assertEquals(Role.GENERATED_SOURCES, structure.roleOf(generated.toPath()));
-        assertEquals(Role.SOURCE_SET, structure.roleOf(module.resolve("src/test")));
+        assertEquals(Role.SOURCE_SET, structure.roleOf(module.resolve("qa/custom")));
         assertEquals(Role.EXCLUDED, structure.roleOf(module.resolve("build")));
         assertEquals(Role.EXCLUDED, structure.roleOf(root.resolve("build")));
         assertEquals(Role.EXCLUDED, structure.roleOf(root.resolve(".gradle")));
@@ -103,13 +103,16 @@ public class ProjectStructureTest {
 
     private static RailroadContentRoot contentRoot(
         Path module,
-        List<File> allSources,
+        String name,
         List<File> java,
         List<File> resources
     ) {
-        return new BasicRailroadContentRoot(module.toFile(), directories(allSources, "source"),
-            directories(java, "testSource"), directories(resources, "resource"),
-            directories(resources, "testResource"), Set.of(module.resolve("build").toFile()));
+        boolean test = name.equals("test");
+        return new BasicRailroadContentRoot(module.toFile(), name, List.of(), List.of(), null,
+            test ? List.of() : directories(java, "source"), test ? directories(java, "testSource") : List.of(),
+            test ? List.of() : directories(resources, "resource"),
+            test ? directories(resources, "testResource") : List.of(),
+            Set.of(module.resolve("build").toFile()));
     }
 
     private static List<RailroadSourceDirectory> directories(List<File> files, String type) {

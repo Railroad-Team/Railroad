@@ -37,6 +37,7 @@ import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import dev.railroadide.railroad.utility.ProjectPathIdentityUtils;
 
 /**
  * Implementation of {@link GradleModelService} that uses the Gradle Tooling API to load
@@ -136,6 +137,9 @@ public class ToolingGradleModelService implements GradleModelService {
             String gradleVersion = buildEnvironment.getGradle().getGradleVersion();
             Path rootDir = gradleBuild.getRootProject().getProjectDirectory().toPath();
 
+            if (ProjectPathIdentityUtils.matches(rootDir, project.getPath())) {
+                rootDir = project.getPath();
+            }
             return new GradleBuildModel(gradleVersion, rootDir, fabricDataModel, gradleProject);
         } catch (Exception exception) {
             throw new RuntimeException("Failed to load Gradle model", exception);

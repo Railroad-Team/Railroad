@@ -417,6 +417,10 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
             String id = module.getPath();
             ids.add(id);
             String prefix = "module." + id + ".";
+            if (id.equals(":") && model.rootDir() != null && !module.getProjectDir().equals(model.rootDir())) {
+                values.put("gradle.importRoot", module.getProjectDir().toAbsolutePath().normalize().toString());
+                values.put("gradle.openRoot", model.rootDir().toAbsolutePath().normalize().toString());
+            }
             values.put(prefix + "classpath", paths(module.getClasspathRoots()));
             captureMainCompileSelection(module, prefix, values);
             values.put(prefix + "modulePath", paths(module.getModulePathRoots()));
@@ -435,7 +439,19 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
                 }
             }
             Set<String> sources = new TreeSet<>();
+            List<String> sourceSets = new ArrayList<>();
             for (RailroadContentRoot root : module.getContentRoots()) {
+                String name = root.getSourceSetName();
+                sourceSets.add(name);
+                String set = prefix + "set." + name + ".";
+                values.put(set + "sources", paths(Stream.concat(root.getSourceDirectories().stream(),
+                    root.getTestSourceDirectories().stream()).map(RailroadSourceDirectory::getDirectory).toList()));
+                values.put(set + "classpath", paths(root.getCompileClasspath()));
+                values.put(set + "outputs", paths(root.getClassOutputs()));
+                if (root.getCompilerHome() != null) {
+                    values.put(set + "jdkHome",
+                        root.getCompilerHome().toPath().toAbsolutePath().normalize().toString());
+                }
                 for (RailroadSourceDirectory source : root.getSourceDirectories()) {
                     sources.add(source.getDirectory().toPath().toAbsolutePath().normalize() + ":generated="
                         + source.isGenerated());
@@ -445,6 +461,7 @@ public final class ProjectWorkspaceConfiguration implements AutoCloseable {
                         + source.isGenerated());
                 }
             }
+            values.put(prefix + "sourceSets", String.join("\n", sourceSets));
             values.put(prefix + "sources", String.join("\n", sources));
         }
         return new WorkspaceConfigurationSnapshot(0, ids, values);

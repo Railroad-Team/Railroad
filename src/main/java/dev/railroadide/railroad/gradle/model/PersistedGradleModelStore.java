@@ -167,10 +167,14 @@ public final class PersistedGradleModelStore {
         if (model.project() == null)
             return true;
 
+        Set<File> projectOutputs = new HashSet<>();
+        for (RailroadModule module : model.project().getModules()) {
+            module.getContentRoots().forEach(root -> projectOutputs.addAll(root.getClassOutputs()));
+        }
         for (RailroadModule module : model.project().getModules()) {
             for (List<File> roots : List.of(module.getClasspathRoots(), module.getDependencyRoots())) {
                 for (File file : roots) {
-                    if (file.getName().endsWith(".jar") && !file.isFile())
+                    if (file.getName().endsWith(".jar") && !projectOutputs.contains(file) && !file.isFile())
                         return false;
                 }
             }

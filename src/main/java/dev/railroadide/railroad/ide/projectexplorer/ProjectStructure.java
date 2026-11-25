@@ -9,9 +9,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -112,10 +110,7 @@ public final class ProjectStructure {
         }
 
         /**
-         * Adds a Gradle module and its source sets. The imported model lists resource roots among its source roots and
-         * does not say which source sets hold tests, so resource roots take precedence and test roots are recognised by
-         * their source set's directory name. The module's {@code build} and {@code .gradle} directories are excluded
-         * even when the module has no Java source sets.
+         * Adds a Gradle module and the source and resource roles reported by its imported source sets.
          *
          * @param moduleDir module root directory
          * @param contentRoots source sets of the module
@@ -124,20 +119,10 @@ public final class ProjectStructure {
         public Builder gradleModule(Path moduleDir, Iterable<? extends RailroadContentRoot> contentRoots) {
             module(moduleDir);
             for (RailroadContentRoot contentRoot : contentRoots) {
-                Set<Path> resources = new HashSet<>();
-                for (RailroadSourceDirectory directory : concat(contentRoot.getResourceDirectories(),
-                    contentRoot.getTestResourceDirectories())) {
-                    Path path = normalize(directory.getDirectory().toPath());
-                    resources.add(path);
-                    gradleDirectory(moduleDir, path, directory.isGenerated(), Role.RESOURCES, Role.TEST_RESOURCES);
-                }
-                for (RailroadSourceDirectory directory : concat(contentRoot.getSourceDirectories(),
-                    contentRoot.getTestSourceDirectories())) {
-                    Path path = normalize(directory.getDirectory().toPath());
-                    if (!resources.contains(path)) {
-                        gradleDirectory(moduleDir, path, directory.isGenerated(), Role.SOURCES, Role.TEST_SOURCES);
-                    }
-                }
+                gradleDirectories(moduleDir, contentRoot.getSourceDirectories(), Role.SOURCES);
+                gradleDirectories(moduleDir, contentRoot.getTestSourceDirectories(), Role.TEST_SOURCES);
+                gradleDirectories(moduleDir, contentRoot.getResourceDirectories(), Role.RESOURCES);
+                gradleDirectories(moduleDir, contentRoot.getTestResourceDirectories(), Role.TEST_RESOURCES);
                 for (File excluded : contentRoot.getExcludedDirectories()) {
                     excluded(excluded.toPath());
                 }
@@ -147,27 +132,15 @@ public final class ProjectStructure {
             return this;
         }
 
-        private void gradleDirectory(Path moduleDir, Path directory, boolean generated, Role role, Role testRole) {
-            if (generated) {
-                sourceDirectory(moduleDir, directory, Role.GENERATED_SOURCES);
-            } else {
-                sourceDirectory(moduleDir, directory, isTestSourceSet(directory.getParent()) ? testRole : role);
-            }
-        }
-
-        private static boolean isTestSourceSet(Path sourceSet) {
-            return sourceSet != null && sourceSet.getFileName() != null
-                && sourceSet.getFileName().toString().toLowerCase(Locale.ROOT).contains("test");
-        }
-
-        private static List<RailroadSourceDirectory> concat(
-            Iterable<? extends RailroadSourceDirectory> first,
-            Iterable<? extends RailroadSourceDirectory> second
+        private void gradleDirectories(
+            Path moduleDir,
+            Iterable<? extends RailroadSourceDirectory> directories,
+            Role role
         ) {
-            List<RailroadSourceDirectory> directories = new ArrayList<>();
-            first.forEach(directories::add);
-            second.forEach(directories::add);
-            return directories;
+            for (var directory : directories) {
+                sourceDirectory(moduleDir, directory.getDirectory().toPath(),
+                    directory.isGenerated() ? Role.GENERATED_SOURCES : role);
+            }
         }
 
         /**

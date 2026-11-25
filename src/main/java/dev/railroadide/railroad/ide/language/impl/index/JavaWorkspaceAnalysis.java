@@ -30,6 +30,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Immutable Java analysis inputs derived from one workspace capture. Workspace source comes from the
@@ -370,6 +371,18 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
         UsageSink sink,
         Runnable activityCheck
     ) {
+        return usages(workspace, document, query, sink, activityCheck, _ -> true);
+    }
+
+    /** Searches the selected candidate files, resolving their references with this compile classpath. */
+    public @Nullable UsageSearch usages(
+        WorkspaceSnapshot workspace,
+        DocumentSnapshot document,
+        UsageQuery query,
+        UsageSink sink,
+        Runnable activityCheck,
+        Predicate<Path> include
+    ) {
         activityCheck.run();
         var extractor = new JavaProjectSemanticExtractor();
         var files = sourceIndex.files().values();
@@ -412,8 +425,8 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
             || declaration.kind().id().equals(JavaSymbolKind.FIELD.id())) ? declaration.simpleName() : null;
         var candidates = files.stream().filter(file -> {
             activityCheck.run();
-            return requiredName == null
-                || JavaUnicodeEscapes.translate(sourceTexts.get(file.path())).contains(requiredName);
+            return include.test(file.path()) && (requiredName == null
+                || JavaUnicodeEscapes.translate(sourceTexts.get(file.path())).contains(requiredName));
         }).sorted(Comparator.comparing(file -> file.semanticShard().uri().toString())).toList();
 
         var usages = new ArrayList<Location<?>>();
@@ -555,6 +568,12 @@ public final class JavaWorkspaceAnalysis implements JavaSourceSnapshotIndex {
             topLevel = symbols.lookupClassStub(topLevel.enclosingClassName());
         }
         return topLevel;
+    }
+
+    /** The compiled top-level class used to open the library view containing this type. */
+    public Optional<DocumentUri> topLevelBinaryLocation(String name) {
+        var topLevel = topLevelClass(name);
+        return topLevel == null ? Optional.empty() : binaryLocation(topLevel.getFullName());
     }
 
     private Optional<DocumentUri> binaryLocation(String qualifiedName) {

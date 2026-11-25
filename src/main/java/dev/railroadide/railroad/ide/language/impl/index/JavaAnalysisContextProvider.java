@@ -9,7 +9,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 import dev.railroadide.railroad.Railroad;
@@ -42,6 +41,7 @@ import dev.railroadide.railroad.ide.sst.document.api.WorkspaceSnapshot;
 import dev.railroadide.railroad.ide.sst.document.api.DocumentId;
 import dev.railroadide.railroad.ide.sst.request.api.RequestContext;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.MapMaker;
 
 /**
  * Combines Java project, library, and JDK symbol indexes, caching library and JDK scans.
@@ -53,7 +53,12 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
     private static final String EPOCH = "index.binary.epoch";
     private volatile boolean closed;
 
+    private record SourceIndexKey(JavaProjectSemanticIndex index, JavaSourceSets.Scope scope) {
+    }
+
     private static final class Cache {
+        private final com.google.common.cache.Cache<SourceIndexKey, JavaProjectSemanticIndex> sources = CacheBuilder
+            .newBuilder().maximumSize(4).build();
         private final Session session;
         private final String epoch;
         private final long generation;
@@ -63,7 +68,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
             .concurrencyLevel(1).maximumSize(2).build();
         private final JavaWorkspaceAnalysisProvider workspace;
         private final BooleanSupplier active;
-        private final Map<Object, ReentrantLock> loading = new ConcurrentHashMap<>();
+        private final ConcurrentMap<Object, ReentrantLock> loading = new MapMaker().weakValues().makeMap();
         private volatile boolean disposed;
         private Cache(
             Session session,
@@ -137,6 +142,7 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
 
         private synchronized void dispose() {
             disposed = true;
+            sources.invalidateAll();
             libraries.invalidateAll();
             jdks.invalidateAll();
             workspace.close();
@@ -354,25 +360,40 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         if (context.configurationGeneration() != cache.generation)
             throw new CancellationException("Live Java configuration was superseded");
         List<JavaSymbolIndex> delegates = new ArrayList<>();
-        if (projectIndex != null) {
-            delegates.add(projectIndex);
-        }
 
         if (javaContext != null) {
             WorkspaceConfigurationSnapshot gradle = javaContext.gradleConfiguration();
             List<Path> roots;
             Path archive;
+            Path jdk;
             if (gradle != null) {
                 var scope = JavaWorkspaceAnalysisProvider.sourceContext(gradle, file, document);
+                if (projectIndex != null && scope.sourceSet() != null) {
+                    var key = new SourceIndexKey(projectIndex, scope.sourceSet());
+                    projectIndex = cache.load(cache.sources, key, "railroad.activity.indexing_project", activityCheck,
+                        () -> {
+                            var visible = JavaProjectSemanticIndex.builder();
+                            var sets = JavaSourceSets.of(gradle);
+                            for (var entry : key.index().files().values()) {
+                                activityCheck.run();
+                                if (sets.visible(key.scope(), entry.path())) {
+                                    visible.putFile(entry);
+                                }
+                            }
+                            return visible.build();
+                        });
+                }
+                jdk = scope.jdkHome(gradle);
                 roots = scope.classpath(gradle);
                 archive = scope.archive();
             } else {
+                jdk = javaContext.jdkHome();
                 roots = libraryRoots(javaContext);
                 var sources = JavaLibrarySources.shared();
                 archive = (document == null ? sources.ownerArchive(file, roots) : sources.ownerArchive(document, roots))
                     .orElse(null);
             }
-            Path jdk = gradle == null ? javaContext.jdkHome() : JavaWorkspaceAnalysisProvider.jdkHome(gradle);
+
             JavaSymbolIndex libraryIndex = libraryIndex(roots, archive, cache, activityCheck);
             if (!libraryIndex.declaredQualifiedNames().isEmpty()) {
                 delegates.add(libraryIndex);
@@ -389,6 +410,9 @@ public final class JavaAnalysisContextProvider implements AutoCloseable {
         activityCheck.run();
         if (cache != cache(context.session()))
             throw new CancellationException("Java configuration changed during scan");
+        if (projectIndex != null) {
+            delegates.addFirst(projectIndex);
+        }
         if (delegates.isEmpty())
             return null;
         if (delegates.size() == 1)

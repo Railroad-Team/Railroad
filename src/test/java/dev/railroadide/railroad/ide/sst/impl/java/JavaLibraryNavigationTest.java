@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,58 +33,62 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class JavaLibraryNavigationTest {
     private static final String LIBRARY = """
-        package lib;
+                package lib;
 
+                import java.util.ArrayList;
+        import java.util.HashMap;
         import java.util.List;
 
-        /** Greets people. */
-        public class Greeter<T extends Comparable<T>> {
-            public static int VALUE;
+                /** Greets people. */
+                public class Greeter<T extends Comparable<T>> {
+                    public static int VALUE;
 
-            public Greeter() {
-            }
+                    public Greeter() {
+                    }
 
-            public Greeter(String name) {
-            }
+                    public Greeter(String name) {
+                    }
 
-            public static String greet(String name) {
-                return "Hi " + name;
-            }
+                    public static String greet(String name) {
+                        return "Hi " + name;
+                    }
 
-            public static String greet(String name, int times) {
-                return name.repeat(times);
-            }
+                    public static String greet(String name, int times) {
+                        return name.repeat(times);
+                    }
 
-            public <E> E pick(List<? extends E> items, T key) {
-                return items.getFirst();
-            }
+                    public <E> E pick(List<? extends E> items, T key) {
+                        return items.getFirst();
+                    }
 
-            public static class Inner {
-                public void run() {
+                    public static class Inner {
+                        public void run() {
+                        }
+                    }
+
+                    public enum Mood {
+                        HAPPY, SAD
+                    }
                 }
-            }
-
-            public enum Mood {
-                HAPPY, SAD
-            }
-        }
-        """;
+                """;
     private static final String SOURCE = """
-        import lib.Greeter;
+                import lib.Greeter;
+                import java.util.ArrayList;
+        import java.util.HashMap;
         import java.util.List;
 
-        class Main {
-            void test(Greeter<String> greeter) {
-                Greeter.greet("a");
-                Greeter.greet("a", 2);
-                int value = Greeter.VALUE;
-                new Greeter<String>("x");
-                greeter.pick(List.of(1), "k");
-                new Greeter.Inner().run();
-                Greeter.Mood mood = Greeter.Mood.SAD;
-            }
-        }
-        """;
+                class Main {
+                    void test(Greeter<String> greeter) {
+                        Greeter.greet("a");
+                        Greeter.greet("a", 2);
+                        int value = Greeter.VALUE;
+                        new Greeter<String>("x");
+                        greeter.pick(List.of(1), "k");
+                        new Greeter.Inner().run();
+                        Greeter.Mood mood = Greeter.Mood.SAD;
+                    }
+                }
+                """;
 
     @TempDir
     public Path directory;
@@ -169,6 +175,38 @@ public class JavaLibraryNavigationTest {
                 new UsageQuery.AtOffset(target.location().range().start), UsageSink.NONE).value();
             assertEquals(result.symbol(), fromDeclaration.symbol());
             assertEquals(result.usages(), fromDeclaration.usages());
+        }
+    }
+
+    @Test
+    public void usagesFromAnAttachedDeclarationFindOnlySourceSetsUsingThatArchive() throws Exception {
+        var dependency = library(Layout.MAVEN);
+        var otherVersion = library(Layout.GRADLE);
+        var settings = new HashMap<String, String>();
+        settings.put("module.app.sourceSets", "main\ntest\nclient");
+        settings.put("module.app.classpath", dependency + "\n" + otherVersion);
+        var callers = new ArrayList<TextDocumentSnapshot>();
+        for (String set : List.of("main", "test", "client")) {
+            Path root = directory.resolve(set);
+            settings.put("module.app.set." + set + ".sources", root.toString());
+            settings.put("module.app.set." + set + ".classpath",
+                (set.equals("client") ? otherVersion : dependency).toString());
+            callers.add(document(root.resolve("Caller.java"),
+                "import lib.Greeter; class Caller { String message = Greeter.greet(\"hi\"); }"));
+        }
+        var store = new DefaultDocumentStore("test", new WorkspaceConfigurationSnapshot(0, Set.of("app"), settings));
+        callers.forEach(store::publishBacking);
+        var main = callers.getFirst();
+        try (var services = new JavaSstServices(new JavaLibrarySources(directory.resolve("views")))) {
+            var target = services.definitions(context(store.capture(), main), main.text().indexOf("greet("))
+                .value().getFirst();
+            store.publishBacking(target.snapshot());
+            var result = services.usages(context(store.capture(), target.snapshot()),
+                new UsageQuery.AtOffset(target.location().range().start), UsageSink.NONE).value();
+
+            assertNotNull(result);
+            assertEquals(List.of(main.id(), callers.get(1).id()),
+                result.usages().stream().map(Location::documentId).toList());
         }
     }
 

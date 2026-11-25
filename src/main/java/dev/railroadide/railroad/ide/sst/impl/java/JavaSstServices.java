@@ -21,7 +21,6 @@ import dev.railroadide.railroad.ide.sst.syntax.api.SyntaxNode;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -143,22 +142,15 @@ public final class JavaSstServices
 
     @Override
     public FeatureResult<List<DefinitionTarget>> implementations(FeatureRequestContext context, int offset) {
-        return targets(context, offset, (graph, id) -> SemanticNavigationResolver.implementationsOf(graph,
-            context.workspaceSnapshot(), id, context::checkActive));
-    }
-
-    private FeatureResult<List<DefinitionTarget>> targets(
-        FeatureRequestContext context,
-        int offset,
-        BiFunction<WorkspaceSymbolGraph, SymbolId, List<DefinitionTarget>> query
-    ) {
         context.checkActive();
         if (!(context.documentSnapshot() instanceof TextDocumentSnapshot source))
             return new FeatureResult<>(context, List.of());
 
-        WorkspaceSymbolGraph graph = capture(context).resolvedGraph(context::checkActive);
+        var queries = new JavaSourceSetQueries(context, this::capture);
+        WorkspaceSymbolGraph graph = queries.graph(null, false);
         List<DefinitionTarget> targets = SemanticNavigationResolver.symbolAt(graph, source, offset)
-            .map(id -> query.apply(graph, id))
+            .map(id -> SemanticNavigationResolver.implementationsOf(queries.graph(id, false),
+                context.workspaceSnapshot(), id, context::checkActive))
             .orElseGet(List::of);
         context.checkActive();
         return new FeatureResult<>(context, targets);
@@ -170,8 +162,7 @@ public final class JavaSstServices
         Objects.requireNonNull(sink, "sink");
         context.checkActive();
 
-        UsageSearch search = capture(context).usages(context.workspaceSnapshot(), context.documentSnapshot(), query,
-            sink, context::checkActive);
+        UsageSearch search = new JavaSourceSetQueries(context, this::capture).usages(query, sink);
         context.checkActive();
         return new FeatureResult<>(context, search);
     }
@@ -179,7 +170,7 @@ public final class JavaSstServices
     @Override
     public FeatureResult<RenamePreparation> prepareRename(FeatureRequestContext context, int offset) {
         context.checkActive();
-        RenamePreparation preparation = new JavaRenameEngine(context, this::capture).prepare(offset);
+        RenamePreparation preparation = new JavaRenameEngine(context, this::capture, null).prepare(offset);
         context.checkActive();
         return new FeatureResult<>(context, preparation);
     }
@@ -194,7 +185,7 @@ public final class JavaSstServices
         Objects.requireNonNull(symbol, "symbol");
         Objects.requireNonNull(newName, "newName");
         context.checkActive();
-        RenameProposal proposal = new JavaRenameEngine(context, this::capture).rename(offset, symbol, newName);
+        RenameProposal proposal = new JavaRenameEngine(context, this::capture, symbol).rename(offset, symbol, newName);
         context.checkActive();
         return new FeatureResult<>(context, proposal);
     }

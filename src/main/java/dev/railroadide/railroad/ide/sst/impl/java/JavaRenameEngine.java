@@ -100,12 +100,13 @@ public final class JavaRenameEngine {
      */
     public JavaRenameEngine(
         FeatureRequestContext context,
-        Function<FeatureRequestContext, JavaWorkspaceAnalysis> capture
+        Function<FeatureRequestContext, JavaWorkspaceAnalysis> capture,
+        SymbolId target
     ) {
         this.context = Objects.requireNonNull(context, "context");
         this.workspace = context.workspaceSnapshot();
         this.capture = Objects.requireNonNull(capture, "capture");
-        this.graph = capture.apply(context).renameGraph(context::checkActive);
+        this.graph = new JavaSourceSetQueries(context, capture).graph(target, true);
         for (SemanticIndexShard shard : graph.shards().values()) {
             if (workspace.document(shard.documentId()).orElse(null) instanceof TextDocumentSnapshot snapshot
                 && snapshot.version().equals(shard.documentVersion()) && snapshot.uri().equals(shard.uri())
@@ -1348,7 +1349,7 @@ public final class JavaRenameEngine {
         var request = new FeatureRequestContext(renamedWorkspace, requester, context.cancellationToken(),
             context.deadline());
         var renamedAnalysis = capture.apply(request);
-        WorkspaceSymbolGraph after = renamedAnalysis.renameGraph(context::checkActive);
+        WorkspaceSymbolGraph after = new JavaSourceSetQueries(request, capture).graph(rename.apply(target.id()), true);
 
         compareReferences(after, rename, plan, renamedDocuments, conflicts);
         compareEdges(after, rename, conflicts);
